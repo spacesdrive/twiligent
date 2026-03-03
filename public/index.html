@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Social Media Analytics Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+
+<body>
+    <div id="welcomeScreen" class="welcome-screen hidden">
+        <div class="welcome-content">
+            <div class="welcome-icon">
+                <i class="fas fa-chart-line fa-3x"></i>
+            </div>
+            <h1>Welcome to Your Analytics Dashboard</h1>
+            <p>Track your social media performance all in one place</p>
+            <p class="welcome-subtitle">Get started by adding your first account</p>
+            <button class="btn-primary btn-large" onclick="showSetupWizard()">
+                <i class="fas fa-plus"></i>
+                <span>Add Your First Account</span>
+            </button>
+        </div>
+    </div>
+
+    <div id="mainDashboard" class="dashboard-container hidden">
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <h2>Analytics</h2>
+            </div>
+
+            <nav class="nav-menu">
+                <a href="#" class="nav-item active" data-tab="overview">
+                    <i class="fas fa-home"></i>
+                    <span>Overview</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="youtube">
+                    <i class="fab fa-youtube"></i>
+                    <span>YouTube</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="accounts">
+                    <i class="fas fa-users"></i>
+                    <span>Accounts</span>
+                </a>
+                <a href="#" class="nav-item" data-tab="settings">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()">
+                    <i class="fas fa-moon moon-icon"></i>
+                    <i class="fas fa-sun sun-icon"></i>
+                </button>
+                <div class="last-update">
+                    <span class="update-label">Last Updated</span>
+                    <span class="update-time" id="lastUpdateTime">Never</span>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div id="overviewTab" class="tab-content active">
+                <header class="content-header">
+                    <div>
+                        <h1>Overview</h1>
+                        <p class="header-subtitle">Combined analytics across all platforms</p>
+                    </div>
+                    <button class="btn-secondary" onclick="updateAllStats()">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>Update All Stats</span>
+                    </button>
+                </header>
+
+                <div class="kpi-grid">
+                    <div class="kpi-card">
+                        <div class="kpi-icon kpi-icon-views">
+                            <i class="fas fa-eye fa-2x"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <div class="kpi-label">Total Views</div>
+                            <div class="kpi-value" id="totalViews">0</div>
+                            <div class="kpi-change positive" id="viewsChange">—</div>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-icon kpi-icon-subscribers">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <div class="kpi-label">Total Subscribers</div>
+                            <div class="kpi-value" id="totalSubscribers">0</div>
+                            <div class="kpi-change positive" id="subscribersChange">—</div>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-icon kpi-icon-videos">
+                            <i class="fas fa-video fa-2x"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <div class="kpi-label">Total Videos</div>
+                            <div class="kpi-value" id="totalVideos">0</div>
+                            <div class="kpi-change positive" id="videosChange">—</div>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-icon kpi-icon-accounts">
+                            <i class="fas fa-folder fa-2x"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <div class="kpi-label">Total Accounts</div>
+                            <div class="kpi-value" id="totalAccounts">0</div>
+                            <div class="kpi-change" id="accountsChange">—</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2 class="section-title">Platform Performance</h2>
+                    <div class="card">
+                        <canvas id="platformComparisonChart" height="80"></canvas>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2 class="section-title">Top Performing Channels</h2>
+                    <div class="card">
+                        <div id="topPerformers" class="top-performers-list">
+                            <div class="empty-state">
+                                <div class="empty-icon">
+                                    <i class="fas fa-chart-bar fa-3x"></i>
+                                </div>
+                                <p>No data available yet</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="youtubeTab" class="tab-content">
+                <header class="content-header">
+                    <div>
+                        <h1>YouTube Analytics</h1>
+                        <p class="header-subtitle">Detailed YouTube channel insights</p>
+                    </div>
+                </header>
+
+                <div class="kpi-grid" id="youtubeSummaryCards">
+                    <div class="kpi-card">
+                        <div class="kpi-icon yt-views">
+                            <i class="fab fa-youtube fa-2x"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <div class="kpi-label">YouTube Views</div>
+                            <div class="kpi-value" id="ytTotalViews">0</div>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-icon yt-subs">
+                            <i class="fas fa-bell fa-2x"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <div class="kpi-label">Subscribers</div>
+                            <div class="kpi-value" id="ytTotalSubs">0</div>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-icon yt-videos">
+                            <i class="fas fa-play fa-2x"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <div class="kpi-label">Total Videos</div>
+                            <div class="kpi-value" id="ytTotalVideos">0</div>
+                        </div>
+                    </div>
+
+                    <div class="kpi-card">
+                        <div class="kpi-icon yt-channels">
+                            <i class="fab fa-youtube fa-2x"></i>
+                        </div>
+                        <div class="kpi-content">
+                            <div class="kpi-label">Channels</div>
+                            <div class="kpi-value" id="ytChannelCount">0</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <div class="section-header">
+                        <h2 class="section-title">Channels</h2>
+                        <button class="btn-primary" onclick="showAddAccountModal()">
+                            <i class="fas fa-plus"></i>
+                            <span>Add Channel</span>
+                        </button>
+                    </div>
+                    <div class="card">
+                        <div id="youtubeChannels" class="channels-list"></div>
+                    </div>
+                </div>
+
+                <div class="section" id="channelDetailsSection" style="display: none;">
+                    <div class="section-header">
+                        <h2 class="section-title">Channel Details: <span id="selectedChannelName"></span></h2>
+                        <button class="btn-secondary" onclick="closeChannelDetails()">
+                            <i class="fas fa-times"></i>
+                            <span>Close</span>
+                        </button>
+                    </div>
+
+                    <div class="card">
+                        <h3>Recent Videos</h3>
+                        <div id="channelVideos" class="videos-grid"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="accountsTab" class="tab-content">
+                <header class="content-header">
+                    <div>
+                        <h1>Accounts</h1>
+                        <p class="header-subtitle">Manage all connected accounts</p>
+                    </div>
+                    <button class="btn-primary" onclick="showAddAccountModal()">
+                        <i class="fas fa-plus"></i>
+                        <span>Add Account</span>
+                    </button>
+                </header>
+
+                <div class="card">
+                    <div id="accountsList" class="accounts-list"></div>
+                </div>
+            </div>
+
+
+
+            <div id="settingsTab" class="tab-content">
+                <header class="content-header">
+                    <div>
+                        <h1>Settings</h1>
+                        <p class="header-subtitle">Configure your dashboard</p>
+                    </div>
+                </header>
+
+                <div class="section">
+                    <h2 class="section-title">API Configuration</h2>
+                    <div class="card">
+                        <div class="form-group">
+                            <label for="youtubeApiKey">YouTube API Key</label>
+                            <input type="password" id="youtubeApiKey" class="form-input"
+                                placeholder="Enter your YouTube Data API v3 key">
+                            <p class="form-help">
+                                Get your API key from <a href="https://console.cloud.google.com/" target="_blank">Google
+                                    Cloud Console</a>
+                            </p>
+                        </div>
+
+                        <button class="btn-primary" onclick="saveAPIKey()">Save API Key</button>
+
+                        <div class="api-status" id="apiStatus">
+                            <span class="status-indicator status-unknown"></span>
+                            <span>API Key Status: Not configured</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2 class="section-title">Manual Updates</h2>
+                    <div class="card">
+                        <p>Manually fetch the latest statistics for all accounts</p>
+                        <button class="btn-primary" onclick="updateAllStats()">
+                            <i class="fas fa-sync-alt"></i>
+                            <span>Update All Stats Now</span>
+                        </button>
+
+                        <div class="last-update-info">
+                            <strong>Last Successful Update:</strong> <span id="settingsLastUpdate">Never</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2 class="section-title">About</h2>
+                    <div class="card">
+                        <h3>Social Media Analytics Dashboard</h3>
+                        <p>Version 1.0.0 - Local-Only Analytics</p>
+                        <ul class="about-list">
+                            <li>
+                                <i class="fas fa-check"></i>
+                                <span>100% Local - No cloud storage</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-check"></i>
+                                <span>Privacy-focused - Your data stays on your computer</span>
+                            </li>
+                            <li>
+                                <i class="fas fa-check"></i>
+                                <span>YouTube Analytics - Track channel performance</span>
+                            </li>
+
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="addAccountModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Add New Account</h2>
+                <button class="modal-close" onclick="closeAddAccountModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="accountName">Account Name</label>
+                    <input type="text" id="accountName" class="form-input" placeholder="e.g., My YouTube Channel">
+                </div>
+
+                <div class="form-group">
+                    <label for="accountPlatform">Platform</label>
+                    <select id="accountPlatform" class="form-input">
+                        <option value="youtube">YouTube</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="accountChannelId">Channel ID</label>
+                    <input type="text" id="accountChannelId" class="form-input" placeholder="UCxxxxxxxxxxxxxxxxxxxxx">
+                    <p class="form-help">
+                        Find your Channel ID in YouTube Studio → Settings → Channel → Advanced settings
+                    </p>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn-secondary" onclick="testConnection()">Test Connection</button>
+                    <button class="btn-primary" onclick="addAccount()">Add Account</button>
+                </div>
+
+                <div id="modalStatus" class="modal-status hidden"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loadingOverlay" class="loading-overlay hidden">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">Loading...</p>
+    </div>
+
+    <div id="toast" class="toast hidden"></div>
+
+    <script src="js/chart.min.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        function toggleTheme() {
+            const html = document.documentElement;
+            const currentTheme = html.getAttribute('data-theme');
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        });
+    </script>
+</body>
+
+</html>

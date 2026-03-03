@@ -1,0 +1,65 @@
+name: Instagram Scheduled Publisher
+
+# Automatically publishes scheduled Instagram posts via GitHub Actions.
+# Runs every 15 minutes — posts publish within ~15 min of their scheduled time.
+#
+# FREE TIER USAGE:
+#   Public repos  → unlimited minutes (recommended)
+#   Private repos → 2,000 min/month; change cron to '*/30 * * * *' to stay within limit
+#
+# REQUIRED SECRETS (set in GitHub repo → Settings → Secrets → Actions):
+#   ACCOUNTS_JSON  — Base64-encoded contents of backend/data/accounts.json
+#                    Generate with: cat backend/data/accounts.json | base64
+#                    (PowerShell: [Convert]::ToBase64String([IO.File]::ReadAllBytes("backend\data\accounts.json")))
+
+on:
+  schedule:
+    - cron: '*/60 * * * *'
+  workflow_dispatch: # Manual trigger from GitHub UI
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Check for due posts
+        id: check
+        run: |
+          if [ ! -f "backend/data/scheduled_posts.json" ]; then
+            echo "No scheduled_posts.json found"
+            echo "has_due=false" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          DUE=$(node -e "
+            const posts = JSON.parse(require('fs').readFileSync('backend/data/scheduled_posts.json', 'utf8'));
+            const now = new Date();
+            const due = posts.filter(p => p.status === 'pending' && new Date(p.scheduledAt) <= now);
+            console.log(due.length > 0 ? 'true' : 'false');
+          ")
+          echo "has_due=$DUE" >> $GITHUB_OUTPUT
+          echo "Due posts found: $DUE"
+
+      - name: Publish scheduled posts
+        if: steps.check.outputs.has_due == 'true'
+        run: node scripts/publish-scheduled.js
+        env:
+          ACCOUNTS_JSON: ${{ secrets.ACCOUNTS_JSON }}
+
+      - name: Commit updated schedule
+        if: steps.check.outputs.has_due == 'true'
+        run: |
+          git config user.name "GitHub Actions Bot"
+          git config user.email "actions@github.com"
+          git add backend/data/scheduled_posts.json
+          git diff --staged --quiet || git commit -m "📅 Auto-publish: $(date -u '+%Y-%m-%d %H:%M UTC') [skip ci]"
+          git push

@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Sensitive data — NEVER commit these
+backend/data/accounts.json
+backend/data/api_keys.json
+
+# Cache files
+backend/data/videos_cache.json
+backend/data/ig_cache.json
+backend/data/history.json
+
+# Frontend build
+frontend/dist/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.sw?
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*

@@ -1,0 +1,26 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="logoBg" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FF0000"/>
+      <stop offset="100%" stop-color="#CC0000"/>
+    </linearGradient>
+    <linearGradient id="barGrad1" x1="0" y1="100" x2="0" y2="30" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.95"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0.7"/>
+    </linearGradient>
+    <linearGradient id="playGrad" x1="70" y1="20" x2="110" y2="55" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#FFD4D4"/>
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" rx="28" fill="url(#logoBg)"/>
+  <rect x="18" y="72" width="16" height="26" rx="4" fill="url(#barGrad1)" opacity="0.9"/>
+  <rect x="40" y="52" width="16" height="46" rx="4" fill="url(#barGrad1)" opacity="0.95"/>
+  <rect x="62" y="36" width="16" height="62" rx="4" fill="url(#barGrad1)"/>
+  <path d="M26 68 L48 48 L70 32" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.6"/>
+  <g transform="translate(82, 18)">
+    <rect width="30" height="22" rx="5" fill="rgba(255,255,255,0.2)"/>
+    <path d="M11 5 L23 11 L11 17Z" fill="url(#playGrad)"/>
+  </g>
+  <circle cx="70" cy="32" r="4" fill="#FFFFFF" opacity="0.9"/>
+</svg>
