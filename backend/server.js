@@ -67,6 +67,9 @@ async function syncScheduledPostsToGitHub() {
         const gh = keys.github;
         if (!gh?.token || !gh?.repo) return; // Not configured
 
+        // Normalize repo: accept full URL or owner/repo format
+        const repo = gh.repo.replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '').replace(/\/$/, '');
+
         const posts = await readJSON(SCHEDULED_POSTS_FILE) || [];
         const content = Buffer.from(JSON.stringify(posts, null, 2)).toString('base64');
         const filePath = 'backend/data/scheduled_posts.json';
@@ -75,7 +78,7 @@ async function syncScheduledPostsToGitHub() {
         // Get current file SHA (needed for updates)
         let sha;
         try {
-            const res = await fetch(`https://api.github.com/repos/${gh.repo}/contents/${filePath}?ref=${branch}`, {
+            const res = await fetch(`https://api.github.com/repos/${repo}/contents/${filePath}?ref=${branch}`, {
                 headers: { Authorization: `token ${gh.token}`, 'User-Agent': 'SocialMediaDashboard' }
             });
             if (res.ok) {
@@ -88,7 +91,7 @@ async function syncScheduledPostsToGitHub() {
         const body = { message: '📅 Sync scheduled posts', content, branch };
         if (sha) body.sha = sha;
 
-        const res = await fetch(`https://api.github.com/repos/${gh.repo}/contents/${filePath}`, {
+        const res = await fetch(`https://api.github.com/repos/${repo}/contents/${filePath}`, {
             method: 'PUT',
             headers: {
                 Authorization: `token ${gh.token}`,
@@ -115,10 +118,13 @@ async function pullScheduledPostsFromGitHub() {
         const gh = keys.github;
         if (!gh?.token || !gh?.repo) return;
 
+        // Normalize repo: accept full URL or owner/repo format
+        const repo = gh.repo.replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '').replace(/\/$/, '');
+
         const filePath = 'backend/data/scheduled_posts.json';
         const branch = gh.branch || 'main';
 
-        const res = await fetch(`https://api.github.com/repos/${gh.repo}/contents/${filePath}?ref=${branch}`, {
+        const res = await fetch(`https://api.github.com/repos/${repo}/contents/${filePath}?ref=${branch}`, {
             headers: { Authorization: `token ${gh.token}`, 'User-Agent': 'SocialMediaDashboard' }
         });
         if (!res.ok) return;
