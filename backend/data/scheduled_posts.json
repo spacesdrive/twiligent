@@ -15,10 +15,11 @@
     "userTags": [],
     "altText": "",
     "scheduledAt": "2026-03-05T02:30:00.000Z",
-    "status": "pending",
+    "status": "published",
     "createdAt": "2026-03-03T19:39:25.486Z",
-    "publishedMediaId": null,
-    "error": null
+    "publishedMediaId": "18076623290616903",
+    "error": null,
+    "publishedAt": "2026-03-05T04:07:43.835Z"
   },
   {
     "id": "mmb33ck9d8j3j5",
