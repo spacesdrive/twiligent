@@ -59,10 +59,11 @@
     "userTags": [],
     "altText": "",
     "scheduledAt": "2026-03-07T02:30:00.000Z",
-    "status": "pending",
+    "status": "published",
     "createdAt": "2026-03-03T20:52:30.309Z",
-    "publishedMediaId": null,
-    "error": null
+    "publishedMediaId": "18093077498102800",
+    "error": null,
+    "publishedAt": "2026-03-07T03:53:36.750Z"
   },
   {
     "id": "mmb33kejz9w04a",
