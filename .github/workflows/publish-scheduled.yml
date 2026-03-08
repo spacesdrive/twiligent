@@ -62,4 +62,8 @@ jobs:
           git config user.email "actions@github.com"
           git add backend/data/scheduled_posts.json
           git diff --staged --quiet || git commit -m "📅 Auto-publish: $(date -u '+%Y-%m-%d %H:%M UTC') [skip ci]"
-          git push
+          for i in 1 2 3; do
+            git pull --rebase origin main && git push && break
+            echo "Push attempt $i failed, retrying..."
+            sleep 2
+          done
