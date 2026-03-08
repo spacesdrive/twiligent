@@ -3,6 +3,7 @@ const cors = require('cors');
 const fs = require('fs').promises;
 const path = require('path');
 const fetch = require('node-fetch');
+const sodium = require('libsodium-wrappers');
 
 const app = express();
 const PORT = 3001;
@@ -155,6 +156,59 @@ async function pullScheduledPostsFromGitHub() {
         console.log(`  ☁️ Pulled ${remotePosts.length} post(s) from GitHub, merged to ${merged.length}`);
     } catch (err) {
         console.error('  ☁️ GitHub pull error:', err.message);
+    }
+}
+
+// ─── GitHub Accounts Secret Sync ─────────────────────────────────────────────
+// Automatically updates ACCOUNTS_JSON secret in GitHub Actions whenever accounts change.
+// This means you never have to manually regenerate the base64 secret again.
+
+async function syncAccountsSecretToGitHub() {
+    try {
+        const keys = await readJSON(API_KEYS_FILE) || {};
+        const gh = keys.github;
+        if (!gh?.token || !gh?.repo) return;
+
+        const repo = gh.repo.replace(/^https?:\/\/github\.com\//, '').replace(/\.git$/, '').replace(/\/$/, '');
+        const accounts = await readJSON(ACCOUNTS_FILE) || [];
+        const secretValue = Buffer.from(JSON.stringify(accounts, null, 2)).toString('base64');
+
+        // Step 1: Get the repo's public key for encrypting secrets
+        const pkRes = await fetch(`https://api.github.com/repos/${repo}/actions/secrets/public-key`, {
+            headers: { Authorization: `token ${gh.token}`, 'User-Agent': 'SocialMediaDashboard' }
+        });
+        if (!pkRes.ok) {
+            console.error('  ☁️ Failed to get GitHub public key:', (await pkRes.json()).message);
+            return;
+        }
+        const { key: publicKey, key_id } = await pkRes.json();
+
+        // Step 2: Encrypt the secret using libsodium sealed box
+        await sodium.ready;
+        const binKey = sodium.from_base64(publicKey, sodium.base64_variants.ORIGINAL);
+        const binSecret = sodium.from_string(secretValue);
+        const encrypted = sodium.crypto_box_seal(binSecret, binKey);
+        const encryptedB64 = sodium.to_base64(encrypted, sodium.base64_variants.ORIGINAL);
+
+        // Step 3: Update the secret
+        const res = await fetch(`https://api.github.com/repos/${repo}/actions/secrets/ACCOUNTS_JSON`, {
+            method: 'PUT',
+            headers: {
+                Authorization: `token ${gh.token}`,
+                'Content-Type': 'application/json',
+                'User-Agent': 'SocialMediaDashboard'
+            },
+            body: JSON.stringify({ encrypted_value: encryptedB64, key_id }),
+        });
+
+        if (res.status === 201 || res.status === 204) {
+            console.log('  ☁️ Synced ACCOUNTS_JSON secret to GitHub');
+        } else {
+            const err = await res.json();
+            console.error('  ☁️ GitHub secret sync error:', err.message);
+        }
+    } catch (err) {
+        console.error('  ☁️ GitHub secret sync error:', err.message);
     }
 }
 
@@ -1042,6 +1096,7 @@ app.post('/api/accounts', async (req, res) => {
 
         accounts.push(newAccount);
         await writeJSON(ACCOUNTS_FILE, accounts);
+        syncAccountsSecretToGitHub().catch(() => { });
 
         res.json({ success: true, account: newAccount });
     } catch (err) {
@@ -1113,6 +1168,7 @@ app.post('/api/accounts/instagram', async (req, res) => {
 
         accounts.push(newAccount);
         await writeJSON(ACCOUNTS_FILE, accounts);
+        syncAccountsSecretToGitHub().catch(() => { });
 
         // Mask token in response
         const safeAccount = { ...newAccount };
@@ -1138,6 +1194,7 @@ app.post('/api/accounts/:id/refresh-ig-token', async (req, res) => {
         account.accessToken = refreshed.accessToken;
         account.tokenExpiresAt = new Date(Date.now() + (refreshed.expiresIn || 5184000) * 1000).toISOString();
         await writeJSON(ACCOUNTS_FILE, accounts);
+        syncAccountsSecretToGitHub().catch(() => { });
         res.json({ success: true, message: 'Token refreshed for another 60 days', expiresAt: account.tokenExpiresAt });
     } catch (err) {
         res.status(400).json({ success: false, message: err.message });
@@ -1152,6 +1209,7 @@ app.delete('/api/accounts/:id', async (req, res) => {
         if (!account) return res.status(404).json({ success: false, message: 'Not found' });
         const filtered = accounts.filter(a => a.id !== req.params.id);
         await writeJSON(ACCOUNTS_FILE, filtered);
+        syncAccountsSecretToGitHub().catch(() => { });
 
         // Clean caches
         const cache = await readJSON(VIDEOS_CACHE_FILE);
