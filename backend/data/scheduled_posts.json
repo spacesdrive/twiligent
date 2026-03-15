@@ -257,10 +257,11 @@
     "userTags": [],
     "altText": "",
     "scheduledAt": "2026-03-15T02:30:00.000Z",
-    "status": "pending",
+    "status": "published",
     "createdAt": "2026-03-04T08:17:32.647Z",
-    "publishedMediaId": null,
-    "error": null
+    "publishedMediaId": "18003463127890721",
+    "error": null,
+    "publishedAt": "2026-03-15T04:29:42.112Z"
   },
   {
     "id": "mmbrkj3hrfh55a",
