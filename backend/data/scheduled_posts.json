@@ -301,10 +301,11 @@
     "userTags": [],
     "altText": "",
     "scheduledAt": "2026-03-17T02:30:00.000Z",
-    "status": "pending",
+    "status": "published",
     "createdAt": "2026-03-04T08:17:42.054Z",
-    "publishedMediaId": null,
-    "error": null
+    "publishedMediaId": "18136133368511454",
+    "error": null,
+    "publishedAt": "2026-03-17T04:04:39.379Z"
   },
   {
     "id": "mmbrkq155fc560",
