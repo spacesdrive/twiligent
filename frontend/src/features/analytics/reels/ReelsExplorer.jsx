@@ -8,8 +8,8 @@ import {
     Search, Visibility, FavoriteBorder, ChatBubbleOutline, PlayCircleOutline,
     Instagram, MovieFilter, Photo, Collections, ViewCarousel,
 } from '@mui/icons-material';
-import { api } from '../services/api';
-import { fmtNum, fmtDate, timeAgo } from '../utils/formatters';
+import { api } from '../../../services/api';
+import { fmtNum, fmtDate, timeAgo } from '../../../utils/formatters';
 
 const ITEMS_PER_PAGE = 24;
 

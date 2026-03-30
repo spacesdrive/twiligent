@@ -16,7 +16,7 @@ import {
     DriveFolderUpload, PlaylistAdd, SkipNext, Stop, Pause,
     ContentCopy, DragIndicator, EditNote, DeleteSweep, OpenInNew,
 } from '@mui/icons-material';
-import { api } from '../services/api';
+import { api } from '../../services/api';
 
 const IG_GRADIENT = 'linear-gradient(135deg, #F58529, #DD2A7B, #8134AF, #515BD4)';
 

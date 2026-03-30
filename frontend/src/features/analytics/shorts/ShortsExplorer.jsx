@@ -7,8 +7,8 @@ import {
 import {
     Search, Visibility, ThumbUp, Comment, PlayCircleOutline, YouTube,
 } from '@mui/icons-material';
-import { api } from '../services/api';
-import { fmtNum, fmtDate, fmtDuration, fmtPercent, timeAgo } from '../utils/formatters';
+import { api } from '../../../services/api';
+import { fmtNum, fmtDate, fmtDuration, fmtPercent, timeAgo } from '../../../utils/formatters';
 
 const ITEMS_PER_PAGE = 24;
 

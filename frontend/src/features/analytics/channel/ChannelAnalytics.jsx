@@ -17,9 +17,9 @@ import {
     ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Legend,
     AreaChart, Area, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
 } from 'recharts';
-import StatCard from './StatCard';
-import { api } from '../services/api';
-import { fmtNum, fmtNumFull, fmtDate, fmtPercent, fmtDuration, timeAgo, CATEGORY_MAP } from '../utils/formatters';
+import StatCard from '../../../components/ui/StatCard';
+import { api } from '../../../services/api';
+import { fmtNum, fmtNumFull, fmtDate, fmtPercent, fmtDuration, timeAgo, CATEGORY_MAP } from '../../../utils/formatters';
 
 const COLORS = ['#FF0000', '#3EA6FF', '#4CAF50', '#FF9800', '#AB47BC', '#26A69A', '#EC407A', '#5C6BC0', '#FFCA28', '#00BCD4'];
 

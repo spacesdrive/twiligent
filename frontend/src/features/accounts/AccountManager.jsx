@@ -8,8 +8,8 @@ import {
     Add, Delete, Refresh, Search, YouTube, People, Visibility, VideoLibrary,
     Link as LinkIcon, CheckCircle, Instagram, Favorite, Photo, Key,
 } from '@mui/icons-material';
-import { api } from '../services/api';
-import { fmtNum, timeAgo } from '../utils/formatters';
+import { api } from '../../services/api';
+import { fmtNum, timeAgo } from '../../utils/formatters';
 
 export default function AccountManager({ accounts, showToast, onRefresh }) {
     const [dialogOpen, setDialogOpen] = useState(false);

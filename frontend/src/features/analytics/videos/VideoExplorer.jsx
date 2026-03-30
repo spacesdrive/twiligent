@@ -11,8 +11,8 @@ import {
     ViewList, ViewModule, Sort, PlayCircleOutline, TrendingUp,
     Schedule, Speed, YouTube,
 } from '@mui/icons-material';
-import { api } from '../services/api';
-import { fmtNum, fmtNumFull, fmtDate, fmtDuration, fmtPercent, timeAgo } from '../utils/formatters';
+import { api } from '../../../services/api';
+import { fmtNum, fmtNumFull, fmtDate, fmtDuration, fmtPercent, timeAgo } from '../../../utils/formatters';
 
 const ITEMS_PER_PAGE = 25;
 
