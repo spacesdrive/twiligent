@@ -16,9 +16,9 @@ import {
     ResponsiveContainer, PieChart, Pie, Cell, Legend, LineChart, Line,
     AreaChart, Area,
 } from 'recharts';
-import StatCard from './StatCard';
-import { fmtNum, fmtNumFull, fmtDate, timeAgo } from '../utils/formatters';
-import { api } from '../services/api';
+import StatCard from '../../../components/ui/StatCard';
+import { fmtNum, fmtNumFull, fmtDate, timeAgo } from '../../../utils/formatters';
+import { api } from '../../../services/api';
 
 const IG_GRADIENT = 'linear-gradient(135deg, #F58529, #DD2A7B, #8134AF, #515BD4)';
 const IG_COLORS = ['#F58529', '#DD2A7B', '#8134AF', '#515BD4', '#FEDA77', '#405DE6'];
@@ -234,26 +234,29 @@ export default function InstagramAnalytics({ account, showToast, onBack }) {
                 </Grid>
             </Grid>
 
-            {/* Best posting day & hour */}
-            {(a.bestPostingDay || a.bestPostingHour) && (
-                <Card sx={{ mb: 2.5, p: 2 }}>
-                    <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
+            {/* Best posting day & hour + Avg Engagement */}
+            <Card sx={{ mb: 2.5 }}>
+                <CardContent sx={{ py: 1.5, px: 2.5, '&:last-child': { pb: 1.5 } }}>
+                    <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap', alignItems: 'center' }}>
                         {a.bestPostingDay && (
-                            <Chip icon={<Star sx={{ color: '#FFD700 !important' }} />}
+                            <Chip icon={<Star sx={{ color: '#F59E0B !important', fontSize: '16px !important' }} />}
                                 label={`Best Day: ${a.bestPostingDay}`}
-                                sx={{ fontSize: 13, fontWeight: 600, height: 32 }} />
+                                sx={{ fontSize: 12, fontWeight: 700, height: 30, bgcolor: 'rgba(245,158,11,0.1)', color: '#F59E0B', border: '1px solid rgba(245,158,11,0.2)' }} />
                         )}
                         {a.bestPostingHour && (
-                            <Chip icon={<Schedule sx={{ color: '#4CAF50 !important' }} />}
+                            <Chip icon={<Schedule sx={{ color: '#22C55E !important', fontSize: '16px !important' }} />}
                                 label={`Best Hour: ${a.bestPostingHour}`}
-                                sx={{ fontSize: 13, fontWeight: 600, height: 32 }} />
+                                sx={{ fontSize: 12, fontWeight: 700, height: 30, bgcolor: 'rgba(34,197,94,0.1)', color: '#22C55E', border: '1px solid rgba(34,197,94,0.2)' }} />
                         )}
-                        <Chip icon={<TrendingUp sx={{ color: '#2196F3 !important' }} />}
+                        <Chip icon={<TrendingUp sx={{ color: '#3B82F6 !important', fontSize: '16px !important' }} />}
                             label={`Avg Engagement: ${fmtNum(a.avgEngagement || 0)}/post`}
-                            sx={{ fontSize: 13, fontWeight: 600, height: 32 }} />
+                            sx={{ fontSize: 12, fontWeight: 700, height: 30, bgcolor: 'rgba(59,130,246,0.1)', color: '#3B82F6', border: '1px solid rgba(59,130,246,0.2)' }} />
+                        <Chip icon={<WorkspacePremium sx={{ color: '#A78BFA !important', fontSize: '16px !important' }} />}
+                            label={`Consistency: ${a.consistencyScore || 0}/100`}
+                            sx={{ fontSize: 12, fontWeight: 700, height: 30, bgcolor: 'rgba(167,139,250,0.1)', color: '#A78BFA', border: '1px solid rgba(167,139,250,0.2)' }} />
                     </Box>
-                </Card>
-            )}
+                </CardContent>
+            </Card>
 
             {/* CHARTS ROW 1: Engagement Timeline + Content Mix */}
             <Grid container spacing={2.5} sx={{ mb: 3 }}>

@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ThemeProvider, CssBaseline, Box, Snackbar, Alert } from '@mui/material';
 import theme from './theme';
-import Sidebar from './components/Sidebar';
-import Overview from './components/Overview';
-import ChannelAnalytics from './components/ChannelAnalytics';
-import AccountManager from './components/AccountManager';
-import Settings from './components/Settings';
-import VideoExplorer from './components/VideoExplorer';
-import ShortsExplorer from './components/ShortsExplorer';
-import ReelsExplorer from './components/ReelsExplorer';
-import InstagramAnalytics from './components/InstagramAnalytics';
-import UploadContent from './components/UploadContent';
+import Sidebar from './layouts/Sidebar';
+import Overview from './features/analytics/overview/Overview';
+import ChannelAnalytics from './features/analytics/channel/ChannelAnalytics';
+import AccountManager from './features/accounts/AccountManager';
+import Settings from './features/settings/Settings';
+import VideoExplorer from './features/analytics/videos/VideoExplorer';
+import ShortsExplorer from './features/analytics/shorts/ShortsExplorer';
+import ReelsExplorer from './features/analytics/reels/ReelsExplorer';
+import InstagramAnalytics from './features/analytics/instagram/InstagramAnalytics';
+import UploadContent from './features/publishing/UploadContent';
 import { api } from './services/api';
 import { normalizeAccount } from './utils/formatters';
 

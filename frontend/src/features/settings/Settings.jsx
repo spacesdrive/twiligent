@@ -7,7 +7,7 @@ import {
     Key, Save, Visibility, VisibilityOff, CheckCircle, Error as ErrorIcon,
     Refresh, Info, GitHub, Code, Instagram, Cloud, Sync, Schedule,
 } from '@mui/icons-material';
-import { api } from '../services/api';
+import { api } from '../../services/api';
 
 export default function Settings({ showToast, onRefresh }) {
     const [apiKey, setApiKey] = useState('');
