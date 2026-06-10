@@ -7,6 +7,7 @@ import {
     Tabs, Tab, Badge, Collapse, Dialog, DialogTitle, DialogContent, DialogActions,
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
 } from '@mui/material';
+import { useAppContext } from '../../context/AppContext';
 import {
     CloudUpload, Instagram, Photo, Movie, ViewCarousel, AutoStories,
     Delete, CheckCircle, Error as ErrorIcon, Schedule, Send,
@@ -28,7 +29,8 @@ const CONTENT_TYPES = [
 
 const PUBLISH_STEPS = ['Select Media', 'Configure', 'Upload & Publish'];
 
-export default function UploadContent({ accounts, showToast }) {
+export default function UploadContent() {
+    const { accounts, showToast } = useAppContext();
     const [igAccounts, setIgAccounts] = useState([]);
     const [selectedAccount, setSelectedAccount] = useState('');
     const [contentType, setContentType] = useState('');
