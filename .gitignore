@@ -34,3 +34,5 @@ yarn-debug.log*
 
 *.bat
 .mcp.json
+.agents
+skills-lock.json
