@@ -1,48 +1,36 @@
-import React, { useState } from 'react';
+import React, { Suspense } from 'react';
 import { Outlet } from 'react-router-dom';
-import { Box, Toolbar, useMediaQuery } from '@mui/material';
-import MainDrawer, { DRAWER_WIDTH, MINI_DRAWER_WIDTH } from './Drawer/index';
-import Header from './Header/index';
+import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import AppSidebar from './Sidebar';
+import AppHeader from './Header';
+
+function PageSkeleton() {
+  return (
+    <div className="flex-1 p-4 sm:p-6 space-y-4 animate-pulse">
+      <div className="h-8 w-48 rounded-md bg-muted" />
+      <div className="h-4 w-72 rounded-md bg-muted" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mt-6">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-28 rounded-xl bg-muted" />
+        ))}
+      </div>
+      <div className="h-64 rounded-xl bg-muted" />
+    </div>
+  );
+}
 
 export default function MainLayout() {
-  const isMobile = useMediaQuery('(max-width:1024px)');
-  const [drawerOpen, setDrawerOpen] = useState(true);
-
-  const toggleDrawer = () => setDrawerOpen(prev => !prev);
-
-  const contentMargin = isMobile ? 0 : (drawerOpen ? DRAWER_WIDTH : MINI_DRAWER_WIDTH);
-
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
-      <MainDrawer open={drawerOpen} onClose={() => setDrawerOpen(false)} />
-
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          ml: isMobile ? 0 : `${contentMargin}px`,
-          transition: 'margin-left 0.2s ease',
-          minWidth: 0,
-          display: 'flex',
-          flexDirection: 'column',
-        }}
-      >
-        <Header drawerOpen={drawerOpen} onToggleDrawer={toggleDrawer} />
-
-        {/* Offset for fixed header */}
-        <Toolbar sx={{ minHeight: '60px !important', flexShrink: 0 }} />
-
-        {/* Page content */}
-        <Box
-          sx={{
-            flex: 1,
-            p: { xs: 2, sm: 3 },
-            overflowX: 'hidden',
-          }}
-        >
-          <Outlet />
-        </Box>
-      </Box>
-    </Box>
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset>
+        <AppHeader />
+        <main className="flex-1 overflow-auto p-4 sm:p-6">
+          <Suspense fallback={<PageSkeleton />}>
+            <Outlet />
+          </Suspense>
+        </main>
+      </SidebarInset>
+    </SidebarProvider>
   );
 }
