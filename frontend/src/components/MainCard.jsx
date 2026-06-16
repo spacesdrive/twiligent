@@ -1,72 +1,39 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, Divider, Typography } from '@mui/material';
-import { GREY, PRIMARY } from '../themes/index';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { cn } from '@/lib/utils';
 
 export default function MainCard({
-  border = true,
-  boxShadow = false,
   children,
-  subheader,
-  content = true,
-  contentSX = {},
-  darkTitle = false,
-  divider = true,
-  elevation,
-  secondary,
-  shadow,
-  sx = {},
   title,
-  modal = false,
-  ...others
+  subheader,
+  secondary,
+  content = true,
+  contentClassName = '',
+  className = '',
+  noPadding = false,
+  ...props
 }) {
   return (
-    <Card
-      elevation={elevation ?? 0}
-      sx={{
-        position: 'relative',
-        border: border ? `1px solid ${GREY.A800}` : 'none',
-        borderRadius: 2,
-        boxShadow: boxShadow
-          ? shadow || '0 1px 4px rgba(0,0,0,0.08)'
-          : 'none',
-        ':hover': {
-          boxShadow: boxShadow
-            ? shadow || '0 4px 12px rgba(0,0,0,0.12)'
-            : 'none',
-        },
-        ...(modal && {
-          position: 'absolute',
-          top: '50%',
-          left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: { xs: 'calc(100% - 50px)', sm: 'auto' },
-          maxWidth: 768,
-        }),
-        ...sx,
-      }}
-      {...others}
-    >
+    <Card className={cn('border border-border shadow-none', className)} {...props}>
       {title && (
-        <CardHeader
-          sx={{ p: 2.5 }}
-          title={
-            <Typography variant={darkTitle ? 'h4' : 'subtitle1'} sx={{ fontWeight: 600 }}>
-              {title}
-            </Typography>
-          }
-          action={secondary}
-          subheader={subheader && (
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              {subheader}
-            </Typography>
-          )}
-        />
+        <>
+          <CardHeader className="px-5 py-4 flex-row items-start justify-between space-y-0">
+            <div>
+              <CardTitle className="text-sm font-semibold">{title}</CardTitle>
+              {subheader && (
+                <p className="text-xs text-muted-foreground mt-0.5">{subheader}</p>
+              )}
+            </div>
+            {secondary && <div className="flex-shrink-0">{secondary}</div>}
+          </CardHeader>
+          <Separator />
+        </>
       )}
-
-      {title && divider && <Divider />}
-
       {content ? (
-        <CardContent sx={{ p: 2.5, ...contentSX }}>{children}</CardContent>
+        <CardContent className={cn('px-5 py-4', noPadding && 'p-0', contentClassName)}>
+          {children}
+        </CardContent>
       ) : (
         children
       )}
