@@ -1,350 +1,385 @@
 import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
-    Box, Typography, Grid, Button, TextField,
-    InputAdornment, IconButton, Chip, Divider, Alert, CircularProgress,
-} from '@mui/material';
-import {
-    Key, Save, Visibility, VisibilityOff, CheckCircle,
-    Refresh, Info, GitHub, Code, Instagram, Cloud, Sync,
-} from '@mui/icons-material';
+  KeyRound, Save, Eye, EyeOff, CheckCircle2, RefreshCw,
+  Info, GitBranch, Code2, Camera, Cloud, RotateCcw, AlertTriangle,
+} from 'lucide-react';
 import MainCard from '../../components/MainCard';
 import { useAppContext } from '../../context/AppContext';
 import { api } from '../../services/api';
-import { PRIMARY } from '../../themes/index';
+import { cn } from '@/lib/utils';
+
+function SecretInput({ value, onChange, placeholder, showByDefault = false, icon: Icon = KeyRound, ...props }) {
+  const [show, setShow] = useState(showByDefault);
+  return (
+    <div className="relative">
+      {Icon && <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />}
+      <Input
+        type={show ? 'text' : 'password'}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        className={cn('pr-10', Icon && 'pl-9')}
+        {...props}
+      />
+      <button
+        type="button"
+        onClick={() => setShow(s => !s)}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+      >
+        {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+      </button>
+    </div>
+  );
+}
+
+function SettingSection({ title, icon: Icon, children, action }) {
+  return (
+    <MainCard
+      title={title}
+      secondary={action}
+      className="mb-4"
+    >
+      <div className="space-y-4">{children}</div>
+    </MainCard>
+  );
+}
 
 export default function Settings() {
-    const { showToast, refreshAll } = useAppContext();
+  const { showToast, refreshAll } = useAppContext();
 
-    const [apiKey,            setApiKey]            = useState('');
-    const [igAppId,           setIgAppId]           = useState('');
-    const [igAppSecret,       setIgAppSecret]       = useState('');
-    const [cloudinaryName,    setCloudinaryName]    = useState('');
-    const [cloudinaryPreset,  setCloudinaryPreset]  = useState('');
-    const [githubToken,       setGithubToken]       = useState('');
-    const [githubRepo,        setGithubRepo]        = useState('');
-    const [githubBranch,      setGithubBranch]      = useState('main');
-    const [showKey,           setShowKey]           = useState(false);
-    const [showIgSecret,      setShowIgSecret]      = useState(false);
-    const [showGhToken,       setShowGhToken]       = useState(false);
-    const [saving,            setSaving]            = useState(false);
-    const [savingIg,          setSavingIg]          = useState(false);
-    const [savingCloud,       setSavingCloud]       = useState(false);
-    const [savingGh,          setSavingGh]          = useState(false);
-    const [syncingGh,         setSyncingGh]         = useState(false);
-    const [testing,           setTesting]           = useState(false);
-    const [testResult,        setTestResult]        = useState(null);
-    const [loading,           setLoading]           = useState(true);
+  const [apiKey,           setApiKey]           = useState('');
+  const [igAppId,          setIgAppId]          = useState('');
+  const [igAppSecret,      setIgAppSecret]      = useState('');
+  const [cloudinaryName,   setCloudinaryName]   = useState('');
+  const [cloudinaryPreset, setCloudinaryPreset] = useState('');
+  const [githubToken,      setGithubToken]      = useState('');
+  const [githubRepo,       setGithubRepo]       = useState('');
+  const [githubBranch,     setGithubBranch]     = useState('main');
+  const [saving,           setSaving]           = useState(false);
+  const [savingIg,         setSavingIg]         = useState(false);
+  const [savingCloud,      setSavingCloud]       = useState(false);
+  const [savingGh,         setSavingGh]         = useState(false);
+  const [syncingGh,        setSyncingGh]        = useState(false);
+  const [testing,          setTesting]          = useState(false);
+  const [testResult,       setTestResult]       = useState(null);
+  const [loading,          setLoading]          = useState(true);
 
-    useEffect(() => { loadKeys(); }, []);
+  useEffect(() => { loadKeys(); }, []);
 
-    const loadKeys = async () => {
-        setLoading(true);
-        try {
-            const res = await api.getKeys();
-            setApiKey(res.youtube || '');
-            if (res.instagram) { setIgAppId(res.instagram.appId || ''); setIgAppSecret(res.instagram.appSecret || ''); }
-            if (res.cloudinary) { setCloudinaryName(res.cloudinary.cloudName || ''); setCloudinaryPreset(res.cloudinary.uploadPreset || ''); }
-            if (res.github) { setGithubToken(res.github.token || ''); setGithubRepo(res.github.repo || ''); setGithubBranch(res.github.branch || 'main'); }
-        } catch (err) {
-            showToast('Failed to load API keys', 'error');
-        } finally {
-            setLoading(false);
-        }
-    };
+  const loadKeys = async () => {
+    setLoading(true);
+    try {
+      const res = await api.getKeys();
+      setApiKey(res.youtube || '');
+      if (res.instagram) { setIgAppId(res.instagram.appId || ''); setIgAppSecret(res.instagram.appSecret || ''); }
+      if (res.cloudinary) { setCloudinaryName(res.cloudinary.cloudName || ''); setCloudinaryPreset(res.cloudinary.uploadPreset || ''); }
+      if (res.github) { setGithubToken(res.github.token || ''); setGithubRepo(res.github.repo || ''); setGithubBranch(res.github.branch || 'main'); }
+    } catch (err) {
+      showToast('Failed to load API keys', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const handleSave = async () => {
-        setSaving(true);
-        try { await api.saveKey(apiKey); showToast('API key saved successfully', 'success'); }
-        catch (err) { showToast('Failed to save API key: ' + err.message, 'error'); }
-        finally { setSaving(false); }
-    };
+  const handleSave = async () => {
+    setSaving(true);
+    try { await api.saveKey(apiKey); showToast('API key saved successfully'); }
+    catch (err) { showToast('Failed to save API key: ' + err.message, 'error'); }
+    finally { setSaving(false); }
+  };
 
-    const handleTest = async () => {
-        setTesting(true); setTestResult(null);
-        try {
-            const res = await api.health();
-            setTestResult({ success: res.status === 'ok', message: res.status === 'ok' ? 'API connection successful!' : 'Unexpected status.' });
-        } catch (err) {
-            setTestResult({ success: false, message: 'Connection failed: ' + err.message });
-        } finally { setTesting(false); }
-    };
+  const handleTest = async () => {
+    setTesting(true); setTestResult(null);
+    try {
+      const res = await api.health();
+      setTestResult({ success: res.status === 'ok', message: res.status === 'ok' ? 'API connection successful!' : 'Unexpected status.' });
+    } catch (err) {
+      setTestResult({ success: false, message: 'Connection failed: ' + err.message });
+    } finally { setTesting(false); }
+  };
 
-    const handleSaveInstagram = async () => {
-        setSavingIg(true);
-        try { await api.saveKeys({ instagram: { appId: igAppId, appSecret: igAppSecret } }); showToast('Instagram credentials saved successfully', 'success'); }
-        catch (err) { showToast('Failed to save Instagram credentials: ' + err.message, 'error'); }
-        finally { setSavingIg(false); }
-    };
+  const handleSaveInstagram = async () => {
+    setSavingIg(true);
+    try { await api.saveKeys({ instagram: { appId: igAppId, appSecret: igAppSecret } }); showToast('Instagram credentials saved'); }
+    catch (err) { showToast('Failed to save: ' + err.message, 'error'); }
+    finally { setSavingIg(false); }
+  };
 
-    const handleSaveCloudinary = async () => {
-        setSavingCloud(true);
-        try { await api.saveKeys({ cloudinary: { cloudName: cloudinaryName, uploadPreset: cloudinaryPreset } }); showToast('Cloudinary settings saved successfully', 'success'); }
-        catch (err) { showToast('Failed to save Cloudinary settings: ' + err.message, 'error'); }
-        finally { setSavingCloud(false); }
-    };
+  const handleSaveCloudinary = async () => {
+    setSavingCloud(true);
+    try { await api.saveKeys({ cloudinary: { cloudName: cloudinaryName, uploadPreset: cloudinaryPreset } }); showToast('Cloudinary settings saved'); }
+    catch (err) { showToast('Failed to save: ' + err.message, 'error'); }
+    finally { setSavingCloud(false); }
+  };
 
-    const handleSaveGitHub = async () => {
-        setSavingGh(true);
-        try { await api.saveKeys({ github: { token: githubToken, repo: githubRepo, branch: githubBranch } }); showToast('GitHub Actions settings saved successfully', 'success'); }
-        catch (err) { showToast('Failed to save GitHub settings: ' + err.message, 'error'); }
-        finally { setSavingGh(false); }
-    };
+  const handleSaveGitHub = async () => {
+    setSavingGh(true);
+    try { await api.saveKeys({ github: { token: githubToken, repo: githubRepo, branch: githubBranch } }); showToast('GitHub settings saved'); }
+    catch (err) { showToast('Failed to save: ' + err.message, 'error'); }
+    finally { setSavingGh(false); }
+  };
 
-    const handleSyncGitHub = async () => {
-        setSyncingGh(true);
-        try { await api.syncToGitHub(); showToast('Scheduled posts synced to GitHub', 'success'); }
-        catch (err) { showToast('Sync failed: ' + err.message, 'error'); }
-        finally { setSyncingGh(false); }
-    };
+  const handleSyncGitHub = async () => {
+    setSyncingGh(true);
+    try { await api.syncToGitHub(); showToast('Scheduled posts synced to GitHub'); }
+    catch (err) { showToast('Sync failed: ' + err.message, 'error'); }
+    finally { setSyncingGh(false); }
+  };
 
-    const masked = (val, start = 8, end = 4) =>
-        val ? val.substring(0, start) + '•'.repeat(Math.max(0, val.length - start - end)) + val.substring(val.length - end) : '';
-
+  if (loading) {
     return (
-        <Box>
-            <Typography variant="h4" sx={{ mb: 3 }}>Settings</Typography>
-
-            <Grid container spacing={3}>
-                <Grid size={{ xs: 12, md: 8 }}>
-
-                    {/* YouTube API Key */}
-                    <MainCard title="YouTube Data API Key" sx={{ mb: 3 }}>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
-                            Required to fetch YouTube channel and video data. Get your key from the{' '}
-                            <Box component="a" href="https://console.cloud.google.com/apis/credentials" target="_blank"
-                                sx={{ color: PRIMARY.main, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
-                                Google Cloud Console
-                            </Box>.
-                        </Typography>
-                        <TextField fullWidth value={showKey ? apiKey : masked(apiKey)}
-                            onChange={e => setApiKey(e.target.value)}
-                            placeholder="AIzaSy…" size="small"
-                            onFocus={() => setShowKey(true)}
-                            slotProps={{
-                                input: {
-                                    startAdornment: <InputAdornment position="start"><Key sx={{ color: 'text.secondary' }} /></InputAdornment>,
-                                    endAdornment: (
-                                        <InputAdornment position="end">
-                                            <IconButton size="small" onClick={() => setShowKey(!showKey)}>
-                                                {showKey ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
-                                            </IconButton>
-                                        </InputAdornment>
-                                    ),
-                                }
-                            }}
-                            sx={{ mb: 2 }}
-                        />
-                        <Box sx={{ display: 'flex', gap: 1.5 }}>
-                            <Button variant="contained" startIcon={saving ? <CircularProgress size={16} color="inherit" /> : <Save />}
-                                onClick={handleSave} disabled={saving || !apiKey.trim()}>
-                                Save Key
-                            </Button>
-                            <Button variant="outlined" startIcon={testing ? <CircularProgress size={16} /> : <CheckCircle />}
-                                onClick={handleTest} disabled={testing}>
-                                Test Connection
-                            </Button>
-                        </Box>
-                        {testResult && (
-                            <Alert severity={testResult.success ? 'success' : 'error'} sx={{ mt: 2 }}>
-                                {testResult.message}
-                            </Alert>
-                        )}
-                    </MainCard>
-
-                    {/* Instagram Credentials */}
-                    <MainCard title="Instagram App Credentials" sx={{ mb: 3 }}>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
-                            Optional — enables long-lived token exchange (~60 days). Get these from{' '}
-                            <Box component="a" href="https://developers.facebook.com/apps/" target="_blank"
-                                sx={{ color: '#E1306C', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
-                                App Dashboard → Instagram → API setup with Instagram login
-                            </Box>.
-                        </Typography>
-                        <TextField fullWidth value={igAppId} onChange={e => setIgAppId(e.target.value)}
-                            placeholder="Instagram App ID from App Dashboard" size="small" label="Instagram App ID"
-                            slotProps={{ input: { startAdornment: <InputAdornment position="start"><Code sx={{ color: 'text.secondary' }} /></InputAdornment> } }}
-                            sx={{ mb: 2 }} />
-                        <TextField fullWidth value={showIgSecret ? igAppSecret : masked(igAppSecret, 6)}
-                            onChange={e => setIgAppSecret(e.target.value)}
-                            placeholder="Instagram App Secret from App Dashboard" size="small" label="Instagram App Secret"
-                            onFocus={() => setShowIgSecret(true)}
-                            slotProps={{
-                                input: {
-                                    startAdornment: <InputAdornment position="start"><Key sx={{ color: 'text.secondary' }} /></InputAdornment>,
-                                    endAdornment: (
-                                        <InputAdornment position="end">
-                                            <IconButton size="small" onClick={() => setShowIgSecret(!showIgSecret)}>
-                                                {showIgSecret ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
-                                            </IconButton>
-                                        </InputAdornment>
-                                    ),
-                                }
-                            }}
-                            sx={{ mb: 2 }} />
-                        <Button variant="contained" startIcon={savingIg ? <CircularProgress size={16} color="inherit" /> : <Save />}
-                            onClick={handleSaveInstagram} disabled={savingIg || (!igAppId.trim() && !igAppSecret.trim())}>
-                            Save Instagram Credentials
-                        </Button>
-                        <Alert severity="info" sx={{ mt: 2 }}>
-                            Only the <strong>Instagram App Secret</strong> is needed for token exchange. You can add accounts
-                            without credentials — tokens from the App Dashboard are already long-lived (60 days).
-                        </Alert>
-                    </MainCard>
-
-                    {/* Cloudinary */}
-                    <MainCard title="Cloudinary CDN (for Instagram Uploads)" sx={{ mb: 3 }}>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
-                            Instagram API requires media at a public URL. Cloudinary is used to host your files before publishing.
-                            Get a free account at{' '}
-                            <Box component="a" href="https://cloudinary.com/users/register_free" target="_blank"
-                                sx={{ color: '#3448C5', textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
-                                cloudinary.com
-                            </Box>. Use an <strong>unsigned upload preset</strong>.
-                        </Typography>
-                        <TextField fullWidth value={cloudinaryName} onChange={e => setCloudinaryName(e.target.value)}
-                            placeholder="e.g. my-cloud-name" size="small" label="Cloud Name"
-                            slotProps={{ input: { startAdornment: <InputAdornment position="start"><Cloud sx={{ color: 'text.secondary' }} /></InputAdornment> } }}
-                            sx={{ mb: 2 }} />
-                        <TextField fullWidth value={cloudinaryPreset} onChange={e => setCloudinaryPreset(e.target.value)}
-                            placeholder="e.g. ml_default (unsigned preset)" size="small" label="Upload Preset (unsigned)"
-                            slotProps={{ input: { startAdornment: <InputAdornment position="start"><Code sx={{ color: 'text.secondary' }} /></InputAdornment> } }}
-                            sx={{ mb: 2 }} />
-                        <Button variant="contained" startIcon={savingCloud ? <CircularProgress size={16} color="inherit" /> : <Save />}
-                            onClick={handleSaveCloudinary} disabled={savingCloud || !cloudinaryName.trim()}>
-                            Save Cloudinary Settings
-                        </Button>
-                        <Alert severity="info" sx={{ mt: 2 }}>
-                            Create an <strong>unsigned upload preset</strong> in Cloudinary → Settings → Upload → Upload presets → Add.
-                        </Alert>
-                    </MainCard>
-
-                    {/* GitHub Actions */}
-                    <MainCard title="GitHub Actions (Cloud Scheduling)" sx={{ mb: 3 }}>
-                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
-                            Publish scheduled posts from the cloud — even when your PC is off. Runs every 15 min via GitHub Actions (free).
-                            Create a{' '}
-                            <Box component="a" href="https://github.com/settings/tokens?type=beta" target="_blank"
-                                sx={{ color: PRIMARY.main, textDecoration: 'none', '&:hover': { textDecoration: 'underline' } }}>
-                                Fine-grained Personal Access Token
-                            </Box>{' '}
-                            with <strong>Contents: Read & Write</strong> permission.
-                        </Typography>
-                        <TextField fullWidth value={showGhToken ? githubToken : masked(githubToken)}
-                            onChange={e => setGithubToken(e.target.value)}
-                            placeholder="ghp_xxxxxxxxxxxx" size="small" label="GitHub Personal Access Token"
-                            onFocus={() => setShowGhToken(true)}
-                            slotProps={{
-                                input: {
-                                    startAdornment: <InputAdornment position="start"><Key sx={{ color: 'text.secondary' }} /></InputAdornment>,
-                                    endAdornment: (
-                                        <InputAdornment position="end">
-                                            <IconButton size="small" onClick={() => setShowGhToken(!showGhToken)}>
-                                                {showGhToken ? <VisibilityOff fontSize="small" /> : <Visibility fontSize="small" />}
-                                            </IconButton>
-                                        </InputAdornment>
-                                    ),
-                                }
-                            }}
-                            sx={{ mb: 2 }} />
-                        <TextField fullWidth value={githubRepo} onChange={e => setGithubRepo(e.target.value)}
-                            placeholder="username/repo-name" size="small" label="Repository (owner/repo)"
-                            slotProps={{ input: { startAdornment: <InputAdornment position="start"><GitHub sx={{ color: 'text.secondary' }} /></InputAdornment> } }}
-                            sx={{ mb: 2 }} />
-                        <TextField fullWidth value={githubBranch} onChange={e => setGithubBranch(e.target.value)}
-                            placeholder="main" size="small" label="Branch"
-                            slotProps={{ input: { startAdornment: <InputAdornment position="start"><Code sx={{ color: 'text.secondary' }} /></InputAdornment> } }}
-                            sx={{ mb: 2 }} />
-                        <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-                            <Button variant="contained" startIcon={savingGh ? <CircularProgress size={16} color="inherit" /> : <Save />}
-                                onClick={handleSaveGitHub} disabled={savingGh || !githubToken.trim() || !githubRepo.trim()}>
-                                Save GitHub Settings
-                            </Button>
-                            <Button variant="outlined" startIcon={syncingGh ? <CircularProgress size={16} /> : <Sync />}
-                                onClick={handleSyncGitHub} disabled={syncingGh || !githubToken.trim() || !githubRepo.trim()}>
-                                Sync Now
-                            </Button>
-                        </Box>
-                        <Alert severity="info" sx={{ mt: 2 }}>
-                            <strong>Setup steps:</strong><br />
-                            1. Push this project to a GitHub repo<br />
-                            2. Go to repo → Settings → Secrets → Actions → New Secret<br />
-                            3. Add secret <code>ACCOUNTS_JSON</code> with the Base64 of your <code>accounts.json</code><br />
-                            4. The workflow runs every 15 min automatically
-                        </Alert>
-                    </MainCard>
-
-                    {/* How to get API keys */}
-                    <MainCard title="How to Get a YouTube API Key">
-                        <Box component="ol" sx={{ pl: 2, color: 'text.secondary', '& li': { mb: 1.5, lineHeight: 1.6 } }}>
-                            <li>Go to the <Box component="a" href="https://console.cloud.google.com/" target="_blank" sx={{ color: PRIMARY.main }}>Google Cloud Console</Box></li>
-                            <li>Create a new project or select an existing one</li>
-                            <li>Enable the <strong>YouTube Data API v3</strong> from the API Library</li>
-                            <li>Go to <strong>Credentials</strong> → <strong>Create Credentials</strong> → <strong>API Key</strong></li>
-                            <li>Copy the API key and paste it above</li>
-                            <li>Optional: Restrict the key to YouTube Data API v3 only for security</li>
-                        </Box>
-                        <Alert severity="info" sx={{ mt: 2 }}>
-                            The free quota allows ~10,000 units/day. Fetching a channel uses ~5 units, video details ~3 units per batch.
-                        </Alert>
-
-                        <Divider sx={{ my: 3 }} />
-
-                        <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
-                            How to Get Instagram Access
-                        </Typography>
-                        <Box component="ol" sx={{ pl: 2, color: 'text.secondary', '& li': { mb: 1.5, lineHeight: 1.6 } }}>
-                            <li>Go to <Box component="a" href="https://developers.facebook.com/apps/" target="_blank" sx={{ color: '#E1306C' }}>Meta for Developers</Box> and create a new app (type: <strong>Business</strong>)</li>
-                            <li>Add the <strong>Instagram</strong> product and set up <strong>API setup with Instagram business login</strong></li>
-                            <li>Your account must be a <strong>Business</strong> or <strong>Creator</strong> professional account</li>
-                            <li>Find your <strong>Instagram App ID</strong> and <strong>Instagram App Secret</strong> under Business login settings</li>
-                            <li>Add your account as a <strong>Tester</strong> under App Roles → Instagram Testers</li>
-                            <li>Click <strong>Generate Token</strong> next to your Instagram account to get a long-lived access token (60 days)</li>
-                            <li>Required permission: <strong>instagram_business_basic</strong></li>
-                            <li>Paste the access token in the <strong>Add Account → Instagram</strong> dialog</li>
-                        </Box>
-                        <Alert severity="warning" sx={{ mt: 2 }}>
-                            In development mode, only test users / Instagram Testers can use the app.
-                            Tokens from the App Dashboard are long-lived (~60 days).
-                        </Alert>
-                    </MainCard>
-
-                </Grid>
-
-                {/* Right column — Quick Actions + About */}
-                <Grid size={{ xs: 12, md: 4 }}>
-                    <Box sx={{ position: 'sticky', top: 80 }}>
-                        <MainCard title="Quick Actions" sx={{ mb: 2 }}>
-                            <Button fullWidth variant="outlined" startIcon={<Refresh />} onClick={refreshAll} sx={{ mb: 1.5 }}>
-                                Refresh All Accounts
-                            </Button>
-                            <Button fullWidth variant="outlined" startIcon={<CheckCircle />} onClick={handleTest}>
-                                Test API Health
-                            </Button>
-                        </MainCard>
-
-                        <MainCard title="About">
-                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2, lineHeight: 1.7 }}>
-                                Social Media Analytics Dashboard — a comprehensive analytics tool for tracking YouTube and Instagram
-                                performance with engagement metrics, growth tracking, and more.
-                            </Typography>
-                            <Divider sx={{ my: 2 }} />
-                            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                {[
-                                    { label: 'React',              color: '#61DAFB' },
-                                    { label: 'MUI v7',             color: '#007FFF' },
-                                    { label: 'Recharts',           color: '#82ca9d' },
-                                    { label: 'Node.js',            color: '#68A038' },
-                                    { label: 'YouTube API v3',     color: '#FF4444' },
-                                    { label: 'Instagram Graph API', color: '#E1306C' },
-                                ].map(c => (
-                                    <Chip key={c.label} label={c.label} size="small" variant="outlined"
-                                        sx={{ borderColor: `${c.color}55`, color: c.color }} />
-                                ))}
-                            </Box>
-                        </MainCard>
-                    </Box>
-                </Grid>
-            </Grid>
-        </Box>
+      <div className="space-y-4">
+        {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}
+      </div>
     );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">Configure API keys and integrations</p>
+      </div>
+
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        {/* Main column */}
+        <div className="xl:col-span-2 space-y-4">
+
+          {/* YouTube API Key */}
+          <MainCard title="YouTube Data API Key">
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Required to fetch YouTube channel and video data. Get your key from the{' '}
+                <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer" className="text-primary underline-offset-4 hover:underline font-medium">
+                  Google Cloud Console
+                </a>.
+              </p>
+              <div className="space-y-1.5">
+                <Label>API Key</Label>
+                <SecretInput value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="AIzaSy…" />
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <Button onClick={handleSave} disabled={saving || !apiKey.trim()} className="gap-2" size="sm">
+                  {saving ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                  Save Key
+                </Button>
+                <Button variant="outline" onClick={handleTest} disabled={testing} size="sm" className="gap-2">
+                  {testing ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                  Test Connection
+                </Button>
+              </div>
+              {testResult && (
+                <Alert variant={testResult.success ? 'default' : 'destructive'}>
+                  {testResult.success ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+                  <AlertDescription>{testResult.message}</AlertDescription>
+                </Alert>
+              )}
+            </div>
+          </MainCard>
+
+          {/* Instagram */}
+          <MainCard title="Instagram App Credentials">
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Optional — enables long-lived token exchange. Get these from{' '}
+                <a href="https://developers.facebook.com/apps/" target="_blank" rel="noreferrer" className="text-pink-600 underline-offset-4 hover:underline font-medium">
+                  App Dashboard → Instagram → API setup
+                </a>.
+              </p>
+              <div className="space-y-1.5">
+                <Label>Instagram App ID</Label>
+                <div className="relative">
+                  <Code2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  <Input className="pl-9" value={igAppId} onChange={e => setIgAppId(e.target.value)} placeholder="Instagram App ID" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Instagram App Secret</Label>
+                <SecretInput value={igAppSecret} onChange={e => setIgAppSecret(e.target.value)} placeholder="Instagram App Secret" />
+              </div>
+              <Button onClick={handleSaveInstagram} disabled={savingIg || (!igAppId.trim() && !igAppSecret.trim())} size="sm" className="gap-2">
+                {savingIg ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                Save Instagram Credentials
+              </Button>
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  Only the <strong>App Secret</strong> is needed for token exchange. Tokens from the App Dashboard are already long-lived (60 days).
+                </AlertDescription>
+              </Alert>
+            </div>
+          </MainCard>
+
+          {/* Cloudinary */}
+          <MainCard title="Cloudinary CDN (Instagram Uploads)">
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Instagram API requires media at a public URL. Cloudinary hosts your files before publishing.
+                Get a free account at{' '}
+                <a href="https://cloudinary.com/users/register_free" target="_blank" rel="noreferrer" className="text-blue-600 underline-offset-4 hover:underline font-medium">
+                  cloudinary.com
+                </a>.
+              </p>
+              <div className="space-y-1.5">
+                <Label>Cloud Name</Label>
+                <div className="relative">
+                  <Cloud className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  <Input className="pl-9" value={cloudinaryName} onChange={e => setCloudinaryName(e.target.value)} placeholder="my-cloud-name" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Upload Preset (unsigned)</Label>
+                <div className="relative">
+                  <Code2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  <Input className="pl-9" value={cloudinaryPreset} onChange={e => setCloudinaryPreset(e.target.value)} placeholder="ml_default" />
+                </div>
+              </div>
+              <Button onClick={handleSaveCloudinary} disabled={savingCloud || !cloudinaryName.trim()} size="sm" className="gap-2">
+                {savingCloud ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                Save Cloudinary Settings
+              </Button>
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  Create an <strong>unsigned upload preset</strong> in Cloudinary → Settings → Upload → Upload presets → Add.
+                </AlertDescription>
+              </Alert>
+            </div>
+          </MainCard>
+
+          {/* GitHub Actions */}
+          <MainCard title="GitHub Actions (Cloud Scheduling)">
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Publish scheduled posts from the cloud — even when your PC is off. Runs every 15 min via GitHub Actions (free).
+                Create a{' '}
+                <a href="https://github.com/settings/tokens?type=beta" target="_blank" rel="noreferrer" className="text-primary underline-offset-4 hover:underline font-medium">
+                  Fine-grained Personal Access Token
+                </a>{' '}
+                with <strong>Contents: Read & Write</strong> permission. For automatic account sync, also add <strong>Secrets: Read & Write</strong>.
+              </p>
+              <div className="space-y-1.5">
+                <Label>GitHub Personal Access Token</Label>
+                <SecretInput value={githubToken} onChange={e => setGithubToken(e.target.value)} placeholder="ghp_xxxxxxxxxxxx" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Repository (owner/repo)</Label>
+                <div className="relative">
+                  <GitBranch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  <Input className="pl-9" value={githubRepo} onChange={e => setGithubRepo(e.target.value)} placeholder="username/repo-name" />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Branch</Label>
+                <div className="relative">
+                  <Code2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                  <Input className="pl-9" value={githubBranch} onChange={e => setGithubBranch(e.target.value)} placeholder="main" />
+                </div>
+              </div>
+              <div className="flex gap-2 flex-wrap">
+                <Button onClick={handleSaveGitHub} disabled={savingGh || !githubToken.trim() || !githubRepo.trim()} size="sm" className="gap-2">
+                  {savingGh ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                  Save GitHub Settings
+                </Button>
+                <Button variant="outline" onClick={handleSyncGitHub} disabled={syncingGh || !githubToken.trim() || !githubRepo.trim()} size="sm" className="gap-2">
+                  {syncingGh ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />}
+                  Sync Now
+                </Button>
+              </div>
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription className="text-xs leading-relaxed">
+                  <strong>Setup:</strong> Push this project to GitHub → Settings → Secrets → Add <code className="bg-muted px-1 rounded text-xs">ACCOUNTS_JSON</code> (Base64 of accounts.json). Workflow runs every 15 min automatically.
+                </AlertDescription>
+              </Alert>
+            </div>
+          </MainCard>
+
+          {/* How to get keys */}
+          <MainCard title="How to Get a YouTube API Key">
+            <div className="space-y-4">
+              <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside">
+                <li>Go to the <a href="https://console.cloud.google.com/" target="_blank" rel="noreferrer" className="text-primary font-medium hover:underline">Google Cloud Console</a></li>
+                <li>Create a new project or select an existing one</li>
+                <li>Enable the <strong className="text-foreground">YouTube Data API v3</strong> from the API Library</li>
+                <li>Go to <strong className="text-foreground">Credentials → Create Credentials → API Key</strong></li>
+                <li>Copy the API key and paste it above</li>
+                <li>Optional: Restrict the key to YouTube Data API v3 only</li>
+              </ol>
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  The free quota allows ~10,000 units/day. Fetching a channel uses ~5 units, video details ~3 units per batch.
+                </AlertDescription>
+              </Alert>
+              <Separator />
+              <p className="text-sm font-semibold">How to Get Instagram Access</p>
+              <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside">
+                <li>Go to <a href="https://developers.facebook.com/apps/" target="_blank" rel="noreferrer" className="text-pink-600 font-medium hover:underline">Meta for Developers</a> and create a new app (type: <strong className="text-foreground">Business</strong>)</li>
+                <li>Add the <strong className="text-foreground">Instagram</strong> product and set up <strong className="text-foreground">API setup with Instagram business login</strong></li>
+                <li>Your account must be a <strong className="text-foreground">Business</strong> or <strong className="text-foreground">Creator</strong> professional account</li>
+                <li>Find your App ID and App Secret under Business login settings</li>
+                <li>Add your account as a <strong className="text-foreground">Tester</strong> under App Roles</li>
+                <li>Click <strong className="text-foreground">Generate Token</strong> next to your Instagram account</li>
+                <li>Required permission: <code className="bg-muted px-1 rounded text-xs">instagram_business_basic</code></li>
+              </ol>
+              <Alert variant="destructive" className="border-yellow-200 bg-yellow-50 text-yellow-800 [&>svg]:text-yellow-600">
+                <AlertTriangle className="h-4 w-4" />
+                <AlertDescription className="text-xs text-yellow-800">
+                  In development mode, only test users / Instagram Testers can use the app. Tokens from the App Dashboard are long-lived (~60 days).
+                </AlertDescription>
+              </Alert>
+            </div>
+          </MainCard>
+        </div>
+
+        {/* Sidebar column */}
+        <div className="space-y-4">
+          <div className="sticky top-20 space-y-4">
+            <MainCard title="Quick Actions">
+              <div className="space-y-2">
+                <Button variant="outline" size="sm" className="w-full gap-2 justify-start" onClick={refreshAll}>
+                  <RefreshCw className="h-3.5 w-3.5" /> Refresh All Accounts
+                </Button>
+                <Button variant="outline" size="sm" className="w-full gap-2 justify-start" onClick={handleTest}>
+                  <CheckCircle2 className="h-3.5 w-3.5" /> Test API Health
+                </Button>
+              </div>
+            </MainCard>
+
+            <MainCard title="About">
+              <div className="space-y-3">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  Twiligent — a comprehensive analytics tool for tracking YouTube and Instagram performance.
+                </p>
+                <Separator />
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { label: 'React', color: 'bg-sky-100 text-sky-700 border-sky-200' },
+                    { label: 'shadcn/ui', color: 'bg-zinc-100 text-zinc-700 border-zinc-200' },
+                    { label: 'Tailwind v4', color: 'bg-cyan-100 text-cyan-700 border-cyan-200' },
+                    { label: 'Recharts', color: 'bg-green-100 text-green-700 border-green-200' },
+                    { label: 'Node.js', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
+                    { label: 'YouTube API', color: 'bg-red-100 text-red-700 border-red-200' },
+                    { label: 'Instagram API', color: 'bg-pink-100 text-pink-700 border-pink-200' },
+                  ].map(c => (
+                    <span key={c.label} className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${c.color}`}>
+                      {c.label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            </MainCard>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
