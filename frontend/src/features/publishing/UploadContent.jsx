@@ -1,1972 +1,1089 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Textarea } from '@/components/ui/textarea';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
-    Box, Typography, Card, CardContent, Grid, Button, TextField, Select,
-    MenuItem, FormControl, InputLabel, Chip, LinearProgress, Avatar,
-    Switch, FormControlLabel, CircularProgress, Alert, Stepper, Step,
-    StepLabel, IconButton, Divider, Tooltip, InputAdornment,
-    Tabs, Tab, Badge, Collapse, Dialog, DialogTitle, DialogContent, DialogActions,
-    Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
-} from '@mui/material';
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue,
+} from '@/components/ui/select';
+import { Spinner } from '@/components/ui/spinner';
+import {
+  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+} from '@/components/ui/table';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import {
+  Upload, Camera, Image as ImageIcon, Film, BookOpen, Trash2,
+  CheckCircle2, AlertCircle, Calendar, Send, X, Plus, Copy, Square,
+  UserPlus, MapPin, AtSign, Music, Clock, FolderUp,
+  ExternalLink, Pencil, Trash,
+} from 'lucide-react';
+import MainCard from '../../components/MainCard';
 import { useAppContext } from '../../context/AppContext';
-import {
-    CloudUpload, Instagram, Photo, Movie, ViewCarousel, AutoStories,
-    Delete, CheckCircle, Error as ErrorIcon, Schedule, Send,
-    Image as ImageIcon, VideoFile, Add, Close, Settings,
-    PersonAdd, LocationOn, AlternateEmail, MusicNote, PhotoCamera,
-    Timer, Science, CalendarMonth, AccessTime,
-    DriveFolderUpload, PlaylistAdd, SkipNext, Stop, Pause,
-    ContentCopy, DragIndicator, EditNote, DeleteSweep, OpenInNew,
-} from '@mui/icons-material';
 import { api } from '../../services/api';
-
-const IG_GRADIENT = 'linear-gradient(135deg, #F58529, #DD2A7B, #8134AF, #515BD4)';
+import { cn } from '@/lib/utils';
 
 const CONTENT_TYPES = [
-    { value: 'IMAGE', label: 'Photo Post', icon: <Photo />, color: '#F58529', accept: 'image/jpeg', desc: 'JPEG image, 4:5 to 1.91:1 ratio, max 8MB' },
-    { value: 'REELS', label: 'Reel', icon: <Movie />, color: '#DD2A7B', accept: 'video/mp4,video/quicktime', desc: 'MP4/MOV, 9:16 ratio, 3s–15min, max 300MB' },
-    { value: 'STORIES', label: 'Story', icon: <AutoStories />, color: '#8134AF', accept: 'image/jpeg,video/mp4,video/quicktime', desc: 'Image or video, 9:16, max 60s video' },
+  { value: 'IMAGE', label: 'Photo',    icon: ImageIcon, color: '#F58529', accept: 'image/jpeg', desc: 'JPEG, 4:5 to 1.91:1, max 8MB' },
+  { value: 'REELS', label: 'Reel',     icon: Film,      color: '#DD2A7B', accept: 'video/mp4,video/quicktime', desc: 'MP4/MOV 9:16, 3s–15min, max 300MB' },
+  { value: 'STORIES', label: 'Story',  icon: BookOpen,  color: '#8134AF', accept: 'image/jpeg,video/mp4,video/quicktime', desc: 'Image or video, 9:16, max 60s' },
 ];
 
 const PUBLISH_STEPS = ['Select Media', 'Configure', 'Upload & Publish'];
 
+const STATUS_CHIP_MAP = {
+  published:  { label: 'Published',   cls: 'bg-green-50 border-green-200 text-green-700' },
+  failed:     { label: 'Failed',      cls: 'bg-red-50 border-red-200 text-red-700' },
+  publishing: { label: 'Publishing…', cls: 'bg-orange-50 border-orange-200 text-orange-700' },
+  pending:    { label: 'Pending',     cls: 'bg-amber-50 border-amber-200 text-amber-700' },
+};
+
+const BULK_STATUS_MAP = {
+  pending:    { label: 'Pending',      cls: 'bg-muted text-muted-foreground' },
+  uploading:  { label: 'Uploading…',  cls: 'bg-blue-50 border-blue-200 text-blue-700' },
+  creating:   { label: 'Creating…',   cls: 'bg-pink-50 border-pink-200 text-pink-700' },
+  processing: { label: 'Processing…', cls: 'bg-purple-50 border-purple-200 text-purple-700' },
+  publishing: { label: 'Publishing…', cls: 'bg-orange-50 border-orange-200 text-orange-700' },
+  scheduling: { label: 'Scheduling…', cls: 'bg-orange-50 border-orange-200 text-orange-700' },
+  done:       { label: 'Published',   cls: 'bg-green-50 border-green-200 text-green-700' },
+  scheduled:  { label: 'Scheduled',   cls: 'bg-amber-50 border-amber-200 text-amber-700' },
+  error:      { label: 'Failed',      cls: 'bg-red-50 border-red-200 text-red-700' },
+};
+
+function StatusBadge({ status }) {
+  const s = STATUS_CHIP_MAP[status] || STATUS_CHIP_MAP.pending;
+  return <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border', s.cls)}>{s.label}</span>;
+}
+
+function BulkStatusBadge({ status }) {
+  const s = BULK_STATUS_MAP[status] || BULK_STATUS_MAP.pending;
+  return <span className={cn('inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold border', s.cls)}>{s.label}</span>;
+}
+
 export default function UploadContent() {
-    const { accounts, showToast } = useAppContext();
-    const [igAccounts, setIgAccounts] = useState([]);
-    const [selectedAccount, setSelectedAccount] = useState('');
-    const [contentType, setContentType] = useState('');
-    const [file, setFile] = useState(null);
-    const [filePreview, setFilePreview] = useState(null);
-    const [cloudConfig, setCloudConfig] = useState(null);
+  const { accounts, showToast } = useAppContext();
+  const [igAccounts, setIgAccounts] = useState([]);
+  const [selectedAccount, setSelectedAccount] = useState('');
+  const [contentType, setContentType] = useState('');
+  const [file, setFile] = useState(null);
+  const [filePreview, setFilePreview] = useState(null);
+  const [cloudConfig, setCloudConfig] = useState(null);
 
-    // Settings
-    const [caption, setCaption] = useState('');
-    const [shareToFeed, setShareToFeed] = useState(true);
-    const [coverFile, setCoverFile] = useState(null);
-    const [coverPreview, setCoverPreview] = useState(null);
-    const [audioName, setAudioName] = useState('');
-    const [thumbOffset, setThumbOffset] = useState('');
-    const [locationId, setLocationId] = useState('');
-    const [collaborators, setCollaborators] = useState('');
-    const [userTags, setUserTags] = useState('');
-    const [altText, setAltText] = useState('');
+  const [caption, setCaption] = useState('');
+  const [shareToFeed, setShareToFeed] = useState(true);
+  const [coverFile, setCoverFile] = useState(null);
+  const [coverPreview, setCoverPreview] = useState(null);
+  const [audioName, setAudioName] = useState('');
+  const [thumbOffset, setThumbOffset] = useState('');
+  const [locationId, setLocationId] = useState('');
+  const [collaborators, setCollaborators] = useState('');
+  const [userTags, setUserTags] = useState('');
+  const [altText, setAltText] = useState('');
 
-    // Schedule state
-    const [scheduleMode, setScheduleMode] = useState(false);
-    const [scheduleDate, setScheduleDate] = useState('');
-    const [scheduleTime, setScheduleTime] = useState('');
-    const [scheduledPosts, setScheduledPosts] = useState([]);
-    const [showScheduled, setShowScheduled] = useState(false);
-    const [loadingScheduled, setLoadingScheduled] = useState(false);
+  const [scheduleMode, setScheduleMode] = useState(false);
+  const [scheduleDate, setScheduleDate] = useState('');
+  const [scheduleTime, setScheduleTime] = useState('');
+  const [scheduledPosts, setScheduledPosts] = useState([]);
+  const [statusFilter, setStatusFilter] = useState('all');
 
-    // Delete confirmation for published posts
-    const [confirmDeleteId, setConfirmDeleteId] = useState(null);
-    const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
-    const [statusFilter, setStatusFilter] = useState('all');
+  const [editingPostId, setEditingPostId] = useState(null);
+  const [editCaption, setEditCaption] = useState('');
+  const [editDate, setEditDate] = useState('');
+  const [editTime, setEditTime] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
 
-    // Edit scheduled post state
-    const [editingPostId, setEditingPostId] = useState(null);
-    const [editCaption, setEditCaption] = useState('');
-    const [editDate, setEditDate] = useState('');
-    const [editTime, setEditTime] = useState('');
-    const [savingEdit, setSavingEdit] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
 
-    // Publish state
-    const [activeStep, setActiveStep] = useState(0);
-    const [uploading, setUploading] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState(0);
-    const [publishStatus, setPublishStatus] = useState(''); // '', 'uploading-cloudinary', 'creating-container', 'processing', 'publishing', 'done', 'error'
-    const [statusMessage, setStatusMessage] = useState('');
-    const [publishedMediaId, setPublishedMediaId] = useState(null);
+  const [activeStep, setActiveStep] = useState(0);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [publishStatus, setPublishStatus] = useState('');
+  const [statusMessage, setStatusMessage] = useState('');
+  const [publishedMediaId, setPublishedMediaId] = useState(null);
 
-    const fileInputRef = useRef(null);
-    const coverInputRef = useRef(null);
-    const bulkFileInputRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const coverInputRef = useRef(null);
+  const bulkFileInputRef = useRef(null);
+  const bulkIdCounter = useRef(0);
+  const bulkCancelRef = useRef(false);
 
-    // Bulk upload state
-    const [uploadMode, setUploadMode] = useState('single'); // 'single' | 'bulk'
-    const [bulkFiles, setBulkFiles] = useState([]); // [{id, file, preview, caption, status, progress, error, mediaId}]
-    const [bulkAccount, setBulkAccount] = useState('');
-    const [bulkContentType, setBulkContentType] = useState('REELS');
-    const [bulkSharedCaption, setBulkSharedCaption] = useState('');
-    const [bulkCollaborators, setBulkCollaborators] = useState('');
-    const [bulkUserTags, setBulkUserTags] = useState('');
-    const [bulkLocationId, setBulkLocationId] = useState('');
-    const [bulkShareToFeed, setBulkShareToFeed] = useState(true);
-    const [bulkScheduleMode, setBulkScheduleMode] = useState(false);
-    const [bulkStartDate, setBulkStartDate] = useState('');
-    const [bulkStartTime, setBulkStartTime] = useState('');
-    const [bulkInterval, setBulkInterval] = useState(1440); // minutes between posts (default: 24h = 1 day)
-    const [bulkProcessing, setBulkProcessing] = useState(false);
-    const [bulkCurrentIndex, setBulkCurrentIndex] = useState(-1);
-    const [bulkCancelled, setBulkCancelled] = useState(false);
-    const bulkCancelRef = useRef(false);
+  const [uploadMode, setUploadMode] = useState('single');
+  const [bulkFiles, setBulkFiles] = useState([]);
+  const [bulkAccount, setBulkAccount] = useState('');
+  const [bulkContentType, setBulkContentType] = useState('REELS');
+  const [bulkSharedCaption, setBulkSharedCaption] = useState('');
+  const [bulkCollaborators, setBulkCollaborators] = useState('');
+  const [bulkUserTags, setBulkUserTags] = useState('');
+  const [bulkLocationId, setBulkLocationId] = useState('');
+  const [bulkShareToFeed, setBulkShareToFeed] = useState(true);
+  const [bulkScheduleMode, setBulkScheduleMode] = useState(false);
+  const [bulkStartDate, setBulkStartDate] = useState('');
+  const [bulkStartTime, setBulkStartTime] = useState('');
+  const [bulkInterval, setBulkInterval] = useState(1440);
+  const [bulkProcessing, setBulkProcessing] = useState(false);
+  const [bulkCancelled, setBulkCancelled] = useState(false);
 
-    useEffect(() => {
-        const ig = (accounts || []).filter(a => a.platform === 'instagram');
-        setIgAccounts(ig);
-        if (ig.length === 1) setSelectedAccount(ig[0].id);
-        loadCloudinaryConfig();
-        loadScheduledPosts();
-    }, [accounts]);
+  useEffect(() => {
+    const ig = (accounts || []).filter(a => a.platform === 'instagram');
+    setIgAccounts(ig);
+    if (ig.length === 1) setSelectedAccount(ig[0].id);
+    loadCloudinaryConfig();
+    loadScheduledPosts();
+  }, [accounts]);
 
-    const loadScheduledPosts = async () => {
-        try {
-            const res = await api.getScheduledPosts();
-            if (res.success) setScheduledPosts(res.posts || []);
-        } catch { }
-    };
+  const loadScheduledPosts = async () => {
+    try {
+      const res = await api.getScheduledPosts();
+      if (res.success) setScheduledPosts(res.posts || []);
+    } catch { }
+  };
 
-    const loadCloudinaryConfig = async () => {
-        try {
-            const res = await api.getCloudinaryConfig();
-            if (res.success) setCloudConfig(res);
-        } catch { }
-    };
+  const loadCloudinaryConfig = async () => {
+    try {
+      const res = await api.getCloudinaryConfig();
+      if (res.success) setCloudConfig(res);
+    } catch { }
+  };
 
-    const handleFileSelect = (e) => {
-        const f = e.target.files?.[0];
-        if (!f) return;
-        setFile(f);
-        if (f.type.startsWith('image/')) {
-            setFilePreview(URL.createObjectURL(f));
-        } else if (f.type.startsWith('video/')) {
-            setFilePreview(URL.createObjectURL(f));
-        }
-    };
+  const handleFileSelect = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setFile(f);
+    setFilePreview(URL.createObjectURL(f));
+  };
 
-    const handleCoverSelect = (e) => {
-        const f = e.target.files?.[0];
-        if (!f) return;
-        setCoverFile(f);
-        setCoverPreview(URL.createObjectURL(f));
-    };
+  const handleCoverSelect = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setCoverFile(f);
+    setCoverPreview(URL.createObjectURL(f));
+  };
 
-    const clearFile = () => {
-        setFile(null);
-        setFilePreview(null);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-    };
+  const clearFile = () => { setFile(null); setFilePreview(null); if (fileInputRef.current) fileInputRef.current.value = ''; };
+  const clearCover = () => { setCoverFile(null); setCoverPreview(null); if (coverInputRef.current) coverInputRef.current.value = ''; };
 
-    const clearCover = () => {
-        setCoverFile(null);
-        setCoverPreview(null);
-        if (coverInputRef.current) coverInputRef.current.value = '';
-    };
+  const resetAll = () => {
+    clearFile(); clearCover();
+    setCaption(''); setShareToFeed(true); setAudioName(''); setThumbOffset('');
+    setLocationId(''); setCollaborators(''); setUserTags(''); setAltText('');
+    setContentType(''); setActiveStep(0); setPublishStatus(''); setStatusMessage('');
+    setPublishedMediaId(null); setUploadProgress(0); setScheduleMode(false);
+    setScheduleDate(''); setScheduleTime('');
+  };
 
-    const resetAll = () => {
-        clearFile();
-        clearCover();
-        setCaption('');
-        setShareToFeed(true);
-        setAudioName('');
-        setThumbOffset('');
-        setLocationId('');
-        setCollaborators('');
-        setUserTags('');
-        setAltText('');
-        setContentType('');
-        setActiveStep(0);
-        setPublishStatus('');
-        setStatusMessage('');
-        setPublishedMediaId(null);
-        setUploadProgress(0);
-        setScheduleMode(false);
-        setScheduleDate('');
-        setScheduleTime('');
-    };
+  const uploadToCloudinary = async (fileToUpload) => {
+    if (!cloudConfig) throw new Error('Cloudinary not configured. Go to Settings.');
+    const formData = new FormData();
+    formData.append('file', fileToUpload);
+    formData.append('upload_preset', cloudConfig.uploadPreset);
+    const resourceType = fileToUpload.type.startsWith('video/') ? 'video' : 'image';
+    const xhr = new XMLHttpRequest();
+    return new Promise((resolve, reject) => {
+      xhr.upload.addEventListener('progress', e => { if (e.lengthComputable) setUploadProgress(Math.round((e.loaded / e.total) * 100)); });
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) { resolve(JSON.parse(xhr.responseText).secure_url); }
+        else { try { reject(new Error(JSON.parse(xhr.responseText).error?.message || 'Upload failed')); } catch { reject(new Error('Upload failed')); } }
+      });
+      xhr.addEventListener('error', () => reject(new Error('Network error')));
+      xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudConfig.cloudName}/${resourceType}/upload`);
+      xhr.send(formData);
+    });
+  };
 
-    const uploadToCloudinary = async (fileToUpload) => {
-        if (!cloudConfig) throw new Error('Cloudinary not configured. Go to Settings.');
-        const formData = new FormData();
-        formData.append('file', fileToUpload);
-        formData.append('upload_preset', cloudConfig.uploadPreset);
+  const waitForContainer = async (containerId, accountId, maxAttempts = 30) => {
+    for (let i = 0; i < maxAttempts; i++) {
+      await new Promise(r => setTimeout(r, 3000));
+      try {
+        const status = await api.getIGContainerStatus(containerId, accountId);
+        setStatusMessage(`Processing: ${status.statusCode || 'IN_PROGRESS'}…`);
+        if (status.statusCode === 'FINISHED' || status.statusCode === 'PUBLISHED') return true;
+        if (status.statusCode === 'ERROR') throw new Error('Container processing failed: ' + (status.status || 'Unknown'));
+        if (status.statusCode === 'EXPIRED') throw new Error('Container expired');
+      } catch (err) { if (err.message.includes('processing failed') || err.message.includes('expired')) throw err; }
+    }
+    throw new Error('Timed out waiting for media processing');
+  };
 
-        const resourceType = fileToUpload.type.startsWith('video/') ? 'video' : 'image';
+  const parseUserTags = (str) => str.split(',').map(s => {
+    const parts = s.trim().replace(/^@/, '').split(/\s+/);
+    return { username: parts[0], x: parts[1] ? parseFloat(parts[1]) : 0.5, y: parts[2] ? parseFloat(parts[2]) : 0.5 };
+  }).filter(t => t.username);
 
+  const handlePublish = async () => {
+    if (!selectedAccount || !file || !contentType) { showToast('Select account, content type, and file', 'error'); return; }
+    if (!cloudConfig) { showToast('Cloudinary not configured', 'error'); return; }
+    if (scheduleMode) {
+      if (!scheduleDate || !scheduleTime) { showToast('Set schedule date and time', 'error'); return; }
+      const scheduledAt = new Date(`${scheduleDate}T${scheduleTime}`);
+      if (scheduledAt <= new Date()) { showToast('Scheduled time must be in the future', 'error'); return; }
+      setUploading(true); setPublishStatus('uploading-cloudinary'); setActiveStep(2);
+      try {
+        const mediaUrl = await uploadToCloudinary(file);
+        let coverUrl = null;
+        if (coverFile && contentType === 'REELS') { setStatusMessage('Uploading cover…'); coverUrl = await uploadToCloudinary(coverFile); }
+        setPublishStatus('scheduling'); setStatusMessage('Saving scheduled post…');
+        const res = await api.createScheduledPost({
+          accountId: selectedAccount, platform: 'instagram', mediaType: contentType, mediaUrl, caption: caption || '',
+          coverUrl: coverUrl || null, shareToFeed: contentType === 'REELS' ? shareToFeed : true,
+          collaborators: collaborators ? collaborators.split(',').map(s => s.trim()).filter(Boolean) : [],
+          audioName: audioName || '', thumbOffset: thumbOffset ? parseInt(thumbOffset) : null,
+          locationId: locationId || '', userTags: userTags ? parseUserTags(userTags) : [],
+          altText: (contentType === 'IMAGE' && altText) ? altText : '', scheduledAt: scheduledAt.toISOString(),
+        });
+        if (!res.success) throw new Error(res.message || 'Failed to schedule');
+        setPublishStatus('scheduled'); setStatusMessage(`Scheduled for ${scheduledAt.toLocaleString()}`);
+        showToast('Post scheduled!'); loadScheduledPosts();
+      } catch (err) { setPublishStatus('error'); setStatusMessage(err.message); showToast('Schedule failed: ' + err.message, 'error'); }
+      finally { setUploading(false); }
+      return;
+    }
+
+    setUploading(true); setPublishStatus('uploading-cloudinary'); setStatusMessage('Uploading to CDN…'); setActiveStep(2);
+    try {
+      const mediaUrl = await uploadToCloudinary(file);
+      let coverUrl = null;
+      if (coverFile && contentType === 'REELS') { setStatusMessage('Uploading cover…'); coverUrl = await uploadToCloudinary(coverFile); }
+      setPublishStatus('creating-container'); setStatusMessage('Creating Instagram container…');
+      const containerRes = await api.createIGContainer(selectedAccount, {
+        mediaType: contentType, mediaUrl, caption: caption || undefined, coverUrl: coverUrl || undefined,
+        shareToFeed: contentType === 'REELS' ? shareToFeed : undefined,
+        collaborators: collaborators ? collaborators.split(',').map(s => s.trim()).filter(Boolean) : undefined,
+        audioName: audioName || undefined, thumbOffset: thumbOffset ? parseInt(thumbOffset) : undefined,
+        locationId: locationId || undefined, userTags: userTags ? parseUserTags(userTags) : undefined,
+        altText: (contentType === 'IMAGE' && altText) ? altText : undefined,
+      });
+      if (!containerRes.success || !containerRes.containerId) throw new Error(containerRes.message || 'Failed to create container');
+      if (contentType === 'REELS' || contentType === 'STORIES') { setPublishStatus('processing'); setStatusMessage('Instagram is processing…'); await waitForContainer(containerRes.containerId, selectedAccount); }
+      else { await new Promise(r => setTimeout(r, 2000)); }
+      setPublishStatus('publishing'); setStatusMessage('Publishing to Instagram…');
+      const publishRes = await api.publishIGContainer(selectedAccount, containerRes.containerId);
+      if (!publishRes.success || !publishRes.mediaId) throw new Error(publishRes.message || 'Publish failed');
+      setPublishStatus('done'); setPublishedMediaId(publishRes.mediaId); setStatusMessage('Published successfully!');
+      showToast('Content published to Instagram!');
+    } catch (err) { setPublishStatus('error'); setStatusMessage(err.message); showToast('Publish failed: ' + err.message, 'error'); }
+    finally { setUploading(false); }
+  };
+
+  // Bulk upload
+  const handleBulkFilesSelect = (e) => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const newItems = files.map(f => ({ id: ++bulkIdCounter.current, file: f, preview: URL.createObjectURL(f), caption: '', status: 'pending', progress: 0, error: null, mediaId: null }));
+    setBulkFiles(prev => {
+      const updated = [...prev, ...newItems];
+      if (prev.length === 0) { setBulkScheduleMode(true); setBulkInterval(1440); setBulkStartTime('08:00'); const t = new Date(); t.setDate(t.getDate() + 1); setBulkStartDate(t.toISOString().split('T')[0]); }
+      return updated;
+    });
+    if (bulkFileInputRef.current) bulkFileInputRef.current.value = '';
+  };
+
+  const removeBulkFile = (id) => {
+    setBulkFiles(prev => { const item = prev.find(f => f.id === id); if (item?.preview) URL.revokeObjectURL(item.preview); return prev.filter(f => f.id !== id); });
+  };
+
+  const updateBulkFileCaption = (id, cap) => setBulkFiles(prev => prev.map(f => f.id === id ? { ...f, caption: cap } : f));
+
+  const applySharedCaption = () => { if (!bulkSharedCaption) return; setBulkFiles(prev => prev.map(f => f.status === 'pending' ? { ...f, caption: bulkSharedCaption } : f)); };
+
+  const clearBulkFiles = () => { bulkFiles.forEach(f => { if (f.preview) URL.revokeObjectURL(f.preview); }); setBulkFiles([]); setBulkProcessing(false); setBulkCancelled(false); bulkCancelRef.current = false; };
+
+  const handleBulkProcess = async () => {
+    if (!bulkAccount || bulkFiles.length === 0 || !bulkContentType) { showToast('Select account, type, and files', 'error'); return; }
+    if (!cloudConfig) { showToast('Cloudinary not configured', 'error'); return; }
+    if (bulkScheduleMode && (!bulkStartDate || !bulkStartTime)) { showToast('Set start date and time', 'error'); return; }
+    const baseTime = bulkScheduleMode ? new Date(`${bulkStartDate}T${bulkStartTime}`) : null;
+    if (baseTime && baseTime <= new Date()) { showToast('Start time must be in the future', 'error'); return; }
+    setBulkProcessing(true); setBulkCancelled(false); bulkCancelRef.current = false;
+    const pendingFiles = bulkFiles.filter(f => f.status === 'pending');
+    let scheduleOffset = 0, successCount = 0, failCount = 0;
+    for (let i = 0; i < pendingFiles.length; i++) {
+      if (bulkCancelRef.current) break;
+      const item = pendingFiles[i];
+      try {
+        setBulkFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'uploading', progress: 0 } : f));
         const xhr = new XMLHttpRequest();
-        return new Promise((resolve, reject) => {
-            xhr.upload.addEventListener('progress', (e) => {
-                if (e.lengthComputable) {
-                    setUploadProgress(Math.round((e.loaded / e.total) * 100));
-                }
-            });
-            xhr.addEventListener('load', () => {
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    const data = JSON.parse(xhr.responseText);
-                    resolve(data.secure_url);
-                } else {
-                    try {
-                        const err = JSON.parse(xhr.responseText);
-                        reject(new Error(err.error?.message || 'Cloudinary upload failed'));
-                    } catch {
-                        reject(new Error('Cloudinary upload failed'));
-                    }
-                }
-            });
-            xhr.addEventListener('error', () => reject(new Error('Network error during upload')));
-            xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudConfig.cloudName}/${resourceType}/upload`);
-            xhr.send(formData);
+        const formData = new FormData(); formData.append('file', item.file); formData.append('upload_preset', cloudConfig.uploadPreset);
+        const rtype = item.file.type.startsWith('video/') ? 'video' : 'image';
+        const mediaUrl = await new Promise((resolve, reject) => {
+          xhr.upload.addEventListener('progress', e => { if (e.lengthComputable) setBulkFiles(prev => prev.map(f => f.id === item.id ? { ...f, progress: Math.round(e.loaded / e.total * 100) } : f)); });
+          xhr.addEventListener('load', () => { if (xhr.status >= 200 && xhr.status < 300) resolve(JSON.parse(xhr.responseText).secure_url); else reject(new Error('Upload failed')); });
+          xhr.addEventListener('error', () => reject(new Error('Network error')));
+          xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudConfig.cloudName}/${rtype}/upload`); xhr.send(formData);
         });
-    };
-
-    const waitForContainer = async (containerId, accountId, maxAttempts = 30) => {
-        for (let i = 0; i < maxAttempts; i++) {
-            await new Promise(r => setTimeout(r, 3000));
-            try {
-                const status = await api.getIGContainerStatus(containerId, accountId);
-                setStatusMessage(`Processing: ${status.statusCode || 'IN_PROGRESS'}...`);
-                if (status.statusCode === 'FINISHED') return true;
-                if (status.statusCode === 'ERROR') throw new Error('Container processing failed: ' + (status.status || 'Unknown error'));
-                if (status.statusCode === 'EXPIRED') throw new Error('Container expired');
-                if (status.statusCode === 'PUBLISHED') return true;
-            } catch (err) {
-                if (err.message.includes('processing failed') || err.message.includes('expired')) throw err;
-            }
-        }
-        throw new Error('Timed out waiting for media processing');
-    };
-
-    // ===== BULK UPLOAD FUNCTIONS =====
-    let bulkIdCounter = useRef(0);
-
-    const handleBulkFilesSelect = (e) => {
-        const files = Array.from(e.target.files || []);
-        if (!files.length) return;
-        const typeInfo = CONTENT_TYPES.find(t => t.value === bulkContentType);
-        const newItems = files.map(f => ({
-            id: ++bulkIdCounter.current,
-            file: f,
-            preview: URL.createObjectURL(f),
-            caption: '',
-            status: 'pending', // pending, uploading, creating, processing, publishing, done, scheduled, error
-            progress: 0,
-            error: null,
-            mediaId: null,
-        }));
-        setBulkFiles(prev => {
-            const updated = [...prev, ...newItems];
-            // Auto-enable schedule with smart defaults when files are first added
-            if (prev.length === 0 && updated.length > 0) {
-                setBulkScheduleMode(true);
-                setBulkInterval(1440); // 1 post per day
-                setBulkStartTime('08:00');
-                // Set start date to tomorrow
-                const tomorrow = new Date();
-                tomorrow.setDate(tomorrow.getDate() + 1);
-                setBulkStartDate(tomorrow.toISOString().split('T')[0]);
-            }
-            return updated;
-        });
-        if (bulkFileInputRef.current) bulkFileInputRef.current.value = '';
-    };
-
-    const removeBulkFile = (id) => {
-        setBulkFiles(prev => {
-            const item = prev.find(f => f.id === id);
-            if (item?.preview) URL.revokeObjectURL(item.preview);
-            return prev.filter(f => f.id !== id);
-        });
-    };
-
-    const updateBulkFileCaption = (id, caption) => {
-        setBulkFiles(prev => prev.map(f => f.id === id ? { ...f, caption } : f));
-    };
-
-    const applySharedCaption = () => {
-        if (!bulkSharedCaption) return;
-        setBulkFiles(prev => prev.map(f => f.status === 'pending' ? { ...f, caption: bulkSharedCaption } : f));
-    };
-
-    const clearBulkFiles = () => {
-        bulkFiles.forEach(f => { if (f.preview) URL.revokeObjectURL(f.preview); });
-        setBulkFiles([]);
-        setBulkProcessing(false);
-        setBulkCurrentIndex(-1);
-        setBulkCancelled(false);
-        bulkCancelRef.current = false;
-    };
-
-    const uploadToCloudinaryBulk = async (fileToUpload, onProgress) => {
-        if (!cloudConfig) throw new Error('Cloudinary not configured.');
-        const formData = new FormData();
-        formData.append('file', fileToUpload);
-        formData.append('upload_preset', cloudConfig.uploadPreset);
-        const resourceType = fileToUpload.type.startsWith('video/') ? 'video' : 'image';
-        const xhr = new XMLHttpRequest();
-        return new Promise((resolve, reject) => {
-            xhr.upload.addEventListener('progress', (e) => {
-                if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
-            });
-            xhr.addEventListener('load', () => {
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    resolve(JSON.parse(xhr.responseText).secure_url);
-                } else {
-                    try { reject(new Error(JSON.parse(xhr.responseText).error?.message || 'Upload failed')); }
-                    catch { reject(new Error('Cloudinary upload failed')); }
-                }
-            });
-            xhr.addEventListener('error', () => reject(new Error('Network error')));
-            xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudConfig.cloudName}/${resourceType}/upload`);
-            xhr.send(formData);
-        });
-    };
-
-    const waitForContainerBulk = async (containerId, accountId, maxAttempts = 30) => {
-        for (let i = 0; i < maxAttempts; i++) {
-            await new Promise(r => setTimeout(r, 3000));
-            const status = await api.getIGContainerStatus(containerId, accountId);
-            if (status.statusCode === 'FINISHED' || status.statusCode === 'PUBLISHED') return true;
-            if (status.statusCode === 'ERROR') throw new Error('Processing failed: ' + (status.status || 'Unknown'));
-            if (status.statusCode === 'EXPIRED') throw new Error('Container expired');
-        }
-        throw new Error('Timed out waiting for processing');
-    };
-
-    const handleBulkProcess = async () => {
-        if (!bulkAccount || bulkFiles.length === 0 || !bulkContentType) {
-            showToast('Select an account, content type, and add files', 'error');
-            return;
-        }
-        if (!cloudConfig) {
-            showToast('Cloudinary not configured. Go to Settings.', 'error');
-            return;
-        }
-        if (bulkScheduleMode && (!bulkStartDate || !bulkStartTime)) {
-            showToast('Set a start date and time for scheduling', 'error');
-            return;
-        }
-
-        setBulkProcessing(true);
-        setBulkCancelled(false);
-        bulkCancelRef.current = false;
-
-        const pendingFiles = bulkFiles.filter(f => f.status === 'pending');
-        let scheduleOffset = 0;
-        let successCount = 0;
-        let failCount = 0;
-        const baseTime = bulkScheduleMode ? new Date(`${bulkStartDate}T${bulkStartTime}`) : null;
-
-        if (baseTime && baseTime <= new Date()) {
-            showToast('Start time must be in the future', 'error');
-            setBulkProcessing(false);
-            return;
-        }
-
-        for (let i = 0; i < pendingFiles.length; i++) {
-            if (bulkCancelRef.current) break;
-
-            const item = pendingFiles[i];
-            setBulkCurrentIndex(bulkFiles.findIndex(f => f.id === item.id));
-
-            try {
-                // Upload to Cloudinary
-                setBulkFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'uploading', progress: 0 } : f));
-                const mediaUrl = await uploadToCloudinaryBulk(item.file, (pct) => {
-                    setBulkFiles(prev => prev.map(f => f.id === item.id ? { ...f, progress: pct } : f));
-                });
-
-                if (bulkCancelRef.current) break;
-
-                if (bulkScheduleMode) {
-                    // Schedule mode: create scheduled post
-                    setBulkFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'scheduling', progress: 100 } : f));
-                    const scheduledAt = new Date(baseTime.getTime() + scheduleOffset * bulkInterval * 60000);
-                    const postData = {
-                        accountId: bulkAccount,
-                        platform: 'instagram',
-                        mediaType: bulkContentType,
-                        mediaUrl,
-                        caption: item.caption || '',
-                        coverUrl: null,
-                        shareToFeed: bulkContentType === 'REELS' ? bulkShareToFeed : true,
-                        collaborators: bulkCollaborators ? bulkCollaborators.split(',').map(s => s.trim()).filter(Boolean) : [],
-                        audioName: '',
-                        thumbOffset: null,
-                        locationId: bulkLocationId || '',
-                        userTags: bulkUserTags ? parseUserTags(bulkUserTags) : [],
-                        altText: '',
-                        scheduledAt: scheduledAt.toISOString(),
-                    };
-                    const res = await api.createScheduledPost(postData);
-                    if (!res.success) throw new Error(res.message || 'Failed to schedule');
-                    setBulkFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'scheduled', progress: 100 } : f));
-                    scheduleOffset++;
-                    successCount++;
-                } else {
-                    // Immediate publish mode
-                    setBulkFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'creating', progress: 100 } : f));
-                    const publishData = {
-                        mediaType: bulkContentType,
-                        mediaUrl,
-                        caption: item.caption || undefined,
-                        shareToFeed: bulkContentType === 'REELS' ? bulkShareToFeed : undefined,
-                        collaborators: bulkCollaborators ? bulkCollaborators.split(',').map(s => s.trim()).filter(Boolean) : undefined,
-                        locationId: bulkLocationId || undefined,
-                        userTags: bulkUserTags ? parseUserTags(bulkUserTags) : undefined,
-                    };
-                    const containerRes = await api.createIGContainer(bulkAccount, publishData);
-                    if (!containerRes.success || !containerRes.containerId) throw new Error(containerRes.message || 'Failed to create container');
-
-                    if (bulkCancelRef.current) break;
-
-                    // Wait for processing
-                    if (bulkContentType === 'REELS' || bulkContentType === 'STORIES') {
-                        setBulkFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'processing' } : f));
-                        await waitForContainerBulk(containerRes.containerId, bulkAccount);
-                    } else {
-                        await new Promise(r => setTimeout(r, 2000));
-                    }
-
-                    if (bulkCancelRef.current) break;
-
-                    // Publish
-                    setBulkFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'publishing' } : f));
-                    const publishRes = await api.publishIGContainer(bulkAccount, containerRes.containerId);
-                    if (!publishRes.success || !publishRes.mediaId) throw new Error(publishRes.message || 'Publish failed');
-
-                    setBulkFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'done', mediaId: publishRes.mediaId } : f));
-                    successCount++;
-                }
-            } catch (err) {
-                setBulkFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'error', error: err.message } : f));
-                failCount++;
-            }
-
-            // Small delay between items to avoid rate limits
-            if (i < pendingFiles.length - 1 && !bulkCancelRef.current) {
-                await new Promise(r => setTimeout(r, 2000));
-            }
-        }
-
-        setBulkProcessing(false);
-        setBulkCurrentIndex(-1);
-        if (bulkCancelRef.current) {
-            showToast('Bulk upload cancelled', 'warning');
+        if (bulkCancelRef.current) break;
+        if (bulkScheduleMode) {
+          setBulkFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'scheduling', progress: 100 } : f));
+          const scheduledAt = new Date(baseTime.getTime() + scheduleOffset * bulkInterval * 60000);
+          const res = await api.createScheduledPost({ accountId: bulkAccount, platform: 'instagram', mediaType: bulkContentType, mediaUrl, caption: item.caption || '', coverUrl: null, shareToFeed: bulkContentType === 'REELS' ? bulkShareToFeed : true, collaborators: bulkCollaborators ? bulkCollaborators.split(',').map(s => s.trim()).filter(Boolean) : [], audioName: '', thumbOffset: null, locationId: bulkLocationId || '', userTags: bulkUserTags ? parseUserTags(bulkUserTags) : [], altText: '', scheduledAt: scheduledAt.toISOString() });
+          if (!res.success) throw new Error(res.message || 'Failed to schedule');
+          setBulkFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'scheduled', progress: 100 } : f));
+          scheduleOffset++; successCount++;
         } else {
-            showToast(`Bulk complete: ${successCount} succeeded, ${failCount} failed`, successCount > 0 ? 'success' : 'error');
-            if (bulkScheduleMode) loadScheduledPosts();
+          setBulkFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'creating', progress: 100 } : f));
+          const containerRes = await api.createIGContainer(bulkAccount, { mediaType: bulkContentType, mediaUrl, caption: item.caption || undefined, shareToFeed: bulkContentType === 'REELS' ? bulkShareToFeed : undefined, collaborators: bulkCollaborators ? bulkCollaborators.split(',').map(s => s.trim()).filter(Boolean) : undefined, locationId: bulkLocationId || undefined, userTags: bulkUserTags ? parseUserTags(bulkUserTags) : undefined });
+          if (!containerRes.success || !containerRes.containerId) throw new Error(containerRes.message || 'Container creation failed');
+          if (bulkCancelRef.current) break;
+          if (bulkContentType === 'REELS' || bulkContentType === 'STORIES') {
+            setBulkFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'processing' } : f));
+            for (let j = 0; j < 30; j++) { await new Promise(r => setTimeout(r, 3000)); const s = await api.getIGContainerStatus(containerRes.containerId, bulkAccount); if (s.statusCode === 'FINISHED' || s.statusCode === 'PUBLISHED') break; if (s.statusCode === 'ERROR') throw new Error('Processing failed'); if (s.statusCode === 'EXPIRED') throw new Error('Container expired'); }
+          } else { await new Promise(r => setTimeout(r, 2000)); }
+          if (bulkCancelRef.current) break;
+          setBulkFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'publishing' } : f));
+          const publishRes = await api.publishIGContainer(bulkAccount, containerRes.containerId);
+          if (!publishRes.success || !publishRes.mediaId) throw new Error(publishRes.message || 'Publish failed');
+          setBulkFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'done', mediaId: publishRes.mediaId } : f));
+          successCount++;
         }
-    };
-
-    const handleCancelBulk = () => {
-        bulkCancelRef.current = true;
-        setBulkCancelled(true);
-    };
-
-    const getBulkStatusInfo = (status) => {
-        switch (status) {
-            case 'pending': return { label: 'Pending', color: '#888', bgColor: '#88888822' };
-            case 'uploading': return { label: 'Uploading...', color: '#3448C5', bgColor: '#3448C522' };
-            case 'creating': return { label: 'Creating...', color: '#DD2A7B', bgColor: '#DD2A7B22' };
-            case 'processing': return { label: 'Processing...', color: '#8134AF', bgColor: '#8134AF22' };
-            case 'publishing': return { label: 'Publishing...', color: '#F58529', bgColor: '#F5852922' };
-            case 'scheduling': return { label: 'Scheduling...', color: '#F58529', bgColor: '#F5852922' };
-            case 'done': return { label: 'Published', color: '#4CAF50', bgColor: '#4CAF5022' };
-            case 'scheduled': return { label: 'Scheduled', color: '#F58529', bgColor: '#F5852922' };
-            case 'error': return { label: 'Failed', color: '#f44336', bgColor: '#f4433622' };
-            default: return { label: status, color: '#888', bgColor: '#88888822' };
-        }
-    };
-
-    const bulkStats = {
-        total: bulkFiles.length,
-        pending: bulkFiles.filter(f => f.status === 'pending').length,
-        done: bulkFiles.filter(f => f.status === 'done').length,
-        scheduled: bulkFiles.filter(f => f.status === 'scheduled').length,
-        errors: bulkFiles.filter(f => f.status === 'error').length,
-        active: bulkFiles.filter(f => ['uploading', 'creating', 'processing', 'publishing', 'scheduling'].includes(f.status)).length,
-    };
-
-    const handlePublish = async () => {
-        if (!selectedAccount || !file || !contentType) {
-            showToast('Please select account, content type, and file', 'error');
-            return;
-        }
-        if (!cloudConfig) {
-            showToast('Cloudinary not configured. Please set it up in Settings.', 'error');
-            return;
-        }
-
-        // If scheduling, upload to Cloudinary first then create scheduled post
-        if (scheduleMode) {
-            if (!scheduleDate || !scheduleTime) {
-                showToast('Please set a schedule date and time', 'error');
-                return;
-            }
-            const scheduledAt = new Date(`${scheduleDate}T${scheduleTime}`);
-            const now = new Date();
-            if (scheduledAt <= now) {
-                showToast('Scheduled time must be in the future', 'error');
-                return;
-            }
-
-            setUploading(true);
-            setPublishStatus('uploading-cloudinary');
-            setStatusMessage('Uploading file to CDN for scheduling...');
-            setActiveStep(2);
-
-            try {
-                const mediaUrl = await uploadToCloudinary(file);
-                let coverUrl = null;
-                if (coverFile && contentType === 'REELS') {
-                    setStatusMessage('Uploading cover image...');
-                    coverUrl = await uploadToCloudinary(coverFile);
-                }
-
-                setPublishStatus('scheduling');
-                setStatusMessage('Saving scheduled post...');
-
-                const postData = {
-                    accountId: selectedAccount,
-                    platform: 'instagram',
-                    mediaType: contentType,
-                    mediaUrl,
-                    caption: caption || '',
-                    coverUrl: coverUrl || null,
-                    shareToFeed: contentType === 'REELS' ? shareToFeed : true,
-                    collaborators: collaborators ? collaborators.split(',').map(s => s.trim()).filter(Boolean) : [],
-                    audioName: audioName || '',
-                    thumbOffset: thumbOffset ? parseInt(thumbOffset) : null,
-                    locationId: locationId || '',
-                    userTags: userTags ? parseUserTags(userTags) : [],
-                    altText: (contentType === 'IMAGE' && altText) ? altText : '',
-                    scheduledAt: scheduledAt.toISOString(),
-                };
-
-                const res = await api.createScheduledPost(postData);
-                if (!res.success) throw new Error(res.message || 'Failed to schedule');
-
-                setPublishStatus('scheduled');
-                setStatusMessage(`Scheduled for ${scheduledAt.toLocaleString()}`);
-                showToast('Post scheduled successfully!', 'success');
-                loadScheduledPosts();
-            } catch (err) {
-                setPublishStatus('error');
-                setStatusMessage(err.message);
-                showToast('Schedule failed: ' + err.message, 'error');
-            } finally {
-                setUploading(false);
-            }
-            return;
-        }
-
-        setUploading(true);
-        setPublishStatus('uploading-cloudinary');
-        setStatusMessage('Uploading file to CDN...');
-        setActiveStep(2);
-
-        try {
-            // Step 1: Upload to Cloudinary
-            const mediaUrl = await uploadToCloudinary(file);
-            setStatusMessage('File uploaded to CDN successfully!');
-
-            // Upload cover if provided
-            let coverUrl = null;
-            if (coverFile && contentType === 'REELS') {
-                setStatusMessage('Uploading cover image...');
-                coverUrl = await uploadToCloudinary(coverFile);
-            }
-
-            // Step 2: Create IG container
-            setPublishStatus('creating-container');
-            setStatusMessage('Creating Instagram media container...');
-
-            const publishData = {
-                mediaType: contentType,
-                mediaUrl,
-                caption: caption || undefined,
-                coverUrl: coverUrl || undefined,
-                shareToFeed: contentType === 'REELS' ? shareToFeed : undefined,
-                collaborators: collaborators ? collaborators.split(',').map(s => s.trim()).filter(Boolean) : undefined,
-                audioName: audioName || undefined,
-                thumbOffset: thumbOffset ? parseInt(thumbOffset) : undefined,
-                locationId: locationId || undefined,
-                userTags: userTags ? parseUserTags(userTags) : undefined,
-                altText: (contentType === 'IMAGE' && altText) ? altText : undefined,
-            };
-
-            const containerRes = await api.createIGContainer(selectedAccount, publishData);
-            if (!containerRes.success || !containerRes.containerId) {
-                throw new Error(containerRes.message || 'Failed to create container');
-            }
-
-            const containerId = containerRes.containerId;
-
-            // Step 3: Wait for processing (videos need time)
-            if (contentType === 'REELS' || contentType === 'STORIES') {
-                setPublishStatus('processing');
-                setStatusMessage('Instagram is processing the media...');
-                await waitForContainer(containerId, selectedAccount);
-            } else {
-                // Images are usually ready immediately, but let's check once
-                await new Promise(r => setTimeout(r, 2000));
-            }
-
-            // Step 4: Publish
-            setPublishStatus('publishing');
-            setStatusMessage('Publishing to Instagram...');
-
-            const publishRes = await api.publishIGContainer(selectedAccount, containerId);
-            if (!publishRes.success || !publishRes.mediaId) {
-                throw new Error(publishRes.message || 'Failed to publish');
-            }
-
-            setPublishStatus('done');
-            setPublishedMediaId(publishRes.mediaId);
-            setStatusMessage('Published successfully!');
-            showToast('Content published to Instagram!', 'success');
-
-        } catch (err) {
-            setPublishStatus('error');
-            setStatusMessage(err.message);
-            showToast('Publish failed: ' + err.message, 'error');
-        } finally {
-            setUploading(false);
-        }
-    };
-
-    const parseUserTags = (str) => {
-        // Format: "@user1, @user2" or "user1 0.5 0.5, user2 0.3 0.8"
-        return str.split(',').map(s => {
-            const parts = s.trim().replace(/^@/, '').split(/\s+/);
-            return {
-                username: parts[0],
-                x: parts[1] ? parseFloat(parts[1]) : 0.5,
-                y: parts[2] ? parseFloat(parts[2]) : 0.5,
-            };
-        }).filter(t => t.username);
-    };
-
-    const handleDeleteScheduled = async (id) => {
-        try {
-            await api.deleteScheduledPost(id);
-            showToast('Post removed from records', 'success');
-            setConfirmDeleteId(null);
-            loadScheduledPosts();
-        } catch (err) {
-            showToast('Delete failed: ' + err.message, 'error');
-            setConfirmDeleteId(null);
-        }
-    };
-
-    const handleDeleteAll = async () => {
-        try {
-            const res = await api.deleteAllScheduledPosts();
-            showToast(`Deleted ${res.deleted} post(s) & synced to GitHub`, 'success');
-            setConfirmDeleteAll(false);
-            loadScheduledPosts();
-        } catch (err) {
-            showToast('Delete all failed: ' + err.message, 'error');
-            setConfirmDeleteAll(false);
-        }
-    };
-
-    const startEditPost = (post) => {
-        setEditingPostId(post.id);
-        setEditCaption(post.caption || '');
-        const dt = new Date(post.scheduledAt);
-        // Convert to local date/time for the inputs
-        const y = dt.getFullYear();
-        const m = String(dt.getMonth() + 1).padStart(2, '0');
-        const d = String(dt.getDate()).padStart(2, '0');
-        const hh = String(dt.getHours()).padStart(2, '0');
-        const mm = String(dt.getMinutes()).padStart(2, '0');
-        setEditDate(`${y}-${m}-${d}`);
-        setEditTime(`${hh}:${mm}`);
-    };
-
-    const cancelEdit = () => {
-        setEditingPostId(null);
-        setEditCaption('');
-        setEditDate('');
-        setEditTime('');
-    };
-
-    const handleSaveEdit = async () => {
-        if (!editingPostId) return;
-        if (!editDate || !editTime) {
-            showToast('Please set a date and time', 'error');
-            return;
-        }
-        const scheduledAt = new Date(`${editDate}T${editTime}`);
-        if (scheduledAt <= new Date()) {
-            showToast('Scheduled time must be in the future', 'error');
-            return;
-        }
-        setSavingEdit(true);
-        try {
-            const res = await api.updateScheduledPost(editingPostId, {
-                caption: editCaption,
-                scheduledAt: scheduledAt.toISOString(),
-            });
-            if (!res.success) throw new Error(res.message || 'Update failed');
-            showToast('Post updated & synced to GitHub', 'success');
-            cancelEdit();
-            loadScheduledPosts();
-        } catch (err) {
-            showToast('Update failed: ' + err.message, 'error');
-        } finally {
-            setSavingEdit(false);
-        }
-    };
-
-    const canProceed = () => {
-        if (activeStep === 0) return !!file && !!contentType && !!selectedAccount;
-        if (activeStep === 1) return true;
-        return false;
-    };
-
-    const selectedAcct = igAccounts.find(a => a.id === selectedAccount);
-    const selectedType = CONTENT_TYPES.find(t => t.value === contentType);
-    const isVideo = contentType === 'REELS' || (contentType === 'STORIES' && file?.type?.startsWith('video/'));
-
-    return (
-        <>
-        <Box>
-            {/* Header */}
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3, flexWrap: 'wrap', gap: 2 }}>
-                <Typography variant="h4" sx={{ fontWeight: 700 }}>
-                    <CloudUpload sx={{ verticalAlign: 'middle', mr: 1.5, color: '#DD2A7B', fontSize: 36 }} />
-                    Upload Content
-                </Typography>
-                {publishStatus === 'done' && uploadMode === 'single' && (
-                    <Button variant="contained" onClick={resetAll}
-                        sx={{ background: IG_GRADIENT }}>
-                        Upload Another
-                    </Button>
-                )}
-            </Box>
-
-            {/* Mode Tabs */}
-            <Tabs value={uploadMode} onChange={(_, v) => setUploadMode(v)}
-                sx={{
-                    mb: 3, '& .MuiTab-root': { fontWeight: 600, textTransform: 'none', fontSize: 15, minHeight: 48 },
-                    '& .MuiTabs-indicator': { background: IG_GRADIENT, height: 3, borderRadius: 2 },
-                }}>
-                <Tab value="single" icon={<CloudUpload sx={{ fontSize: 20 }} />} iconPosition="start" label="Single Upload" />
-                <Tab value="bulk" icon={
-                    <Badge badgeContent={bulkFiles.length || null} color="warning" max={99}>
-                        <DriveFolderUpload sx={{ fontSize: 20 }} />
-                    </Badge>
-                } iconPosition="start" label="Bulk Upload" />
-            </Tabs>
-
-            {/* No IG accounts */}
-            {igAccounts.length === 0 && (
-                <Alert severity="warning" sx={{ mb: 3 }}>
-                    No Instagram accounts found. Add an account first in the Accounts section.
-                </Alert>
-            )}
-
-            {/* No Cloudinary */}
-            {!cloudConfig && (
-                <Alert severity="info" sx={{ mb: 3 }}>
-                    <strong>Cloudinary CDN required</strong> — Instagram API needs media at a public URL.
-                    Configure Cloudinary in <strong>Settings</strong> to enable uploads.
-                </Alert>
-            )}
-
-            {/* ===== SINGLE UPLOAD MODE ===== */}
-            {uploadMode === 'single' && (<>
-
-                {/* Stepper */}
-                <Stepper activeStep={activeStep} sx={{ mb: 4 }}>
-                    {PUBLISH_STEPS.map((label) => (
-                        <Step key={label}>
-                            <StepLabel>{label}</StepLabel>
-                        </Step>
-                    ))}
-                </Stepper>
-
-                {/* STEP 0: Select Media */}
-                {activeStep === 0 && (
-                    <Grid container spacing={3}>
-                        {/* Platform & Account */}
-                        <Grid size={{ xs: 12, md: 6 }}>
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                                        <Instagram sx={{ verticalAlign: 'middle', mr: 1, color: '#DD2A7B' }} />
-                                        Platform & Account
-                                    </Typography>
-
-                                    <Box sx={{ mb: 2.5 }}>
-                                        <Chip icon={<Instagram />} label="Instagram"
-                                            sx={{ background: IG_GRADIENT, color: '#fff', fontWeight: 600, fontSize: 14, height: 36, px: 1 }} />
-                                        <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', mt: 1 }}>
-                                            YouTube uploads coming soon
-                                        </Typography>
-                                    </Box>
-
-                                    <FormControl fullWidth size="small">
-                                        <InputLabel>Select Account</InputLabel>
-                                        <Select value={selectedAccount} label="Select Account"
-                                            onChange={(e) => setSelectedAccount(e.target.value)}>
-                                            {igAccounts.map(a => (
-                                                <MenuItem key={a.id} value={a.id}>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                                        <Avatar src={a.profilePictureUrl || a.thumbnailUrl || a.thumbnail}
-                                                            sx={{ width: 28, height: 28 }}>
-                                                            <Instagram sx={{ fontSize: 16 }} />
-                                                        </Avatar>
-                                                        <Box>
-                                                            <Typography sx={{ fontWeight: 500, fontSize: 14 }}>{a.title || a.username}</Typography>
-                                                            {a.username && <Typography variant="caption" sx={{ color: 'text.secondary' }}>@{a.username}</Typography>}
-                                                        </Box>
-                                                    </Box>
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Content Type */}
-                        <Grid size={{ xs: 12, md: 6 }}>
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                                        Content Type
-                                    </Typography>
-                                    <Grid container spacing={1.5}>
-                                        {CONTENT_TYPES.map(t => (
-                                            <Grid size={{ xs: 4 }} key={t.value}>
-                                                <Card
-                                                    onClick={() => { setContentType(t.value); clearFile(); }}
-                                                    sx={{
-                                                        cursor: 'pointer', textAlign: 'center', p: 2,
-                                                        border: contentType === t.value ? `2px solid ${t.color}` : '2px solid transparent',
-                                                        bgcolor: contentType === t.value ? `${t.color}15` : 'transparent',
-                                                        transition: 'all 0.2s',
-                                                        '&:hover': { bgcolor: `${t.color}10` },
-                                                    }}>
-                                                    <Box sx={{ color: t.color, mb: 0.5 }}>{t.icon}</Box>
-                                                    <Typography variant="body2" sx={{ fontWeight: 600, fontSize: 12 }}>{t.label}</Typography>
-                                                </Card>
-                                            </Grid>
-                                        ))}
-                                    </Grid>
-                                    {selectedType && (
-                                        <Typography variant="caption" sx={{ display: 'block', color: 'text.secondary', mt: 1.5 }}>
-                                            {selectedType.desc}
-                                        </Typography>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* File Upload */}
-                        <Grid size={12}>
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                                        Select File
-                                    </Typography>
-                                    {!file ? (
-                                        <Box
-                                            onClick={() => contentType && fileInputRef.current?.click()}
-                                            sx={{
-                                                border: '2px dashed rgba(255,255,255,0.2)', borderRadius: 3,
-                                                p: 6, textAlign: 'center', cursor: contentType ? 'pointer' : 'not-allowed',
-                                                transition: 'all 0.2s',
-                                                opacity: contentType ? 1 : 0.5,
-                                                '&:hover': contentType ? { borderColor: '#DD2A7B', bgcolor: 'rgba(221,42,123,0.05)' } : {},
-                                            }}>
-                                            <CloudUpload sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
-                                            <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                                {contentType ? 'Click to select file' : 'Choose a content type first'}
-                                            </Typography>
-                                            {selectedType && (
-                                                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                                                    {selectedType.desc}
-                                                </Typography>
-                                            )}
-                                        </Box>
-                                    ) : (
-                                        <Box sx={{ display: 'flex', gap: 3, alignItems: 'flex-start' }}>
-                                            <Box sx={{ width: 200, flexShrink: 0, borderRadius: 2, overflow: 'hidden', position: 'relative' }}>
-                                                {file.type.startsWith('video/') ? (
-                                                    <video src={filePreview} controls muted
-                                                        style={{ width: '100%', maxHeight: 280, objectFit: 'contain', background: '#000', borderRadius: 8 }} />
-                                                ) : (
-                                                    <Box component="img" src={filePreview}
-                                                        sx={{ width: '100%', maxHeight: 280, objectFit: 'contain', borderRadius: 2, bgcolor: '#111' }} />
-                                                )}
-                                                <IconButton onClick={clearFile} size="small"
-                                                    sx={{ position: 'absolute', top: 4, right: 4, bgcolor: 'rgba(0,0,0,0.7)', color: '#fff', '&:hover': { bgcolor: '#f44336' } }}>
-                                                    <Close fontSize="small" />
-                                                </IconButton>
-                                            </Box>
-                                            <Box>
-                                                <Typography variant="body1" sx={{ fontWeight: 600 }}>{file.name}</Typography>
-                                                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                                                    {(file.size / (1024 * 1024)).toFixed(2)} MB • {file.type}
-                                                </Typography>
-                                                <Chip label={selectedType?.label} size="small"
-                                                    sx={{ mt: 1, bgcolor: `${selectedType?.color}22`, color: selectedType?.color }} />
-                                            </Box>
-                                        </Box>
-                                    )}
-                                    <input ref={fileInputRef} type="file" hidden
-                                        accept={selectedType?.accept || '*'}
-                                        onChange={handleFileSelect} />
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Next button */}
-                        <Grid size={12}>
-                            <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                <Button variant="contained" disabled={!canProceed()}
-                                    onClick={() => setActiveStep(1)}
-                                    sx={{ background: IG_GRADIENT, px: 4 }}>
-                                    Next: Configure Settings
-                                </Button>
-                            </Box>
-                        </Grid>
-                    </Grid>
-                )}
-
-                {/* STEP 1: Configure */}
-                {activeStep === 1 && (
-                    <Grid container spacing={3}>
-                        {/* Caption */}
-                        <Grid size={{ xs: 12, md: 8 }}>
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                                        Caption & Details
-                                    </Typography>
-                                    <TextField fullWidth multiline rows={4} value={caption}
-                                        onChange={e => setCaption(e.target.value)}
-                                        placeholder="Write your caption... #hashtags @mentions"
-                                        label="Caption" size="small" sx={{ mb: 2 }}
-                                        helperText={`${caption.length}/2,200 characters`} />
-
-                                    {contentType === 'IMAGE' && (
-                                        <TextField fullWidth value={altText}
-                                            onChange={e => setAltText(e.target.value)}
-                                            placeholder="Describe the image for accessibility"
-                                            label="Alt Text" size="small" sx={{ mb: 2 }}
-                                            slotProps={{ input: { startAdornment: <InputAdornment position="start"><ImageIcon sx={{ color: 'text.secondary', fontSize: 18 }} /></InputAdornment> } }} />
-                                    )}
-
-                                    <TextField fullWidth value={collaborators}
-                                        onChange={e => setCollaborators(e.target.value)}
-                                        placeholder="username1, username2 (comma-separated)"
-                                        label="Collaborators" size="small" sx={{ mb: 2 }}
-                                        slotProps={{ input: { startAdornment: <InputAdornment position="start"><PersonAdd sx={{ color: 'text.secondary', fontSize: 18 }} /></InputAdornment> } }} />
-
-                                    <TextField fullWidth value={userTags}
-                                        onChange={e => setUserTags(e.target.value)}
-                                        placeholder="@username1, @username2"
-                                        label="Tag Users" size="small" sx={{ mb: 2 }}
-                                        slotProps={{ input: { startAdornment: <InputAdornment position="start"><AlternateEmail sx={{ color: 'text.secondary', fontSize: 18 }} /></InputAdornment> } }} />
-
-                                    <TextField fullWidth value={locationId}
-                                        onChange={e => setLocationId(e.target.value)}
-                                        placeholder="Facebook Page ID for location"
-                                        label="Location ID (optional)" size="small"
-                                        slotProps={{ input: { startAdornment: <InputAdornment position="start"><LocationOn sx={{ color: 'text.secondary', fontSize: 18 }} /></InputAdornment> } }} />
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Reel-specific settings */}
-                        <Grid size={{ xs: 12, md: 4 }}>
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                                        {contentType === 'REELS' ? 'Reel Settings' : 'Post Settings'}
-                                    </Typography>
-
-                                    {contentType === 'REELS' && (
-                                        <>
-                                            <FormControlLabel
-                                                control={<Switch checked={shareToFeed} onChange={(e) => setShareToFeed(e.target.checked)} />}
-                                                label="Share to Feed"
-                                                sx={{ mb: 2, display: 'block' }}
-                                            />
-
-                                            <TextField fullWidth value={audioName}
-                                                onChange={e => setAudioName(e.target.value)}
-                                                placeholder="Custom audio name"
-                                                label="Audio Name" size="small" sx={{ mb: 2 }}
-                                                slotProps={{ input: { startAdornment: <InputAdornment position="start"><MusicNote sx={{ color: 'text.secondary', fontSize: 18 }} /></InputAdornment> } }} />
-
-                                            <TextField fullWidth value={thumbOffset}
-                                                onChange={e => setThumbOffset(e.target.value)}
-                                                placeholder="Milliseconds (e.g. 5000)"
-                                                label="Thumbnail Offset (ms)" size="small" sx={{ mb: 2 }}
-                                                type="number"
-                                                slotProps={{ input: { startAdornment: <InputAdornment position="start"><Timer sx={{ color: 'text.secondary', fontSize: 18 }} /></InputAdornment> } }} />
-
-                                            <Typography variant="body2" sx={{ fontWeight: 500, mb: 1 }}>Cover Image (optional)</Typography>
-                                            {!coverFile ? (
-                                                <Button variant="outlined" size="small" startIcon={<PhotoCamera />}
-                                                    onClick={() => coverInputRef.current?.click()}
-                                                    sx={{ mb: 1, borderColor: 'rgba(255,255,255,0.15)' }}>
-                                                    Select Cover
-                                                </Button>
-                                            ) : (
-                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-                                                    <Box component="img" src={coverPreview}
-                                                        sx={{ width: 50, height: 50, objectFit: 'cover', borderRadius: 1 }} />
-                                                    <Typography variant="caption" sx={{ flex: 1 }}>{coverFile.name}</Typography>
-                                                    <IconButton size="small" onClick={clearCover}><Close fontSize="small" /></IconButton>
-                                                </Box>
-                                            )}
-                                            <input ref={coverInputRef} type="file" hidden accept="image/jpeg"
-                                                onChange={handleCoverSelect} />
-                                        </>
-                                    )}
-
-                                    {/* Preview info */}
-                                    <Divider sx={{ my: 2 }} />
-                                    <Typography variant="body2" sx={{ fontWeight: 500, mb: 1 }}>Summary</Typography>
-                                    <Box sx={{ fontSize: 12, color: 'text.secondary' }}>
-                                        <Box>Account: <strong style={{ color: '#fff' }}>{selectedAcct?.title || selectedAcct?.username || '—'}</strong></Box>
-                                        <Box>Type: <strong style={{ color: selectedType?.color }}>{selectedType?.label}</strong></Box>
-                                        <Box>File: <strong style={{ color: '#fff' }}>{file?.name || '—'}</strong></Box>
-                                        <Box>Size: <strong style={{ color: '#fff' }}>{file ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` : '—'}</strong></Box>
-                                        {caption && <Box>Caption: <strong style={{ color: '#fff' }}>{caption.substring(0, 60)}{caption.length > 60 ? '...' : ''}</strong></Box>}
-                                        {scheduleMode && scheduleDate && scheduleTime && (
-                                            <Box>Schedule: <strong style={{ color: '#F58529' }}>{new Date(`${scheduleDate}T${scheduleTime}`).toLocaleString()}</strong></Box>
-                                        )}
-                                    </Box>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Schedule Option */}
-                        <Grid size={12}>
-                            <Card>
-                                <CardContent>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: scheduleMode ? 2 : 0 }}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            <Schedule sx={{ color: '#F58529' }} />
-                                            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                                                Schedule for Later
-                                            </Typography>
-                                        </Box>
-                                        <FormControlLabel
-                                            control={<Switch checked={scheduleMode} onChange={e => setScheduleMode(e.target.checked)} />}
-                                            label={scheduleMode ? 'Scheduled' : 'Publish Now'}
-                                        />
-                                    </Box>
-                                    {scheduleMode && (
-                                        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap' }}>
-                                            <TextField
-                                                type="date" value={scheduleDate}
-                                                onChange={e => setScheduleDate(e.target.value)}
-                                                label="Date" size="small"
-                                                slotProps={{ inputLabel: { shrink: true }, input: { inputProps: { min: new Date().toISOString().split('T')[0] } } }}
-                                                sx={{ minWidth: 180 }}
-                                            />
-                                            <TextField
-                                                type="time" value={scheduleTime}
-                                                onChange={e => setScheduleTime(e.target.value)}
-                                                label="Time" size="small"
-                                                slotProps={{ inputLabel: { shrink: true } }}
-                                                sx={{ minWidth: 150 }}
-                                            />
-                                            {scheduleDate && scheduleTime && (
-                                                <Chip
-                                                    icon={<CalendarMonth sx={{ fontSize: 16 }} />}
-                                                    label={new Date(`${scheduleDate}T${scheduleTime}`).toLocaleString()}
-                                                    color="warning" variant="outlined"
-                                                    sx={{ alignSelf: 'center' }}
-                                                />
-                                            )}
-                                        </Box>
-                                    )}
-                                    {scheduleMode && (
-                                        <Alert severity="info" sx={{ mt: 2 }}>
-                                            <strong>Cloud Scheduling.</strong> Your file is uploaded to Cloudinary now. If GitHub Actions
-                                            is configured (Settings), posts publish from the cloud even when your PC is off.
-                                            Otherwise, keep the server running for on-time publishing.
-                                        </Alert>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Nav buttons */}
-                        <Grid size={12}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                                <Button variant="outlined" onClick={() => setActiveStep(0)}
-                                    sx={{ borderColor: 'rgba(255,255,255,0.15)' }}>
-                                    Back
-                                </Button>
-                                <Box sx={{ display: 'flex', gap: 1.5 }}>
-                                    <Button variant="contained" onClick={handlePublish}
-                                        startIcon={uploading ? <CircularProgress size={16} /> : (scheduleMode ? <Schedule /> : <Send />)}
-                                        disabled={uploading || (scheduleMode && (!scheduleDate || !scheduleTime))}
-                                        sx={{ background: scheduleMode ? 'linear-gradient(135deg, #F58529, #FF6B35)' : IG_GRADIENT, px: 4 }}>
-                                        {scheduleMode ? 'Schedule Post' : 'Upload & Publish Now'}
-                                    </Button>
-                                </Box>
-                            </Box>
-                        </Grid>
-                    </Grid>
-                )}
-
-                {/* STEP 2: Upload & Publish Progress */}
-                {activeStep === 2 && (
-                    <Card>
-                        <CardContent sx={{ textAlign: 'center', py: 6 }}>
-                            {publishStatus === 'uploading-cloudinary' && (
-                                <>
-                                    <CloudUpload sx={{ fontSize: 56, color: '#3448C5', mb: 2 }} />
-                                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>Uploading to CDN...</Typography>
-                                    <Box sx={{ maxWidth: 400, mx: 'auto', mb: 2 }}>
-                                        <LinearProgress variant="determinate" value={uploadProgress}
-                                            sx={{ height: 8, borderRadius: 4, '& .MuiLinearProgress-bar': { background: IG_GRADIENT } }} />
-                                    </Box>
-                                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>{uploadProgress}% uploaded</Typography>
-                                </>
-                            )}
-
-                            {publishStatus === 'creating-container' && (
-                                <>
-                                    <CircularProgress size={56} sx={{ color: '#DD2A7B', mb: 2 }} />
-                                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>Creating Instagram Container...</Typography>
-                                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>Sending media to Instagram API</Typography>
-                                </>
-                            )}
-
-                            {publishStatus === 'processing' && (
-                                <>
-                                    <CircularProgress size={56} sx={{ color: '#8134AF', mb: 2 }} />
-                                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>Processing Media...</Typography>
-                                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>{statusMessage}</Typography>
-                                    <Typography variant="caption" sx={{ color: 'text.disabled', display: 'block', mt: 1 }}>
-                                        This may take a minute for videos
-                                    </Typography>
-                                </>
-                            )}
-
-                            {publishStatus === 'publishing' && (
-                                <>
-                                    <CircularProgress size={56} sx={{ color: '#F58529', mb: 2 }} />
-                                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>Publishing...</Typography>
-                                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>Almost there!</Typography>
-                                </>
-                            )}
-
-                            {publishStatus === 'done' && (
-                                <>
-                                    <CheckCircle sx={{ fontSize: 64, color: '#4CAF50', mb: 2 }} />
-                                    <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, color: '#4CAF50' }}>
-                                        Published Successfully!
-                                    </Typography>
-                                    <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3 }}>
-                                        Your {selectedType?.label?.toLowerCase()} is now live on Instagram.
-                                    </Typography>
-                                    {publishedMediaId && (
-                                        <Chip label={`Media ID: ${publishedMediaId}`} variant="outlined"
-                                            sx={{ mb: 3, borderColor: 'rgba(255,255,255,0.15)' }} />
-                                    )}
-                                    <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-                                        <Button variant="contained" onClick={resetAll}
-                                            sx={{ background: IG_GRADIENT }}>
-                                            Upload Another
-                                        </Button>
-                                        <Button variant="outlined" onClick={() => {
-                                            if (selectedAcct?.username) {
-                                                window.open(`https://instagram.com/${selectedAcct.username}`, '_blank');
-                                            }
-                                        }}
-                                            startIcon={<Instagram />}
-                                            sx={{ borderColor: 'rgba(255,255,255,0.15)' }}>
-                                            View Profile
-                                        </Button>
-                                    </Box>
-                                </>
-                            )}
-
-                            {publishStatus === 'error' && (
-                                <>
-                                    <ErrorIcon sx={{ fontSize: 64, color: '#f44336', mb: 2 }} />
-                                    <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, color: '#f44336' }}>
-                                        {scheduleMode ? 'Schedule Failed' : 'Publish Failed'}
-                                    </Typography>
-                                    <Typography variant="body2" sx={{ color: 'text.secondary', mb: 3, maxWidth: 500, mx: 'auto' }}>
-                                        {statusMessage}
-                                    </Typography>
-                                    <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-                                        <Button variant="contained" onClick={() => { setActiveStep(1); setPublishStatus(''); }}
-                                            sx={{ background: IG_GRADIENT }}>
-                                            Try Again
-                                        </Button>
-                                        <Button variant="outlined" onClick={resetAll}
-                                            sx={{ borderColor: 'rgba(255,255,255,0.15)' }}>
-                                            Start Over
-                                        </Button>
-                                    </Box>
-                                </>
-                            )}
-
-                            {publishStatus === 'scheduling' && (
-                                <>
-                                    <CircularProgress size={56} sx={{ color: '#F58529', mb: 2 }} />
-                                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>Saving Schedule...</Typography>
-                                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>{statusMessage}</Typography>
-                                </>
-                            )}
-
-                            {publishStatus === 'scheduled' && (
-                                <>
-                                    <Schedule sx={{ fontSize: 64, color: '#F58529', mb: 2 }} />
-                                    <Typography variant="h5" sx={{ fontWeight: 700, mb: 1, color: '#F58529' }}>
-                                        Post Scheduled!
-                                    </Typography>
-                                    <Typography variant="body2" sx={{ color: 'text.secondary', mb: 1 }}>
-                                        Your {selectedType?.label?.toLowerCase()} has been scheduled.
-                                    </Typography>
-                                    <Typography variant="body1" sx={{ fontWeight: 600, mb: 3 }}>
-                                        {statusMessage}
-                                    </Typography>
-                                    <Alert severity="info" sx={{ maxWidth: 500, mx: 'auto', mb: 3, textAlign: 'left' }}>
-                                        Your post is synced and will auto-publish at the scheduled time.
-                                        With <strong>GitHub Actions</strong> configured, it publishes even when your PC is off.
-                                    </Alert>
-                                    <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-                                        <Button variant="contained" onClick={resetAll}
-                                            sx={{ background: 'linear-gradient(135deg, #F58529, #FF6B35)' }}>
-                                            Schedule Another
-                                        </Button>
-                                        <Button variant="outlined" onClick={() => { setShowScheduled(true); resetAll(); }}
-                                            startIcon={<CalendarMonth />}
-                                            sx={{ borderColor: 'rgba(255,255,255,0.15)' }}>
-                                            View Scheduled
-                                        </Button>
-                                    </Box>
-                                </>
-                            )}
-                        </CardContent>
-                    </Card>
-                )}
-
-            </>)}
-
-            {/* ===== BULK UPLOAD MODE ===== */}
-            {uploadMode === 'bulk' && (
-                <Box>
-                    <Grid container spacing={3}>
-                        {/* Account & Content Type */}
-                        <Grid size={{ xs: 12, md: 6 }}>
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                                        <Instagram sx={{ verticalAlign: 'middle', mr: 1, color: '#DD2A7B' }} />
-                                        Account & Type
-                                    </Typography>
-                                    <FormControl fullWidth size="small" sx={{ mb: 2 }}>
-                                        <InputLabel>Select Account</InputLabel>
-                                        <Select value={bulkAccount} label="Select Account"
-                                            onChange={(e) => setBulkAccount(e.target.value)} disabled={bulkProcessing}>
-                                            {igAccounts.map(a => (
-                                                <MenuItem key={a.id} value={a.id}>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                                        <Avatar src={a.profilePictureUrl || a.thumbnailUrl || a.thumbnail}
-                                                            sx={{ width: 28, height: 28 }}>
-                                                            <Instagram sx={{ fontSize: 16 }} />
-                                                        </Avatar>
-                                                        <Box>
-                                                            <Typography sx={{ fontWeight: 500, fontSize: 14 }}>{a.title || a.username}</Typography>
-                                                            {a.username && <Typography variant="caption" sx={{ color: 'text.secondary' }}>@{a.username}</Typography>}
-                                                        </Box>
-                                                    </Box>
-                                                </MenuItem>
-                                            ))}
-                                        </Select>
-                                    </FormControl>
-                                    <Grid container spacing={1.5}>
-                                        {CONTENT_TYPES.map(t => (
-                                            <Grid size={{ xs: 4 }} key={t.value}>
-                                                <Card
-                                                    onClick={() => !bulkProcessing && setBulkContentType(t.value)}
-                                                    sx={{
-                                                        cursor: bulkProcessing ? 'not-allowed' : 'pointer', textAlign: 'center', p: 1.5,
-                                                        border: bulkContentType === t.value ? `2px solid ${t.color}` : '2px solid transparent',
-                                                        bgcolor: bulkContentType === t.value ? `${t.color}15` : 'transparent',
-                                                        transition: 'all 0.2s',
-                                                        '&:hover': !bulkProcessing ? { bgcolor: `${t.color}10` } : {},
-                                                    }}>
-                                                    <Box sx={{ color: t.color, mb: 0.5 }}>{t.icon}</Box>
-                                                    <Typography variant="body2" sx={{ fontWeight: 600, fontSize: 11 }}>{t.label}</Typography>
-                                                </Card>
-                                            </Grid>
-                                        ))}
-                                    </Grid>
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Shared Settings */}
-                        <Grid size={{ xs: 12, md: 6 }}>
-                            <Card>
-                                <CardContent>
-                                    <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                                        Shared Settings
-                                    </Typography>
-                                    <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-                                        <TextField fullWidth value={bulkSharedCaption}
-                                            onChange={e => setBulkSharedCaption(e.target.value)}
-                                            placeholder="Shared caption for all files..."
-                                            label="Shared Caption" size="small" disabled={bulkProcessing}
-                                            multiline rows={2} />
-                                        <Tooltip title="Apply shared caption to all pending files">
-                                            <span>
-                                                <Button variant="outlined" onClick={applySharedCaption}
-                                                    disabled={!bulkSharedCaption || bulkProcessing}
-                                                    sx={{ minWidth: 42, borderColor: 'rgba(255,255,255,0.15)' }}>
-                                                    <ContentCopy sx={{ fontSize: 18 }} />
-                                                </Button>
-                                            </span>
-                                        </Tooltip>
-                                    </Box>
-                                    <TextField fullWidth value={bulkCollaborators}
-                                        onChange={e => setBulkCollaborators(e.target.value)}
-                                        placeholder="username1, username2"
-                                        label="Collaborators (all posts)" size="small" sx={{ mb: 2 }} disabled={bulkProcessing}
-                                        slotProps={{ input: { startAdornment: <InputAdornment position="start"><PersonAdd sx={{ color: 'text.secondary', fontSize: 18 }} /></InputAdornment> } }} />
-                                    <TextField fullWidth value={bulkUserTags}
-                                        onChange={e => setBulkUserTags(e.target.value)}
-                                        placeholder="@username1, @username2"
-                                        label="Tag Users (all posts)" size="small" sx={{ mb: 2 }} disabled={bulkProcessing}
-                                        slotProps={{ input: { startAdornment: <InputAdornment position="start"><AlternateEmail sx={{ color: 'text.secondary', fontSize: 18 }} /></InputAdornment> } }} />
-                                    {bulkContentType === 'REELS' && (
-                                        <FormControlLabel
-                                            control={<Switch checked={bulkShareToFeed} onChange={(e) => setBulkShareToFeed(e.target.checked)} disabled={bulkProcessing} />}
-                                            label="Share Reels to Feed"
-                                        />
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* File Picker */}
-                        <Grid size={12}>
-                            <Card>
-                                <CardContent>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-                                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                                            <DriveFolderUpload sx={{ verticalAlign: 'middle', mr: 1, color: '#DD2A7B' }} />
-                                            Files ({bulkFiles.length})
-                                        </Typography>
-                                        <Box sx={{ display: 'flex', gap: 1 }}>
-                                            {bulkFiles.length > 0 && !bulkProcessing && (
-                                                <Button size="small" variant="outlined" onClick={clearBulkFiles}
-                                                    startIcon={<Delete />}
-                                                    sx={{ borderColor: 'rgba(255,255,255,0.15)', color: '#f44336' }}>
-                                                    Clear All
-                                                </Button>
-                                            )}
-                                            <Button size="small" variant="contained" onClick={() => bulkFileInputRef.current?.click()}
-                                                startIcon={<Add />} disabled={bulkProcessing}
-                                                sx={{ background: IG_GRADIENT }}>
-                                                Add Files
-                                            </Button>
-                                        </Box>
-                                    </Box>
-                                    <input ref={bulkFileInputRef} type="file" hidden multiple
-                                        accept={CONTENT_TYPES.find(t => t.value === bulkContentType)?.accept || '*'}
-                                        onChange={handleBulkFilesSelect} />
-
-                                    {bulkFiles.length === 0 ? (
-                                        <Box
-                                            onClick={() => bulkFileInputRef.current?.click()}
-                                            sx={{
-                                                border: '2px dashed rgba(255,255,255,0.15)', borderRadius: 3,
-                                                p: 5, textAlign: 'center', cursor: 'pointer',
-                                                transition: 'all 0.2s',
-                                                '&:hover': { borderColor: '#DD2A7B', bgcolor: 'rgba(221,42,123,0.05)' },
-                                            }}>
-                                            <DriveFolderUpload sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
-                                            <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                                Click to select multiple files
-                                            </Typography>
-                                            <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                                                Select multiple videos or images at once. You can add more files later.
-                                            </Typography>
-                                        </Box>
-                                    ) : (
-                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5, maxHeight: 500, overflowY: 'auto', pr: 1 }}>
-                                            {bulkFiles.map((item, idx) => {
-                                                const statusInfo = getBulkStatusInfo(item.status);
-                                                const isActive = item.status !== 'pending' && item.status !== 'done' && item.status !== 'scheduled' && item.status !== 'error';
-                                                return (
-                                                    <Box key={item.id} sx={{
-                                                        display: 'flex', alignItems: 'flex-start', gap: 2, p: 1.5,
-                                                        borderRadius: 2, bgcolor: 'rgba(255,255,255,0.03)',
-                                                        border: isActive ? `1px solid ${statusInfo.color}44` : '1px solid rgba(255,255,255,0.06)',
-                                                        transition: 'all 0.3s',
-                                                    }}>
-                                                        {/* Thumbnail */}
-                                                        <Box sx={{ width: 64, height: 64, flexShrink: 0, borderRadius: 1.5, overflow: 'hidden', bgcolor: '#111', position: 'relative' }}>
-                                                            {item.file.type.startsWith('video/') ? (
-                                                                <video src={item.preview} muted
-                                                                    style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                            ) : (
-                                                                <Box component="img" src={item.preview}
-                                                                    sx={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                                                            )}
-                                                            <Box sx={{
-                                                                position: 'absolute', top: 2, left: 2,
-                                                                bgcolor: 'rgba(0,0,0,0.7)', borderRadius: 0.5, px: 0.5,
-                                                                fontSize: 10, fontWeight: 700, color: '#fff',
-                                                            }}>
-                                                                #{idx + 1}
-                                                            </Box>
-                                                            {item.status === 'uploading' && (
-                                                                <Box sx={{
-                                                                    position: 'absolute', bottom: 0, left: 0, right: 0,
-                                                                    height: 4, bgcolor: 'rgba(0,0,0,0.5)',
-                                                                }}>
-                                                                    <Box sx={{
-                                                                        height: '100%', width: `${item.progress}%`,
-                                                                        background: IG_GRADIENT, transition: 'width 0.3s',
-                                                                    }} />
-                                                                </Box>
-                                                            )}
-                                                        </Box>
-
-                                                        {/* Details */}
-                                                        <Box sx={{ flex: 1, minWidth: 0 }}>
-                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                                                                <Typography variant="body2" sx={{
-                                                                    fontWeight: 600, fontSize: 13,
-                                                                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1,
-                                                                }}>
-                                                                    {item.file.name}
-                                                                </Typography>
-                                                                <Typography variant="caption" sx={{ color: 'text.secondary', flexShrink: 0 }}>
-                                                                    {(item.file.size / (1024 * 1024)).toFixed(1)} MB
-                                                                </Typography>
-                                                            </Box>
-                                                            {item.status === 'pending' ? (
-                                                                <TextField
-                                                                    fullWidth size="small" variant="outlined"
-                                                                    placeholder={`Caption for file #${idx + 1}...`}
-                                                                    value={item.caption}
-                                                                    onChange={e => updateBulkFileCaption(item.id, e.target.value)}
-                                                                    multiline maxRows={2}
-                                                                    sx={{ '& .MuiOutlinedInput-root': { fontSize: 12 } }}
-                                                                />
-                                                            ) : (
-                                                                <Typography variant="caption" sx={{ color: 'text.secondary' }}>
-                                                                    {item.caption || '(no caption)'}
-                                                                </Typography>
-                                                            )}
-                                                            {item.status === 'uploading' && (
-                                                                <LinearProgress variant="determinate" value={item.progress}
-                                                                    sx={{ mt: 0.5, height: 3, borderRadius: 2, '& .MuiLinearProgress-bar': { background: IG_GRADIENT } }} />
-                                                            )}
-                                                            {item.error && (
-                                                                <Typography variant="caption" sx={{ color: '#f44336', display: 'block', mt: 0.5 }}>
-                                                                    {item.error}
-                                                                </Typography>
-                                                            )}
-                                                            {item.mediaId && (
-                                                                <Typography variant="caption" sx={{ color: '#4CAF50', display: 'block', mt: 0.5 }}>
-                                                                    Media ID: {item.mediaId}
-                                                                </Typography>
-                                                            )}
-                                                        </Box>
-
-                                                        {/* Status & Actions */}
-                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexShrink: 0 }}>
-                                                            {isActive && <CircularProgress size={16} sx={{ color: statusInfo.color }} />}
-                                                            <Chip size="small" label={statusInfo.label}
-                                                                sx={{ fontWeight: 600, fontSize: 11, bgcolor: statusInfo.bgColor, color: statusInfo.color }} />
-                                                            {item.status === 'pending' && !bulkProcessing && (
-                                                                <IconButton size="small" onClick={() => removeBulkFile(item.id)}
-                                                                    sx={{ color: 'text.secondary', '&:hover': { color: '#f44336' } }}>
-                                                                    <Close fontSize="small" />
-                                                                </IconButton>
-                                                            )}
-                                                        </Box>
-                                                    </Box>
-                                                );
-                                            })}
-                                        </Box>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Bulk Schedule Option */}
-                        <Grid size={12}>
-                            <Card>
-                                <CardContent>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: bulkScheduleMode ? 2 : 0 }}>
-                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                            <Schedule sx={{ color: '#F58529' }} />
-                                            <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                                                Bulk Schedule
-                                            </Typography>
-                                        </Box>
-                                        <FormControlLabel
-                                            control={<Switch checked={bulkScheduleMode} onChange={e => setBulkScheduleMode(e.target.checked)} disabled={bulkProcessing} />}
-                                            label={bulkScheduleMode ? 'Schedule All' : 'Publish All Now'}
-                                        />
-                                    </Box>
-                                    {bulkScheduleMode && (
-                                        <>
-                                            <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 2 }}>
-                                                <TextField
-                                                    type="date" value={bulkStartDate}
-                                                    onChange={e => setBulkStartDate(e.target.value)}
-                                                    label="Start Date" size="small" disabled={bulkProcessing}
-                                                    slotProps={{ inputLabel: { shrink: true }, input: { inputProps: { min: new Date().toISOString().split('T')[0] } } }}
-                                                    sx={{ minWidth: 180 }}
-                                                />
-                                                <TextField
-                                                    type="time" value={bulkStartTime}
-                                                    onChange={e => setBulkStartTime(e.target.value)}
-                                                    label="Post Time" size="small" disabled={bulkProcessing}
-                                                    slotProps={{ inputLabel: { shrink: true } }}
-                                                    sx={{ minWidth: 150 }}
-                                                />
-                                                <FormControl size="small" sx={{ minWidth: 200 }} disabled={bulkProcessing}>
-                                                    <InputLabel>Frequency</InputLabel>
-                                                    <Select value={bulkInterval} label="Frequency"
-                                                        onChange={e => setBulkInterval(e.target.value)}>
-                                                        <MenuItem value={720}>Every 12 Hours</MenuItem>
-                                                        <MenuItem value={1440}>Once a Day</MenuItem>
-                                                        <MenuItem value={2880}>Every 2 Days</MenuItem>
-                                                        <MenuItem value={4320}>Every 3 Days</MenuItem>
-                                                        <MenuItem value={10080}>Once a Week</MenuItem>
-                                                    </Select>
-                                                </FormControl>
-                                            </Box>
-                                            {bulkStartDate && bulkStartTime && bulkFiles.filter(f => f.status === 'pending').length > 0 && (
-                                                <Alert severity="info" sx={{ mb: 1 }}>
-                                                    <strong>Schedule Preview:</strong> {bulkFiles.filter(f => f.status === 'pending').length} files will be scheduled
-                                                    starting at <strong>{new Date(`${bulkStartDate}T${bulkStartTime}`).toLocaleString()}</strong>,
-                                                    {' '}spaced <strong>{bulkInterval >= 1440 ? `${bulkInterval / 1440} day${bulkInterval > 1440 ? 's' : ''}` : `${bulkInterval / 60} hr${bulkInterval > 60 ? 's' : ''}`}</strong> apart.
-                                                    Last post at <strong>{new Date(new Date(`${bulkStartDate}T${bulkStartTime}`).getTime() + (bulkFiles.filter(f => f.status === 'pending').length - 1) * bulkInterval * 60000).toLocaleString()}</strong>.
-                                                </Alert>
-                                            )}
-                                        </>
-                                    )}
-                                    {!bulkScheduleMode && bulkFiles.filter(f => f.status === 'pending').length > 0 && (
-                                        <Alert severity="warning" sx={{ mt: 1 }}>
-                                            <strong>Immediate publish:</strong> {bulkFiles.filter(f => f.status === 'pending').length} files will be uploaded and published
-                                            to Instagram one-by-one. This may take a while for videos. Rate limit: 100 posts/24hr.
-                                        </Alert>
-                                    )}
-                                </CardContent>
-                            </Card>
-                        </Grid>
-
-                        {/* Progress Summary (during/after processing) */}
-                        {(bulkProcessing || bulkStats.done > 0 || bulkStats.scheduled > 0 || bulkStats.errors > 0) && (
-                            <Grid size={12}>
-                                <Card>
-                                    <CardContent>
-                                        <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
-                                            {bulkProcessing ? 'Processing...' : 'Results'}
-                                        </Typography>
-                                        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 2 }}>
-                                            <Chip label={`${bulkStats.total} Total`} variant="outlined" sx={{ borderColor: 'rgba(255,255,255,0.15)' }} />
-                                            {bulkStats.done > 0 && <Chip icon={<CheckCircle sx={{ fontSize: 16 }} />} label={`${bulkStats.done} Published`} sx={{ bgcolor: '#4CAF5022', color: '#4CAF50', fontWeight: 600 }} />}
-                                            {bulkStats.scheduled > 0 && <Chip icon={<Schedule sx={{ fontSize: 16 }} />} label={`${bulkStats.scheduled} Scheduled`} sx={{ bgcolor: '#F5852922', color: '#F58529', fontWeight: 600 }} />}
-                                            {bulkStats.errors > 0 && <Chip icon={<ErrorIcon sx={{ fontSize: 16 }} />} label={`${bulkStats.errors} Failed`} sx={{ bgcolor: '#f4433622', color: '#f44336', fontWeight: 600 }} />}
-                                            {bulkStats.pending > 0 && <Chip label={`${bulkStats.pending} Pending`} sx={{ bgcolor: '#88888822', color: '#888' }} />}
-                                            {bulkStats.active > 0 && <Chip icon={<CircularProgress size={12} />} label={`${bulkStats.active} Active`} sx={{ bgcolor: '#DD2A7B22', color: '#DD2A7B', fontWeight: 600 }} />}
-                                        </Box>
-                                        {bulkProcessing && (
-                                            <LinearProgress
-                                                variant="determinate"
-                                                value={((bulkStats.done + bulkStats.scheduled + bulkStats.errors) / bulkStats.total) * 100}
-                                                sx={{ height: 6, borderRadius: 3, '& .MuiLinearProgress-bar': { background: IG_GRADIENT } }}
-                                            />
-                                        )}
-                                    </CardContent>
-                                </Card>
-                            </Grid>
+      } catch (err) { setBulkFiles(prev => prev.map(f => f.id === item.id ? { ...f, status: 'error', error: err.message } : f)); failCount++; }
+      if (i < pendingFiles.length - 1 && !bulkCancelRef.current) await new Promise(r => setTimeout(r, 2000));
+    }
+    setBulkProcessing(false);
+    if (bulkCancelRef.current) { showToast('Bulk upload cancelled', 'warning'); }
+    else { showToast(`Bulk complete: ${successCount} succeeded, ${failCount} failed`, successCount > 0 ? 'success' : 'error'); if (bulkScheduleMode) loadScheduledPosts(); }
+  };
+
+  const handleDeleteScheduled = async (id) => {
+    try { await api.deleteScheduledPost(id); showToast('Post removed'); setConfirmDeleteId(null); loadScheduledPosts(); }
+    catch (err) { showToast('Delete failed: ' + err.message, 'error'); setConfirmDeleteId(null); }
+  };
+
+  const handleDeleteAll = async () => {
+    try { const res = await api.deleteAllScheduledPosts(); showToast(`Deleted ${res.deleted} post(s)`); setConfirmDeleteAll(false); loadScheduledPosts(); }
+    catch (err) { showToast('Delete all failed: ' + err.message, 'error'); setConfirmDeleteAll(false); }
+  };
+
+  const startEditPost = (post) => {
+    setEditingPostId(post.id); setEditCaption(post.caption || '');
+    const dt = new Date(post.scheduledAt);
+    setEditDate(`${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, '0')}-${String(dt.getDate()).padStart(2, '0')}`);
+    setEditTime(`${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`);
+  };
+  const cancelEdit = () => { setEditingPostId(null); setEditCaption(''); setEditDate(''); setEditTime(''); };
+
+  const handleSaveEdit = async () => {
+    if (!editingPostId || !editDate || !editTime) { showToast('Set date and time', 'error'); return; }
+    const scheduledAt = new Date(`${editDate}T${editTime}`);
+    if (scheduledAt <= new Date()) { showToast('Scheduled time must be in the future', 'error'); return; }
+    setSavingEdit(true);
+    try {
+      const res = await api.updateScheduledPost(editingPostId, { caption: editCaption, scheduledAt: scheduledAt.toISOString() });
+      if (!res.success) throw new Error(res.message || 'Update failed');
+      showToast('Post updated & synced'); cancelEdit(); loadScheduledPosts();
+    } catch (err) { showToast('Update failed: ' + err.message, 'error'); }
+    finally { setSavingEdit(false); }
+  };
+
+  const canProceed = () => { if (activeStep === 0) return !!file && !!contentType && !!selectedAccount; return true; };
+  const selectedAcct = igAccounts.find(a => a.id === selectedAccount);
+  const selectedType = CONTENT_TYPES.find(t => t.value === contentType);
+
+  const bulkStats = {
+    total: bulkFiles.length,
+    pending: bulkFiles.filter(f => f.status === 'pending').length,
+    done: bulkFiles.filter(f => f.status === 'done').length,
+    scheduled: bulkFiles.filter(f => f.status === 'scheduled').length,
+    errors: bulkFiles.filter(f => f.status === 'error').length,
+    active: bulkFiles.filter(f => ['uploading','creating','processing','publishing','scheduling'].includes(f.status)).length,
+  };
+
+  const fmtLocalDate = (iso) => iso ? new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+
+  const sPostsCounts = {
+    all: scheduledPosts.length,
+    pending: scheduledPosts.filter(p => p.status === 'pending').length,
+    publishing: scheduledPosts.filter(p => p.status === 'publishing').length,
+    published: scheduledPosts.filter(p => p.status === 'published').length,
+    failed: scheduledPosts.filter(p => p.status === 'failed').length,
+  };
+  const filteredScheduled = scheduledPosts.filter(p => statusFilter === 'all' || p.status === statusFilter).sort((a, b) => new Date(b.scheduledAt) - new Date(a.scheduledAt));
+
+  return (
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Upload className="h-7 w-7 text-pink-500" />
+          <h1 className="text-2xl font-bold tracking-tight">Upload Content</h1>
+        </div>
+        {publishStatus === 'done' && uploadMode === 'single' && (
+          <Button size="sm" onClick={resetAll} style={{ background: 'linear-gradient(135deg, #F58529, #DD2A7B, #8134AF)' }} className="text-white">Upload Another</Button>
+        )}
+      </div>
+
+      {igAccounts.length === 0 && (
+        <Alert><AlertDescription>No Instagram accounts found. Add an account in the Accounts section first.</AlertDescription></Alert>
+      )}
+      {!cloudConfig && (
+        <Alert><AlertDescription><strong>Cloudinary CDN required</strong> — Configure it in <strong>Settings</strong> to enable uploads.</AlertDescription></Alert>
+      )}
+
+      {/* Mode Tabs */}
+      <Tabs value={uploadMode} onValueChange={setUploadMode}>
+        <TabsList>
+          <TabsTrigger value="single" className="gap-2"><Upload className="h-4 w-4" />Single Upload</TabsTrigger>
+          <TabsTrigger value="bulk" className="gap-2">
+            <FolderUp className="h-4 w-4" />
+            Bulk Upload
+            {bulkFiles.length > 0 && <span className="ml-1 bg-amber-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">{bulkFiles.length}</span>}
+          </TabsTrigger>
+        </TabsList>
+
+        {/* ===== SINGLE UPLOAD ===== */}
+        <TabsContent value="single" className="mt-4">
+          {/* Stepper */}
+          <div className="flex items-center gap-2 mb-6">
+            {PUBLISH_STEPS.map((label, i) => (
+              <React.Fragment key={label}>
+                <div className={cn('flex items-center gap-2 text-sm font-medium', i === activeStep ? 'text-foreground' : i < activeStep ? 'text-primary' : 'text-muted-foreground')}>
+                  <span className={cn('h-7 w-7 rounded-full flex items-center justify-center text-xs font-bold border-2', i === activeStep ? 'border-primary bg-primary text-primary-foreground' : i < activeStep ? 'border-primary bg-primary text-primary-foreground' : 'border-muted-foreground/30')}>{i + 1}</span>
+                  <span className="hidden sm:block">{label}</span>
+                </div>
+                {i < PUBLISH_STEPS.length - 1 && <div className={cn('flex-1 h-0.5 rounded', i < activeStep ? 'bg-primary' : 'bg-border')} />}
+              </React.Fragment>
+            ))}
+          </div>
+
+          {/* Step 0: Select Media */}
+          {activeStep === 0 && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Platform & Account */}
+                <MainCard title="Platform & Account">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold text-white" style={{ background: 'linear-gradient(135deg, #F58529, #DD2A7B, #8134AF, #515BD4)' }}>
+                        <Camera className="h-3 w-3" /> Instagram
+                      </span>
+                      <span className="text-xs text-muted-foreground">YouTube coming soon</span>
+                    </div>
+                    <Select value={selectedAccount} onValueChange={setSelectedAccount}>
+                      <SelectTrigger>
+                        {selectedAcct ? (
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Avatar className="size-5 shrink-0"><AvatarImage src={selectedAcct.profilePictureUrl || selectedAcct.thumbnailUrl} /><AvatarFallback className="text-[9px] bg-gradient-to-br from-pink-500 to-purple-600 text-white">{(selectedAcct.title || selectedAcct.username || '?')[0].toUpperCase()}</AvatarFallback></Avatar>
+                            <span className="text-sm truncate">{selectedAcct.title || selectedAcct.username}</span>
+                            {selectedAcct.username && <span className="text-xs text-muted-foreground shrink-0">@{selectedAcct.username}</span>}
+                          </div>
+                        ) : (
+                          <SelectValue placeholder="Select account…" />
                         )}
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          {igAccounts.map(a => (
+                            <SelectItem key={a.id} value={a.id}>
+                              <div className="flex items-center gap-2">
+                                <Avatar className="size-5 shrink-0"><AvatarImage src={a.profilePictureUrl || a.thumbnailUrl} /><AvatarFallback className="text-[9px] bg-gradient-to-br from-pink-500 to-purple-600 text-white">{(a.title || a.username || '?')[0].toUpperCase()}</AvatarFallback></Avatar>
+                                <span className="text-sm font-medium truncate">{a.title || a.username}</span>
+                                {a.username && <span className="text-xs text-muted-foreground shrink-0">@{a.username}</span>}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </MainCard>
 
-                        {/* Action Buttons */}
-                        <Grid size={12}>
-                            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
-                                {bulkProcessing ? (
-                                    <Button variant="contained" color="error" onClick={handleCancelBulk}
-                                        startIcon={<Stop />}
-                                        sx={{ px: 4 }}>
-                                        Cancel
-                                    </Button>
-                                ) : (
-                                    <Button variant="contained" onClick={handleBulkProcess}
-                                        startIcon={bulkScheduleMode ? <Schedule /> : <Send />}
-                                        disabled={bulkFiles.filter(f => f.status === 'pending').length === 0 || !bulkAccount || !bulkContentType}
-                                        sx={{
-                                            background: bulkScheduleMode ? 'linear-gradient(135deg, #F58529, #FF6B35)' : IG_GRADIENT,
-                                            px: 4, py: 1.2, fontSize: 15,
-                                        }}>
-                                        {bulkScheduleMode
-                                            ? `Schedule ${bulkFiles.filter(f => f.status === 'pending').length} Posts`
-                                            : `Publish ${bulkFiles.filter(f => f.status === 'pending').length} Posts Now`}
-                                    </Button>
-                                )}
-                            </Box>
-                        </Grid>
-                    </Grid>
-                </Box>
+                {/* Content Type */}
+                <MainCard title="Content Type">
+                  <div className="grid grid-cols-3 gap-2">
+                    {CONTENT_TYPES.map(t => {
+                      const Icon = t.icon;
+                      return (
+                        <button key={t.value} onClick={() => { setContentType(t.value); clearFile(); }}
+                          className={cn('flex flex-col items-center gap-1.5 p-3 rounded-lg border-2 cursor-pointer transition-all text-center', contentType === t.value ? 'border-current' : 'border-border hover:border-muted-foreground/50')}
+                          style={{ borderColor: contentType === t.value ? t.color : undefined, background: contentType === t.value ? `${t.color}15` : undefined }}>
+                          <Icon className="h-5 w-5" style={{ color: t.color }} />
+                          <span className="text-xs font-semibold">{t.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {selectedType && <p className="text-xs text-muted-foreground mt-2">{selectedType.desc}</p>}
+                </MainCard>
+              </div>
+
+              {/* File Upload */}
+              <MainCard title="Select File">
+                {!file ? (
+                  <button onClick={() => contentType && fileInputRef.current?.click()}
+                    className={cn('w-full border-2 border-dashed rounded-xl p-10 text-center transition-all', contentType ? 'cursor-pointer hover:border-pink-500 hover:bg-pink-500/5 border-border' : 'cursor-not-allowed border-border opacity-50')}>
+                    <Upload className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
+                    <p className="font-medium">{contentType ? 'Click to select file' : 'Choose a content type first'}</p>
+                    {selectedType && <p className="text-xs text-muted-foreground mt-1">{selectedType.desc}</p>}
+                  </button>
+                ) : (
+                  <div className="flex gap-4 items-start">
+                    <div className="relative w-48 flex-shrink-0 rounded-lg overflow-hidden">
+                      {file.type.startsWith('video/') ? (
+                        <video src={filePreview} controls muted className="w-full max-h-64 object-contain bg-black rounded-lg" />
+                      ) : (
+                        <img src={filePreview} className="w-full max-h-64 object-contain rounded-lg bg-muted" alt="" />
+                      )}
+                      <button onClick={clearFile} className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-red-500 transition-colors"><X className="h-3 w-3" /></button>
+                    </div>
+                    <div>
+                      <p className="font-semibold">{file.name}</p>
+                      <p className="text-sm text-muted-foreground">{(file.size / (1024 * 1024)).toFixed(2)} MB · {file.type}</p>
+                      <span className="inline-block mt-2 px-2 py-0.5 rounded text-xs font-semibold border" style={{ borderColor: `${selectedType?.color}50`, color: selectedType?.color, background: `${selectedType?.color}15` }}>{selectedType?.label}</span>
+                    </div>
+                  </div>
+                )}
+                <input ref={fileInputRef} type="file" hidden accept={selectedType?.accept || '*'} onChange={handleFileSelect} />
+              </MainCard>
+
+              <div className="flex justify-end">
+                <Button disabled={!canProceed()} onClick={() => setActiveStep(1)} style={{ background: 'linear-gradient(135deg, #F58529, #DD2A7B, #8134AF)' }} className="text-white px-6">Next: Configure Settings</Button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 1: Configure */}
+          {activeStep === 1 && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {/* Caption & Details */}
+                <div className="md:col-span-2">
+                  <MainCard title="Caption & Details">
+                    <div className="space-y-3">
+                      <div>
+                        <Textarea value={caption} onChange={e => setCaption(e.target.value)} placeholder="Write your caption… #hashtags @mentions" rows={4} />
+                        <p className="text-xs text-muted-foreground mt-1">{caption.length}/2,200 characters</p>
+                      </div>
+                      {contentType === 'IMAGE' && (
+                        <div className="relative"><ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input className="pl-9" value={altText} onChange={e => setAltText(e.target.value)} placeholder="Alt text for accessibility" /></div>
+                      )}
+                      <div className="relative"><UserPlus className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input className="pl-9" value={collaborators} onChange={e => setCollaborators(e.target.value)} placeholder="Collaborators (username1, username2)" /></div>
+                      <div className="relative"><AtSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input className="pl-9" value={userTags} onChange={e => setUserTags(e.target.value)} placeholder="Tag users (@username1, @username2)" /></div>
+                      <div className="relative"><MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input className="pl-9" value={locationId} onChange={e => setLocationId(e.target.value)} placeholder="Location ID (Facebook Page ID)" /></div>
+                    </div>
+                  </MainCard>
+                </div>
+
+                {/* Settings & Summary */}
+                <MainCard title={contentType === 'REELS' ? 'Reel Settings' : 'Post Settings'}>
+                  <div className="space-y-3">
+                    {contentType === 'REELS' && (
+                      <>
+                        <div className="flex items-center justify-between">
+                          <Label className="text-sm">Share to Feed</Label>
+                          <Switch checked={shareToFeed} onCheckedChange={setShareToFeed} />
+                        </div>
+                        <div className="relative"><Music className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input className="pl-9" value={audioName} onChange={e => setAudioName(e.target.value)} placeholder="Audio name (optional)" /></div>
+                        <div className="relative"><Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input className="pl-9 " type="number" value={thumbOffset} onChange={e => setThumbOffset(e.target.value)} placeholder="Thumbnail offset (ms)" /></div>
+                        <div>
+                          <Label className="text-sm font-medium mb-1.5 block">Cover Image (optional)</Label>
+                          {!coverFile ? (
+                            <Button variant="outline" size="sm" onClick={() => coverInputRef.current?.click()} className="gap-2"><Camera className="h-3.5 w-3.5" />Select Cover</Button>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <img src={coverPreview} className="h-10 w-10 rounded object-cover" alt="" />
+                              <span className="text-xs flex-1 truncate">{coverFile.name}</span>
+                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={clearCover}><X className="h-3 w-3" /></Button>
+                            </div>
+                          )}
+                          <input ref={coverInputRef} type="file" hidden accept="image/jpeg" onChange={handleCoverSelect} />
+                        </div>
+                      </>
+                    )}
+                    <Separator />
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <p>Account: <strong className="text-foreground">{selectedAcct?.title || selectedAcct?.username || '—'}</strong></p>
+                      <p>Type: <strong style={{ color: selectedType?.color }}>{selectedType?.label}</strong></p>
+                      <p>File: <strong className="text-foreground">{file?.name || '—'}</strong></p>
+                      <p>Size: <strong className="text-foreground">{file ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` : '—'}</strong></p>
+                      {scheduleMode && scheduleDate && scheduleTime && <p>Schedule: <strong className="text-amber-600">{new Date(`${scheduleDate}T${scheduleTime}`).toLocaleString()}</strong></p>}
+                    </div>
+                  </div>
+                </MainCard>
+              </div>
+
+              {/* Schedule */}
+              <MainCard>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2"><Calendar className="h-5 w-5 text-amber-500" /><h3 className="font-semibold">Schedule for Later</h3></div>
+                  <div className="flex items-center gap-2"><Label className="text-sm">{scheduleMode ? 'Scheduled' : 'Publish Now'}</Label><Switch checked={scheduleMode} onCheckedChange={setScheduleMode} /></div>
+                </div>
+                {scheduleMode && (
+                  <div className="space-y-3">
+                    <div className="flex gap-3 flex-wrap">
+                      <Input type="date" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} min={new Date().toISOString().split('T')[0]} className="w-44" />
+                      <Input type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} className="w-36" />
+                      {scheduleDate && scheduleTime && (
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 border border-amber-200 text-amber-700">
+                          <Calendar className="h-3 w-3" />{new Date(`${scheduleDate}T${scheduleTime}`).toLocaleString()}
+                        </span>
+                      )}
+                    </div>
+                    <Alert><AlertDescription><strong>Cloud Scheduling.</strong> Your file is uploaded to Cloudinary now. With <strong>GitHub Actions</strong> configured, posts publish even when your PC is off.</AlertDescription></Alert>
+                  </div>
+                )}
+              </MainCard>
+
+              <div className="flex justify-between">
+                <Button variant="outline" onClick={() => setActiveStep(0)}>Back</Button>
+                <Button onClick={handlePublish} disabled={uploading || (scheduleMode && (!scheduleDate || !scheduleTime))}
+                  style={{ background: scheduleMode ? 'linear-gradient(135deg, #F58529, #FF6B35)' : 'linear-gradient(135deg, #F58529, #DD2A7B, #8134AF)' }} className="text-white gap-2 px-6">
+                  {uploading ? <Spinner /> : (scheduleMode ? <Calendar data-icon="inline-start" /> : <Send data-icon="inline-start" />)}
+                  {scheduleMode ? 'Schedule Post' : 'Upload & Publish Now'}
+                </Button>
+              </div>
+            </div>
+          )}
+
+          {/* Step 2: Progress */}
+          {activeStep === 2 && (
+            <MainCard>
+              <div className="flex flex-col items-center text-center py-8 gap-3">
+                {publishStatus === 'uploading-cloudinary' && (
+                  <>
+                    <Upload className="h-14 w-14 text-blue-500" />
+                    <h3 className="text-lg font-bold">Uploading to CDN…</h3>
+                    <div className="w-72"><Progress value={uploadProgress} className="h-2" /></div>
+                    <p className="text-sm text-muted-foreground">{uploadProgress}% uploaded</p>
+                  </>
+                )}
+                {(publishStatus === 'creating-container' || publishStatus === 'publishing' || publishStatus === 'scheduling') && (
+                  <>
+                    <Spinner className="size-12" />
+                    <h3 className="text-lg font-bold">{publishStatus === 'creating-container' ? 'Creating Instagram Container…' : publishStatus === 'scheduling' ? 'Saving Schedule…' : 'Publishing…'}</h3>
+                    <p className="text-sm text-muted-foreground">{statusMessage}</p>
+                  </>
+                )}
+                {publishStatus === 'processing' && (
+                  <>
+                    <Spinner className="size-12" />
+                    <h3 className="text-lg font-bold">Processing Media…</h3>
+                    <p className="text-sm text-muted-foreground">{statusMessage}</p>
+                    <p className="text-xs text-muted-foreground">This may take a minute for videos</p>
+                  </>
+                )}
+                {publishStatus === 'done' && (
+                  <>
+                    <CheckCircle2 className="h-16 w-16 text-green-500" />
+                    <h3 className="text-xl font-bold text-green-600">Published Successfully!</h3>
+                    <p className="text-sm text-muted-foreground">Your {selectedType?.label?.toLowerCase()} is now live on Instagram.</p>
+                    {publishedMediaId && <Badge variant="outline">Media ID: {publishedMediaId}</Badge>}
+                    <div className="flex gap-2 mt-2">
+                      <Button onClick={resetAll} style={{ background: 'linear-gradient(135deg, #F58529, #DD2A7B, #8134AF)' }} className="text-white">Upload Another</Button>
+                      {selectedAcct?.username && <Button variant="outline" onClick={() => window.open(`https://instagram.com/${selectedAcct.username}`, '_blank')} className="gap-2"><Camera className="h-4 w-4" />View Profile</Button>}
+                    </div>
+                  </>
+                )}
+                {publishStatus === 'scheduled' && (
+                  <>
+                    <Calendar className="h-16 w-16 text-amber-500" />
+                    <h3 className="text-xl font-bold text-amber-600">Post Scheduled!</h3>
+                    <p className="text-sm text-muted-foreground">Your {selectedType?.label?.toLowerCase()} has been scheduled.</p>
+                    <p className="font-semibold">{statusMessage}</p>
+                    <Alert className="max-w-sm text-left"><AlertDescription>Your post is synced and will auto-publish at the scheduled time. With <strong>GitHub Actions</strong> it publishes even when your PC is off.</AlertDescription></Alert>
+                    <div className="flex gap-2 mt-2">
+                      <Button onClick={resetAll} style={{ background: 'linear-gradient(135deg, #F58529, #FF6B35)' }} className="text-white">Schedule Another</Button>
+                    </div>
+                  </>
+                )}
+                {publishStatus === 'error' && (
+                  <>
+                    <AlertCircle className="h-16 w-16 text-red-500" />
+                    <h3 className="text-xl font-bold text-red-600">{scheduleMode ? 'Schedule Failed' : 'Publish Failed'}</h3>
+                    <p className="text-sm text-muted-foreground max-w-md">{statusMessage}</p>
+                    <div className="flex gap-2 mt-2">
+                      <Button onClick={() => { setActiveStep(1); setPublishStatus(''); }} style={{ background: 'linear-gradient(135deg, #F58529, #DD2A7B, #8134AF)' }} className="text-white">Try Again</Button>
+                      <Button variant="outline" onClick={resetAll}>Start Over</Button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </MainCard>
+          )}
+        </TabsContent>
+
+        {/* ===== BULK UPLOAD ===== */}
+        <TabsContent value="bulk" className="mt-4">
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Account & Type */}
+              <MainCard title="Account & Type">
+                <div className="space-y-3">
+                  {(() => {
+                    const bulkAcct = igAccounts.find(a => a.id === bulkAccount);
+                    return (
+                      <Select value={bulkAccount} onValueChange={setBulkAccount} disabled={bulkProcessing}>
+                        <SelectTrigger>
+                          {bulkAcct ? (
+                            <div className="flex items-center gap-2 min-w-0">
+                              <Avatar className="size-5 shrink-0"><AvatarImage src={bulkAcct.profilePictureUrl || bulkAcct.thumbnailUrl} /><AvatarFallback className="text-[9px] bg-gradient-to-br from-pink-500 to-purple-600 text-white">{(bulkAcct.title || bulkAcct.username || '?')[0].toUpperCase()}</AvatarFallback></Avatar>
+                              <span className="text-sm truncate">{bulkAcct.title || bulkAcct.username}</span>
+                              {bulkAcct.username && <span className="text-xs text-muted-foreground shrink-0">@{bulkAcct.username}</span>}
+                            </div>
+                          ) : (
+                            <SelectValue placeholder="Select account…" />
+                          )}
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectGroup>
+                            {igAccounts.map(a => (
+                              <SelectItem key={a.id} value={a.id}>
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="size-5 shrink-0"><AvatarImage src={a.profilePictureUrl || a.thumbnailUrl} /><AvatarFallback className="text-[9px] bg-gradient-to-br from-pink-500 to-purple-600 text-white">{(a.title || a.username || '?')[0].toUpperCase()}</AvatarFallback></Avatar>
+                                  <span className="text-sm font-medium truncate">{a.title || a.username}</span>
+                                  {a.username && <span className="text-xs text-muted-foreground shrink-0">@{a.username}</span>}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectGroup>
+                        </SelectContent>
+                      </Select>
+                    );
+                  })()}
+                  <div className="grid grid-cols-3 gap-2">
+                    {CONTENT_TYPES.map(t => {
+                      const Icon = t.icon;
+                      return (
+                        <button key={t.value} onClick={() => !bulkProcessing && setBulkContentType(t.value)}
+                          className={cn('flex flex-col items-center gap-1 p-2.5 rounded-lg border-2 transition-all text-center', bulkProcessing && 'opacity-50 cursor-not-allowed', bulkContentType === t.value ? 'border-current' : 'border-border hover:border-muted-foreground/50')}
+                          style={{ borderColor: bulkContentType === t.value ? t.color : undefined, background: bulkContentType === t.value ? `${t.color}15` : undefined }}>
+                          <Icon className="h-4 w-4" style={{ color: t.color }} />
+                          <span className="text-[11px] font-semibold">{t.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </MainCard>
+
+              {/* Shared Settings */}
+              <MainCard title="Shared Settings">
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <Textarea value={bulkSharedCaption} onChange={e => setBulkSharedCaption(e.target.value)} placeholder="Shared caption for all files…" rows={2} disabled={bulkProcessing} className="flex-1" />
+                    <Tooltip>
+                      <TooltipTrigger render={<Button variant="outline" size="icon" onClick={applySharedCaption} disabled={!bulkSharedCaption || bulkProcessing} />}>
+                        <Copy />
+                      </TooltipTrigger>
+                      <TooltipContent>Apply to all pending</TooltipContent>
+                    </Tooltip>
+                  </div>
+                  <div className="relative"><UserPlus className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input className="pl-9" value={bulkCollaborators} onChange={e => setBulkCollaborators(e.target.value)} placeholder="Collaborators (all posts)" disabled={bulkProcessing} /></div>
+                  <div className="relative"><AtSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" /><Input className="pl-9" value={bulkUserTags} onChange={e => setBulkUserTags(e.target.value)} placeholder="Tag users (all posts)" disabled={bulkProcessing} /></div>
+                  {bulkContentType === 'REELS' && (
+                    <div className="flex items-center justify-between"><Label className="text-sm">Share Reels to Feed</Label><Switch checked={bulkShareToFeed} onCheckedChange={setBulkShareToFeed} disabled={bulkProcessing} /></div>
+                  )}
+                </div>
+              </MainCard>
+            </div>
+
+            {/* File Picker */}
+            <MainCard>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2"><FolderUp className="h-5 w-5 text-pink-500" /><h3 className="font-semibold">Files ({bulkFiles.length})</h3></div>
+                <div className="flex gap-2">
+                  {bulkFiles.length > 0 && !bulkProcessing && (
+                    <Button size="sm" variant="outline" onClick={clearBulkFiles} className="gap-1.5 text-red-500 border-red-200 hover:bg-red-50"><Trash2 className="h-3.5 w-3.5" />Clear All</Button>
+                  )}
+                  <Button size="sm" onClick={() => bulkFileInputRef.current?.click()} disabled={bulkProcessing} style={{ background: 'linear-gradient(135deg, #F58529, #DD2A7B, #8134AF)' }} className="text-white gap-1.5"><Plus className="h-3.5 w-3.5" />Add Files</Button>
+                </div>
+              </div>
+              <input ref={bulkFileInputRef} type="file" hidden multiple accept={CONTENT_TYPES.find(t => t.value === bulkContentType)?.accept || '*'} onChange={handleBulkFilesSelect} />
+
+              {bulkFiles.length === 0 ? (
+                <button onClick={() => bulkFileInputRef.current?.click()} className="w-full border-2 border-dashed border-border rounded-xl p-8 text-center cursor-pointer hover:border-pink-500 hover:bg-pink-500/5 transition-all">
+                  <FolderUp className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
+                  <p className="font-medium">Click to select multiple files</p>
+                  <p className="text-xs text-muted-foreground mt-1">Select multiple videos or images at once</p>
+                </button>
+              ) : (
+                <div className="space-y-2 max-h-[480px] overflow-y-auto pr-1">
+                  {bulkFiles.map((item, idx) => {
+                    const isActive = ['uploading','creating','processing','publishing','scheduling'].includes(item.status);
+                    return (
+                      <div key={item.id} className={cn('flex items-start gap-3 p-3 rounded-lg border transition-all', isActive ? 'bg-card/50' : 'bg-muted/20 border-border')}>
+                        <div className="w-14 h-14 flex-shrink-0 rounded-lg overflow-hidden bg-muted relative">
+                          {item.file.type.startsWith('video/') ? <video src={item.preview} muted className="w-full h-full object-cover" /> : <img src={item.preview} className="w-full h-full object-cover" alt="" />}
+                          <span className="absolute top-0.5 left-0.5 bg-black/70 text-white text-[9px] font-bold px-1 rounded">#{idx + 1}</span>
+                          {item.status === 'uploading' && <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/40"><div className="h-full bg-gradient-to-r from-orange-500 to-pink-500 transition-all" style={{ width: `${item.progress}%` }} /></div>}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-sm font-semibold truncate">{item.file.name}</span>
+                            <span className="text-xs text-muted-foreground shrink-0">{(item.file.size / (1024 * 1024)).toFixed(1)} MB</span>
+                          </div>
+                          {item.status === 'pending' ? (
+                            <Textarea value={item.caption} onChange={e => updateBulkFileCaption(item.id, e.target.value)} placeholder={`Caption for file #${idx + 1}…`} rows={1} className="text-xs" />
+                          ) : (
+                            <p className="text-xs text-muted-foreground">{item.caption || '(no caption)'}</p>
+                          )}
+                          {item.status === 'uploading' && <Progress value={item.progress} className="h-1 mt-1" />}
+                          {item.error && <p className="text-xs text-red-500 mt-0.5">{item.error}</p>}
+                          {item.mediaId && <p className="text-xs text-green-600 mt-0.5">Media ID: {item.mediaId}</p>}
+                        </div>
+                        <div className="flex items-center gap-1.5 flex-shrink-0">
+                          {isActive && <Spinner />}
+                          <BulkStatusBadge status={item.status} />
+                          {item.status === 'pending' && !bulkProcessing && (
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground hover:text-red-500" onClick={() => removeBulkFile(item.id)}><X className="h-3 w-3" /></Button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </MainCard>
+
+            {/* Bulk Schedule */}
+            <MainCard>
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2"><Calendar className="h-5 w-5 text-amber-500" /><h3 className="font-semibold">Bulk Schedule</h3></div>
+                <div className="flex items-center gap-2"><Label className="text-sm">{bulkScheduleMode ? 'Schedule All' : 'Publish All Now'}</Label><Switch checked={bulkScheduleMode} onCheckedChange={setBulkScheduleMode} disabled={bulkProcessing} /></div>
+              </div>
+              {bulkScheduleMode && (
+                <div className="space-y-3">
+                  <div className="flex gap-3 flex-wrap">
+                    <Input type="date" value={bulkStartDate} onChange={e => setBulkStartDate(e.target.value)} min={new Date().toISOString().split('T')[0]} className="w-44" disabled={bulkProcessing} />
+                    <Input type="time" value={bulkStartTime} onChange={e => setBulkStartTime(e.target.value)} className="w-36" disabled={bulkProcessing} />
+                    <Select value={String(bulkInterval)} onValueChange={v => setBulkInterval(Number(v))} disabled={bulkProcessing}>
+                      <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectGroup>
+                          <SelectItem value="720">Every 12 Hours</SelectItem>
+                          <SelectItem value="1440">Once a Day</SelectItem>
+                          <SelectItem value="2880">Every 2 Days</SelectItem>
+                          <SelectItem value="4320">Every 3 Days</SelectItem>
+                          <SelectItem value="10080">Once a Week</SelectItem>
+                        </SelectGroup>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  {bulkStartDate && bulkStartTime && bulkStats.pending > 0 && (
+                    <Alert><AlertDescription>
+                      <strong>Schedule Preview:</strong> {bulkStats.pending} files starting at <strong>{new Date(`${bulkStartDate}T${bulkStartTime}`).toLocaleString()}</strong>,
+                      spaced <strong>{bulkInterval >= 1440 ? `${bulkInterval / 1440} day${bulkInterval > 1440 ? 's' : ''}` : `${bulkInterval / 60} hr${bulkInterval > 60 ? 's' : ''}`}</strong> apart.
+                      Last post at <strong>{new Date(new Date(`${bulkStartDate}T${bulkStartTime}`).getTime() + (bulkStats.pending - 1) * bulkInterval * 60000).toLocaleString()}</strong>.
+                    </AlertDescription></Alert>
+                  )}
+                </div>
+              )}
+              {!bulkScheduleMode && bulkStats.pending > 0 && (
+                <Alert className="mt-2"><AlertDescription><strong>Immediate publish:</strong> {bulkStats.pending} files will be uploaded and published one-by-one. Rate limit: 100 posts/24hr.</AlertDescription></Alert>
+              )}
+            </MainCard>
+
+            {/* Progress summary */}
+            {(bulkProcessing || bulkStats.done > 0 || bulkStats.scheduled > 0 || bulkStats.errors > 0) && (
+              <MainCard title={bulkProcessing ? 'Processing…' : 'Results'}>
+                <div className="flex gap-2 flex-wrap mb-3">
+                  <Badge variant="outline">{bulkStats.total} Total</Badge>
+                  {bulkStats.done > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-green-50 border border-green-200 text-green-700"><CheckCircle2 className="h-3 w-3" />{bulkStats.done} Published</span>}
+                  {bulkStats.scheduled > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 border border-amber-200 text-amber-700"><Calendar className="h-3 w-3" />{bulkStats.scheduled} Scheduled</span>}
+                  {bulkStats.errors > 0 && <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold bg-red-50 border border-red-200 text-red-700"><AlertCircle className="h-3 w-3" />{bulkStats.errors} Failed</span>}
+                  {bulkStats.pending > 0 && <Badge variant="secondary">{bulkStats.pending} Pending</Badge>}
+                </div>
+                {bulkProcessing && <Progress value={((bulkStats.done + bulkStats.scheduled + bulkStats.errors) / bulkStats.total) * 100} className="h-2" />}
+              </MainCard>
             )}
 
-            {/* Scheduled Posts Table */}
-            {scheduledPosts.length > 0 && (() => {
-                const counts = {
-                    all: scheduledPosts.length,
-                    pending: scheduledPosts.filter(p => p.status === 'pending').length,
-                    publishing: scheduledPosts.filter(p => p.status === 'publishing').length,
-                    published: scheduledPosts.filter(p => p.status === 'published').length,
-                    failed: scheduledPosts.filter(p => p.status === 'failed').length,
-                };
-                const filtered = scheduledPosts
-                    .filter(p => statusFilter === 'all' || p.status === statusFilter)
-                    .sort((a, b) => new Date(b.scheduledAt) - new Date(a.scheduledAt));
+            <div className="flex justify-end">
+              {bulkProcessing ? (
+                <Button variant="destructive" onClick={() => { bulkCancelRef.current = true; setBulkCancelled(true); }} className="gap-2 px-6"><Square className="h-4 w-4" />Cancel</Button>
+              ) : (
+                <Button onClick={handleBulkProcess} disabled={bulkStats.pending === 0 || !bulkAccount || !bulkContentType}
+                  style={{ background: bulkScheduleMode ? 'linear-gradient(135deg, #F58529, #FF6B35)' : 'linear-gradient(135deg, #F58529, #DD2A7B, #8134AF)' }} className="text-white gap-2 px-6">
+                  {bulkScheduleMode ? <Calendar className="h-4 w-4" /> : <Send className="h-4 w-4" />}
+                  {bulkScheduleMode ? `Schedule ${bulkStats.pending} Posts` : `Publish ${bulkStats.pending} Posts Now`}
+                </Button>
+              )}
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
 
-                const cellSx = { borderColor: 'rgba(255,255,255,0.06)', py: 1, px: 1.5 };
-                const headCellSx = { ...cellSx, fontWeight: 700, fontSize: 12, color: 'text.secondary', textTransform: 'uppercase', letterSpacing: 0.5, bgcolor: 'rgba(255,255,255,0.03)' };
-
-                const statusChip = (status) => {
-                    const map = {
-                        published:  { label: 'Published',   bg: '#4CAF5022', color: '#4CAF50' },
-                        failed:     { label: 'Failed',      bg: '#f4433622', color: '#f44336' },
-                        publishing: { label: 'Publishing…', bg: '#FF980022', color: '#FF9800' },
-                        pending:    { label: 'Pending',     bg: '#F5852922', color: '#F58529' },
-                    };
-                    const s = map[status] || map.pending;
-                    return <Chip size="small" label={s.label} sx={{ fontWeight: 600, fontSize: 11, bgcolor: s.bg, color: s.color }} />;
-                };
-
-                const fmtDate = (iso) => iso ? new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—';
-
+      {/* Scheduled Posts Table */}
+      {scheduledPosts.length > 0 && (
+        <MainCard content={false}>
+          <div className="px-5 py-4 flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2"><Calendar className="h-5 w-5 text-amber-500" /><h3 className="font-bold">Scheduled Posts</h3></div>
+            <div className="flex gap-2">
+              <Button size="sm" variant="ghost" onClick={loadScheduledPosts} className="gap-1.5 text-muted-foreground"><Calendar className="h-3.5 w-3.5" />Refresh</Button>
+              <Button size="sm" variant="outline" onClick={() => setConfirmDeleteAll(true)} className="gap-1.5 text-red-500 border-red-200 hover:bg-red-50"><Trash className="h-3.5 w-3.5" />Delete All</Button>
+            </div>
+          </div>
+          <Separator />
+          <div className="px-5 py-3 flex gap-2 flex-wrap">
+            {[
+              { label: 'Total', value: sPostsCounts.all, color: 'default', filter: 'all' },
+              { label: 'Pending', value: sPostsCounts.pending, cls: 'bg-amber-50 border-amber-200 text-amber-700', filter: 'pending' },
+              { label: 'Publishing', value: sPostsCounts.publishing, cls: 'bg-orange-50 border-orange-200 text-orange-700', filter: 'publishing' },
+              { label: 'Published', value: sPostsCounts.published, cls: 'bg-green-50 border-green-200 text-green-700', filter: 'published' },
+              { label: 'Failed', value: sPostsCounts.failed, cls: 'bg-red-50 border-red-200 text-red-700', filter: 'failed' },
+            ].map(s => (
+              <button key={s.filter} onClick={() => setStatusFilter(s.filter)}
+                className={cn('inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border cursor-pointer transition-all', statusFilter === s.filter ? (s.cls || 'bg-muted text-foreground border-border') : 'bg-muted/30 text-muted-foreground border-transparent hover:border-border')}>
+                {s.label}: {s.value}
+              </button>
+            ))}
+          </div>
+          <Separator />
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-8">#</TableHead>
+                <TableHead>Account</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead className="min-w-48">Caption</TableHead>
+                <TableHead className="min-w-40">Scheduled At</TableHead>
+                <TableHead className="min-w-40">Published At</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead className="min-w-40">Error</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredScheduled.map((post, idx) => {
+                const acct = igAccounts.find(a => a.id === post.accountId);
+                const typeInfo = CONTENT_TYPES.find(t => t.value === post.mediaType);
+                const Icon = typeInfo?.icon || ImageIcon;
+                const isEditing = editingPostId === post.id;
+                const canEdit = post.status === 'pending' || post.status === 'scheduled';
+                const isPastDue = post.status === 'pending' && new Date(post.scheduledAt) < new Date();
                 return (
-                    <Card sx={{ mt: 3 }}>
-                        <CardContent sx={{ pb: '12px !important' }}>
-                            {/* Header */}
-                            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2, flexWrap: 'wrap', gap: 1 }}>
-                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                                    <CalendarMonth sx={{ color: '#F58529' }} />
-                                    <Typography variant="h6" sx={{ fontWeight: 700 }}>Scheduled Posts</Typography>
-                                </Box>
-                                <Box sx={{ display: 'flex', gap: 1 }}>
-                                    <Button size="small" onClick={loadScheduledPosts} startIcon={<Schedule />}
-                                        sx={{ color: 'text.secondary' }}>Refresh</Button>
-                                    <Button size="small" variant="outlined" color="error"
-                                        startIcon={<DeleteSweep />}
-                                        onClick={() => setConfirmDeleteAll(true)}
-                                        sx={{ borderColor: '#f4433644', color: '#f44336', '&:hover': { borderColor: '#f44336', bgcolor: '#f4433611' } }}>
-                                        Delete All
-                                    </Button>
-                                </Box>
-                            </Box>
-
-                            {/* Stats bar */}
-                            <Box sx={{ display: 'flex', gap: 1, mb: 2, flexWrap: 'wrap' }}>
-                                {[
-                                    { label: 'Total',      value: counts.all,       color: '#aaa',     filter: 'all' },
-                                    { label: 'Pending',    value: counts.pending,    color: '#F58529',  filter: 'pending' },
-                                    { label: 'Publishing', value: counts.publishing, color: '#FF9800',  filter: 'publishing' },
-                                    { label: 'Published',  value: counts.published,  color: '#4CAF50',  filter: 'published' },
-                                    { label: 'Failed',     value: counts.failed,     color: '#f44336',  filter: 'failed' },
-                                ].map(s => (
-                                    <Chip key={s.filter} size="small"
-                                        label={`${s.label}: ${s.value}`}
-                                        onClick={() => setStatusFilter(s.filter)}
-                                        sx={{
-                                            fontWeight: 600, fontSize: 12, cursor: 'pointer',
-                                            bgcolor: statusFilter === s.filter ? `${s.color}22` : 'rgba(255,255,255,0.05)',
-                                            color: statusFilter === s.filter ? s.color : 'text.secondary',
-                                            border: statusFilter === s.filter ? `1px solid ${s.color}55` : '1px solid transparent',
-                                        }}
-                                    />
-                                ))}
-                            </Box>
-
-                            {/* Table */}
-                            <TableContainer sx={{ borderRadius: 1.5, border: '1px solid rgba(255,255,255,0.06)' }}>
-                                <Table size="small">
-                                    <TableHead>
-                                        <TableRow>
-                                            <TableCell sx={headCellSx}>#</TableCell>
-                                            <TableCell sx={headCellSx}>Account</TableCell>
-                                            <TableCell sx={headCellSx}>Type</TableCell>
-                                            <TableCell sx={{ ...headCellSx, minWidth: 200 }}>Caption</TableCell>
-                                            <TableCell sx={{ ...headCellSx, minWidth: 160 }}>Scheduled At</TableCell>
-                                            <TableCell sx={{ ...headCellSx, minWidth: 160 }}>Published At</TableCell>
-                                            <TableCell sx={headCellSx}>Status</TableCell>
-                                            <TableCell sx={{ ...headCellSx, minWidth: 180 }}>Error</TableCell>
-                                            <TableCell sx={{ ...headCellSx, textAlign: 'right' }}>Actions</TableCell>
-                                        </TableRow>
-                                    </TableHead>
-                                    <TableBody>
-                                        {filtered.map((post, idx) => {
-                                            const acct = igAccounts.find(a => a.id === post.accountId);
-                                            const typeInfo = CONTENT_TYPES.find(t => t.value === post.mediaType);
-                                            const isEditing = editingPostId === post.id;
-                                            const canEdit = post.status === 'pending' || post.status === 'scheduled';
-                                            const isPastDue = post.status === 'pending' && new Date(post.scheduledAt) < new Date();
-                                            return (
-                                                <React.Fragment key={post.id}>
-                                                    <TableRow hover sx={{
-                                                        bgcolor: isEditing ? 'rgba(245,133,41,0.05)' : 'transparent',
-                                                        '&:last-child td': { borderBottom: 0 },
-                                                    }}>
-                                                        {/* # */}
-                                                        <TableCell sx={{ ...cellSx, color: 'text.disabled', fontSize: 12 }}>{idx + 1}</TableCell>
-
-                                                        {/* Account */}
-                                                        <TableCell sx={cellSx}>
-                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                                                                {acct?.profilePictureUrl
-                                                                    ? <Avatar src={acct.profilePictureUrl} sx={{ width: 22, height: 22 }} />
-                                                                    : <Avatar sx={{ width: 22, height: 22, fontSize: 11, background: IG_GRADIENT }}>
-                                                                        {(acct?.username || '?')[0].toUpperCase()}
-                                                                      </Avatar>
-                                                                }
-                                                                <Typography variant="caption" sx={{ fontWeight: 600, whiteSpace: 'nowrap' }}>
-                                                                    {acct?.username ? `@${acct.username}` : post.accountId}
-                                                                </Typography>
-                                                            </Box>
-                                                        </TableCell>
-
-                                                        {/* Type */}
-                                                        <TableCell sx={cellSx}>
-                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, color: typeInfo?.color || '#888' }}>
-                                                                {React.cloneElement(typeInfo?.icon || <Photo />, { sx: { fontSize: 16 } })}
-                                                                <Typography variant="caption" sx={{ fontWeight: 600 }}>{typeInfo?.label || post.mediaType}</Typography>
-                                                            </Box>
-                                                        </TableCell>
-
-                                                        {/* Caption */}
-                                                        <TableCell sx={cellSx}>
-                                                            <Tooltip title={post.caption || ''} placement="top-start">
-                                                                <Typography variant="caption" sx={{
-                                                                    display: 'block', maxWidth: 240,
-                                                                    overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                                                                    color: post.caption ? 'text.primary' : 'text.disabled',
-                                                                }}>
-                                                                    {post.caption || '(no caption)'}
-                                                                </Typography>
-                                                            </Tooltip>
-                                                        </TableCell>
-
-                                                        {/* Scheduled At */}
-                                                        <TableCell sx={cellSx}>
-                                                            <Typography variant="caption" sx={{ color: isPastDue ? '#FF9800' : 'text.secondary', whiteSpace: 'nowrap' }}>
-                                                                {fmtDate(post.scheduledAt)}
-                                                            </Typography>
-                                                            {isPastDue && (
-                                                                <Typography variant="caption" sx={{ display: 'block', color: '#FF9800', fontSize: 10 }}>overdue</Typography>
-                                                            )}
-                                                        </TableCell>
-
-                                                        {/* Published At */}
-                                                        <TableCell sx={cellSx}>
-                                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                                                                <Typography variant="caption" sx={{ color: post.publishedAt ? '#4CAF50' : 'text.disabled', whiteSpace: 'nowrap' }}>
-                                                                    {fmtDate(post.publishedAt)}
-                                                                </Typography>
-                                                                {post.publishedMediaId && (
-                                                                    <Tooltip title={`Media ID: ${post.publishedMediaId}`}>
-                                                                        <OpenInNew sx={{ fontSize: 12, color: '#4CAF5088', cursor: 'default' }} />
-                                                                    </Tooltip>
-                                                                )}
-                                                            </Box>
-                                                        </TableCell>
-
-                                                        {/* Status */}
-                                                        <TableCell sx={cellSx}>{statusChip(post.status)}</TableCell>
-
-                                                        {/* Error */}
-                                                        <TableCell sx={cellSx}>
-                                                            {post.error ? (
-                                                                <Tooltip title={post.error} placement="top-start">
-                                                                    <Typography variant="caption" sx={{
-                                                                        display: 'block', maxWidth: 180, color: '#f44336',
-                                                                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
-                                                                        cursor: 'help',
-                                                                    }}>
-                                                                        {post.error}
-                                                                    </Typography>
-                                                                </Tooltip>
-                                                            ) : (
-                                                                <Typography variant="caption" sx={{ color: 'text.disabled' }}>—</Typography>
-                                                            )}
-                                                        </TableCell>
-
-                                                        {/* Actions */}
-                                                        <TableCell sx={{ ...cellSx, textAlign: 'right', whiteSpace: 'nowrap' }}>
-                                                            {canEdit && !isEditing && (
-                                                                <Tooltip title="Edit post">
-                                                                    <IconButton size="small" onClick={() => startEditPost(post)}
-                                                                        sx={{ color: 'text.secondary', '&:hover': { color: '#F58529' } }}>
-                                                                        <EditNote fontSize="small" />
-                                                                    </IconButton>
-                                                                </Tooltip>
-                                                            )}
-                                                            {isEditing && (
-                                                                <Tooltip title="Cancel edit">
-                                                                    <IconButton size="small" onClick={cancelEdit}
-                                                                        sx={{ color: '#F58529' }}>
-                                                                        <Close fontSize="small" />
-                                                                    </IconButton>
-                                                                </Tooltip>
-                                                            )}
-                                                            {post.status !== 'publishing' && (
-                                                                <Tooltip title={post.status === 'published' ? 'Remove from records' : 'Delete'}>
-                                                                    <IconButton size="small"
-                                                                        onClick={() => post.status === 'published'
-                                                                            ? setConfirmDeleteId(post.id)
-                                                                            : handleDeleteScheduled(post.id)
-                                                                        }
-                                                                        sx={{ color: 'text.secondary', '&:hover': { color: '#f44336' } }}>
-                                                                        <Delete fontSize="small" />
-                                                                    </IconButton>
-                                                                </Tooltip>
-                                                            )}
-                                                        </TableCell>
-                                                    </TableRow>
-
-                                                    {/* Inline Edit Row */}
-                                                    {isEditing && (
-                                                        <TableRow>
-                                                            <TableCell colSpan={9} sx={{ p: 0, borderColor: 'rgba(255,255,255,0.06)' }}>
-                                                                <Collapse in={isEditing} timeout="auto" unmountOnExit>
-                                                                    <Box sx={{ p: 2, bgcolor: 'rgba(245,133,41,0.04)', borderTop: '1px solid rgba(245,133,41,0.2)' }}>
-                                                                        <TextField
-                                                                            fullWidth multiline rows={3} size="small"
-                                                                            value={editCaption}
-                                                                            onChange={e => setEditCaption(e.target.value)}
-                                                                            label="Caption" sx={{ mb: 2 }}
-                                                                            helperText={`${editCaption.length}/2,200 characters`}
-                                                                        />
-                                                                        <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', mb: 2 }}>
-                                                                            <TextField
-                                                                                type="date" value={editDate}
-                                                                                onChange={e => setEditDate(e.target.value)}
-                                                                                label="Scheduled Date" size="small"
-                                                                                slotProps={{ inputLabel: { shrink: true }, input: { inputProps: { min: new Date().toISOString().split('T')[0] } } }}
-                                                                                sx={{ minWidth: 180 }}
-                                                                            />
-                                                                            <TextField
-                                                                                type="time" value={editTime}
-                                                                                onChange={e => setEditTime(e.target.value)}
-                                                                                label="Scheduled Time" size="small"
-                                                                                slotProps={{ inputLabel: { shrink: true } }}
-                                                                                sx={{ minWidth: 150 }}
-                                                                            />
-                                                                            {editDate && editTime && (
-                                                                                <Chip
-                                                                                    icon={<CalendarMonth sx={{ fontSize: 16 }} />}
-                                                                                    label={new Date(`${editDate}T${editTime}`).toLocaleString()}
-                                                                                    color="warning" variant="outlined"
-                                                                                    sx={{ alignSelf: 'center' }}
-                                                                                />
-                                                                            )}
-                                                                        </Box>
-                                                                        <Box sx={{ display: 'flex', gap: 1, justifyContent: 'flex-end' }}>
-                                                                            <Button size="small" variant="outlined" onClick={cancelEdit}
-                                                                                sx={{ borderColor: 'rgba(255,255,255,0.15)' }}>
-                                                                                Cancel
-                                                                            </Button>
-                                                                            <Button size="small" variant="contained" onClick={handleSaveEdit}
-                                                                                disabled={savingEdit}
-                                                                                startIcon={savingEdit ? <CircularProgress size={14} /> : <CheckCircle sx={{ fontSize: 16 }} />}
-                                                                                sx={{ background: 'linear-gradient(135deg, #F58529, #FF6B35)' }}>
-                                                                                {savingEdit ? 'Saving...' : 'Save & Sync'}
-                                                                            </Button>
-                                                                        </Box>
-                                                                    </Box>
-                                                                </Collapse>
-                                                            </TableCell>
-                                                        </TableRow>
-                                                    )}
-                                                </React.Fragment>
-                                            );
-                                        })}
-                                        {filtered.length === 0 && (
-                                            <TableRow>
-                                                <TableCell colSpan={9} sx={{ textAlign: 'center', py: 4, color: 'text.disabled', borderBottom: 0 }}>
-                                                    No posts with status "{statusFilter}"
-                                                </TableCell>
-                                            </TableRow>
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            </TableContainer>
-                        </CardContent>
-                    </Card>
+                  <React.Fragment key={post.id}>
+                    <TableRow className={isEditing ? 'bg-amber-50/50' : ''}>
+                      <TableCell className="text-xs text-muted-foreground">{idx + 1}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1.5">
+                          <Avatar className="h-6 w-6"><AvatarImage src={acct?.profilePictureUrl} /><AvatarFallback className="text-[9px] bg-gradient-to-br from-pink-500 to-purple-600 text-white">{(acct?.username || '?')[0].toUpperCase()}</AvatarFallback></Avatar>
+                          <span className="text-xs font-semibold whitespace-nowrap">{acct?.username ? `@${acct.username}` : post.accountId}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1" style={{ color: typeInfo?.color || '#888' }}>
+                          <Icon className="h-3.5 w-3.5" />
+                          <span className="text-xs font-semibold">{typeInfo?.label || post.mediaType}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Tooltip>
+                          <TooltipTrigger render={<p className="text-xs max-w-48 truncate cursor-default text-muted-foreground" />}>
+                            {post.caption || '(no caption)'}
+                          </TooltipTrigger>
+                          <TooltipContent>{post.caption || '(no caption)'}</TooltipContent>
+                        </Tooltip>
+                      </TableCell>
+                      <TableCell>
+                        <span className={cn('text-xs whitespace-nowrap', isPastDue ? 'text-orange-500' : 'text-muted-foreground')}>{fmtLocalDate(post.scheduledAt)}</span>
+                        {isPastDue && <p className="text-[10px] text-orange-500">overdue</p>}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <span className={cn('text-xs whitespace-nowrap', post.publishedAt ? 'text-green-600' : 'text-muted-foreground')}>{fmtLocalDate(post.publishedAt)}</span>
+                          {post.publishedMediaId && <Tooltip><TooltipTrigger><ExternalLink className="h-3 w-3 text-green-500/50" /></TooltipTrigger><TooltipContent>Media ID: {post.publishedMediaId}</TooltipContent></Tooltip>}
+                        </div>
+                      </TableCell>
+                      <TableCell><StatusBadge status={post.status} /></TableCell>
+                      <TableCell>
+                        {post.error ? (
+                          <Tooltip><TooltipTrigger render={<p className="text-xs max-w-40 truncate text-red-500 cursor-help" />}>{post.error}</TooltipTrigger><TooltipContent>{post.error}</TooltipContent></Tooltip>
+                        ) : <span className="text-muted-foreground text-xs">—</span>}
+                      </TableCell>
+                      <TableCell className="text-right whitespace-nowrap">
+                        {canEdit && !isEditing && <Tooltip><TooltipTrigger render={<Button variant="ghost" size="icon" className="size-7 text-muted-foreground hover:text-amber-500" onClick={() => startEditPost(post)} />}><Pencil /></TooltipTrigger><TooltipContent>Edit</TooltipContent></Tooltip>}
+                        {isEditing && <Button variant="ghost" size="icon" className="size-7 text-amber-500" onClick={cancelEdit}><X /></Button>}
+                        {post.status !== 'publishing' && <Tooltip><TooltipTrigger render={<Button variant="ghost" size="icon" className="size-7 text-muted-foreground hover:text-red-500" onClick={() => post.status === 'published' ? setConfirmDeleteId(post.id) : handleDeleteScheduled(post.id)} />}><Trash2 /></TooltipTrigger><TooltipContent>{post.status === 'published' ? 'Remove from records' : 'Delete'}</TooltipContent></Tooltip>}
+                      </TableCell>
+                    </TableRow>
+                    {isEditing && (
+                      <TableRow>
+                        <TableCell colSpan={9} className="p-0">
+                          <div className="p-4 bg-amber-50/30 border-t border-amber-200/50 space-y-3">
+                            <Textarea value={editCaption} onChange={e => setEditCaption(e.target.value)} label="Caption" rows={3} />
+                            <p className="text-xs text-muted-foreground">{editCaption.length}/2,200 characters</p>
+                            <div className="flex gap-3 flex-wrap">
+                              <Input type="date" value={editDate} onChange={e => setEditDate(e.target.value)} min={new Date().toISOString().split('T')[0]} className="w-44" />
+                              <Input type="time" value={editTime} onChange={e => setEditTime(e.target.value)} className="w-36" />
+                              {editDate && editTime && <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 border border-amber-200 text-amber-700"><Calendar className="h-3 w-3" />{new Date(`${editDate}T${editTime}`).toLocaleString()}</span>}
+                            </div>
+                            <div className="flex gap-2 justify-end">
+                              <Button size="sm" variant="outline" onClick={cancelEdit}>Cancel</Button>
+                              <Button size="sm" onClick={handleSaveEdit} disabled={savingEdit} className="gap-1.5" style={{ background: 'linear-gradient(135deg, #F58529, #FF6B35)' }}>
+                                {savingEdit ? <Spinner /> : <CheckCircle2 data-icon="inline-start" />}
+                                {savingEdit ? 'Saving…' : 'Save & Sync'}
+                              </Button>
+                            </div>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </React.Fragment>
                 );
-            })()}
+              })}
+              {filteredScheduled.length === 0 && (
+                <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-8">No posts with status "{statusFilter}"</TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </MainCard>
+      )}
 
-            {/* API Info */}
-            <Card sx={{ mt: 3 }}>
-                <CardContent>
-                    <Typography variant="body2" sx={{ color: 'text.secondary', fontSize: 12 }}>
-                        <strong>How it works:</strong> Files are uploaded to Cloudinary CDN first (Instagram requires public URLs),
-                        then a media container is created via the Instagram API, processed by Instagram's servers, and published.
-                        Rate limit: 100 posts per 24 hours per account.
-                    </Typography>
-                    <Box sx={{ display: 'flex', gap: 1, mt: 1.5, flexWrap: 'wrap' }}>
-                        <Chip label="JPEG Photos" size="small" variant="outlined" sx={{ borderColor: '#F5852922', color: '#F58529', fontSize: 11 }} />
-                        <Chip label="MP4/MOV Reels" size="small" variant="outlined" sx={{ borderColor: '#DD2A7B22', color: '#DD2A7B', fontSize: 11 }} />
-                        <Chip label="Stories" size="small" variant="outlined" sx={{ borderColor: '#8134AF22', color: '#8134AF', fontSize: 11 }} />
-                        <Chip label="Max 300MB videos" size="small" variant="outlined" sx={{ borderColor: 'rgba(255,255,255,0.1)', fontSize: 11 }} />
-                        <Chip label="Requires instagram_business_content_publish" size="small" variant="outlined" sx={{ borderColor: 'rgba(255,255,255,0.1)', fontSize: 11 }} />
-                    </Box>
-                </CardContent>
-            </Card>
-        </Box>
+      {/* API Info */}
+      <MainCard>
+        <p className="text-xs text-muted-foreground"><strong>How it works:</strong> Files are uploaded to Cloudinary CDN first (Instagram needs public URLs), then a media container is created, processed, and published. Rate limit: 100 posts/24hr per account.</p>
+        <div className="flex gap-2 mt-3 flex-wrap">
+          {[{ label: 'JPEG Photos', color: '#F58529' }, { label: 'MP4/MOV Reels', color: '#DD2A7B' }, { label: 'Stories', color: '#8134AF' }, { label: 'Max 300MB videos', color: undefined }, { label: 'instagram_business_content_publish required', color: undefined }].map(c => (
+            <span key={c.label} className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs border" style={{ borderColor: c.color ? `${c.color}40` : undefined, color: c.color }}>{c.label}</span>
+          ))}
+        </div>
+      </MainCard>
 
-        {/* Confirm delete ALL */}
-        <Dialog open={confirmDeleteAll} onClose={() => setConfirmDeleteAll(false)}
-            PaperProps={{ sx: { bgcolor: '#1e1e2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 2 } }}>
-            <DialogTitle sx={{ fontWeight: 600 }}>Delete all scheduled posts?</DialogTitle>
-            <DialogContent>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                    This removes every post from your records (pending, published, and failed) and syncs the empty list to GitHub.
-                </Typography>
-                <Alert severity="warning" sx={{ mt: 2, fontSize: 12 }}>
-                    Posts already <strong>published to Instagram remain live</strong>. Only local records are deleted.
-                    Any post currently <strong>publishing</strong> will not be removed.
-                </Alert>
-            </DialogContent>
-            <DialogActions sx={{ px: 3, pb: 2 }}>
-                <Button onClick={() => setConfirmDeleteAll(false)} sx={{ color: 'text.secondary' }}>Cancel</Button>
-                <Button variant="contained" color="error" startIcon={<DeleteSweep />} onClick={handleDeleteAll}>
-                    Delete All & Sync
-                </Button>
-            </DialogActions>
-        </Dialog>
+      {/* Delete All confirmation */}
+      <AlertDialog open={confirmDeleteAll} onOpenChange={setConfirmDeleteAll}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete all scheduled posts?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes every post from your records (pending, published, and failed) and syncs to GitHub.
+              Posts already <strong>published to Instagram remain live</strong> — only local records are deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={handleDeleteAll}>
+              <Trash data-icon="inline-start" />Delete All & Sync
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-        {/* Confirm delete published post */}
-        <Dialog open={!!confirmDeleteId} onClose={() => setConfirmDeleteId(null)}
-            PaperProps={{ sx: { bgcolor: '#1e1e2e', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 2 } }}>
-            <DialogTitle sx={{ fontWeight: 600 }}>Remove published post?</DialogTitle>
-            <DialogContent>
-                <Typography variant="body2" sx={{ color: 'text.secondary' }}>
-                    This will remove the entry from your scheduled posts record and sync the change to GitHub.
-                </Typography>
-                <Alert severity="info" sx={{ mt: 2, fontSize: 12 }}>
-                    The post will <strong>remain live on Instagram</strong> — this only removes it from your local records.
-                </Alert>
-            </DialogContent>
-            <DialogActions sx={{ px: 3, pb: 2 }}>
-                <Button onClick={() => setConfirmDeleteId(null)} sx={{ color: 'text.secondary' }}>Cancel</Button>
-                <Button variant="contained" color="error" onClick={() => handleDeleteScheduled(confirmDeleteId)}>
-                    Remove Record
-                </Button>
-            </DialogActions>
-        </Dialog>
-        </>
-    );
+      {/* Confirm remove published post */}
+      <AlertDialog open={!!confirmDeleteId} onOpenChange={v => !v && setConfirmDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove published post?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes the entry from your records and syncs to GitHub.
+              The post will <strong>remain live on Instagram</strong> — only local records are removed.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction variant="destructive" onClick={() => handleDeleteScheduled(confirmDeleteId)}>
+              Remove Record
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
 }
