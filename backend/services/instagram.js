@@ -4,14 +4,33 @@ const { readJSON, writeJSON, ACCOUNTS_FILE } = require('../utils/dataHelpers');
 const IG_GRAPH_URL = 'https://graph.instagram.com';
 const IG_API_VERSION = 'v25.0';
 
-async function igFetch(endpoint, params = {}) {
+async function igFetch(endpoint, params = {}, retries = 1) {
     const needsVersion = !endpoint.startsWith('/oauth') &&
         !endpoint.startsWith('/access_token') &&
         !endpoint.startsWith('/refresh_access_token');
     const base = needsVersion ? `${IG_GRAPH_URL}/${IG_API_VERSION}` : IG_GRAPH_URL;
     const url = new URL(`${base}${endpoint}`);
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-    const res = await fetch(url.toString());
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 15000);
+
+    let res;
+    try {
+        res = await fetch(url.toString(), { signal: controller.signal });
+    } catch (err) {
+        clearTimeout(timer);
+        const isTransient = err.name === 'AbortError' || err.code === 'EAI_AGAIN' ||
+            err.code === 'ECONNRESET' || err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT';
+        if (isTransient && retries > 0) {
+            await new Promise(r => setTimeout(r, 1000));
+            return igFetch(endpoint, params, retries - 1);
+        }
+        if (err.name === 'AbortError') throw new Error('Instagram API request timed out');
+        throw new Error(`Instagram API unreachable (${err.code || err.message})`);
+    }
+    clearTimeout(timer);
+
     const data = await res.json();
     if (data.error) throw new Error(data.error.message || data.error.error_message || JSON.stringify(data.error));
     if (data.error_message) throw new Error(data.error_message);
@@ -103,11 +122,21 @@ async function fetchInstagramProfile(igUserId, accessToken) {
 
 async function fetchInstagramMedia(igUserId, accessToken, limit = 500) {
     let allMedia = [];
-    let url = `${IG_GRAPH_URL}/${IG_API_VERSION}/${igUserId}/media?access_token=${accessToken}&fields=id,caption,media_type,media_url,thumbnail_url,permalink,timestamp,like_count,comments_count&limit=${Math.min(limit, 100)}`;
+    let url = `${IG_GRAPH_URL}/${IG_API_VERSION}/${igUserId}/media?access_token=${accessToken}&fields=id,caption,media_type,media_url,thumbnail_url,cover_url,permalink,timestamp,like_count,comments_count&limit=${Math.min(limit, 100)}`;
 
     let pages = 0;
     while (url && pages < 10 && allMedia.length < limit) {
-        const res = await fetch(url);
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), 15000);
+        let res;
+        try {
+            res = await fetch(url, { signal: controller.signal });
+        } catch (err) {
+            clearTimeout(timer);
+            if (err.name === 'AbortError') throw new Error('Instagram API request timed out');
+            throw new Error(`Instagram API unreachable (${err.code || err.message})`);
+        }
+        clearTimeout(timer);
         const data = await res.json();
         if (data.error) throw new Error(data.error.message || data.error.error_message);
         if (data.data) allMedia = allMedia.concat(data.data);
@@ -115,17 +144,22 @@ async function fetchInstagramMedia(igUserId, accessToken, limit = 500) {
         pages++;
     }
 
-    return allMedia.slice(0, limit).map(m => ({
-        id: m.id,
-        caption: m.caption || '',
-        mediaType: m.media_type || 'IMAGE',
-        mediaUrl: m.media_url || '',
-        thumbnailUrl: m.thumbnail_url || m.media_url || '',
-        permalink: m.permalink || '',
-        timestamp: m.timestamp || '',
-        likeCount: m.like_count || 0,
-        commentsCount: m.comments_count || 0,
-    }));
+    return allMedia.slice(0, limit).map(m => {
+        const isVideo = m.media_type === 'REEL' || m.media_type === 'VIDEO';
+        // For REELs: cover_url > thumbnail_url. For photos: media_url. Never use a video URL as thumbnailUrl.
+        const thumbnailUrl = m.cover_url || m.thumbnail_url || (isVideo ? '' : m.media_url || '');
+        return {
+            id: m.id,
+            caption: m.caption || '',
+            mediaType: m.media_type || 'IMAGE',
+            mediaUrl: m.media_url || '',
+            thumbnailUrl,
+            permalink: m.permalink || '',
+            timestamp: m.timestamp || '',
+            likeCount: m.like_count || 0,
+            commentsCount: m.comments_count || 0,
+        };
+    });
 }
 
 function computeInstagramAnalytics(profile, media) {
