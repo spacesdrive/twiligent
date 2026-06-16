@@ -67,7 +67,8 @@ router.get('/accounts/:id/analytics', async (req, res) => {
             videoCount: videos.length,
         });
     } catch (err) {
-        res.status(400).json({ success: false, message: err.message });
+        const safe = err.message.replace(/https?:\/\/[^\s)]+/g, '[url]');
+        res.status(400).json({ success: false, message: safe });
     }
 });
 
@@ -164,7 +165,9 @@ router.get('/accounts/:id/ig-analytics', async (req, res) => {
             mediaCount: media.length,
         });
     } catch (err) {
-        res.status(400).json({ success: false, message: err.message });
+        // Strip URLs from error messages to avoid leaking access tokens
+        const safe = err.message.replace(/https?:\/\/[^\s)]+/g, '[url]');
+        res.status(400).json({ success: false, message: safe });
     }
 });
 
@@ -187,7 +190,8 @@ router.get('/accounts/:id/ig-media', async (req, res) => {
 
         res.json({ success: true, media, fetchedAt: igCache[req.params.id].fetchedAt });
     } catch (err) {
-        res.status(400).json({ success: false, message: err.message });
+        const safe = err.message.replace(/https?:\/\/[^\s)]+/g, '[url]');
+        res.status(400).json({ success: false, message: safe });
     }
 });
 
