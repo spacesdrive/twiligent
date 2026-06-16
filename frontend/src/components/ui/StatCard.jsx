@@ -1,20 +1,20 @@
 import React from 'react';
-import { Card, CardContent, Box, Typography, Skeleton } from '@mui/material';
-import { alpha } from '@mui/material/styles';
-import { TrendingUp, TrendingDown } from '@mui/icons-material';
+import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { TrendingUp, TrendingDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-// Mantis-style palette for stat cards
 const PALETTE = {
-  blue:   { bg: '#e6f4ff', icon: '#1890ff', text: '#003a8c' },
-  red:    { bg: '#fff1f0', icon: '#ff4d4f', text: '#820014' },
-  green:  { bg: '#f6ffed', icon: '#52c41a', text: '#135200' },
-  orange: { bg: '#fff7e6', icon: '#fa8c16', text: '#613400' },
-  purple: { bg: '#f9f0ff', icon: '#722ed1', text: '#22075e' },
-  teal:   { bg: '#e6fffb', icon: '#13c2c2', text: '#006d75' },
-  pink:   { bg: '#fff0f6', icon: '#eb2f96', text: '#780650' },
-  indigo: { bg: '#f0f5ff', icon: '#2f54eb', text: '#030852' },
-  cyan:   { bg: '#e6fffb', icon: '#13c2c2', text: '#006d75' },
-  amber:  { bg: '#fffbe6', icon: '#faad14', text: '#613400' },
+  blue:   { bg: 'bg-blue-50',   icon: 'text-blue-600',   ring: 'ring-blue-100' },
+  red:    { bg: 'bg-red-50',    icon: 'text-red-500',    ring: 'ring-red-100' },
+  green:  { bg: 'bg-green-50',  icon: 'text-green-600',  ring: 'ring-green-100' },
+  orange: { bg: 'bg-orange-50', icon: 'text-orange-500', ring: 'ring-orange-100' },
+  purple: { bg: 'bg-purple-50', icon: 'text-purple-600', ring: 'ring-purple-100' },
+  teal:   { bg: 'bg-teal-50',   icon: 'text-teal-600',   ring: 'ring-teal-100' },
+  pink:   { bg: 'bg-pink-50',   icon: 'text-pink-600',   ring: 'ring-pink-100' },
+  indigo: { bg: 'bg-indigo-50', icon: 'text-indigo-600', ring: 'ring-indigo-100' },
+  cyan:   { bg: 'bg-cyan-50',   icon: 'text-cyan-600',   ring: 'ring-cyan-100' },
+  amber:  { bg: 'bg-amber-50',  icon: 'text-amber-600',  ring: 'ring-amber-100' },
 };
 
 export default function StatCard({
@@ -25,89 +25,51 @@ export default function StatCard({
   gradient = 'blue',
   loading,
   small,
-  trend,       // number: positive = up, negative = down
-  trendLabel,  // string like "+12% this month"
+  trend,
+  trendLabel,
 }) {
   const pal = PALETTE[gradient] || PALETTE.blue;
+  const iconSize = small ? 'h-4 w-4' : 'h-5 w-5';
+  const iconBoxSize = small ? 'h-9 w-9' : 'h-11 w-11';
 
   return (
-    <Card
-      sx={{
-        height: '100%',
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 2,
-        boxShadow: 'none',
-        transition: 'box-shadow 0.2s',
-        '&:hover': { boxShadow: '0 4px 16px rgba(0,0,0,0.08)' },
-      }}
-    >
-      <CardContent sx={{ p: small ? 2 : 2.5, '&:last-child': { pb: small ? 2 : 2.5 } }}>
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', mb: 1.5 }}>
-          <Box
-            sx={{
-              width: small ? 40 : 48,
-              height: small ? 40 : 48,
-              borderRadius: 1.5,
-              bgcolor: pal.bg,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-            }}
-          >
-            {React.cloneElement(icon, { sx: { color: pal.icon, fontSize: small ? 20 : 24 } })}
-          </Box>
-
+    <Card className="border border-border shadow-none h-full hover:shadow-sm transition-shadow">
+      <CardContent className={cn('flex flex-col gap-3', small ? 'p-4' : 'p-5')}>
+        <div className="flex items-start justify-between">
+          <div className={cn('rounded-xl flex items-center justify-center flex-shrink-0', iconBoxSize, pal.bg)}>
+            {React.isValidElement(icon)
+              ? React.cloneElement(icon, { className: cn(iconSize, pal.icon) })
+              : icon && <span className={cn(iconSize, pal.icon)}>{icon}</span>}
+          </div>
           {trend !== undefined && !loading && (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.3 }}>
+            <div className="flex items-center gap-0.5">
               {trend >= 0
-                ? <TrendingUp sx={{ fontSize: 14, color: '#52c41a' }} />
-                : <TrendingDown sx={{ fontSize: 14, color: '#ff4d4f' }} />}
-              <Typography
-                variant="caption"
-                sx={{ fontWeight: 600, color: trend >= 0 ? '#52c41a' : '#ff4d4f', fontSize: '0.7rem' }}
-              >
+                ? <TrendingUp className="h-3 w-3 text-green-500" />
+                : <TrendingDown className="h-3 w-3 text-red-500" />}
+              <span className={cn('text-xs font-semibold', trend >= 0 ? 'text-green-600' : 'text-red-500')}>
                 {Math.abs(trend)}%
-              </Typography>
-            </Box>
+              </span>
+            </div>
           )}
-        </Box>
+        </div>
 
         {loading ? (
           <>
-            <Skeleton width="60%" height={small ? 28 : 36} sx={{ borderRadius: 1, mb: 0.5 }} />
-            <Skeleton width="80%" height={16} sx={{ borderRadius: 1 }} />
+            <Skeleton className={cn('rounded', small ? 'h-6 w-16' : 'h-8 w-20')} />
+            <Skeleton className="h-3 w-28 rounded" />
           </>
         ) : (
-          <>
-            <Typography
-              sx={{
-                fontWeight: 700,
-                fontSize: small ? '1.1rem' : '1.375rem',
-                lineHeight: 1.2,
-                color: 'text.primary',
-                mb: 0.25,
-                letterSpacing: '-0.02em',
-              }}
-            >
+          <div>
+            <p className={cn('font-bold tracking-tight leading-none text-foreground', small ? 'text-xl' : 'text-2xl')}>
               {value}
-            </Typography>
-            <Typography
-              variant="body2"
-              sx={{ color: 'text.secondary', fontWeight: 500, mb: trendLabel ? 0.5 : 0 }}
-            >
-              {label}
-            </Typography>
+            </p>
+            <p className="text-sm text-muted-foreground font-medium mt-1">{label}</p>
             {(subtitle || trendLabel) && (
-              <Typography
-                variant="caption"
-                sx={{ color: 'text.secondary', display: 'block', lineHeight: 1.4 }}
-              >
+              <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
                 {trendLabel || subtitle}
-              </Typography>
+              </p>
             )}
-          </>
+          </div>
         )}
       </CardContent>
     </Card>
