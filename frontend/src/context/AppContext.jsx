@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { Snackbar, Alert } from '@mui/material';
+import { toast } from 'sonner';
 import { api } from '../services/api';
 import { normalizeAccount } from '../utils/formatters';
 
@@ -8,10 +8,12 @@ const AppContext = createContext(null);
 export function AppProvider({ children }) {
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [toast, setToast] = useState({ open: false, message: '', severity: 'success' });
 
   const showToast = useCallback((message, severity = 'success') => {
-    setToast({ open: true, message, severity });
+    if (severity === 'error') toast.error(message);
+    else if (severity === 'warning') toast.warning(message);
+    else if (severity === 'info') toast.info(message);
+    else toast.success(message);
   }, []);
 
   const loadAccounts = useCallback(async () => {
@@ -41,20 +43,6 @@ export function AppProvider({ children }) {
   return (
     <AppContext.Provider value={{ accounts, setAccounts, loading, showToast, loadAccounts, refreshAll }}>
       {children}
-      <Snackbar
-        open={toast.open}
-        autoHideDuration={4000}
-        onClose={() => setToast(t => ({ ...t, open: false }))}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-      >
-        <Alert
-          severity={toast.severity}
-          onClose={() => setToast(t => ({ ...t, open: false }))}
-          sx={{ borderRadius: 2, boxShadow: '0 4px 20px rgba(0,0,0,0.15)' }}
-        >
-          {toast.message}
-        </Alert>
-      </Snackbar>
     </AppContext.Provider>
   );
 }
