@@ -1,14 +1,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import {
-  Box, Typography, Grid, Avatar, Chip, Button,
-  Table, TableBody, TableCell, TableContainer,
-  TableHead, TableRow, IconButton, Tooltip, Divider, LinearProgress,
-} from '@mui/material';
-import {
-  Visibility, People, VideoLibrary, BarChart,
-  YouTube, Instagram, OpenInNew, Refresh,
-} from '@mui/icons-material';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Progress } from '@/components/ui/progress';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend,
@@ -17,22 +15,9 @@ import StatCard from '../../../components/ui/StatCard';
 import MainCard from '../../../components/MainCard';
 import { useAppContext } from '../../../context/AppContext';
 import { fmtNum, fmtNumFull, timeAgo } from '../../../utils/formatters';
-import { PRIMARY, GREY } from '../../../themes/index';
+import { RefreshCw, Users, Eye, VideoIcon, BarChart3, ExternalLink, Tv, Camera } from 'lucide-react';
 
-const CHART_COLORS = [
-  PRIMARY.main, '#52c41a', '#fa8c16', '#722ed1',
-  '#13c2c2', '#eb2f96', '#2f54eb', '#faad14',
-];
-
-const tooltipStyle = {
-  backgroundColor: '#fff',
-  border: `1px solid ${GREY.A800}`,
-  borderRadius: 8,
-  fontSize: 13,
-  fontWeight: 500,
-  color: GREY[700],
-  boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
-};
+const CHART_COLORS = ['hsl(221.2,83.2%,53.3%)', '#22c55e', '#f97316', '#a855f7', '#06b6d4', '#ec4899', '#6366f1', '#eab308'];
 
 export default function Overview() {
   const { accounts, loading, refreshAll } = useAppContext();
@@ -79,333 +64,214 @@ export default function Overview() {
   };
 
   return (
-    <Box>
+    <div className="space-y-6">
       {/* Page header */}
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 3 }}>
-        <Box>
-          <Typography variant="h4" sx={{ mb: 0.5 }}>Dashboard Overview</Typography>
-          <Typography variant="body2" color="text.secondary">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Dashboard Overview</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">
             {accounts.length === 0
               ? 'Add your first account to start tracking'
               : `Tracking ${accounts.length} account${accounts.length !== 1 ? 's' : ''} · ${ytAccounts.length} YouTube · ${igAccounts.length} Instagram`}
-          </Typography>
-        </Box>
+          </p>
+        </div>
         <Button
-          variant="contained"
-          startIcon={<Refresh sx={{ fontSize: 18 }} />}
           onClick={refreshAll}
           disabled={loading || accounts.length === 0}
-          size="medium"
+          size="sm"
+          className="gap-2 shrink-0"
         >
+          <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
           {loading ? 'Refreshing…' : 'Refresh All'}
         </Button>
-      </Box>
+      </div>
 
-      {loading && <LinearProgress sx={{ mb: 2.5, borderRadius: 1 }} />}
+      {/* Loading bar */}
+      {loading && <Progress className="h-1" value={undefined} />}
 
       {/* KPI cards */}
-      <Grid container spacing={2.5} sx={{ mb: 3 }}>
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {[
-          {
-            icon: <People />,
-            label: 'Total Audience',
-            value: fmtNum(totalAudience),
-            subtitle: `${fmtNum(totals.subscribers)} subs · ${fmtNum(totals.followers)} followers`,
-            gradient: 'purple',
-          },
-          {
-            icon: <Visibility />,
-            label: 'Total Views',
-            value: fmtNum(totals.views),
-            subtitle: fmtNumFull(totals.views),
-            gradient: 'red',
-          },
-          {
-            icon: <VideoLibrary />,
-            label: 'Total Content',
-            value: fmtNum(totals.videos + totals.posts),
-            subtitle: `${fmtNum(totals.videos)} videos · ${fmtNum(totals.posts)} posts`,
-            gradient: 'blue',
-          },
-          {
-            icon: <BarChart />,
-            label: 'Accounts',
-            value: accounts.length,
-            subtitle: `${ytAccounts.length} YouTube · ${igAccounts.length} Instagram`,
-            gradient: 'orange',
-          },
+          { icon: <Users />, label: 'Total Audience', value: fmtNum(totalAudience), subtitle: `${fmtNum(totals.subscribers)} subs · ${fmtNum(totals.followers)} followers`, gradient: 'purple' },
+          { icon: <Eye />,   label: 'Total Views',    value: fmtNum(totals.views),  subtitle: fmtNumFull(totals.views), gradient: 'red' },
+          { icon: <VideoIcon />, label: 'Total Content', value: fmtNum(totals.videos + totals.posts), subtitle: `${fmtNum(totals.videos)} videos · ${fmtNum(totals.posts)} posts`, gradient: 'blue' },
+          { icon: <BarChart3 />, label: 'Accounts',   value: accounts.length,       subtitle: `${ytAccounts.length} YouTube · ${igAccounts.length} Instagram`, gradient: 'orange' },
         ].map((card, i) => (
-          <Grid key={i} size={{ xs: 12, sm: 6, md: 3 }}>
-            <StatCard {...card} loading={loading} />
-          </Grid>
+          <StatCard key={i} {...card} loading={loading} />
         ))}
-      </Grid>
+      </div>
 
       {accounts.length === 0 ? (
         <MainCard>
-          <Box sx={{ textAlign: 'center', py: 6 }}>
-            <Box
-              sx={{
-                width: 72,
-                height: 72,
-                borderRadius: '50%',
-                bgcolor: `${PRIMARY.lighter}`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                mx: 'auto',
-                mb: 2.5,
-              }}
-            >
-              <People sx={{ fontSize: 36, color: PRIMARY.main }} />
-            </Box>
-            <Typography variant="h5" sx={{ mb: 1 }}>Welcome to Twiligent</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ maxWidth: 380, mx: 'auto', mb: 2.5 }}>
-              Add your first YouTube channel or Instagram account to start tracking analytics
-            </Typography>
-            <Button variant="contained" onClick={() => navigate('/accounts')}>
-              Add Account
-            </Button>
-          </Box>
+          <div className="flex flex-col items-center text-center py-12 gap-4">
+            <div className="h-16 w-16 rounded-full bg-primary/10 flex items-center justify-center">
+              <Users className="h-8 w-8 text-primary" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold">Welcome to Twiligent</h3>
+              <p className="text-sm text-muted-foreground mt-1 max-w-sm">
+                Add your first YouTube channel or Instagram account to start tracking analytics
+              </p>
+            </div>
+            <Button onClick={() => navigate('/accounts')}>Add Account</Button>
+          </div>
         </MainCard>
       ) : (
         <>
           {/* Charts */}
-          <Grid container spacing={2.5} sx={{ mb: 2.5 }}>
-            <Grid size={{ xs: 12, md: 8 }}>
-              <MainCard title="Audience Comparison" contentSX={{ p: 2 }}>
-                <ResponsiveContainer width="100%" height={280}>
-                  <AreaChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="audGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%"  stopColor={PRIMARY.main} stopOpacity={0.18} />
-                        <stop offset="95%" stopColor={PRIMARY.main} stopOpacity={0.01} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke={GREY[200]} vertical={false} />
-                    <XAxis
-                      dataKey="name"
-                      tick={{ fill: GREY[500], fontSize: 12 }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tick={{ fill: GREY[500], fontSize: 12 }}
-                      tickFormatter={fmtNum}
-                      axisLine={false}
-                      tickLine={false}
-                      width={52}
-                    />
-                    <ReTooltip
-                      contentStyle={tooltipStyle}
-                      formatter={(v) => [fmtNumFull(v), 'Audience']}
-                      cursor={{ stroke: GREY[300], strokeWidth: 1 }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="audience"
-                      stroke={PRIMARY.main}
-                      strokeWidth={2}
-                      fill="url(#audGrad)"
-                      dot={{ fill: PRIMARY.main, r: 4, strokeWidth: 0 }}
-                      activeDot={{ r: 6, strokeWidth: 0, fill: PRIMARY.dark }}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </MainCard>
-            </Grid>
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+            <MainCard title="Audience Comparison" className="xl:col-span-2">
+              <ResponsiveContainer width="100%" height={260} debounce={200}>
+                <AreaChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="audGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%"  stopColor="hsl(221.2,83.2%,53.3%)" stopOpacity={0.15} />
+                      <stop offset="95%" stopColor="hsl(221.2,83.2%,53.3%)" stopOpacity={0.01} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="name" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} tickFormatter={fmtNum} axisLine={false} tickLine={false} width={48} />
+                  <ReTooltip
+                    contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
+                    formatter={(v) => [fmtNumFull(v), 'Audience']}
+                  />
+                  <Area type="monotone" dataKey="audience" stroke="hsl(221.2,83.2%,53.3%)" strokeWidth={2} fill="url(#audGrad)" dot={{ fill: 'hsl(221.2,83.2%,53.3%)', r: 4, strokeWidth: 0 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </MainCard>
 
-            <Grid size={{ xs: 12, md: 4 }}>
-              <MainCard title="Audience Share" contentSX={{ p: 2 }}>
-                <ResponsiveContainer width="100%" height={280}>
-                  <PieChart>
-                    <Pie
-                      data={pieData}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="44%"
-                      outerRadius={90}
-                      innerRadius={50}
-                      paddingAngle={3}
-                      strokeWidth={0}
-                    >
-                      {pieData.map((entry, i) => (
-                        <Cell key={i} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <ReTooltip contentStyle={tooltipStyle} formatter={(v) => fmtNumFull(v)} />
-                    <Legend
-                      iconType="circle"
-                      iconSize={8}
-                      wrapperStyle={{ fontSize: 12, color: GREY[600], paddingTop: 8 }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </MainCard>
-            </Grid>
-          </Grid>
+            <MainCard title="Audience Share">
+              <ResponsiveContainer width="100%" height={260} debounce={200}>
+                <PieChart>
+                  <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="44%" outerRadius={85} innerRadius={48} paddingAngle={3} strokeWidth={0}>
+                    {pieData.map((entry, i) => (
+                      <Cell key={i} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <ReTooltip contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }} formatter={(v) => fmtNumFull(v)} />
+                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+                </PieChart>
+              </ResponsiveContainer>
+            </MainCard>
+          </div>
 
           {/* Leaderboards */}
-          <Grid container spacing={2.5} sx={{ mb: 2.5 }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
-              { title: 'Top by Audience', list: sorted.byAudience, metric: a => fmtNum(a.platform === 'instagram' ? a.followersCount : a.subscriberCount), metricLabel: a => a.platform === 'instagram' ? 'followers' : 'subscribers' },
-              { title: 'Top by Content',  list: sorted.byContent,  metric: a => a.platform === 'instagram' ? `${fmtNum(a.mediaCount)} posts` : `${fmtNum(a.viewCount)} views`, metricLabel: () => '' },
-            ].map(({ title, list, metric, metricLabel }) => (
-              <Grid key={title} size={{ xs: 12, md: 6 }}>
-                <MainCard title={title}>
+              {
+                title: 'Top by Audience',
+                list: sorted.byAudience,
+                metric: a => fmtNum(a.platform === 'instagram' ? a.followersCount : a.subscriberCount),
+                isIG: a => a.platform === 'instagram',
+              },
+              {
+                title: 'Top by Content',
+                list: sorted.byContent,
+                metric: a => a.platform === 'instagram' ? `${fmtNum(a.mediaCount)} posts` : `${fmtNum(a.viewCount)} views`,
+                isIG: a => a.platform === 'instagram',
+              },
+            ].map(({ title, list, metric, isIG }) => (
+              <MainCard key={title} title={title}>
+                <div className="space-y-1">
                   {list.map((a, i) => {
-                    const isIG = a.platform === 'instagram';
-                    const medalColors = ['#faad14', '#8c8c8c', '#d4845a'];
+                    const ig = isIG(a);
+                    const medalColor = i === 0 ? 'text-yellow-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-orange-400' : 'text-muted-foreground';
                     return (
-                      <Box
+                      <button
                         key={a.id}
                         onClick={() => handleViewChannel(a)}
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 1.5,
-                          py: 1,
-                          px: 1,
-                          borderRadius: 1.5,
-                          cursor: 'pointer',
-                          transition: 'background 0.15s',
-                          '&:hover': { bgcolor: GREY[50] },
-                        }}
+                        className="w-full flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-muted/60 transition-colors text-left"
                       >
-                        <Typography
-                          sx={{
-                            width: 20,
-                            fontWeight: 700,
-                            fontSize: '0.875rem',
-                            color: i < 3 ? medalColors[i] : GREY[400],
-                          }}
-                        >
-                          {i + 1}
-                        </Typography>
-                        <Avatar
-                          src={a.thumbnail || a.profilePictureUrl || a.thumbnails?.default}
-                          sx={{ width: 32, height: 32, border: 'none', bgcolor: isIG ? '#E1306C' : '#FF0000' }}
-                        >
-                          {isIG ? <Instagram sx={{ fontSize: 14 }} /> : <YouTube sx={{ fontSize: 14 }} />}
+                        <span className={`w-5 text-xs font-bold tabular-nums ${medalColor}`}>{i + 1}</span>
+                        <Avatar className="h-7 w-7 flex-shrink-0">
+                          <AvatarImage src={a.thumbnail || a.profilePictureUrl || a.thumbnails?.default} />
+                          <AvatarFallback className={`text-[0.55rem] font-bold text-white ${ig ? 'bg-pink-500' : 'bg-red-500'}`}>
+                            {(a.title || '?').slice(0, 2).toUpperCase()}
+                          </AvatarFallback>
                         </Avatar>
-                        <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Typography variant="body2" noWrap sx={{ fontWeight: 600, color: 'text.primary' }}>
-                            {a.title}
-                          </Typography>
-                        </Box>
-                        <Chip
-                          label={metric(a)}
-                          size="small"
-                          sx={{
-                            bgcolor: isIG ? '#fff0f6' : '#f6ffed',
-                            color: isIG ? '#c41d7f' : '#389e0d',
-                            fontWeight: 600,
-                            fontSize: '0.7rem',
-                            height: 22,
-                            border: '1px solid',
-                            borderColor: isIG ? '#ffadd2' : '#b7eb8f',
-                          }}
-                        />
-                      </Box>
+                        <span className="flex-1 text-sm font-medium truncate">{a.title}</span>
+                        <Badge variant="outline" className={`text-xs font-semibold ${ig ? 'border-pink-200 bg-pink-50 text-pink-700' : 'border-green-200 bg-green-50 text-green-700'}`}>
+                          {metric(a)}
+                        </Badge>
+                      </button>
                     );
                   })}
-                </MainCard>
-              </Grid>
+                </div>
+              </MainCard>
             ))}
-          </Grid>
+          </div>
 
-          {/* Full accounts table */}
+          {/* All accounts table */}
           <MainCard title="All Accounts" content={false}>
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell sx={{ width: 40 }}>#</TableCell>
-                    <TableCell>Account</TableCell>
-                    <TableCell align="center" sx={{ width: 80 }}>Platform</TableCell>
-                    <TableCell align="right">Audience</TableCell>
-                    <TableCell align="right">Content</TableCell>
-                    <TableCell align="right">Updated</TableCell>
-                    <TableCell align="center" sx={{ width: 52 }} />
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {sorted.byAudience.map((a, i) => {
-                    const isIG = a.platform === 'instagram';
-                    return (
-                      <TableRow
-                        key={a.id}
-                        onClick={() => handleViewChannel(a)}
-                        sx={{ cursor: 'pointer' }}
-                      >
-                        <TableCell>
-                          <Typography
-                            variant="body2"
-                            sx={{ fontWeight: 700, color: i < 3 ? '#faad14' : 'text.secondary' }}
-                          >
-                            {i + 1}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                            <Avatar
-                              src={a.thumbnail || a.profilePictureUrl || a.thumbnails?.default}
-                              sx={{ width: 32, height: 32, border: 'none', bgcolor: isIG ? '#E1306C' : '#FF0000' }}
-                            >
-                              {isIG ? <Instagram sx={{ fontSize: 14 }} /> : <YouTube sx={{ fontSize: 14 }} />}
-                            </Avatar>
-                            <Box>
-                              <Typography variant="body2" sx={{ fontWeight: 600 }}>{a.title}</Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {isIG ? `@${a.username || ''}` : (a.customUrl || a.channelId || '')}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </TableCell>
-                        <TableCell align="center">
-                          {isIG
-                            ? <Chip label="Instagram" size="small" sx={{ bgcolor: '#fff0f6', color: '#c41d7f', fontWeight: 600, fontSize: '0.65rem', height: 20 }} />
-                            : <Chip label="YouTube"   size="small" sx={{ bgcolor: '#fff1f0', color: '#a8071a', fontWeight: 600, fontSize: '0.65rem', height: 20 }} />}
-                        </TableCell>
-                        <TableCell align="right">
-                          <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                            {fmtNum(isIG ? a.followersCount : a.subscriberCount)}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {isIG ? 'followers' : 'subscribers'}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="right">
-                          <Typography variant="body2">
-                            {isIG
-                              ? `${fmtNum(a.mediaCount)} posts`
-                              : `${fmtNum(a.viewCount)} views · ${fmtNum(a.videoCount)} vids`}
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="right">
-                          <Typography variant="caption" color="text.secondary">{timeAgo(a.lastUpdated)}</Typography>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Tooltip title="View Analytics">
-                            <IconButton
-                              size="small"
-                              onClick={(e) => { e.stopPropagation(); handleViewChannel(a); }}
-                              sx={{ color: 'text.secondary', '&:hover': { color: PRIMARY.main, bgcolor: PRIMARY.lighter } }}
-                            >
-                              <OpenInNew sx={{ fontSize: 14 }} />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </TableContainer>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-10">#</TableHead>
+                  <TableHead>Account</TableHead>
+                  <TableHead className="text-center">Platform</TableHead>
+                  <TableHead className="text-right">Audience</TableHead>
+                  <TableHead className="text-right">Content</TableHead>
+                  <TableHead className="text-right">Updated</TableHead>
+                  <TableHead className="w-10" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {sorted.byAudience.map((a, i) => {
+                  const ig = a.platform === 'instagram';
+                  const medalColor = i === 0 ? 'text-yellow-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-orange-400' : 'text-muted-foreground';
+                  return (
+                    <TableRow key={a.id} className="cursor-pointer" onClick={() => handleViewChannel(a)}>
+                      <TableCell>
+                        <span className={`text-xs font-bold ${medalColor}`}>{i + 1}</span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2.5">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={a.thumbnail || a.profilePictureUrl || a.thumbnails?.default} />
+                            <AvatarFallback className={`text-xs font-bold text-white ${ig ? 'bg-pink-500' : 'bg-red-500'}`}>
+                              {(a.title || '?').slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="text-sm font-semibold leading-none">{a.title}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">
+                              {ig ? `@${a.username || ''}` : (a.customUrl || a.channelId || '')}
+                            </p>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Badge variant="outline" className={`text-xs ${ig ? 'border-pink-200 bg-pink-50 text-pink-700' : 'border-red-200 bg-red-50 text-red-700'}`}>
+                          {ig ? 'Instagram' : 'YouTube'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <p className="text-sm font-semibold">{fmtNum(ig ? a.followersCount : a.subscriberCount)}</p>
+                        <p className="text-xs text-muted-foreground">{ig ? 'followers' : 'subscribers'}</p>
+                      </TableCell>
+                      <TableCell className="text-right text-sm">
+                        {ig ? `${fmtNum(a.mediaCount)} posts` : `${fmtNum(a.viewCount)} views · ${fmtNum(a.videoCount)} vids`}
+                      </TableCell>
+                      <TableCell className="text-right text-xs text-muted-foreground">
+                        {timeAgo(a.lastUpdated)}
+                      </TableCell>
+                      <TableCell>
+                        <Tooltip>
+                          <TooltipTrigger render={<Button variant="ghost" size="icon" className="size-7" onClick={(e) => { e.stopPropagation(); handleViewChannel(a); }} />}>
+                            <ExternalLink />
+                          </TooltipTrigger>
+                          <TooltipContent>View Analytics</TooltipContent>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
           </MainCard>
         </>
       )}
-    </Box>
+    </div>
   );
 }
