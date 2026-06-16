@@ -128,7 +128,8 @@ async function syncAccountsSecretToGitHub() {
             headers: { Authorization: `token ${gh.token}`, 'User-Agent': 'SocialMediaDashboard' }
         });
         if (!pkRes.ok) {
-            console.error('  ☁️ Failed to get GitHub public key:', (await pkRes.json()).message);
+            const msg = (await pkRes.json()).message || pkRes.status;
+            console.log(`  ☁️ Skipping ACCOUNTS_JSON secret sync (${msg}). Grant "Secrets: Read and write" on your PAT to enable this.`);
             return;
         }
         const { key: publicKey, key_id } = await pkRes.json();
