@@ -1,4 +1,4 @@
-// fetch is a global in Cloudflare Workers — no import needed.
+﻿// fetch is a global in Cloudflare Workers - no import needed.
 import { getAccounts, updateAccount } from '../lib/db.js';
 
 const IG_GRAPH_URL = 'https://graph.instagram.com';
@@ -44,7 +44,7 @@ export async function exchangeForLongLivedToken(shortToken, appSecret) {
         client_secret: appSecret,
         access_token: shortToken,
     });
-    if (!data.access_token) throw new Error('Failed to exchange token — check Instagram App Secret');
+    if (!data.access_token) throw new Error('Failed to exchange token - check Instagram App Secret');
     return {
         accessToken: data.access_token,
         tokenType: data.token_type || 'bearer',
@@ -83,7 +83,7 @@ export async function autoRefreshInstagramTokens(supabase) {
                 const refreshed = await refreshLongLivedToken(account.accessToken);
                 const tokenExpiresAt = new Date(Date.now() + (refreshed.expiresIn || 5184000) * 1000).toISOString();
                 await updateAccount(supabase, account.id, { accessToken: refreshed.accessToken, tokenExpiresAt });
-                console.log(`Token refreshed for @${account.username} — expires ${tokenExpiresAt}`);
+                console.log(`Token refreshed for @${account.username} - expires ${tokenExpiresAt}`);
             } catch (err) {
                 console.error(`Failed to refresh token for @${account.username}: ${err.message}`);
             }

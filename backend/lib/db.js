@@ -1,7 +1,7 @@
-// All functions accept `supabase` as first argument so they work both in
+﻿// All functions accept `supabase` as first argument so they work both in
 // request handlers (where supabase comes from context) and in cron handlers
 // (where supabase is created from env). userId=null means service-level
-// (no user filter) — used by the scheduler and token refresh cron.
+// (no user filter) - used by the scheduler and token refresh cron.
 
 // ── Accounts ──────────────────────────────────────────────────────────────────
 
@@ -51,7 +51,7 @@ export async function deleteAccount(supabase, id, userId = null) {
 }
 
 // ── Settings (API Keys) ───────────────────────────────────────────────────────
-// Table: settings (user_id uuid, key text, value jsonb) — PK is (user_id, key)
+// Table: settings (user_id uuid, key text, value jsonb) - PK is (user_id, key)
 
 const DEFAULT_KEYS = {};
 
