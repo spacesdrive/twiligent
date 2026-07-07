@@ -1,12 +1,20 @@
-const API = 'http://localhost:3001/api';
+import { supabase } from '../lib/supabase';
+
+const API = import.meta.env.VITE_API_URL || 'http://localhost:8787/api';
 
 async function request(path, options = {}) {
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+
     const res = await fetch(`${API}${path}`, {
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
         ...options,
     });
     const data = await res.json();
-    if (!res.ok && !data.success) throw new Error(data.message || 'Request failed');
+    if (!res.ok && !data.success) throw new Error(data.message || data.error || 'Request failed');
     return data;
 }
 
@@ -14,10 +22,8 @@ export const api = {
     // Health
     health: () => request('/health'),
 
-    // API Keys
+    // Server key status — all keys are env vars, this just returns configured: true/false
     getKeys: () => request('/keys'),
-    saveKey: (youtube) => request('/keys', { method: 'POST', body: JSON.stringify({ youtube }) }),
-    saveKeys: (data) => request('/keys', { method: 'POST', body: JSON.stringify(data) }),
 
     // Accounts
     getAccounts: () => request('/accounts'),
@@ -25,6 +31,9 @@ export const api = {
     deleteAccount: (id) => request(`/accounts/${id}`, { method: 'DELETE' }),
     refreshAccount: (id) => request(`/accounts/${id}/refresh`, { method: 'POST' }),
     refreshAll: () => request('/accounts/refresh-all', { method: 'POST' }),
+
+    // Instagram OAuth — gets the auth URL to redirect the browser to
+    getInstagramAuthUrl: () => request('/auth/instagram/url'),
 
     // Instagram accounts
     addInstagramAccount: (accessToken) => request('/accounts/instagram', { method: 'POST', body: JSON.stringify({ accessToken }) }),
@@ -58,8 +67,4 @@ export const api = {
     deleteScheduledPost: (id) => request(`/scheduled-posts/${id}`, { method: 'DELETE' }),
     deleteAllScheduledPosts: () => request('/scheduled-posts', { method: 'DELETE' }),
     processScheduled: () => request('/process-scheduled'),
-
-    // GitHub Sync
-    syncToGitHub: () => request('/github-sync', { method: 'POST' }),
-    pullFromGitHub: () => request('/github-pull', { method: 'POST' }),
 };
