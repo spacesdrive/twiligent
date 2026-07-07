@@ -30,6 +30,7 @@ export async function setIGCache(redis, userId, accountId, data) {
 export async function deleteIGCache(redis, userId, accountId) {
     if (!redis) return;
     try { await redis.del(`ig:${userId}:${accountId}`); } catch { /* non-fatal */ }
+}
 
 // ---- OAuth state via HMAC (no Redis required) --------------------------------
 // State format: base64url(userId:timestamp) . base64url(HMAC-SHA256 signature)
