@@ -8,9 +8,10 @@ import {
   BreadcrumbList, BreadcrumbPage, BreadcrumbSeparator,
 } from '@/components/ui/breadcrumb';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { RefreshCw, Settings, Sun, Moon } from 'lucide-react';
+import { RefreshCw, Settings, Sun, Moon, LogOut } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { useAppContext } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
 import { cn } from '@/lib/utils';
 
 const BREADCRUMB_MAP = {
@@ -28,6 +29,7 @@ export default function AppHeader() {
   const location = useLocation();
   const { loading, refreshAll } = useAppContext();
   const { resolvedTheme, setTheme } = useTheme();
+  const { user, signOut } = useAuth();
   const isDark = resolvedTheme === 'dark';
 
   let crumb = BREADCRUMB_MAP[location.pathname];
@@ -36,6 +38,13 @@ export default function AppHeader() {
   } else if (!crumb && location.pathname.startsWith('/instagram/')) {
     crumb = { label: 'Instagram Analytics', parent: 'Analytics' };
   }
+
+  async function handleSignOut() {
+    await signOut();
+    navigate('/login');
+  }
+
+  const emailInitial = user?.email?.[0]?.toUpperCase() ?? 'T';
 
   return (
     <header className="flex h-14 shrink-0 items-center gap-2 border-b border-border bg-background/95 backdrop-blur px-4">
@@ -93,8 +102,17 @@ export default function AppHeader() {
           <TooltipContent>Settings</TooltipContent>
         </Tooltip>
 
+        <Tooltip>
+          <TooltipTrigger render={<Button variant="ghost" size="icon" className="size-8" onClick={handleSignOut} />}>
+            <LogOut />
+          </TooltipTrigger>
+          <TooltipContent>Sign out ({user?.email})</TooltipContent>
+        </Tooltip>
+
         <Avatar className="size-8 ml-1">
-          <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold">T</AvatarFallback>
+          <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold">
+            {emailInitial}
+          </AvatarFallback>
         </Avatar>
       </div>
     </header>
