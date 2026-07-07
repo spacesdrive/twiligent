@@ -1,19 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Separator } from '@/components/ui/separator';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Plus, Trash2, RefreshCw, Search, Users, CheckCircle2,
-  Tv, Camera, KeyRound, Link2, Info,
+  Tv, Camera, Link2, Info, ExternalLink,
 } from 'lucide-react';
 import MainCard from '../../components/MainCard';
 import { useAppContext } from '../../context/AppContext';
@@ -26,11 +23,33 @@ export default function AccountManager() {
   const [dialogOpen,   setDialogOpen]   = useState(false);
   const [dialogTab,    setDialogTab]    = useState('youtube');
   const [input,        setInput]        = useState('');
-  const [igToken,      setIgToken]      = useState('');
   const [resolving,    setResolving]    = useState(false);
   const [resolved,     setResolved]     = useState(null);
   const [adding,       setAdding]       = useState(false);
+  const [connecting,   setConnecting]   = useState(false);
   const [refreshingId, setRefreshingId] = useState(null);
+
+  // Handle Instagram OAuth redirect result (?ig_connected=true or ?ig_error=...)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const connected = params.get('ig_connected');
+    const igError   = params.get('ig_error');
+
+    if (connected === 'true') {
+      showToast('Instagram account connected successfully!');
+      window.history.replaceState({}, '', window.location.pathname);
+      loadAccounts();
+    } else if (igError) {
+      const msg =
+        igError === 'already_added'   ? 'This Instagram account is already connected' :
+        igError === 'cancelled'        ? 'Instagram authorization was cancelled' :
+        igError === 'access_denied'    ? 'Instagram authorization was denied' :
+        igError === 'invalid_state'    ? 'Authorization expired — please try again' :
+        'Instagram connection failed: ' + igError;
+      showToast(msg, 'error');
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
   const handleResolve = async () => {
     if (!input.trim()) return;
@@ -61,18 +80,15 @@ export default function AccountManager() {
     }
   };
 
-  const handleAddInstagram = async () => {
-    if (!igToken.trim()) return;
-    setAdding(true);
+  const handleConnectInstagram = async () => {
+    setConnecting(true);
     try {
-      await api.addInstagramAccount(igToken.trim());
-      showToast('Instagram account added successfully!');
-      closeDialog();
-      loadAccounts();
+      const { url } = await api.getInstagramAuthUrl();
+      // Navigate the same tab — Instagram will redirect back to /accounts?ig_connected=true
+      window.location.href = url;
     } catch (err) {
-      showToast('Failed to add Instagram account: ' + err.message, 'error');
-    } finally {
-      setAdding(false);
+      showToast('Failed to start Instagram login: ' + err.message, 'error');
+      setConnecting(false);
     }
   };
 
@@ -116,7 +132,6 @@ export default function AccountManager() {
     setDialogOpen(false);
     setResolved(null);
     setInput('');
-    setIgToken('');
   };
 
   const ytAccounts = accounts.filter(a => a.platform !== 'instagram');
@@ -153,7 +168,7 @@ export default function AccountManager() {
             <div>
               <h3 className="text-lg font-semibold">No Accounts Added</h3>
               <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-                Add a YouTube channel or Instagram account to start tracking analytics.
+                Add a YouTube channel or connect an Instagram account to start tracking analytics.
               </p>
             </div>
             <Button onClick={() => setDialogOpen(true)} className="gap-2">
@@ -285,40 +300,34 @@ export default function AccountManager() {
             </TabsContent>
 
             <TabsContent value="instagram" className="space-y-4 mt-4">
+              <p className="text-sm text-muted-foreground">
+                You'll be taken to Instagram to log in and grant access. After approval, you'll be redirected back automatically.
+              </p>
+              <Button
+                onClick={handleConnectInstagram}
+                disabled={connecting}
+                className="w-full gap-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white border-0"
+              >
+                {connecting
+                  ? <RefreshCw className="h-4 w-4 animate-spin" />
+                  : <ExternalLink className="h-4 w-4" />}
+                {connecting ? 'Opening Instagram…' : 'Connect with Instagram'}
+              </Button>
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription className="text-xs">
-                  Paste your <strong>Instagram Access Token</strong> from the App Dashboard. Your account must be a <strong>Business</strong> or <strong>Creator</strong> account.
+                  Your account must be a <strong>Business</strong> or <strong>Creator</strong> professional account. Personal accounts are not supported by the Instagram API.
                 </AlertDescription>
               </Alert>
-              <div className="relative">
-                <KeyRound className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Textarea
-                  className="pl-9 resize-none"
-                  rows={3}
-                  value={igToken}
-                  onChange={e => setIgToken(e.target.value)}
-                  placeholder="Paste your Instagram access token here…"
-                />
-              </div>
             </TabsContent>
           </Tabs>
 
           <DialogFooter>
             <Button variant="ghost" onClick={closeDialog}>Cancel</Button>
-            {dialogTab === 'youtube' ? (
+            {dialogTab === 'youtube' && (
               <Button onClick={handleAdd} disabled={!input.trim() || adding} className="gap-1.5">
                 {adding && <RefreshCw className="h-3.5 w-3.5 animate-spin" />}
                 Add Channel
-              </Button>
-            ) : (
-              <Button
-                onClick={handleAddInstagram}
-                disabled={!igToken.trim() || adding}
-                className="gap-1.5 bg-pink-600 hover:bg-pink-700 text-white"
-              >
-                {adding && <RefreshCw className="h-3.5 w-3.5 animate-spin" />}
-                Add Instagram
               </Button>
             )}
           </DialogFooter>
