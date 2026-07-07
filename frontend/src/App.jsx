@@ -3,8 +3,11 @@ import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { AuthProvider } from './context/AuthContext';
 import { AppProvider } from './context/AppContext';
+import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './layout/index';
+import Login from './pages/Login';
 
 const Overview           = lazy(() => import('./features/analytics/overview/Overview'));
 const ChannelAnalytics   = lazy(() => import('./features/analytics/channel/ChannelAnalytics'));
@@ -18,8 +21,18 @@ const Settings           = lazy(() => import('./features/settings/Settings'));
 
 const router = createBrowserRouter([
   {
+    path: '/login',
+    element: <Login />,
+  },
+  {
     path: '/',
-    element: <MainLayout />,
+    element: (
+      <ProtectedRoute>
+        <AppProvider>
+          <MainLayout />
+        </AppProvider>
+      </ProtectedRoute>
+    ),
     children: [
       { index: true,           element: <Overview /> },
       { path: 'channel/:id',   element: <ChannelAnalytics /> },
@@ -35,31 +48,16 @@ const router = createBrowserRouter([
   },
 ]);
 
-function PageFallback() {
-  return (
-    <div className="flex-1 p-4 sm:p-6 space-y-4 animate-pulse">
-      <div className="h-8 w-48 rounded-md bg-muted" />
-      <div className="h-4 w-72 rounded-md bg-muted" />
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mt-6">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-28 rounded-xl bg-muted" />
-        ))}
-      </div>
-      <div className="h-64 rounded-xl bg-muted" />
-    </div>
-  );
-}
-
 export default function App() {
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       <TooltipProvider>
-        <AppProvider>
+        <AuthProvider>
           <Suspense fallback={null}>
             <RouterProvider router={router} />
           </Suspense>
           <Toaster position="bottom-right" richColors />
-        </AppProvider>
+        </AuthProvider>
       </TooltipProvider>
     </ThemeProvider>
   );
