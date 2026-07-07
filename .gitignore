@@ -8,6 +8,20 @@ backend/data/
 backend/.env
 backend/.dev.vars
 frontend/.env
+.env
+.env.local
+.env.*.local
+
+# Wrangler local state (can contain auth tokens and cached secrets)
+.wrangler/
+backend/.wrangler/
+frontend/.wrangler/
+
+# Certificates and private keys
+*.pem
+*.key
+*.p12
+*.pfx
 
 # Frontend build
 frontend/dist/
