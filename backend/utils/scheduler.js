@@ -1,33 +1,24 @@
-const fetch = require('node-fetch');
-const { readJSON, writeJSON, SCHEDULED_POSTS_FILE, ACCOUNTS_FILE } = require('./dataHelpers');
+// fetch is a global in Cloudflare Workers.
+import { getDuePosts, updatePost, getAccountById } from '../lib/db.js';
 
-function generateId() {
+export function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
 }
 
-let isProcessing = false;
-
-async function processScheduledPosts() {
-    if (isProcessing) return { processed: 0, message: 'Already processing' };
-    isProcessing = true;
+// Called by the cron trigger (every 15 min). Receives supabase directly since
+// there is no Hono request context in cron handlers.
+export async function processScheduledPosts(supabase) {
     let processed = 0;
-    let errors = [];
+    const errors = [];
 
     try {
-        const posts = await readJSON(SCHEDULED_POSTS_FILE) || [];
-        const accounts = await readJSON(ACCOUNTS_FILE) || [];
-        const now = new Date();
+        const duePosts = await getDuePosts(supabase);
 
-        for (const post of posts) {
-            if (post.status !== 'pending') continue;
-            const scheduledDate = new Date(post.scheduledAt);
-            if (scheduledDate > now) continue;
-
-            post.status = 'publishing';
-            await writeJSON(SCHEDULED_POSTS_FILE, posts);
+        for (const post of duePosts) {
+            await updatePost(supabase, post.id, { status: 'publishing' });
 
             try {
-                const acct = accounts.find(a => a.id === post.accountId);
+                const acct = await getAccountById(supabase, post.accountId);
                 if (!acct) throw new Error('Account not found: ' + post.accountId);
 
                 const igId = acct.igUserId;
@@ -90,28 +81,23 @@ async function processScheduledPosts() {
                 const pubData = await pubRes.json();
                 if (pubData.error) throw new Error(pubData.error.message);
 
-                post.status = 'published';
-                post.publishedMediaId = pubData.id;
-                post.publishedAt = new Date().toISOString();
+                await updatePost(supabase, post.id, {
+                    status: 'published',
+                    publishedMediaId: pubData.id,
+                    publishedAt: new Date().toISOString(),
+                });
                 processed++;
-                console.log(`  ✓ Published scheduled post ${post.id} → media ${pubData.id}`);
+                console.log(`Published scheduled post ${post.id} → media ${pubData.id}`);
 
             } catch (err) {
-                post.status = 'failed';
-                post.error = err.message;
+                await updatePost(supabase, post.id, { status: 'failed', error: err.message });
                 errors.push({ id: post.id, error: err.message });
-                console.error(`  ✗ Failed to publish scheduled post ${post.id}: ${err.message}`);
+                console.error(`Failed to publish scheduled post ${post.id}: ${err.message}`);
             }
-
-            await writeJSON(SCHEDULED_POSTS_FILE, posts);
         }
     } catch (err) {
         console.error('Scheduler error:', err);
-    } finally {
-        isProcessing = false;
     }
 
     return { processed, errors };
 }
-
-module.exports = { generateId, processScheduledPosts, get isProcessing() { return isProcessing; } };
