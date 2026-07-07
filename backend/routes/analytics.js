@@ -1,38 +1,40 @@
-const router = require('express').Router();
-const { readJSON, writeJSON, ACCOUNTS_FILE, VIDEOS_CACHE_FILE, IG_CACHE_FILE, getAPIKey } = require('../utils/dataHelpers');
-const { fetchAllVideos, fetchChannelData, computeVideoAnalytics } = require('../services/youtube');
-const { fetchInstagramProfile, fetchInstagramMedia, computeInstagramAnalytics } = require('../services/instagram');
+import { Hono } from 'hono';
+import { getAccounts, getAccountById, updateAccount } from '../lib/db.js';
+import { getVideosCache, setVideosCache, getIGCache, setIGCache } from '../lib/cache.js';
+import { fetchAllVideos, fetchChannelData, computeVideoAnalytics } from '../services/youtube.js';
+import { fetchInstagramProfile, fetchInstagramMedia, computeInstagramAnalytics } from '../services/instagram.js';
 
-router.get('/accounts/:id/analytics', async (req, res) => {
+const app = new Hono();
+
+app.get('/accounts/:id/analytics', async (c) => {
     try {
-        const apiKey = await getAPIKey();
-        if (!apiKey) return res.status(400).json({ success: false, message: 'No API key' });
+        const supabase = c.get('supabase');
+        const userId = c.get('userId');
+        const apiKey = c.env.YOUTUBE_API_KEY;
+        if (!apiKey) return c.json({ success: false, message: 'No API key' }, 400);
 
-        const accounts = await readJSON(ACCOUNTS_FILE);
-        const account = accounts.find(a => a.id === req.params.id);
-        if (!account) return res.status(404).json({ success: false, message: 'Not found' });
+        const account = await getAccountById(supabase, c.req.param('id'), userId);
+        if (!account) return c.json({ success: false, message: 'Not found' }, 404);
 
         const videos = await fetchAllVideos(account.uploadsPlaylistId, apiKey, 10);
-
-        const cache = await readJSON(VIDEOS_CACHE_FILE) || {};
-        cache[req.params.id] = { videos, fetchedAt: new Date().toISOString() };
-        await writeJSON(VIDEOS_CACHE_FILE, cache);
-
+        await setVideosCache(c.get('redis'), userId, c.req.param('id'), { videos, fetchedAt: new Date().toISOString() });
         const analytics = computeVideoAnalytics(videos);
 
         if (!account.publishedAt) {
             try {
                 const channelData = await fetchChannelData(account.channelId, apiKey);
-                account.publishedAt = channelData.publishedAt;
-                account.subscriberCount = channelData.subscriberCount;
-                account.viewCount = channelData.viewCount;
-                account.videoCount = channelData.videoCount;
-                account.title = channelData.title;
-                account.thumbnails = channelData.thumbnails;
-                account.customUrl = channelData.customUrl;
-                account.country = channelData.country;
-                account.lastUpdated = new Date().toISOString();
-                await writeJSON(ACCOUNTS_FILE, accounts);
+                await updateAccount(supabase, account.id, {
+                    publishedAt: channelData.publishedAt,
+                    subscriberCount: channelData.subscriberCount,
+                    viewCount: channelData.viewCount,
+                    videoCount: channelData.videoCount,
+                    title: channelData.title,
+                    thumbnails: channelData.thumbnails,
+                    customUrl: channelData.customUrl,
+                    country: channelData.country,
+                    lastUpdated: new Date().toISOString(),
+                }, userId);
+                Object.assign(account, channelData);
             } catch (e) {
                 console.error('Failed to backfill channel data:', e.message);
             }
@@ -47,7 +49,7 @@ router.get('/accounts/:id/analytics', async (req, res) => {
         const avgSubGainPerDay = channelAge > 0 ? Math.round(account.subscriberCount / channelAge) : 0;
         const avgViewsPerDay = channelAge > 0 ? Math.round(account.viewCount / channelAge) : 0;
 
-        res.json({
+        return c.json({
             success: true,
             channel: {
                 ...account,
@@ -68,40 +70,42 @@ router.get('/accounts/:id/analytics', async (req, res) => {
         });
     } catch (err) {
         const safe = err.message.replace(/https?:\/\/[^\s)]+/g, '[url]');
-        res.status(400).json({ success: false, message: safe });
+        return c.json({ success: false, message: safe }, 400);
     }
 });
 
-router.get('/accounts/:id/videos', async (req, res) => {
+app.get('/accounts/:id/videos', async (c) => {
     try {
-        const cache = await readJSON(VIDEOS_CACHE_FILE) || {};
-        const accountCache = cache[req.params.id];
+        const supabase = c.get('supabase');
+        const redis = c.get('redis');
+        const userId = c.get('userId');
+        const id = c.req.param('id');
 
-        if (accountCache && accountCache.videos) {
-            return res.json({ success: true, videos: accountCache.videos, fetchedAt: accountCache.fetchedAt });
+        const cached = await getVideosCache(redis, userId, id);
+        if (cached && cached.videos) {
+            return c.json({ success: true, videos: cached.videos, fetchedAt: cached.fetchedAt });
         }
 
-        const apiKey = await getAPIKey();
-        if (!apiKey) return res.status(400).json({ success: false, message: 'No API key' });
+        const apiKey = c.env.YOUTUBE_API_KEY;
+        if (!apiKey) return c.json({ success: false, message: 'No API key' }, 400);
 
-        const accounts = await readJSON(ACCOUNTS_FILE);
-        const account = accounts.find(a => a.id === req.params.id);
-        if (!account) return res.status(404).json({ success: false, message: 'Not found' });
+        const account = await getAccountById(supabase, id, userId);
+        if (!account) return c.json({ success: false, message: 'Not found' }, 404);
 
         const videos = await fetchAllVideos(account.uploadsPlaylistId, apiKey, 10);
-        cache[req.params.id] = { videos, fetchedAt: new Date().toISOString() };
-        await writeJSON(VIDEOS_CACHE_FILE, cache);
+        const fetchedAt = new Date().toISOString();
+        await setVideosCache(redis, userId, id, { videos, fetchedAt });
 
-        res.json({ success: true, videos, fetchedAt: cache[req.params.id].fetchedAt });
+        return c.json({ success: true, videos, fetchedAt });
     } catch (err) {
-        res.status(400).json({ success: false, message: err.message });
+        return c.json({ success: false, message: err.message }, 400);
     }
 });
 
-router.get('/comparison', async (req, res) => {
+app.get('/comparison', async (c) => {
     try {
-        const accounts = await readJSON(ACCOUNTS_FILE);
-        if (accounts.length === 0) return res.json({ success: true, comparison: null });
+        const accounts = await getAccounts(c.get('supabase'), c.get('userId'));
+        if (accounts.length === 0) return c.json({ success: true, comparison: null });
 
         const sorted = {
             bySubscribers: [...accounts].sort((a, b) => b.subscriberCount - a.subscriberCount),
@@ -110,12 +114,12 @@ router.get('/comparison', async (req, res) => {
         };
 
         const totals = accounts.reduce((acc, a) => ({
-            subscribers: acc.subscribers + a.subscriberCount,
-            views: acc.views + a.viewCount,
-            videos: acc.videos + a.videoCount,
+            subscribers: acc.subscribers + (a.subscriberCount || 0),
+            views: acc.views + (a.viewCount || 0),
+            videos: acc.videos + (a.videoCount || 0),
         }), { subscribers: 0, views: 0, videos: 0 });
 
-        res.json({
+        return c.json({
             success: true,
             comparison: {
                 rankings: sorted,
@@ -127,90 +131,102 @@ router.get('/comparison', async (req, res) => {
             },
         });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        return c.json({ success: false, message: err.message }, 500);
     }
 });
 
-router.get('/accounts/:id/ig-analytics', async (req, res) => {
+app.get('/accounts/:id/ig-analytics', async (c) => {
     try {
-        const accounts = await readJSON(ACCOUNTS_FILE);
-        const account = accounts.find(a => a.id === req.params.id && a.platform === 'instagram');
-        if (!account) return res.status(404).json({ success: false, message: 'Instagram account not found' });
-        if (!account.accessToken) return res.status(400).json({ success: false, message: 'No access token stored' });
+        const supabase = c.get('supabase');
+        const redis = c.get('redis');
+        const userId = c.get('userId');
+        const id = c.req.param('id');
+
+        const account = await getAccountById(supabase, id, userId);
+        if (!account || account.platform !== 'instagram') {
+            return c.json({ success: false, message: 'Instagram account not found' }, 404);
+        }
+        if (!account.accessToken) {
+            return c.json({ success: false, message: 'No access token stored' }, 400);
+        }
 
         const profile = await fetchInstagramProfile(account.igUserId, account.accessToken);
         const media = await fetchInstagramMedia(account.igUserId, account.accessToken, 500);
 
-        const igCache = await readJSON(IG_CACHE_FILE) || {};
-        igCache[req.params.id] = { media, fetchedAt: new Date().toISOString() };
-        await writeJSON(IG_CACHE_FILE, igCache);
+        await setIGCache(redis, userId, id, { media, fetchedAt: new Date().toISOString() });
+        await updateAccount(supabase, account.id, {
+            followersCount: profile.followersCount,
+            followsCount: profile.followsCount,
+            mediaCount: profile.mediaCount,
+            profilePictureUrl: profile.profilePictureUrl,
+            lastUpdated: new Date().toISOString(),
+        }, userId);
 
         const analytics = computeInstagramAnalytics(profile, media);
+        const { accessToken: _, ...safeAcc } = account;
 
-        account.followersCount = profile.followersCount;
-        account.followsCount = profile.followsCount;
-        account.mediaCount = profile.mediaCount;
-        account.profilePictureUrl = profile.profilePictureUrl;
-        account.lastUpdated = new Date().toISOString();
-        await writeJSON(ACCOUNTS_FILE, accounts);
-
-        const safeAccount = { ...account };
-        delete safeAccount.accessToken;
-
-        res.json({
+        return c.json({
             success: true,
             profile: { ...profile },
-            account: safeAccount,
+            account: safeAcc,
             analytics,
             mediaCount: media.length,
         });
     } catch (err) {
-        // Strip URLs from error messages to avoid leaking access tokens
         const safe = err.message.replace(/https?:\/\/[^\s)]+/g, '[url]');
-        res.status(400).json({ success: false, message: safe });
+        return c.json({ success: false, message: safe }, 400);
     }
 });
 
-router.get('/accounts/:id/ig-media', async (req, res) => {
+app.get('/accounts/:id/ig-media', async (c) => {
     try {
-        const igCache = await readJSON(IG_CACHE_FILE) || {};
-        const cached = igCache[req.params.id];
+        const supabase = c.get('supabase');
+        const redis = c.get('redis');
+        const userId = c.get('userId');
+        const id = c.req.param('id');
+
+        const cached = await getIGCache(redis, userId, id);
         if (cached && cached.media) {
-            return res.json({ success: true, media: cached.media, fetchedAt: cached.fetchedAt });
+            return c.json({ success: true, media: cached.media, fetchedAt: cached.fetchedAt });
         }
 
-        const accounts = await readJSON(ACCOUNTS_FILE);
-        const account = accounts.find(a => a.id === req.params.id && a.platform === 'instagram');
-        if (!account) return res.status(404).json({ success: false, message: 'Not found' });
-        if (!account.accessToken) return res.status(400).json({ success: false, message: 'No access token' });
+        const account = await getAccountById(supabase, id, userId);
+        if (!account || account.platform !== 'instagram') {
+            return c.json({ success: false, message: 'Not found' }, 404);
+        }
+        if (!account.accessToken) {
+            return c.json({ success: false, message: 'No access token' }, 400);
+        }
 
         const media = await fetchInstagramMedia(account.igUserId, account.accessToken, 500);
-        igCache[req.params.id] = { media, fetchedAt: new Date().toISOString() };
-        await writeJSON(IG_CACHE_FILE, igCache);
+        const fetchedAt = new Date().toISOString();
+        await setIGCache(redis, userId, id, { media, fetchedAt });
 
-        res.json({ success: true, media, fetchedAt: igCache[req.params.id].fetchedAt });
+        return c.json({ success: true, media, fetchedAt });
     } catch (err) {
         const safe = err.message.replace(/https?:\/\/[^\s)]+/g, '[url]');
-        res.status(400).json({ success: false, message: safe });
+        return c.json({ success: false, message: safe }, 400);
     }
 });
 
-router.get('/videos/all', async (req, res) => {
+app.get('/videos/all', async (c) => {
     try {
-        const { channelId, sort, order, search, minViews, maxViews } = req.query;
-        const cache = await readJSON(VIDEOS_CACHE_FILE) || {};
-        const accounts = await readJSON(ACCOUNTS_FILE) || [];
+        const supabase = c.get('supabase');
+        const redis = c.get('redis');
+        const userId = c.get('userId');
+        const { channelId, sort, order, search, minViews, maxViews } = c.req.query();
+        const accounts = await getAccounts(supabase, userId);
 
         let allVideos = [];
         for (const acct of accounts) {
             if (channelId && acct.id !== channelId) continue;
-            const cached = cache[acct.id];
+            const cached = await getVideosCache(redis, userId, acct.id);
             if (cached && cached.videos) {
                 allVideos.push(...cached.videos.map(v => ({
                     ...v,
-                    channelTitle: acct.title || acct.name || acct.channelTitle,
+                    channelTitle: acct.title || acct.channelTitle,
                     channelId: acct.id,
-                    channelThumbnail: acct.thumbnails?.default || acct.thumbnailUrl || '',
+                    channelThumbnail: acct.thumbnails?.default || '',
                 })));
             }
         }
@@ -222,7 +238,6 @@ router.get('/videos/all', async (req, res) => {
                 (v.tags || []).some(t => t.toLowerCase().includes(q))
             );
         }
-
         if (minViews) allVideos = allVideos.filter(v => (v.viewCount || 0) >= parseInt(minViews));
         if (maxViews) allVideos = allVideos.filter(v => (v.viewCount || 0) <= parseInt(maxViews));
 
@@ -235,15 +250,15 @@ router.get('/videos/all', async (req, res) => {
             return sortOrder * (bVal - aVal);
         });
 
-        res.json({
+        return c.json({
             success: true,
             videos: allVideos,
             total: allVideos.length,
-            channels: accounts.map(a => ({ id: a.id, title: a.title || a.name })),
+            channels: accounts.map(a => ({ id: a.id, title: a.title })),
         });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        return c.json({ success: false, message: err.message }, 500);
     }
 });
 
-module.exports = router;
+export default app;
