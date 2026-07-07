@@ -14,6 +14,11 @@ import { autoRefreshInstagramTokens } from './services/instagram.js';
 
 const app = new Hono();
 
+app.onError((err, c) => {
+    console.error('Worker error:', err.message);
+    return c.json({ error: 'Internal server error' }, 500);
+});
+
 // ── Global middleware ─────────────────────────────────────────────────────────
 
 app.use('*', cors());
