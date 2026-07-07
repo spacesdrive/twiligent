@@ -1,35 +1,35 @@
 // All functions accept `redis` as first argument.
-// If redis is null (Upstash not configured) all operations are silent no-ops.
+// If redis is null (Upstash not configured) or the call fails, all operations
+// are silent no-ops — cache failures must never break the main request.
 
 export async function getVideosCache(redis, userId, accountId) {
     if (!redis) return null;
-    return (await redis.get(`videos:${userId}:${accountId}`)) || null;
+    try { return (await redis.get(`videos:${userId}:${accountId}`)) || null; } catch { return null; }
 }
 
 export async function setVideosCache(redis, userId, accountId, data) {
     if (!redis) return;
-    await redis.set(`videos:${userId}:${accountId}`, data);
+    try { await redis.set(`videos:${userId}:${accountId}`, data); } catch { /* non-fatal */ }
 }
 
 export async function deleteVideosCache(redis, userId, accountId) {
     if (!redis) return;
-    await redis.del(`videos:${userId}:${accountId}`);
+    try { await redis.del(`videos:${userId}:${accountId}`); } catch { /* non-fatal */ }
 }
 
 export async function getIGCache(redis, userId, accountId) {
     if (!redis) return null;
-    return (await redis.get(`ig:${userId}:${accountId}`)) || null;
+    try { return (await redis.get(`ig:${userId}:${accountId}`)) || null; } catch { return null; }
 }
 
 export async function setIGCache(redis, userId, accountId, data) {
     if (!redis) return;
-    await redis.set(`ig:${userId}:${accountId}`, data);
+    try { await redis.set(`ig:${userId}:${accountId}`, data); } catch { /* non-fatal */ }
 }
 
 export async function deleteIGCache(redis, userId, accountId) {
     if (!redis) return;
-    await redis.del(`ig:${userId}:${accountId}`);
-}
+    try { await redis.del(`ig:${userId}:${accountId}`); } catch { /* non-fatal */ }
 
 // ---- OAuth state via HMAC (no Redis required) --------------------------------
 // State format: base64url(userId:timestamp) . base64url(HMAC-SHA256 signature)
