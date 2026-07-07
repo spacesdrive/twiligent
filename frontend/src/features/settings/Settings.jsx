@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import {
   RefreshCw, CheckCircle2, Info, AlertTriangle, ShieldCheck, GitBranch,
-  Key, ExternalLink, Copy, Check,
+  Key, ExternalLink, Copy, Check, Save,
 } from 'lucide-react';
 import MainCard from '../../components/MainCard';
 import { useAppContext } from '../../context/AppContext';
@@ -46,17 +48,45 @@ export default function Settings() {
   const [testResult,   setTestResult]     = useState(null);
   const [loading,      setLoading]        = useState(true);
 
+  const [ghPat,        setGhPat]          = useState('');
+  const [ghRepoOwner,  setGhRepoOwner]    = useState('');
+  const [ghRepoName,   setGhRepoName]     = useState('');
+  const [ghBranch,     setGhBranch]       = useState('main');
+  const [ghPatSet,     setGhPatSet]       = useState(false);
+  const [ghSaving,     setGhSaving]       = useState(false);
+
   useEffect(() => { loadStatus(); }, []);
 
   const loadStatus = async () => {
     setLoading(true);
     try {
-      const res = await api.getKeys();
-      setServerStatus(res);
+      const [keys, gh] = await Promise.all([api.getKeys(), api.getGithubSettings()]);
+      setServerStatus(keys);
+      setGhRepoOwner(gh.repoOwner || '');
+      setGhRepoName(gh.repoName || '');
+      setGhBranch(gh.branch || 'main');
+      setGhPatSet(gh.patSet || false);
     } catch {
-      // non-critical
+      try {
+        const keys = await api.getKeys();
+        setServerStatus(keys);
+      } catch { /* non-critical */ }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveGithub = async () => {
+    setGhSaving(true);
+    try {
+      await api.saveGithubSettings({ pat: ghPat || undefined, repoOwner: ghRepoOwner, repoName: ghRepoName, branch: ghBranch });
+      showToast('GitHub settings saved');
+      if (ghPat) setGhPatSet(true);
+      setGhPat('');
+    } catch (err) {
+      showToast('Failed to save: ' + err.message, 'error');
+    } finally {
+      setGhSaving(false);
     }
   };
 
@@ -119,6 +149,81 @@ export default function Settings() {
                   ))}
                 </div>
               )}
+            </div>
+          </MainCard>
+
+          {/* GitHub credentials */}
+          <MainCard title="GitHub Integration">
+            <div className="space-y-4">
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border border-border">
+                <GitBranch className="h-5 w-5 text-foreground mt-0.5 flex-shrink-0" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Connect your GitHub repository</p>
+                  <p className="text-sm text-muted-foreground">
+                    Used for GitHub Actions-based scheduled publishing. The PAT lets the scheduler
+                    trigger workflows in your repository.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="gh-owner" className="text-xs">Repository owner</Label>
+                  <Input
+                    id="gh-owner"
+                    placeholder="spacesdrive"
+                    value={ghRepoOwner}
+                    onChange={e => setGhRepoOwner(e.target.value)}
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="gh-repo" className="text-xs">Repository name</Label>
+                  <Input
+                    id="gh-repo"
+                    placeholder="twiligent"
+                    value={ghRepoName}
+                    onChange={e => setGhRepoName(e.target.value)}
+                    className="h-8 text-sm"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="gh-branch" className="text-xs">Branch</Label>
+                <Input
+                  id="gh-branch"
+                  placeholder="main"
+                  value={ghBranch}
+                  onChange={e => setGhBranch(e.target.value)}
+                  className="h-8 text-sm"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="gh-pat" className="text-xs">
+                  Personal Access Token
+                  {ghPatSet && (
+                    <Badge variant="secondary" className="ml-2 text-xs font-normal">
+                      <CheckCircle2 className="h-3 w-3 mr-1 text-green-500" />saved
+                    </Badge>
+                  )}
+                </Label>
+                <Input
+                  id="gh-pat"
+                  type="password"
+                  placeholder={ghPatSet ? 'Enter new token to replace saved one' : 'github_pat_...'}
+                  value={ghPat}
+                  onChange={e => setGhPat(e.target.value)}
+                  className="h-8 text-sm font-mono"
+                />
+                <p className="text-xs text-muted-foreground">Leave blank to keep the existing token. See the guide below for how to create one.</p>
+              </div>
+
+              <Button size="sm" className="gap-2" onClick={handleSaveGithub} disabled={ghSaving}>
+                {ghSaving ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
+                Save GitHub Settings
+              </Button>
             </div>
           </MainCard>
 
