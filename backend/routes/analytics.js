@@ -10,11 +10,11 @@ app.get('/accounts/:id/analytics', async (c) => {
     try {
         const supabase = c.get('supabase');
         const userId = c.get('userId');
-        const apiKey = c.env.YOUTUBE_API_KEY;
+        const apiKey = c.env.YOUTUBE_API_KEY?.replace(/^﻿/, '').trim();
         if (!apiKey) return c.json({ success: false, message: 'No API key' }, 400);
 
         const account = await getAccountById(supabase, c.req.param('id'), userId);
-        if (!account) return c.json({ success: false, message: 'Not found' }, 404);
+        if (!account) return c.json({ success: false, message: 'Account not found' }, 404);
 
         const videos = await fetchAllVideos(account.uploadsPlaylistId, apiKey, 10);
         await setVideosCache(c.get('redis'), userId, c.req.param('id'), { videos, fetchedAt: new Date().toISOString() });
@@ -86,11 +86,11 @@ app.get('/accounts/:id/videos', async (c) => {
             return c.json({ success: true, videos: cached.videos, fetchedAt: cached.fetchedAt });
         }
 
-        const apiKey = c.env.YOUTUBE_API_KEY;
+        const apiKey = c.env.YOUTUBE_API_KEY?.replace(/^﻿/, '').trim();
         if (!apiKey) return c.json({ success: false, message: 'No API key' }, 400);
 
         const account = await getAccountById(supabase, id, userId);
-        if (!account) return c.json({ success: false, message: 'Not found' }, 404);
+        if (!account) return c.json({ success: false, message: 'Account not found' }, 404);
 
         const videos = await fetchAllVideos(account.uploadsPlaylistId, apiKey, 10);
         const fetchedAt = new Date().toISOString();
