@@ -1,14 +1,13 @@
 # Dependencies
 node_modules/
 
-# Sensitive data — NEVER commit these
-backend/data/accounts.json
-backend/data/api_keys.json
+# Data directory (all storage now lives in Supabase + Upstash Redis)
+backend/data/
 
-# Cache files
-backend/data/videos_cache.json
-backend/data/ig_cache.json
-backend/data/history.json
+# Environment variables
+backend/.env
+backend/.dev.vars
+frontend/.env
 
 # Frontend build
 frontend/dist/
