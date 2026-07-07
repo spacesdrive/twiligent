@@ -1,52 +1,56 @@
-﻿import { setOAuthState, getAndDeleteOAuthState } from '../lib/cache.js';
+﻿import { createOAuthState, verifyOAuthState } from '../lib/cache.js';
 import { createAccount, getAccounts } from '../lib/db.js';
 import { fetchInstagramProfile } from '../services/instagram.js';
 
 // GET /api/auth/instagram/url - protected (requireAuth applied by the sub-app in server.js)
 // Returns the Instagram OAuth authorization URL for the frontend to redirect to.
 export async function urlHandler(c) {
-    const APP_ID = c.env.INSTAGRAM_APP_ID;
-    const APP_SECRET = c.env.INSTAGRAM_APP_SECRET;
-    if (!APP_ID || !APP_SECRET) {
-        return c.json({ success: false, message: 'Instagram App credentials not configured on server' }, 500);
+    try {
+        const APP_ID = c.env.INSTAGRAM_APP_ID?.replace(/^﻿/, '').trim();
+        const APP_SECRET = c.env.INSTAGRAM_APP_SECRET?.replace(/^﻿/, '').trim();
+        if (!APP_ID || !APP_SECRET) {
+            return c.json({ success: false, message: 'Instagram App credentials not configured on server' }, 500);
+        }
+
+        const REDIRECT_URI = `${c.env.BACKEND_URL || 'http://localhost:8787'}/api/auth/instagram/callback`;
+
+        // HMAC-signed state - no Redis needed, userId + timestamp embedded
+        const state = await createOAuthState(c.get('userId'), APP_SECRET);
+
+        const params = new URLSearchParams({
+            enable_fb_login: '0',
+            force_authentication: '1',
+            client_id: APP_ID,
+            redirect_uri: REDIRECT_URI,
+            response_type: 'code',
+            scope: 'instagram_business_basic,instagram_business_content_publish,instagram_business_manage_insights,instagram_business_manage_comments',
+            state,
+        });
+
+        return c.json({ url: `https://www.instagram.com/oauth/authorize?${params}` });
+    } catch (err) {
+        console.error('Instagram URL handler error:', err.message);
+        return c.json({ success: false, message: 'Failed to generate auth URL: ' + err.message }, 500);
     }
-
-    const REDIRECT_URI = `${c.env.BACKEND_URL || 'http://localhost:3001'}/api/auth/instagram/callback`;
-
-    // Use crypto.randomUUID() - available as a global in Cloudflare Workers
-    const state = crypto.randomUUID().replace(/-/g, '');
-    await setOAuthState(c.get('redis'), state, c.get('userId'));
-
-    const params = new URLSearchParams({
-        enable_fb_login: '0',
-        force_authentication: '1',
-        client_id: APP_ID,
-        redirect_uri: REDIRECT_URI,
-        response_type: 'code',
-        scope: 'instagram_business_basic,instagram_business_content_publish,instagram_business_manage_insights,instagram_business_manage_comments',
-        state,
-    });
-
-    return c.json({ url: `https://www.instagram.com/oauth/authorize?${params}` });
 }
 
 // GET /api/auth/instagram/callback - public (browser redirect from Instagram)
-// No auth header here - userId is recovered from the Redis state token.
+// No auth header here - userId is recovered from the HMAC state token.
 export async function callbackHandler(c) {
     const { code, state, error, error_reason } = c.req.query();
-    const FRONTEND_URL = c.env.FRONTEND_URL || 'http://localhost:5173';
-    const BACKEND_URL = c.env.BACKEND_URL || 'http://localhost:3001';
+    const FRONTEND_URL = (c.env.FRONTEND_URL || 'http://localhost:5173').replace(/^﻿/, '').trim();
+    const BACKEND_URL = (c.env.BACKEND_URL || 'http://localhost:8787').replace(/^﻿/, '').trim();
     const REDIRECT_URI = `${BACKEND_URL}/api/auth/instagram/callback`;
-    const APP_ID = c.env.INSTAGRAM_APP_ID;
-    const APP_SECRET = c.env.INSTAGRAM_APP_SECRET;
+    const APP_ID = c.env.INSTAGRAM_APP_ID?.replace(/^﻿/, '').trim();
+    const APP_SECRET = c.env.INSTAGRAM_APP_SECRET?.replace(/^﻿/, '').trim();
 
     if (error || !code || !state) {
         const reason = error_reason || error || 'cancelled';
         return c.redirect(`${FRONTEND_URL}/accounts?ig_error=${encodeURIComponent(reason)}`);
     }
 
-    const redis = c.get('redis');
-    const userId = await getAndDeleteOAuthState(redis, state);
+    // Verify HMAC state - recovers userId without Redis
+    const userId = await verifyOAuthState(state, APP_SECRET);
     if (!userId) {
         return c.redirect(`${FRONTEND_URL}/accounts?ig_error=invalid_state`);
     }
