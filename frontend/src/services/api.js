@@ -1,4 +1,4 @@
-import { supabase } from '../lib/supabase';
+﻿import { supabase } from '../lib/supabase';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:8787/api';
 
@@ -22,7 +22,7 @@ export const api = {
     // Health
     health: () => request('/health'),
 
-    // Server key status — all keys are env vars, this just returns configured: true/false
+    // Server key status - all keys are env vars, this just returns configured: true/false
     getKeys: () => request('/keys'),
 
     // Accounts
@@ -32,7 +32,7 @@ export const api = {
     refreshAccount: (id) => request(`/accounts/${id}/refresh`, { method: 'POST' }),
     refreshAll: () => request('/accounts/refresh-all', { method: 'POST' }),
 
-    // Instagram OAuth — gets the auth URL to redirect the browser to
+    // Instagram OAuth - gets the auth URL to redirect the browser to
     getInstagramAuthUrl: () => request('/auth/instagram/url'),
 
     // Instagram accounts

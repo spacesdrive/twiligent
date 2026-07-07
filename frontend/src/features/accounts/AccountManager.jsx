@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -44,7 +44,7 @@ export default function AccountManager() {
         igError === 'already_added'   ? 'This Instagram account is already connected' :
         igError === 'cancelled'        ? 'Instagram authorization was cancelled' :
         igError === 'access_denied'    ? 'Instagram authorization was denied' :
-        igError === 'invalid_state'    ? 'Authorization expired — please try again' :
+        igError === 'invalid_state'    ? 'Authorization expired - please try again' :
         'Instagram connection failed: ' + igError;
       showToast(msg, 'error');
       window.history.replaceState({}, '', window.location.pathname);
@@ -84,7 +84,7 @@ export default function AccountManager() {
     setConnecting(true);
     try {
       const { url } = await api.getInstagramAuthUrl();
-      // Navigate the same tab — Instagram will redirect back to /accounts?ig_connected=true
+      // Navigate the same tab - Instagram will redirect back to /accounts?ig_connected=true
       window.location.href = url;
     } catch (err) {
       showToast('Failed to start Instagram login: ' + err.message, 'error');

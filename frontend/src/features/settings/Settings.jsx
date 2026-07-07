@@ -5,7 +5,7 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import {
-  RefreshCw, CheckCircle2, Info, AlertTriangle, ShieldCheck, Github,
+  RefreshCw, CheckCircle2, Info, AlertTriangle, ShieldCheck, GitBranch,
   Key, ExternalLink, Copy, Check,
 } from 'lucide-react';
 import MainCard from '../../components/MainCard';
@@ -126,7 +126,7 @@ export default function Settings() {
           <MainCard title="GitHub Personal Access Token">
             <div className="space-y-4">
               <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border border-border">
-                <Github className="h-5 w-5 text-foreground mt-0.5 flex-shrink-0" />
+                <GitBranch className="h-5 w-5 text-foreground mt-0.5 flex-shrink-0" />
                 <div className="space-y-1">
                   <p className="text-sm font-medium">What is a GitHub PAT and why do you need it?</p>
                   <p className="text-sm text-muted-foreground">

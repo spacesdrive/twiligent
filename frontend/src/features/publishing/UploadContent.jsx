@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -397,7 +397,7 @@ export default function UploadContent() {
     active: bulkFiles.filter(f => ['uploading','creating','processing','publishing','scheduling'].includes(f.status)).length,
   };
 
-  const fmtLocalDate = (iso) => iso ? new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '—';
+  const fmtLocalDate = (iso) => iso ? new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' }) : '-';
 
   const sPostsCounts = {
     all: scheduledPosts.length,
@@ -425,7 +425,7 @@ export default function UploadContent() {
         <Alert><AlertDescription>No Instagram accounts found. Add an account in the Accounts section first.</AlertDescription></Alert>
       )}
       {!cloudConfig && (
-        <Alert><AlertDescription><strong>Cloudinary CDN required</strong> — Configure it in <strong>Settings</strong> to enable uploads.</AlertDescription></Alert>
+        <Alert><AlertDescription><strong>Cloudinary CDN required</strong> - Configure it in <strong>Settings</strong> to enable uploads.</AlertDescription></Alert>
       )}
 
       {/* Mode Tabs */}
@@ -600,10 +600,10 @@ export default function UploadContent() {
                     )}
                     <Separator />
                     <div className="text-xs text-muted-foreground space-y-1">
-                      <p>Account: <strong className="text-foreground">{selectedAcct?.title || selectedAcct?.username || '—'}</strong></p>
+                      <p>Account: <strong className="text-foreground">{selectedAcct?.title || selectedAcct?.username || '-'}</strong></p>
                       <p>Type: <strong style={{ color: selectedType?.color }}>{selectedType?.label}</strong></p>
-                      <p>File: <strong className="text-foreground">{file?.name || '—'}</strong></p>
-                      <p>Size: <strong className="text-foreground">{file ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` : '—'}</strong></p>
+                      <p>File: <strong className="text-foreground">{file?.name || '-'}</strong></p>
+                      <p>Size: <strong className="text-foreground">{file ? `${(file.size / (1024 * 1024)).toFixed(2)} MB` : '-'}</strong></p>
                       {scheduleMode && scheduleDate && scheduleTime && <p>Schedule: <strong className="text-amber-600">{new Date(`${scheduleDate}T${scheduleTime}`).toLocaleString()}</strong></p>}
                     </div>
                   </div>
@@ -996,7 +996,7 @@ export default function UploadContent() {
                       <TableCell>
                         {post.error ? (
                           <Tooltip><TooltipTrigger render={<p className="text-xs max-w-40 truncate text-red-500 cursor-help" />}>{post.error}</TooltipTrigger><TooltipContent>{post.error}</TooltipContent></Tooltip>
-                        ) : <span className="text-muted-foreground text-xs">—</span>}
+                        ) : <span className="text-muted-foreground text-xs">-</span>}
                       </TableCell>
                       <TableCell className="text-right whitespace-nowrap">
                         {canEdit && !isEditing && <Tooltip><TooltipTrigger render={<Button variant="ghost" size="icon" className="size-7 text-muted-foreground hover:text-amber-500" onClick={() => startEditPost(post)} />}><Pencil /></TooltipTrigger><TooltipContent>Edit</TooltipContent></Tooltip>}
@@ -1054,7 +1054,7 @@ export default function UploadContent() {
             <AlertDialogTitle>Delete all scheduled posts?</AlertDialogTitle>
             <AlertDialogDescription>
               This removes every post from your records (pending, published, and failed) and syncs to GitHub.
-              Posts already <strong>published to Instagram remain live</strong> — only local records are deleted.
+              Posts already <strong>published to Instagram remain live</strong> - only local records are deleted.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1073,7 +1073,7 @@ export default function UploadContent() {
             <AlertDialogTitle>Remove published post?</AlertDialogTitle>
             <AlertDialogDescription>
               This removes the entry from your records and syncs to GitHub.
-              The post will <strong>remain live on Instagram</strong> — only local records are removed.
+              The post will <strong>remain live on Instagram</strong> - only local records are removed.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
