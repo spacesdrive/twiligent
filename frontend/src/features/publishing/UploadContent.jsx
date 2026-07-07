@@ -33,6 +33,14 @@ import { useAppContext } from '../../context/AppContext';
 import { api } from '../../services/api';
 import { cn } from '@/lib/utils';
 
+const BULK_INTERVAL_OPTIONS = [
+  { value: 720,   label: 'Every 12 Hours' },
+  { value: 1440,  label: 'Once a Day' },
+  { value: 2880,  label: 'Every 2 Days' },
+  { value: 4320,  label: 'Every 3 Days' },
+  { value: 10080, label: 'Once a Week' },
+];
+
 const CONTENT_TYPES = [
   { value: 'IMAGE', label: 'Photo',    icon: ImageIcon, color: '#F58529', accept: 'image/jpeg', desc: 'JPEG, 4:5 to 1.91:1, max 8MB' },
   { value: 'REELS', label: 'Reel',     icon: Film,      color: '#DD2A7B', accept: 'video/mp4,video/quicktime', desc: 'MP4/MOV 9:16, 3s–15min, max 300MB' },
@@ -855,14 +863,16 @@ export default function UploadContent() {
                     <Input type="date" value={bulkStartDate} onChange={e => setBulkStartDate(e.target.value)} min={new Date().toISOString().split('T')[0]} className="w-44" disabled={bulkProcessing} />
                     <Input type="time" value={bulkStartTime} onChange={e => setBulkStartTime(e.target.value)} className="w-36" disabled={bulkProcessing} />
                     <Select value={String(bulkInterval)} onValueChange={v => setBulkInterval(Number(v))} disabled={bulkProcessing}>
-                      <SelectTrigger className="w-48"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="w-48">
+                        <span className="flex flex-1 text-left text-sm">
+                          {BULK_INTERVAL_OPTIONS.find(o => o.value === bulkInterval)?.label}
+                        </span>
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectGroup>
-                          <SelectItem value="720">Every 12 Hours</SelectItem>
-                          <SelectItem value="1440">Once a Day</SelectItem>
-                          <SelectItem value="2880">Every 2 Days</SelectItem>
-                          <SelectItem value="4320">Every 3 Days</SelectItem>
-                          <SelectItem value="10080">Once a Week</SelectItem>
+                          {BULK_INTERVAL_OPTIONS.map(o => (
+                            <SelectItem key={o.value} value={String(o.value)}>{o.label}</SelectItem>
+                          ))}
                         </SelectGroup>
                       </SelectContent>
                     </Select>
