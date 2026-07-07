@@ -1,98 +1,63 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
 import {
-  KeyRound, Save, Eye, EyeOff, CheckCircle2, RefreshCw,
-  Info, GitBranch, Code2, Camera, Cloud, RotateCcw, AlertTriangle,
+  RefreshCw, CheckCircle2, Info, AlertTriangle, ShieldCheck, Github,
+  Key, ExternalLink, Copy, Check,
 } from 'lucide-react';
 import MainCard from '../../components/MainCard';
 import { useAppContext } from '../../context/AppContext';
 import { api } from '../../services/api';
-import { cn } from '@/lib/utils';
 
-function SecretInput({ value, onChange, placeholder, showByDefault = false, icon: Icon = KeyRound, ...props }) {
-  const [show, setShow] = useState(showByDefault);
+function CopyButton({ text }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = () => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
   return (
-    <div className="relative">
-      {Icon && <Icon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />}
-      <Input
-        type={show ? 'text' : 'password'}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        className={cn('pr-10', Icon && 'pl-9')}
-        {...props}
-      />
-      <button
-        type="button"
-        onClick={() => setShow(s => !s)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
-      >
-        {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-      </button>
-    </div>
+    <button
+      onClick={handleCopy}
+      className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs bg-muted hover:bg-muted/70 border border-border transition-colors"
+    >
+      {copied ? <Check className="h-3 w-3 text-green-600" /> : <Copy className="h-3 w-3" />}
+      {copied ? 'Copied' : 'Copy'}
+    </button>
   );
 }
 
-function SettingSection({ title, icon: Icon, children, action }) {
+function StepBadge({ n }) {
   return (
-    <MainCard
-      title={title}
-      secondary={action}
-      className="mb-4"
-    >
-      <div className="space-y-4">{children}</div>
-    </MainCard>
+    <span className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary text-primary-foreground text-xs font-bold flex-shrink-0">
+      {n}
+    </span>
   );
 }
 
 export default function Settings() {
   const { showToast, refreshAll } = useAppContext();
 
-  const [apiKey,           setApiKey]           = useState('');
-  const [igAppId,          setIgAppId]          = useState('');
-  const [igAppSecret,      setIgAppSecret]      = useState('');
-  const [cloudinaryName,   setCloudinaryName]   = useState('');
-  const [cloudinaryPreset, setCloudinaryPreset] = useState('');
-  const [githubToken,      setGithubToken]      = useState('');
-  const [githubRepo,       setGithubRepo]       = useState('');
-  const [githubBranch,     setGithubBranch]     = useState('main');
-  const [saving,           setSaving]           = useState(false);
-  const [savingIg,         setSavingIg]         = useState(false);
-  const [savingCloud,      setSavingCloud]       = useState(false);
-  const [savingGh,         setSavingGh]         = useState(false);
-  const [syncingGh,        setSyncingGh]        = useState(false);
-  const [testing,          setTesting]          = useState(false);
-  const [testResult,       setTestResult]       = useState(null);
-  const [loading,          setLoading]          = useState(true);
+  const [serverStatus, setServerStatus]   = useState(null);
+  const [testing,      setTesting]        = useState(false);
+  const [testResult,   setTestResult]     = useState(null);
+  const [loading,      setLoading]        = useState(true);
 
-  useEffect(() => { loadKeys(); }, []);
+  useEffect(() => { loadStatus(); }, []);
 
-  const loadKeys = async () => {
+  const loadStatus = async () => {
     setLoading(true);
     try {
       const res = await api.getKeys();
-      setApiKey(res.youtube || '');
-      if (res.instagram) { setIgAppId(res.instagram.appId || ''); setIgAppSecret(res.instagram.appSecret || ''); }
-      if (res.cloudinary) { setCloudinaryName(res.cloudinary.cloudName || ''); setCloudinaryPreset(res.cloudinary.uploadPreset || ''); }
-      if (res.github) { setGithubToken(res.github.token || ''); setGithubRepo(res.github.repo || ''); setGithubBranch(res.github.branch || 'main'); }
-    } catch (err) {
-      showToast('Failed to load API keys', 'error');
+      setServerStatus(res);
+    } catch {
+      // non-critical
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSave = async () => {
-    setSaving(true);
-    try { await api.saveKey(apiKey); showToast('API key saved successfully'); }
-    catch (err) { showToast('Failed to save API key: ' + err.message, 'error'); }
-    finally { setSaving(false); }
   };
 
   const handleTest = async () => {
@@ -105,38 +70,10 @@ export default function Settings() {
     } finally { setTesting(false); }
   };
 
-  const handleSaveInstagram = async () => {
-    setSavingIg(true);
-    try { await api.saveKeys({ instagram: { appId: igAppId, appSecret: igAppSecret } }); showToast('Instagram credentials saved'); }
-    catch (err) { showToast('Failed to save: ' + err.message, 'error'); }
-    finally { setSavingIg(false); }
-  };
-
-  const handleSaveCloudinary = async () => {
-    setSavingCloud(true);
-    try { await api.saveKeys({ cloudinary: { cloudName: cloudinaryName, uploadPreset: cloudinaryPreset } }); showToast('Cloudinary settings saved'); }
-    catch (err) { showToast('Failed to save: ' + err.message, 'error'); }
-    finally { setSavingCloud(false); }
-  };
-
-  const handleSaveGitHub = async () => {
-    setSavingGh(true);
-    try { await api.saveKeys({ github: { token: githubToken, repo: githubRepo, branch: githubBranch } }); showToast('GitHub settings saved'); }
-    catch (err) { showToast('Failed to save: ' + err.message, 'error'); }
-    finally { setSavingGh(false); }
-  };
-
-  const handleSyncGitHub = async () => {
-    setSyncingGh(true);
-    try { await api.syncToGitHub(); showToast('Scheduled posts synced to GitHub'); }
-    catch (err) { showToast('Sync failed: ' + err.message, 'error'); }
-    finally { setSyncingGh(false); }
-  };
-
   if (loading) {
     return (
       <div className="space-y-4">
-        {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}
+        {[1, 2, 3].map(i => <Skeleton key={i} className="h-48 w-full rounded-xl" />)}
       </div>
     );
   }
@@ -145,202 +82,206 @@ export default function Settings() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Configure API keys and integrations</p>
+        <p className="text-sm text-muted-foreground mt-0.5">Platform configuration and guides</p>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Main column */}
         <div className="xl:col-span-2 space-y-4">
 
-          {/* YouTube API Key */}
-          <MainCard title="YouTube Data API Key">
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Required to fetch YouTube channel and video data. Get your key from the{' '}
-                <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noreferrer" className="text-primary underline-offset-4 hover:underline font-medium">
-                  Google Cloud Console
-                </a>.
-              </p>
-              <div className="space-y-1.5">
-                <Label>API Key</Label>
-                <SecretInput value={apiKey} onChange={e => setApiKey(e.target.value)} placeholder="AIzaSy…" />
+          {/* Server-managed keys status */}
+          <MainCard title="Server API Keys">
+            <div className="space-y-3">
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border border-border">
+                <ShieldCheck className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">All API keys are managed by the server</p>
+                  <p className="text-sm text-muted-foreground">
+                    YouTube, Instagram, and Cloudinary credentials are set as environment variables by the administrator and shared across all users.
+                  </p>
+                </div>
               </div>
-              <div className="flex gap-2 flex-wrap">
-                <Button onClick={handleSave} disabled={saving || !apiKey.trim()} className="gap-2" size="sm">
-                  {saving ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                  Save Key
-                </Button>
-                <Button variant="outline" onClick={handleTest} disabled={testing} size="sm" className="gap-2">
-                  {testing ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
-                  Test Connection
-                </Button>
-              </div>
-              {testResult && (
-                <Alert variant={testResult.success ? 'default' : 'destructive'}>
-                  {testResult.success ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
-                  <AlertDescription>{testResult.message}</AlertDescription>
-                </Alert>
+              {serverStatus && (
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { label: 'YouTube',    ok: serverStatus.youtube?.configured },
+                    { label: 'Instagram',  ok: serverStatus.instagram?.configured },
+                    { label: 'Cloudinary', ok: serverStatus.cloudinary?.configured },
+                  ].map(({ label, ok }) => (
+                    <div key={label} className="flex items-center gap-2 p-2 rounded-md border border-border bg-card">
+                      {ok
+                        ? <CheckCircle2 className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        : <AlertTriangle className="h-4 w-4 text-amber-500 flex-shrink-0" />}
+                      <div>
+                        <p className="text-xs font-medium">{label}</p>
+                        <p className="text-xs text-muted-foreground">{ok ? 'Configured' : 'Not set'}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </MainCard>
 
-          {/* Instagram */}
-          <MainCard title="Instagram App Credentials">
+          {/* GitHub guide */}
+          <MainCard title="GitHub Personal Access Token">
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Optional — enables long-lived token exchange. Get these from{' '}
-                <a href="https://developers.facebook.com/apps/" target="_blank" rel="noreferrer" className="text-pink-600 underline-offset-4 hover:underline font-medium">
-                  App Dashboard → Instagram → API setup
-                </a>.
-              </p>
-              <div className="space-y-1.5">
-                <Label>Instagram App ID</Label>
-                <div className="relative">
-                  <Code2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                  <Input className="pl-9" value={igAppId} onChange={e => setIgAppId(e.target.value)} placeholder="Instagram App ID" />
+              <div className="flex items-start gap-3 p-3 rounded-lg bg-muted/50 border border-border">
+                <Github className="h-5 w-5 text-foreground mt-0.5 flex-shrink-0" />
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">What is a GitHub PAT and why do you need it?</p>
+                  <p className="text-sm text-muted-foreground">
+                    A Personal Access Token lets external services (like this app or a CI workflow) interact with
+                    your GitHub repositories on your behalf. In Twiligent it is used for GitHub Actions-based
+                    scheduled publishing when deploying via Cloudflare Workers.
+                  </p>
                 </div>
               </div>
-              <div className="space-y-1.5">
-                <Label>Instagram App Secret</Label>
-                <SecretInput value={igAppSecret} onChange={e => setIgAppSecret(e.target.value)} placeholder="Instagram App Secret" />
+
+              <div className="space-y-3">
+                <p className="text-sm font-semibold">How to create a GitHub PAT (step-by-step)</p>
+
+                <div className="space-y-3">
+                  <div className="flex items-start gap-3">
+                    <StepBadge n={1} />
+                    <div className="space-y-1 pt-0.5">
+                      <p className="text-sm font-medium">Open GitHub Settings</p>
+                      <p className="text-sm text-muted-foreground">
+                        Go to <strong>github.com</strong>, click your profile photo (top-right), then click{' '}
+                        <strong>Settings</strong>.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <StepBadge n={2} />
+                    <div className="space-y-1 pt-0.5">
+                      <p className="text-sm font-medium">Go to Developer Settings</p>
+                      <p className="text-sm text-muted-foreground">
+                        Scroll to the very bottom of the left sidebar and click{' '}
+                        <strong>Developer settings</strong>.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <StepBadge n={3} />
+                    <div className="space-y-1 pt-0.5">
+                      <p className="text-sm font-medium">Create a Fine-grained token</p>
+                      <p className="text-sm text-muted-foreground">
+                        Click <strong>Personal access tokens</strong> then{' '}
+                        <strong>Fine-grained tokens</strong> then{' '}
+                        <strong>Generate new token</strong>.
+                        Fine-grained tokens are safer than classic tokens because you choose exact permissions.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <StepBadge n={4} />
+                    <div className="space-y-1 pt-0.5">
+                      <p className="text-sm font-medium">Set token details</p>
+                      <ul className="space-y-1 text-sm text-muted-foreground list-disc list-inside">
+                        <li><strong className="text-foreground">Token name:</strong> give it a clear name like <em>twiligent-actions</em></li>
+                        <li><strong className="text-foreground">Expiration:</strong> pick 90 days or custom (you can always regenerate)</li>
+                        <li><strong className="text-foreground">Repository access:</strong> select <em>Only select repositories</em>, then choose the repo</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <StepBadge n={5} />
+                    <div className="space-y-1 pt-0.5">
+                      <p className="text-sm font-medium">Set permissions</p>
+                      <p className="text-sm text-muted-foreground">
+                        Under <strong>Repository permissions</strong>, enable:
+                      </p>
+                      <div className="flex flex-wrap gap-1.5 mt-1">
+                        {['Actions: Read and write', 'Secrets: Read and write', 'Contents: Read-only'].map(p => (
+                          <Badge key={p} variant="secondary" className="text-xs font-normal">{p}</Badge>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <StepBadge n={6} />
+                    <div className="space-y-1 pt-0.5">
+                      <p className="text-sm font-medium">Copy the token immediately</p>
+                      <p className="text-sm text-muted-foreground">
+                        Click <strong>Generate token</strong>. GitHub shows the token once only.
+                        Copy it right away and store it somewhere safe (like a password manager).
+                        If you lose it you must generate a new one.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <StepBadge n={7} />
+                    <div className="space-y-1 pt-0.5">
+                      <p className="text-sm font-medium">Add it as a GitHub Actions secret</p>
+                      <p className="text-sm text-muted-foreground">
+                        In your repository, go to <strong>Settings</strong> then <strong>Secrets and variables</strong>{' '}
+                        then <strong>Actions</strong> then <strong>New repository secret</strong>.
+                        Name it exactly:
+                      </p>
+                      <div className="flex items-center gap-2 mt-1.5 font-mono text-xs bg-muted px-3 py-2 rounded-md border border-border">
+                        <Key className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                        <span className="flex-1">GITHUB_PAT</span>
+                        <CopyButton text="GITHUB_PAT" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <Alert>
+                  <Info className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    Never share your token in code, commit it to git, or paste it in a public place.
+                    If a token is accidentally exposed, go to GitHub and delete it immediately, then generate a new one.
+                  </AlertDescription>
+                </Alert>
               </div>
-              <Button onClick={handleSaveInstagram} disabled={savingIg || (!igAppId.trim() && !igAppSecret.trim())} size="sm" className="gap-2">
-                {savingIg ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                Save Instagram Credentials
-              </Button>
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription className="text-xs">
-                  Only the <strong>App Secret</strong> is needed for token exchange. Tokens from the App Dashboard are already long-lived (60 days).
-                </AlertDescription>
-              </Alert>
             </div>
           </MainCard>
 
-          {/* Cloudinary */}
-          <MainCard title="Cloudinary CDN (Instagram Uploads)">
+          {/* Platform requirements */}
+          <MainCard title="Platform Requirements">
             <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Instagram API requires media at a public URL. Cloudinary hosts your files before publishing.
-                Get a free account at{' '}
-                <a href="https://cloudinary.com/users/register_free" target="_blank" rel="noreferrer" className="text-blue-600 underline-offset-4 hover:underline font-medium">
-                  cloudinary.com
-                </a>.
-              </p>
-              <div className="space-y-1.5">
-                <Label>Cloud Name</Label>
-                <div className="relative">
-                  <Cloud className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                  <Input className="pl-9" value={cloudinaryName} onChange={e => setCloudinaryName(e.target.value)} placeholder="my-cloud-name" />
-                </div>
+              <div>
+                <p className="text-sm font-semibold mb-2">YouTube</p>
+                <p className="text-sm text-muted-foreground">
+                  Just add a channel URL or @handle in <strong>Manage Accounts</strong>. The API key is already configured by the server.
+                </p>
               </div>
-              <div className="space-y-1.5">
-                <Label>Upload Preset (unsigned)</Label>
-                <div className="relative">
-                  <Code2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                  <Input className="pl-9" value={cloudinaryPreset} onChange={e => setCloudinaryPreset(e.target.value)} placeholder="ml_default" />
-                </div>
-              </div>
-              <Button onClick={handleSaveCloudinary} disabled={savingCloud || !cloudinaryName.trim()} size="sm" className="gap-2">
-                {savingCloud ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                Save Cloudinary Settings
-              </Button>
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription className="text-xs">
-                  Create an <strong>unsigned upload preset</strong> in Cloudinary → Settings → Upload → Upload presets → Add.
-                </AlertDescription>
-              </Alert>
-            </div>
-          </MainCard>
-
-          {/* GitHub Actions */}
-          <MainCard title="GitHub Actions (Cloud Scheduling)">
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Publish scheduled posts from the cloud — even when your PC is off. Runs every 15 min via GitHub Actions (free).
-                Create a{' '}
-                <a href="https://github.com/settings/tokens?type=beta" target="_blank" rel="noreferrer" className="text-primary underline-offset-4 hover:underline font-medium">
-                  Fine-grained Personal Access Token
-                </a>{' '}
-                with <strong>Contents: Read & Write</strong> permission. For automatic account sync, also add <strong>Secrets: Read & Write</strong>.
-              </p>
-              <div className="space-y-1.5">
-                <Label>GitHub Personal Access Token</Label>
-                <SecretInput value={githubToken} onChange={e => setGithubToken(e.target.value)} placeholder="ghp_xxxxxxxxxxxx" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Repository (owner/repo)</Label>
-                <div className="relative">
-                  <GitBranch className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                  <Input className="pl-9" value={githubRepo} onChange={e => setGithubRepo(e.target.value)} placeholder="username/repo-name" />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Branch</Label>
-                <div className="relative">
-                  <Code2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-                  <Input className="pl-9" value={githubBranch} onChange={e => setGithubBranch(e.target.value)} placeholder="main" />
-                </div>
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                <Button onClick={handleSaveGitHub} disabled={savingGh || !githubToken.trim() || !githubRepo.trim()} size="sm" className="gap-2">
-                  {savingGh ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                  Save GitHub Settings
-                </Button>
-                <Button variant="outline" onClick={handleSyncGitHub} disabled={syncingGh || !githubToken.trim() || !githubRepo.trim()} size="sm" className="gap-2">
-                  {syncingGh ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />}
-                  Sync Now
-                </Button>
-              </div>
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription className="text-xs leading-relaxed">
-                  <strong>Setup:</strong> Push this project to GitHub → Settings → Secrets → Add <code className="bg-muted px-1 rounded text-xs">ACCOUNTS_JSON</code> (Base64 of accounts.json). Workflow runs every 15 min automatically.
-                </AlertDescription>
-              </Alert>
-            </div>
-          </MainCard>
-
-          {/* How to get keys */}
-          <MainCard title="How to Get a YouTube API Key">
-            <div className="space-y-4">
-              <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside">
-                <li>Go to the <a href="https://console.cloud.google.com/" target="_blank" rel="noreferrer" className="text-primary font-medium hover:underline">Google Cloud Console</a></li>
-                <li>Create a new project or select an existing one</li>
-                <li>Enable the <strong className="text-foreground">YouTube Data API v3</strong> from the API Library</li>
-                <li>Go to <strong className="text-foreground">Credentials → Create Credentials → API Key</strong></li>
-                <li>Copy the API key and paste it above</li>
-                <li>Optional: Restrict the key to YouTube Data API v3 only</li>
-              </ol>
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription className="text-xs">
-                  The free quota allows ~10,000 units/day. Fetching a channel uses ~5 units, video details ~3 units per batch.
-                </AlertDescription>
-              </Alert>
               <Separator />
-              <p className="text-sm font-semibold">How to Get Instagram Access</p>
-              <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside">
-                <li>Go to <a href="https://developers.facebook.com/apps/" target="_blank" rel="noreferrer" className="text-pink-600 font-medium hover:underline">Meta for Developers</a> and create a new app (type: <strong className="text-foreground">Business</strong>)</li>
-                <li>Add the <strong className="text-foreground">Instagram</strong> product and set up <strong className="text-foreground">API setup with Instagram business login</strong></li>
-                <li>Your account must be a <strong className="text-foreground">Business</strong> or <strong className="text-foreground">Creator</strong> professional account</li>
-                <li>Find your App ID and App Secret under Business login settings</li>
-                <li>Add your account as a <strong className="text-foreground">Tester</strong> under App Roles</li>
-                <li>Click <strong className="text-foreground">Generate Token</strong> next to your Instagram account</li>
-                <li>Required permission: <code className="bg-muted px-1 rounded text-xs">instagram_business_basic</code></li>
-              </ol>
-              <Alert variant="destructive" className="border-yellow-200 bg-yellow-50 text-yellow-800 [&>svg]:text-yellow-600">
-                <AlertTriangle className="h-4 w-4" />
-                <AlertDescription className="text-xs text-yellow-800">
-                  In development mode, only test users / Instagram Testers can use the app. Tokens from the App Dashboard are long-lived (~60 days).
-                </AlertDescription>
-              </Alert>
+              <div>
+                <p className="text-sm font-semibold mb-2">Instagram</p>
+                <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside">
+                  <li>Your account must be a <strong className="text-foreground">Business</strong> or <strong className="text-foreground">Creator</strong> professional account</li>
+                  <li>Go to <strong className="text-foreground">Manage Accounts</strong> then Add Account then Instagram</li>
+                  <li>Click <strong className="text-foreground">Connect with Instagram</strong> and you will log in directly on Instagram</li>
+                  <li>Grant the requested permissions and you will be redirected back automatically</li>
+                </ol>
+                <Alert className="mt-3">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="text-xs">
+                    In development mode, only <strong>test users</strong> added in the Facebook App Dashboard can connect. Your Instagram account must be added as a tester there first.
+                  </AlertDescription>
+                </Alert>
+              </div>
+              <Separator />
+              <div>
+                <p className="text-sm font-semibold mb-2">Cloudinary (Instagram uploads)</p>
+                <p className="text-sm text-muted-foreground">
+                  Instagram requires all media to be hosted at a public URL before publishing. Cloudinary handles this automatically.
+                  The cloud name and upload preset are configured server-side. No action needed from you.
+                </p>
+              </div>
             </div>
           </MainCard>
         </div>
 
-        {/* Sidebar column */}
+        {/* Sidebar */}
         <div className="space-y-4">
           <div className="sticky top-20 space-y-4">
             <MainCard title="Quick Actions">
@@ -348,27 +289,59 @@ export default function Settings() {
                 <Button variant="outline" size="sm" className="w-full gap-2 justify-start" onClick={refreshAll}>
                   <RefreshCw className="h-3.5 w-3.5" /> Refresh All Accounts
                 </Button>
-                <Button variant="outline" size="sm" className="w-full gap-2 justify-start" onClick={handleTest}>
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Test API Health
+                <Button variant="outline" size="sm" className="w-full gap-2 justify-start" onClick={handleTest} disabled={testing}>
+                  {testing ? <RefreshCw className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                  Test API Health
                 </Button>
+              </div>
+              {testResult && (
+                <Alert variant={testResult.success ? 'default' : 'destructive'} className="mt-3">
+                  {testResult.success ? <CheckCircle2 className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+                  <AlertDescription className="text-xs">{testResult.message}</AlertDescription>
+                </Alert>
+              )}
+            </MainCard>
+
+            <MainCard title="Useful Links">
+              <div className="space-y-2">
+                {[
+                  { label: 'GitHub Settings', href: 'https://github.com/settings/profile' },
+                  { label: 'GitHub Fine-grained tokens', href: 'https://github.com/settings/tokens?type=beta' },
+                  { label: 'Cloudinary Dashboard', href: 'https://cloudinary.com/console' },
+                  { label: 'Google Cloud Console', href: 'https://console.cloud.google.com/apis/credentials' },
+                  { label: 'Facebook App Dashboard', href: 'https://developers.facebook.com/apps' },
+                  { label: 'Cloudflare Dashboard', href: 'https://dash.cloudflare.com' },
+                ].map(({ label, href }) => (
+                  <a
+                    key={label}
+                    href={href}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center justify-between gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors py-1"
+                  >
+                    {label}
+                    <ExternalLink className="h-3 w-3 flex-shrink-0" />
+                  </a>
+                ))}
               </div>
             </MainCard>
 
             <MainCard title="About">
               <div className="space-y-3">
                 <p className="text-xs text-muted-foreground leading-relaxed">
-                  Twiligent — a comprehensive analytics tool for tracking YouTube and Instagram performance.
+                  Twiligent is a comprehensive analytics tool for tracking YouTube and Instagram performance.
                 </p>
                 <Separator />
                 <div className="flex flex-wrap gap-1.5">
                   {[
-                    { label: 'React', color: 'bg-sky-100 text-sky-700 border-sky-200' },
-                    { label: 'shadcn/ui', color: 'bg-zinc-100 text-zinc-700 border-zinc-200' },
-                    { label: 'Tailwind v4', color: 'bg-cyan-100 text-cyan-700 border-cyan-200' },
-                    { label: 'Recharts', color: 'bg-green-100 text-green-700 border-green-200' },
-                    { label: 'Node.js', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },
-                    { label: 'YouTube API', color: 'bg-red-100 text-red-700 border-red-200' },
-                    { label: 'Instagram API', color: 'bg-pink-100 text-pink-700 border-pink-200' },
+                    { label: 'React',          color: 'bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-900/30 dark:text-sky-400 dark:border-sky-800' },
+                    { label: 'shadcn/ui',      color: 'bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700' },
+                    { label: 'Tailwind v4',    color: 'bg-cyan-100 text-cyan-700 border-cyan-200 dark:bg-cyan-900/30 dark:text-cyan-400 dark:border-cyan-800' },
+                    { label: 'Hono',           color: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800' },
+                    { label: 'Supabase',       color: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' },
+                    { label: 'Cloudflare',     color: 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800' },
+                    { label: 'YouTube API',    color: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800' },
+                    { label: 'Instagram API',  color: 'bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-900/30 dark:text-pink-400 dark:border-pink-800' },
                   ].map(c => (
                     <span key={c.label} className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${c.color}`}>
                       {c.label}
