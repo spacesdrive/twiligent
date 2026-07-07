@@ -1,0 +1,9 @@
+name = "twiligent"
+main = "server.js"
+compatibility_date = "2024-09-23"
+
+# Two cron triggers:
+#   1. Every 15 minutes — publish due scheduled posts
+#   2. Daily at midnight — auto-refresh expiring Instagram tokens
+[triggers]
+crons = ["*/15 * * * *", "0 0 * * *"]
