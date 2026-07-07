@@ -1,15 +1,15 @@
-name: Instagram Scheduled Publisher
+﻿name: Instagram Scheduled Publisher
 
 # Automatically publishes scheduled Instagram posts via GitHub Actions.
-# Runs every 15 minutes — posts publish within ~15 min of their scheduled time.
+# Runs every 15 minutes - posts publish within ~15 min of their scheduled time.
 #
 # FREE TIER USAGE:
 #   Public repos  → unlimited minutes (recommended)
 #   Private repos → 2,000 min/month; change cron to '*/30 * * * *' to stay within limit
 #
 # REQUIRED SECRETS (set in GitHub repo → Settings → Secrets → Actions):
-#   SUPABASE_URL         — your Supabase project URL
-#   SUPABASE_SERVICE_KEY — your Supabase service role key
+#   SUPABASE_URL         - your Supabase project URL
+#   SUPABASE_SERVICE_KEY - your Supabase service role key
 
 on:
   schedule:

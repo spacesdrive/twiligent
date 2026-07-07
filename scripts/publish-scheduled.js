@@ -1,13 +1,13 @@
-#!/usr/bin/env node
+﻿#!/usr/bin/env node
 /**
  * Instagram Scheduled Post Publisher
  *
  * Runs standalone in GitHub Actions (cron every 15 min).
- * Uses native fetch (Node 18+) and the Supabase REST API — no npm install needed.
+ * Uses native fetch (Node 18+) and the Supabase REST API - no npm install needed.
  *
  * Required GitHub Secrets:
- *   SUPABASE_URL         — your Supabase project URL
- *   SUPABASE_SERVICE_KEY — your Supabase service role key (bypasses RLS)
+ *   SUPABASE_URL         - your Supabase project URL
+ *   SUPABASE_SERVICE_KEY - your Supabase service role key (bypasses RLS)
  */
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -163,7 +163,7 @@ async function main() {
     let processed = 0;
 
     for (const post of duePosts) {
-        console.log(`  Publishing: ${post.id} (${post.mediaType}) — scheduled ${post.scheduledAt}`);
+        console.log(`  Publishing: ${post.id} (${post.mediaType}) - scheduled ${post.scheduledAt}`);
         await updatePostStatus(post.id, { status: 'publishing' });
 
         try {
