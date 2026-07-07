@@ -12,7 +12,7 @@ export async function urlHandler(c) {
             return c.json({ success: false, message: 'Instagram App credentials not configured on server' }, 500);
         }
 
-        const REDIRECT_URI = `${c.env.BACKEND_URL || 'http://localhost:8787'}/api/auth/instagram/callback`;
+        const REDIRECT_URI = `${(c.env.BACKEND_URL || 'http://localhost:8787').replace(/^﻿/, '').trim().replace(/\/$/, '')}/api/auth/instagram/callback`;
 
         // HMAC-signed state - no Redis needed, userId + timestamp embedded
         const state = await createOAuthState(c.get('userId'), APP_SECRET);
@@ -38,7 +38,7 @@ export async function urlHandler(c) {
 export async function callbackHandler(c) {
     const { code, state, error, error_reason } = c.req.query();
     const FRONTEND_URL = (c.env.FRONTEND_URL || 'http://localhost:5173').replace(/^﻿/, '').trim();
-    const BACKEND_URL = (c.env.BACKEND_URL || 'http://localhost:8787').replace(/^﻿/, '').trim();
+    const BACKEND_URL = (c.env.BACKEND_URL || 'http://localhost:8787').replace(/^﻿/, '').trim().replace(/\/$/, '');
     const REDIRECT_URI = `${BACKEND_URL}/api/auth/instagram/callback`;
     const APP_ID = c.env.INSTAGRAM_APP_ID?.replace(/^﻿/, '').trim();
     const APP_SECRET = c.env.INSTAGRAM_APP_SECRET?.replace(/^﻿/, '').trim();
