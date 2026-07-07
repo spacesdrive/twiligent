@@ -45,8 +45,10 @@ app.post('/accounts', async (c) => {
         if (!apiKey) return c.json({ success: false, message: 'YouTube API key not configured on server' }, 400);
 
         const channelId = await resolveChannelId(input, apiKey);
-        const channelData = await fetchChannelData(channelId, apiKey);
-        const accounts = await getAccounts(supabase, userId);
+        const [channelData, accounts] = await Promise.all([
+            fetchChannelData(channelId, apiKey),
+            getAccounts(supabase, userId),
+        ]);
 
         if (accounts.find(a => a.channelId === channelId)) {
             return c.json({ success: false, message: 'This channel is already added' }, 400);
@@ -144,43 +146,41 @@ app.post('/accounts/refresh-all', async (c) => {
         const userId = c.get('userId');
         const apiKey = c.env.YOUTUBE_API_KEY;
         const accounts = await getAccounts(supabase, userId);
-        const results = [];
-
-        for (const account of accounts) {
-            try {
-                let updates = { lastUpdated: new Date().toISOString() };
-
-                if (account.platform === 'instagram') {
-                    if (!account.accessToken) throw new Error('No access token');
-                    const profile = await fetchInstagramProfile(account.igUserId, account.accessToken);
-                    updates = {
-                        ...updates,
-                        followersCount: profile.followersCount,
-                        followsCount: profile.followsCount,
-                        mediaCount: profile.mediaCount,
-                        title: profile.name || profile.username,
-                        username: profile.username,
-                        profilePictureUrl: profile.profilePictureUrl,
-                    };
-                } else {
-                    if (!apiKey) throw new Error('No YouTube API key');
-                    const channelData = await fetchChannelData(account.channelId, apiKey);
-                    updates = {
-                        ...updates,
-                        subscriberCount: channelData.subscriberCount,
-                        viewCount: channelData.viewCount,
-                        videoCount: channelData.videoCount,
-                        title: channelData.title,
-                        thumbnails: channelData.thumbnails,
-                    };
-                }
-
-                await updateAccount(supabase, account.id, updates, userId);
-                results.push({ id: account.id, success: true });
-            } catch (err) {
-                results.push({ id: account.id, success: false, error: err.message });
+        const settled = await Promise.allSettled(accounts.map(async (account) => {
+            let updates = { lastUpdated: new Date().toISOString() };
+            if (account.platform === 'instagram') {
+                if (!account.accessToken) throw new Error('No access token');
+                const profile = await fetchInstagramProfile(account.igUserId, account.accessToken);
+                updates = {
+                    ...updates,
+                    followersCount: profile.followersCount,
+                    followsCount: profile.followsCount,
+                    mediaCount: profile.mediaCount,
+                    title: profile.name || profile.username,
+                    username: profile.username,
+                    profilePictureUrl: profile.profilePictureUrl,
+                };
+            } else {
+                if (!apiKey) throw new Error('No YouTube API key');
+                const channelData = await fetchChannelData(account.channelId, apiKey);
+                updates = {
+                    ...updates,
+                    subscriberCount: channelData.subscriberCount,
+                    viewCount: channelData.viewCount,
+                    videoCount: channelData.videoCount,
+                    title: channelData.title,
+                    thumbnails: channelData.thumbnails,
+                };
             }
-        }
+            await updateAccount(supabase, account.id, updates, userId);
+            return account.id;
+        }));
+
+        const results = settled.map((r, i) =>
+            r.status === 'fulfilled'
+                ? { id: accounts[i].id, success: true }
+                : { id: accounts[i].id, success: false, error: r.reason?.message }
+        );
 
         const updatedAccounts = await getAccounts(supabase, userId);
         return c.json({
@@ -257,8 +257,7 @@ app.post('/accounts/:id/refresh', async (c) => {
         }
 
         await updateAccount(supabase, account.id, updates, userId);
-        const updated = await getAccountById(supabase, account.id, userId);
-        return c.json({ success: true, account: safeAccount(updated) });
+        return c.json({ success: true, account: safeAccount({ ...account, ...updates }) });
     } catch (err) {
         return c.json({ success: false, message: err.message }, 400);
     }
@@ -272,9 +271,11 @@ app.delete('/accounts/:id', async (c) => {
         const id = c.req.param('id');
         const account = await getAccountById(supabase, id, userId);
         if (!account) return c.json({ success: false, message: 'Not found' }, 404);
-        await deleteAccount(supabase, id, userId);
-        await deleteVideosCache(redis, userId, id);
-        await deleteIGCache(redis, userId, id);
+        await Promise.all([
+            deleteAccount(supabase, id, userId),
+            deleteVideosCache(redis, userId, id),
+            deleteIGCache(redis, userId, id),
+        ]);
         return c.json({ success: true });
     } catch (err) {
         return c.json({ success: false, message: err.message }, 500);
