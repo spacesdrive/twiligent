@@ -8,6 +8,7 @@ import accountsRouter from './routes/accounts.js';
 import analyticsRouter from './routes/analytics.js';
 import publishingRouter from './routes/publishing.js';
 import scheduledPostsRouter from './routes/scheduledPosts.js';
+import settingsRouter from './routes/settings.js';
 import { urlHandler, callbackHandler } from './routes/instagramAuth.js';
 import { processScheduledPosts } from './utils/scheduler.js';
 import { autoRefreshInstagramTokens } from './services/instagram.js';
@@ -49,6 +50,7 @@ api.route('/', accountsRouter);
 api.route('/', analyticsRouter);
 api.route('/', publishingRouter);
 api.route('/', scheduledPostsRouter);
+api.route('/', settingsRouter);
 
 // Instagram OAuth URL generator - protected (needs userId to create state token)
 api.get('/auth/instagram/url', urlHandler);
