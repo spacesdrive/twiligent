@@ -1,61 +1,71 @@
-const express = require('express');
-const cors = require('cors');
+import { Hono } from 'hono';
+import { cors } from 'hono/cors';
+import { getSupabase } from './lib/supabase.js';
+import { getRedis } from './lib/redis.js';
+import { requireAuth } from './middleware/auth.js';
+import keysRouter from './routes/keys.js';
+import accountsRouter from './routes/accounts.js';
+import analyticsRouter from './routes/analytics.js';
+import publishingRouter from './routes/publishing.js';
+import scheduledPostsRouter from './routes/scheduledPosts.js';
+import { urlHandler, callbackHandler } from './routes/instagramAuth.js';
+import { processScheduledPosts } from './utils/scheduler.js';
+import { autoRefreshInstagramTokens } from './services/instagram.js';
 
-const { initializeData, readJSON, SCHEDULED_POSTS_FILE } = require('./utils/dataHelpers');
-const { removeAccountsFileFromGitHub, pullScheduledPostsFromGitHub } = require('./services/github');
-const { autoRefreshInstagramTokens } = require('./services/instagram');
-const { processScheduledPosts } = require('./utils/scheduler');
+const app = new Hono();
 
-const app = express();
-const PORT = 3001;
+// ── Global middleware ─────────────────────────────────────────────────────────
 
-app.use(cors());
-app.use(express.json());
+app.use('*', cors());
 
-// ─── Routes ──────────────────────────────────────────────────────────────────
-
-app.use('/api/keys', require('./routes/keys'));
-app.use('/api', require('./routes/accounts'));
-app.use('/api', require('./routes/analytics'));
-app.use('/api', require('./routes/publishing'));
-app.use('/api', require('./routes/scheduledPosts'));
-app.use('/api', require('./routes/github'));
-
-app.get('/api/health', (_req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+// Attach Supabase and Redis clients to context for every request.
+// Both are stateless HTTP clients — safe to create per-request in Workers.
+app.use('*', async (c, next) => {
+    c.set('supabase', getSupabase(c.env));
+    c.set('redis', getRedis(c.env));
+    await next();
 });
 
-// ─── Startup ─────────────────────────────────────────────────────────────────
+// ── Public routes ─────────────────────────────────────────────────────────────
 
-initializeData().then(async () => {
-    await pullScheduledPostsFromGitHub();
+app.get('/api/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
-    const posts = await readJSON(SCHEDULED_POSTS_FILE) || [];
-    const overdue = posts.filter(p => p.status === 'pending' && new Date(p.scheduledAt) <= new Date());
-    if (overdue.length > 0) {
-        console.log(`  ⏰ ${overdue.length} overdue scheduled post(s) found, publishing now...`);
-        await processScheduledPosts();
-    }
+// Instagram OAuth callback — public because it's a browser redirect (no JWT available).
+// The userId is recovered from the Redis state token instead.
+app.get('/api/auth/instagram/callback', callbackHandler);
 
-    setInterval(async () => {
-        const posts = await readJSON(SCHEDULED_POSTS_FILE) || [];
-        const due = posts.filter(p => p.status === 'pending' && new Date(p.scheduledAt) <= new Date());
-        if (due.length > 0) {
-            console.log(`\n  ⏰ ${due.length} scheduled post(s) due, processing...`);
-            await processScheduledPosts();
+// ── Protected routes (require valid Supabase JWT) ─────────────────────────────
+
+const api = new Hono();
+api.use('*', requireAuth);
+
+api.route('/', keysRouter);
+api.route('/', accountsRouter);
+api.route('/', analyticsRouter);
+api.route('/', publishingRouter);
+api.route('/', scheduledPostsRouter);
+
+// Instagram OAuth URL generator — protected (needs userId to create state token)
+api.get('/auth/instagram/url', urlHandler);
+
+app.route('/api', api);
+
+// ── Cloudflare Workers export ─────────────────────────────────────────────────
+
+export default {
+    // Handles all HTTP requests
+    fetch: app.fetch,
+
+    // Cron trigger handler — runs on the schedule defined in wrangler.toml:
+    //   "*/15 * * * *" → publish due scheduled posts
+    //   "0 0 * * *"    → refresh expiring Instagram tokens
+    async scheduled(event, env, ctx) {
+        const supabase = getSupabase(env);
+
+        if (event.cron === '*/15 * * * *') {
+            ctx.waitUntil(processScheduledPosts(supabase));
+        } else if (event.cron === '0 0 * * *') {
+            ctx.waitUntil(autoRefreshInstagramTokens(supabase));
         }
-    }, 60000);
-
-    removeAccountsFileFromGitHub().catch(() => { });
-
-    autoRefreshInstagramTokens();
-    setInterval(autoRefreshInstagramTokens, 24 * 60 * 60 * 1000);
-
-    app.listen(PORT, () => {
-        console.log(`\n  Social Media Analytics API Server`);
-        console.log(`  Running on http://localhost:${PORT}`);
-        console.log(`  YouTube + Instagram analytics ready`);
-        console.log(`  📅 Scheduler active (checks every 60s)`);
-        console.log(`  🔑 Instagram token auto-refresh active (checks every 24h)\n`);
-    });
-});
+    },
+};
