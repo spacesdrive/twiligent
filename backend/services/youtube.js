@@ -1,4 +1,4 @@
-const fetch = require('node-fetch');
+// fetch is a global in Cloudflare Workers — no import needed.
 
 async function ytFetch(endpoint, params, apiKey) {
     const url = new URL(`https://www.googleapis.com/youtube/v3/${endpoint}`);
@@ -28,7 +28,7 @@ function extractChannelId(input) {
     return input;
 }
 
-async function resolveChannelId(input, apiKey) {
+export async function resolveChannelId(input, apiKey) {
     const extracted = extractChannelId(input);
     if (!extracted) throw new Error('Invalid input');
     if (/^UC[\w-]{22}$/.test(extracted)) return extracted;
@@ -51,7 +51,7 @@ async function resolveChannelId(input, apiKey) {
     throw new Error('Could not resolve channel. Please provide a valid Channel ID (starts with UC).');
 }
 
-async function fetchChannelData(channelId, apiKey) {
+export async function fetchChannelData(channelId, apiKey) {
     const data = await ytFetch('channels', {
         part: 'snippet,statistics,contentDetails,brandingSettings,status,topicDetails',
         id: channelId,
@@ -85,7 +85,7 @@ async function fetchChannelData(channelId, apiKey) {
     };
 }
 
-async function fetchAllVideos(playlistId, apiKey, maxPages = 10) {
+export async function fetchAllVideos(playlistId, apiKey, maxPages = 10) {
     let allVideos = [];
     let pageToken = '';
     let page = 0;
@@ -154,7 +154,7 @@ function formatCompact(n) {
     return n.toString();
 }
 
-function computeVideoAnalytics(videos) {
+export function computeVideoAnalytics(videos) {
     if (!videos || videos.length === 0) {
         return {
             totalVideos: 0, totalViews: 0, totalLikes: 0, totalComments: 0,
@@ -284,7 +284,6 @@ function computeVideoAnalytics(videos) {
     const variance = weekValues.reduce((s, v) => s + Math.pow(v - avgWeekly, 2), 0) / Math.max(1, weekValues.length);
     const stdDev = Math.sqrt(variance);
     const consistencyScore = Math.max(0, Math.min(100, Math.round(100 - (stdDev / Math.max(0.01, avgWeekly)) * 25)));
-
     const viralityScore = avgViews > 0 ? Math.round((viewsSorted[0]?.viewCount || 0) / avgViews * 10) / 10 : 0;
 
     const maxViews = viewsSorted[0]?.viewCount || 0;
@@ -389,14 +388,3 @@ function computeVideoAnalytics(videos) {
         viewsTrend, engagementTrend, likeRateTrend,
     };
 }
-
-module.exports = {
-    ytFetch,
-    extractChannelId,
-    resolveChannelId,
-    fetchChannelData,
-    fetchAllVideos,
-    parseDuration,
-    computeVideoAnalytics,
-    formatCompact,
-};
