@@ -1,33 +1,35 @@
-const router = require('express').Router();
-const { readJSON, writeJSON, SCHEDULED_POSTS_FILE } = require('../utils/dataHelpers');
-const { syncEverythingToGitHub } = require('../services/github');
-const { generateId, processScheduledPosts } = require('../utils/scheduler');
+import { Hono } from 'hono';
+import { getPosts, getPostById, createPost, updatePost, deletePost, deleteAllPosts } from '../lib/db.js';
+import { generateId, processScheduledPosts } from '../utils/scheduler.js';
 
-router.get('/scheduled-posts', async (req, res) => {
+const app = new Hono();
+
+app.get('/scheduled-posts', async (c) => {
     try {
-        const posts = await readJSON(SCHEDULED_POSTS_FILE) || [];
-        res.json({ success: true, posts });
+        const posts = await getPosts(c.get('supabase'), c.get('userId'));
+        return c.json({ success: true, posts });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        return c.json({ success: false, message: err.message }, 500);
     }
 });
 
-router.post('/scheduled-posts', async (req, res) => {
+app.post('/scheduled-posts', async (c) => {
     try {
+        const body = await c.req.json();
         const {
             accountId, platform, mediaType, mediaUrl,
             caption, coverUrl, shareToFeed, collaborators,
             audioName, thumbOffset, locationId, userTags,
             altText, scheduledAt,
-        } = req.body;
+        } = body;
 
         if (!accountId || !mediaUrl || !scheduledAt) {
-            return res.status(400).json({ success: false, message: 'accountId, mediaUrl, and scheduledAt are required' });
+            return c.json({ success: false, message: 'accountId, mediaUrl, and scheduledAt are required' }, 400);
         }
 
         const scheduledDate = new Date(scheduledAt);
         if (isNaN(scheduledDate.getTime()) || scheduledDate <= new Date()) {
-            return res.status(400).json({ success: false, message: 'scheduledAt must be a valid future date' });
+            return c.json({ success: false, message: 'scheduledAt must be a valid future date' }, 400);
         }
 
         const post = {
@@ -52,78 +54,76 @@ router.post('/scheduled-posts', async (req, res) => {
             error: null,
         };
 
-        const posts = await readJSON(SCHEDULED_POSTS_FILE) || [];
-        posts.push(post);
-        await writeJSON(SCHEDULED_POSTS_FILE, posts);
-        syncEverythingToGitHub().catch(() => { });
-
-        res.json({ success: true, post });
+        await createPost(c.get('supabase'), post, c.get('userId'));
+        return c.json({ success: true, post });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        return c.json({ success: false, message: err.message }, 500);
     }
 });
 
-router.put('/scheduled-posts/:id', async (req, res) => {
+app.put('/scheduled-posts/:id', async (c) => {
     try {
-        const posts = await readJSON(SCHEDULED_POSTS_FILE) || [];
-        const idx = posts.findIndex(p => p.id === req.params.id);
-        if (idx === -1) return res.status(404).json({ success: false, message: 'Scheduled post not found' });
-        if (posts[idx].status !== 'pending' && posts[idx].status !== 'scheduled') {
-            return res.status(400).json({ success: false, message: 'Can only edit pending posts' });
+        const supabase = c.get('supabase');
+        const userId = c.get('userId');
+        const id = c.req.param('id');
+        const post = await getPostById(supabase, id, userId);
+        if (!post) return c.json({ success: false, message: 'Scheduled post not found' }, 404);
+        if (post.status !== 'pending' && post.status !== 'scheduled') {
+            return c.json({ success: false, message: 'Can only edit pending posts' }, 400);
         }
 
+        const body = await c.req.json();
         const allowed = ['caption', 'scheduledAt', 'shareToFeed', 'collaborators', 'audioName',
             'thumbOffset', 'locationId', 'userTags', 'altText', 'coverUrl'];
+        const updates = {};
         for (const key of allowed) {
-            if (req.body[key] !== undefined) posts[idx][key] = req.body[key];
+            if (body[key] !== undefined) updates[key] = body[key];
         }
-        if (req.body.scheduledAt) posts[idx].scheduledAt = new Date(req.body.scheduledAt).toISOString();
+        if (body.scheduledAt) updates.scheduledAt = new Date(body.scheduledAt).toISOString();
 
-        await writeJSON(SCHEDULED_POSTS_FILE, posts);
-        syncEverythingToGitHub().catch(() => { });
-        res.json({ success: true, post: posts[idx] });
+        await updatePost(supabase, id, updates, userId);
+        const updated = await getPostById(supabase, id, userId);
+        return c.json({ success: true, post: updated });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        return c.json({ success: false, message: err.message }, 500);
     }
 });
 
-router.delete('/scheduled-posts', async (_req, res) => {
+app.delete('/scheduled-posts', async (c) => {
     try {
-        let posts = await readJSON(SCHEDULED_POSTS_FILE) || [];
-        const publishing = posts.filter(p => p.status === 'publishing');
-        await writeJSON(SCHEDULED_POSTS_FILE, publishing);
-        syncEverythingToGitHub().catch(() => { });
-        res.json({ success: true, deleted: posts.length - publishing.length, kept: publishing.length });
+        const { deleted, kept } = await deleteAllPosts(c.get('supabase'), c.get('userId'));
+        return c.json({ success: true, deleted, kept });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        return c.json({ success: false, message: err.message }, 500);
     }
 });
 
-router.delete('/scheduled-posts/:id', async (req, res) => {
+app.delete('/scheduled-posts/:id', async (c) => {
     try {
-        let posts = await readJSON(SCHEDULED_POSTS_FILE) || [];
-        const post = posts.find(p => p.id === req.params.id);
-        if (!post) return res.status(404).json({ success: false, message: 'Scheduled post not found' });
+        const supabase = c.get('supabase');
+        const userId = c.get('userId');
+        const id = c.req.param('id');
+        const post = await getPostById(supabase, id, userId);
+        if (!post) return c.json({ success: false, message: 'Scheduled post not found' }, 404);
         if (post.status === 'publishing') {
-            return res.status(400).json({ success: false, message: 'Cannot delete a post that is currently publishing' });
+            return c.json({ success: false, message: 'Cannot delete a post that is currently publishing' }, 400);
         }
-        posts = posts.filter(p => p.id !== req.params.id);
-        await writeJSON(SCHEDULED_POSTS_FILE, posts);
-        syncEverythingToGitHub().catch(() => { });
-        res.json({ success: true, message: 'Scheduled post deleted' });
+        await deletePost(supabase, id, userId);
+        return c.json({ success: true, message: 'Scheduled post deleted' });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        return c.json({ success: false, message: err.message }, 500);
     }
 });
 
-router.get('/process-scheduled', async (req, res) => {
-    const result = await processScheduledPosts();
-    res.json({ success: true, ...result, timestamp: new Date().toISOString() });
+// Manual trigger for testing
+app.get('/process-scheduled', async (c) => {
+    const result = await processScheduledPosts(c.get('supabase'));
+    return c.json({ success: true, ...result, timestamp: new Date().toISOString() });
 });
 
-router.post('/process-scheduled', async (req, res) => {
-    const result = await processScheduledPosts();
-    res.json({ success: true, ...result, timestamp: new Date().toISOString() });
+app.post('/process-scheduled', async (c) => {
+    const result = await processScheduledPosts(c.get('supabase'));
+    return c.json({ success: true, ...result, timestamp: new Date().toISOString() });
 });
 
-module.exports = router;
+export default app;
