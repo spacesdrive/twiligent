@@ -1,65 +1,92 @@
 #!/usr/bin/env node
 /**
  * Instagram Scheduled Post Publisher
- * 
+ *
  * Runs standalone in GitHub Actions (cron every 15 min).
- * Reads scheduled posts, publishes due ones to Instagram, updates the file.
- * 
- * Environment variables (set as GitHub Secrets):
- *   ACCOUNTS_JSON - Base64-encoded contents of accounts.json
- * 
- * Requires Node.js 18+ (uses native fetch).
+ * Uses native fetch (Node 18+) and the Supabase REST API — no npm install needed.
+ *
+ * Required GitHub Secrets:
+ *   SUPABASE_URL         — your Supabase project URL
+ *   SUPABASE_SERVICE_KEY — your Supabase service role key (bypasses RLS)
  */
 
-const fs = require('fs');
-const path = require('path');
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 
-const SCHEDULED_POSTS_FILE = path.join(__dirname, '..', 'backend', 'data', 'scheduled_posts.json');
+if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+    console.error('❌ Missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
+    console.error('   Add these as GitHub Actions secrets in your repo settings.');
+    process.exit(1);
+}
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// ─── Supabase REST helpers (no SDK, native fetch only) ────────────────────────
 
-function getAccounts() {
-    // Priority 1: ACCOUNTS_JSON env var (GitHub Actions)
-    if (process.env.ACCOUNTS_JSON) {
-        try {
-            return JSON.parse(Buffer.from(process.env.ACCOUNTS_JSON, 'base64').toString('utf8'));
-        } catch {
-            // Maybe it's plain JSON, not base64
-            return JSON.parse(process.env.ACCOUNTS_JSON);
-        }
+const sbHeaders = {
+    'apikey': SUPABASE_SERVICE_KEY,
+    'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+    'Content-Type': 'application/json',
+};
+
+async function sbGet(path) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, { headers: sbHeaders });
+    if (!res.ok) throw new Error(`Supabase GET ${path}: ${await res.text()}`);
+    return res.json();
+}
+
+async function sbPatch(path, body) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
+        method: 'PATCH',
+        headers: { ...sbHeaders, 'Prefer': 'return=minimal' },
+        body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error(`Supabase PATCH ${path}: ${await res.text()}`);
+}
+
+// ─── Data access ──────────────────────────────────────────────────────────────
+
+async function getDuePosts() {
+    const now = encodeURIComponent(new Date().toISOString());
+    const rows = await sbGet(
+        `/scheduled_posts?status=eq.pending&scheduled_at=lte.${now}&select=id,account_id,status,scheduled_at,data`
+    );
+    return (rows || []).map(row => ({
+        id: row.id,
+        accountId: row.account_id,
+        status: row.status,
+        scheduledAt: row.scheduled_at,
+        ...(row.data || {}),
+    }));
+}
+
+async function getAccount(accountId) {
+    const rows = await sbGet(`/accounts?id=eq.${accountId}&select=id,platform,data`);
+    if (!rows || rows.length === 0) return null;
+    return { id: rows[0].id, platform: rows[0].platform, ...(rows[0].data || {}) };
+}
+
+async function updatePostStatus(id, updates) {
+    const { status, ...dataUpdates } = updates;
+    const patch = {};
+    if (status) patch.status = status;
+
+    if (Object.keys(dataUpdates).length > 0) {
+        const rows = await sbGet(`/scheduled_posts?id=eq.${id}&select=data`);
+        const currentData = rows?.[0]?.data || {};
+        patch.data = { ...currentData, ...dataUpdates };
     }
-    // Priority 2: Local file
-    const localFile = path.join(__dirname, '..', 'backend', 'data', 'accounts.json');
-    if (fs.existsSync(localFile)) {
-        return JSON.parse(fs.readFileSync(localFile, 'utf8'));
-    }
-    return [];
+
+    await sbPatch(`/scheduled_posts?id=eq.${id}`, patch);
 }
 
-function getScheduledPosts() {
-    if (!fs.existsSync(SCHEDULED_POSTS_FILE)) return [];
-    return JSON.parse(fs.readFileSync(SCHEDULED_POSTS_FILE, 'utf8'));
-}
+// ─── Instagram publishing ─────────────────────────────────────────────────────
 
-function saveScheduledPosts(posts) {
-    fs.writeFileSync(SCHEDULED_POSTS_FILE, JSON.stringify(posts, null, 2));
-}
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-function sleep(ms) {
-    return new Promise(r => setTimeout(r, ms));
-}
-
-// ─── Instagram Publishing ────────────────────────────────────────────────────
-
-async function publishPost(post, accounts) {
-    const acct = accounts.find(a => a.id === post.accountId);
-    if (!acct) throw new Error('Account not found: ' + post.accountId);
-
-    const igId = acct.igUserId;
-    const token = acct.accessToken;
+async function publishToInstagram(post, account) {
+    const igId = account.igUserId;
+    const token = account.accessToken;
     const params = { access_token: token };
 
-    // Build container params based on media type
     if (post.mediaType === 'REELS') {
         params.media_type = 'REELS';
         params.video_url = post.mediaUrl;
@@ -80,7 +107,6 @@ async function publishPost(post, accounts) {
         }
         if (post.userTags?.length) params.user_tags = JSON.stringify(post.userTags);
     } else {
-        // IMAGE
         params.image_url = post.mediaUrl;
         if (post.caption) params.caption = post.caption;
         if (post.locationId) params.location_id = post.locationId;
@@ -88,18 +114,13 @@ async function publishPost(post, accounts) {
         if (post.altText) params.alt_text = post.altText;
     }
 
-    // Step 1: Create container
     const qs = new URLSearchParams(params).toString();
-    const createRes = await fetch(
-        `https://graph.instagram.com/v25.0/${igId}/media?${qs}`,
-        { method: 'POST' }
-    );
+    const createRes = await fetch(`https://graph.instagram.com/v25.0/${igId}/media?${qs}`, { method: 'POST' });
     const createData = await createRes.json();
     if (createData.error) throw new Error(createData.error.message);
 
     const containerId = createData.id;
 
-    // Step 2: Wait for processing (videos/reels need polling)
     if (post.mediaType === 'REELS' || post.mediaType === 'STORIES') {
         for (let i = 0; i < 60; i++) {
             await sleep(3000);
@@ -115,7 +136,6 @@ async function publishPost(post, accounts) {
         await sleep(2000);
     }
 
-    // Step 3: Publish
     const pubRes = await fetch(
         `https://graph.instagram.com/v25.0/${igId}/media_publish?creation_id=${containerId}&access_token=${token}`,
         { method: 'POST' }
@@ -126,26 +146,15 @@ async function publishPost(post, accounts) {
     return pubData.id;
 }
 
-// ─── Main ────────────────────────────────────────────────────────────────────
+// ─── Main ─────────────────────────────────────────────────────────────────────
 
 async function main() {
     console.log('📅 Instagram Scheduled Post Publisher');
-    console.log(`   Time: ${new Date().toISOString()}`);
-    console.log('');
+    console.log(`   Time: ${new Date().toISOString()}\n`);
 
-    const accounts = getAccounts();
-    if (!accounts.length) {
-        console.log('❌ No accounts found.');
-        console.log('   Set the ACCOUNTS_JSON secret (base64 of accounts.json)');
-        process.exit(1);
-    }
-    console.log(`   Accounts loaded: ${accounts.length}`);
+    const duePosts = await getDuePosts();
 
-    const posts = getScheduledPosts();
-    const now = new Date();
-    const duePosts = posts.filter(p => p.status === 'pending' && new Date(p.scheduledAt) <= now);
-
-    if (!duePosts.length) {
+    if (duePosts.length === 0) {
         console.log('✓ No posts due for publishing');
         process.exit(0);
     }
@@ -154,28 +163,28 @@ async function main() {
     let processed = 0;
 
     for (const post of duePosts) {
-        console.log(`  Publishing: ${post.id} (${post.mediaType}) — scheduled for ${post.scheduledAt}`);
-        post.status = 'publishing';
-        saveScheduledPosts(posts);
+        console.log(`  Publishing: ${post.id} (${post.mediaType}) — scheduled ${post.scheduledAt}`);
+        await updatePostStatus(post.id, { status: 'publishing' });
 
         try {
-            const mediaId = await publishPost(post, accounts);
-            post.status = 'published';
-            post.publishedMediaId = mediaId;
-            post.publishedAt = new Date().toISOString();
+            const account = await getAccount(post.accountId);
+            if (!account) throw new Error('Account not found: ' + post.accountId);
+
+            const mediaId = await publishToInstagram(post, account);
+            await updatePostStatus(post.id, {
+                status: 'published',
+                publishedMediaId: mediaId,
+                publishedAt: new Date().toISOString(),
+            });
             processed++;
             console.log(`  ✓ Published → media ${mediaId}`);
         } catch (err) {
-            post.status = 'failed';
-            post.error = err.message;
+            await updatePostStatus(post.id, { status: 'failed', error: err.message });
             console.error(`  ✗ Failed: ${err.message}`);
         }
-
-        saveScheduledPosts(posts);
     }
 
-    console.log(`\n📊 Results: ${processed}/${duePosts.length} published successfully`);
-    // Exit 0 even if some failed — so the commit step still runs
+    console.log(`\n📊 Results: ${processed}/${duePosts.length} published`);
     process.exit(0);
 }
 
