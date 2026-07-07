@@ -150,17 +150,21 @@ app.get('/accounts/:id/ig-analytics', async (c) => {
             return c.json({ success: false, message: 'No access token stored' }, 400);
         }
 
-        const profile = await fetchInstagramProfile(account.igUserId, account.accessToken);
-        const media = await fetchInstagramMedia(account.igUserId, account.accessToken, 500);
+        const [profile, media] = await Promise.all([
+            fetchInstagramProfile(account.igUserId, account.accessToken),
+            fetchInstagramMedia(account.igUserId, account.accessToken, 500),
+        ]);
 
-        await setIGCache(redis, userId, id, { media, fetchedAt: new Date().toISOString() });
-        await updateAccount(supabase, account.id, {
-            followersCount: profile.followersCount,
-            followsCount: profile.followsCount,
-            mediaCount: profile.mediaCount,
-            profilePictureUrl: profile.profilePictureUrl,
-            lastUpdated: new Date().toISOString(),
-        }, userId);
+        await Promise.all([
+            setIGCache(redis, userId, id, { media, fetchedAt: new Date().toISOString() }),
+            updateAccount(supabase, account.id, {
+                followersCount: profile.followersCount,
+                followsCount: profile.followsCount,
+                mediaCount: profile.mediaCount,
+                profilePictureUrl: profile.profilePictureUrl,
+                lastUpdated: new Date().toISOString(),
+            }, userId),
+        ]);
 
         const analytics = computeInstagramAnalytics(profile, media);
         const { accessToken: _, ...safeAcc } = account;
