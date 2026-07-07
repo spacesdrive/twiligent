@@ -8,17 +8,13 @@ name: Instagram Scheduled Publisher
 #   Private repos → 2,000 min/month; change cron to '*/30 * * * *' to stay within limit
 #
 # REQUIRED SECRETS (set in GitHub repo → Settings → Secrets → Actions):
-#   ACCOUNTS_JSON  — Base64-encoded contents of backend/data/accounts.json
-#                    Generate with: cat backend/data/accounts.json | base64
-#                    (PowerShell: [Convert]::ToBase64String([IO.File]::ReadAllBytes("backend\data\accounts.json")))
+#   SUPABASE_URL         — your Supabase project URL
+#   SUPABASE_SERVICE_KEY — your Supabase service role key
 
 on:
   schedule:
     - cron: '*/15 * * * *'
-  workflow_dispatch: # Manual trigger from GitHub UI
-
-permissions:
-  contents: write
+  workflow_dispatch:
 
 jobs:
   publish:
@@ -32,38 +28,8 @@ jobs:
         with:
           node-version: 20
 
-      - name: Check for due posts
-        id: check
-        run: |
-          if [ ! -f "backend/data/scheduled_posts.json" ]; then
-            echo "No scheduled_posts.json found"
-            echo "has_due=false" >> $GITHUB_OUTPUT
-            exit 0
-          fi
-          DUE=$(node -e "
-            const posts = JSON.parse(require('fs').readFileSync('backend/data/scheduled_posts.json', 'utf8'));
-            const now = new Date();
-            const due = posts.filter(p => p.status === 'pending' && new Date(p.scheduledAt) <= now);
-            console.log(due.length > 0 ? 'true' : 'false');
-          ")
-          echo "has_due=$DUE" >> $GITHUB_OUTPUT
-          echo "Due posts found: $DUE"
-
       - name: Publish scheduled posts
-        if: steps.check.outputs.has_due == 'true'
         run: node scripts/publish-scheduled.js
         env:
-          ACCOUNTS_JSON: ${{ secrets.ACCOUNTS_JSON }}
-
-      - name: Commit updated schedule
-        if: steps.check.outputs.has_due == 'true'
-        run: |
-          git config user.name "GitHub Actions Bot"
-          git config user.email "actions@github.com"
-          git add backend/data/scheduled_posts.json
-          git diff --staged --quiet || git commit -m "📅 Auto-publish: $(date -u '+%Y-%m-%d %H:%M UTC') [skip ci]"
-          for i in 1 2 3; do
-            git pull --rebase origin main && git push && break
-            echo "Push attempt $i failed, retrying..."
-            sleep 2
-          done
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
