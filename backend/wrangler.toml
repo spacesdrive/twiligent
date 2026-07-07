@@ -1,6 +1,6 @@
 name = "twiligent"
 main = "server.js"
-compatibility_date = "2024-09-23"
+compatibility_date = "2025-01-01"
 account_id = "8c3836c859b7bdeb63ab0f7d55dd9b05"
 
 [triggers]
