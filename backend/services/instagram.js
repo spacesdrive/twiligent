@@ -1,5 +1,5 @@
-const fetch = require('node-fetch');
-const { readJSON, writeJSON, ACCOUNTS_FILE } = require('../utils/dataHelpers');
+// fetch is a global in Cloudflare Workers — no import needed.
+import { getAccounts, updateAccount } from '../lib/db.js';
 
 const IG_GRAPH_URL = 'https://graph.instagram.com';
 const IG_API_VERSION = 'v25.0';
@@ -20,14 +20,15 @@ async function igFetch(endpoint, params = {}, retries = 1) {
         res = await fetch(url.toString(), { signal: controller.signal });
     } catch (err) {
         clearTimeout(timer);
-        const isTransient = err.name === 'AbortError' || err.code === 'EAI_AGAIN' ||
-            err.code === 'ECONNRESET' || err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT';
+        const isTransient = err.name === 'AbortError' ||
+            err.message?.includes('EAI_AGAIN') ||
+            err.message?.includes('ECONNRESET');
         if (isTransient && retries > 0) {
             await new Promise(r => setTimeout(r, 1000));
             return igFetch(endpoint, params, retries - 1);
         }
         if (err.name === 'AbortError') throw new Error('Instagram API request timed out');
-        throw new Error(`Instagram API unreachable (${err.code || err.message})`);
+        throw new Error(`Instagram API unreachable (${err.message})`);
     }
     clearTimeout(timer);
 
@@ -37,7 +38,7 @@ async function igFetch(endpoint, params = {}, retries = 1) {
     return data;
 }
 
-async function exchangeForLongLivedToken(shortToken, appSecret) {
+export async function exchangeForLongLivedToken(shortToken, appSecret) {
     const data = await igFetch('/access_token', {
         grant_type: 'ig_exchange_token',
         client_secret: appSecret,
@@ -51,7 +52,7 @@ async function exchangeForLongLivedToken(shortToken, appSecret) {
     };
 }
 
-async function refreshLongLivedToken(longToken) {
+export async function refreshLongLivedToken(longToken) {
     const data = await igFetch('/refresh_access_token', {
         grant_type: 'ig_refresh_token',
         access_token: longToken,
@@ -64,10 +65,11 @@ async function refreshLongLivedToken(longToken) {
     };
 }
 
-// Auto-refresh tokens expiring within 15 days. Called on startup and every 24h.
-async function autoRefreshInstagramTokens() {
+// Called by the daily cron trigger. Receives supabase so it works outside of
+// a request context (no Hono context available in cron handlers).
+export async function autoRefreshInstagramTokens(supabase) {
     try {
-        const accounts = await readJSON(ACCOUNTS_FILE) || [];
+        const accounts = await getAccounts(supabase);
         const igAccounts = accounts.filter(a => a.platform === 'instagram' && a.accessToken && a.tokenExpiresAt);
         if (igAccounts.length === 0) return;
 
@@ -76,32 +78,22 @@ async function autoRefreshInstagramTokens() {
         const toRefresh = igAccounts.filter(a => new Date(a.tokenExpiresAt) <= soon);
         if (toRefresh.length === 0) return;
 
-        console.log(`\n  🔑 Auto-refreshing ${toRefresh.length} Instagram token(s) expiring within 15 days...`);
-        let changed = false;
         for (const account of toRefresh) {
             try {
                 const refreshed = await refreshLongLivedToken(account.accessToken);
-                account.accessToken = refreshed.accessToken;
-                account.tokenExpiresAt = new Date(Date.now() + (refreshed.expiresIn || 5184000) * 1000).toISOString();
-                console.log(`  ✅ Token refreshed for @${account.username} — expires ${account.tokenExpiresAt}`);
-                changed = true;
+                const tokenExpiresAt = new Date(Date.now() + (refreshed.expiresIn || 5184000) * 1000).toISOString();
+                await updateAccount(supabase, account.id, { accessToken: refreshed.accessToken, tokenExpiresAt });
+                console.log(`Token refreshed for @${account.username} — expires ${tokenExpiresAt}`);
             } catch (err) {
-                console.error(`  ❌ Failed to refresh token for @${account.username}: ${err.message}`);
+                console.error(`Failed to refresh token for @${account.username}: ${err.message}`);
             }
         }
-
-        if (changed) {
-            await writeJSON(ACCOUNTS_FILE, accounts);
-            // Lazy-require to avoid circular dependency at module load time
-            const { syncEverythingToGitHub } = require('./github');
-            syncEverythingToGitHub().catch(() => { });
-        }
     } catch (err) {
-        console.error('  ❌ autoRefreshInstagramTokens error:', err.message);
+        console.error('autoRefreshInstagramTokens error:', err.message);
     }
 }
 
-async function fetchInstagramProfile(igUserId, accessToken) {
+export async function fetchInstagramProfile(igUserId, accessToken) {
     const endpoint = igUserId ? `/${igUserId}` : '/me';
     const data = await igFetch(endpoint, {
         access_token: accessToken,
@@ -120,7 +112,7 @@ async function fetchInstagramProfile(igUserId, accessToken) {
     };
 }
 
-async function fetchInstagramMedia(igUserId, accessToken, limit = 500) {
+export async function fetchInstagramMedia(igUserId, accessToken, limit = 500) {
     let allMedia = [];
     let url = `${IG_GRAPH_URL}/${IG_API_VERSION}/${igUserId}/media?access_token=${accessToken}&fields=id,caption,media_type,media_url,thumbnail_url,cover_url,permalink,timestamp,like_count,comments_count&limit=${Math.min(limit, 100)}`;
 
@@ -134,7 +126,7 @@ async function fetchInstagramMedia(igUserId, accessToken, limit = 500) {
         } catch (err) {
             clearTimeout(timer);
             if (err.name === 'AbortError') throw new Error('Instagram API request timed out');
-            throw new Error(`Instagram API unreachable (${err.code || err.message})`);
+            throw new Error(`Instagram API unreachable (${err.message})`);
         }
         clearTimeout(timer);
         const data = await res.json();
@@ -146,7 +138,6 @@ async function fetchInstagramMedia(igUserId, accessToken, limit = 500) {
 
     return allMedia.slice(0, limit).map(m => {
         const isVideo = m.media_type === 'REEL' || m.media_type === 'VIDEO';
-        // For REELs: cover_url > thumbnail_url. For photos: media_url. Never use a video URL as thumbnailUrl.
         const thumbnailUrl = m.cover_url || m.thumbnail_url || (isVideo ? '' : m.media_url || '');
         return {
             id: m.id,
@@ -162,7 +153,7 @@ async function fetchInstagramMedia(igUserId, accessToken, limit = 500) {
     });
 }
 
-function computeInstagramAnalytics(profile, media) {
+export function computeInstagramAnalytics(profile, media) {
     const emptyAnalytics = {
         totalPosts: profile.mediaCount || 0, fetchedPosts: 0,
         totalLikes: 0, totalComments: 0, totalEngagement: 0,
@@ -254,7 +245,6 @@ function computeInstagramAnalytics(profile, media) {
         avgEngagement: b.count > 0 ? Math.round((b.likes + b.comments) / b.count) : 0,
     }));
     const bestDayObj = postsByDayOfWeek.reduce((best, d) => d.avgEngagement > best.avgEngagement ? d : best, postsByDayOfWeek[0]);
-    const bestPostingDay = bestDayObj?.day || '';
 
     const hourBuckets = Array(24).fill(null).map(() => ({ count: 0, likes: 0, comments: 0 }));
     dates.forEach((d, i) => {
@@ -269,7 +259,6 @@ function computeInstagramAnalytics(profile, media) {
         avgEngagement: b.count > 0 ? Math.round((b.likes + b.comments) / b.count) : 0,
     }));
     const bestHourObj = postsByHour.reduce((best, h) => h.avgEngagement > best.avgEngagement ? h : best, postsByHour[0]);
-    const bestPostingHour = bestHourObj?.posts > 0 ? bestHourObj.label : '';
 
     const monthMap = {};
     media.forEach(m => {
@@ -290,7 +279,6 @@ function computeInstagramAnalytics(profile, media) {
             avgComments: Math.round(s.comments / s.posts),
             engagement: s.likes + s.comments,
         }));
-    const engagementTimeline = monthlyBreakdown;
 
     const now = Date.now();
     const postsLast7Days = dates.filter(d => (now - d.getTime()) <= 7 * 86400000).length;
@@ -299,7 +287,7 @@ function computeInstagramAnalytics(profile, media) {
 
     const hashtagMap = {};
     media.forEach(m => {
-        const tags = (m.caption || '').match(/#[\w\u00C0-\u024F]+/g) || [];
+        const tags = (m.caption || '').match(/#[\wÀ-ɏ]+/g) || [];
         tags.forEach(tag => {
             const t = tag.toLowerCase();
             if (!hashtagMap[t]) hashtagMap[t] = { tag: t, count: 0, likes: 0, comments: 0 };
@@ -348,8 +336,6 @@ function computeInstagramAnalytics(profile, media) {
         const mean = engagements.reduce((s, v) => s + v, 0) / engagements.length;
         const variance = engagements.reduce((s, v) => s + Math.pow(v - mean, 2), 0) / engagements.length;
         const stdDev = Math.sqrt(variance);
-        // Social media engagement is inherently high-variance (viral posts skew cv >> 1).
-        // Use 100/(1+cv) so cv=0→100, cv=1→50, cv=2→33 — avoids always-zero for normal accounts.
         const cv = mean > 0 ? stdDev / mean : (stdDev > 0 ? 10 : 0);
         consistencyScore = Math.max(0, Math.min(100, Math.round(100 / (1 + cv))));
     }
@@ -370,22 +356,12 @@ function computeInstagramAnalytics(profile, media) {
         performanceByType,
         postFrequency: { perWeek, perMonth },
         topPosts,
-        postsByDayOfWeek, bestPostingDay,
-        postsByHour, bestPostingHour,
-        engagementTimeline, monthlyBreakdown,
+        postsByDayOfWeek, bestPostingDay: bestDayObj?.day || '',
+        postsByHour, bestPostingHour: bestHourObj?.posts > 0 ? bestHourObj.label : '',
+        engagementTimeline: monthlyBreakdown, monthlyBreakdown,
         postsLast7Days, postsLast30Days, postsLast90Days,
         hashtagAnalysis,
         captionLengthCorrelation,
         viralityScore, consistencyScore,
     };
 }
-
-module.exports = {
-    igFetch,
-    exchangeForLongLivedToken,
-    refreshLongLivedToken,
-    autoRefreshInstagramTokens,
-    fetchInstagramProfile,
-    fetchInstagramMedia,
-    computeInstagramAnalytics,
-};
