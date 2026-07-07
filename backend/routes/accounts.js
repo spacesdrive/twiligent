@@ -1,49 +1,59 @@
-const router = require('express').Router();
-const { readJSON, writeJSON, ACCOUNTS_FILE, VIDEOS_CACHE_FILE, IG_CACHE_FILE, getAPIKey, getIGAppCredentials } = require('../utils/dataHelpers');
-const { syncEverythingToGitHub } = require('../services/github');
-const { fetchInstagramProfile, exchangeForLongLivedToken, refreshLongLivedToken } = require('../services/instagram');
-const { resolveChannelId, fetchChannelData } = require('../services/youtube');
+import { Hono } from 'hono';
+import {
+    getAccounts, getAccountById, createAccount, updateAccount, deleteAccount,
+} from '../lib/db.js';
+import { deleteVideosCache, deleteIGCache } from '../lib/cache.js';
+import { fetchInstagramProfile, exchangeForLongLivedToken, refreshLongLivedToken } from '../services/instagram.js';
+import { resolveChannelId, fetchChannelData } from '../services/youtube.js';
 
-router.get('/accounts', async (req, res) => {
-    const accounts = await readJSON(ACCOUNTS_FILE) || [];
-    const safe = accounts.map(a => {
-        const copy = { ...a };
-        if (copy.accessToken) delete copy.accessToken;
-        return copy;
-    });
-    res.json(safe);
-});
+const app = new Hono();
 
-router.post('/resolve-channel', async (req, res) => {
+function safeAccount(account) {
+    const copy = { ...account };
+    delete copy.accessToken;
+    return copy;
+}
+
+app.get('/accounts', async (c) => {
     try {
-        const { input } = req.body;
-        const apiKey = await getAPIKey();
-        if (!apiKey) return res.status(400).json({ success: false, message: 'YouTube API key not configured' });
-
-        const channelId = await resolveChannelId(input, apiKey);
-        const channelData = await fetchChannelData(channelId, apiKey);
-        res.json({ success: true, data: channelData });
+        const accounts = await getAccounts(c.get('supabase'), c.get('userId'));
+        return c.json(accounts.map(safeAccount));
     } catch (err) {
-        res.status(400).json({ success: false, message: err.message });
+        return c.json({ success: false, message: err.message }, 500);
     }
 });
 
-router.post('/accounts', async (req, res) => {
+app.post('/resolve-channel', async (c) => {
     try {
-        const { input } = req.body;
-        const apiKey = await getAPIKey();
-        if (!apiKey) return res.status(400).json({ success: false, message: 'YouTube API key not configured' });
+        const { input } = await c.req.json();
+        const apiKey = c.env.YOUTUBE_API_KEY;
+        if (!apiKey) return c.json({ success: false, message: 'YouTube API key not configured on server' }, 400);
+        const channelId = await resolveChannelId(input, apiKey);
+        const channelData = await fetchChannelData(channelId, apiKey);
+        return c.json({ success: true, data: channelData });
+    } catch (err) {
+        return c.json({ success: false, message: err.message }, 400);
+    }
+});
+
+app.post('/accounts', async (c) => {
+    try {
+        const { input } = await c.req.json();
+        const supabase = c.get('supabase');
+        const userId = c.get('userId');
+        const apiKey = c.env.YOUTUBE_API_KEY;
+        if (!apiKey) return c.json({ success: false, message: 'YouTube API key not configured on server' }, 400);
 
         const channelId = await resolveChannelId(input, apiKey);
         const channelData = await fetchChannelData(channelId, apiKey);
-        const accounts = await readJSON(ACCOUNTS_FILE);
+        const accounts = await getAccounts(supabase, userId);
 
         if (accounts.find(a => a.channelId === channelId)) {
-            return res.status(400).json({ success: false, message: 'This channel is already added' });
+            return c.json({ success: false, message: 'This channel is already added' }, 400);
         }
 
         const newAccount = {
-            id: Date.now().toString(),
+            id: Date.now().toString() + Math.random().toString(36).substring(2, 6),
             channelId: channelData.channelId,
             title: channelData.title,
             description: channelData.description,
@@ -63,22 +73,21 @@ router.post('/accounts', async (req, res) => {
             lastUpdated: new Date().toISOString(),
         };
 
-        accounts.push(newAccount);
-        await writeJSON(ACCOUNTS_FILE, accounts);
-        syncEverythingToGitHub().catch(() => { });
-
-        res.json({ success: true, account: newAccount });
+        await createAccount(supabase, newAccount, userId);
+        return c.json({ success: true, account: newAccount });
     } catch (err) {
-        res.status(400).json({ success: false, message: err.message });
+        return c.json({ success: false, message: err.message }, 400);
     }
 });
 
-router.post('/accounts/instagram', async (req, res) => {
+app.post('/accounts/instagram', async (c) => {
     try {
-        const { accessToken } = req.body;
-        if (!accessToken) return res.status(400).json({ success: false, message: 'Access token is required' });
+        const { accessToken } = await c.req.json();
+        if (!accessToken) return c.json({ success: false, message: 'Access token is required' }, 400);
 
-        const { appSecret } = await getIGAppCredentials();
+        const supabase = c.get('supabase');
+        const userId = c.get('userId');
+        const appSecret = c.env.INSTAGRAM_APP_SECRET;
 
         let finalToken = accessToken;
         let expiresIn = 0;
@@ -87,28 +96,23 @@ router.post('/accounts/instagram', async (req, res) => {
                 const longToken = await exchangeForLongLivedToken(accessToken, appSecret);
                 finalToken = longToken.accessToken;
                 expiresIn = longToken.expiresIn;
-                console.log('Token exchanged for long-lived token successfully');
             } catch (err) {
                 console.log('Token exchange skipped (token may already be long-lived):', err.message);
             }
-        } else {
-            console.log('No Instagram App Secret configured — using token as-is');
         }
 
         const profile = await fetchInstagramProfile(null, finalToken);
-
         if (!profile.igUserId) {
             throw new Error('Could not get Instagram User ID. Make sure the token has instagram_business_basic permission and is from a Business/Creator account.');
         }
 
-        const accounts = await readJSON(ACCOUNTS_FILE);
-
+        const accounts = await getAccounts(supabase, userId);
         if (accounts.find(a => a.platform === 'instagram' && a.igUserId === profile.igUserId)) {
-            return res.status(400).json({ success: false, message: 'This Instagram account is already added' });
+            return c.json({ success: false, message: 'This Instagram account is already added' }, 400);
         }
 
         const newAccount = {
-            id: Date.now().toString(),
+            id: Date.now().toString() + Math.random().toString(36).substring(2, 6),
             platform: 'instagram',
             igUserId: profile.igUserId,
             username: profile.username,
@@ -127,145 +131,154 @@ router.post('/accounts/instagram', async (req, res) => {
             lastUpdated: new Date().toISOString(),
         };
 
-        accounts.push(newAccount);
-        await writeJSON(ACCOUNTS_FILE, accounts);
-        syncEverythingToGitHub().catch(() => { });
-
-        const safeAccount = { ...newAccount };
-        delete safeAccount.accessToken;
-        res.json({ success: true, account: safeAccount });
+        await createAccount(supabase, newAccount, userId);
+        return c.json({ success: true, account: safeAccount(newAccount) });
     } catch (err) {
-        res.status(400).json({ success: false, message: err.message });
+        return c.json({ success: false, message: err.message }, 400);
     }
 });
 
-router.post('/accounts/refresh-all', async (req, res) => {
+app.post('/accounts/refresh-all', async (c) => {
     try {
-        const apiKey = await getAPIKey();
-        const accounts = await readJSON(ACCOUNTS_FILE);
+        const supabase = c.get('supabase');
+        const userId = c.get('userId');
+        const apiKey = c.env.YOUTUBE_API_KEY;
+        const accounts = await getAccounts(supabase, userId);
         const results = [];
 
         for (const account of accounts) {
             try {
+                let updates = { lastUpdated: new Date().toISOString() };
+
                 if (account.platform === 'instagram') {
                     if (!account.accessToken) throw new Error('No access token');
                     const profile = await fetchInstagramProfile(account.igUserId, account.accessToken);
-                    account.followersCount = profile.followersCount;
-                    account.followsCount = profile.followsCount;
-                    account.mediaCount = profile.mediaCount;
-                    account.title = profile.name || profile.username;
-                    account.username = profile.username;
-                    account.profilePictureUrl = profile.profilePictureUrl;
+                    updates = {
+                        ...updates,
+                        followersCount: profile.followersCount,
+                        followsCount: profile.followsCount,
+                        mediaCount: profile.mediaCount,
+                        title: profile.name || profile.username,
+                        username: profile.username,
+                        profilePictureUrl: profile.profilePictureUrl,
+                    };
                 } else {
                     if (!apiKey) throw new Error('No YouTube API key');
                     const channelData = await fetchChannelData(account.channelId, apiKey);
-                    account.subscriberCount = channelData.subscriberCount;
-                    account.viewCount = channelData.viewCount;
-                    account.videoCount = channelData.videoCount;
-                    account.title = channelData.title;
-                    account.thumbnails = channelData.thumbnails;
+                    updates = {
+                        ...updates,
+                        subscriberCount: channelData.subscriberCount,
+                        viewCount: channelData.viewCount,
+                        videoCount: channelData.videoCount,
+                        title: channelData.title,
+                        thumbnails: channelData.thumbnails,
+                    };
                 }
-                account.lastUpdated = new Date().toISOString();
+
+                await updateAccount(supabase, account.id, updates, userId);
                 results.push({ id: account.id, success: true });
             } catch (err) {
                 results.push({ id: account.id, success: false, error: err.message });
             }
         }
 
-        await writeJSON(ACCOUNTS_FILE, accounts);
-        const safeAccounts = accounts.map(a => {
-            const safe = { ...a };
-            if (safe.accessToken) delete safe.accessToken;
-            return safe;
+        const updatedAccounts = await getAccounts(supabase, userId);
+        return c.json({
+            success: true,
+            accounts: updatedAccounts.map(safeAccount),
+            results,
+            updatedAt: new Date().toISOString(),
         });
-        res.json({ success: true, accounts: safeAccounts, results, updatedAt: new Date().toISOString() });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        return c.json({ success: false, message: err.message }, 500);
     }
 });
 
-router.post('/accounts/:id/refresh-ig-token', async (req, res) => {
+app.post('/accounts/:id/refresh-ig-token', async (c) => {
     try {
-        const accounts = await readJSON(ACCOUNTS_FILE);
-        const account = accounts.find(a => a.id === req.params.id && a.platform === 'instagram');
-        if (!account) return res.status(404).json({ success: false, message: 'Instagram account not found' });
-        if (!account.accessToken) return res.status(400).json({ success: false, message: 'No access token stored' });
-
+        const supabase = c.get('supabase');
+        const userId = c.get('userId');
+        const account = await getAccountById(supabase, c.req.param('id'), userId);
+        if (!account || account.platform !== 'instagram') {
+            return c.json({ success: false, message: 'Instagram account not found' }, 404);
+        }
+        if (!account.accessToken) {
+            return c.json({ success: false, message: 'No access token stored' }, 400);
+        }
         const refreshed = await refreshLongLivedToken(account.accessToken);
-        account.accessToken = refreshed.accessToken;
-        account.tokenExpiresAt = new Date(Date.now() + (refreshed.expiresIn || 5184000) * 1000).toISOString();
-        await writeJSON(ACCOUNTS_FILE, accounts);
-        syncEverythingToGitHub().catch(() => { });
-        res.json({ success: true, message: 'Token refreshed for another 60 days', expiresAt: account.tokenExpiresAt });
+        const tokenExpiresAt = new Date(Date.now() + (refreshed.expiresIn || 5184000) * 1000).toISOString();
+        await updateAccount(supabase, account.id, { accessToken: refreshed.accessToken, tokenExpiresAt }, userId);
+        return c.json({ success: true, message: 'Token refreshed for another 60 days', expiresAt: tokenExpiresAt });
     } catch (err) {
-        res.status(400).json({ success: false, message: err.message });
+        return c.json({ success: false, message: err.message }, 400);
     }
 });
 
-router.post('/accounts/:id/refresh', async (req, res) => {
+app.post('/accounts/:id/refresh', async (c) => {
     try {
-        const accounts = await readJSON(ACCOUNTS_FILE);
-        const account = accounts.find(a => a.id === req.params.id);
-        if (!account) return res.status(404).json({ success: false, message: 'Not found' });
+        const supabase = c.get('supabase');
+        const userId = c.get('userId');
+        const account = await getAccountById(supabase, c.req.param('id'), userId);
+        if (!account) return c.json({ success: false, message: 'Not found' }, 404);
+
+        let updates = { lastUpdated: new Date().toISOString() };
 
         if (account.platform === 'instagram') {
-            if (!account.accessToken) return res.status(400).json({ success: false, message: 'No access token' });
+            if (!account.accessToken) return c.json({ success: false, message: 'No access token' }, 400);
             const profile = await fetchInstagramProfile(account.igUserId, account.accessToken);
-            account.followersCount = profile.followersCount;
-            account.followsCount = profile.followsCount;
-            account.mediaCount = profile.mediaCount;
-            account.title = profile.name || profile.username;
-            account.username = profile.username;
-            account.profilePictureUrl = profile.profilePictureUrl;
-            account.biography = profile.biography;
-            account.website = profile.website;
+            updates = {
+                ...updates,
+                followersCount: profile.followersCount,
+                followsCount: profile.followsCount,
+                mediaCount: profile.mediaCount,
+                title: profile.name || profile.username,
+                username: profile.username,
+                profilePictureUrl: profile.profilePictureUrl,
+                biography: profile.biography,
+                website: profile.website,
+            };
         } else {
-            const apiKey = await getAPIKey();
-            if (!apiKey) return res.status(400).json({ success: false, message: 'No API key' });
+            const apiKey = c.env.YOUTUBE_API_KEY;
+            if (!apiKey) return c.json({ success: false, message: 'No API key' }, 400);
             const channelData = await fetchChannelData(account.channelId, apiKey);
-            account.subscriberCount = channelData.subscriberCount;
-            account.viewCount = channelData.viewCount;
-            account.videoCount = channelData.videoCount;
-            account.title = channelData.title;
-            account.description = channelData.description;
-            account.thumbnails = channelData.thumbnails;
-            account.customUrl = channelData.customUrl;
-            account.country = channelData.country;
-            account.keywords = channelData.keywords;
-            account.topicCategories = channelData.topicCategories;
+            updates = {
+                ...updates,
+                subscriberCount: channelData.subscriberCount,
+                viewCount: channelData.viewCount,
+                videoCount: channelData.videoCount,
+                title: channelData.title,
+                description: channelData.description,
+                thumbnails: channelData.thumbnails,
+                customUrl: channelData.customUrl,
+                country: channelData.country,
+                keywords: channelData.keywords,
+                topicCategories: channelData.topicCategories,
+            };
         }
-        account.lastUpdated = new Date().toISOString();
-        await writeJSON(ACCOUNTS_FILE, accounts);
 
-        const safeAccount = { ...account };
-        if (safeAccount.accessToken) delete safeAccount.accessToken;
-        res.json({ success: true, account: safeAccount });
+        await updateAccount(supabase, account.id, updates, userId);
+        const updated = await getAccountById(supabase, account.id, userId);
+        return c.json({ success: true, account: safeAccount(updated) });
     } catch (err) {
-        res.status(400).json({ success: false, message: err.message });
+        return c.json({ success: false, message: err.message }, 400);
     }
 });
 
-router.delete('/accounts/:id', async (req, res) => {
+app.delete('/accounts/:id', async (c) => {
     try {
-        const accounts = await readJSON(ACCOUNTS_FILE);
-        const account = accounts.find(a => a.id === req.params.id);
-        if (!account) return res.status(404).json({ success: false, message: 'Not found' });
-        const filtered = accounts.filter(a => a.id !== req.params.id);
-        await writeJSON(ACCOUNTS_FILE, filtered);
-        syncEverythingToGitHub().catch(() => { });
-
-        const cache = await readJSON(VIDEOS_CACHE_FILE);
-        delete cache[req.params.id];
-        await writeJSON(VIDEOS_CACHE_FILE, cache);
-
-        const igCache = await readJSON(IG_CACHE_FILE) || {};
-        delete igCache[req.params.id];
-        await writeJSON(IG_CACHE_FILE, igCache);
-
-        res.json({ success: true });
+        const supabase = c.get('supabase');
+        const redis = c.get('redis');
+        const userId = c.get('userId');
+        const id = c.req.param('id');
+        const account = await getAccountById(supabase, id, userId);
+        if (!account) return c.json({ success: false, message: 'Not found' }, 404);
+        await deleteAccount(supabase, id, userId);
+        await deleteVideosCache(redis, userId, id);
+        await deleteIGCache(redis, userId, id);
+        return c.json({ success: true });
     } catch (err) {
-        res.status(500).json({ success: false, message: err.message });
+        return c.json({ success: false, message: err.message }, 500);
     }
 });
 
-module.exports = router;
+export default app;
