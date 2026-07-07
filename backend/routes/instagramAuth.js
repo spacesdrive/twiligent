@@ -1,8 +1,8 @@
-import { setOAuthState, getAndDeleteOAuthState } from '../lib/cache.js';
+﻿import { setOAuthState, getAndDeleteOAuthState } from '../lib/cache.js';
 import { createAccount, getAccounts } from '../lib/db.js';
 import { fetchInstagramProfile } from '../services/instagram.js';
 
-// GET /api/auth/instagram/url — protected (requireAuth applied by the sub-app in server.js)
+// GET /api/auth/instagram/url - protected (requireAuth applied by the sub-app in server.js)
 // Returns the Instagram OAuth authorization URL for the frontend to redirect to.
 export async function urlHandler(c) {
     const APP_ID = c.env.INSTAGRAM_APP_ID;
@@ -13,7 +13,7 @@ export async function urlHandler(c) {
 
     const REDIRECT_URI = `${c.env.BACKEND_URL || 'http://localhost:3001'}/api/auth/instagram/callback`;
 
-    // Use crypto.randomUUID() — available as a global in Cloudflare Workers
+    // Use crypto.randomUUID() - available as a global in Cloudflare Workers
     const state = crypto.randomUUID().replace(/-/g, '');
     await setOAuthState(c.get('redis'), state, c.get('userId'));
 
@@ -30,8 +30,8 @@ export async function urlHandler(c) {
     return c.json({ url: `https://www.instagram.com/oauth/authorize?${params}` });
 }
 
-// GET /api/auth/instagram/callback — public (browser redirect from Instagram)
-// No auth header here — userId is recovered from the Redis state token.
+// GET /api/auth/instagram/callback - public (browser redirect from Instagram)
+// No auth header here - userId is recovered from the Redis state token.
 export async function callbackHandler(c) {
     const { code, state, error, error_reason } = c.req.query();
     const FRONTEND_URL = c.env.FRONTEND_URL || 'http://localhost:5173';
