@@ -10,8 +10,8 @@
  *   SUPABASE_SERVICE_KEY - your Supabase service role key (bypasses RLS)
  */
 
-const SUPABASE_URL = process.env.SUPABASE_URL?.replace(/^﻿/, '').trim();
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY?.replace(/^﻿/, '').trim();
+const SUPABASE_URL = process.env.SUPABASE_URL?.replace(/^\uFEFF/g, '').trim();
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY?.replace(/^\uFEFF/g, '').trim();
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
     console.error('❌ Missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
