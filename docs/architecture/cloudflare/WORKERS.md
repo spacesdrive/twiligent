@@ -11,10 +11,10 @@ compatibility_date = "2025-01-01"
 crons = ["*/15 * * * *", "0 0 * * *"]
 ```
 
-- `name` — the Worker name as deployed on Cloudflare; also determines the default URL
-- `main` — entry point file (ES module)
-- `compatibility_date` — pins the Workers runtime API version
-- `crons` — cron trigger schedules (see `docs/architecture/backend/CRON.md`)
+- `name` - the Worker name as deployed on Cloudflare; also determines the default URL
+- `main` - entry point file (ES module)
+- `compatibility_date` - pins the Workers runtime API version
+- `crons` - cron trigger schedules (see `docs/architecture/backend/CRON.md`)
 
 ## Worker Export Format
 
@@ -24,9 +24,9 @@ The Worker exports two handlers:
 export default {
     fetch: app.fetch,            // handles HTTP requests (the Hono app)
     async scheduled(event, env, ctx) {   // handles cron triggers
-        // event.cron — the cron expression that fired
-        // env — Worker environment bindings (secrets + vars)
-        // ctx.waitUntil(promise) — keeps Worker alive for background work
+        // event.cron - the cron expression that fired
+        // env - Worker environment bindings (secrets + vars)
+        // ctx.waitUntil(promise) - keeps Worker alive for background work
     }
 };
 ```
@@ -38,8 +38,8 @@ All secrets are set via `wrangler secret put <NAME>`. They are available at runt
 | Secret | Required | Purpose |
 |---|---|---|
 | `SUPABASE_URL` | Yes | Supabase project URL |
-| `SUPABASE_SERVICE_KEY` | Yes | Service-role key — bypasses RLS, all DB operations |
-| `SUPABASE_ANON_KEY` | Yes | Anon key — used only for JWT verification in `requireAuth` |
+| `SUPABASE_SERVICE_KEY` | Yes | Service-role key - bypasses RLS, all DB operations |
+| `SUPABASE_ANON_KEY` | Yes | Anon key - used only for JWT verification in `requireAuth` |
 | `YOUTUBE_API_KEY` | Yes | Shared YouTube Data API v3 key (all users share quota) |
 | `INSTAGRAM_APP_ID` | Yes | Meta/Facebook App ID for OAuth |
 | `INSTAGRAM_APP_SECRET` | Yes | Used for OAuth token exchange + HMAC state signing |
@@ -55,7 +55,7 @@ All secrets are set via `wrangler secret put <NAME>`. They are available at runt
 ```bash
 wrangler secret put SUPABASE_URL
 wrangler secret put SUPABASE_SERVICE_KEY
-# (paste value when prompted — no echo)
+# (paste value when prompted - no echo)
 ```
 
 ### Local development (`.dev.vars`)
@@ -85,7 +85,7 @@ These are hard constraints imposed by the Cloudflare Workers runtime. Violating 
 
 1. **No Node.js APIs.** No `fs`, `Buffer`, `path`, `process.env` (use `c.env`), `require()`. Everything must be ESM `import`.
 
-2. **No binary file handling.** The Worker cannot efficiently stream large binary files. Never add routes that accept file uploads — Cloudinary handles that directly from the browser.
+2. **No binary file handling.** The Worker cannot efficiently stream large binary files. Never add routes that accept file uploads - Cloudinary handles that directly from the browser.
 
 3. **No persistent state between requests.** The Worker isolate may be a fresh instance on every request. Do not rely on module-level variables to persist state across requests. All state must come from Supabase, Redis, or Worker KV.
 

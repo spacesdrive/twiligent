@@ -1,4 +1,4 @@
-﻿// fetch is a global in Cloudflare Workers - no import needed.
+// fetch is a global in Cloudflare Workers - no import needed.
 import { getAccounts, updateAccount } from '../lib/db.js';
 
 const IG_GRAPH_URL = 'https://graph.instagram.com';

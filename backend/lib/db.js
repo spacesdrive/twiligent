@@ -1,4 +1,4 @@
-﻿// All functions accept `supabase` as first argument so they work both in
+// All functions accept `supabase` as first argument so they work both in
 // request handlers (where supabase comes from context) and in cron handlers
 // (where supabase is created from env). userId=null means service-level
 // (no user filter) - used by the scheduler and token refresh cron.

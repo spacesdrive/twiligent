@@ -1,4 +1,4 @@
-﻿import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 
 function clean(s) {
     return s?.replace(/^﻿/, '').trim();

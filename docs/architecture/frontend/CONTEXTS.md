@@ -36,10 +36,10 @@ useEffect(() => {
 
 ### Where to use it
 
-- `ProtectedRoute` — reads `session` to decide whether to redirect to `/login`
-- `Login.jsx` — calls `signIn()` and `signUp()`
-- `Header.jsx` — calls `signOut()`, shows `user.email`
-- Do **not** use in page/feature components — they should never need auth state directly
+- `ProtectedRoute` - reads `session` to decide whether to redirect to `/login`
+- `Login.jsx` - calls `signIn()` and `signUp()`
+- `Header.jsx` - calls `signOut()`, shows `user.email`
+- Do **not** use in page/feature components - they should never need auth state directly
 
 ---
 
@@ -64,15 +64,15 @@ const { accounts, setAccounts, loading, showToast, loadAccounts, refreshAll } = 
 
 ### Loading behavior
 
-`loadAccounts()` is called automatically on mount. It does not set `loading = true` — it's a background load. Only `refreshAll()` sets `loading = true` (used to show a spinner in the Header).
+`loadAccounts()` is called automatically on mount. It does not set `loading = true` - it's a background load. Only `refreshAll()` sets `loading = true` (used to show a spinner in the Header).
 
 ### Where to use it
 
 All feature pages and layout components use `useAppContext()`:
-- `Sidebar.jsx` — generates per-account nav links from `accounts`
-- `Overview.jsx` — renders the all-accounts dashboard
-- `AccountManager.jsx` — calls `loadAccounts()` after add/delete
-- `ChannelAnalytics.jsx` — finds the account by `params.id`
+- `Sidebar.jsx` - generates per-account nav links from `accounts`
+- `Overview.jsx` - renders the all-accounts dashboard
+- `AccountManager.jsx` - calls `loadAccounts()` after add/delete
+- `ChannelAnalytics.jsx` - finds the account by `params.id`
 - All pages that show toast notifications call `showToast()`
 
 ### Account shape after `normalizeAccount()`
@@ -94,7 +94,7 @@ All feature pages and layout components use `useAppContext()`:
     username: '...',
     followersCount: 5000,
     mediaCount: 200,
-    // Note: accessToken is NEVER present — stripped by safeAccount() on the backend
+    // Note: accessToken is NEVER present - stripped by safeAccount() on the backend
 }
 ```
 
@@ -102,8 +102,8 @@ All feature pages and layout components use `useAppContext()`:
 
 ## Context Rules
 
-1. Never use `AuthContext` in feature pages — they should not care about auth state
+1. Never use `AuthContext` in feature pages - they should not care about auth state
 2. Never use `AppContext` in `AuthContext` or vice versa
 3. `AppProvider` must be inside `ProtectedRoute` (it makes authenticated API calls on mount)
-4. All toast notifications go through `showToast()` — never call `toast()` from sonner directly in pages
+4. All toast notifications go through `showToast()` - never call `toast()` from sonner directly in pages
 5. Do not add new global state to `AppContext` unless it truly needs to be shared across multiple unrelated pages. Prefer local component state.

@@ -1,6 +1,6 @@
 # JavaScript Standards
 
-This project is plain JavaScript — no TypeScript, no Babel transpilation beyond what Vite handles. These rules apply to both the backend (Cloudflare Worker) and the frontend (Vite + React).
+This project is plain JavaScript - no TypeScript, no Babel transpilation beyond what Vite handles. These rules apply to both the backend (Cloudflare Worker) and the frontend (Vite + React).
 
 ## Module System
 
@@ -10,10 +10,10 @@ This project is plain JavaScript — no TypeScript, no Babel transpilation beyon
 
 ## File Conventions
 
-- **Backend files:** `camelCase.js` — `server.js`, `auth.js`, `instagram.js`, `db.js`
-- **Frontend utility/service files:** `camelCase.js` — `api.js`, `formatters.js`
-- **Frontend React files:** `PascalCase.jsx` — `Overview.jsx`, `AppContext.jsx`
-- **shadcn generated files:** `kebab-case.jsx` — do not rename these
+- **Backend files:** `camelCase.js` - `server.js`, `auth.js`, `instagram.js`, `db.js`
+- **Frontend utility/service files:** `camelCase.js` - `api.js`, `formatters.js`
+- **Frontend React files:** `PascalCase.jsx` - `Overview.jsx`, `AppContext.jsx`
+- **shadcn generated files:** `kebab-case.jsx` - do not rename these
 
 ## Comments Policy
 
@@ -27,18 +27,18 @@ Write no comments by default. Add a comment only when the WHY is non-obvious and
 
 **Do write (sparingly):**
 ```js
-// userId=null means service-level — used by cron handlers that scan all users
+// userId=null means service-level - used by cron handlers that scan all users
 export async function getAccounts(supabase, userId = null) { ... }
 
-// Redis HMAC state: base64url(userId:timestamp).HMAC-SHA256-sig — see cache.js
+// Redis HMAC state: base64url(userId:timestamp).HMAC-SHA256-sig - see cache.js
 ```
 
 ## Naming
 
-- Functions: `camelCase` — `getAccounts`, `computeVideoAnalytics`, `publishToInstagram`
-- Variables: `camelCase` — `accountId`, `scheduledAt`, `accessToken`
+- Functions: `camelCase` - `getAccounts`, `computeVideoAnalytics`, `publishToInstagram`
+- Variables: `camelCase` - `accountId`, `scheduledAt`, `accessToken`
 - Constants: `SCREAMING_SNAKE_CASE` only for true global constants (rare)
-- React components: `PascalCase` — `ChannelAnalytics`, `AppProvider`
+- React components: `PascalCase` - `ChannelAnalytics`, `AppProvider`
 
 Prefer names that describe intent, not implementation:
 - `getVideosCache` not `redisGetVideos`
@@ -58,12 +58,12 @@ try {
 }
 ```
 
-In **service functions**, throw descriptive errors — let the caller decide how to handle:
+In **service functions**, throw descriptive errors - let the caller decide how to handle:
 ```js
 if (data.error) throw new Error(data.error.message);
 ```
 
-In **cache functions**, always catch and silently ignore — cache failures must never bubble up:
+In **cache functions**, always catch and silently ignore - cache failures must never bubble up:
 ```js
 try { return await redis.get(key); } catch { return null; }
 ```

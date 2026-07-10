@@ -5,23 +5,23 @@
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  Browser (User)                                                  │
-│  React SPA — Cloudflare Pages                                   │
+│  React SPA - Cloudflare Pages                                   │
 │  https://twiligent.pages.dev                                     │
 └────────────────────────┬────────────────────────────────────────┘
                          │ HTTPS + Bearer JWT
                          ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│  Cloudflare Worker — "twiligent"                                 │
+│  Cloudflare Worker - "twiligent"                                 │
 │  https://twiligent.ujjwalkrai.workers.dev/api                   │
 │                                                                  │
 │  Hono v4 app                                                     │
 │  ├── Global middleware: CORS, Supabase client, Redis client      │
 │  ├── Public: GET /api/health, GET /api/auth/instagram/callback   │
-│  └── Protected (/api/*): requireAuth → routes                   │
+│  └── Protected (/api/*): requireAuth -> routes                   │
 │                                                                  │
 │  Cron handlers (wrangler.toml triggers):                         │
-│  ├── */15 * * * *  → processScheduledPosts()                     │
-│  └── 0 0 * * *     → autoRefreshInstagramTokens()               │
+│  ├── */15 * * * *  -> processScheduledPosts()                     │
+│  └── 0 0 * * *     -> autoRefreshInstagramTokens()               │
 └──────┬──────────┬──────────────┬────────────────────────────────┘
        │          │              │
        ▼          ▼              ▼
@@ -55,38 +55,38 @@
 
 ```
 Browser
-  → fetch(`${VITE_API_URL}/accounts`, { Authorization: Bearer <jwt> })
+  -> fetch(`${VITE_API_URL}/accounts`, { Authorization: Bearer <jwt> })
       ↓
 Cloudflare Worker edge node (nearest to user)
-  → CORS middleware (checks origin)
-  → Client injection middleware (creates Supabase + Redis clients from env)
-  → requireAuth middleware
-      → extracts Bearer token from Authorization header
-      → supabaseAuth.auth.getUser(token) → Supabase validates JWT
-      → sets c.userId, c.userEmail on Hono context
-  → route handler (e.g., accounts router)
-      → db.getAccounts(supabase, userId)  [lib/db.js]
-          → supabase.from('accounts').select(...).eq('user_id', userId)
-      → normalizes rows
-      → returns JSON response
+  -> CORS middleware (checks origin)
+  -> Client injection middleware (creates Supabase + Redis clients from env)
+  -> requireAuth middleware
+      -> extracts Bearer token from Authorization header
+      -> supabaseAuth.auth.getUser(token) -> Supabase validates JWT
+      -> sets c.userId, c.userEmail on Hono context
+  -> route handler (e.g., accounts router)
+      -> db.getAccounts(supabase, userId)  [lib/db.js]
+          -> supabase.from('accounts').select(...).eq('user_id', userId)
+      -> normalizes rows
+      -> returns JSON response
 ```
 
 ## Cron Lifecycle
 
 ```
 Cloudflare scheduler fires cron trigger
-  → Worker.scheduled(event, env, ctx)
-      → getSupabase(env)  [creates service-role client]
-      → if event.cron === '*/15 * * * *':
+  -> Worker.scheduled(event, env, ctx)
+      -> getSupabase(env)  [creates service-role client]
+      -> if event.cron === '*/15 * * * *':
           ctx.waitUntil(processScheduledPosts(supabase))
-              → db.getDuePosts(supabase)  [no userId filter — scans all users]
-              → for each post: publishToInstagram(post, account)
-              → db.updatePost(supabase, id, { status: 'published' })
-      → if event.cron === '0 0 * * *':
+              -> db.getDuePosts(supabase)  [no userId filter - scans all users]
+              -> for each post: publishToInstagram(post, account)
+              -> db.updatePost(supabase, id, { status: 'published' })
+      -> if event.cron === '0 0 * * *':
           ctx.waitUntil(autoRefreshInstagramTokens(supabase))
-              → db.getAccounts(supabase)  [all users, platform='instagram']
-              → for each expiring token: igFetch refresh endpoint
-              → db.updateAccount(supabase, id, { accessToken: newToken })
+              -> db.getAccounts(supabase)  [all users, platform='instagram']
+              -> for each expiring token: igFetch refresh endpoint
+              -> db.updateAccount(supabase, id, { accessToken: newToken })
 ```
 
 ## Data Storage Strategy
@@ -117,6 +117,6 @@ Frontend env vars are documented in `docs/architecture/cloudflare/PAGES.md`.
 
 4. **`safeAccount()` is the only place access tokens are stripped.** Any route that returns account data must pass through this function before responding.
 
-5. **`db.js` is the only file that contains Supabase queries.** Route handlers import and call db functions — they never call `supabase.from()` directly.
+5. **`db.js` is the only file that contains Supabase queries.** Route handlers import and call db functions - they never call `supabase.from()` directly.
 
-6. **`api.js` is the only file that calls `fetch()` in the frontend.** Components call `api.methodName()` — they never construct fetch calls.
+6. **`api.js` is the only file that calls `fetch()` in the frontend.** Components call `api.methodName()` - they never construct fetch calls.

@@ -2,7 +2,7 @@
 
 ## Automatic Deployment (Normal Path)
 
-Push to `main` → GitHub Actions deploys automatically.
+Push to `main` -> GitHub Actions deploys automatically.
 
 | What changed | Workflow that runs | What it deploys |
 |---|---|---|
@@ -53,13 +53,13 @@ wrangler secret put UPSTASH_REDIS_REST_URL      # optional
 wrangler secret put UPSTASH_REDIS_REST_TOKEN    # optional
 ```
 
-Each command prompts for the value (no echo — the value is not shown).
+Each command prompts for the value (no echo - the value is not shown).
 
 ## Setting GitHub Actions Secrets
 
 Required for `deploy-frontend.yml` and `publish-scheduled.yml`:
 
-1. GitHub → repository → Settings → Secrets and variables → Actions
+1. GitHub -> repository -> Settings -> Secrets and variables -> Actions
 2. Click "New repository secret" for each:
 
 **For frontend deploy:**
@@ -88,10 +88,10 @@ curl https://twiligent.ujjwalkrai.workers.dev/api/health
 ```
 
 **Frontend:**  
-Open `https://twiligent.pages.dev` → verify login page loads → sign in → verify accounts load.
+Open `https://twiligent.pages.dev` -> verify login page loads -> sign in -> verify accounts load.
 
 **Scheduled publisher:**  
-GitHub Actions → "Instagram Scheduled Publisher" → "Run workflow" → check run output.
+GitHub Actions -> "Instagram Scheduled Publisher" -> "Run workflow" -> check run output.
 
 ## Rollback
 
@@ -104,7 +104,7 @@ wrangler deployments list
 wrangler rollback <deployment-id>
 ```
 
-**Frontend:** Cloudflare Pages → deployments list → "Rollback to this deployment" on a previous build.
+**Frontend:** Cloudflare Pages -> deployments list -> "Rollback to this deployment" on a previous build.
 
 ## First-Time Setup
 

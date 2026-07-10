@@ -2,7 +2,7 @@
 
 ## Environment Access
 
-Access environment variables and secrets via `c.env` (in Hono handlers) or `env` (in the `scheduled` cron handler). Never use `process.env` — it does not exist in the Workers runtime.
+Access environment variables and secrets via `c.env` (in Hono handlers) or `env` (in the `scheduled` cron handler). Never use `process.env` - it does not exist in the Workers runtime.
 
 ```js
 // In a Hono handler or middleware:
@@ -20,20 +20,20 @@ export default {
 ## No Node.js APIs
 
 The Workers runtime does not have Node.js built-ins. These are unavailable:
-- `fs` — no file system
-- `Buffer` — use `Uint8Array`, `TextEncoder`, `TextDecoder`
-- `path` — no file system paths
-- `process` — no `process.env`, `process.exit`, etc.
-- `crypto` module — use Web Crypto API (`crypto.subtle`)
-- `require()` — use ESM `import`
+- `fs` - no file system
+- `Buffer` - use `Uint8Array`, `TextEncoder`, `TextDecoder`
+- `path` - no file system paths
+- `process` - no `process.env`, `process.exit`, etc.
+- `crypto` module - use Web Crypto API (`crypto.subtle`)
+- `require()` - use ESM `import`
 
 **Web APIs available in Workers:**
-- `fetch()` — for HTTP calls
-- `crypto.subtle` — for HMAC, hashing
-- `TextEncoder` / `TextDecoder` — for string/buffer conversion
-- `URL`, `URLSearchParams` — for URL construction
-- `btoa()` / `atob()` — for base64
-- `ReadableStream`, `WritableStream` — for streaming
+- `fetch()` - for HTTP calls
+- `crypto.subtle` - for HMAC, hashing
+- `TextEncoder` / `TextDecoder` - for string/buffer conversion
+- `URL`, `URLSearchParams` - for URL construction
+- `btoa()` / `atob()` - for base64
+- `ReadableStream`, `WritableStream` - for streaming
 
 ## `ctx.waitUntil()`
 
@@ -47,14 +47,14 @@ async scheduled(event, env, ctx) {
 
 Without `ctx.waitUntil()`, the Worker isolate may terminate before the promise resolves.
 
-Do not use `ctx.waitUntil()` in HTTP request handlers — just `await` the work normally.
+Do not use `ctx.waitUntil()` in HTTP request handlers - just `await` the work normally.
 
 ## Stateless Requests
 
 The Workers runtime does not guarantee a persistent process between requests. Do not rely on module-level variables to persist state:
 
 ```js
-// BAD — will not work reliably
+// BAD - will not work reliably
 let cachedData = null;
 export default { fetch: async (request, env) => {
     if (cachedData) return Response.json(cachedData); // unreliable
@@ -62,7 +62,7 @@ export default { fetch: async (request, env) => {
     return Response.json(cachedData);
 }};
 
-// GOOD — use Redis or Supabase for persistence
+// GOOD - use Redis or Supabase for persistence
 const cached = await redis.get('my-key');
 if (cached) return c.json(cached);
 const fresh = await fetchData(env);
@@ -74,9 +74,9 @@ return c.json(fresh);
 
 The Worker is bundled as a single ESM file by Wrangler. Large dependencies increase cold-start time and may exceed Workers bundle size limits. The current backend has minimal dependencies:
 
-- `hono` — ~15KB gzipped
-- `@supabase/supabase-js` — larger; mostly used for auth.getUser()
-- `@upstash/redis` — small REST client
+- `hono` - ~15KB gzipped
+- `@supabase/supabase-js` - larger; mostly used for auth.getUser()
+- `@upstash/redis` - small REST client
 
 Avoid adding large dependencies. If a library is only needed for one small utility, consider implementing that utility directly.
 
@@ -117,7 +117,7 @@ cd backend
 wrangler deploy
 ```
 
-Or push to `main` with changes in `backend/` — GitHub Actions deploys automatically via `deploy-backend.yml`.
+Or push to `main` with changes in `backend/` - GitHub Actions deploys automatically via `deploy-backend.yml`.
 
 ## CORS
 
@@ -131,4 +131,4 @@ app.use('*', cors({
 }));
 ```
 
-This change would need to be applied carefully — it would break requests from local development (`localhost:5173`) unless the allowed origin list includes it.
+This change would need to be applied carefully - it would break requests from local development (`localhost:5173`) unless the allowed origin list includes it.

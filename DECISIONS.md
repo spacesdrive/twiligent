@@ -1,6 +1,6 @@
 # Architecture Decision Log
 
-Records every significant architectural decision, the alternatives considered, and the reasoning. Append new entries — never modify or delete existing ones.
+Records every significant architectural decision, the alternatives considered, and the reasoning. Append new entries - never modify or delete existing ones.
 
 ---
 
@@ -20,7 +20,7 @@ Records every significant architectural decision, the alternatives considered, a
 - Zero cold starts at the edge
 - Global distribution at no extra cost
 - Free tier includes built-in cron triggers
-- Native `crypto.subtle` API for HMAC — no dependency needed
+- Native `crypto.subtle` API for HMAC - no dependency needed
 - `wrangler` CLI makes local dev and deploy identical
 
 **Trade-offs:**
@@ -46,7 +46,7 @@ Records every significant architectural decision, the alternatives considered, a
 **Reasoning:**
 - First-class Cloudflare Workers support
 - Type-safe context (`c.set()` / `c.get()`)
-- Middleware composability matches the auth → route pattern
+- Middleware composability matches the auth -> route pattern
 - `app.route()` enables clean sub-application isolation
 - Active maintenance and large community
 
@@ -79,7 +79,7 @@ Records every significant architectural decision, the alternatives considered, a
 **Trade-offs:**
 - External service dependency
 - jsonb data column means no column-level DB constraints on account fields
-- RLS is bypassed by the backend — application-layer isolation is the security model
+- RLS is bypassed by the backend - application-layer isolation is the security model
 
 ---
 
@@ -88,21 +88,21 @@ Records every significant architectural decision, the alternatives considered, a
 **Date:** 2024 (initial)  
 **Status:** Accepted
 
-**Decision:** YouTube API key, Instagram App ID/Secret, Cloudinary credentials are all stored as Cloudflare Worker secrets — shared across all users of the instance.
+**Decision:** YouTube API key, Instagram App ID/Secret, Cloudinary credentials are all stored as Cloudflare Worker secrets - shared across all users of the instance.
 
 **Alternatives considered:**
 - Per-user API key storage in Supabase `settings` table
 - User-provided keys stored encrypted in DB
 
 **Reasoning:**
-- The app is self-hosted — there is one admin and a small team
+- The app is self-hosted - there is one admin and a small team
 - Per-user keys add UI complexity with marginal security benefit at this scale
 - Worker secrets are encrypted at rest and never exposed in API responses
 
 **Trade-offs:**
 - All users share the YouTube API daily quota
 - Changing credentials requires a Worker redeploy
-- `GET /api/keys` only returns `{configured: true/false}` — the frontend can see what is configured but never the values
+- `GET /api/keys` only returns `{configured: true/false}` - the frontend can see what is configured but never the values
 
 ---
 
@@ -125,7 +125,7 @@ Records every significant architectural decision, the alternatives considered, a
 **Trade-offs:**
 - No column-level DB constraints on data fields
 - Queries cannot use index-accelerated filters on data sub-fields without JSON indexing
-- `accessToken` lives inside `data.accessToken` — must be consistently stripped by `safeAccount()`
+- `accessToken` lives inside `data.accessToken` - must be consistently stripped by `safeAccount()`
 
 ---
 
@@ -146,10 +146,10 @@ Records every significant architectural decision, the alternatives considered, a
 **Reasoning:**
 - The app must function without Redis configured
 - HMAC is cryptographically equivalent to a signed opaque token
-- `crypto.subtle` is natively available in Workers — no dependency needed
+- `crypto.subtle` is natively available in Workers - no dependency needed
 
 **Trade-offs:**
-- State cannot be invalidated early (e.g., on logout) — only expires by time
+- State cannot be invalidated early (e.g., on logout) - only expires by time
 - If `INSTAGRAM_APP_SECRET` is compromised, historical state tokens can be forged
 
 ---
@@ -169,11 +169,11 @@ Records every significant architectural decision, the alternatives considered, a
 **Reasoning:**
 - GitHub Actions is free on public repos (unlimited minutes)
 - Provides redundancy if the Worker cron fails or is paused
-- `scripts/publish-scheduled.js` can run without any npm install — it uses native fetch only
+- `scripts/publish-scheduled.js` can run without any npm install - it uses native fetch only
 - The same Supabase table is the source of truth for both systems
 
 **Trade-offs:**
-- There is a risk of double-publishing if both run at exactly the same moment. Mitigated by the `publishing` status lock — the first scheduler to claim a post sets it to `publishing`, so the second will skip it.
+- There is a risk of double-publishing if both run at exactly the same moment. Mitigated by the `publishing` status lock - the first scheduler to claim a post sets it to `publishing`, so the second will skip it.
 - `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` must be set as GitHub Actions secrets separately from Worker secrets
 
 ---
@@ -192,12 +192,12 @@ Records every significant architectural decision, the alternatives considered, a
 
 **Reasoning:**
 - Self-hosted users may not want to create an Upstash account
-- YouTube and Instagram API quotas are the real constraint — caching is an optimization
+- YouTube and Instagram API quotas are the real constraint - caching is an optimization
 - Silent fallback means Redis can be added or removed without code changes
 
 **Trade-offs:**
 - Without Redis, every analytics page load fetches 500+ videos/media items from external APIs
-- Cache TTL is not set — cached data persists until the account is deleted or explicitly invalidated
+- Cache TTL is not set - cached data persists until the account is deleted or explicitly invalidated
 
 ---
 
@@ -216,13 +216,13 @@ Records every significant architectural decision, the alternatives considered, a
 **Reasoning:**
 - Instagram's Graph API requires a publicly accessible, stable URL
 - Cloudinary provides immediate CDN distribution
-- The unsigned upload preset lets the browser upload directly — the backend never handles binary file streams
+- The unsigned upload preset lets the browser upload directly - the backend never handles binary file streams
 - Cloudinary's transformation URLs can generate thumbnails and previews
 
 **Trade-offs:**
 - Requires a Cloudinary account and upload preset configuration
-- Media stays in Cloudinary after posting — could accumulate cost if not cleaned up
-- `GET /api/cloudinary-config` exposes the cloud name and unsigned preset to the frontend (acceptable — unsigned presets are intentionally public)
+- Media stays in Cloudinary after posting - could accumulate cost if not cleaned up
+- `GET /api/cloudinary-config` exposes the cloud name and unsigned preset to the frontend (acceptable - unsigned presets are intentionally public)
 
 ---
 
@@ -239,7 +239,7 @@ Records every significant architectural decision, the alternatives considered, a
 - JSDoc annotations for IDE assistance
 
 **Reasoning:**
-- Reduced build complexity — no tsc step in Workers or Vite
+- Reduced build complexity - no tsc step in Workers or Vite
 - The project is small enough that naming conventions and documentation provide adequate clarity
 - Worker bundles avoid a TS compilation step
 
@@ -264,7 +264,7 @@ Records every significant architectural decision, the alternatives considered, a
 **Reasoning:**
 - Service-role key simplifies cron handlers (scheduler, token refresh) which need to query across all users
 - Having a single key avoids key-switching logic in `lib/db.js`
-- The security boundary is the `requireAuth` middleware — once the JWT is verified, `userId` is trusted
+- The security boundary is the `requireAuth` middleware - once the JWT is verified, `userId` is trusted
 
 **Trade-offs:**
 - A bug that accidentally omits `.eq('user_id', userId)` could expose another user's data
@@ -283,5 +283,5 @@ Records every significant architectural decision, the alternatives considered, a
 **Status:** The settings table and API routes exist. The GitHub push feature is planned but not yet implemented.
 
 **Trade-offs:**
-- GitHub PAT is stored in plaintext in Supabase jsonb — acceptable for a self-hosted deployment where the admin trusts the storage layer
+- GitHub PAT is stored in plaintext in Supabase jsonb - acceptable for a self-hosted deployment where the admin trusts the storage layer
 - The `settings` table design (user_id + key + jsonb value) is generic enough to hold any future per-user configuration

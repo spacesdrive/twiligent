@@ -25,7 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 ```
 
-Never import from `shadcn/ui` directly — the components are copied into the project.
+Never import from `shadcn/ui` directly - the components are copied into the project.
 
 ## Adding a New Component
 
@@ -76,7 +76,7 @@ shadcn components are composed using their named export variants. Read the compo
 
 ## `cn()` Utility
 
-Always use `cn()` from `@/lib/utils` to combine class names — it handles conditional classes and tailwind-merge conflicts:
+Always use `cn()` from `@/lib/utils` to combine class names - it handles conditional classes and tailwind-merge conflicts:
 
 ```jsx
 import { cn } from '@/lib/utils';
@@ -103,4 +103,4 @@ import StatCard from '@/components/ui/StatCard';
 
 The project uses `next-themes` with `attribute="class"`. Dark mode is applied by adding the `dark` class to `<html>`. All shadcn components respond to this automatically via CSS variables defined in `frontend/src/index.css`.
 
-Do not hardcode colors in components — use Tailwind semantic classes (`text-muted-foreground`, `bg-card`, `border-border`, etc.) that reference CSS variables.
+Do not hardcode colors in components - use Tailwind semantic classes (`text-muted-foreground`, `bg-card`, `border-border`, etc.) that reference CSS variables.

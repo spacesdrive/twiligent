@@ -2,14 +2,14 @@
 
 ## Overview
 
-Caching is implemented via Upstash Redis (REST API) using the `@upstash/redis` SDK. It is **entirely optional** — if `UPSTASH_REDIS_REST_URL` is not set, `getRedis()` returns `null` and all cache functions in `lib/cache.js` silently no-op.
+Caching is implemented via Upstash Redis (REST API) using the `@upstash/redis` SDK. It is **entirely optional** - if `UPSTASH_REDIS_REST_URL` is not set, `getRedis()` returns `null` and all cache functions in `lib/cache.js` silently no-op.
 
 ## Cache Layer: `backend/lib/cache.js`
 
 All cache operations follow this contract:
 - Accept `redis` as the first argument
 - If `redis` is `null`, return immediately (no-op)
-- Wrap all `redis` calls in `try/catch` — a Redis failure must never break the main request
+- Wrap all `redis` calls in `try/catch` - a Redis failure must never break the main request
 
 ```js
 export async function getVideosCache(redis, userId, accountId) {
@@ -71,4 +71,4 @@ Expiry: 10 minutes (checked by comparing embedded timestamp to Date.now())
 Secret: INSTAGRAM_APP_SECRET
 ```
 
-These functions are in `cache.js` for historical reasons — they started as Redis-backed and were migrated to HMAC. They could logically live in `lib/auth.js` but remain in `cache.js` for stability.
+These functions are in `cache.js` for historical reasons - they started as Redis-backed and were migrated to HMAC. They could logically live in `lib/auth.js` but remain in `cache.js` for stability.

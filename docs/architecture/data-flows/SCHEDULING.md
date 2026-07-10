@@ -1,4 +1,4 @@
-# Data Flow — Scheduled Publishing (Dual Scheduler)
+# Data Flow - Scheduled Publishing (Dual Scheduler)
 
 ## Overview
 
@@ -7,12 +7,12 @@ Two independent systems check for due posts every 15 minutes. Both target the sa
 ## System A: Cloudflare Worker Cron
 
 **Trigger:** `*/15 * * * *` cron in `wrangler.toml`  
-**Handler:** `backend/utils/scheduler.js` → `processScheduledPosts(supabase)`  
+**Handler:** `backend/utils/scheduler.js` -> `processScheduledPosts(supabase)`  
 **Supabase client:** service-role (created from Worker env)
 
 ## System B: GitHub Actions
 
-**Trigger:** `publish-scheduled.yml` workflow → `schedule: cron('*/15 * * * *')`  
+**Trigger:** `publish-scheduled.yml` workflow -> `schedule: cron('*/15 * * * *')`  
 **Handler:** `scripts/publish-scheduled.js` (standalone Node.js, zero npm deps)  
 **Supabase client:** direct REST API calls using `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` GitHub secrets
 
@@ -42,13 +42,13 @@ The `AND status = 'pending'` condition means only one scheduler can successfully
 pending              The post is waiting to be published
    │
    ▼ scheduler picks it up
-publishing           Claimed by a scheduler — in-flight
+publishing           Claimed by a scheduler - in-flight
    │
-   ├─ Instagram API succeeds ──→ published
+   ├─ Instagram API succeeds ──-> published
    │                              + data.publishedMediaId
    │                              + data.publishedAt
    │
-   └─ Instagram API fails ─────→ failed
+   └─ Instagram API fails ─────-> failed
                                   + data.error (error message)
 ```
 
@@ -69,10 +69,10 @@ Both schedulers implement the same logic:
 ## Configuration Requirements
 
 ### For Worker Cron (System A)
-- Worker secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `INSTAGRAM_APP_ID` (not used by scheduler directly — the account's stored `accessToken` is used)
+- Worker secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `INSTAGRAM_APP_ID` (not used by scheduler directly - the account's stored `accessToken` is used)
 - No additional setup beyond deploying the Worker
 
 ### For GitHub Actions (System B)
 - GitHub repo secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`
 - The `publish-scheduled.yml` workflow must be enabled
-- Note: These GitHub secrets are only required for System B — the main deploy workflows (`deploy-backend.yml`, `deploy-frontend.yml`) do not need them
+- Note: These GitHub secrets are only required for System B - the main deploy workflows (`deploy-backend.yml`, `deploy-frontend.yml`) do not need them

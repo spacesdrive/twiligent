@@ -27,8 +27,8 @@ function parseDurationToSeconds(iso) {
 const PERFORMANCE_TIERS = [
   { label: 'All',                value: 'all' },
   { label: 'Viral (>1M)',        value: 'viral',  min: 1000000 },
-  { label: 'High (100K–1M)',     value: 'high',   min: 100000, max: 1000000 },
-  { label: 'Medium (10K–100K)', value: 'medium', min: 10000,  max: 100000 },
+  { label: 'High (100K-1M)',     value: 'high',   min: 100000, max: 1000000 },
+  { label: 'Medium (10K-100K)', value: 'medium', min: 10000,  max: 100000 },
   { label: 'Low (<10K)',         value: 'low',    max: 10000 },
 ];
 

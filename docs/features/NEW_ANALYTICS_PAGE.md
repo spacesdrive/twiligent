@@ -10,7 +10,7 @@ Adding a platform analytics page touches all layers:
 |---|---|
 | **Backend service** | New service file with platform API client, data fetcher, analytics computation |
 | **Backend cache** | New cache key functions in `lib/cache.js` |
-| **Backend db** | No schema change needed — `platform='reddit'` works with existing `accounts` table |
+| **Backend db** | No schema change needed - `platform='reddit'` works with existing `accounts` table |
 | **Backend routes** | New analytics routes (`/accounts/:id/platform-analytics`, `/accounts/:id/platform-media`) |
 | **Backend server** | Mount new router in `server.js` |
 | **Frontend api** | New methods in `api.js` |
@@ -24,9 +24,9 @@ Adding a platform analytics page touches all layers:
 ```
 backend/
   services/
-    reddit.js           ← API client + analytics computation
+    reddit.js           <- API client + analytics computation
   routes/
-    reddit.js           ← analytics routes
+    reddit.js           <- analytics routes
 
 frontend/src/
   features/
@@ -133,7 +133,7 @@ api.route('/', redditRouter);
 ```
 
 ```js
-// backend/routes/accounts.js — in the delete handler
+// backend/routes/accounts.js - in the delete handler
 await deleteRedditCache(redis, userId, id);  // add alongside existing cache deletes
 ```
 
@@ -162,14 +162,14 @@ getRedditAnalytics: (id) => request(`/accounts/${id}/reddit-analytics`),
 ```
 
 ```jsx
-// Sidebar.jsx — in per-account link generation for Reddit accounts
+// Sidebar.jsx - in per-account link generation for Reddit accounts
 { title: 'Reddit', url: `/reddit/${account.id}`, icon: RedditIcon }
 ```
 
 ## Step 7: Update Documentation
 
-- `docs/architecture/backend/ROUTES.md` — new routes
-- `docs/architecture/backend/CACHING.md` — new cache keys
-- `docs/architecture/backend/SERVICES.md` — Reddit service
-- `docs/architecture/data-flows/` — create `REDDIT.md` for the analytics flow
-- `CHANGELOG.md` — feature entry
+- `docs/architecture/backend/ROUTES.md` - new routes
+- `docs/architecture/backend/CACHING.md` - new cache keys
+- `docs/architecture/backend/SERVICES.md` - Reddit service
+- `docs/architecture/data-flows/` - create `REDDIT.md` for the analytics flow
+- `CHANGELOG.md` - feature entry

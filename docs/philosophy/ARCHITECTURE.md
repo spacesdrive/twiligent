@@ -4,13 +4,13 @@
 
 ### 1. Fetch at the edge, not in the client
 
-The Cloudflare Worker sits at the edge, close to the user. All data fetching — from Supabase, from external platform APIs, from Redis — happens in the Worker. The React client fetches from the Worker only. The client never talks to Supabase or platform APIs directly.
+The Cloudflare Worker sits at the edge, close to the user. All data fetching - from Supabase, from external platform APIs, from Redis - happens in the Worker. The React client fetches from the Worker only. The client never talks to Supabase or platform APIs directly.
 
 **Why:** Keeps credentials server-side. Enables caching at the edge. Single point of auth enforcement.
 
 ### 2. One source of auth truth
 
-Authentication is Supabase JWTs. The Worker verifies the JWT on every protected request. `userId` derived from the verified JWT is the only identity that matters. No session state. No cookies. The JWT is verified by checking its signature against the Supabase JWT secret — not by calling Supabase on every request.
+Authentication is Supabase JWTs. The Worker verifies the JWT on every protected request. `userId` derived from the verified JWT is the only identity that matters. No session state. No cookies. The JWT is verified by checking its signature against the Supabase JWT secret - not by calling Supabase on every request.
 
 **Why:** Stateless auth scales to zero infrastructure. JWTs are self-verifying.
 
@@ -30,7 +30,7 @@ Redis is optional infrastructure. The cache layer always catches errors and retu
 
 ### 5. Credentials stay in the Worker
 
-Platform API credentials (Instagram app secret, YouTube API key) are Worker secrets — not in code, not in the database, not in the frontend. The only credential that goes near the frontend is the Supabase anon key, which is public by design.
+Platform API credentials (Instagram app secret, YouTube API key) are Worker secrets - not in code, not in the database, not in the frontend. The only credential that goes near the frontend is the Supabase anon key, which is public by design.
 
 User-specific tokens (Instagram access tokens, GitHub PATs) live in `accounts.data` in the database. They are read by the Worker and never returned to the frontend. See `ADR-004`.
 
@@ -48,7 +48,7 @@ This is a deliberate constraint, not an oversight. See `ADR-010` and `docs/guide
 
 **Not a real-time system.** There are no WebSockets, no Server-Sent Events. Analytics pages refresh on load. Scheduled post status updates on poll.
 
-**Not a multi-tenant platform.** Every user has their own credentials, their own accounts. There is no concept of organizations, teams, or shared accounts at the data layer. (This is a known constraint — see ROADMAP.md.)
+**Not a multi-tenant platform.** Every user has their own credentials, their own accounts. There is no concept of organizations, teams, or shared accounts at the data layer. (This is a known constraint - see ROADMAP.md.)
 
 ## When to Break These Rules
 

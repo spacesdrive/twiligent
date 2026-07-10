@@ -1,4 +1,4 @@
-# Backend — Hono Application Structure
+# Backend - Hono Application Structure
 
 ## Entry Point: `backend/server.js`
 
@@ -117,7 +117,7 @@ app.onError((err, c) => {
 });
 ```
 
-Route handlers should catch their own errors and return descriptive messages. Do not throw from route handlers — catch and return JSON error responses with appropriate status codes.
+Route handlers should catch their own errors and return descriptive messages. Do not throw from route handlers - catch and return JSON error responses with appropriate status codes.
 
 ## Environment Access
 

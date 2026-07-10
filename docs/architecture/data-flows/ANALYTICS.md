@@ -1,4 +1,4 @@
-# Data Flow — Analytics
+# Data Flow - Analytics
 
 ## YouTube Analytics Flow
 
@@ -6,26 +6,26 @@
 User navigates to /channel/:id
     │
     ▼
-ChannelAnalytics.jsx mounts → api.getAnalytics(id)
-    → GET /api/accounts/:id/analytics
+ChannelAnalytics.jsx mounts -> api.getAnalytics(id)
+    -> GET /api/accounts/:id/analytics
         │
         ▼
     Worker: analyticsRouter
-        1. getAccountById(supabase, id, userId) — verify ownership
+        1. getAccountById(supabase, id, userId) - verify ownership
         2. redis cache check: getVideosCache(redis, userId, id)
-           → cache hit: return cached data immediately
-           → cache miss: continue
+           -> cache hit: return cached data immediately
+           -> cache miss: continue
         3. Fetch from YouTube Data API:
            a. GET /channels?part=snippet,statistics,contentDetails&id={channelId}
-              → channel metadata + subscriber/view/video counts + uploadPlaylistId
+              -> channel metadata + subscriber/view/video counts + uploadPlaylistId
            b. Paginate /playlistItems?part=contentDetails&playlistId={uploadPlaylistId}
-              → up to 10 pages × 50 items = 500 video IDs
+              -> up to 10 pages × 50 items = 500 video IDs
            c. Batch /videos?part=snippet,statistics&id={id1,id2,...}
-              → 50 videos per batch request → statistics (views, likes, comments, duration)
+              -> 50 videos per batch request -> statistics (views, likes, comments, duration)
         4. computeVideoAnalytics(videos, channel)
-           → 50+ computed metrics
+           -> 50+ computed metrics
         5. setVideosCache(redis, userId, id, result)
-           → cache result for future requests
+           -> cache result for future requests
         6. Return JSON
 ```
 
@@ -67,23 +67,23 @@ ChannelAnalytics.jsx mounts → api.getAnalytics(id)
 User navigates to /instagram/:id
     │
     ▼
-InstagramAnalytics.jsx mounts → api.getIGAnalytics(id)
-    → GET /api/accounts/:id/ig-analytics
+InstagramAnalytics.jsx mounts -> api.getIGAnalytics(id)
+    -> GET /api/accounts/:id/ig-analytics
         │
         ▼
     Worker: analyticsRouter
-        1. getAccountById(supabase, id, userId) — verify ownership + get accessToken
+        1. getAccountById(supabase, id, userId) - verify ownership + get accessToken
         2. redis cache check: getIGCache(redis, userId, id)
-           → cache hit: return immediately
-           → cache miss: continue
+           -> cache hit: return immediately
+           -> cache miss: continue
         3. Fetch from Instagram Graph API:
            a. GET /me?fields=id,username,account_type,media_count,followers_count
-              → profile data
+              -> profile data
            b. Paginate /me/media?fields=id,media_type,timestamp,like_count,comments_count,
               caption,permalink,thumbnail_url,media_url
-              → up to 500 media items (10 pages × 50)
+              -> up to 500 media items (10 pages × 50)
         4. computeInstagramAnalytics(media, profile)
-           → engagement metrics
+           -> engagement metrics
         5. setIGCache(redis, userId, id, result)
         6. Return JSON
 ```
@@ -130,9 +130,9 @@ User navigates to /
     │
     ▼
 Overview.jsx uses accounts from AppContext
-    → Combined totals computed from account.subscriberCount, viewCount, etc.
-    → api.getComparison() → GET /api/comparison
-        → returns all accounts sorted by view count, subscriber count
+    -> Combined totals computed from account.subscriberCount, viewCount, etc.
+    -> api.getComparison() -> GET /api/comparison
+        -> returns all accounts sorted by view count, subscriber count
 ```
 
-The Overview doesn't fetch fresh analytics — it uses the cached account metadata (subscriber counts, view counts) already in `AppContext.accounts`. Deep per-account analytics (video lists, engagement rates) are only fetched when the user navigates to a specific account page.
+The Overview doesn't fetch fresh analytics - it uses the cached account metadata (subscriber counts, view counts) already in `AppContext.accounts`. Deep per-account analytics (video lists, engagement rates) are only fetched when the user navigates to a specific account page.

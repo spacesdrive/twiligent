@@ -1,4 +1,4 @@
-# MCP: Parallel Search — Research
+# MCP: Parallel Search - Research
 
 ## Purpose
 
@@ -30,7 +30,7 @@ Parallel Search fetches current web content for research tasks: UX patterns, bro
    - "how Hootsuite implements scheduling calendar"
    - "time slot selection UI accessibility"
 3. Extract the patterns relevant to this project's constraints (mobile-first, React)
-4. Apply the patterns — document sources in a code comment if the pattern is non-obvious
+4. Apply the patterns - document sources in a code comment if the pattern is non-obvious
 
 ### API Behavior Research
 
@@ -44,9 +44,9 @@ When Instagram/YouTube API behavior is unclear or seems different from Context7 
 
 Before building any interactive feature:
 
-1. Search "WCAG 2.1 {feature type}" — e.g., "WCAG 2.1 date picker accessibility"
+1. Search "WCAG 2.1 {feature type}" - e.g., "WCAG 2.1 date picker accessibility"
 2. Check MDN for the correct ARIA roles and attributes
-3. Apply what you find — shadcn components already include correct ARIA in most cases
+3. Apply what you find - shadcn components already include correct ARIA in most cases
 
 ## Multiple Search Queries
 

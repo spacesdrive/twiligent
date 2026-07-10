@@ -11,7 +11,7 @@ Both cron triggers invoke the `scheduled` export from `backend/server.js`.
 
 ## Cron Handlers
 
-### `*/15 * * * *` — Instagram Scheduled Post Publisher
+### `*/15 * * * *` - Instagram Scheduled Post Publisher
 
 **Function:** `processScheduledPosts(supabase)` in `backend/utils/scheduler.js`
 
@@ -24,11 +24,11 @@ Both cron triggers invoke the `scheduled` export from `backend/server.js`.
    - On success: sets status to `'published'`, stores `publishedMediaId` and `publishedAt` in `data`
    - On failure: sets status to `'failed'`, stores `error` message in `data`
 
-**No userId filter** — the scheduler operates across all users. It uses the service-role Supabase client.
+**No userId filter** - the scheduler operates across all users. It uses the service-role Supabase client.
 
 **Concurrency safety:** The `'publishing'` status acts as a mutex. If the Worker cron and GitHub Actions cron overlap, the second one to claim a post will find it already in `'publishing'` state and skip it (it won't appear in the `status=pending` query).
 
-### `0 0 * * *` — Instagram Token Auto-Refresh
+### `0 0 * * *` - Instagram Token Auto-Refresh
 
 **Function:** `autoRefreshInstagramTokens(supabase)` in `backend/services/instagram.js`
 

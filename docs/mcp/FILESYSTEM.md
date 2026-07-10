@@ -1,4 +1,4 @@
-# MCP: Filesystem — Codebase Navigation
+# MCP: Filesystem - Codebase Navigation
 
 ## Purpose
 
@@ -28,7 +28,7 @@ pattern: "safeAccount"
 path: backend/
 ```
 
-Better: Use the built-in Grep tool for this — it's faster for string search.
+Better: Use the built-in Grep tool for this - it's faster for string search.
 
 ### Get directory structure
 
@@ -56,9 +56,9 @@ path: frontend/src/
 
 The built-in Grep and Glob tools are faster for most search tasks:
 
-- `Grep pattern="useAppContext"` — faster than filesystem search for string patterns
-- `Glob pattern="backend/routes/*.js"` — faster than filesystem for file patterns
-- `Read file_path="..."` — faster than filesystem for single file reads
+- `Grep pattern="useAppContext"` - faster than filesystem search for string patterns
+- `Glob pattern="backend/routes/*.js"` - faster than filesystem for file patterns
+- `Read file_path="..."` - faster than filesystem for single file reads
 
 Use Filesystem MCP when you need its specific features: recursive directory trees, multi-file reads in one call, or file move operations.
 
@@ -71,6 +71,6 @@ When renaming a function or moving a file:
 3. Verify with Grep that no old references remain
 
 Example: renaming `safeAccount` to `stripSensitiveFields`:
-1. `search_files pattern="safeAccount" path="backend/"` → list of files
+1. `search_files pattern="safeAccount" path="backend/"` -> list of files
 2. Edit each file
-3. `Grep pattern="safeAccount"` → should return empty
+3. `Grep pattern="safeAccount"` -> should return empty

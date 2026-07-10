@@ -73,7 +73,7 @@ export async function getTwitterTweets(userId, accessToken) {
     return data || [];
 }
 
-// Analytics computation (pure function — easy to test)
+// Analytics computation (pure function - easy to test)
 export function computeTwitterAnalytics(tweets, profile) {
     const totalLikes = tweets.reduce((sum, t) => sum + (t.public_metrics?.like_count || 0), 0);
     const totalRetweets = tweets.reduce((sum, t) => sum + (t.public_metrics?.retweet_count || 0), 0);
@@ -208,7 +208,7 @@ await deleteTwitterCache(redis, userId, id);
 ```toml
 # wrangler.toml
 [vars]
-# (no vars for platform-specific secrets — use secrets)
+# (no vars for platform-specific secrets - use secrets)
 ```
 
 ```bash
@@ -249,13 +249,13 @@ Follow `docs/features/NEW_REACT_PAGE.md` and `docs/features/NEW_ANALYTICS_PAGE.m
 If the platform uses OAuth:
 - Backend: add `GET /auth/{platform}/start` and `GET /auth/{platform}/callback` routes
 - Use the HMAC-signed state pattern (see `docs/architecture/backend/CACHING.md` and `ADR-006` in `DECISIONS.md`)
-- Store tokens in `accounts.data` — never in a separate table
+- Store tokens in `accounts.data` - never in a separate table
 - Delete cache on every token refresh
 
 ## Security Checklist
 
 - [ ] Access token never returned in any API response (use `safeTwitterAccount()` or equivalent)
-- [ ] Access token read from `account.accessToken` on the backend — never passed from frontend
+- [ ] Access token read from `account.accessToken` on the backend - never passed from frontend
 - [ ] OAuth callback validates HMAC state before accepting code
-- [ ] New Worker secrets added with `wrangler secret put` — not stored in `wrangler.toml` plaintext
+- [ ] New Worker secrets added with `wrangler secret put` - not stored in `wrangler.toml` plaintext
 - [ ] New secrets added to GitHub Actions repository secrets if needed by CI

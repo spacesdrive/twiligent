@@ -70,7 +70,7 @@ export default {
 };
 ```
 
-Or match by the cron expression string — the `event.cron` property contains the exact cron string from `wrangler.toml`.
+Or match by the cron expression string - the `event.cron` property contains the exact cron string from `wrangler.toml`.
 
 ### Step 4: Test Locally
 
@@ -86,7 +86,7 @@ curl "http://localhost:8787/__scheduled?cron=30+3+*+*+*"
 cd backend && wrangler deploy
 ```
 
-Cron triggers deploy with the Worker. Verify in the Cloudflare dashboard → Workers → Triggers → Cron.
+Cron triggers deploy with the Worker. Verify in the Cloudflare dashboard -> Workers -> Triggers -> Cron.
 
 ---
 
@@ -152,13 +152,13 @@ jobs:
 
 If the task requires secrets not already in GitHub Actions:
 
-1. GitHub → Settings → Secrets and variables → Actions
+1. GitHub -> Settings -> Secrets and variables -> Actions
 2. Add `New repository secret`
 3. Name must match what the workflow references
 
 ### Step 4: Test
 
-GitHub → Actions → "My Scheduled Task" → "Run workflow" → watch the logs.
+GitHub -> Actions -> "My Scheduled Task" -> "Run workflow" -> watch the logs.
 
 ---
 

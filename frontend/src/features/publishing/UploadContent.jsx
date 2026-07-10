@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -43,7 +43,7 @@ const BULK_INTERVAL_OPTIONS = [
 
 const CONTENT_TYPES = [
   { value: 'IMAGE', label: 'Photo',    icon: ImageIcon, color: '#F58529', accept: 'image/jpeg', desc: 'JPEG, 4:5 to 1.91:1, max 8MB' },
-  { value: 'REELS', label: 'Reel',     icon: Film,      color: '#DD2A7B', accept: 'video/mp4,video/quicktime', desc: 'MP4/MOV 9:16, 3s–15min, max 300MB' },
+  { value: 'REELS', label: 'Reel',     icon: Film,      color: '#DD2A7B', accept: 'video/mp4,video/quicktime', desc: 'MP4/MOV 9:16, 3s-15min, max 300MB' },
   { value: 'STORIES', label: 'Story',  icon: BookOpen,  color: '#8134AF', accept: 'image/jpeg,video/mp4,video/quicktime', desc: 'Image or video, 9:16, max 60s' },
 ];
 
