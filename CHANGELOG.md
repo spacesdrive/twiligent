@@ -7,6 +7,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+**Reddit Integration**
+- `POST /api/accounts/reddit` - add Reddit account by username with optional session cookie
+- `GET /api/accounts/:id/reddit-analytics` - full analytics: profile, score stats, subreddit breakdown, posting time patterns, monthly breakdown, virality and consistency scores
+- `GET /api/accounts/:id/reddit-posts` - paginated post list (up to 100 posts, cached in Redis)
+- `backend/services/reddit.js` - Reddit public JSON API client (`redditFetch`), `fetchRedditProfile`, `fetchRedditPosts`, `computeRedditAnalytics`, `safeRedditAccount`
+- Reddit cache key `reddit:{userId}:{accountId}` in Upstash Redis; invalidated on account delete
+- `frontend/src/features/analytics/reddit/RedditAnalytics.jsx` - detailed stats page with karma breakdown, score timeline, post type distribution, day/hour analysis, subreddit breakdown, top posts table
+- `frontend/src/features/analytics/reddit/RedditPosts.jsx` - filterable/sortable post explorer with subreddit filter, search, sort by score/comments/date
+- Reddit tab in Account Manager dialog (username + optional session cookie)
+- Reddit accounts section in Account Manager accounts list
+- Reddit accounts included in Overview totals, leaderboards, and all-accounts table
+- Reddit accounts in Sidebar quick navigation (routes to `/reddit/:id`)
+- Routes `/reddit/:id` and `/reddit-posts/:id` in App.jsx
+
 ### Fixed
 - Strip non-ASCII characters from `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` env vars in `scripts/publish-scheduled.js` using `/[^\x20-\x7E]/g` to defend against BOM injected by PowerShell 5.1 when setting GitHub Actions secrets
 - Replaced embedded literal U+FEFF in BOM-strip regex with proper `﻿` unicode escape

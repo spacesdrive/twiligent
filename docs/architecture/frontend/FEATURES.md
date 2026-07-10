@@ -67,10 +67,12 @@ Each page manages its own loading/data/error state. Pages do not write to `AppCo
 
 | Feature | Path | Description |
 |---|---|---|
-| Overview | `/` | Aggregate KPIs across all connected accounts |
-| Accounts | `/accounts` | Connect/disconnect social accounts |
+| Overview | `/` | Aggregate KPIs across all connected accounts (YouTube, Instagram, Reddit) |
+| Accounts | `/accounts` | Connect/disconnect social accounts (YouTube, Instagram, Reddit) |
 | Channel Analytics | `/channel/:id` | YouTube analytics for one channel |
 | Instagram Analytics | `/instagram/:id` | Instagram analytics for one account |
+| Reddit Analytics | `/reddit/:id` | Reddit analytics for one account - karma, post scores, subreddit breakdown, timing |
+| Reddit Posts | `/reddit-posts/:id` | Searchable and sortable post list for a Reddit account |
 | Video Explorer | `/videos/:id` | YouTube video library with search and sort |
 | Publish | `/publish/:id` | Publish a post to Instagram immediately |
 | Schedule | `/schedule/:id` | View and manage the scheduled post queue |

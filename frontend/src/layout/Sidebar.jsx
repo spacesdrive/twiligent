@@ -101,9 +101,11 @@ export default function AppSidebar() {
             <SidebarGroupLabel>Accounts</SidebarGroupLabel>
             <SidebarMenu>
               {accounts.map((acc) => {
-                const isIG = acc.platform === 'instagram';
-                const path = isIG ? `/instagram/${acc.id}` : `/channel/${acc.id}`;
+                const isIG     = acc.platform === 'instagram';
+                const isReddit = acc.platform === 'reddit';
+                const path     = isIG ? `/instagram/${acc.id}` : isReddit ? `/reddit/${acc.id}` : `/channel/${acc.id}`;
                 const initials = (acc.title || '?').slice(0, 2).toUpperCase();
+                const avatarBg = isIG ? '#ec4899' : isReddit ? '#f97316' : '#ef4444';
                 return (
                   <SidebarMenuItem key={acc.id}>
                     <SidebarMenuButton
@@ -117,7 +119,7 @@ export default function AppSidebar() {
                           alt={acc.title}
                         />
                         <AvatarFallback
-                          style={{ background: isIG ? '#ec4899' : '#ef4444' }}
+                          style={{ background: avatarBg }}
                           className="text-[0.5rem] font-bold text-white"
                         >
                           {initials}

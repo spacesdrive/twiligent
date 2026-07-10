@@ -97,6 +97,31 @@ async function ytFetch(path, params, env) {
 
 ---
 
+## `backend/services/reddit.js`
+
+### HTTP Client
+
+All Reddit public JSON API calls go through `redditFetch(path, cookie)`. Requests include a descriptive `User-Agent` header (required by Reddit). Cookie is optional - if provided, it is sent as `Cookie: reddit_session=<value>` for private account access and higher rate limits.
+
+### Key Functions
+
+| Function | Purpose |
+|---|---|
+| `fetchRedditProfile(username, cookie)` | Fetches profile data from `/user/{username}/about.json` |
+| `fetchRedditPosts(username, cookie, limit)` | Paginates submitted posts up to `limit` (default 100) via `/user/{username}/submitted.json` |
+| `computeRedditAnalytics(profile, posts)` | Computes score stats, subreddit breakdown, posting time patterns, monthly breakdown, virality/consistency scores |
+| `safeRedditAccount(account)` | Strips the `cookie` field before any API response |
+
+### `safeRedditAccount(account)`
+
+Strips the `cookie` field before the account object is returned in any API response, identical in purpose to `safeAccount()` for Instagram access tokens.
+
+### No Worker secrets required
+
+Reddit integration requires no Worker secrets. The session cookie is a per-user credential stored in `accounts.data.cookie` (in the Supabase DB). It is read server-side by the Worker and never returned to the frontend.
+
+---
+
 ## Adding a New Service
 
 1. Create `backend/services/myPlatform.js`

@@ -15,7 +15,7 @@ import StatCard from '../../../components/ui/StatCard';
 import MainCard from '../../../components/MainCard';
 import { useAppContext } from '../../../context/AppContext';
 import { fmtNum, fmtNumFull, timeAgo } from '../../../utils/formatters';
-import { RefreshCw, Users, Eye, VideoIcon, BarChart3, ExternalLink, Tv, Camera } from 'lucide-react';
+import { RefreshCw, Users, Eye, VideoIcon, BarChart3, ExternalLink, Tv, Camera, MessageSquare } from 'lucide-react';
 
 const CHART_COLORS = ['hsl(221.2,83.2%,53.3%)', '#22c55e', '#f97316', '#a855f7', '#06b6d4', '#ec4899', '#6366f1', '#eab308'];
 
@@ -23,12 +23,16 @@ export default function Overview() {
   const { accounts, loading, refreshAll } = useAppContext();
   const navigate = useNavigate();
 
-  const ytAccounts = accounts.filter(a => a.platform !== 'instagram');
-  const igAccounts = accounts.filter(a => a.platform === 'instagram');
+  const ytAccounts     = accounts.filter(a => a.platform !== 'instagram' && a.platform !== 'reddit');
+  const igAccounts     = accounts.filter(a => a.platform === 'instagram');
+  const redditAccounts = accounts.filter(a => a.platform === 'reddit');
 
   const totals = accounts.reduce((acc, a) => {
     if (a.platform === 'instagram') {
       return { ...acc, followers: acc.followers + (a.followersCount || 0), posts: acc.posts + (a.mediaCount || 0) };
+    }
+    if (a.platform === 'reddit') {
+      return { ...acc, karma: acc.karma + (a.totalKarma || 0) };
     }
     return {
       ...acc,
@@ -36,30 +40,40 @@ export default function Overview() {
       views: acc.views + (a.viewCount || 0),
       videos: acc.videos + (a.videoCount || 0),
     };
-  }, { subscribers: 0, views: 0, videos: 0, followers: 0, posts: 0 });
+  }, { subscribers: 0, views: 0, videos: 0, followers: 0, posts: 0, karma: 0 });
 
-  const totalAudience = totals.subscribers + totals.followers;
+  const totalAudience = totals.subscribers + totals.followers + totals.karma;
+
+  const audienceMetric = (a) => {
+    if (a.platform === 'reddit')    return a.totalKarma   || 0;
+    if (a.platform === 'instagram') return a.followersCount || 0;
+    return a.subscriberCount || 0;
+  };
+  const contentMetric = (a) => {
+    if (a.platform === 'reddit')    return 0;
+    if (a.platform === 'instagram') return a.mediaCount  || 0;
+    return a.viewCount || 0;
+  };
 
   const sorted = {
-    byAudience: [...accounts].sort((a, b) =>
-      (b.subscriberCount || b.followersCount || 0) - (a.subscriberCount || a.followersCount || 0)),
-    byContent: [...accounts].sort((a, b) =>
-      (b.viewCount || b.mediaCount || 0) - (a.viewCount || a.mediaCount || 0)),
+    byAudience: [...accounts].sort((a, b) => audienceMetric(b) - audienceMetric(a)),
+    byContent:  [...accounts].sort((a, b) => contentMetric(b) - contentMetric(a)),
   };
 
   const chartData = accounts.map(a => ({
     name: (a.title || '').slice(0, 14) + ((a.title || '').length > 14 ? '…' : ''),
-    audience: a.subscriberCount || a.followersCount || 0,
+    audience: audienceMetric(a),
   }));
 
   const pieData = accounts.map((a, i) => ({
     name: (a.title || '').slice(0, 14) + ((a.title || '').length > 14 ? '…' : ''),
-    value: a.subscriberCount || a.followersCount || 0,
+    value: audienceMetric(a),
     color: CHART_COLORS[i % CHART_COLORS.length],
   }));
 
   const handleViewChannel = (acc) => {
     if (acc.platform === 'instagram') navigate(`/instagram/${acc.id}`);
+    else if (acc.platform === 'reddit') navigate(`/reddit/${acc.id}`);
     else navigate(`/channel/${acc.id}`);
   };
 
@@ -72,7 +86,12 @@ export default function Overview() {
           <p className="text-sm text-muted-foreground mt-0.5">
             {accounts.length === 0
               ? 'Add your first account to start tracking'
-              : `Tracking ${accounts.length} account${accounts.length !== 1 ? 's' : ''} · ${ytAccounts.length} YouTube · ${igAccounts.length} Instagram`}
+              : [
+                  `Tracking ${accounts.length} account${accounts.length !== 1 ? 's' : ''}`,
+                  ytAccounts.length     ? `${ytAccounts.length} YouTube`     : null,
+                  igAccounts.length     ? `${igAccounts.length} Instagram`   : null,
+                  redditAccounts.length ? `${redditAccounts.length} Reddit`  : null,
+                ].filter(Boolean).join(' · ')}
           </p>
         </div>
         <Button
@@ -95,7 +114,7 @@ export default function Overview() {
           { icon: <Users />, label: 'Total Audience', value: fmtNum(totalAudience), subtitle: `${fmtNum(totals.subscribers)} subs · ${fmtNum(totals.followers)} followers`, gradient: 'purple' },
           { icon: <Eye />,   label: 'Total Views',    value: fmtNum(totals.views),  subtitle: fmtNumFull(totals.views), gradient: 'red' },
           { icon: <VideoIcon />, label: 'Total Content', value: fmtNum(totals.videos + totals.posts), subtitle: `${fmtNum(totals.videos)} videos · ${fmtNum(totals.posts)} posts`, gradient: 'blue' },
-          { icon: <BarChart3 />, label: 'Accounts',   value: accounts.length,       subtitle: `${ytAccounts.length} YouTube · ${igAccounts.length} Instagram`, gradient: 'orange' },
+          { icon: <BarChart3 />, label: 'Accounts', value: accounts.length, subtitle: [ytAccounts.length ? `${ytAccounts.length} YouTube` : null, igAccounts.length ? `${igAccounts.length} Instagram` : null, redditAccounts.length ? `${redditAccounts.length} Reddit` : null].filter(Boolean).join(' · '), gradient: 'orange' },
         ].map((card, i) => (
           <StatCard key={i} {...card} loading={loading} />
         ))}
@@ -162,21 +181,30 @@ export default function Overview() {
               {
                 title: 'Top by Audience',
                 list: sorted.byAudience,
-                metric: a => fmtNum(a.platform === 'instagram' ? a.followersCount : a.subscriberCount),
-                isIG: a => a.platform === 'instagram',
+                metric: a => {
+                  if (a.platform === 'instagram') return `${fmtNum(a.followersCount)} followers`;
+                  if (a.platform === 'reddit')    return `${fmtNum(a.totalKarma)} karma`;
+                  return `${fmtNum(a.subscriberCount)} subs`;
+                },
               },
               {
                 title: 'Top by Content',
-                list: sorted.byContent,
+                list: sorted.byContent.filter(a => a.platform !== 'reddit'),
                 metric: a => a.platform === 'instagram' ? `${fmtNum(a.mediaCount)} posts` : `${fmtNum(a.viewCount)} views`,
-                isIG: a => a.platform === 'instagram',
               },
-            ].map(({ title, list, metric, isIG }) => (
+            ].map(({ title, list, metric }) => (
               <MainCard key={title} title={title}>
                 <div className="space-y-1">
                   {list.map((a, i) => {
-                    const ig = isIG(a);
-                    const medalColor = i === 0 ? 'text-yellow-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-orange-400' : 'text-muted-foreground';
+                    const ig     = a.platform === 'instagram';
+                    const reddit = a.platform === 'reddit';
+                    const medalColor  = i === 0 ? 'text-yellow-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-orange-400' : 'text-muted-foreground';
+                    const fallbackBg  = ig ? 'bg-pink-500' : reddit ? 'bg-orange-500' : 'bg-red-500';
+                    const badgeCls    = ig
+                      ? 'border-pink-200 bg-pink-50 text-pink-700'
+                      : reddit
+                      ? 'border-orange-200 bg-orange-50 text-orange-700'
+                      : 'border-green-200 bg-green-50 text-green-700';
                     return (
                       <button
                         key={a.id}
@@ -186,12 +214,12 @@ export default function Overview() {
                         <span className={`w-5 text-xs font-bold tabular-nums ${medalColor}`}>{i + 1}</span>
                         <Avatar className="h-7 w-7 flex-shrink-0">
                           <AvatarImage src={a.thumbnail || a.profilePictureUrl || a.thumbnails?.default} />
-                          <AvatarFallback className={`text-[0.55rem] font-bold text-white ${ig ? 'bg-pink-500' : 'bg-red-500'}`}>
+                          <AvatarFallback className={`text-[0.55rem] font-bold text-white ${fallbackBg}`}>
                             {(a.title || '?').slice(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
                         <span className="flex-1 text-sm font-medium truncate">{a.title}</span>
-                        <Badge variant="outline" className={`text-xs font-semibold ${ig ? 'border-pink-200 bg-pink-50 text-pink-700' : 'border-green-200 bg-green-50 text-green-700'}`}>
+                        <Badge variant="outline" className={`text-xs font-semibold ${badgeCls}`}>
                           {metric(a)}
                         </Badge>
                       </button>
@@ -218,8 +246,15 @@ export default function Overview() {
               </TableHeader>
               <TableBody>
                 {sorted.byAudience.map((a, i) => {
-                  const ig = a.platform === 'instagram';
+                  const ig     = a.platform === 'instagram';
+                  const reddit = a.platform === 'reddit';
                   const medalColor = i === 0 ? 'text-yellow-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-orange-400' : 'text-muted-foreground';
+                  const fallbackBg = ig ? 'bg-pink-500' : reddit ? 'bg-orange-500' : 'bg-red-500';
+                  const platformBadgeCls = ig
+                    ? 'border-pink-200 bg-pink-50 text-pink-700'
+                    : reddit
+                    ? 'border-orange-200 bg-orange-50 text-orange-700'
+                    : 'border-red-200 bg-red-50 text-red-700';
                   return (
                     <TableRow key={a.id} className="cursor-pointer" onClick={() => handleViewChannel(a)}>
                       <TableCell>
@@ -229,29 +264,29 @@ export default function Overview() {
                         <div className="flex items-center gap-2.5">
                           <Avatar className="h-8 w-8">
                             <AvatarImage src={a.thumbnail || a.profilePictureUrl || a.thumbnails?.default} />
-                            <AvatarFallback className={`text-xs font-bold text-white ${ig ? 'bg-pink-500' : 'bg-red-500'}`}>
+                            <AvatarFallback className={`text-xs font-bold text-white ${fallbackBg}`}>
                               {(a.title || '?').slice(0, 2).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
                           <div>
                             <p className="text-sm font-semibold leading-none">{a.title}</p>
                             <p className="text-xs text-muted-foreground mt-0.5">
-                              {ig ? `@${a.username || ''}` : (a.customUrl || a.channelId || '')}
+                              {ig ? `@${a.username || ''}` : reddit ? `u/${a.username || ''}` : (a.customUrl || a.channelId || '')}
                             </p>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
-                        <Badge variant="outline" className={`text-xs ${ig ? 'border-pink-200 bg-pink-50 text-pink-700' : 'border-red-200 bg-red-50 text-red-700'}`}>
-                          {ig ? 'Instagram' : 'YouTube'}
+                        <Badge variant="outline" className={`text-xs ${platformBadgeCls}`}>
+                          {ig ? 'Instagram' : reddit ? 'Reddit' : 'YouTube'}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <p className="text-sm font-semibold">{fmtNum(ig ? a.followersCount : a.subscriberCount)}</p>
-                        <p className="text-xs text-muted-foreground">{ig ? 'followers' : 'subscribers'}</p>
+                        <p className="text-sm font-semibold">{fmtNum(ig ? a.followersCount : reddit ? a.totalKarma : a.subscriberCount)}</p>
+                        <p className="text-xs text-muted-foreground">{ig ? 'followers' : reddit ? 'karma' : 'subscribers'}</p>
                       </TableCell>
                       <TableCell className="text-right text-sm">
-                        {ig ? `${fmtNum(a.mediaCount)} posts` : `${fmtNum(a.viewCount)} views · ${fmtNum(a.videoCount)} vids`}
+                        {ig ? `${fmtNum(a.mediaCount)} posts` : reddit ? `${fmtNum(a.postKarma)} post karma` : `${fmtNum(a.viewCount)} views · ${fmtNum(a.videoCount)} vids`}
                       </TableCell>
                       <TableCell className="text-right text-xs text-muted-foreground">
                         {timeAgo(a.lastUpdated)}

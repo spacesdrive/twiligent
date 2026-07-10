@@ -61,6 +61,13 @@ All routes live under `/api`. Routes under the `api` sub-app require a valid Sup
 | GET | `/api/process-scheduled` | `routes/scheduledPosts.js` | Manual trigger - runs `processScheduledPosts()` immediately (dev/test) |
 | POST | `/api/process-scheduled` | `routes/scheduledPosts.js` | Same as above |
 
+### Reddit
+| Method | Path | File | Purpose |
+|---|---|---|---|
+| POST | `/api/accounts/reddit` | `routes/accounts.js` | Add Reddit account by username + optional session cookie |
+| GET | `/api/accounts/:id/reddit-analytics` | `routes/reddit.js` | Fetch profile + posts + computed analytics; cached in Redis |
+| GET | `/api/accounts/:id/reddit-posts` | `routes/reddit.js` | Returns cached post list or live-fetched posts |
+
 ### Settings
 | Method | Path | File | Purpose |
 |---|---|---|---|

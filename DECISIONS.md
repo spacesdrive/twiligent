@@ -285,3 +285,28 @@ Records every significant architectural decision, the alternatives considered, a
 **Trade-offs:**
 - GitHub PAT is stored in plaintext in Supabase jsonb - acceptable for a self-hosted deployment where the admin trusts the storage layer
 - The `settings` table design (user_id + key + jsonb value) is generic enough to hold any future per-user configuration
+
+---
+
+## ADR-013: Reddit integration uses cookie-based auth via public JSON API
+
+**Date:** 2026-07-10  
+**Status:** Accepted
+
+**Decision:** Reddit accounts are added by username. An optional `reddit_session` cookie value can be provided for private accounts or improved rate limits. Analytics are fetched from Reddit's public JSON API (`https://www.reddit.com/user/{username}/about.json` and `/submitted.json`).
+
+**Alternatives considered:**
+- Reddit OAuth 2.0 (script app): Requires registering a Reddit app, storing `REDDIT_CLIENT_ID` and `REDDIT_CLIENT_SECRET` as Worker secrets, and implementing the token grant flow. Higher complexity for a self-hosted product.
+- Reddit OAuth 2.0 (web app): Full OAuth redirect flow matching the Instagram pattern. Requires a registered Reddit app and callback route.
+
+**Reasoning:**
+- Reddit's public JSON API returns full post data for public accounts with no authentication at all
+- Cookie-based auth extends this to private accounts without any app registration
+- No new Worker secrets are required - the cookie is per-user data stored in `accounts.data.cookie`
+- The cookie is stripped by `safeRedditAccount()` before any API response, matching the Instagram access token pattern
+- For most self-hosted users tracking their own public Reddit account, the public API is sufficient
+
+**Trade-offs:**
+- `reddit_session` cookies expire when the user's Reddit session ends - the user must re-enter the cookie if it expires
+- Reddit's public API has stricter rate limits (60 req/10min without auth) than the OAuth API (600 req/10min)
+- No token refresh cron - unlike Instagram, Reddit session cookies cannot be programmatically refreshed

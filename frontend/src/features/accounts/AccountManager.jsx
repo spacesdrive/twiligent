@@ -10,7 +10,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Plus, Trash2, RefreshCw, Search, Users, CheckCircle2,
-  Tv, Camera, Link2, Info, ExternalLink,
+  Tv, Camera, Link2, Info, ExternalLink, MessageSquare,
 } from 'lucide-react';
 import MainCard from '../../components/MainCard';
 import { useAppContext } from '../../context/AppContext';
@@ -26,8 +26,11 @@ export default function AccountManager() {
   const [resolving,    setResolving]    = useState(false);
   const [resolved,     setResolved]     = useState(null);
   const [adding,       setAdding]       = useState(false);
-  const [connecting,   setConnecting]   = useState(false);
-  const [refreshingId, setRefreshingId] = useState(null);
+  const [connecting,      setConnecting]      = useState(false);
+  const [redditUsername,  setRedditUsername]  = useState('');
+  const [redditCookie,    setRedditCookie]    = useState('');
+  const [addingReddit,    setAddingReddit]    = useState(false);
+  const [refreshingId,    setRefreshingId]    = useState(null);
 
   // Handle Instagram OAuth redirect result (?ig_connected=true or ?ig_error=...)
   useEffect(() => {
@@ -128,14 +131,34 @@ export default function AccountManager() {
     }
   };
 
+  const handleAddReddit = async () => {
+    if (!redditUsername.trim()) return;
+    setAddingReddit(true);
+    try {
+      await api.addRedditAccount(redditUsername.trim(), redditCookie.trim() || null);
+      showToast('Reddit account added');
+      setRedditUsername('');
+      setRedditCookie('');
+      closeDialog();
+      loadAccounts();
+    } catch (err) {
+      showToast('Failed to add Reddit account: ' + err.message, 'error');
+    } finally {
+      setAddingReddit(false);
+    }
+  };
+
   const closeDialog = () => {
     setDialogOpen(false);
     setResolved(null);
     setInput('');
+    setRedditUsername('');
+    setRedditCookie('');
   };
 
-  const ytAccounts = accounts.filter(a => a.platform !== 'instagram');
-  const igAccounts = accounts.filter(a => a.platform === 'instagram');
+  const ytAccounts     = accounts.filter(a => a.platform !== 'instagram' && a.platform !== 'reddit');
+  const igAccounts     = accounts.filter(a => a.platform === 'instagram');
+  const redditAccounts = accounts.filter(a => a.platform === 'reddit');
 
   return (
     <div className="space-y-6">
@@ -144,7 +167,11 @@ export default function AccountManager() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Manage Accounts</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            {ytAccounts.length} YouTube channels · {igAccounts.length} Instagram accounts
+            {[
+              ytAccounts.length     ? `${ytAccounts.length} YouTube`     : null,
+              igAccounts.length     ? `${igAccounts.length} Instagram`   : null,
+              redditAccounts.length ? `${redditAccounts.length} Reddit`  : null,
+            ].filter(Boolean).join(' · ') || 'No accounts added yet'}
           </p>
         </div>
         <div className="flex gap-2">
@@ -191,7 +218,7 @@ export default function AccountManager() {
                   <AccountCard
                     key={acct.id}
                     acct={acct}
-                    isIG={false}
+                    platform="youtube"
                     metrics={[
                       { label: 'Subscribers', value: fmtNum(acct.subscriberCount), className: 'bg-red-50 text-red-700' },
                       { label: 'Views',        value: fmtNum(acct.viewCount),       className: 'bg-blue-50 text-blue-700' },
@@ -219,11 +246,39 @@ export default function AccountManager() {
                   <AccountCard
                     key={acct.id}
                     acct={acct}
-                    isIG={true}
+                    platform="instagram"
                     metrics={[
                       { label: 'Followers',  value: fmtNum(acct.followersCount), className: 'bg-pink-50 text-pink-700' },
                       { label: 'Following',  value: fmtNum(acct.followsCount),   className: 'bg-purple-50 text-purple-700' },
                       { label: 'Posts',      value: fmtNum(acct.mediaCount),     className: 'bg-green-50 text-green-700' },
+                    ]}
+                    refreshingId={refreshingId}
+                    onRefresh={handleRefreshOne}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Reddit */}
+          {redditAccounts.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <MessageSquare className="h-5 w-5 text-orange-500" />
+                <h2 className="text-base font-semibold">Reddit Accounts</h2>
+                <Badge variant="outline" className="border-orange-200 bg-orange-50 text-orange-600 text-xs">{redditAccounts.length}</Badge>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                {redditAccounts.map(acct => (
+                  <AccountCard
+                    key={acct.id}
+                    acct={acct}
+                    platform="reddit"
+                    metrics={[
+                      { label: 'Total Karma',   value: fmtNum(acct.totalKarma),   className: 'bg-orange-50 text-orange-700' },
+                      { label: 'Post Karma',    value: fmtNum(acct.postKarma),    className: 'bg-red-50 text-red-700' },
+                      { label: 'Comment Karma', value: fmtNum(acct.commentKarma), className: 'bg-amber-50 text-amber-700' },
                     ]}
                     refreshingId={refreshingId}
                     onRefresh={handleRefreshOne}
@@ -251,6 +306,9 @@ export default function AccountManager() {
               </TabsTrigger>
               <TabsTrigger value="instagram" className="flex-1 gap-1.5">
                 <Camera className="h-3.5 w-3.5" /> Instagram
+              </TabsTrigger>
+              <TabsTrigger value="reddit" className="flex-1 gap-1.5">
+                <MessageSquare className="h-3.5 w-3.5" /> Reddit
               </TabsTrigger>
             </TabsList>
 
@@ -311,12 +369,47 @@ export default function AccountManager() {
                 {connecting
                   ? <RefreshCw className="h-4 w-4 animate-spin" />
                   : <ExternalLink className="h-4 w-4" />}
-                {connecting ? 'Opening Instagram…' : 'Connect with Instagram'}
+                {connecting ? 'Opening Instagram...' : 'Connect with Instagram'}
               </Button>
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription className="text-xs">
                   Your account must be a <strong>Business</strong> or <strong>Creator</strong> professional account. Personal accounts are not supported by the Instagram API.
+                </AlertDescription>
+              </Alert>
+            </TabsContent>
+
+            <TabsContent value="reddit" className="space-y-4 mt-4">
+              <p className="text-sm text-muted-foreground">
+                Enter your Reddit username to track your public post analytics.
+              </p>
+              <div className="space-y-3">
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">u/</span>
+                  <Input
+                    className="pl-8"
+                    value={redditUsername}
+                    onChange={e => setRedditUsername(e.target.value)}
+                    placeholder="your_username"
+                    onKeyDown={e => e.key === 'Enter' && handleAddReddit()}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Session Cookie (optional - for private accounts or higher rate limits)
+                  </label>
+                  <Input
+                    type="password"
+                    value={redditCookie}
+                    onChange={e => setRedditCookie(e.target.value)}
+                    placeholder="reddit_session cookie value"
+                  />
+                </div>
+              </div>
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  Public accounts work without a cookie. To get your session cookie, open Reddit in a browser, open DevTools (F12), go to Application &gt; Cookies, and copy the <code className="bg-muted px-1 rounded">reddit_session</code> value.
                 </AlertDescription>
               </Alert>
             </TabsContent>
@@ -330,6 +423,12 @@ export default function AccountManager() {
                 Add Channel
               </Button>
             )}
+            {dialogTab === 'reddit' && (
+              <Button onClick={handleAddReddit} disabled={!redditUsername.trim() || addingReddit} className="gap-1.5">
+                {addingReddit && <RefreshCw className="h-3.5 w-3.5 animate-spin" />}
+                Add Reddit Account
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -337,22 +436,29 @@ export default function AccountManager() {
   );
 }
 
-function AccountCard({ acct, isIG, metrics, refreshingId, onRefresh, onDelete }) {
+function AccountCard({ acct, platform, metrics, refreshingId, onRefresh, onDelete }) {
+  const isIG     = platform === 'instagram';
+  const isReddit = platform === 'reddit';
   const initials = (acct.title || '?').slice(0, 2).toUpperCase();
+  const fallbackBg = isIG ? 'bg-pink-500' : isReddit ? 'bg-orange-500' : 'bg-red-500';
+  const subtitle = isIG
+    ? `@${acct.username || acct.igUsername || ''}`
+    : isReddit
+    ? `u/${acct.username || ''}`
+    : (acct.customUrl || '');
+
   return (
     <div className="border border-border rounded-xl p-4 bg-card hover:shadow-sm transition-shadow space-y-3">
       <div className="flex items-center gap-3">
         <Avatar className="h-11 w-11">
           <AvatarImage src={acct.thumbnail || acct.profilePictureUrl || acct.thumbnails?.default} />
-          <AvatarFallback className={`text-xs font-bold text-white ${isIG ? 'bg-pink-500' : 'bg-red-500'}`}>
+          <AvatarFallback className={`text-xs font-bold text-white ${fallbackBg}`}>
             {initials}
           </AvatarFallback>
         </Avatar>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold truncate">{acct.title || acct.channelId}</p>
-          <p className="text-xs text-muted-foreground truncate">
-            {isIG ? `@${acct.username || acct.igUsername || ''}` : (acct.customUrl || '')}
-          </p>
+          <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
         </div>
       </div>
 
