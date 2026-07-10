@@ -49,6 +49,7 @@ All secrets are set via `wrangler secret put <NAME>`. They are available at runt
 | `FRONTEND_URL` | Yes | Frontend URL (for post-OAuth redirect back to the SPA) |
 | `UPSTASH_REDIS_REST_URL` | Optional | Upstash Redis endpoint; caching disabled if absent |
 | `UPSTASH_REDIS_REST_TOKEN` | Optional | Upstash auth token |
+| `REDDIT_ENCRYPTION_KEY` | Optional | 64-char hex (32 bytes) AES-256-GCM key for encrypting Reddit passwords; Reddit auto-refresh disabled if absent |
 
 ### Setting secrets
 

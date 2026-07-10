@@ -3,9 +3,10 @@ import {
     getAccounts, getAccountById, createAccount, updateAccount, deleteAccount,
 } from '../lib/db.js';
 import { deleteVideosCache, deleteIGCache, deleteRedditCache } from '../lib/cache.js';
+import { encryptPassword } from '../lib/crypto.js';
 import { fetchInstagramProfile, exchangeForLongLivedToken, refreshLongLivedToken } from '../services/instagram.js';
 import { resolveChannelId, fetchChannelData } from '../services/youtube.js';
-import { fetchRedditProfile, safeRedditAccount } from '../services/reddit.js';
+import { fetchRedditProfile, loginToReddit, safeRedditAccount } from '../services/reddit.js';
 
 const app = new Hono();
 
@@ -13,6 +14,7 @@ function safeAccount(account) {
     const copy = { ...account };
     delete copy.accessToken;
     delete copy.cookie;
+    delete copy.encryptedPassword;
     return copy;
 }
 
@@ -86,13 +88,27 @@ app.post('/accounts', async (c) => {
 
 app.post('/accounts/reddit', async (c) => {
     try {
-        const { username, cookie } = await c.req.json();
+        const { username, password } = await c.req.json();
         if (!username) return c.json({ success: false, message: 'Username is required' }, 400);
 
         const supabase = c.get('supabase');
         const userId = c.get('userId');
+        const cleanUsername = username.replace(/^u\//i, '').trim();
 
-        const profile = await fetchRedditProfile(username.replace(/^u\//i, '').trim(), cookie || null);
+        let cookieData = {};
+        let encryptedPassword = null;
+
+        if (password) {
+            const encKey = c.env.REDDIT_ENCRYPTION_KEY;
+            if (!encKey) {
+                return c.json({ success: false, message: 'REDDIT_ENCRYPTION_KEY is not configured on the server - run: wrangler secret put REDDIT_ENCRYPTION_KEY' }, 500);
+            }
+            const loginResult = await loginToReddit(cleanUsername, password);
+            cookieData = loginResult;
+            encryptedPassword = await encryptPassword(password, encKey);
+        }
+
+        const profile = await fetchRedditProfile(cleanUsername, cookieData.cookie ?? null);
 
         const accounts = await getAccounts(supabase, userId);
         if (accounts.find(a => a.platform === 'reddit' && a.username === profile.username)) {
@@ -109,7 +125,8 @@ app.post('/accounts/reddit', async (c) => {
             commentKarma: profile.commentKarma,
             iconUrl: profile.iconUrl,
             createdAt: profile.createdAt,
-            cookie: cookie || null,
+            encryptedPassword,
+            ...cookieData,
             addedAt: new Date().toISOString(),
             lastUpdated: new Date().toISOString(),
         };

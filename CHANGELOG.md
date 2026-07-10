@@ -9,6 +9,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+**Reddit Automatic Session Refresh**
+- `backend/lib/crypto.js` - AES-256-GCM encrypt/decrypt using `crypto.subtle` (Web Crypto API, no npm dependency)
+- `POST /api/accounts/reddit` now accepts `password` instead of `cookie`; logs in to Reddit automatically, encrypts the password with `REDDIT_ENCRYPTION_KEY`, and stores `cookie`, `cookieAcquiredAt`, `cookieExpiresAt` in `accounts.data`
+- `loginToReddit(username, password)` in `backend/services/reddit.js` - authenticates via `ssl.reddit.com/api/login` and returns `{ cookie, cookieAcquiredAt, cookieExpiresAt }`
+- `autoRefreshRedditSessions(supabase, encryptionKey)` in `backend/services/reddit.js` - cron handler that re-logs in any Reddit account whose cookie is older than 23 hours; runs on the `0 0 * * *` trigger alongside Instagram token refresh
+- `ensureFreshCookie()` in `backend/routes/reddit.js` - per-request freshness check before analytics/posts fetch; auto-re-logins if cookie is stale and credentials are stored
+- `safeAccount()` and `safeRedditAccount()` now also strip `encryptedPassword` from all API responses
+- Account Manager Reddit tab changed from manual cookie paste to username + password; shows session status badge on each Reddit account card (active / expired / public)
+- New Worker secret: `REDDIT_ENCRYPTION_KEY` (optional; Reddit auto-refresh disabled if absent)
+
 **Reddit Integration**
 - `POST /api/accounts/reddit` - add Reddit account by username with optional session cookie
 - `GET /api/accounts/:id/reddit-analytics` - full analytics: profile, score stats, subreddit breakdown, posting time patterns, monthly breakdown, virality and consistency scores

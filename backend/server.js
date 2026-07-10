@@ -13,6 +13,7 @@ import redditRouter from './routes/reddit.js';
 import { urlHandler, callbackHandler } from './routes/instagramAuth.js';
 import { processScheduledPosts } from './utils/scheduler.js';
 import { autoRefreshInstagramTokens } from './services/instagram.js';
+import { autoRefreshRedditSessions } from './services/reddit.js';
 
 const app = new Hono();
 
@@ -75,6 +76,7 @@ export default {
             ctx.waitUntil(processScheduledPosts(supabase));
         } else if (event.cron === '0 0 * * *') {
             ctx.waitUntil(autoRefreshInstagramTokens(supabase));
+            ctx.waitUntil(autoRefreshRedditSessions(supabase, env.REDDIT_ENCRYPTION_KEY));
         }
     },
 };
