@@ -298,3 +298,4 @@ When anything changes, update every relevant docs file from the table below. The
 | Workflow changed | `docs/workflows/` (relevant file) |
 | Guideline changed | `docs/guidelines/` (relevant file) |
 | Philosophy changed | `docs/philosophy/` (relevant file) |
+| Project setup, features, or deployment instructions change | `README.md` |

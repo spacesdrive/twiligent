@@ -4,13 +4,14 @@
 
   <h1>Twiligent</h1>
 
-  <p><strong>A self-hosted analytics and publishing dashboard for YouTube and Instagram.<br/>Your data. Your machine. No subscriptions.</strong></p>
+  <p><strong>A self-hosted analytics and publishing dashboard for YouTube and Instagram.<br/>Your data. Your infrastructure. No subscriptions.</strong></p>
 
   <p>
-    <a href="https://nodejs.org"><img src="https://img.shields.io/badge/Node.js-18%2B-339933?style=flat-square&logo=node.js&logoColor=white" alt="Node.js 18+" /></a>
     <a href="https://react.dev"><img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React 19" /></a>
     <a href="https://vitejs.dev"><img src="https://img.shields.io/badge/Vite-7-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite 7" /></a>
     <a href="https://tailwindcss.com"><img src="https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind CSS v4" /></a>
+    <a href="https://hono.dev"><img src="https://img.shields.io/badge/Hono-4-E36002?style=flat-square&logo=hono&logoColor=white" alt="Hono 4" /></a>
+    <a href="https://workers.cloudflare.com"><img src="https://img.shields.io/badge/Cloudflare_Workers-edge-F38020?style=flat-square&logo=cloudflare&logoColor=white" alt="Cloudflare Workers" /></a>
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-22c55e?style=flat-square" alt="MIT License" /></a>
   </p>
 
@@ -27,9 +28,9 @@
 
 ## What is Twiligent?
 
-Every analytics product wants a monthly subscription and access to your data. Twiligent is the alternative: a local-first dashboard that pulls your YouTube and Instagram stats directly from their official APIs, displays them in one place, and keeps everything on your machine.
+Every analytics product wants a monthly subscription and access to your data. Twiligent is the alternative: a self-hosted dashboard that pulls your YouTube and Instagram stats directly from their official APIs, displays them in one place, and runs entirely on infrastructure you control.
 
-No data leaves your computer except when you schedule an Instagram post through GitHub Actions. No accounts created on a third-party service. No ongoing cost beyond free API tiers.
+You deploy one Cloudflare Worker and one Cloudflare Pages site using your own API credentials. Your data is stored in your own Supabase database and cached in your own Upstash Redis instance. No shared infrastructure. No accounts created on third-party services beyond the free tiers you choose. No ongoing cost.
 
 ---
 
@@ -40,7 +41,7 @@ No data leaves your computer except when you schedule an Instagram post through 
 - [Quick Start](#quick-start)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
-- [API Keys Setup](#api-keys-setup)
+- [Configuration](#configuration)
 - [Scheduled Publishing with GitHub Actions](#scheduled-publishing-with-github-actions)
 - [How It Works](#how-it-works)
 - [Project Structure](#project-structure)
@@ -59,11 +60,11 @@ No data leaves your computer except when you schedule an Instagram post through 
 | **Instagram analytics** | Followers, engagement rate, virality score, consistency score, best posting day and hour, content-type performance, hashtag analysis, caption-length correlation |
 | **Unified overview** | Cross-platform totals, audience comparison chart, audience share pie, leaderboards |
 | **Content explorers** | Sortable and filterable grids for all YouTube Videos, all YouTube Shorts, and all Instagram Reels and posts |
-| **Scheduled publishing** | Schedule Instagram photos, Reels, and Stories; GitHub Actions publishes them every 15 minutes even when your machine is offline |
+| **Scheduled publishing** | Schedule Instagram photos, Reels, and Stories; a Cloudflare Worker cron publishes them every 15 minutes automatically |
 | **Bulk upload** | Upload multiple files at once, assign captions individually or apply a shared caption, schedule them with configurable intervals |
 | **Cloudinary CDN** | Upload media directly from the dashboard; Instagram requires public URLs before publishing |
-| **Token auto-refresh** | Instagram long-lived tokens renew automatically every 24 hours so analytics never break |
-| **Zero database** | All data lives in plain JSON files under `backend/data/` for easy backup and full control |
+| **Token auto-refresh** | Instagram long-lived tokens renew automatically every 24 hours via a daily Worker cron so analytics never break |
+| **Authentication** | Supabase Auth with email and password; each user's accounts and posts are fully isolated |
 | **Dark and light mode** | Toggle between themes from the header |
 
 ---
@@ -116,7 +117,7 @@ No data leaves your computer except when you schedule an Instagram post through 
     </td>
     <td width="33%" align="center">
       <img src="frontend/public/screenshots/Setting%20Page.png" alt="Settings" width="100%" />
-      <br/><sub><strong>Settings</strong> - manage YouTube API key, Instagram App credentials, and Cloudinary config in one place</sub>
+      <br/><sub><strong>Settings</strong> - configure your GitHub PAT and repository for the scheduled post fallback publisher</sub>
     </td>
   </tr>
 </table>
@@ -125,7 +126,7 @@ No data leaves your computer except when you schedule an Instagram post through 
 
 ## Quick Start
 
-Three steps to get running:
+Clone and install dependencies:
 
 ```bash
 git clone https://github.com/spacesdrive/twiligent.git
@@ -133,30 +134,31 @@ cd twiligent/backend && npm install
 cd ../frontend && npm install
 ```
 
-Then start both servers:
+Create `backend/.dev.vars` with your credentials (see [Configuration](#configuration)), then start both servers:
 
 ```bash
-# Terminal 1 - backend (port 3001)
-cd backend && npm run dev
+# Terminal 1 - backend (port 8787)
+cd backend && wrangler dev
 
 # Terminal 2 - frontend (port 5173)
 cd frontend && npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173), go to **Settings**, paste your YouTube API key, and add your first account.
+Open [http://localhost:5173](http://localhost:5173) and sign up for an account, then go to **Accounts** to add your first YouTube channel or Instagram account.
 
 ---
 
 ## Prerequisites
 
-| Requirement | Minimum version | Notes |
-|---|---|---|
-| Node.js | 18 | 20 recommended |
-| npm | 9 | included with Node.js |
-| YouTube Data API v3 key | - | required for YouTube analytics |
-| Instagram Graph API token | - | required for Instagram analytics |
-| Cloudinary account | - | optional; required for content publishing |
-| GitHub repository | - | optional; required for scheduled publishing |
+| Requirement | Notes |
+|---|---|
+| Node.js 20 | Required for Wrangler CLI |
+| Wrangler CLI | `npm install -g wrangler`, then `wrangler login` |
+| Cloudflare account | Free tier sufficient for Workers and Pages |
+| Supabase project | Free tier sufficient; create at [supabase.com](https://supabase.com) |
+| YouTube Data API v3 key | Required for YouTube analytics |
+| Instagram Graph API | Meta app of type Business required |
+| Cloudinary account | Required for content publishing only |
 
 ---
 
@@ -169,106 +171,173 @@ git clone https://github.com/spacesdrive/twiligent.git
 cd twiligent
 ```
 
-**2. Install backend dependencies**
+**2. Install dependencies**
 
 ```bash
 cd backend && npm install
+cd ../frontend && npm install
 ```
 
-**3. Install frontend dependencies**
+**3. Create the Supabase database tables**
 
-```bash
-cd frontend && npm install
+In your Supabase project, open the SQL editor and run the following:
+
+```sql
+-- Accounts table
+create table accounts (
+  id text primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  platform text not null,
+  data jsonb not null
+);
+
+-- Settings table
+create table settings (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  key text not null,
+  value jsonb,
+  primary key (user_id, key)
+);
+
+-- Scheduled posts table
+create table scheduled_posts (
+  id text primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  account_id text not null references accounts(id) on delete cascade,
+  status text not null default 'pending',
+  scheduled_at timestamptz not null,
+  data jsonb
+);
 ```
 
-**4. Start the development servers**
+**4. Configure credentials**
+
+See [Configuration](#configuration) below.
+
+**5. Start the development servers**
 
 ```bash
 # Terminal 1
-cd backend && npm run dev
+cd backend && wrangler dev
 
 # Terminal 2
 cd frontend && npm run dev
 ```
 
-The backend runs on port 3001. The frontend runs on port 5173. Open [http://localhost:5173](http://localhost:5173).
-
-All API keys are configured through the Settings page in the UI. No manual file editing required after initial clone.
+The backend runs on port 8787. The frontend runs on port 5173. Open [http://localhost:5173](http://localhost:5173).
 
 ---
 
-## API Keys Setup
+## Configuration
 
-### YouTube Data API v3
+### Local development (`backend/.dev.vars`)
+
+Create `backend/.dev.vars` (this file is gitignored):
+
+```
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+YOUTUBE_API_KEY=AIzaSy...
+INSTAGRAM_APP_ID=123456789
+INSTAGRAM_APP_SECRET=abc123...
+CLOUDINARY_CLOUD_NAME=mycloud
+CLOUDINARY_UPLOAD_PRESET=ml_default
+BACKEND_URL=http://localhost:8787
+FRONTEND_URL=http://localhost:5173
+UPSTASH_REDIS_REST_URL=https://...
+UPSTASH_REDIS_REST_TOKEN=...
+```
+
+`UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are optional. The app works without Redis - analytics are fetched live on every request with caching disabled.
+
+### Frontend environment variables (`frontend/.env.local`)
+
+```
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+VITE_API_URL=http://localhost:8787
+```
+
+### Production (Cloudflare Workers secrets)
+
+Set each secret via Wrangler:
+
+```bash
+wrangler secret put SUPABASE_URL
+wrangler secret put SUPABASE_SERVICE_KEY
+wrangler secret put SUPABASE_ANON_KEY
+wrangler secret put YOUTUBE_API_KEY
+wrangler secret put INSTAGRAM_APP_ID
+wrangler secret put INSTAGRAM_APP_SECRET
+wrangler secret put CLOUDINARY_CLOUD_NAME
+wrangler secret put CLOUDINARY_UPLOAD_PRESET
+wrangler secret put BACKEND_URL
+wrangler secret put FRONTEND_URL
+wrangler secret put UPSTASH_REDIS_REST_URL
+wrangler secret put UPSTASH_REDIS_REST_TOKEN
+```
+
+### Getting API credentials
+
+**YouTube Data API v3**
 
 1. Open [Google Cloud Console](https://console.cloud.google.com/) and create a new project
 2. Navigate to **APIs and Services** then **Library**, search for "YouTube Data API v3", and enable it
 3. Go to **Credentials**, click **Create Credentials**, and select **API key**
 4. Optionally restrict the key to the YouTube Data API v3 for security
-5. Copy the key and paste it into the **Settings** page inside Twiligent
+5. Set it as `YOUTUBE_API_KEY`
 
-### Instagram Graph API
+**Instagram Graph API**
 
 Instagram requires a Business or Creator account linked to a Facebook Page.
 
 1. Go to [Meta for Developers](https://developers.facebook.com/) and create an app of type **Business**
 2. Add the **Instagram Graph API** product to your app
-3. Generate a User Access Token with the following permissions:
-   - `instagram_business_basic`
-   - `instagram_business_manage_insights`
-   - `instagram_business_content_publish` (required for publishing)
-4. The token from the App Dashboard is already long-lived (60 days). Twiligent auto-refreshes it before expiry.
-5. In Twiligent, go to **Accounts**, click **Add Instagram Account**, and paste the token
+3. Note your **App ID** and **App Secret** from the app's Basic Settings
+4. Set `INSTAGRAM_APP_ID` and `INSTAGRAM_APP_SECRET`
+5. In Twiligent, go to **Accounts** and use the **Connect Instagram** flow to authorize accounts via OAuth
 
-**Optional:** Save your Instagram App ID and App Secret in **Settings** to enable automatic short-to-long-lived token exchange when adding accounts.
-
-### Cloudinary (required for publishing only)
+**Cloudinary (required for publishing only)**
 
 1. Sign up at [cloudinary.com](https://cloudinary.com) (free tier: 25 GB storage, 25 GB bandwidth per month)
-2. From the Cloudinary dashboard, copy your **Cloud name**, **API Key**, and **API Secret**
+2. From the Cloudinary dashboard, copy your **Cloud name**
 3. Create an **unsigned upload preset** in Cloudinary (Settings then Upload then Upload presets)
-4. Paste all four values into the Cloudinary section of Twiligent Settings
+4. Set `CLOUDINARY_CLOUD_NAME` and `CLOUDINARY_UPLOAD_PRESET`
 
 ---
 
 ## Scheduled Publishing with GitHub Actions
 
-Twiligent uses a GitHub Actions workflow to publish scheduled Instagram posts every 15 minutes. Posts publish on time even when your machine is offline.
+Twiligent uses a dual-scheduler approach to publish Instagram posts reliably:
+
+1. **Primary:** The Cloudflare Worker has a built-in cron trigger that fires every 15 minutes. No setup required - it runs automatically once the Worker is deployed.
+2. **Fallback:** A GitHub Actions workflow (`publish-scheduled.yml`) also runs every 15 minutes. It serves as a backup in case the Worker cron misses a cycle.
+
+Both schedulers write to the same `scheduled_posts` table in Supabase. A `publishing` status flag acts as a mutex to prevent the same post from being published twice.
 
 ### How scheduling works
 
 1. You schedule a post through the **Publish** page (photo, reel, or story with caption and optional metadata)
-2. The post is saved locally to `backend/data/scheduled_posts.json` and synced to your GitHub repo via the Contents API
-3. The GitHub Actions workflow runs on a 15-minute cron and checks for due posts
-4. Due posts are published to Instagram via the Graph API using your stored token
-5. The workflow commits the updated `scheduled_posts.json` back to the repo with status changed to `published`
-6. When your backend starts next time, it pulls the latest status from GitHub
+2. The post is saved to Supabase with `status: 'pending'` and a `scheduled_at` timestamp
+3. The Worker cron fires every 15 minutes, queries for due posts, and publishes them via the Instagram Graph API
+4. Each post is marked `publishing` before the API call and `published` or `failed` after
+5. The GitHub Actions workflow runs the same logic as a redundant fallback
 
-### Setup
+### Setup (GitHub Actions fallback only)
 
-**Step 1 - Push your repo to GitHub**
+The Cloudflare Worker cron requires no additional setup. To enable the GitHub Actions fallback:
 
-The `backend/data/accounts.json` file is gitignored automatically to protect your tokens.
-
-**Step 2 - Encode your accounts file**
-
-```bash
-# macOS or Linux
-cat backend/data/accounts.json | base64
-
-# Windows PowerShell
-[Convert]::ToBase64String([IO.File]::ReadAllBytes("backend\data\accounts.json"))
-```
-
-**Step 3 - Add the repository secret**
+**Step 1 - Add repository secrets**
 
 Go to your GitHub repo, then **Settings**, then **Secrets and variables**, then **Actions**, then **New repository secret**:
 
 | Name | Value |
 |---|---|
-| `ACCOUNTS_JSON` | The base64 string from Step 2 |
+| `SUPABASE_URL` | Your Supabase project URL |
+| `SUPABASE_SERVICE_KEY` | Your Supabase service role key |
 
-**Step 4 - Enable Actions**
+**Step 2 - Enable Actions**
 
 Go to your repo then **Actions** and enable workflows if prompted. The `Instagram Scheduled Publisher` workflow starts automatically on the cron schedule.
 
@@ -280,31 +349,33 @@ Go to your repo then **Actions** and enable workflows if prompted. The `Instagra
 
 ```mermaid
 flowchart TD
-    A[Browser - localhost:5173] -->|REST API calls| B[Express Backend - localhost:3001]
-    B -->|YouTube Data API v3| C[Google APIs]
-    B -->|Instagram Graph API v25| D[Meta APIs]
-    B -->|Upload preset| E[Cloudinary CDN]
-    B -->|Contents API| F[GitHub Repository]
-    F -->|Cron every 15 min| G[GitHub Actions]
-    G -->|Graph API publish| D
-    G -->|Commit status update| F
-    B -->|On startup| F
-    B -->|JSON read/write| H[(backend/data/)]
-    H --- H1[accounts.json]
-    H --- H2[scheduled_posts.json]
-    H --- H3[api_keys.json]
-    H --- H4[videos_cache.json]
-    H --- H5[ig_cache.json]
+    A[Browser - Cloudflare Pages] -->|HTTPS + Bearer JWT| B[Cloudflare Worker - Hono]
+    B -->|JWT verification| C[Supabase Auth]
+    B -->|Read/write data| D[(Supabase Postgres)]
+    B -->|Cache get/set| E[(Upstash Redis)]
+    B -->|YouTube Data API v3| F[Google APIs]
+    B -->|Instagram Graph API v25| G[Meta APIs]
+    B -->|Upload preset config| H[Cloudinary CDN]
+    B -->|Worker cron every 15 min| B
+    B -->|Publish scheduled posts| G
+    I[GitHub Actions - every 15 min] -->|Read pending posts| D
+    I -->|Publish fallback| G
 ```
 
-**Backend startup sequence:**
+**Request lifecycle:**
 
-1. Initialize JSON data files if they do not exist
-2. Pull latest `scheduled_posts.json` from GitHub to sync any posts published while offline
-3. Check for overdue pending posts and publish them immediately
-4. Start the 60-second scheduler loop for upcoming posts
-5. Start the 24-hour Instagram token auto-refresh cycle
-6. Remove `accounts.json` from GitHub if it was accidentally committed
+1. The browser sends a request with a Supabase JWT in the `Authorization: Bearer` header
+2. The Cloudflare Worker verifies the JWT and extracts the user ID
+3. Route handlers query Supabase using the verified user ID as an isolation filter
+4. Frequently accessed data (analytics) is read from Upstash Redis if available; otherwise fetched live from the platform APIs and cached
+5. Responses are returned as JSON; access tokens are always stripped before leaving the Worker
+
+**Cron lifecycle:**
+
+1. The Cloudflare scheduler fires the Worker on a `*/15 * * * *` cron
+2. The Worker queries `scheduled_posts` for rows with `status = 'pending'` and `scheduled_at <= now()`
+3. Each due post is set to `publishing` (mutex), published to Instagram, then set to `published` or `failed`
+4. A separate `0 0 * * *` cron refreshes expiring Instagram access tokens across all users
 
 ---
 
@@ -314,29 +385,31 @@ flowchart TD
 twiligent/
 ├── .github/
 │   └── workflows/
-│       └── publish-scheduled.yml    # Cron workflow (every 15 minutes)
+│       ├── deploy-backend.yml       # Wrangler deploy on backend changes
+│       ├── deploy-frontend.yml      # Cloudflare Pages deploy on frontend changes
+│       └── publish-scheduled.yml    # Scheduled post fallback (every 15 minutes)
 │
 ├── backend/
-│   ├── data/                        # JSON storage (accounts.json is gitignored)
-│   │   ├── api_keys.json            # API credentials
-│   │   ├── scheduled_posts.json     # Post queue synced via GitHub API
-│   │   ├── videos_cache.json        # YouTube video analytics cache
-│   │   └── ig_cache.json            # Instagram media cache
+│   ├── lib/
+│   │   ├── db.js                    # All Supabase query functions (single source)
+│   │   ├── cache.js                 # Redis cache helpers (silent fail on error)
+│   │   ├── redis.js                 # Upstash Redis client factory
+│   │   └── supabase.js              # Supabase client factory
+│   ├── middleware/
+│   │   └── auth.js                  # requireAuth: JWT verification, sets userId
 │   ├── routes/
 │   │   ├── accounts.js              # Add, remove, and refresh accounts
-│   │   ├── analytics.js             # Fetch YouTube and Instagram analytics
-│   │   ├── publishing.js            # Publish content to Instagram Graph API
-│   │   ├── scheduledPosts.js        # CRUD for the post schedule
-│   │   ├── github.js                # GitHub sync and pull endpoints
-│   │   └── keys.js                  # API key management
+│   │   ├── analytics.js             # YouTube and Instagram analytics
+│   │   ├── publishing.js            # Instagram Graph API publish flow
+│   │   ├── scheduledPosts.js        # CRUD for scheduled post queue
+│   │   ├── instagramAuth.js         # Instagram OAuth flow
+│   │   ├── settings.js              # User settings (GitHub PAT)
+│   │   └── keys.js                  # API key presence check
 │   ├── services/
 │   │   ├── youtube.js               # YouTube Data API v3 client
-│   │   ├── instagram.js             # Instagram Graph API client with retry and timeout
-│   │   └── github.js                # GitHub Contents API and Actions Secrets client
-│   ├── utils/
-│   │   ├── dataHelpers.js           # JSON file read and write utilities
-│   │   └── scheduler.js             # Due-post detection and publish loop
-│   └── server.js                    # Express entry point
+│   │   └── instagram.js             # Instagram Graph API client
+│   ├── server.js                    # Hono app + Worker export (fetch + scheduled)
+│   └── wrangler.toml                # Cloudflare Worker config and cron triggers
 │
 ├── frontend/
 │   └── src/
@@ -350,18 +423,18 @@ twiligent/
 │       │   │   └── reels/           # Instagram content explorer
 │       │   ├── accounts/            # Account management UI
 │       │   ├── publishing/          # Single and bulk upload with scheduler
-│       │   └── settings/            # API key configuration
+│       │   └── settings/            # GitHub PAT configuration
+│       ├── context/
+│       │   └── AppContext.jsx       # Global accounts and loading state
 │       ├── layout/
 │       │   ├── Sidebar.jsx          # Collapsible navigation sidebar
 │       │   └── Header.jsx           # Breadcrumbs, refresh, theme toggle
 │       ├── components/ui/           # shadcn/ui components and custom primitives
-│       ├── context/
-│       │   └── AppContext.jsx       # Global accounts and loading state
 │       └── services/
-│           └── api.js               # Typed frontend API client
+│           └── api.js               # Frontend API client (all fetch calls)
 │
 └── scripts/
-    └── publish-scheduled.js         # Node.js script run by GitHub Actions
+    └── publish-scheduled.js         # Node.js script run by GitHub Actions fallback
 ```
 
 ---
@@ -386,20 +459,23 @@ twiligent/
 
 | Library | Version | Purpose |
 |---|---|---|
-| Express | 4 | HTTP server and routing |
-| node-fetch | 2 | HTTP client for external APIs |
-| libsodium-wrappers | latest | Encrypts GitHub Actions secrets |
-| nodemon | latest | Development server with hot reload |
+| Hono | 4 | Web framework for Cloudflare Workers |
+| @supabase/supabase-js | 2 | Supabase client for database and auth |
+| @upstash/redis | 1 | Edge-compatible Redis client for caching |
+| Wrangler | 3 | Cloudflare Workers CLI (dev and deploy) |
 
 **Infrastructure**
 
 | Service | Purpose |
 |---|---|
+| Cloudflare Workers | Backend API and built-in cron scheduler |
+| Cloudflare Pages | Frontend SPA hosting with CI/CD |
+| Supabase | PostgreSQL database and authentication (JWT) |
+| Upstash Redis | Analytics caching layer (optional) |
 | YouTube Data API v3 | Channel and video analytics |
 | Instagram Graph API v25 | Account analytics and content publishing |
 | Cloudinary | Media CDN (Instagram requires public URLs) |
-| GitHub Contents API | Syncing scheduled posts across devices |
-| GitHub Actions | Cloud-based cron publishing (free tier) |
+| GitHub Actions | Fallback cron publisher and deployment CI/CD |
 
 ---
 
@@ -414,10 +490,10 @@ Most analytics tools share one or more of these problems:
 
 Twiligent is different on each point:
 
-- **Free to run.** Uses only free API tiers and GitHub Actions free minutes
+- **Free to run.** Uses only free API tiers, free Cloudflare Workers and Pages, and free Supabase and Upstash tiers
 - **Multi-platform.** YouTube and Instagram in one unified view
-- **Self-hosted.** Your credentials and cached data never leave your machine
-- **Open and auditable.** Every API call is a readable service module; all data is a plain JSON file you can open in any editor
+- **Self-hosted.** You own every piece of the infrastructure: the Worker, the database, the cache, the credentials
+- **Open and auditable.** Every API call is a readable service module; the database schema is plain SQL you can inspect and export at any time
 
 ---
 
@@ -455,5 +531,5 @@ Please keep pull requests focused: one feature or fix per PR. Avoid unrelated re
 ---
 
 <div align="center">
-  <sub>Built with Express, React 19, Tailwind CSS v4, and the YouTube Data and Instagram Graph APIs.</sub>
+  <sub>Built with Hono, Cloudflare Workers, React 19, Tailwind CSS v4, Supabase, and the YouTube Data and Instagram Graph APIs.</sub>
 </div>
