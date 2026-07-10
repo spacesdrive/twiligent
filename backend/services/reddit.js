@@ -1,4 +1,6 @@
 // fetch is a global in Cloudflare Workers - no import needed.
+import { decryptPassword } from '../lib/crypto.js';
+import { getAccounts, updateAccount } from '../lib/db.js';
 
 const REDDIT_BASE = 'https://www.reddit.com';
 const USER_AGENT = 'Twiligent/1.0 (social analytics dashboard; personal use)';
@@ -244,5 +246,75 @@ export function computeRedditAnalytics(profile, posts) {
 export function safeRedditAccount(account) {
     const copy = { ...account };
     delete copy.cookie;
+    delete copy.encryptedPassword;
     return copy;
+}
+
+// Log in to Reddit using the old JSON API (returns session cookie in body, no redirect needed).
+export async function loginToReddit(username, password) {
+    const body = new URLSearchParams({ user: username, passwd: password, api_type: 'json' });
+    const res = await fetch('https://ssl.reddit.com/api/login', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'User-Agent': USER_AGENT,
+        },
+        body: body.toString(),
+    });
+
+    if (res.status === 429) throw new Error('Reddit rate limit - try again in a few minutes');
+    if (!res.ok) throw new Error(`Reddit login request failed with status ${res.status}`);
+
+    const data = await res.json();
+    const errors = data?.json?.errors ?? [];
+    if (errors.length > 0) {
+        const [[code, message]] = errors;
+        if (code === 'WRONG_PASSWORD') throw new Error('Incorrect Reddit password');
+        if (code === 'RATELIMIT') throw new Error('Too many login attempts - wait a few minutes and try again');
+        if (code === 'BAD_CAPTCHA') throw new Error('CAPTCHA required - try again in a few minutes');
+        throw new Error(message || 'Reddit login failed');
+    }
+
+    const cookieValue = data?.json?.data?.cookie;
+    if (!cookieValue) throw new Error('Login succeeded but Reddit returned no session cookie');
+
+    return {
+        cookie: cookieValue,
+        cookieAcquiredAt: new Date().toISOString(),
+        // Reddit session cookies from this API last approximately 24 hours
+        cookieExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+    };
+}
+
+// Cron handler: refresh Reddit session cookies for accounts with stored credentials
+// whose cookie is approaching expiry (older than 23 hours).
+export async function autoRefreshRedditSessions(supabase, encryptionKey) {
+    if (!encryptionKey) return;
+
+    let accounts;
+    try {
+        accounts = await getAccounts(supabase);
+    } catch (err) {
+        console.error('autoRefreshRedditSessions: failed to query accounts:', err.message);
+        return;
+    }
+
+    const threshold = 23 * 60 * 60 * 1000;
+    const stale = accounts.filter(a =>
+        a.platform === 'reddit' &&
+        a.encryptedPassword &&
+        a.cookieAcquiredAt &&
+        (Date.now() - new Date(a.cookieAcquiredAt).getTime()) > threshold
+    );
+
+    for (const account of stale) {
+        try {
+            const password = await decryptPassword(account.encryptedPassword, encryptionKey);
+            const { cookie, cookieAcquiredAt, cookieExpiresAt } = await loginToReddit(account.username, password);
+            await updateAccount(supabase, account.id, { cookie, cookieAcquiredAt, cookieExpiresAt, lastUpdated: new Date().toISOString() });
+            console.log(`Refreshed Reddit session for u/${account.username}`);
+        } catch (err) {
+            console.error(`Failed to refresh Reddit session for u/${account.username}:`, err.message);
+        }
+    }
 }

@@ -28,9 +28,11 @@ Both cron triggers invoke the `scheduled` export from `backend/server.js`.
 
 **Concurrency safety:** The `'publishing'` status acts as a mutex. If the Worker cron and GitHub Actions cron overlap, the second one to claim a post will find it already in `'publishing'` state and skip it (it won't appear in the `status=pending` query).
 
-### `0 0 * * *` - Instagram Token Auto-Refresh
+### `0 0 * * *` - Instagram Token Auto-Refresh + Reddit Session Refresh
 
-**Function:** `autoRefreshInstagramTokens(supabase)` in `backend/services/instagram.js`
+Two functions run in parallel via `ctx.waitUntil()`:
+
+**1. `autoRefreshInstagramTokens(supabase)` in `backend/services/instagram.js`**
 
 **What it does:**
 1. Queries all accounts with `platform = 'instagram'`
@@ -43,6 +45,21 @@ Both cron triggers invoke the `scheduled` export from `backend/server.js`.
 - Tokens must be refreshed before they expire
 - The daily cron refreshes any token expiring within 15 days
 - This gives a 15-day window for recovery if the cron fails for a few days
+
+**2. `autoRefreshRedditSessions(supabase, encryptionKey)` in `backend/services/reddit.js`**
+
+**What it does:**
+1. Queries all accounts with `platform = 'reddit'` that have `encryptedPassword` set
+2. For each, checks if `cookieAcquiredAt` is older than 23 hours
+3. If stale: decrypts the stored password using `REDDIT_ENCRYPTION_KEY` and calls `loginToReddit(username, password)`
+4. Updates `cookie`, `cookieAcquiredAt`, and `cookieExpiresAt` in Supabase
+5. Logs success or error per account; never throws - failures are non-fatal
+
+**Cookie lifecycle:**
+- Reddit session cookies obtained via `ssl.reddit.com/api/login` last approximately 24 hours
+- The daily cron refreshes cookies older than 23 hours
+- If `REDDIT_ENCRYPTION_KEY` is not set, this function exits immediately (no-op)
+- Accounts without a stored encrypted password (public-only access) are skipped
 
 ## The `ctx.waitUntil()` Pattern
 

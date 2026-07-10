@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Plus, Trash2, RefreshCw, Search, Users, CheckCircle2,
   Tv, Camera, Link2, Info, ExternalLink, MessageSquare,
+  Lock, Unlock, Globe,
 } from 'lucide-react';
 import MainCard from '../../components/MainCard';
 import { useAppContext } from '../../context/AppContext';
@@ -28,7 +29,7 @@ export default function AccountManager() {
   const [adding,       setAdding]       = useState(false);
   const [connecting,      setConnecting]      = useState(false);
   const [redditUsername,  setRedditUsername]  = useState('');
-  const [redditCookie,    setRedditCookie]    = useState('');
+  const [redditPassword,  setRedditPassword]  = useState('');
   const [addingReddit,    setAddingReddit]    = useState(false);
   const [refreshingId,    setRefreshingId]    = useState(null);
 
@@ -135,10 +136,8 @@ export default function AccountManager() {
     if (!redditUsername.trim()) return;
     setAddingReddit(true);
     try {
-      await api.addRedditAccount(redditUsername.trim(), redditCookie.trim() || null);
+      await api.addRedditAccount(redditUsername.trim(), redditPassword.trim() || null);
       showToast('Reddit account added');
-      setRedditUsername('');
-      setRedditCookie('');
       closeDialog();
       loadAccounts();
     } catch (err) {
@@ -153,7 +152,7 @@ export default function AccountManager() {
     setResolved(null);
     setInput('');
     setRedditUsername('');
-    setRedditCookie('');
+    setRedditPassword('');
   };
 
   const ytAccounts     = accounts.filter(a => a.platform !== 'instagram' && a.platform !== 'reddit');
@@ -381,7 +380,7 @@ export default function AccountManager() {
 
             <TabsContent value="reddit" className="space-y-4 mt-4">
               <p className="text-sm text-muted-foreground">
-                Enter your Reddit username to track your public post analytics.
+                Enter your Reddit username. Add your password to enable automatic session refresh.
               </p>
               <div className="space-y-3">
                 <div className="relative">
@@ -396,20 +395,21 @@ export default function AccountManager() {
                 </div>
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">
-                    Session Cookie (optional - for private accounts or higher rate limits)
+                    Password (optional - enables automatic session refresh)
                   </label>
                   <Input
                     type="password"
-                    value={redditCookie}
-                    onChange={e => setRedditCookie(e.target.value)}
-                    placeholder="reddit_session cookie value"
+                    value={redditPassword}
+                    onChange={e => setRedditPassword(e.target.value)}
+                    placeholder="Reddit password"
+                    onKeyDown={e => e.key === 'Enter' && handleAddReddit()}
                   />
                 </div>
               </div>
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription className="text-xs">
-                  Public accounts work without a cookie. To get your session cookie, open Reddit in a browser, open DevTools (F12), go to Application &gt; Cookies, and copy the <code className="bg-muted px-1 rounded">reddit_session</code> value.
+                  Public accounts work without a password - analytics are fetched from Reddit's public API. Adding your password stores it encrypted on the server and enables automatic session refresh every 24 hours for private accounts or higher rate limits.
                 </AlertDescription>
               </Alert>
             </TabsContent>
@@ -471,6 +471,28 @@ function AccountCard({ acct, platform, metrics, refreshingId, onRefresh, onDelet
         ))}
       </div>
 
+      {isReddit && (
+        <div className="flex items-center gap-1.5 text-xs">
+          {acct.cookieExpiresAt ? (
+            new Date(acct.cookieExpiresAt) > new Date() ? (
+              <>
+                <Lock className="h-3 w-3 text-green-500" />
+                <span className="text-green-600">Session active - auto-refresh on</span>
+              </>
+            ) : (
+              <>
+                <Unlock className="h-3 w-3 text-red-500" />
+                <span className="text-red-600">Session expired - refresh account</span>
+              </>
+            )
+          ) : (
+            <>
+              <Globe className="h-3 w-3 text-muted-foreground" />
+              <span className="text-muted-foreground">Public access only</span>
+            </>
+          )}
+        </div>
+      )}
       {acct.lastUpdated && (
         <p className="text-xs text-muted-foreground">Updated {timeAgo(acct.lastUpdated)}</p>
       )}

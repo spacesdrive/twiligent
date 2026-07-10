@@ -310,3 +310,27 @@ Records every significant architectural decision, the alternatives considered, a
 - `reddit_session` cookies expire when the user's Reddit session ends - the user must re-enter the cookie if it expires
 - Reddit's public API has stricter rate limits (60 req/10min without auth) than the OAuth API (600 req/10min)
 - No token refresh cron - unlike Instagram, Reddit session cookies cannot be programmatically refreshed
+
+---
+
+## ADR-014: Reddit password stored AES-256-GCM encrypted for automatic session refresh
+
+**Date:** 2026-07-10
+**Status:** Accepted
+
+**Decision:** When a user adds a Reddit account with a password, the password is encrypted using AES-256-GCM via the Web Crypto API (`crypto.subtle`) and stored in `accounts.data.encryptedPassword`. The key is `REDDIT_ENCRYPTION_KEY`, a 32-byte random value stored as a Worker secret (hex string). The daily cron (`0 0 * * *`) decrypts the password and re-logs in when the session cookie is older than 23 hours.
+
+**Alternatives considered:**
+- Plaintext password storage: simpler but violates the principle that credentials at rest must not be recoverable without a key
+- OAuth 2.0 (script app): requires app registration, client credentials as Worker secrets, token grant flow - higher complexity with no benefit for a self-hosted single-operator deployment
+
+**Reasoning:**
+- `crypto.subtle` AES-GCM is available natively in Cloudflare Workers - no npm dependency needed
+- The encryption key (`REDDIT_ENCRYPTION_KEY`) never leaves the Worker environment; it is never stored in Supabase or returned by any API endpoint
+- AES-GCM is authenticated encryption - tampering with the ciphertext is detectable
+- Keeps the auto-refresh architecture consistent with Instagram's token refresh pattern
+
+**Trade-offs:**
+- If `REDDIT_ENCRYPTION_KEY` is lost, all stored Reddit passwords are unrecoverable - users would need to re-add their accounts with a new password
+- A compromised Worker environment (leaked `REDDIT_ENCRYPTION_KEY` + DB access) allows decryption of all stored passwords
+- Reddit's unofficial login API (`ssl.reddit.com/api/login`) is not a documented endpoint and could change without notice
