@@ -1,4 +1,4 @@
-# MCP: Context7 — Library Documentation
+# MCP: Context7 - Library Documentation
 
 ## Purpose
 
@@ -12,15 +12,15 @@ Context7 fetches current, version-accurate documentation for libraries and APIs.
 ## When to Use
 
 ✅ **Use Context7 for:**
-- Instagram Graph API — container creation params, field names, error codes
-- YouTube Data API v3 — endpoint params, quota costs, response shapes
-- Hono v4 — middleware API, context methods, routing
-- Supabase JS — client methods, query builder, auth API
-- Cloudflare Workers — runtime APIs, `ctx.waitUntil()`, env bindings
-- Recharts v3 — component props, data shapes, chart configuration
-- shadcn/ui components — available props, slot composition
-- React 19 — hooks API, new features
-- React Router v7 — `createBrowserRouter`, `Outlet`, nested routes
+- Instagram Graph API - container creation params, field names, error codes
+- YouTube Data API v3 - endpoint params, quota costs, response shapes
+- Hono v4 - middleware API, context methods, routing
+- Supabase JS - client methods, query builder, auth API
+- Cloudflare Workers - runtime APIs, `ctx.waitUntil()`, env bindings
+- Recharts v3 - component props, data shapes, chart configuration
+- shadcn/ui components - available props, slot composition
+- React 19 - hooks API, new features
+- React Router v7 - `createBrowserRouter`, `Outlet`, nested routes
 
 ❌ **Do not use Context7 for:**
 - Debugging business logic (read the code instead)
@@ -31,7 +31,7 @@ Context7 fetches current, version-accurate documentation for libraries and APIs.
 ## Workflow
 
 1. `resolve-library-id` with the library name and your specific question
-2. Review results — pick the ID with the most relevant description and highest score
+2. Review results - pick the ID with the most relevant description and highest score
 3. `query-docs` with the selected ID and your full question
 4. Apply the documentation to the implementation
 
@@ -70,7 +70,7 @@ query-docs: "How do I create an AreaChart with multiple data series,
 
 ## Tips
 
-- Be specific in your query — include the exact method name or concept
+- Be specific in your query - include the exact method name or concept
 - If the first result doesn't match, try alternate names (e.g., "next.js" not "nextjs", "hono.js" not "honojs")
 - Use version-specific IDs when the project is on a specific version and the API has changed recently
-- The Supabase library has multiple IDs — prefer the one specifically for the JavaScript client
+- The Supabase library has multiple IDs - prefer the one specifically for the JavaScript client

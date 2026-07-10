@@ -14,13 +14,13 @@ All routes live under `/api`. Routes under the `api` sub-app require a valid Sup
 ### Keys
 | Method | Path | File | Purpose |
 |---|---|---|---|
-| GET | `/api/keys` | `routes/keys.js` | Returns `{ youtube: bool, instagram: bool, cloudinary: bool }` — whether each API key is configured |
+| GET | `/api/keys` | `routes/keys.js` | Returns `{ youtube: bool, instagram: bool, cloudinary: bool }` - whether each API key is configured |
 
 ### Accounts
 | Method | Path | File | Purpose |
 |---|---|---|---|
 | GET | `/api/accounts` | `routes/accounts.js` | List all user accounts (tokens stripped via `safeAccount()`) |
-| POST | `/api/accounts` | `routes/accounts.js` | Add YouTube channel — resolves URL/handle to channel ID, fetches stats |
+| POST | `/api/accounts` | `routes/accounts.js` | Add YouTube channel - resolves URL/handle to channel ID, fetches stats |
 | DELETE | `/api/accounts/:id` | `routes/accounts.js` | Remove account + invalidate Redis cache for that account |
 | POST | `/api/accounts/refresh-all` | `routes/accounts.js` | Refresh stats for every account; returns updated accounts list |
 | POST | `/api/accounts/:id/refresh` | `routes/accounts.js` | Refresh a single account's stats |
@@ -30,9 +30,9 @@ All routes live under `/api`. Routes under the `api` sub-app require a valid Sup
 ### Analytics
 | Method | Path | File | Purpose |
 |---|---|---|---|
-| GET | `/api/accounts/:id/analytics` | `routes/analytics.js` | Full YouTube analytics — fetches up to 500 videos, runs `computeVideoAnalytics()`, returns 50+ metrics |
+| GET | `/api/accounts/:id/analytics` | `routes/analytics.js` | Full YouTube analytics - fetches up to 500 videos, runs `computeVideoAnalytics()`, returns 50+ metrics |
 | GET | `/api/accounts/:id/videos` | `routes/analytics.js` | Returns cached video list (from Redis if available) |
-| GET | `/api/accounts/:id/ig-analytics` | `routes/analytics.js` | Instagram analytics — fetches up to 500 media, runs `computeInstagramAnalytics()` |
+| GET | `/api/accounts/:id/ig-analytics` | `routes/analytics.js` | Instagram analytics - fetches up to 500 media, runs `computeInstagramAnalytics()` |
 | GET | `/api/accounts/:id/ig-media` | `routes/analytics.js` | Returns cached Instagram media list |
 | GET | `/api/comparison` | `routes/analytics.js` | Cross-account comparison data for the Overview dashboard |
 
@@ -58,7 +58,7 @@ All routes live under `/api`. Routes under the `api` sub-app require a valid Sup
 | PUT | `/api/scheduled-posts/:id` | `routes/scheduledPosts.js` | Edit a pending post (caption, scheduled time, media, etc.) |
 | DELETE | `/api/scheduled-posts/:id` | `routes/scheduledPosts.js` | Delete a single post |
 | DELETE | `/api/scheduled-posts` | `routes/scheduledPosts.js` | Delete all posts except those with `status: 'publishing'` |
-| GET | `/api/process-scheduled` | `routes/scheduledPosts.js` | Manual trigger — runs `processScheduledPosts()` immediately (dev/test) |
+| GET | `/api/process-scheduled` | `routes/scheduledPosts.js` | Manual trigger - runs `processScheduledPosts()` immediately (dev/test) |
 | POST | `/api/process-scheduled` | `routes/scheduledPosts.js` | Same as above |
 
 ### Settings

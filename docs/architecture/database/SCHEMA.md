@@ -4,7 +4,7 @@
 
 Supabase (PostgreSQL) with three application tables. All tables include `user_id` (UUID) referencing `auth.users` to scope data per user.
 
-The backend uses the **service-role key** (bypasses Row Level Security) but enforces isolation by always appending `.eq('user_id', userId)` on user-scoped queries. The `userId` comes exclusively from the verified JWT — never from request input.
+The backend uses the **service-role key** (bypasses Row Level Security) but enforces isolation by always appending `.eq('user_id', userId)` on user-scoped queries. The `userId` comes exclusively from the verified JWT - never from request input.
 
 Cron handlers (`processScheduledPosts`, `autoRefreshInstagramTokens`) intentionally omit the `userId` filter to operate across all users.
 
@@ -17,7 +17,7 @@ Stores connected YouTube channels and Instagram accounts.
 | Column | Type | Nullable | Description |
 |---|---|---|---|
 | `id` | text | NOT NULL | PK. Client-generated: `Date.now().toString(36) + Math.random().toString(36).slice(2)` |
-| `user_id` | uuid | NOT NULL | FK → `auth.users.id`. All user-scoped queries filter on this. |
+| `user_id` | uuid | NOT NULL | FK -> `auth.users.id`. All user-scoped queries filter on this. |
 | `platform` | text | NOT NULL | `'youtube'` or `'instagram'` |
 | `data` | jsonb | NOT NULL | All platform-specific fields (see below) |
 
@@ -59,8 +59,8 @@ Stores connected YouTube channels and Instagram accounts.
 
 ### Indexes recommended
 
-- `accounts(user_id)` — speeds up all user-scoped queries
-- `accounts(platform)` — speeds up cross-user platform queries in cron handlers
+- `accounts(user_id)` - speeds up all user-scoped queries
+- `accounts(platform)` - speeds up cross-user platform queries in cron handlers
 
 ---
 
@@ -70,9 +70,9 @@ Per-user key-value configuration store.
 
 | Column | Type | Nullable | Description |
 |---|---|---|---|
-| `user_id` | uuid | NOT NULL | PK (composite). FK → `auth.users.id` |
+| `user_id` | uuid | NOT NULL | PK (composite). FK -> `auth.users.id` |
 | `key` | text | NOT NULL | PK (composite). Currently only `'api_keys'` |
-| `value` | jsonb | — | Configuration payload |
+| `value` | jsonb | - | Configuration payload |
 
 ### Primary key: `(user_id, key)`
 
@@ -98,20 +98,20 @@ Stores Instagram posts queued for future publishing.
 | Column | Type | Nullable | Description |
 |---|---|---|---|
 | `id` | text | NOT NULL | PK. Client-generated: same pattern as `accounts.id` |
-| `user_id` | uuid | NOT NULL | FK → `auth.users.id` |
-| `account_id` | text | NOT NULL | FK → `accounts.id` |
+| `user_id` | uuid | NOT NULL | FK -> `auth.users.id` |
+| `account_id` | text | NOT NULL | FK -> `accounts.id` |
 | `status` | text | NOT NULL | `'pending'`, `'publishing'`, `'published'`, `'failed'` |
 | `scheduled_at` | timestamptz | NOT NULL | UTC timestamp when the post should be published |
-| `data` | jsonb | — | Post content and result data (see below) |
+| `data` | jsonb | - | Post content and result data (see below) |
 
 ### Status lifecycle
 
 ```
-pending → publishing → published
+pending -> publishing -> published
                     ↘ failed
 ```
 
-The `publishing` status is a mutex — it prevents double-publishing when both the Worker cron and GitHub Actions scheduler fire at the same time.
+The `publishing` status is a mutex - it prevents double-publishing when both the Worker cron and GitHub Actions scheduler fire at the same time.
 
 ### `data` jsonb shape
 
@@ -136,14 +136,14 @@ The `publishing` status is a mutex — it prevents double-publishing when both t
 
 ### Indexes recommended
 
-- `scheduled_posts(user_id)` — user-scoped queries
-- `scheduled_posts(status, scheduled_at)` — the cron scheduler query: `status=pending AND scheduled_at <= now()`
+- `scheduled_posts(user_id)` - user-scoped queries
+- `scheduled_posts(status, scheduled_at)` - the cron scheduler query: `status=pending AND scheduled_at <= now()`
 
 ---
 
-## `lib/db.js` — Query Layer
+## `lib/db.js` - Query Layer
 
-All SQL operations are centralized in `backend/lib/db.js`. Route handlers and cron handlers import named functions from this file — they never call `supabase.from()` directly.
+All SQL operations are centralized in `backend/lib/db.js`. Route handlers and cron handlers import named functions from this file - they never call `supabase.from()` directly.
 
 ### Available functions
 
@@ -162,7 +162,7 @@ saveSettings(supabase, keys, userId)
 // Scheduled Posts
 getPosts(supabase, userId?)
 getPostById(supabase, id, userId?)
-getDuePosts(supabase)                // for cron — no userId filter, selects pending+overdue
+getDuePosts(supabase)                // for cron - no userId filter, selects pending+overdue
 createPost(supabase, post, userId)
 updatePost(supabase, id, updates, userId?)
 deletePost(supabase, id, userId?)

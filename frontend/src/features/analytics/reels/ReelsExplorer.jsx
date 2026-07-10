@@ -35,8 +35,8 @@ const MEDIA_TYPE_META = {
 const PERFORMANCE_TIERS = [
   { label: 'All',              value: 'all' },
   { label: 'Viral (>100K)',    value: 'viral',  min: 100000 },
-  { label: 'High (10K–100K)', value: 'high',   min: 10000, max: 100000 },
-  { label: 'Medium (1K–10K)', value: 'medium', min: 1000,  max: 10000 },
+  { label: 'High (10K-100K)', value: 'high',   min: 10000, max: 100000 },
+  { label: 'Medium (1K-10K)', value: 'medium', min: 1000,  max: 10000 },
   { label: 'Low (<1K)',        value: 'low',    max: 1000 },
 ];
 

@@ -4,7 +4,7 @@
 
 | Credential | Where stored | Who reads it | Exposed to client? |
 |---|---|---|---|
-| Supabase anon key | `VITE_SUPABASE_ANON_KEY` (env var in frontend build) | Frontend (Supabase JS auth) | **Yes — intentionally public** |
+| Supabase anon key | `VITE_SUPABASE_ANON_KEY` (env var in frontend build) | Frontend (Supabase JS auth) | **Yes - intentionally public** |
 | Supabase service role key | Worker secret | Worker only | **Never** |
 | Instagram App ID | Worker secret | Worker only | **Never** |
 | Instagram App Secret | Worker secret | Worker only | **Never** |
@@ -23,16 +23,16 @@ The service role key bypasses Supabase Row-Level Security and has full read/writ
 - Never referenced in frontend code
 - Never returned in any API response
 - Never logged
-- The `.dev.vars` file must remain in `.gitignore` — verify before every commit that touches the backend
+- The `.dev.vars` file must remain in `.gitignore` - verify before every commit that touches the backend
 
 ## User Access Token Protection
 
 Instagram access tokens grant posting authority on behalf of users. They must be treated with the same care as passwords.
 
 **Rules:**
-- Stored in `accounts.data.accessToken` (jsonb field, not a dedicated column — intentional)
+- Stored in `accounts.data.accessToken` (jsonb field, not a dedicated column - intentional)
 - Never selected and returned to the frontend. The `safeAccount()` function strips them before responses
-- When updating an account, the token field must survive the jsonb merge — never replace the whole `data` object with a subset
+- When updating an account, the token field must survive the jsonb merge - never replace the whole `data` object with a subset
 - When deleting an account, the token becomes inaccessible because the row is deleted
 
 ## User Row Isolation
@@ -50,8 +50,8 @@ const userId = c.get('userId');
 const { data } = await supabase
     .from('accounts')
     .select('*')
-    .eq('user_id', userId)  // ← always present
-    .eq('id', accountId);   // ← narrows to specific account
+    .eq('user_id', userId)  // <- always present
+    .eq('id', accountId);   // <- narrows to specific account
 
 // Wrong: no user_id filter
 const { data } = await supabase.from('accounts').select('*').eq('id', accountId);
@@ -93,9 +93,9 @@ The frontend must never:
 
 If a credential is compromised:
 1. Worker secrets: `wrangler secret put SECRET_NAME` then `wrangler deploy`
-2. GitHub Actions secrets: update in repository Settings → Secrets
+2. GitHub Actions secrets: update in repository Settings -> Secrets
 3. Instagram App Secret: rotate in Meta Developer dashboard, then update Worker secret
-4. Supabase service role key: rotate in Supabase project Settings → API
+4. Supabase service role key: rotate in Supabase project Settings -> API
 5. User Instagram tokens: user must reconnect their account via the OAuth flow
 
 There is no automated secrets rotation. This is a known gap.

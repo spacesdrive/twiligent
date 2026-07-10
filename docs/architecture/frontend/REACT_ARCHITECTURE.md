@@ -7,12 +7,12 @@
 | Framework | React | 19 |
 | Router | React Router | 7 |
 | Build tool | Vite | 7 |
-| UI components | shadcn/ui (base-nova style) | — |
+| UI components | shadcn/ui (base-nova style) | - |
 | Styling | Tailwind CSS | 4 |
 | Charts | Recharts | 3 |
-| Theming | next-themes | — |
-| Toasts | Sonner | — |
-| Icons | Lucide React | — |
+| Theming | next-themes | - |
+| Toasts | Sonner | - |
+| Icons | Lucide React | - |
 
 ## Entry: `frontend/src/main.jsx`
 
@@ -31,18 +31,18 @@ Defines the router, provider tree, and lazy-loaded page imports.
 ## Provider Tree
 
 ```
-ThemeProvider (next-themes)          ← OS/user theme preference
-  TooltipProvider (shadcn)           ← global tooltip context
-    AuthProvider (AuthContext.jsx)   ← Supabase session
+ThemeProvider (next-themes)          <- OS/user theme preference
+  TooltipProvider (shadcn)           <- global tooltip context
+    AuthProvider (AuthContext.jsx)   <- Supabase session
       Suspense (fallback=null)
         RouterProvider
-          /login → Login (no protection)
-          /* →
-            ProtectedRoute           ← redirects to /login if no session
-              AppProvider            ← accounts[], loading, showToast
-                MainLayout           ← sidebar + header + <Outlet />
+          /login -> Login (no protection)
+          /* ->
+            ProtectedRoute           <- redirects to /login if no session
+              AppProvider            <- accounts[], loading, showToast
+                MainLayout           <- sidebar + header + <Outlet />
                   (lazy page)
-      Toaster (Sonner, bottom-right) ← toast notifications
+      Toaster (Sonner, bottom-right) <- toast notifications
 ```
 
 **Why `AppProvider` is inside `ProtectedRoute`:** `AppProvider` calls `api.getAccounts()` on mount. This request requires a valid JWT. If `AppProvider` were outside `ProtectedRoute`, it would fire before auth is confirmed and fail with 401.
@@ -78,12 +78,12 @@ frontend/src/
     Login.jsx             Auth page (not lazy-loaded, always small)
   features/
     analytics/
-      overview/           Overview.jsx — all-accounts dashboard
-      channel/            ChannelAnalytics.jsx — per-channel YouTube
-      instagram/          InstagramAnalytics.jsx — per-account Instagram
-      videos/             VideoExplorer.jsx — all videos table
-      shorts/             ShortsExplorer.jsx — shorts-filtered table
-      reels/              ReelsExplorer.jsx — Instagram media grid
+      overview/           Overview.jsx - all-accounts dashboard
+      channel/            ChannelAnalytics.jsx - per-channel YouTube
+      instagram/          InstagramAnalytics.jsx - per-account Instagram
+      videos/             VideoExplorer.jsx - all videos table
+      shorts/             ShortsExplorer.jsx - shorts-filtered table
+      reels/              ReelsExplorer.jsx - Instagram media grid
     publishing/
       UploadContent.jsx   Instagram publishing + schedule queue
     accounts/

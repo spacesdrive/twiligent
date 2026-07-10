@@ -37,7 +37,7 @@ The `request()` function in `frontend/src/services/api.js` reads `data.error` an
 |---|---|
 | `200` | Successful GET, PUT, DELETE |
 | `201` | Successful POST that creates a resource |
-| `400` | Bad request — missing fields, invalid input |
+| `400` | Bad request - missing fields, invalid input |
 | `401` | Authentication required or token invalid (returned by `requireAuth`) |
 | `403` | Authenticated but not authorized (wrong user for this resource) |
 | `404` | Resource not found |
@@ -89,11 +89,11 @@ The backend extracts and verifies it in `requireAuth`. Route handlers access the
 
 ## Route Naming
 
-- Resource collections: plural noun — `/accounts`, `/scheduled-posts`
-- Single resources: `/:id` suffix — `/accounts/:id`
-- Sub-resources: nested — `/accounts/:id/analytics`, `/accounts/:id/ig-media`
-- Actions on resources: verb-noun — `/accounts/refresh-all`, `/accounts/:id/refresh`
-- Non-resource actions: verb noun — `/resolve-channel`, `/process-scheduled`
+- Resource collections: plural noun - `/accounts`, `/scheduled-posts`
+- Single resources: `/:id` suffix - `/accounts/:id`
+- Sub-resources: nested - `/accounts/:id/analytics`, `/accounts/:id/ig-media`
+- Actions on resources: verb-noun - `/accounts/refresh-all`, `/accounts/:id/refresh`
+- Non-resource actions: verb noun - `/resolve-channel`, `/process-scheduled`
 
 ## Frontend `api.js` Conventions
 

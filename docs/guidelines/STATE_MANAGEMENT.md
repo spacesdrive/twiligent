@@ -4,16 +4,16 @@
 
 ```
 Is the data needed by only one component?
-    → useState in that component
+    -> useState in that component
 
 Is the data needed by a few sibling/child components?
-    → useState in the closest common ancestor, passed as props
+    -> useState in the closest common ancestor, passed as props
 
 Is the data needed across many unrelated pages?
-    → AppContext (accounts, showToast)
+    -> AppContext (accounts, showToast)
 
 Is the data auth-related (session, user)?
-    → AuthContext
+    -> AuthContext
 ```
 
 ## Component-Level State (`useState`)
@@ -30,7 +30,7 @@ const [loading, setLoading] = useState(true);
 const [selectedTab, setSelectedTab] = useState('overview');
 ```
 
-## AppContext — What Belongs Here
+## AppContext - What Belongs Here
 
 `AppContext` currently provides:
 
@@ -38,29 +38,29 @@ const [selectedTab, setSelectedTab] = useState('overview');
 |---|---|---|
 | `accounts` | `Account[]` | Needed by Sidebar (nav links), Overview (dashboard), all analytics pages (lookup by ID), AccountManager (CRUD), Header (refresh button) |
 | `loading` | `boolean` | The global refresh spinner in Header |
-| `showToast` | `function` | Toast notifications from anywhere — avoids threading Sonner's `toast` import everywhere |
+| `showToast` | `function` | Toast notifications from anywhere - avoids threading Sonner's `toast` import everywhere |
 
 **Do not add** page-specific data to `AppContext`. If only one or two pages need a piece of data, keep it local.
 
-## AuthContext — What Belongs Here
+## AuthContext - What Belongs Here
 
 Only auth state:
-- `session` — the Supabase session object
-- `user` — shorthand for `session.user`
-- `signIn`, `signUp`, `signOut` — auth actions
+- `session` - the Supabase session object
+- `user` - shorthand for `session.user`
+- `signIn`, `signUp`, `signOut` - auth actions
 
-Feature pages should not need to read `AuthContext`. If a feature page needs the user's email or ID, reconsider — in most cases, the backend handles user scoping via the JWT, so the frontend doesn't need to know the userId.
+Feature pages should not need to read `AuthContext`. If a feature page needs the user's email or ID, reconsider - in most cases, the backend handles user scoping via the JWT, so the frontend doesn't need to know the userId.
 
 ## Derived State
 
 Prefer computing derived values at render time rather than storing them in state:
 
 ```jsx
-// Good — derive from existing state
+// Good - derive from existing state
 const youtubeAccounts = accounts.filter(a => a.platform === 'youtube');
 const totalViews = accounts.reduce((sum, a) => sum + (a.viewCount || 0), 0);
 
-// Bad — storing derived data in extra state
+// Bad - storing derived data in extra state
 const [youtubeAccounts, setYoutubeAccounts] = useState([]);
 useEffect(() => {
     setYoutubeAccounts(accounts.filter(a => a.platform === 'youtube'));
@@ -86,7 +86,7 @@ Use `useRef` for:
 - Referencing DOM elements (`ref={inputRef}; inputRef.current.focus()`)
 - Storing mutable values that should not trigger re-renders (e.g., a timer ID, a cancelled flag)
 
-Do not use `useRef` as a workaround for stale closures — fix the closure instead.
+Do not use `useRef` as a workaround for stale closures - fix the closure instead.
 
 ## No External State Library
 

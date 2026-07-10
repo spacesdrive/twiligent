@@ -25,12 +25,12 @@ async function igFetch(path, token, options = {}) {
 
 | Function | Purpose |
 |---|---|
-| `exchangeCodeForToken(code, env)` | Short-lived code → short-lived token (Instagram OAuth step 1) |
-| `exchangeForLongLivedToken(shortToken, env)` | Short-lived → 60-day long-lived token (Instagram OAuth step 2) |
+| `exchangeCodeForToken(code, env)` | Short-lived code -> short-lived token (Instagram OAuth step 1) |
+| `exchangeForLongLivedToken(shortToken, env)` | Short-lived -> 60-day long-lived token (Instagram OAuth step 2) |
 | `getIGProfile(accessToken)` | Fetches `id, username, account_type, media_count` for the token |
 | `getIGMedia(accessToken, limit)` | Paginates media items up to `limit` (default 500) |
 | `refreshLongLivedToken(accessToken)` | Extends a long-lived token; call before expiry |
-| `autoRefreshInstagramTokens(supabase)` | Cron handler — refreshes all tokens expiring within 15 days |
+| `autoRefreshInstagramTokens(supabase)` | Cron handler - refreshes all tokens expiring within 15 days |
 | `computeInstagramAnalytics(media, profile)` | Computes engagement rates, hashtag analysis, timing patterns, monthly breakdown |
 | `publishIGContainer(igUserId, params, token)` | Creates a media container via Graph API |
 | `publishIGMedia(igUserId, containerId, token)` | Publishes a container; returns `mediaId` |

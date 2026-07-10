@@ -1,8 +1,8 @@
-# MCP: Sequential Thinking — Planning and Debugging
+# MCP: Sequential Thinking - Planning and Debugging
 
 ## Purpose
 
-Sequential Thinking enables structured, step-by-step reasoning for complex problems. Use it before implementing anything non-trivial to produce a verified plan — not a list of guesses.
+Sequential Thinking enables structured, step-by-step reasoning for complex problems. Use it before implementing anything non-trivial to produce a verified plan - not a list of guesses.
 
 ## When to Use
 
@@ -74,8 +74,8 @@ Sequential Thinking would work through:
 ### Debugging double-publishing
 
 Sequential Thinking would walk through:
-- The `getDuePosts()` query — what exactly does it return?
-- The `status = 'publishing'` update — is it atomic?
+- The `getDuePosts()` query - what exactly does it return?
+- The `status = 'publishing'` update - is it atomic?
 - The race condition window between SELECT and UPDATE
 - Whether Supabase/PostgreSQL guarantees isolation at the right level
 - Whether the GitHub Actions workflow and Worker cron can actually overlap

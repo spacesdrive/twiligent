@@ -12,7 +12,7 @@ Request arrives
 2. Client injection        app.use('*', clientInjectionMiddleware)
     │
     ▼
-3. requireAuth             api.use('*', requireAuth)    ← protected routes only
+3. requireAuth             api.use('*', requireAuth)    <- protected routes only
     │
     ▼
 Route handler
@@ -25,7 +25,7 @@ Route handler
 **Source:** `hono/cors` (Hono built-in)  
 **Applied to:** Every request
 
-Configured with defaults — allows all origins in development. For production, the Worker's CORS behavior should be tightened to only allow `FRONTEND_URL`.
+Configured with defaults - allows all origins in development. For production, the Worker's CORS behavior should be tightened to only allow `FRONTEND_URL`.
 
 **Current config:** `cors()` with no options (allows all origins). This is acceptable for a self-hosted deployment where the Worker URL is not publicly advertised.
 
@@ -36,7 +36,7 @@ Configured with defaults — allows all origins in development. For production, 
 **Source:** Inline in `backend/server.js`  
 **Applied to:** Every request
 
-Creates per-request Supabase and Redis client instances and sets them on the Hono context. This is the correct pattern for Cloudflare Workers — clients must be created fresh per request because there is no persistent process memory.
+Creates per-request Supabase and Redis client instances and sets them on the Hono context. This is the correct pattern for Cloudflare Workers - clients must be created fresh per request because there is no persistent process memory.
 
 ```js
 app.use('*', async (c, next) => {
@@ -46,8 +46,8 @@ app.use('*', async (c, next) => {
 });
 ```
 
-**`getSupabase(env)`** — creates a Supabase client with the service-role key. Used for all DB operations.  
-**`getRedis(env)`** — creates an Upstash Redis client if `UPSTASH_REDIS_REST_URL` is set, otherwise returns `null`. All cache functions in `lib/cache.js` handle `null` silently.
+**`getSupabase(env)`** - creates a Supabase client with the service-role key. Used for all DB operations.  
+**`getRedis(env)`** - creates an Upstash Redis client if `UPSTASH_REDIS_REST_URL` is set, otherwise returns `null`. All cache functions in `lib/cache.js` handle `null` silently.
 
 ---
 
@@ -72,11 +72,11 @@ export async function requireAuth(c, next) {
 **What it does:**
 1. Extracts `Authorization: Bearer <token>` header
 2. Creates a Supabase **anon** client (not service-role) to verify the JWT
-3. Calls `supabaseAuth.auth.getUser(token)` — Supabase validates the token signature
+3. Calls `supabaseAuth.auth.getUser(token)` - Supabase validates the token signature
 4. Sets `userId` (UUID) and `userEmail` (string) on the Hono context
 5. Returns 401 JSON if token is missing, invalid, or expired
 
-**Critical:** `userId` from this middleware is the only trusted source of user identity. Route handlers must use `c.get('userId')` — never accept a userId from request body or query params.
+**Critical:** `userId` from this middleware is the only trusted source of user identity. Route handlers must use `c.get('userId')` - never accept a userId from request body or query params.
 
 ---
 

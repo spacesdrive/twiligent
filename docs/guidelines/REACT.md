@@ -102,7 +102,7 @@ function handleInputChange(e) { ... }
 
 ## Lazy Loading
 
-All pages are lazy-loaded via `React.lazy()` in `App.jsx`. Do not import pages directly — always use lazy imports for new pages.
+All pages are lazy-loaded via `React.lazy()` in `App.jsx`. Do not import pages directly - always use lazy imports for new pages.
 
 ```jsx
 const MyNewPage = lazy(() => import('./features/myFeature/MyNewPage'));
@@ -114,10 +114,10 @@ const MyNewPage = lazy(() => import('./features/myFeature/MyNewPage'));
 - `<button>` for actions, `<a>` for navigation
 - Images need `alt` attributes (empty string for decorative images)
 - Use semantic HTML: `<main>`, `<nav>`, `<section>`, `<article>` where appropriate
-- shadcn components handle most ARIA attributes automatically — use them as provided
+- shadcn components handle most ARIA attributes automatically - use them as provided
 
 ## Performance
 
-- Avoid large computations in render — move to `useMemo` if expensive
-- Avoid re-creating functions in render that are passed as props — use `useCallback`
+- Avoid large computations in render - move to `useMemo` if expensive
+- Avoid re-creating functions in render that are passed as props - use `useCallback`
 - The analytics computation functions (`computeVideoAnalytics`) run on the backend, not the frontend

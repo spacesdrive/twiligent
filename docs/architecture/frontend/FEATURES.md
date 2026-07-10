@@ -7,21 +7,21 @@ frontend/src/
 ├── features/
 │   ├── analytics/
 │   │   ├── channel/
-│   │   │   └── ChannelAnalytics.jsx        ← YouTube channel analytics
+│   │   │   └── ChannelAnalytics.jsx        <- YouTube channel analytics
 │   │   ├── instagram/
-│   │   │   └── InstagramAnalytics.jsx      ← Instagram account analytics
+│   │   │   └── InstagramAnalytics.jsx      <- Instagram account analytics
 │   │   └── overview/
-│   │       └── Overview.jsx                ← Cross-platform aggregate dashboard
+│   │       └── Overview.jsx                <- Cross-platform aggregate dashboard
 │   ├── accounts/
-│   │   └── Accounts.jsx                    ← Add/remove connected accounts
+│   │   └── Accounts.jsx                    <- Add/remove connected accounts
 │   ├── publish/
-│   │   └── Publish.jsx                     ← Instagram immediate publish
+│   │   └── Publish.jsx                     <- Instagram immediate publish
 │   ├── schedule/
-│   │   └── Schedule.jsx                    ← Instagram scheduled posts queue
+│   │   └── Schedule.jsx                    <- Instagram scheduled posts queue
 │   ├── settings/
-│   │   └── Settings.jsx                    ← GitHub PAT and other settings
+│   │   └── Settings.jsx                    <- GitHub PAT and other settings
 │   └── videos/
-│       └── VideoExplorer.jsx               ← YouTube video library with filtering
+│       └── VideoExplorer.jsx               <- YouTube video library with filtering
 ```
 
 ## Feature Conventions
@@ -31,8 +31,8 @@ frontend/src/
 Each top-level directory under `features/` represents a product area. Sub-directories represent per-platform views within that area.
 
 ```
-features/analytics/youtube/   ← correct
-features/ChannelAnalytics.jsx ← wrong (flat, not grouped)
+features/analytics/youtube/   <- correct
+features/ChannelAnalytics.jsx <- wrong (flat, not grouped)
 ```
 
 ### One page component per file
@@ -41,9 +41,9 @@ Each `.jsx` file in `features/` is a routable page. It is lazy-imported in `App.
 
 ```
 features/analytics/channel/
-  ChannelAnalytics.jsx         ← page (exported as default)
-  VideoCard.jsx                ← sub-component used only here
-  useChannelData.js            ← hook used only here
+  ChannelAnalytics.jsx         <- page (exported as default)
+  VideoCard.jsx                <- sub-component used only here
+  useChannelData.js            <- hook used only here
 ```
 
 Shared components used across multiple features go in `components/` (shadcn UI pieces) or `components/shared/` (custom cross-feature pieces).
@@ -54,14 +54,14 @@ Pages are entry points from the router. They get their context from `useAppConte
 
 ### Feature state is local
 
-Each page manages its own loading/data/error state. Pages do not write to `AppContext` — the context is for account list and toast only. If you need shared state between two pages, it belongs in the URL (query params or route params), not in context.
+Each page manages its own loading/data/error state. Pages do not write to `AppContext` - the context is for account list and toast only. If you need shared state between two pages, it belongs in the URL (query params or route params), not in context.
 
 ### Naming
 
-- Page files: `PascalCase.jsx` matching the feature name — `ChannelAnalytics.jsx`, `Schedule.jsx`
-- Sub-components: `PascalCase.jsx` named for what they render — `VideoCard.jsx`, `StatRow.jsx`
-- Hooks: `camelCase.js` with `use` prefix — `useChannelData.js`
-- Directories: `camelCase` matching the feature — `analytics/channel/`, `publish/`
+- Page files: `PascalCase.jsx` matching the feature name - `ChannelAnalytics.jsx`, `Schedule.jsx`
+- Sub-components: `PascalCase.jsx` named for what they render - `VideoCard.jsx`, `StatRow.jsx`
+- Hooks: `camelCase.js` with `use` prefix - `useChannelData.js`
+- Directories: `camelCase` matching the feature - `analytics/channel/`, `publish/`
 
 ## Current Features
 

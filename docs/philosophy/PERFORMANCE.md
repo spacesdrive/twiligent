@@ -6,21 +6,21 @@
 
 ```
 Request
-  → Redis (hot cache, ~1ms)    ← check first
+  -> Redis (hot cache, ~1ms)    <- check first
       hit: return immediately
       miss: fall through
-  → Platform API / Supabase    ← cold path
-      → populate Redis
-      → return result
+  -> Platform API / Supabase    <- cold path
+      -> populate Redis
+      -> return result
 ```
 
 ### Cache keys and TTLs
 
 | Resource | Cache key | TTL | Note |
 |---|---|---|---|
-| YouTube analytics | `videos:{userId}:{accountId}` | None set (bug — see ROADMAP) | Should be 1 hour |
-| Instagram analytics | `ig:{userId}:{accountId}` | None set (bug — see ROADMAP) | Should be 1 hour |
-| OAuth state | `oauth_ig:{state}` | 10 minutes | Security-critical — do not extend |
+| YouTube analytics | `videos:{userId}:{accountId}` | None set (bug - see ROADMAP) | Should be 1 hour |
+| Instagram analytics | `ig:{userId}:{accountId}` | None set (bug - see ROADMAP) | Should be 1 hour |
+| OAuth state | `oauth_ig:{state}` | 10 minutes | Security-critical - do not extend |
 
 Cache invalidation happens on:
 - Account deletion (explicit `redis.del()`)
@@ -39,10 +39,10 @@ await redis.set(key, data, { ex: 3600 }); // expire after 1 hour
 
 ## Edge Deployment
 
-The Cloudflare Worker runs at the edge — in a data center close to the user. This means:
+The Cloudflare Worker runs at the edge - in a data center close to the user. This means:
 - Low first-byte latency for API responses
 - Supabase queries go from the Worker (edge) to Supabase (centralized), so DB round-trips are fast but not zero
-- Platform API calls (Instagram, YouTube) happen from the Worker — not from the user's browser — eliminating client-side rate limit attribution
+- Platform API calls (Instagram, YouTube) happen from the Worker - not from the user's browser - eliminating client-side rate limit attribution
 
 ## Bundle Size
 
@@ -61,13 +61,13 @@ Analytics libraries (Recharts) and heavy page components are loaded on demand wh
 Cloudflare Workers have a CPU time limit of 50ms per request (on the free tier; up to 30 seconds on paid). Expensive operations to be aware of:
 - HMAC computation: negligible
 - Multiple sequential Supabase queries: watch for N+1 patterns
-- Large JSON serialization: analytics response objects can be large — profile them
+- Large JSON serialization: analytics response objects can be large - profile them
 
 If a route feels slow, add Redis caching first before optimizing the underlying query.
 
 ## What We Don't Optimize (Yet)
 
 - **Database indexes:** The `accounts` and `scheduled_posts` tables have only a primary key index. If query performance degrades as the table grows, add an index on `user_id`. See ROADMAP.
-- **Response compression:** Cloudflare automatically compresses Worker responses with gzip/brotli — no code needed.
+- **Response compression:** Cloudflare automatically compresses Worker responses with gzip/brotli - no code needed.
 - **Image optimization:** Cloudinary handles image resizing and format conversion for Instagram posts. No custom image optimization in the app layer.
 - **Frontend rendering performance:** The app is not a high-frequency update scenario. No virtualization, no memoization beyond standard React patterns. If analytics tables get large (1000+ rows), add pagination.

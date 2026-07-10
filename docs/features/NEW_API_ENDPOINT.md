@@ -108,7 +108,7 @@ Add the new routes to `docs/architecture/backend/ROUTES.md`.
 ## Security Checklist
 
 - [ ] Route is mounted under `api` (protected by `requireAuth`)
-- [ ] Route handler reads `userId` from `c.get('userId')` — not from request body
+- [ ] Route handler reads `userId` from `c.get('userId')` - not from request body
 - [ ] All DB queries include `.eq('user_id', userId)` for user-scoped data
 - [ ] Any account data in the response passes through `safeAccount()` if it contains tokens
 - [ ] Input validation returns 400 for missing required fields

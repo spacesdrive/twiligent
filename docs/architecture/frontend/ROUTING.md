@@ -8,8 +8,8 @@ The app uses React Router v6 in `frontend/src/App.jsx`. The router uses `Browser
 
 | Path | Component | Notes |
 |---|---|---|
-| `/login` | `Login.jsx` | Public — redirects to `/` if already authenticated |
-| `/` (layout) | `AppLayout` (inline) | Protected — redirects to `/login` if unauthenticated |
+| `/login` | `Login.jsx` | Public - redirects to `/` if already authenticated |
+| `/` (layout) | `AppLayout` (inline) | Protected - redirects to `/login` if unauthenticated |
 | `/` (index) | `Overview.jsx` | Default page after login |
 | `/accounts` | `Accounts.jsx` | Connect/disconnect accounts |
 | `/channel/:id` | `ChannelAnalytics.jsx` | `:id` = account.id for YouTube accounts |
@@ -67,14 +67,14 @@ All lazy components are wrapped in `<Suspense>` with a shared fallback.
 
 ## URL Parameters
 
-The `:id` param in per-account routes always refers to `account.id` — the primary key of the `accounts` table. Pages look up the account from `AppContext`:
+The `:id` param in per-account routes always refers to `account.id` - the primary key of the `accounts` table. Pages look up the account from `AppContext`:
 
 ```js
 const { id } = useParams();
 const account = accounts.find(a => a.id === id);
 ```
 
-If `account` is undefined (invalid ID or account deleted), the page renders an empty state — it does not redirect.
+If `account` is undefined (invalid ID or account deleted), the page renders an empty state - it does not redirect.
 
 ## Navigation
 

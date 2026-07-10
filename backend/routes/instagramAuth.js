@@ -1,4 +1,4 @@
-﻿import { createOAuthState, verifyOAuthState } from '../lib/cache.js';
+import { createOAuthState, verifyOAuthState } from '../lib/cache.js';
 import { createAccount, getAccounts } from '../lib/db.js';
 import { fetchInstagramProfile } from '../services/instagram.js';
 

@@ -8,7 +8,7 @@ Every route handler follows this exact shape:
 router.METHOD('/path', async (c) => {
     const userId = c.get('userId');         // from requireAuth middleware
     const supabase = c.get('supabase');     // from client injection middleware
-    const redis = c.get('redis');           // may be null — always guard
+    const redis = c.get('redis');           // may be null - always guard
     
     // 1. Read inputs
     const id = c.req.param('id');
@@ -30,7 +30,7 @@ router.METHOD('/path', async (c) => {
 
 ## Context Values
 
-Access these via `c.get()` — never reconstruct them inside handlers:
+Access these via `c.get()` - never reconstruct them inside handlers:
 
 | Key | Type | Notes |
 |---|---|---|
@@ -55,7 +55,7 @@ const body = await c.req.json();
 const auth = c.req.header('Authorization');
 ```
 
-Never destructure `c.req` directly — always call the method.
+Never destructure `c.req` directly - always call the method.
 
 ## Returning Responses
 
@@ -114,15 +114,15 @@ app.use('/api/*', async (c, next) => {
 ## Error Handling Rules
 
 - Always wrap external calls (Supabase, platform APIs) in try/catch
-- Log with `console.error('VERB /path:', err.message)` — include the route in the log
-- Never throw from a route handler — catch and return `c.json({ error }, status)`
+- Log with `console.error('VERB /path:', err.message)` - include the route in the log
+- Never throw from a route handler - catch and return `c.json({ error }, status)`
 - 400 for client errors (missing fields, invalid format, resource not found)
 - 500 for server errors (DB failures, external API failures)
 - Never expose stack traces in the response body
 
 ## What Not To Do
 
-- Do not import `env` directly — access it via `c.env` or via the middleware-injected clients
-- Do not use `c.env` directly in route handlers — always use `c.get('supabase')` / `c.get('redis')`
-- Do not build Supabase clients inside route handlers — the middleware does this once per request
-- Do not use `app.use()` for business logic — that is for cross-cutting middleware only
+- Do not import `env` directly - access it via `c.env` or via the middleware-injected clients
+- Do not use `c.env` directly in route handlers - always use `c.get('supabase')` / `c.get('redis')`
+- Do not build Supabase clients inside route handlers - the middleware does this once per request
+- Do not use `app.use()` for business logic - that is for cross-cutting middleware only

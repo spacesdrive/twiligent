@@ -29,7 +29,7 @@ Supabase errors are objects with `message`, `code`, and `details`. Throwing the 
 
 ### Cache Operations (lib/cache.js)
 
-Always catch and silently ignore — cache failures must never surface to users:
+Always catch and silently ignore - cache failures must never surface to users:
 
 ```js
 try {
@@ -39,7 +39,7 @@ try {
 }
 ```
 
-The empty `catch` block is intentional. Do not log cache errors — they create noise for transient Redis connection issues.
+The empty `catch` block is intentional. Do not log cache errors - they create noise for transient Redis connection issues.
 
 ### Route Handlers (routes/)
 
@@ -63,11 +63,11 @@ router.get('/accounts/:id/analytics', async (c) => {
 ```
 
 **Status codes:**
-- `400` — bad request (missing required fields, invalid input)
-- `401` — unauthorized (handled by `requireAuth`, not route handlers)
-- `403` — forbidden (account belongs to another user)
-- `404` — resource not found
-- `500` — unexpected server error
+- `400` - bad request (missing required fields, invalid input)
+- `401` - unauthorized (handled by `requireAuth`, not route handlers)
+- `403` - forbidden (account belongs to another user)
+- `404` - resource not found
+- `500` - unexpected server error
 
 ### Frontend API Calls
 
@@ -107,9 +107,9 @@ This is the last resort. Route handlers should not rely on it.
 
 ## Logging
 
-Use `console.error()` for errors in route handlers — Cloudflare Workers captures these in the dashboard logs.
+Use `console.error()` for errors in route handlers - Cloudflare Workers captures these in the dashboard logs.
 
-Format: `console.error('METHOD /path:', err.message)` — includes the route for easy filtering.
+Format: `console.error('METHOD /path:', err.message)` - includes the route for easy filtering.
 
 Do not log sensitive values: access tokens, API keys, user emails, Supabase URLs.
 

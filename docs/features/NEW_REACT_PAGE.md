@@ -108,9 +108,9 @@ getMyData: (id) => request(`/accounts/${id}/my-data`),
 
 ## Conventions
 
-- Use `useAppContext()` — don't re-fetch the accounts list, use what's in context
+- Use `useAppContext()` - don't re-fetch the accounts list, use what's in context
 - Always handle loading and error states
-- Use `Skeleton` components for loading state (not spinners — shadcn's Skeleton matches the page layout)
+- Use `Skeleton` components for loading state (not spinners - shadcn's Skeleton matches the page layout)
 - Use semantic HTML for the page structure
 - Wrap content in `className="p-6"` padding (matches existing pages)
 - Use `space-y-6` or `space-y-4` for vertical rhythm between sections
@@ -122,7 +122,7 @@ For pages that show aggregate data across all accounts (like Overview):
 ```jsx
 export default function MyAggregatePage() {
     const { accounts, loading: accountsLoading } = useAppContext();
-    // accounts is already loaded — no need to fetch
+    // accounts is already loaded - no need to fetch
     
     const summary = useMemo(() => {
         return accounts.reduce((sum, a) => sum + (a.viewCount || 0), 0);

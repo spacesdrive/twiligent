@@ -6,7 +6,7 @@
 |---|---|---|---|
 | Service client | `SUPABASE_SERVICE_KEY` | `getSupabase(env)` in `lib/supabase.js` | All DB operations (bypasses RLS) |
 | Auth client | `SUPABASE_ANON_KEY` | `getSupabaseAuth(env)` in `lib/supabase.js` | JWT verification only (`auth.getUser(token)`) |
-| Frontend client | `VITE_SUPABASE_ANON_KEY` | `lib/supabase.js` in frontend | Supabase Auth (sign in/out, session) — no DB queries |
+| Frontend client | `VITE_SUPABASE_ANON_KEY` | `lib/supabase.js` in frontend | Supabase Auth (sign in/out, session) - no DB queries |
 
 **Rule:** The service client is the only client used for database queries. The auth client is used exclusively in `requireAuth` middleware. The frontend client is used only for Supabase Auth, never for database access.
 
@@ -75,7 +75,7 @@ await supabase.from('accounts').update({
 }).eq('id', id);
 ```
 
-**Never replace the entire `data` object** without first reading the current value — you'll lose fields that aren't in the update.
+**Never replace the entire `data` object** without first reading the current value - you'll lose fields that aren't in the update.
 
 ## Row Isolation
 
@@ -83,7 +83,7 @@ Every user-scoped query must include `.eq('user_id', userId)`. Functions that in
 
 ```js
 export async function getDuePosts(supabase) {
-    // No userId filter — used by cron scheduler to process all users' posts
+    // No userId filter - used by cron scheduler to process all users' posts
     const { data, error } = await supabase
         .from('scheduled_posts')
         .select(...)
@@ -95,7 +95,7 @@ export async function getDuePosts(supabase) {
 
 ## Client Lifecycle
 
-Supabase clients are created fresh per request in the Worker — they are stateless HTTP clients and safe to create on each request. Do not cache client instances in module-level variables; they would hold references to a specific request's `env` bindings.
+Supabase clients are created fresh per request in the Worker - they are stateless HTTP clients and safe to create on each request. Do not cache client instances in module-level variables; they would hold references to a specific request's `env` bindings.
 
 ```js
 // lib/supabase.js
@@ -104,7 +104,7 @@ export function getSupabase(env) {
 }
 ```
 
-## Frontend — No DB Access
+## Frontend - No DB Access
 
 The frontend's Supabase client (`frontend/src/lib/supabase.js`) is used only for:
 - `supabase.auth.signInWithPassword()`

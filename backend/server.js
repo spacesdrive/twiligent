@@ -1,4 +1,4 @@
-﻿import { Hono } from 'hono';
+import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { getSupabase } from './lib/supabase.js';
 import { getRedis } from './lib/redis.js';

@@ -3,9 +3,9 @@
 ## When You Need a New Table
 
 Before creating a new table, consider whether the data fits the existing jsonb pattern:
-- If it's platform-specific configuration for an account → add fields to `accounts.data` jsonb
-- If it's per-user settings → use the `settings` table with a new `key`
-- If it's a new entity with its own lifecycle and queryable status → new table
+- If it's platform-specific configuration for an account -> add fields to `accounts.data` jsonb
+- If it's per-user settings -> use the `settings` table with a new `key`
+- If it's a new entity with its own lifecycle and queryable status -> new table
 
 ## Steps
 
@@ -36,9 +36,9 @@ CREATE INDEX content_drafts_status_idx ON content_drafts(status);
 
 ### Step 2: Create the Table in Supabase
 
-Option A: Supabase Dashboard → SQL Editor → paste and run the SQL above
+Option A: Supabase Dashboard -> SQL Editor -> paste and run the SQL above
 
-Option B: Supabase Dashboard → Table Editor → create visually
+Option B: Supabase Dashboard -> Table Editor -> create visually
 
 There is currently no migration tool configured. SQL is applied directly. **Document the SQL in this guide for future reference** if it needs to be recreated.
 
@@ -133,13 +133,13 @@ Update `docs/architecture/database/SCHEMA.md` with:
 ### Step 6: Wire Up the Feature
 
 Follow the guides for:
-- `docs/features/NEW_API_ENDPOINT.md` — add backend routes
-- `docs/features/NEW_REACT_PAGE.md` — add frontend page
-- `docs/features/NEW_API_ENDPOINT.md` — add frontend api.js methods
+- `docs/features/NEW_API_ENDPOINT.md` - add backend routes
+- `docs/features/NEW_REACT_PAGE.md` - add frontend page
+- `docs/features/NEW_API_ENDPOINT.md` - add frontend api.js methods
 
 ## Naming Conventions for New Tables
 
-- Table names: `snake_case`, plural — `content_drafts`, `webhook_configs`
+- Table names: `snake_case`, plural - `content_drafts`, `webhook_configs`
 - All tables must have `user_id uuid NOT NULL`
 - If table relates to an account: also include `account_id text NOT NULL`
 - Status columns: text, with documented enum values

@@ -2,7 +2,7 @@
 
 ## Current State
 
-This project has no automated test suite. Testing is currently manual. This is a known gap — see ROADMAP.md.
+This project has no automated test suite. Testing is currently manual. This is a known gap - see ROADMAP.md.
 
 The testing workflow documented here describes what should run before shipping any change.
 
@@ -54,14 +54,14 @@ cd backend && wrangler dev
 Open the app in a browser. For each changed area, test:
 
 **Authentication:**
-- [ ] Login with valid credentials → lands on Overview
-- [ ] Login with invalid credentials → error message shown
-- [ ] Sign out → redirects to login
+- [ ] Login with valid credentials -> lands on Overview
+- [ ] Login with invalid credentials -> error message shown
+- [ ] Sign out -> redirects to login
 
 **Accounts:**
-- [ ] Add a YouTube channel by URL → appears in sidebar
-- [ ] Delete an account → removed from sidebar
-- [ ] Connect Instagram via OAuth → OAuth popup, returns to accounts page
+- [ ] Add a YouTube channel by URL -> appears in sidebar
+- [ ] Delete an account -> removed from sidebar
+- [ ] Connect Instagram via OAuth -> OAuth popup, returns to accounts page
 
 **Analytics:**
 - [ ] Overview page loads with correct totals
@@ -73,10 +73,10 @@ Open the app in a browser. For each changed area, test:
 - [ ] Upload to Cloudinary works
 - [ ] Container creation succeeds
 - [ ] Status polling shows progress for video
-- [ ] Publish succeeds → media ID shown
+- [ ] Publish succeeds -> media ID shown
 
 **Scheduling (if changed):**
-- [ ] Create a scheduled post → appears in queue
+- [ ] Create a scheduled post -> appears in queue
 - [ ] Manual trigger processes due posts correctly
 - [ ] Failed posts show error in UI
 
@@ -89,7 +89,7 @@ Open the app in a browser. For each changed area, test:
 
 ### 6. Console Error Verification
 
-Open browser DevTools → Console. Navigate through all changed pages.
+Open browser DevTools -> Console. Navigate through all changed pages.
 - No JavaScript errors
 - No failed network requests (red in Network tab)
 - No React warnings about missing keys, prop types, etc.
@@ -97,16 +97,16 @@ Open browser DevTools → Console. Navigate through all changed pages.
 ### 7. Accessibility Verification
 
 For any new UI:
-- Tab through all interactive elements — all must be reachable
-- Press Enter on buttons — they should activate
-- Press Space on buttons and checkboxes — they should activate
+- Tab through all interactive elements - all must be reachable
+- Press Enter on buttons - they should activate
+- Press Space on buttons and checkboxes - they should activate
 - Check for visible focus ring on focused elements
-- Use Chrome's built-in Accessibility tab (DevTools → Elements → Accessibility) to verify ARIA structure
+- Use Chrome's built-in Accessibility tab (DevTools -> Elements -> Accessibility) to verify ARIA structure
 
 ### 8. Responsive Layout Verification
 
 Resize the browser to test at:
-- 375px (iPhone SE — smallest common mobile)
+- 375px (iPhone SE - smallest common mobile)
 - 768px (tablet)
 - 1280px (laptop)
 - 1920px (desktop)
@@ -121,7 +121,7 @@ Verify:
 
 After any change to `scripts/publish-scheduled.js` or `publish-scheduled.yml`:
 
-1. GitHub Actions → "Instagram Scheduled Publisher" → "Run workflow"
+1. GitHub Actions -> "Instagram Scheduled Publisher" -> "Run workflow"
 2. Watch the run output
 3. Verify: "No posts due for publishing" (if no scheduled posts) or successful publish
 
@@ -131,7 +131,7 @@ If you have a test post scheduled in the near future, use `GET /api/process-sche
 
 When automated tests are added, this document will be updated. Priority order for adding tests:
 
-1. **Unit tests for `computeVideoAnalytics()` and `computeInstagramAnalytics()`** — pure functions with complex logic, easy to test
-2. **Unit tests for `lib/db.js` functions** — using a Supabase test project
-3. **Integration tests for backend routes** — using `miniflare` or similar Workers test runner
-4. **End-to-end tests** — Playwright for the full login → view analytics → publish flow
+1. **Unit tests for `computeVideoAnalytics()` and `computeInstagramAnalytics()`** - pure functions with complex logic, easy to test
+2. **Unit tests for `lib/db.js` functions** - using a Supabase test project
+3. **Integration tests for backend routes** - using `miniflare` or similar Workers test runner
+4. **End-to-end tests** - Playwright for the full login -> view analytics -> publish flow

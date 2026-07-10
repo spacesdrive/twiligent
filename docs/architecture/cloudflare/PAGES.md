@@ -2,7 +2,7 @@
 
 ## Overview
 
-The React frontend is deployed to Cloudflare Pages. It is a static SPA — all routing is client-side (React Router), and the Cloudflare Pages `_redirects` file handles the SPA fallback.
+The React frontend is deployed to Cloudflare Pages. It is a static SPA - all routing is client-side (React Router), and the Cloudflare Pages `_redirects` file handles the SPA fallback.
 
 ## Build Configuration
 
@@ -36,11 +36,11 @@ The frontend accesses environment variables at **build time** via Vite's `VITE_`
 
 | Variable | Purpose | Where set |
 |---|---|---|
-| `VITE_SUPABASE_URL` | Supabase project URL (public) | Cloudflare Pages → Settings → Environment Variables |
-| `VITE_SUPABASE_ANON_KEY` | Supabase anon key (public) | Cloudflare Pages → Settings → Environment Variables |
-| `VITE_API_URL` | Backend Worker URL | Cloudflare Pages → Settings → Environment Variables |
+| `VITE_SUPABASE_URL` | Supabase project URL (public) | Cloudflare Pages -> Settings -> Environment Variables |
+| `VITE_SUPABASE_ANON_KEY` | Supabase anon key (public) | Cloudflare Pages -> Settings -> Environment Variables |
+| `VITE_API_URL` | Backend Worker URL | Cloudflare Pages -> Settings -> Environment Variables |
 
-**These are public values** — they are baked into the JavaScript bundle. Do not add the service role key here. Do not add any private API credentials here.
+**These are public values** - they are baked into the JavaScript bundle. Do not add the service role key here. Do not add any private API credentials here.
 
 Vite exposes them at runtime as `import.meta.env.VITE_*`.
 
@@ -61,7 +61,7 @@ npx wrangler pages deploy dist --project-name=twiligent
 
 The app is accessible at both:
 - `twiligent.pages.dev` (Cloudflare Pages default)
-- Custom domain configured in Cloudflare Pages → Custom domains
+- Custom domain configured in Cloudflare Pages -> Custom domains
 
 ## Local Development
 

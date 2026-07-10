@@ -1,6 +1,6 @@
 // All functions accept `redis` as first argument.
 // If redis is null (Upstash not configured) or the call fails, all operations
-// are silent no-ops — cache failures must never break the main request.
+// are silent no-ops - cache failures must never break the main request.
 
 export async function getVideosCache(redis, userId, accountId) {
     if (!redis) return null;
