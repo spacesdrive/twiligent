@@ -14,6 +14,8 @@ The app uses React Router v6 in `frontend/src/App.jsx`. The router uses `Browser
 | `/accounts` | `Accounts.jsx` | Connect/disconnect accounts |
 | `/channel/:id` | `ChannelAnalytics.jsx` | `:id` = account.id for YouTube accounts |
 | `/instagram/:id` | `InstagramAnalytics.jsx` | `:id` = account.id for Instagram accounts |
+| `/reddit/:id` | `RedditAnalytics.jsx` | `:id` = account.id for Reddit accounts |
+| `/reddit-posts/:id` | `RedditPosts.jsx` | `:id` = account.id; filterable/sortable post explorer |
 | `/videos/:id` | `VideoExplorer.jsx` | `:id` = account.id for YouTube accounts |
 | `/publish/:id` | `Publish.jsx` | `:id` = account.id for Instagram accounts |
 | `/schedule/:id` | `Schedule.jsx` | `:id` = account.id for Instagram accounts |

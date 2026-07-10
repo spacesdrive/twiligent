@@ -2,15 +2,17 @@ import { Hono } from 'hono';
 import {
     getAccounts, getAccountById, createAccount, updateAccount, deleteAccount,
 } from '../lib/db.js';
-import { deleteVideosCache, deleteIGCache } from '../lib/cache.js';
+import { deleteVideosCache, deleteIGCache, deleteRedditCache } from '../lib/cache.js';
 import { fetchInstagramProfile, exchangeForLongLivedToken, refreshLongLivedToken } from '../services/instagram.js';
 import { resolveChannelId, fetchChannelData } from '../services/youtube.js';
+import { fetchRedditProfile, safeRedditAccount } from '../services/reddit.js';
 
 const app = new Hono();
 
 function safeAccount(account) {
     const copy = { ...account };
     delete copy.accessToken;
+    delete copy.cookie;
     return copy;
 }
 
@@ -77,6 +79,43 @@ app.post('/accounts', async (c) => {
 
         await createAccount(supabase, newAccount, userId);
         return c.json({ success: true, account: newAccount });
+    } catch (err) {
+        return c.json({ success: false, message: err.message }, 400);
+    }
+});
+
+app.post('/accounts/reddit', async (c) => {
+    try {
+        const { username, cookie } = await c.req.json();
+        if (!username) return c.json({ success: false, message: 'Username is required' }, 400);
+
+        const supabase = c.get('supabase');
+        const userId = c.get('userId');
+
+        const profile = await fetchRedditProfile(username.replace(/^u\//i, '').trim(), cookie || null);
+
+        const accounts = await getAccounts(supabase, userId);
+        if (accounts.find(a => a.platform === 'reddit' && a.username === profile.username)) {
+            return c.json({ success: false, message: 'This Reddit account is already added' }, 400);
+        }
+
+        const newAccount = {
+            id: Date.now().toString() + Math.random().toString(36).substring(2, 6),
+            platform: 'reddit',
+            username: profile.username,
+            title: `u/${profile.username}`,
+            totalKarma: profile.totalKarma,
+            postKarma: profile.postKarma,
+            commentKarma: profile.commentKarma,
+            iconUrl: profile.iconUrl,
+            createdAt: profile.createdAt,
+            cookie: cookie || null,
+            addedAt: new Date().toISOString(),
+            lastUpdated: new Date().toISOString(),
+        };
+
+        await createAccount(supabase, newAccount, userId);
+        return c.json({ success: true, account: safeRedditAccount(newAccount) });
     } catch (err) {
         return c.json({ success: false, message: err.message }, 400);
     }
@@ -160,6 +199,15 @@ app.post('/accounts/refresh-all', async (c) => {
                     username: profile.username,
                     profilePictureUrl: profile.profilePictureUrl,
                 };
+            } else if (account.platform === 'reddit') {
+                const profile = await fetchRedditProfile(account.username, account.cookie ?? null);
+                updates = {
+                    ...updates,
+                    totalKarma: profile.totalKarma,
+                    postKarma: profile.postKarma,
+                    commentKarma: profile.commentKarma,
+                    iconUrl: profile.iconUrl,
+                };
             } else {
                 if (!apiKey) throw new Error('No YouTube API key');
                 const channelData = await fetchChannelData(account.channelId, apiKey);
@@ -237,6 +285,15 @@ app.post('/accounts/:id/refresh', async (c) => {
                 biography: profile.biography,
                 website: profile.website,
             };
+        } else if (account.platform === 'reddit') {
+            const profile = await fetchRedditProfile(account.username, account.cookie ?? null);
+            updates = {
+                ...updates,
+                totalKarma: profile.totalKarma,
+                postKarma: profile.postKarma,
+                commentKarma: profile.commentKarma,
+                iconUrl: profile.iconUrl,
+            };
         } else {
             const apiKey = c.env.YOUTUBE_API_KEY;
             if (!apiKey) return c.json({ success: false, message: 'No API key' }, 400);
@@ -275,6 +332,7 @@ app.delete('/accounts/:id', async (c) => {
             deleteAccount(supabase, id, userId),
             deleteVideosCache(redis, userId, id),
             deleteIGCache(redis, userId, id),
+            deleteRedditCache(redis, userId, id),
         ]);
         return c.json({ success: true });
     } catch (err) {

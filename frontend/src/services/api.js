@@ -60,6 +60,11 @@ export const api = {
     getIGContainerStatus: (containerId, accountId) => request(`/ig-container/${containerId}/status?accountId=${accountId}`),
     publishIGContainer: (id, containerId) => request(`/accounts/${id}/ig-media-publish`, { method: 'POST', body: JSON.stringify({ containerId }) }),
 
+    // Reddit accounts
+    addRedditAccount: (username, cookie) => request('/accounts/reddit', { method: 'POST', body: JSON.stringify({ username, cookie }) }),
+    getRedditAnalytics: (id) => request(`/accounts/${id}/reddit-analytics`),
+    getRedditPosts: (id) => request(`/accounts/${id}/reddit-posts`),
+
     // GitHub settings
     getGithubSettings: () => request('/settings/github'),
     saveGithubSettings: (data) => request('/settings/github', { method: 'PUT', body: JSON.stringify(data) }),
