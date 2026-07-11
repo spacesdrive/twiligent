@@ -10,7 +10,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Plus, Trash2, RefreshCw, Search, Users, CheckCircle2,
-  Tv, Camera, Link2, Info, ExternalLink, MessageSquare, Lock,
+  Tv, Camera, Link2, Info, ExternalLink, MessageSquare, Lock, Twitter,
 } from 'lucide-react';
 import MainCard from '../../components/MainCard';
 import { useAppContext } from '../../context/AppContext';
@@ -30,6 +30,10 @@ export default function AccountManager() {
   const [redditUsername, setRedditUsername] = useState('');
   const [redditCookie,   setRedditCookie]   = useState('');
   const [addingReddit,   setAddingReddit]   = useState(false);
+  const [xUsername,  setXUsername]  = useState('');
+  const [xAuthToken, setXAuthToken] = useState('');
+  const [xCt0,       setXCt0]       = useState('');
+  const [addingX,    setAddingX]    = useState(false);
   const [refreshingId,    setRefreshingId]    = useState(null);
 
   // Handle Instagram OAuth redirect result (?ig_connected=true or ?ig_error=...)
@@ -146,17 +150,36 @@ export default function AccountManager() {
     }
   };
 
+  const handleAddX = async () => {
+    if (!xUsername.trim() || !xAuthToken.trim() || !xCt0.trim()) return;
+    setAddingX(true);
+    try {
+      await api.addXAccount(xUsername.trim(), xAuthToken.trim(), xCt0.trim());
+      showToast('X account added');
+      closeDialog();
+      loadAccounts();
+    } catch (err) {
+      showToast('Failed to add X account: ' + err.message, 'error');
+    } finally {
+      setAddingX(false);
+    }
+  };
+
   const closeDialog = () => {
     setDialogOpen(false);
     setResolved(null);
     setInput('');
     setRedditUsername('');
     setRedditCookie('');
+    setXUsername('');
+    setXAuthToken('');
+    setXCt0('');
   };
 
-  const ytAccounts     = accounts.filter(a => a.platform !== 'instagram' && a.platform !== 'reddit');
+  const ytAccounts     = accounts.filter(a => !['instagram', 'reddit', 'x'].includes(a.platform));
   const igAccounts     = accounts.filter(a => a.platform === 'instagram');
   const redditAccounts = accounts.filter(a => a.platform === 'reddit');
+  const xAccounts      = accounts.filter(a => a.platform === 'x');
 
   return (
     <div className="space-y-6">
@@ -169,6 +192,7 @@ export default function AccountManager() {
               ytAccounts.length     ? `${ytAccounts.length} YouTube`     : null,
               igAccounts.length     ? `${igAccounts.length} Instagram`   : null,
               redditAccounts.length ? `${redditAccounts.length} Reddit`  : null,
+              xAccounts.length      ? `${xAccounts.length} X`           : null,
             ].filter(Boolean).join(' · ') || 'No accounts added yet'}
           </p>
         </div>
@@ -286,6 +310,34 @@ export default function AccountManager() {
               </div>
             </div>
           )}
+
+          {/* X */}
+          {xAccounts.length > 0 && (
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <Twitter className="h-5 w-5 text-sky-500" />
+                <h2 className="text-base font-semibold">X Accounts</h2>
+                <Badge variant="outline" className="border-sky-200 bg-sky-50 text-sky-600 text-xs">{xAccounts.length}</Badge>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                {xAccounts.map(acct => (
+                  <AccountCard
+                    key={acct.id}
+                    acct={acct}
+                    platform="x"
+                    metrics={[
+                      { label: 'Followers',  value: fmtNum(acct.followersCount), className: 'bg-sky-50 text-sky-700' },
+                      { label: 'Following',  value: fmtNum(acct.followingCount), className: 'bg-blue-50 text-blue-700' },
+                      { label: 'Tweets',     value: fmtNum(acct.tweetCount),     className: 'bg-slate-50 text-slate-700' },
+                    ]}
+                    refreshingId={refreshingId}
+                    onRefresh={handleRefreshOne}
+                    onDelete={handleDelete}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -307,6 +359,9 @@ export default function AccountManager() {
               </TabsTrigger>
               <TabsTrigger value="reddit" className="flex-1 gap-1.5">
                 <MessageSquare className="h-3.5 w-3.5" /> Reddit
+              </TabsTrigger>
+              <TabsTrigger value="x" className="flex-1 gap-1.5">
+                <Twitter className="h-3.5 w-3.5" /> X
               </TabsTrigger>
             </TabsList>
 
@@ -410,6 +465,50 @@ export default function AccountManager() {
                 </AlertDescription>
               </Alert>
             </TabsContent>
+
+            <TabsContent value="x" className="space-y-4 mt-4">
+              <p className="text-sm text-muted-foreground">
+                Session cookies are required to fetch your X analytics from the server.
+              </p>
+              <div className="space-y-3">
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">@</span>
+                  <Input
+                    className="pl-8"
+                    value={xUsername}
+                    onChange={e => setXUsername(e.target.value)}
+                    placeholder="your_username"
+                    onKeyDown={e => e.key === 'Enter' && handleAddX()}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium">auth_token</label>
+                  <Input
+                    type="password"
+                    value={xAuthToken}
+                    onChange={e => setXAuthToken(e.target.value)}
+                    placeholder="auth_token cookie value"
+                    onKeyDown={e => e.key === 'Enter' && handleAddX()}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-xs font-medium">ct0</label>
+                  <Input
+                    type="password"
+                    value={xCt0}
+                    onChange={e => setXCt0(e.target.value)}
+                    placeholder="ct0 cookie value"
+                    onKeyDown={e => e.key === 'Enter' && handleAddX()}
+                  />
+                </div>
+              </div>
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription className="text-xs">
+                  Log in to x.com in your browser. Open DevTools (F12), go to <strong>Application &gt; Cookies &gt; https://x.com</strong>. Copy the values of <strong>auth_token</strong> and <strong>ct0</strong> and paste them above.
+                </AlertDescription>
+              </Alert>
+            </TabsContent>
           </Tabs>
 
           <DialogFooter>
@@ -426,6 +525,12 @@ export default function AccountManager() {
                 Add Reddit Account
               </Button>
             )}
+            {dialogTab === 'x' && (
+              <Button onClick={handleAddX} disabled={!xUsername.trim() || !xAuthToken.trim() || !xCt0.trim() || addingX} className="gap-1.5">
+                {addingX && <RefreshCw className="h-3.5 w-3.5 animate-spin" />}
+                Add X Account
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -436,12 +541,15 @@ export default function AccountManager() {
 function AccountCard({ acct, platform, metrics, refreshingId, onRefresh, onDelete }) {
   const isIG     = platform === 'instagram';
   const isReddit = platform === 'reddit';
+  const isX      = platform === 'x';
   const initials = (acct.title || '?').slice(0, 2).toUpperCase();
-  const fallbackBg = isIG ? 'bg-pink-500' : isReddit ? 'bg-orange-500' : 'bg-red-500';
+  const fallbackBg = isIG ? 'bg-pink-500' : isReddit ? 'bg-orange-500' : isX ? 'bg-sky-500' : 'bg-red-500';
   const subtitle = isIG
     ? `@${acct.username || acct.igUsername || ''}`
     : isReddit
     ? `u/${acct.username || ''}`
+    : isX
+    ? `@${acct.username || ''}`
     : (acct.customUrl || '');
 
   return (
@@ -468,17 +576,17 @@ function AccountCard({ acct, platform, metrics, refreshingId, onRefresh, onDelet
         ))}
       </div>
 
-      {isReddit && (
+      {(isReddit || isX) && (
         <div className="flex items-center gap-1.5 text-xs">
           {acct.hasCookie ? (
             <>
               <Lock className="h-3 w-3 text-green-500" />
-              <span className="text-green-600">Session cookie stored</span>
+              <span className="text-green-600">Session cookies stored</span>
             </>
           ) : (
             <>
               <Lock className="h-3 w-3 text-destructive" />
-              <span className="text-destructive">No cookie - re-add account</span>
+              <span className="text-destructive">No cookies - re-add account</span>
             </>
           )}
         </div>

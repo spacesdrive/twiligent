@@ -87,6 +87,16 @@ export function normalizeAccount(acct) {
             commentKarma: acct.commentKarma || 0,
         };
     }
+    if (acct.platform === 'x') {
+        return {
+            ...acct,
+            title: acct.title || `@${acct.username}`,
+            thumbnail: acct.profileImageUrl || '',
+            followersCount: acct.followersCount || 0,
+            followingCount: acct.followingCount || 0,
+            tweetCount: acct.tweetCount || 0,
+        };
+    }
     return {
         ...acct,
         title: acct.title || acct.name || acct.channelTitle || acct.channelId,

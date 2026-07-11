@@ -203,6 +203,82 @@ RedditAnalytics.jsx mounts -> api.getRedditAnalytics(id)
 
 Note: Reddit disabled `view_count` from their API in December 2018. The field always returns `null` regardless of authentication method. Views are not available for Reddit posts.
 
+## X (Twitter) Analytics Flow
+
+```
+User navigates to /x/:id
+    │
+    ▼
+XAnalytics.jsx mounts -> api.getXAnalytics(id)
+    -> GET /api/accounts/:id/x-analytics
+        │
+        ▼
+    Worker: xRouter
+        1. getAccountById(supabase, id, userId) - verify ownership
+        2. redis cache check: key x:{userId}:{accountId}
+           -> cache hit: return immediately
+           -> cache miss: continue
+        3. Fetch from X internal GraphQL API (auth_token + ct0 cookies):
+           a. GET /graphql/{queryId}/UserByScreenName
+              -> profile: username, displayName, description, followersCount,
+                 followingCount, tweetCount, listedCount, verifiedType,
+                 profileImageUrl, location, website, createdAt
+           b. Resolve userId from profile, then paginate /graphql/{queryId}/UserTweets
+              -> up to 10 pages x 20 = up to 200 tweets
+        4. computeXAnalytics(profile, tweets)
+           -> engagement metrics, posting patterns, timeline
+        5. Cache result in Redis
+        6. Return { profile, analytics, tweets }
+```
+
+### computeXAnalytics() Output (partial)
+
+```js
+{
+    fetchedTweets: 200,
+    totalLikes: 45000,       avgLikes: 225,
+    totalRetweets: 8000,     avgRetweets: 40,
+    totalReplies: 3200,      avgReplies: 16,
+    totalQuotes: 1200,       totalBookmarks: 5000,
+    totalImpressions: 2000000, avgImpressions: 10000,
+    engagementRate: 1.4,     // (avgLikes+avgRetweets+avgReplies) / followers * 100
+    avgEngagement: 281,
+    topTweets: [ /* top 10 by likes */ ],
+    tweetTypeDistribution: { tweet: 150, retweet: 20, reply: 25, quote: 5 },
+    postsByDayOfWeek: [ /* 7 entries with avgLikes and post count per day */ ],
+    postsByHour: [ /* 24 entries with avgLikes per hour */ ],
+    bestPostingDay: 'Tuesday',
+    bestPostingHour: '14:00',
+    monthlyBreakdown: [
+        { month: '2025-06', posts: 15, likes: 3200, retweets: 600, impressions: 150000, avgLikes: 213 },
+        // ...
+    ],
+    postsLast7Days: 4,
+    postsLast30Days: 18,
+    postsLast90Days: 52,
+    postFrequency: { perWeek: 4.2, perMonth: 18.1 },
+    viralityScore: 8.2,      // peak tweet likes / avg likes
+    consistencyScore: 54,    // 0-100, higher = more uniform performance
+}
+```
+
+### Per-tweet fields
+
+```js
+{
+    id, text, createdAt,
+    likeCount, retweetCount, replyCount, quoteCount, bookmarkCount,
+    impressionCount,    // views.count from X API - available for own tweets
+    isRetweet, isReply, isQuote,
+    lang, permalink,
+    mediaType,          // 'text' | 'image' | 'video' | 'link'
+}
+```
+
+Note: `impressionCount` requires authentication as the account owner. It is available for own tweets via X's `views.count` field in the GraphQL response. Older tweets or tweets viewed without authentication return 0.
+
+Note: X's GraphQL `queryId` values in `X_QUERY_IDS` (backend/services/x.js) rotate when X deploys frontend updates. Update them when the API returns HTTP 400.
+
 ## Overview Dashboard (Cross-Account)
 
 ```

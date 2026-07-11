@@ -122,6 +122,33 @@ Reddit integration requires no Worker secrets. The session cookie is a per-user 
 
 ---
 
+---
+
+## `backend/services/x.js`
+
+### HTTP Client
+
+All X (Twitter) internal GraphQL API calls go through `xFetch(url, authToken, ct0)`. Requests include the X web client bearer token in `Authorization`, the `ct0` value in `x-csrf-token`, and both cookies in `Cookie`. The bearer token (`X_BEARER` constant) is X's own web client token and has been stable for years. GraphQL query IDs (`X_QUERY_IDS`) rotate when X deploys frontend changes and must be updated in the service file when HTTP 400 errors appear.
+
+### Key Functions
+
+| Function | Purpose |
+|---|---|
+| `fetchXProfile(username, authToken, ct0)` | Fetches profile via `UserByScreenName` GraphQL query: followers, following, tweet count, bio, verified status, profile image |
+| `fetchXTweets(username, authToken, ct0, limit)` | Paginates own tweets via `UserTweets` GraphQL query; up to 200 tweets; includes likes, retweets, replies, quotes, bookmarks, impressions |
+| `computeXAnalytics(profile, tweets)` | Computes engagement rate, avg metrics, posting time patterns, monthly breakdown, tweet type distribution, virality/consistency scores |
+| `safeXAccount(account)` | Strips `authToken` and `ct0` fields before any API response |
+
+### `safeXAccount(account)`
+
+Strips `authToken` and `ct0` from the account object before it is returned in any API response. Exposes `hasCookie: boolean` to indicate whether session credentials are stored.
+
+### No Worker secrets required
+
+X integration requires no Worker secrets. The `auth_token` and `ct0` session cookies are per-user credentials stored in `accounts.data.authToken` and `accounts.data.ct0`. They are read server-side by the Worker and never returned to the frontend.
+
+---
+
 ## Adding a New Service
 
 1. Create `backend/services/myPlatform.js`

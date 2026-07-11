@@ -9,6 +9,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+**X (Twitter) integration**
+- `POST /api/accounts/x` - add X account by username, auth_token, and ct0 session cookies
+- `GET /api/accounts/:id/x-analytics` - full analytics: profile, tweet stats, engagement rate, impressions, posting time patterns, monthly breakdown, virality and consistency scores; cached in Redis at `x:{userId}:{accountId}`
+- `GET /api/accounts/:id/x-tweets` - tweet list with likes, retweets, replies, quotes, bookmarks, impressions per tweet
+- `backend/services/x.js` - X GraphQL API client (`xFetch`), `fetchXProfile`, `fetchXTweets`, `computeXAnalytics`, `safeXAccount`
+- `frontend/src/features/analytics/x/XAnalytics.jsx` - detailed analytics page with follower stats, KPI cards, impressions timeline, tweet type breakdown pie, posting time charts, engagement breakdown, top tweets table
+- `frontend/src/features/analytics/x/XTweets.jsx` - filterable/sortable tweet explorer with type filter (original/retweet/reply/quote), text search, sort by likes/retweets/impressions/date
+- X tab in Account Manager dialog (username + auth_token + ct0 with DevTools instructions)
+- X accounts section in Account Manager accounts list with follower/following/tweet metrics
+- X accounts in Sidebar quick navigation (routes to `/x/:id`) with blue avatar
+- "X Tweets" nav item in Analytics sidebar section
+- Routes `/x/:id` and `/x-tweets/:id` in App.jsx
+- X normalization in `formatters.js` normalizeAccount()
+
 **Reddit Analytics improvements**
 - Karma separated into its own dedicated card in `RedditAnalytics.jsx` (total, post, comment, awardee karma); previously karma was mixed into the profile header
 - KPI cards: Posts Fetched, Total Score, Total Comments, Awards Received - replacing the previous generic set
