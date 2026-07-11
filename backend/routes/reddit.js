@@ -21,7 +21,10 @@ async function ensureFreshCookie(account, supabase, userId, encryptionKey) {
 
     try {
         const password = await decryptPassword(account.encryptedPassword, encryptionKey);
-        const { cookie, cookieAcquiredAt, cookieExpiresAt } = await loginToReddit(account.username, password);
+        const totpSecret = account.encryptedTotpSecret
+            ? await decryptPassword(account.encryptedTotpSecret, encryptionKey)
+            : null;
+        const { cookie, cookieAcquiredAt, cookieExpiresAt } = await loginToReddit(account.username, password, totpSecret);
         await updateAccount(supabase, account.id, { cookie, cookieAcquiredAt, cookieExpiresAt, lastUpdated: new Date().toISOString() }, userId);
         return cookie;
     } catch (err) {

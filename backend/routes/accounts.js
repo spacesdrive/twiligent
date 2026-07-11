@@ -12,9 +12,11 @@ const app = new Hono();
 
 function safeAccount(account) {
     const copy = { ...account };
+    copy.hasTotpSecret = !!copy.encryptedTotpSecret;
     delete copy.accessToken;
     delete copy.cookie;
     delete copy.encryptedPassword;
+    delete copy.encryptedTotpSecret;
     return copy;
 }
 
@@ -88,7 +90,7 @@ app.post('/accounts', async (c) => {
 
 app.post('/accounts/reddit', async (c) => {
     try {
-        const { username, password } = await c.req.json();
+        const { username, password, totpSecret } = await c.req.json();
         if (!username) return c.json({ success: false, message: 'Username is required' }, 400);
 
         const supabase = c.get('supabase');
@@ -97,15 +99,17 @@ app.post('/accounts/reddit', async (c) => {
 
         let cookieData = {};
         let encryptedPassword = null;
+        let encryptedTotpSecret = null;
 
         if (password) {
             const encKey = c.env.REDDIT_ENCRYPTION_KEY;
             if (!encKey) {
                 return c.json({ success: false, message: 'REDDIT_ENCRYPTION_KEY is not configured on the server - run: wrangler secret put REDDIT_ENCRYPTION_KEY' }, 500);
             }
-            const loginResult = await loginToReddit(cleanUsername, password);
+            const loginResult = await loginToReddit(cleanUsername, password, totpSecret || null);
             cookieData = loginResult;
             encryptedPassword = await encryptPassword(password, encKey);
+            if (totpSecret) encryptedTotpSecret = await encryptPassword(totpSecret, encKey);
         }
 
         const profile = await fetchRedditProfile(cleanUsername, cookieData.cookie ?? null);
@@ -126,6 +130,7 @@ app.post('/accounts/reddit', async (c) => {
             iconUrl: profile.iconUrl,
             createdAt: profile.createdAt,
             encryptedPassword,
+            encryptedTotpSecret,
             ...cookieData,
             addedAt: new Date().toISOString(),
             lastUpdated: new Date().toISOString(),
