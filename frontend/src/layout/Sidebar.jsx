@@ -8,7 +8,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   LayoutDashboard, PlaySquare, Scissors, Camera,
-  Upload, Users, Settings, Flame,
+  Upload, Users, Settings, Flame, Twitter,
 } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 
@@ -21,6 +21,7 @@ const NAV_GROUPS = [
       { path: '/shorts',       label: 'Shorts',        icon: Scissors },
       { path: '/reels',        label: 'IG Content',    icon: Camera },
       { path: '/reddit-posts', label: 'Reddit Posts',  icon: Flame },
+      { path: '/x-tweets',    label: 'X Tweets',      icon: Twitter },
     ],
   },
   {
@@ -104,9 +105,10 @@ export default function AppSidebar() {
               {accounts.map((acc) => {
                 const isIG     = acc.platform === 'instagram';
                 const isReddit = acc.platform === 'reddit';
-                const path     = isIG ? `/instagram/${acc.id}` : isReddit ? `/reddit/${acc.id}` : `/channel/${acc.id}`;
+                const isX      = acc.platform === 'x';
+                const path     = isIG ? `/instagram/${acc.id}` : isReddit ? `/reddit/${acc.id}` : isX ? `/x/${acc.id}` : `/channel/${acc.id}`;
                 const initials = (acc.title || '?').slice(0, 2).toUpperCase();
-                const avatarBg = isIG ? '#ec4899' : isReddit ? '#f97316' : '#ef4444';
+                const avatarBg = isIG ? '#ec4899' : isReddit ? '#f97316' : isX ? '#1D9BF0' : '#ef4444';
                 return (
                   <SidebarMenuItem key={acc.id}>
                     <SidebarMenuButton

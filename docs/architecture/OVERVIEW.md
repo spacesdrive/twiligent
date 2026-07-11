@@ -30,7 +30,8 @@
 │ Postgres │ │  Redis  │  │  ├── YouTube Data API v3              │
 │          │ │ (cache) │  │  ├── Instagram Graph API v25          │
 │          │ │ (cache) │  │  ├── Reddit Public JSON API           │
-│ tables:  │ │         │  │  └── Cloudinary Upload API            │
+│ tables:  │ │         │  │  ├── X (Twitter) GraphQL API          │
+│          │ │ (cache) │  │  └── Cloudinary Upload API            │
 │ accounts │ │ keys:   │  └──────────────────────────────────────┘
 │ settings │ │ videos: │
 │ sched_   │ │ {u}:{a} │

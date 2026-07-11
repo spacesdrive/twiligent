@@ -2,20 +2,23 @@ import { Hono } from 'hono';
 import {
     getAccounts, getAccountById, createAccount, updateAccount, deleteAccount,
 } from '../lib/db.js';
-import { deleteVideosCache, deleteIGCache, deleteRedditCache } from '../lib/cache.js';
+import { deleteVideosCache, deleteIGCache, deleteRedditCache, deleteXCache } from '../lib/cache.js';
 import { fetchInstagramProfile, exchangeForLongLivedToken, refreshLongLivedToken } from '../services/instagram.js';
 import { resolveChannelId, fetchChannelData } from '../services/youtube.js';
 import { fetchRedditProfile, safeRedditAccount } from '../services/reddit.js';
+import { fetchXProfile, safeXAccount } from '../services/x.js';
 
 const app = new Hono();
 
 function safeAccount(account) {
     const copy = { ...account };
-    copy.hasCookie = !!copy.cookie;
+    copy.hasCookie = !!copy.cookie || !!(copy.authToken && copy.ct0);
     delete copy.accessToken;
     delete copy.cookie;
     delete copy.encryptedPassword;
     delete copy.encryptedTotpSecret;
+    delete copy.authToken;
+    delete copy.ct0;
     return copy;
 }
 
@@ -126,6 +129,51 @@ app.post('/accounts/reddit', async (c) => {
     }
 });
 
+app.post('/accounts/x', async (c) => {
+    try {
+        const { username, authToken, ct0 } = await c.req.json();
+        if (!username) return c.json({ success: false, message: 'Username is required' }, 400);
+        if (!authToken) return c.json({ success: false, message: 'auth_token cookie is required - open x.com in your browser, go to DevTools (F12) > Application > Cookies > https://x.com, copy the auth_token value' }, 400);
+        if (!ct0) return c.json({ success: false, message: 'ct0 cookie is required - copy the ct0 value from the same DevTools Cookies panel' }, 400);
+
+        const supabase = c.get('supabase');
+        const userId = c.get('userId');
+        const cleanUsername = username.replace(/^@/, '').trim();
+
+        const profile = await fetchXProfile(cleanUsername, authToken, ct0);
+
+        const accounts = await getAccounts(supabase, userId);
+        if (accounts.find(a => a.platform === 'x' && a.username?.toLowerCase() === profile.username.toLowerCase())) {
+            return c.json({ success: false, message: 'This X account is already added' }, 400);
+        }
+
+        const newAccount = {
+            id: Date.now().toString() + Math.random().toString(36).substring(2, 6),
+            platform: 'x',
+            username: profile.username,
+            title: `@${profile.username}`,
+            displayName: profile.displayName,
+            description: profile.description,
+            followersCount: profile.followersCount,
+            followingCount: profile.followingCount,
+            tweetCount: profile.tweetCount,
+            profileImageUrl: profile.profileImageUrl,
+            verifiedType: profile.verifiedType,
+            location: profile.location,
+            website: profile.website,
+            authToken,
+            ct0,
+            addedAt: new Date().toISOString(),
+            lastUpdated: new Date().toISOString(),
+        };
+
+        await createAccount(supabase, newAccount, userId);
+        return c.json({ success: true, account: safeXAccount(newAccount) });
+    } catch (err) {
+        return c.json({ success: false, message: err.message }, 400);
+    }
+});
+
 app.post('/accounts/instagram', async (c) => {
     try {
         const { accessToken } = await c.req.json();
@@ -214,6 +262,19 @@ app.post('/accounts/refresh-all', async (c) => {
                     commentKarma: profile.commentKarma,
                     iconUrl: profile.iconUrl,
                 };
+            } else if (account.platform === 'x') {
+                if (!account.authToken || !account.ct0) throw new Error('Session cookies not stored - re-add this account with auth_token and ct0 from x.com DevTools');
+                const profile = await fetchXProfile(account.username, account.authToken, account.ct0);
+                updates = {
+                    ...updates,
+                    followersCount: profile.followersCount,
+                    followingCount: profile.followingCount,
+                    tweetCount: profile.tweetCount,
+                    displayName: profile.displayName,
+                    profileImageUrl: profile.profileImageUrl,
+                    description: profile.description,
+                    verifiedType: profile.verifiedType,
+                };
             } else {
                 if (!apiKey) throw new Error('No YouTube API key');
                 const channelData = await fetchChannelData(account.channelId, apiKey);
@@ -301,6 +362,19 @@ app.post('/accounts/:id/refresh', async (c) => {
                 commentKarma: profile.commentKarma,
                 iconUrl: profile.iconUrl,
             };
+        } else if (account.platform === 'x') {
+            if (!account.authToken || !account.ct0) return c.json({ success: false, message: 'Session cookies not stored - re-add this account with auth_token and ct0 from x.com DevTools' }, 400);
+            const profile = await fetchXProfile(account.username, account.authToken, account.ct0);
+            updates = {
+                ...updates,
+                followersCount: profile.followersCount,
+                followingCount: profile.followingCount,
+                tweetCount: profile.tweetCount,
+                displayName: profile.displayName,
+                profileImageUrl: profile.profileImageUrl,
+                description: profile.description,
+                verifiedType: profile.verifiedType,
+            };
         } else {
             const apiKey = c.env.YOUTUBE_API_KEY;
             if (!apiKey) return c.json({ success: false, message: 'No API key' }, 400);
@@ -340,6 +414,7 @@ app.delete('/accounts/:id', async (c) => {
             deleteVideosCache(redis, userId, id),
             deleteIGCache(redis, userId, id),
             deleteRedditCache(redis, userId, id),
+            deleteXCache(redis, userId, id),
         ]);
         return c.json({ success: true });
     } catch (err) {

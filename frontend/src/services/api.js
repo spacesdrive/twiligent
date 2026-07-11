@@ -65,6 +65,11 @@ export const api = {
     getRedditAnalytics: (id) => request(`/accounts/${id}/reddit-analytics`),
     getRedditPosts: (id) => request(`/accounts/${id}/reddit-posts`),
 
+    // X (Twitter) accounts
+    addXAccount: (username, authToken, ct0) => request('/accounts/x', { method: 'POST', body: JSON.stringify({ username, authToken, ct0 }) }),
+    getXAnalytics: (id) => request(`/accounts/${id}/x-analytics`),
+    getXTweets: (id) => request(`/accounts/${id}/x-tweets`),
+
     // GitHub settings
     getGithubSettings: () => request('/settings/github'),
     saveGithubSettings: (data) => request('/settings/github', { method: 'PUT', body: JSON.stringify(data) }),

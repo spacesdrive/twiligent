@@ -376,3 +376,29 @@ Records every significant architectural decision, the alternatives considered, a
 
 **Trade-offs:**
 - All Reddit account post lists are fetched in parallel on page mount, which may trigger more API calls than a single-account view; mitigated by Redis cache on each individual account endpoint
+
+---
+
+## ADR-017: X (Twitter) integration uses cookie-based auth via internal GraphQL API
+
+**Date:** 2026-07-11  
+**Status:** Accepted
+
+**Decision:** X accounts are added using `auth_token` and `ct0` session cookies from a logged-in x.com browser session. Analytics are fetched from X's internal GraphQL API (`api.x.com/graphql/{queryId}/UserByScreenName` and `UserTweets`). The X web client's bearer token is used alongside the cookies for authentication.
+
+**Alternatives considered:**
+- X API v2 (OAuth 2.0): requires a developer account, app approval from X, and paid API tier for analytics endpoints beyond basic read. Rate limits are tier-based and cost money at volume.
+- X API v1.1 (OAuth 1.0a): legacy, partially deprecated, same developer account requirement.
+- Syndication API (`syndication.twitter.com`): public embed API with no auth required, but returns no engagement metrics (likes, retweets, impressions).
+
+**Reasoning:**
+- Cookie-based auth matches X's own web client and gives access to all data visible to the logged-in user, including impressions on own tweets
+- No developer account, app approval, or monthly cost required for a self-hosted personal deployment
+- Follows the same pattern as Reddit cookie-based auth already established in this project
+- `auth_token` + `ct0` are the two cookies X uses for all GraphQL calls; storing both matches the documented approach used by multiple open-source tools
+
+**Trade-offs:**
+- GraphQL query IDs (`queryId`) in the URL rotate when X deploys frontend changes. Update `X_QUERY_IDS` in `backend/services/x.js` when endpoints return HTTP 400. Error messages clearly identify this case.
+- X's internal GraphQL contract is undocumented. Response shapes may change without notice.
+- Session cookies expire or are revoked when the user logs out, changes their password, or X detects automation patterns. Users must re-add the account with fresh cookies.
+- Cloudflare Worker IP ranges may be rate-limited or blocked by X more aggressively than residential IPs. Users experiencing consistent failures should verify with a personal IP.
