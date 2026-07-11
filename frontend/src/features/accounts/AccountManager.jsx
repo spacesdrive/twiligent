@@ -10,8 +10,16 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Plus, Trash2, RefreshCw, Search, Users, CheckCircle2,
-  Tv, Camera, Link2, Info, ExternalLink, MessageSquare, Lock, Twitter,
+  Tv, Camera, Link2, Info, ExternalLink, MessageSquare, Lock,
 } from 'lucide-react';
+
+function XIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em" {...props}>
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z" />
+    </svg>
+  );
+}
 import MainCard from '../../components/MainCard';
 import { useAppContext } from '../../context/AppContext';
 import { api } from '../../services/api';
@@ -315,7 +323,7 @@ export default function AccountManager() {
           {xAccounts.length > 0 && (
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <Twitter className="h-5 w-5 text-sky-500" />
+                <XIcon className="h-5 w-5 text-sky-500" />
                 <h2 className="text-base font-semibold">X Accounts</h2>
                 <Badge variant="outline" className="border-sky-200 bg-sky-50 text-sky-600 text-xs">{xAccounts.length}</Badge>
               </div>
@@ -361,7 +369,7 @@ export default function AccountManager() {
                 <MessageSquare className="h-3.5 w-3.5" /> Reddit
               </TabsTrigger>
               <TabsTrigger value="x" className="flex-1 gap-1.5">
-                <Twitter className="h-3.5 w-3.5" /> X
+                <XIcon className="h-3.5 w-3.5" /> X
               </TabsTrigger>
             </TabsList>
 
