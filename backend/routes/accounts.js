@@ -96,7 +96,7 @@ app.post('/accounts/reddit', async (c) => {
         const userId = c.get('userId');
         const cleanUsername = username.replace(/^u\//i, '').trim();
 
-        const profile = await fetchRedditProfile(cleanUsername, cookie ?? null);
+        const profile = await fetchRedditProfile(cleanUsername, cookie ?? null, c.env);
 
         const accounts = await getAccounts(supabase, userId);
         if (accounts.find(a => a.platform === 'reddit' && a.username === profile.username)) {
@@ -204,7 +204,7 @@ app.post('/accounts/refresh-all', async (c) => {
                     profilePictureUrl: profile.profilePictureUrl,
                 };
             } else if (account.platform === 'reddit') {
-                const profile = await fetchRedditProfile(account.username, account.cookie ?? null);
+                const profile = await fetchRedditProfile(account.username, account.cookie ?? null, c.env);
                 updates = {
                     ...updates,
                     totalKarma: profile.totalKarma,
@@ -290,7 +290,7 @@ app.post('/accounts/:id/refresh', async (c) => {
                 website: profile.website,
             };
         } else if (account.platform === 'reddit') {
-            const profile = await fetchRedditProfile(account.username, account.cookie ?? null);
+            const profile = await fetchRedditProfile(account.username, account.cookie ?? null, c.env);
             updates = {
                 ...updates,
                 totalKarma: profile.totalKarma,

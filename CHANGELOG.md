@@ -9,10 +9,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+**Reddit Application-Only OAuth**
+- Added `REDDIT_CLIENT_ID` and `REDDIT_CLIENT_SECRET` optional Worker secrets for application-only OAuth (client credentials grant)
+- `getAppOnlyToken(env)` in `backend/services/reddit.js` - exchanges client credentials for a bearer token via `POST /api/v1/access_token` with `grant_type=client_credentials`; token cached in isolate memory with expiry
+- When credentials are set, all Reddit API calls use `oauth.reddit.com` with `Authorization: Bearer` header instead of unauthenticated `www.reddit.com` requests; this resolves Reddit's datacenter IP block
+- When credentials are absent, requests fall back to unauthenticated (may 403 depending on Reddit's IP filtering)
+- Fixed User-Agent to proper Reddit-required format: `script:twiligent:v1.0 (by /u/spacesdrive)`
+- Better 403 error message: distinguishes between "account is private or suspended" (authenticated 403) and "Reddit blocked the request - set REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET" (unauthenticated 403)
+- `fetchRedditProfile(username, cookie, env)` and `fetchRedditPosts(username, cookie, limit, env)` now accept `env` as an optional last parameter; all call sites updated in `accounts.js` and `routes/reddit.js` to pass `c.env`
+
 **Reddit Login Fix - Remove Broken Auto-Login**
 - Removed `loginToReddit` password-based auto-login; Reddit's `ssl.reddit.com/api/login` blocks all server/datacenter IPs and cannot be used from Cloudflare Workers
 - `POST /api/accounts/reddit` now accepts `{ username, cookie }` - cookie is optional and manually provided by the user from browser DevTools for private accounts
-- Public Reddit accounts work without any session cookie - all analytics data is fetched from Reddit's public JSON API which requires no authentication
+- Public Reddit accounts work without any session cookie - all analytics data is fetched from Reddit's public JSON API
 - `autoRefreshRedditSessions` replaced with a no-op; session cookies must be refreshed manually by re-adding the account
 - AccountManager Reddit tab updated: password and TOTP fields removed; replaced with optional session cookie field with clear browser DevTools instructions
 - AccountCard badge shows "Session cookie stored" or "Public access" based on `hasCookie`
