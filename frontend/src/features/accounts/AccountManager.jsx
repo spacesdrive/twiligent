@@ -10,8 +10,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Plus, Trash2, RefreshCw, Search, Users, CheckCircle2,
-  Tv, Camera, Link2, Info, ExternalLink, MessageSquare,
-  Lock, Globe,
+  Tv, Camera, Link2, Info, ExternalLink, MessageSquare, Lock,
 } from 'lucide-react';
 import MainCard from '../../components/MainCard';
 import { useAppContext } from '../../context/AppContext';
@@ -133,10 +132,10 @@ export default function AccountManager() {
   };
 
   const handleAddReddit = async () => {
-    if (!redditUsername.trim()) return;
+    if (!redditUsername.trim() || !redditCookie.trim()) return;
     setAddingReddit(true);
     try {
-      await api.addRedditAccount(redditUsername.trim(), redditCookie.trim() || null);
+      await api.addRedditAccount(redditUsername.trim(), redditCookie.trim());
       showToast('Reddit account added');
       closeDialog();
       loadAccounts();
@@ -380,7 +379,7 @@ export default function AccountManager() {
 
             <TabsContent value="reddit" className="space-y-4 mt-4">
               <p className="text-sm text-muted-foreground">
-                Enter your Reddit username. For public accounts no session cookie is needed.
+                A session cookie is required to fetch Reddit analytics from the server.
               </p>
               <div className="space-y-3">
                 <div className="relative">
@@ -394,14 +393,12 @@ export default function AccountManager() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">
-                    Session cookie (optional - for private accounts only)
-                  </label>
+                  <label className="text-xs font-medium">Session cookie</label>
                   <Input
                     type="password"
                     value={redditCookie}
                     onChange={e => setRedditCookie(e.target.value)}
-                    placeholder="reddit_session cookie value"
+                    placeholder="reddit_session value"
                     onKeyDown={e => e.key === 'Enter' && handleAddReddit()}
                   />
                 </div>
@@ -409,7 +406,7 @@ export default function AccountManager() {
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription className="text-xs">
-                  Public Reddit accounts work without a session cookie - analytics are fetched from Reddit's public API. For private accounts, open your browser DevTools while logged in to Reddit, go to Application &gt; Cookies &gt; reddit.com, and copy the value of the <strong>reddit_session</strong> cookie.
+                  Log in to reddit.com in your browser. Open DevTools (F12), go to <strong>Application &gt; Cookies &gt; https://www.reddit.com</strong>, find the cookie named <strong>reddit_session</strong>, and copy its value.
                 </AlertDescription>
               </Alert>
             </TabsContent>
@@ -424,7 +421,7 @@ export default function AccountManager() {
               </Button>
             )}
             {dialogTab === 'reddit' && (
-              <Button onClick={handleAddReddit} disabled={!redditUsername.trim() || addingReddit} className="gap-1.5">
+              <Button onClick={handleAddReddit} disabled={!redditUsername.trim() || !redditCookie.trim() || addingReddit} className="gap-1.5">
                 {addingReddit && <RefreshCw className="h-3.5 w-3.5 animate-spin" />}
                 Add Reddit Account
               </Button>
@@ -480,8 +477,8 @@ function AccountCard({ acct, platform, metrics, refreshingId, onRefresh, onDelet
             </>
           ) : (
             <>
-              <Globe className="h-3 w-3 text-muted-foreground" />
-              <span className="text-muted-foreground">Public access</span>
+              <Lock className="h-3 w-3 text-destructive" />
+              <span className="text-destructive">No cookie - re-add account</span>
             </>
           )}
         </div>

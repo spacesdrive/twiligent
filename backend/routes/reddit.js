@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { getAccountById } from '../lib/db.js';
 import { getRedditCache, setRedditCache } from '../lib/cache.js';
-import { fetchRedditProfile, fetchRedditPosts, computeRedditAnalytics, safeRedditAccount } from '../services/reddit.js';
+import { fetchRedditProfile, fetchRedditPosts, computeRedditAnalytics } from '../services/reddit.js';
 
 const router = new Hono();
 
@@ -14,14 +14,14 @@ router.get('/accounts/:id/reddit-analytics', async (c) => {
     try {
         const account = await getAccountById(supabase, id, userId);
         if (!account || account.platform !== 'reddit') return c.json({ error: 'Reddit account not found' }, 404);
+        if (!account.cookie) return c.json({ error: 'No session cookie stored - re-add this account with a session cookie from reddit.com DevTools' }, 400);
 
         const cached = await getRedditCache(redis, userId, id);
         if (cached) return c.json(cached);
 
-        const cookie = account.cookie ?? null;
         const [profile, posts] = await Promise.all([
-            fetchRedditProfile(account.username, cookie, c.env),
-            fetchRedditPosts(account.username, cookie, 100, c.env),
+            fetchRedditProfile(account.username, account.cookie),
+            fetchRedditPosts(account.username, account.cookie, 100),
         ]);
         const analytics = computeRedditAnalytics(profile, posts);
         const result = { profile, analytics, posts };
@@ -43,12 +43,12 @@ router.get('/accounts/:id/reddit-posts', async (c) => {
     try {
         const account = await getAccountById(supabase, id, userId);
         if (!account || account.platform !== 'reddit') return c.json({ error: 'Reddit account not found' }, 404);
+        if (!account.cookie) return c.json({ error: 'No session cookie stored - re-add this account with a session cookie from reddit.com DevTools' }, 400);
 
         const cached = await getRedditCache(redis, userId, id);
         if (cached?.posts) return c.json(cached.posts);
 
-        const cookie = account.cookie ?? null;
-        const posts = await fetchRedditPosts(account.username, cookie, 100, c.env);
+        const posts = await fetchRedditPosts(account.username, account.cookie, 100);
         return c.json(posts);
     } catch (err) {
         console.error(`GET /accounts/${id}/reddit-posts:`, err.message);
