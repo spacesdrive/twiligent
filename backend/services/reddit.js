@@ -82,6 +82,7 @@ export async function fetchRedditPosts(username, cookie, limit = 100) {
         isNsfw: p.over_18 ?? false,
         createdAt: p.created_utc ? new Date(p.created_utc * 1000).toISOString() : '',
         flair: p.link_flair_text ?? '',
+        awardsCount: p.total_awards_received ?? 0,
     }));
 }
 
@@ -89,6 +90,7 @@ export function computeRedditAnalytics(profile, posts) {
     const empty = {
         fetchedPosts: 0, totalScore: 0, avgScore: 0, medianScore: 0,
         totalComments: 0, avgComments: 0, avgUpvoteRatio: 0,
+        totalAwards: 0, avgAwards: 0,
         topPosts: [], worstPosts: [], subredditBreakdown: [],
         mediaTypeDistribution: {}, postsByDayOfWeek: [], postsByHour: [],
         monthlyBreakdown: [], engagementTimeline: [],
@@ -100,10 +102,12 @@ export function computeRedditAnalytics(profile, posts) {
 
     if (!posts || posts.length === 0) return empty;
 
-    const totalScore = posts.reduce((s, p) => s + p.score, 0);
+    const totalScore    = posts.reduce((s, p) => s + p.score, 0);
     const totalComments = posts.reduce((s, p) => s + p.numComments, 0);
-    const avgScore = Math.round(totalScore / posts.length);
+    const totalAwards   = posts.reduce((s, p) => s + (p.awardsCount ?? 0), 0);
+    const avgScore    = Math.round(totalScore / posts.length);
     const avgComments = Math.round(totalComments / posts.length);
+    const avgAwards   = parseFloat((totalAwards / posts.length).toFixed(2));
     const avgUpvoteRatio = parseFloat(
         (posts.reduce((s, p) => s + p.upvoteRatio, 0) / posts.length * 100).toFixed(1)
     );
@@ -230,6 +234,7 @@ export function computeRedditAnalytics(profile, posts) {
         fetchedPosts: posts.length,
         totalScore, avgScore, medianScore,
         totalComments, avgComments, avgUpvoteRatio,
+        totalAwards, avgAwards,
         topPosts: byScore.slice(0, 10),
         worstPosts: byScore.slice(-5).reverse(),
         subredditBreakdown,

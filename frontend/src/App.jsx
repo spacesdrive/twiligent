@@ -20,6 +20,7 @@ const AccountManager     = lazy(() => import('./features/accounts/AccountManager
 const Settings           = lazy(() => import('./features/settings/Settings'));
 const RedditAnalytics    = lazy(() => import('./features/analytics/reddit/RedditAnalytics'));
 const RedditPosts        = lazy(() => import('./features/analytics/reddit/RedditPosts'));
+const RedditPostsAll     = lazy(() => import('./features/analytics/reddit/RedditPostsAll'));
 
 const router = createBrowserRouter([
   {
@@ -46,6 +47,7 @@ const router = createBrowserRouter([
       { path: 'accounts',           element: <AccountManager /> },
       { path: 'settings',           element: <Settings /> },
       { path: 'reddit/:id',         element: <RedditAnalytics /> },
+      { path: 'reddit-posts',       element: <RedditPostsAll /> },
       { path: 'reddit-posts/:id',   element: <RedditPosts /> },
       { path: '*',             element: <Navigate to="/" replace /> },
     ],
