@@ -1,5 +1,5 @@
 // fetch is a global in Cloudflare Workers - no import needed.
-import { decryptPassword } from '../lib/crypto.js';
+import { decryptPassword, generateTOTP } from '../lib/crypto.js';
 import { getAccounts, updateAccount } from '../lib/db.js';
 
 const REDDIT_BASE = 'https://www.reddit.com';
@@ -242,22 +242,38 @@ export function computeRedditAnalytics(profile, posts) {
     };
 }
 
-// Strips the session cookie before any API response - treat cookie like an access token.
+// Strips sensitive fields before any API response. Exposes hasTotpSecret as a boolean so the
+// frontend can show 2FA status without revealing the secret itself.
 export function safeRedditAccount(account) {
     const copy = { ...account };
+    copy.hasTotpSecret = !!copy.encryptedTotpSecret;
     delete copy.cookie;
     delete copy.encryptedPassword;
+    delete copy.encryptedTotpSecret;
     return copy;
 }
 
+// Browser-like User-Agent required for the login endpoint - Reddit blocks custom UAs on ssl.reddit.com.
+const LOGIN_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+
 // Log in to Reddit using the old JSON API (returns session cookie in body, no redirect needed).
-export async function loginToReddit(username, password) {
-    const body = new URLSearchParams({ user: username, passwd: password, api_type: 'json' });
+// When the account has 2FA enabled, pass the Base32 TOTP secret as totpSecret and the current
+// 6-digit code is appended to the password automatically: "password:123456"
+export async function loginToReddit(username, password, totpSecret = null) {
+    let passwd = password;
+    if (totpSecret) {
+        const code = await generateTOTP(totpSecret);
+        passwd = `${password}:${code}`;
+    }
+
+    const body = new URLSearchParams({ user: username, passwd, api_type: 'json' });
     const res = await fetch('https://ssl.reddit.com/api/login', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
-            'User-Agent': USER_AGENT,
+            'User-Agent': LOGIN_USER_AGENT,
+            'Origin': 'https://ssl.reddit.com',
+            'Referer': 'https://www.reddit.com/',
         },
         body: body.toString(),
     });
@@ -270,6 +286,7 @@ export async function loginToReddit(username, password) {
     if (errors.length > 0) {
         const [[code, message]] = errors;
         if (code === 'WRONG_PASSWORD') throw new Error('Incorrect Reddit password');
+        if (code === 'TWO_FA_REQUIRED') throw new Error('This account has two-factor authentication enabled. Enter your TOTP secret when adding the account to enable automatic login.');
         if (code === 'RATELIMIT') throw new Error('Too many login attempts - wait a few minutes and try again');
         if (code === 'BAD_CAPTCHA') throw new Error('CAPTCHA required - try again in a few minutes');
         throw new Error(message || 'Reddit login failed');
@@ -310,7 +327,10 @@ export async function autoRefreshRedditSessions(supabase, encryptionKey) {
     for (const account of stale) {
         try {
             const password = await decryptPassword(account.encryptedPassword, encryptionKey);
-            const { cookie, cookieAcquiredAt, cookieExpiresAt } = await loginToReddit(account.username, password);
+            const totpSecret = account.encryptedTotpSecret
+                ? await decryptPassword(account.encryptedTotpSecret, encryptionKey)
+                : null;
+            const { cookie, cookieAcquiredAt, cookieExpiresAt } = await loginToReddit(account.username, password, totpSecret);
             await updateAccount(supabase, account.id, { cookie, cookieAcquiredAt, cookieExpiresAt, lastUpdated: new Date().toISOString() });
             console.log(`Refreshed Reddit session for u/${account.username}`);
         } catch (err) {

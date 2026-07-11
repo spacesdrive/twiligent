@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Plus, Trash2, RefreshCw, Search, Users, CheckCircle2,
   Tv, Camera, Link2, Info, ExternalLink, MessageSquare,
-  Lock, Unlock, Globe,
+  Lock, Unlock, Globe, ShieldCheck,
 } from 'lucide-react';
 import MainCard from '../../components/MainCard';
 import { useAppContext } from '../../context/AppContext';
@@ -28,9 +28,10 @@ export default function AccountManager() {
   const [resolved,     setResolved]     = useState(null);
   const [adding,       setAdding]       = useState(false);
   const [connecting,      setConnecting]      = useState(false);
-  const [redditUsername,  setRedditUsername]  = useState('');
-  const [redditPassword,  setRedditPassword]  = useState('');
-  const [addingReddit,    setAddingReddit]    = useState(false);
+  const [redditUsername,   setRedditUsername]   = useState('');
+  const [redditPassword,   setRedditPassword]   = useState('');
+  const [redditTotpSecret, setRedditTotpSecret] = useState('');
+  const [addingReddit,     setAddingReddit]     = useState(false);
   const [refreshingId,    setRefreshingId]    = useState(null);
 
   // Handle Instagram OAuth redirect result (?ig_connected=true or ?ig_error=...)
@@ -136,7 +137,11 @@ export default function AccountManager() {
     if (!redditUsername.trim()) return;
     setAddingReddit(true);
     try {
-      await api.addRedditAccount(redditUsername.trim(), redditPassword.trim() || null);
+      await api.addRedditAccount(
+        redditUsername.trim(),
+        redditPassword.trim() || null,
+        redditTotpSecret.trim() || null,
+      );
       showToast('Reddit account added');
       closeDialog();
       loadAccounts();
@@ -153,6 +158,7 @@ export default function AccountManager() {
     setInput('');
     setRedditUsername('');
     setRedditPassword('');
+    setRedditTotpSecret('');
   };
 
   const ytAccounts     = accounts.filter(a => a.platform !== 'instagram' && a.platform !== 'reddit');
@@ -405,11 +411,28 @@ export default function AccountManager() {
                     onKeyDown={e => e.key === 'Enter' && handleAddReddit()}
                   />
                 </div>
+                {redditPassword && (
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      TOTP secret (only if your account has two-factor authentication enabled)
+                    </label>
+                    <Input
+                      type="password"
+                      value={redditTotpSecret}
+                      onChange={e => setRedditTotpSecret(e.target.value)}
+                      placeholder="Base32 secret from your authenticator app"
+                      onKeyDown={e => e.key === 'Enter' && handleAddReddit()}
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      This is the setup key shown when you first enabled 2FA, not the 6-digit code. It looks like JBSWY3DPEHPK3PXP. Leave blank if 2FA is off.
+                    </p>
+                  </div>
+                )}
               </div>
               <Alert>
                 <Info className="h-4 w-4" />
                 <AlertDescription className="text-xs">
-                  Public accounts work without a password - analytics are fetched from Reddit's public API. Adding your password stores it encrypted on the server and enables automatic session refresh every 24 hours for private accounts or higher rate limits.
+                  Public accounts work without a password. Adding a password stores it encrypted and enables automatic session refresh every 24 hours. If your account uses two-factor authentication, also enter your TOTP secret so login codes are generated automatically.
                 </AlertDescription>
               </Alert>
             </TabsContent>
@@ -472,24 +495,32 @@ function AccountCard({ acct, platform, metrics, refreshingId, onRefresh, onDelet
       </div>
 
       {isReddit && (
-        <div className="flex items-center gap-1.5 text-xs">
-          {acct.cookieExpiresAt ? (
-            new Date(acct.cookieExpiresAt) > new Date() ? (
-              <>
-                <Lock className="h-3 w-3 text-green-500" />
-                <span className="text-green-600">Session active - auto-refresh on</span>
-              </>
+        <div className="flex flex-col gap-1 text-xs">
+          <div className="flex items-center gap-1.5">
+            {acct.cookieExpiresAt ? (
+              new Date(acct.cookieExpiresAt) > new Date() ? (
+                <>
+                  <Lock className="h-3 w-3 text-green-500" />
+                  <span className="text-green-600">Session active - auto-refresh on</span>
+                </>
+              ) : (
+                <>
+                  <Unlock className="h-3 w-3 text-red-500" />
+                  <span className="text-red-600">Session expired - re-add account</span>
+                </>
+              )
             ) : (
               <>
-                <Unlock className="h-3 w-3 text-red-500" />
-                <span className="text-red-600">Session expired - refresh account</span>
+                <Globe className="h-3 w-3 text-muted-foreground" />
+                <span className="text-muted-foreground">Public access only</span>
               </>
-            )
-          ) : (
-            <>
-              <Globe className="h-3 w-3 text-muted-foreground" />
-              <span className="text-muted-foreground">Public access only</span>
-            </>
+            )}
+          </div>
+          {acct.hasTotpSecret && (
+            <div className="flex items-center gap-1.5">
+              <ShieldCheck className="h-3 w-3 text-blue-500" />
+              <span className="text-blue-600">2FA enabled</span>
+            </div>
           )}
         </div>
       )}
