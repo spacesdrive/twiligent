@@ -123,6 +123,86 @@ InstagramAnalytics.jsx mounts -> api.getIGAnalytics(id)
 }
 ```
 
+## Reddit Analytics Flow
+
+```
+User navigates to /reddit/:id
+    │
+    ▼
+RedditAnalytics.jsx mounts -> api.getRedditAnalytics(id)
+    -> GET /api/accounts/:id/reddit-analytics
+        │
+        ▼
+    Worker: redditRouter
+        1. getAccountById(supabase, id, userId) - verify ownership
+        2. redis cache check: key reddit:{userId}:{accountId}
+           -> cache hit: return immediately
+           -> cache miss: continue
+        3. Fetch from Reddit public JSON API (with optional session cookie):
+           a. GET /user/{username}/about.json
+              -> profile: totalKarma, postKarma, commentKarma, awardeeKarma, iconUrl, createdAt
+           b. Paginate /user/{username}/submitted.json?limit=100
+              -> up to 10 pages x 100 items = up to 1000 posts
+        4. computeRedditAnalytics(profile, posts)
+           -> score stats, subreddit breakdown, timing analysis
+        5. Cache result in Redis
+        6. Return { profile, analytics }
+```
+
+### computeRedditAnalytics() Output (partial)
+
+```js
+{
+    fetchedPosts: 100,
+    totalScore: 45000,
+    avgScore: 450,
+    medianScore: 120,
+    totalComments: 3200,
+    avgComments: 32,
+    avgUpvoteRatio: 91.4,        // percentage
+    totalAwards: 18,
+    avgAwards: 0.18,
+    topPosts: [ /* top 10 by score */ ],
+    worstPosts: [ /* bottom 5 by score */ ],
+    subredditBreakdown: [
+        { subreddit: 'programming', posts: 40, totalScore: 20000, avgScore: 500, avgComments: 45 },
+        // ...
+    ],
+    mediaTypeDistribution: { text: 60, link: 25, image: 10, video: 5 },
+    postsByDayOfWeek: [ /* 7 entries with avgScore and post count per day */ ],
+    postsByHour: [ /* 24 entries with avgScore per hour */ ],
+    bestPostingDay: 'Tuesday',
+    bestPostingHour: '14:00',
+    monthlyBreakdown: [
+        { month: '2025-06', posts: 8, score: 3600, avgScore: 450 },
+        // ...
+    ],
+    postsLast7Days: 2,
+    postsLast30Days: 8,
+    postsLast90Days: 24,
+    postFrequency: { perWeek: 1.8, perMonth: 7.6 },
+    viralityScore: 4.2,          // peak / average score ratio
+    consistencyScore: 68,        // 0-100, higher = more uniform performance
+}
+```
+
+### Per-post fields (in posts array and topPosts)
+
+```js
+{
+    id, title, subreddit, subredditPrefixed,
+    score, upvoteRatio, numComments,
+    url, permalink, thumbnail,
+    mediaType,      // 'text' | 'image' | 'video' | 'link'
+    isSelf, isVideo, isNsfw,
+    createdAt,      // ISO string
+    flair,
+    awardsCount,    // total_awards_received from Reddit API
+}
+```
+
+Note: Reddit disabled `view_count` from their API in December 2018. The field always returns `null` regardless of authentication method. Views are not available for Reddit posts.
+
 ## Overview Dashboard (Cross-Account)
 
 ```
@@ -136,3 +216,5 @@ Overview.jsx uses accounts from AppContext
 ```
 
 The Overview doesn't fetch fresh analytics - it uses the cached account metadata (subscriber counts, view counts) already in `AppContext.accounts`. Deep per-account analytics (video lists, engagement rates) are only fetched when the user navigates to a specific account page.
+
+Reddit accounts are excluded from the audience totals, audience comparison chart, and audience share pie chart. Karma is not equivalent to subscribers or followers - it is an engagement/reputation metric. Reddit accounts get their own karma summary card in the Overview showing totalKarma, postKarma, and commentKarma. The audience charts and leaderboard tables only include YouTube and Instagram accounts.

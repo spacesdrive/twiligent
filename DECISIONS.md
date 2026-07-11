@@ -334,3 +334,45 @@ Records every significant architectural decision, the alternatives considered, a
 - If `REDDIT_ENCRYPTION_KEY` is lost, all stored Reddit passwords are unrecoverable - users would need to re-add their accounts with a new password
 - A compromised Worker environment (leaked `REDDIT_ENCRYPTION_KEY` + DB access) allows decryption of all stored passwords
 - Reddit's unofficial login API (`ssl.reddit.com/api/login`) is not a documented endpoint and could change without notice
+
+---
+
+## ADR-015: Reddit karma excluded from audience metrics in Overview
+
+**Date:** 2026-07-11  
+**Status:** Accepted
+
+**Decision:** Reddit karma (total, post, comment) is displayed in a separate card on the Overview dashboard and is never added to the Total Audience count or included in the Audience Comparison or Audience Share charts.
+
+**Alternatives considered:**
+- Include karma as an "audience proxy" alongside YouTube subscribers and Instagram followers
+
+**Reasoning:**
+- Karma is an engagement/reputation score that accumulates over a Reddit account's lifetime; it has no relationship to audience size
+- A user with 100k karma and zero followers is categorically different from a YouTube channel with 100k subscribers
+- Mixing them into a single "Total Audience" KPI produces a number that is meaningless and actively misleading
+- Reddit's own platform does not expose a follower or subscriber count for user profiles via their API
+
+**Trade-offs:**
+- Reddit accounts appear less prominently in the Overview since they have no audience bar in the comparison chart; this is the correct representation of what the data means
+
+---
+
+## ADR-016: Global Reddit Posts page uses Promise.allSettled across all accounts
+
+**Date:** 2026-07-11  
+**Status:** Accepted
+
+**Decision:** The `/reddit-posts` page fetches posts from all connected Reddit accounts concurrently using `Promise.allSettled`, then merges and displays them in a single table. Failures from individual accounts show a toast but do not block posts from other accounts from displaying.
+
+**Alternatives considered:**
+- Sequential fetches: simpler but slower; one slow account blocks all others
+- Single-account page only: matches YouTube Videos and Shorts pattern but Reddit accounts are more likely to be used across separate communities
+
+**Reasoning:**
+- `Promise.allSettled` (not `Promise.all`) ensures a failed account does not reject the entire request
+- Matches the established `VideoExplorer` pattern for multi-channel YouTube
+- Users tracking multiple Reddit identities benefit from a unified view; per-account pages still exist for deep analysis
+
+**Trade-offs:**
+- All Reddit account post lists are fetched in parallel on page mount, which may trigger more API calls than a single-account view; mitigated by Redis cache on each individual account endpoint

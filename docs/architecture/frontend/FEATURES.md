@@ -10,18 +10,22 @@ frontend/src/
 │   │   │   └── ChannelAnalytics.jsx        <- YouTube channel analytics
 │   │   ├── instagram/
 │   │   │   └── InstagramAnalytics.jsx      <- Instagram account analytics
-│   │   └── overview/
-│   │       └── Overview.jsx                <- Cross-platform aggregate dashboard
+│   │   ├── overview/
+│   │   │   └── Overview.jsx                <- Cross-platform aggregate dashboard
+│   │   └── reddit/
+│   │       ├── RedditAnalytics.jsx         <- Reddit account analytics (karma, scores, subreddits)
+│   │       ├── RedditPosts.jsx             <- Per-account post explorer
+│   │       └── RedditPostsAll.jsx          <- Global post explorer (all Reddit accounts)
 │   ├── accounts/
-│   │   └── Accounts.jsx                    <- Add/remove connected accounts
-│   ├── publish/
-│   │   └── Publish.jsx                     <- Instagram immediate publish
-│   ├── schedule/
-│   │   └── Schedule.jsx                    <- Instagram scheduled posts queue
+│   │   └── AccountManager.jsx              <- Add/remove connected accounts
+│   ├── publishing/
+│   │   └── UploadContent.jsx               <- Instagram publish + scheduled post queue
 │   ├── settings/
 │   │   └── Settings.jsx                    <- GitHub PAT and other settings
 │   └── videos/
-│       └── VideoExplorer.jsx               <- YouTube video library with filtering
+│       ├── VideoExplorer.jsx               <- YouTube video library with filtering
+│       ├── ShortsExplorer.jsx              <- YouTube Shorts-filtered view
+│       └── ReelsExplorer.jsx               <- Instagram Reels-filtered view
 ```
 
 ## Feature Conventions
@@ -71,8 +75,9 @@ Each page manages its own loading/data/error state. Pages do not write to `AppCo
 | Accounts | `/accounts` | Connect/disconnect social accounts (YouTube, Instagram, Reddit) |
 | Channel Analytics | `/channel/:id` | YouTube analytics for one channel |
 | Instagram Analytics | `/instagram/:id` | Instagram analytics for one account |
-| Reddit Analytics | `/reddit/:id` | Reddit analytics for one account - karma, post scores, subreddit breakdown, timing |
-| Reddit Posts | `/reddit-posts/:id` | Searchable and sortable post list for a Reddit account |
+| Reddit Analytics | `/reddit/:id` | Reddit analytics for one account - karma breakdown, score timeline, post type distribution, day/hour analysis, subreddit breakdown, top posts |
+| Reddit Posts (global) | `/reddit-posts` | Combined post explorer across all Reddit accounts with account and subreddit filters |
+| Reddit Posts (per account) | `/reddit-posts/:id` | Searchable and sortable post list for a single Reddit account |
 | Video Explorer | `/videos/:id` | YouTube video library with search and sort |
 | Publish | `/publish/:id` | Publish a post to Instagram immediately |
 | Schedule | `/schedule/:id` | View and manage the scheduled post queue |

@@ -15,7 +15,8 @@ The app uses React Router v6 in `frontend/src/App.jsx`. The router uses `Browser
 | `/channel/:id` | `ChannelAnalytics.jsx` | `:id` = account.id for YouTube accounts |
 | `/instagram/:id` | `InstagramAnalytics.jsx` | `:id` = account.id for Instagram accounts |
 | `/reddit/:id` | `RedditAnalytics.jsx` | `:id` = account.id for Reddit accounts |
-| `/reddit-posts/:id` | `RedditPosts.jsx` | `:id` = account.id; filterable/sortable post explorer |
+| `/reddit-posts` | `RedditPostsAll.jsx` | Combined post explorer across all connected Reddit accounts |
+| `/reddit-posts/:id` | `RedditPosts.jsx` | `:id` = account.id; filterable/sortable post explorer for one account |
 | `/videos/:id` | `VideoExplorer.jsx` | `:id` = account.id for YouTube accounts |
 | `/publish/:id` | `Publish.jsx` | `:id` = account.id for Instagram accounts |
 | `/schedule/:id` | `Schedule.jsx` | `:id` = account.id for Instagram accounts |
@@ -23,21 +24,7 @@ The app uses React Router v6 in `frontend/src/App.jsx`. The router uses `Browser
 
 ## Auth Guard
 
-There is no dedicated `<ProtectedRoute>` component. Auth protection is applied inline in the layout route:
-
-```jsx
-// App.jsx
-function AppLayout() {
-    const { user, loading } = useAuthContext();
-
-    if (loading) return <LoadingScreen />;
-    if (!user) return <Navigate to="/login" replace />;
-
-    return <SidebarLayout />;
-}
-```
-
-All routes nested under `AppLayout` are protected. `/login` is the only public route.
+Auth protection is applied via a `<ProtectedRoute>` component wrapping the layout route in `App.jsx`. All child routes are protected. `/login` is the only public route.
 
 ## Lazy Loading
 
