@@ -20,7 +20,7 @@ import { fmtNum, fmtNumFull, fmtDate, timeAgo } from '../../../utils/formatters'
 import {
   ArrowLeft, RefreshCw, TrendingUp, MessageSquare, Award, BarChart2,
   Calendar, Clock, Zap, Flame, Trophy, ExternalLink, FileText, Link2,
-  Image, Video, Star, Eye,
+  Image, Video, Star,
 } from 'lucide-react';
 
 const REDDIT_COLORS = ['#FF4500', '#FF6534', '#FF8C00', '#FFA500', '#FFB347', '#FFC080'];
@@ -183,10 +183,10 @@ export default function RedditAnalytics() {
 
       {/* KPI cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard icon={<TrendingUp />}    label="Posts Fetched"  value={fmtNum(a.fetchedPosts)} subtitle={`${a.postsLast30Days ?? 0} in the last 30 days`} gradient="orange" />
-        <StatCard icon={<Eye />}           label="Total Views"    value={a.totalViews !== null ? fmtNum(a.totalViews) : 'N/A'} subtitle={a.totalViews !== null ? `Avg ${fmtNum(a.avgViews)} per post` : 'Reddit does not always expose views'} gradient="red" />
-        <StatCard icon={<Award />}         label="Total Score"    value={fmtNum(a.totalScore)} subtitle={`Avg ${fmtNum(a.avgScore)} per post`} gradient="purple" />
-        <StatCard icon={<MessageSquare />} label="Total Comments" value={fmtNum(a.totalComments)} subtitle={`Avg ${fmtNum(a.avgComments)} per post`} gradient="blue" />
+        <StatCard icon={<TrendingUp />}    label="Posts Fetched"   value={fmtNum(a.fetchedPosts)} subtitle={`${a.postsLast30Days ?? 0} in the last 30 days`} gradient="orange" />
+        <StatCard icon={<Award />}         label="Total Score"     value={fmtNum(a.totalScore)} subtitle={`Avg ${fmtNum(a.avgScore)} per post`} gradient="red" />
+        <StatCard icon={<MessageSquare />} label="Total Comments"  value={fmtNum(a.totalComments)} subtitle={`Avg ${fmtNum(a.avgComments)} per post`} gradient="blue" />
+        <StatCard icon={<Star />}          label="Awards Received" value={fmtNum(a.totalAwards ?? 0)} subtitle={`Avg ${a.avgAwards ?? 0} per post`} gradient="purple" />
       </div>
 
       {/* Score timeline + media type pie */}
@@ -261,8 +261,6 @@ export default function RedditAnalytics() {
               { label: 'Avg upvote ratio', value: `${a.avgUpvoteRatio ?? 0}%` },
               { label: 'Total comments',   value: fmtNum(a.totalComments) },
               { label: 'Avg comments',     value: fmtNum(a.avgComments) },
-              { label: 'Awards received',  value: fmtNum(a.totalAwards ?? 0) },
-              { label: 'Avg awards / post', value: String(a.avgAwards ?? 0) },
             ].map(item => (
               <div key={item.label} className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">{item.label}</span>
@@ -380,7 +378,6 @@ export default function RedditAnalytics() {
                 <TableHead className="w-8">#</TableHead>
                 <TableHead>Post</TableHead>
                 <TableHead className="text-right">Score</TableHead>
-                <TableHead className="text-right">Views</TableHead>
                 <TableHead className="text-right">Comments</TableHead>
                 <TableHead className="text-right">Upvote %</TableHead>
                 <TableHead className="text-right">Posted</TableHead>
@@ -405,7 +402,6 @@ export default function RedditAnalytics() {
                     </div>
                   </TableCell>
                   <TableCell className="text-right text-sm font-semibold tabular-nums text-orange-500">{fmtNum(post.score)}</TableCell>
-                  <TableCell className="text-right text-sm tabular-nums text-muted-foreground">{post.viewCount !== null ? fmtNum(post.viewCount) : <span className="text-xs">N/A</span>}</TableCell>
                   <TableCell className="text-right text-sm tabular-nums">{fmtNum(post.numComments)}</TableCell>
                   <TableCell className="text-right text-sm tabular-nums">{Math.round((post.upvoteRatio ?? 0) * 100)}%</TableCell>
                   <TableCell className="text-right text-xs text-muted-foreground">{fmtDate(post.createdAt)}</TableCell>

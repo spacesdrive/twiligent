@@ -83,7 +83,6 @@ export async function fetchRedditPosts(username, cookie, limit = 100) {
         createdAt: p.created_utc ? new Date(p.created_utc * 1000).toISOString() : '',
         flair: p.link_flair_text ?? '',
         awardsCount: p.total_awards_received ?? 0,
-        viewCount: typeof p.view_count === 'number' ? p.view_count : null,
     }));
 }
 
@@ -92,7 +91,6 @@ export function computeRedditAnalytics(profile, posts) {
         fetchedPosts: 0, totalScore: 0, avgScore: 0, medianScore: 0,
         totalComments: 0, avgComments: 0, avgUpvoteRatio: 0,
         totalAwards: 0, avgAwards: 0,
-        totalViews: null, avgViews: null, postsWithViews: 0,
         topPosts: [], worstPosts: [], subredditBreakdown: [],
         mediaTypeDistribution: {}, postsByDayOfWeek: [], postsByHour: [],
         monthlyBreakdown: [], engagementTimeline: [],
@@ -111,13 +109,6 @@ export function computeRedditAnalytics(profile, posts) {
     const avgComments = Math.round(totalComments / posts.length);
     const avgAwards   = parseFloat((totalAwards / posts.length).toFixed(2));
 
-    const postsWithViews = posts.filter(p => p.viewCount !== null).length;
-    const totalViews = postsWithViews > 0
-        ? posts.reduce((s, p) => s + (p.viewCount ?? 0), 0)
-        : null;
-    const avgViews = postsWithViews > 0 && totalViews !== null
-        ? Math.round(totalViews / postsWithViews)
-        : null;
     const avgUpvoteRatio = parseFloat(
         (posts.reduce((s, p) => s + p.upvoteRatio, 0) / posts.length * 100).toFixed(1)
     );
@@ -245,7 +236,6 @@ export function computeRedditAnalytics(profile, posts) {
         totalScore, avgScore, medianScore,
         totalComments, avgComments, avgUpvoteRatio,
         totalAwards, avgAwards,
-        totalViews, avgViews, postsWithViews,
         topPosts: byScore.slice(0, 10),
         worstPosts: byScore.slice(-5).reverse(),
         subredditBreakdown,
