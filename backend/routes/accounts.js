@@ -91,12 +91,13 @@ app.post('/accounts/reddit', async (c) => {
     try {
         const { username, cookie } = await c.req.json();
         if (!username) return c.json({ success: false, message: 'Username is required' }, 400);
+        if (!cookie) return c.json({ success: false, message: 'Session cookie is required - open reddit.com in your browser, copy the reddit_session value from DevTools (Application > Cookies > reddit.com), and paste it here' }, 400);
 
         const supabase = c.get('supabase');
         const userId = c.get('userId');
         const cleanUsername = username.replace(/^u\//i, '').trim();
 
-        const profile = await fetchRedditProfile(cleanUsername, cookie ?? null, c.env);
+        const profile = await fetchRedditProfile(cleanUsername, cookie);
 
         const accounts = await getAccounts(supabase, userId);
         if (accounts.find(a => a.platform === 'reddit' && a.username === profile.username)) {
@@ -108,12 +109,12 @@ app.post('/accounts/reddit', async (c) => {
             platform: 'reddit',
             username: profile.username,
             title: `u/${profile.username}`,
-            totalKarma: profile.totalKarma ?? 0,
-            postKarma: profile.postKarma ?? 0,
-            commentKarma: profile.commentKarma ?? 0,
-            iconUrl: profile.iconUrl ?? '',
-            createdAt: profile.createdAt ?? '',
-            ...(cookie ? { cookie } : {}),
+            totalKarma: profile.totalKarma,
+            postKarma: profile.postKarma,
+            commentKarma: profile.commentKarma,
+            iconUrl: profile.iconUrl,
+            createdAt: profile.createdAt,
+            cookie,
             addedAt: new Date().toISOString(),
             lastUpdated: new Date().toISOString(),
         };
@@ -204,7 +205,8 @@ app.post('/accounts/refresh-all', async (c) => {
                     profilePictureUrl: profile.profilePictureUrl,
                 };
             } else if (account.platform === 'reddit') {
-                const profile = await fetchRedditProfile(account.username, account.cookie ?? null, c.env);
+                if (!account.cookie) throw new Error('No session cookie stored - re-add this account with a session cookie from reddit.com DevTools');
+                const profile = await fetchRedditProfile(account.username, account.cookie);
                 updates = {
                     ...updates,
                     totalKarma: profile.totalKarma,
@@ -290,7 +292,8 @@ app.post('/accounts/:id/refresh', async (c) => {
                 website: profile.website,
             };
         } else if (account.platform === 'reddit') {
-            const profile = await fetchRedditProfile(account.username, account.cookie ?? null, c.env);
+            if (!account.cookie) return c.json({ success: false, message: 'No session cookie stored - re-add this account with a session cookie from reddit.com DevTools' }, 400);
+            const profile = await fetchRedditProfile(account.username, account.cookie);
             updates = {
                 ...updates,
                 totalKarma: profile.totalKarma,
