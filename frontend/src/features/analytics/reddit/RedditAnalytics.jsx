@@ -20,7 +20,7 @@ import { fmtNum, fmtNumFull, fmtDate, timeAgo } from '../../../utils/formatters'
 import {
   ArrowLeft, RefreshCw, TrendingUp, MessageSquare, Award, BarChart2,
   Calendar, Clock, Zap, Flame, Trophy, ExternalLink, FileText, Link2,
-  Image, Video,
+  Image, Video, Star,
 } from 'lucide-react';
 
 const REDDIT_COLORS = ['#FF4500', '#FF6534', '#FF8C00', '#FFA500', '#FFB347', '#FFC080'];
@@ -124,7 +124,7 @@ export default function RedditAnalytics() {
                 <h1 className="text-xl font-bold">u/{p.username || account.username}</h1>
                 {p.isGold && <Badge className="bg-yellow-500 text-white text-xs">Gold</Badge>}
                 {p.verified && <Badge className="bg-blue-500 text-white text-xs">Verified</Badge>}
-                {p.isMod && <Badge variant="outline" className="text-xs">Mod</Badge>}
+                {p.isMod && <Badge variant="outline" className="text-xs">Moderator</Badge>}
               </div>
               <p className="text-sm text-muted-foreground mt-0.5">
                 Reddit account
@@ -156,19 +156,26 @@ export default function RedditAnalytics() {
             </Button>
           </div>
         </div>
+      </MainCard>
 
-        <Separator className="my-4" />
-
-        {/* Karma breakdown */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+      {/* Karma - separate from profile since it's the key engagement metric on Reddit */}
+      <MainCard>
+        <div className="flex items-center gap-2 mb-4">
+          <Flame className="h-4 w-4 text-orange-500" />
+          <span className="text-sm font-semibold">Karma</span>
+          <span className="text-xs text-muted-foreground">earned across posts and comments</span>
+        </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
           {[
-            { label: 'Total Karma',   value: fmtNum(p.totalKarma) },
-            { label: 'Post Karma',    value: fmtNum(p.postKarma) },
-            { label: 'Comment Karma', value: fmtNum(p.commentKarma) },
+            { label: 'Total Karma',   value: fmtNum(p.totalKarma),   sub: fmtNumFull(p.totalKarma) },
+            { label: 'Post Karma',    value: fmtNum(p.postKarma),    sub: 'from submitted posts' },
+            { label: 'Comment Karma', value: fmtNum(p.commentKarma), sub: 'from comments' },
+            { label: 'Awardee Karma', value: fmtNum(p.awardeeKarma ?? 0), sub: 'from received awards' },
           ].map(item => (
             <div key={item.label} className="text-center p-3 rounded-lg bg-muted/40">
-              <p className="text-xl font-bold tabular-nums">{item.value}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{item.label}</p>
+              <p className="text-xl font-bold tabular-nums text-orange-500">{item.value}</p>
+              <p className="text-xs font-medium mt-0.5">{item.label}</p>
+              <p className="text-[10px] text-muted-foreground mt-0.5">{item.sub}</p>
             </div>
           ))}
         </div>
@@ -176,10 +183,10 @@ export default function RedditAnalytics() {
 
       {/* KPI cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard icon={<TrendingUp />}    label="Posts Analyzed" value={fmtNum(a.fetchedPosts)} subtitle={`${a.postsLast30Days ?? 0} in last 30 days`} gradient="orange" />
-        <StatCard icon={<Award />}         label="Total Score"    value={fmtNum(a.totalScore)} subtitle={`Avg ${fmtNum(a.avgScore)} per post`} gradient="red" />
-        <StatCard icon={<MessageSquare />} label="Total Comments" value={fmtNum(a.totalComments)} subtitle={`Avg ${fmtNum(a.avgComments)} per post`} gradient="blue" />
-        <StatCard icon={<BarChart2 />}     label="Upvote Rate"    value={`${a.avgUpvoteRatio ?? 0}%`} subtitle="average upvote ratio" gradient="purple" />
+        <StatCard icon={<TrendingUp />}    label="Posts Fetched"    value={fmtNum(a.fetchedPosts)} subtitle={`${a.postsLast30Days ?? 0} in the last 30 days`} gradient="orange" />
+        <StatCard icon={<Award />}         label="Total Score"      value={fmtNum(a.totalScore)} subtitle={`Avg ${fmtNum(a.avgScore)} per post`} gradient="red" />
+        <StatCard icon={<MessageSquare />} label="Total Comments"   value={fmtNum(a.totalComments)} subtitle={`Avg ${fmtNum(a.avgComments)} per post`} gradient="blue" />
+        <StatCard icon={<Star />}          label="Awards Received"  value={fmtNum(a.totalAwards ?? 0)} subtitle={`Avg ${a.avgAwards ?? 0} per post`} gradient="purple" />
       </div>
 
       {/* Score timeline + media type pie */}
@@ -219,39 +226,41 @@ export default function RedditAnalytics() {
         </div>
       )}
 
-      {/* Activity scores */}
+      {/* Detailed metrics */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        <MainCard title="Post Activity">
+        <MainCard title="Posting Frequency">
           <div className="space-y-3">
             {[
-              { label: 'Last 7 days',  value: a.postsLast7Days },
-              { label: 'Last 30 days', value: a.postsLast30Days },
-              { label: 'Last 90 days', value: a.postsLast90Days },
+              { label: 'Last 7 days',  value: `${a.postsLast7Days} posts` },
+              { label: 'Last 30 days', value: `${a.postsLast30Days} posts` },
+              { label: 'Last 90 days', value: `${a.postsLast90Days} posts` },
             ].map(item => (
               <div key={item.label} className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">{item.label}</span>
-                <span className="text-sm font-semibold tabular-nums">{item.value} posts</span>
+                <span className="text-sm font-semibold tabular-nums">{item.value}</span>
               </div>
             ))}
             <Separator />
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Per week (avg)</span>
-              <span className="text-sm font-semibold">{a.postFrequency?.perWeek ?? 0}</span>
+              <span className="text-sm text-muted-foreground">Avg per week</span>
+              <span className="text-sm font-semibold tabular-nums">{a.postFrequency?.perWeek ?? 0}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Per month (avg)</span>
-              <span className="text-sm font-semibold">{a.postFrequency?.perMonth ?? 0}</span>
+              <span className="text-sm text-muted-foreground">Avg per month</span>
+              <span className="text-sm font-semibold tabular-nums">{a.postFrequency?.perMonth ?? 0}</span>
             </div>
           </div>
         </MainCard>
 
-        <MainCard title="Score Distribution">
+        <MainCard title="Score Breakdown">
           <div className="space-y-3">
             {[
-              { label: 'Avg score',    value: fmtNum(a.avgScore) },
-              { label: 'Median score', value: fmtNum(a.medianScore) },
-              { label: 'Best score',   value: fmtNum(a.topPosts?.[0]?.score) },
-              { label: 'Avg upvote %', value: `${a.avgUpvoteRatio ?? 0}%` },
+              { label: 'Average score',    value: fmtNum(a.avgScore) },
+              { label: 'Median score',     value: fmtNum(a.medianScore) },
+              { label: 'Best single post', value: fmtNum(a.topPosts?.[0]?.score) },
+              { label: 'Avg upvote ratio', value: `${a.avgUpvoteRatio ?? 0}%` },
+              { label: 'Total comments',   value: fmtNum(a.totalComments) },
+              { label: 'Avg comments',     value: fmtNum(a.avgComments) },
             ].map(item => (
               <div key={item.label} className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">{item.label}</span>
@@ -261,11 +270,11 @@ export default function RedditAnalytics() {
           </div>
         </MainCard>
 
-        <MainCard title="Performance Scores">
+        <MainCard title="Performance Indicators">
           <div className="space-y-4">
             {[
-              { label: 'Virality Score', value: a.viralityScore, max: Math.max(10, a.viralityScore), desc: 'Peak vs average score ratio' },
-              { label: 'Consistency',    value: a.consistencyScore, max: 100, desc: 'Score reliability across posts' },
+              { label: 'Virality Score', value: a.viralityScore, max: Math.max(10, a.viralityScore), desc: 'Ratio of peak post score to average - higher means bigger outlier hits' },
+              { label: 'Consistency',    value: a.consistencyScore, max: 100, desc: 'Score reliability across posts - 100 means very uniform performance' },
             ].map(item => (
               <div key={item.label} className="space-y-1.5">
                 <div className="flex items-center justify-between text-sm">

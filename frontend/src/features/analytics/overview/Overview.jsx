@@ -15,7 +15,7 @@ import StatCard from '../../../components/ui/StatCard';
 import MainCard from '../../../components/MainCard';
 import { useAppContext } from '../../../context/AppContext';
 import { fmtNum, fmtNumFull, timeAgo } from '../../../utils/formatters';
-import { RefreshCw, Users, Eye, VideoIcon, BarChart3, ExternalLink, Tv, Camera, MessageSquare } from 'lucide-react';
+import { RefreshCw, Users, Eye, VideoIcon, BarChart3, ExternalLink, Tv, Camera, MessageSquare, Flame } from 'lucide-react';
 
 const CHART_COLORS = ['hsl(221.2,83.2%,53.3%)', '#22c55e', '#f97316', '#a855f7', '#06b6d4', '#ec4899', '#6366f1', '#eab308'];
 
@@ -32,7 +32,7 @@ export default function Overview() {
       return { ...acc, followers: acc.followers + (a.followersCount || 0), posts: acc.posts + (a.mediaCount || 0) };
     }
     if (a.platform === 'reddit') {
-      return { ...acc, karma: acc.karma + (a.totalKarma || 0) };
+      return { ...acc, karma: acc.karma + (a.totalKarma || 0), postKarma: acc.postKarma + (a.postKarma || 0), commentKarma: acc.commentKarma + (a.commentKarma || 0) };
     }
     return {
       ...acc,
@@ -40,13 +40,14 @@ export default function Overview() {
       views: acc.views + (a.viewCount || 0),
       videos: acc.videos + (a.videoCount || 0),
     };
-  }, { subscribers: 0, views: 0, videos: 0, followers: 0, posts: 0, karma: 0 });
+  }, { subscribers: 0, views: 0, videos: 0, followers: 0, posts: 0, karma: 0, postKarma: 0, commentKarma: 0 });
 
-  const totalAudience = totals.subscribers + totals.followers + totals.karma;
+  // Karma is engagement-based, not audience-based — excluded from totalAudience
+  const totalAudience = totals.subscribers + totals.followers;
 
   const audienceMetric = (a) => {
-    if (a.platform === 'reddit')    return a.totalKarma   || 0;
     if (a.platform === 'instagram') return a.followersCount || 0;
+    if (a.platform === 'reddit')    return 0;
     return a.subscriberCount || 0;
   };
   const contentMetric = (a) => {
@@ -54,18 +55,22 @@ export default function Overview() {
     if (a.platform === 'instagram') return a.mediaCount  || 0;
     return a.viewCount || 0;
   };
+  const karmaMetric = (a) => (a.platform === 'reddit' ? a.totalKarma || 0 : 0);
+
+  // Audience charts exclude Reddit - karma is not an audience metric
+  const nonRedditAccounts = accounts.filter(a => a.platform !== 'reddit');
 
   const sorted = {
-    byAudience: [...accounts].sort((a, b) => audienceMetric(b) - audienceMetric(a)),
-    byContent:  [...accounts].sort((a, b) => contentMetric(b) - contentMetric(a)),
+    byAudience: [...nonRedditAccounts].sort((a, b) => audienceMetric(b) - audienceMetric(a)),
+    byContent:  [...nonRedditAccounts].sort((a, b) => contentMetric(b) - contentMetric(a)),
   };
 
-  const chartData = accounts.map(a => ({
+  const chartData = nonRedditAccounts.map(a => ({
     name: (a.title || '').slice(0, 14) + ((a.title || '').length > 14 ? '…' : ''),
     audience: audienceMetric(a),
   }));
 
-  const pieData = accounts.map((a, i) => ({
+  const pieData = nonRedditAccounts.map((a, i) => ({
     name: (a.title || '').slice(0, 14) + ((a.title || '').length > 14 ? '…' : ''),
     value: audienceMetric(a),
     color: CHART_COLORS[i % CHART_COLORS.length],
@@ -111,14 +116,53 @@ export default function Overview() {
       {/* KPI cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         {[
-          { icon: <Users />, label: 'Total Audience', value: fmtNum(totalAudience), subtitle: `${fmtNum(totals.subscribers)} subs · ${fmtNum(totals.followers)} followers`, gradient: 'purple' },
-          { icon: <Eye />,   label: 'Total Views',    value: fmtNum(totals.views),  subtitle: fmtNumFull(totals.views), gradient: 'red' },
-          { icon: <VideoIcon />, label: 'Total Content', value: fmtNum(totals.videos + totals.posts), subtitle: `${fmtNum(totals.videos)} videos · ${fmtNum(totals.posts)} posts`, gradient: 'blue' },
+          { icon: <Users />,    label: 'Total Audience', value: fmtNum(totalAudience), subtitle: `${fmtNum(totals.subscribers)} subs · ${fmtNum(totals.followers)} followers`, gradient: 'purple' },
+          { icon: <Eye />,      label: 'Total Views',    value: fmtNum(totals.views),  subtitle: fmtNumFull(totals.views), gradient: 'red' },
+          { icon: <VideoIcon />, label: 'Total Content', value: fmtNum(totals.videos + totals.posts), subtitle: `${fmtNum(totals.videos)} videos · ${fmtNum(totals.posts)} IG posts`, gradient: 'blue' },
           { icon: <BarChart3 />, label: 'Accounts', value: accounts.length, subtitle: [ytAccounts.length ? `${ytAccounts.length} YouTube` : null, igAccounts.length ? `${igAccounts.length} Instagram` : null, redditAccounts.length ? `${redditAccounts.length} Reddit` : null].filter(Boolean).join(' · '), gradient: 'orange' },
         ].map((card, i) => (
           <StatCard key={i} {...card} loading={loading} />
         ))}
       </div>
+
+      {/* Reddit karma summary - separate from audience since karma is not an audience metric */}
+      {redditAccounts.length > 0 && (
+        <MainCard>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Flame className="h-4 w-4 text-orange-500" />
+              <span className="text-sm font-semibold">Reddit</span>
+              <span className="text-xs text-muted-foreground">{redditAccounts.length} account{redditAccounts.length !== 1 ? 's' : ''}</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { label: 'Total Karma',   value: fmtNum(totals.karma) },
+              { label: 'Post Karma',    value: fmtNum(totals.postKarma) },
+              { label: 'Comment Karma', value: fmtNum(totals.commentKarma) },
+            ].map(item => (
+              <div key={item.label} className="text-center p-3 rounded-lg bg-muted/40">
+                <p className="text-lg font-bold tabular-nums text-orange-500">{item.value}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{item.label}</p>
+              </div>
+            ))}
+          </div>
+          {redditAccounts.length > 1 && (
+            <div className="mt-3 space-y-1">
+              {[...redditAccounts].sort((a, b) => (b.totalKarma || 0) - (a.totalKarma || 0)).map(a => (
+                <button
+                  key={a.id}
+                  onClick={() => navigate(`/reddit/${a.id}`)}
+                  className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-muted/60 transition-colors text-left"
+                >
+                  <span className="text-sm font-medium">u/{a.username}</span>
+                  <span className="text-sm tabular-nums text-muted-foreground">{fmtNum(a.totalKarma)} karma</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </MainCard>
+      )}
 
       {accounts.length === 0 ? (
         <MainCard>
@@ -129,7 +173,7 @@ export default function Overview() {
             <div>
               <h3 className="text-lg font-semibold">Welcome to Twiligent</h3>
               <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-                Add your first YouTube channel or Instagram account to start tracking analytics
+                Add your first YouTube channel, Instagram account, or Reddit profile to start tracking analytics
               </p>
             </div>
             <Button onClick={() => navigate('/accounts')}>Add Account</Button>
@@ -137,8 +181,8 @@ export default function Overview() {
         </MainCard>
       ) : (
         <>
-          {/* Charts */}
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+          {/* Audience charts - YouTube + Instagram only */}
+          {nonRedditAccounts.length > 0 && <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
             <MainCard title="Audience Comparison" className="xl:col-span-2">
               <ResponsiveContainer width="100%" height={260} debounce={200}>
                 <AreaChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
@@ -173,38 +217,29 @@ export default function Overview() {
                 </PieChart>
               </ResponsiveContainer>
             </MainCard>
-          </div>
+          </div>}
 
-          {/* Leaderboards */}
+          {nonRedditAccounts.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {[
               {
                 title: 'Top by Audience',
                 list: sorted.byAudience,
-                metric: a => {
-                  if (a.platform === 'instagram') return `${fmtNum(a.followersCount)} followers`;
-                  if (a.platform === 'reddit')    return `${fmtNum(a.totalKarma)} karma`;
-                  return `${fmtNum(a.subscriberCount)} subs`;
-                },
+                metric: a => a.platform === 'instagram' ? `${fmtNum(a.followersCount)} followers` : `${fmtNum(a.subscriberCount)} subs`,
               },
               {
                 title: 'Top by Content',
-                list: sorted.byContent.filter(a => a.platform !== 'reddit'),
+                list: sorted.byContent,
                 metric: a => a.platform === 'instagram' ? `${fmtNum(a.mediaCount)} posts` : `${fmtNum(a.viewCount)} views`,
               },
             ].map(({ title, list, metric }) => (
               <MainCard key={title} title={title}>
                 <div className="space-y-1">
                   {list.map((a, i) => {
-                    const ig     = a.platform === 'instagram';
-                    const reddit = a.platform === 'reddit';
-                    const medalColor  = i === 0 ? 'text-yellow-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-orange-400' : 'text-muted-foreground';
-                    const fallbackBg  = ig ? 'bg-pink-500' : reddit ? 'bg-orange-500' : 'bg-red-500';
-                    const badgeCls    = ig
-                      ? 'border-pink-200 bg-pink-50 text-pink-700'
-                      : reddit
-                      ? 'border-orange-200 bg-orange-50 text-orange-700'
-                      : 'border-green-200 bg-green-50 text-green-700';
+                    const ig = a.platform === 'instagram';
+                    const medalColor = i === 0 ? 'text-yellow-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-orange-400' : 'text-muted-foreground';
+                    const fallbackBg = ig ? 'bg-pink-500' : 'bg-red-500';
+                    const badgeCls   = ig ? 'border-pink-200 bg-pink-50 text-pink-700' : 'border-green-200 bg-green-50 text-green-700';
                     return (
                       <button
                         key={a.id}
@@ -229,8 +264,9 @@ export default function Overview() {
               </MainCard>
             ))}
           </div>
+          )}
 
-          {/* All accounts table */}
+          {nonRedditAccounts.length > 0 && (
           <MainCard title="All Accounts" content={false}>
             <Table>
               <TableHeader>
@@ -246,15 +282,10 @@ export default function Overview() {
               </TableHeader>
               <TableBody>
                 {sorted.byAudience.map((a, i) => {
-                  const ig     = a.platform === 'instagram';
-                  const reddit = a.platform === 'reddit';
+                  const ig = a.platform === 'instagram';
                   const medalColor = i === 0 ? 'text-yellow-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-orange-400' : 'text-muted-foreground';
-                  const fallbackBg = ig ? 'bg-pink-500' : reddit ? 'bg-orange-500' : 'bg-red-500';
-                  const platformBadgeCls = ig
-                    ? 'border-pink-200 bg-pink-50 text-pink-700'
-                    : reddit
-                    ? 'border-orange-200 bg-orange-50 text-orange-700'
-                    : 'border-red-200 bg-red-50 text-red-700';
+                  const fallbackBg = ig ? 'bg-pink-500' : 'bg-red-500';
+                  const platformBadgeCls = ig ? 'border-pink-200 bg-pink-50 text-pink-700' : 'border-red-200 bg-red-50 text-red-700';
                   return (
                     <TableRow key={a.id} className="cursor-pointer" onClick={() => handleViewChannel(a)}>
                       <TableCell>
@@ -271,22 +302,22 @@ export default function Overview() {
                           <div>
                             <p className="text-sm font-semibold leading-none">{a.title}</p>
                             <p className="text-xs text-muted-foreground mt-0.5">
-                              {ig ? `@${a.username || ''}` : reddit ? `u/${a.username || ''}` : (a.customUrl || a.channelId || '')}
+                              {ig ? `@${a.username || ''}` : (a.customUrl || a.channelId || '')}
                             </p>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell className="text-center">
                         <Badge variant="outline" className={`text-xs ${platformBadgeCls}`}>
-                          {ig ? 'Instagram' : reddit ? 'Reddit' : 'YouTube'}
+                          {ig ? 'Instagram' : 'YouTube'}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <p className="text-sm font-semibold">{fmtNum(ig ? a.followersCount : reddit ? a.totalKarma : a.subscriberCount)}</p>
-                        <p className="text-xs text-muted-foreground">{ig ? 'followers' : reddit ? 'karma' : 'subscribers'}</p>
+                        <p className="text-sm font-semibold">{fmtNum(ig ? a.followersCount : a.subscriberCount)}</p>
+                        <p className="text-xs text-muted-foreground">{ig ? 'followers' : 'subscribers'}</p>
                       </TableCell>
                       <TableCell className="text-right text-sm">
-                        {ig ? `${fmtNum(a.mediaCount)} posts` : reddit ? `${fmtNum(a.postKarma)} post karma` : `${fmtNum(a.viewCount)} views · ${fmtNum(a.videoCount)} vids`}
+                        {ig ? `${fmtNum(a.mediaCount)} posts` : `${fmtNum(a.viewCount)} views · ${fmtNum(a.videoCount)} vids`}
                       </TableCell>
                       <TableCell className="text-right text-xs text-muted-foreground">
                         {timeAgo(a.lastUpdated)}
@@ -305,6 +336,7 @@ export default function Overview() {
               </TableBody>
             </Table>
           </MainCard>
+          )}
         </>
       )}
     </div>
