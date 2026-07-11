@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { getAccountById } from '../lib/db.js';
 import { getRedditCache, setRedditCache } from '../lib/cache.js';
-import { fetchRedditProfile, fetchRedditPosts, computeRedditAnalytics } from '../services/reddit.js';
+import { fetchRedditProfile, fetchRedditPosts, computeRedditAnalytics, safeRedditAccount } from '../services/reddit.js';
 
 const router = new Hono();
 

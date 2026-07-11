@@ -20,7 +20,7 @@ import { fmtNum, fmtNumFull, fmtDate, timeAgo } from '../../../utils/formatters'
 import {
   ArrowLeft, RefreshCw, TrendingUp, MessageSquare, Award, BarChart2,
   Calendar, Clock, Zap, Flame, Trophy, ExternalLink, FileText, Link2,
-  Image, Video,
+  Image, Video, AlertTriangle,
 } from 'lucide-react';
 
 const REDDIT_COLORS = ['#FF4500', '#FF6534', '#FF8C00', '#FFA500', '#FFB347', '#FFC080'];
@@ -162,9 +162,9 @@ export default function RedditAnalytics() {
         {/* Karma breakdown */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {[
-            { label: 'Total Karma',   value: fmtNum(p.totalKarma),   sub: fmtNumFull(p.totalKarma) },
-            { label: 'Post Karma',    value: fmtNum(p.postKarma),    sub: fmtNumFull(p.postKarma) },
-            { label: 'Comment Karma', value: fmtNum(p.commentKarma), sub: fmtNumFull(p.commentKarma) },
+            { label: 'Total Karma',   value: a.apiRestricted ? 'N/A' : fmtNum(p.totalKarma) },
+            { label: 'Post Karma',    value: a.apiRestricted ? 'N/A' : fmtNum(p.postKarma) },
+            { label: 'Comment Karma', value: a.apiRestricted ? 'N/A' : fmtNum(p.commentKarma) },
           ].map(item => (
             <div key={item.label} className="text-center p-3 rounded-lg bg-muted/40">
               <p className="text-xl font-bold tabular-nums">{item.value}</p>
@@ -174,12 +174,26 @@ export default function RedditAnalytics() {
         </div>
       </MainCard>
 
+      {/* Reddit API restriction notice */}
+      {a.apiRestricted && (
+        <div className="flex items-start gap-3 rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-4 text-sm">
+          <AlertTriangle className="h-4 w-4 text-yellow-500 mt-0.5 shrink-0" />
+          <div>
+            <p className="font-medium text-yellow-600 dark:text-yellow-400">Reddit API restricted</p>
+            <p className="text-muted-foreground mt-0.5">
+              Reddit ended unauthenticated server API access in May 2026. Karma and score data are unavailable.
+              Posting activity, subreddit breakdown, and timing patterns are sourced from RSS and remain accurate.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* KPI cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard icon={<TrendingUp />}    label="Posts Analyzed" value={fmtNum(a.fetchedPosts)} subtitle={`${a.postsLast30Days ?? 0} in last 30 days`} gradient="orange" />
-        <StatCard icon={<Award />}         label="Total Score"    value={fmtNum(a.totalScore)} subtitle={`Avg ${fmtNum(a.avgScore)} per post`} gradient="red" />
-        <StatCard icon={<MessageSquare />} label="Total Comments" value={fmtNum(a.totalComments)} subtitle={`Avg ${fmtNum(a.avgComments)} per post`} gradient="blue" />
-        <StatCard icon={<BarChart2 />}     label="Upvote Rate"    value={`${a.avgUpvoteRatio ?? 0}%`} subtitle="average upvote ratio" gradient="purple" />
+        <StatCard icon={<Award />}         label="Total Score"    value={a.apiRestricted ? 'N/A' : fmtNum(a.totalScore)} subtitle={a.apiRestricted ? 'unavailable' : `Avg ${fmtNum(a.avgScore)} per post`} gradient="red" />
+        <StatCard icon={<MessageSquare />} label="Total Comments" value={a.apiRestricted ? 'N/A' : fmtNum(a.totalComments)} subtitle={a.apiRestricted ? 'unavailable' : `Avg ${fmtNum(a.avgComments)} per post`} gradient="blue" />
+        <StatCard icon={<BarChart2 />}     label="Upvote Rate"    value={a.apiRestricted ? 'N/A' : `${a.avgUpvoteRatio ?? 0}%`} subtitle="average upvote ratio" gradient="purple" />
       </div>
 
       {/* Score timeline + media type pie */}
