@@ -14,7 +14,7 @@ import { api } from '../../../services/api';
 import { fmtNum, fmtDate } from '../../../utils/formatters';
 import {
   Search, ExternalLink, TrendingUp, MessageSquare, FileText,
-  Image, Video, Link2, Award, RefreshCw,
+  Image, Video, Link2, Award, RefreshCw, Eye,
 } from 'lucide-react';
 
 const MEDIA_TYPE_LABELS = { text: 'Text', image: 'Image', video: 'Video', link: 'Link' };
@@ -118,11 +118,16 @@ export default function RedditPostsAll() {
     });
   }, [posts, query, sort, accountFilter, subFilter]);
 
-  const totals = useMemo(() => ({
-    posts: filtered.length,
-    score: filtered.reduce((s, p) => s + p.score, 0),
-    comments: filtered.reduce((s, p) => s + p.numComments, 0),
-  }), [filtered]);
+  const totals = useMemo(() => {
+    const postsWithViews = filtered.filter(p => p.viewCount !== null);
+    return {
+      posts: filtered.length,
+      score: filtered.reduce((s, p) => s + p.score, 0),
+      comments: filtered.reduce((s, p) => s + p.numComments, 0),
+      views: postsWithViews.length > 0 ? postsWithViews.reduce((s, p) => s + (p.viewCount ?? 0), 0) : null,
+      postsWithViews: postsWithViews.length,
+    };
+  }, [filtered]);
 
   if (redditAccounts.length === 0) {
     return (
@@ -172,9 +177,10 @@ export default function RedditPostsAll() {
       ) : (
         <>
           {/* Summary stats */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
             <StatCard icon={<TrendingUp />}    label="Posts Shown"    value={fmtNum(totals.posts)}    subtitle={`${posts.length} total fetched`} gradient="orange" />
-            <StatCard icon={<Award />}         label="Combined Score" value={fmtNum(totals.score)}    subtitle={filtered.length > 0 ? `Avg ${fmtNum(Math.round(totals.score / filtered.length))} per post` : ''} gradient="red" />
+            <StatCard icon={<Eye />}           label="Total Views"    value={totals.views !== null ? fmtNum(totals.views) : 'N/A'} subtitle={totals.views !== null ? `Across ${totals.postsWithViews} posts` : 'Reddit does not always expose views'} gradient="red" />
+            <StatCard icon={<Award />}         label="Combined Score" value={fmtNum(totals.score)}    subtitle={filtered.length > 0 ? `Avg ${fmtNum(Math.round(totals.score / filtered.length))} per post` : ''} gradient="purple" />
             <StatCard icon={<MessageSquare />} label="Total Comments" value={fmtNum(totals.comments)} subtitle={filtered.length > 0 ? `Avg ${fmtNum(Math.round(totals.comments / filtered.length))} per post` : ''} gradient="blue" />
           </div>
 
@@ -240,6 +246,7 @@ export default function RedditPostsAll() {
                   {redditAccounts.length > 1 && <TableHead className="w-36">Account</TableHead>}
                   <TableHead className="w-24">Type</TableHead>
                   <TableHead className="text-right w-24">Score</TableHead>
+                  <TableHead className="text-right w-24">Views</TableHead>
                   <TableHead className="text-right w-28">Comments</TableHead>
                   <TableHead className="text-right w-20">Upvote %</TableHead>
                   <TableHead className="text-right w-28">Date</TableHead>
@@ -249,7 +256,7 @@ export default function RedditPostsAll() {
               <TableBody>
                 {filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={redditAccounts.length > 1 ? 9 : 8} className="text-center text-muted-foreground py-12">
+                    <TableCell colSpan={redditAccounts.length > 1 ? 10 : 9} className="text-center text-muted-foreground py-12">
                       No posts match the current filters
                     </TableCell>
                   </TableRow>
@@ -299,6 +306,9 @@ export default function RedditPostsAll() {
                       </TableCell>
                       <TableCell className="text-right text-sm font-semibold tabular-nums text-orange-500">
                         {fmtNum(post.score)}
+                      </TableCell>
+                      <TableCell className="text-right text-sm tabular-nums text-muted-foreground">
+                        {post.viewCount !== null ? fmtNum(post.viewCount) : <span className="text-xs">N/A</span>}
                       </TableCell>
                       <TableCell className="text-right text-sm tabular-nums">{fmtNum(post.numComments)}</TableCell>
                       <TableCell className="text-right text-sm tabular-nums">
