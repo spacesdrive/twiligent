@@ -1,4 +1,4 @@
-# Architecture Overview
+﻿# Architecture Overview
 
 ## System Topology
 
@@ -29,6 +29,7 @@
 │ Supabase │ │ Upstash │  │  External APIs                        │
 │ Postgres │ │  Redis  │  │  ├── YouTube Data API v3              │
 │          │ │ (cache) │  │  ├── Instagram Graph API v25          │
+│          │ │ (cache) │  │  ├── Reddit Public JSON API           │
 │ tables:  │ │         │  │  └── Cloudinary Upload API            │
 │ accounts │ │ keys:   │  └──────────────────────────────────────┘
 │ settings │ │ videos: │

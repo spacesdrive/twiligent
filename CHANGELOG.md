@@ -9,6 +9,30 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+**Reddit Analytics improvements**
+- Karma separated into its own dedicated card in `RedditAnalytics.jsx` (total, post, comment, awardee karma); previously karma was mixed into the profile header
+- KPI cards: Posts Fetched, Total Score, Total Comments, Awards Received - replacing the previous generic set
+- Awards Received (`total_awards_received` from Reddit API) added to per-post data and analytics computation (`totalAwards`, `avgAwards`)
+- Score Breakdown card now shows 6 metrics: avg score, median score, best single post, avg upvote ratio, total comments, avg comments
+- Section labels updated: "Post Activity" to "Posting Frequency", "Score Distribution" to "Score Breakdown", "Performance Scores" to "Performance Indicators"
+
+**Reddit Posts global page**
+- `frontend/src/features/analytics/reddit/RedditPostsAll.jsx` - new page at `/reddit-posts` aggregating posts across all connected Reddit accounts using `Promise.allSettled`
+- Account selector dropdown (shown only when 2+ Reddit accounts connected)
+- Subreddit filter, text search, and sort by score, comments, or date
+- Three summary StatCards: Posts Shown, Combined Score, Total Comments
+- Empty state when no Reddit accounts connected
+- Route `/reddit-posts` added to `App.jsx` before the existing `/reddit-posts/:id` route
+- "Reddit Posts" nav item added to Analytics section of Sidebar
+
+**Overview karma fix**
+- Reddit karma no longer counted in Total Audience KPI (karma is not subscribers/followers)
+- Audience Comparison bar chart and Audience Share pie chart now exclude Reddit accounts
+- Content leaderboard and All Accounts table now exclude Reddit accounts
+- Reddit accounts display a dedicated karma card (total, post, comment karma per account) below the main KPI row
+
+### Fixed
+
 **Reddit Application-Only OAuth**
 - Added `REDDIT_CLIENT_ID` and `REDDIT_CLIENT_SECRET` optional Worker secrets for application-only OAuth (client credentials grant)
 - `getAppOnlyToken(env)` in `backend/services/reddit.js` - exchanges client credentials for a bearer token via `POST /api/v1/access_token` with `grant_type=client_credentials`; token cached in isolate memory with expiry
