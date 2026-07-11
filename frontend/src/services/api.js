@@ -61,7 +61,7 @@ export const api = {
     publishIGContainer: (id, containerId) => request(`/accounts/${id}/ig-media-publish`, { method: 'POST', body: JSON.stringify({ containerId }) }),
 
     // Reddit accounts
-    addRedditAccount: (username, password, totpSecret) => request('/accounts/reddit', { method: 'POST', body: JSON.stringify({ username, password, totpSecret }) }),
+    addRedditAccount: (username, cookie) => request('/accounts/reddit', { method: 'POST', body: JSON.stringify({ username, cookie }) }),
     getRedditAnalytics: (id) => request(`/accounts/${id}/reddit-analytics`),
     getRedditPosts: (id) => request(`/accounts/${id}/reddit-posts`),
 
