@@ -20,8 +20,8 @@ router.get('/accounts/:id/reddit-analytics', async (c) => {
 
         const cookie = account.cookie ?? null;
         const [profile, posts] = await Promise.all([
-            fetchRedditProfile(account.username, cookie),
-            fetchRedditPosts(account.username, cookie, 100),
+            fetchRedditProfile(account.username, cookie, c.env),
+            fetchRedditPosts(account.username, cookie, 100, c.env),
         ]);
         const analytics = computeRedditAnalytics(profile, posts);
         const result = { profile, analytics, posts };
@@ -48,7 +48,7 @@ router.get('/accounts/:id/reddit-posts', async (c) => {
         if (cached?.posts) return c.json(cached.posts);
 
         const cookie = account.cookie ?? null;
-        const posts = await fetchRedditPosts(account.username, cookie, 100);
+        const posts = await fetchRedditPosts(account.username, cookie, 100, c.env);
         return c.json(posts);
     } catch (err) {
         console.error(`GET /accounts/${id}/reddit-posts:`, err.message);

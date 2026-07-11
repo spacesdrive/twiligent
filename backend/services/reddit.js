@@ -3,19 +3,56 @@
 // Session cookies are stored as-is (not encrypted) and used directly in requests.
 
 const REDDIT_BASE = 'https://www.reddit.com';
-const USER_AGENT = 'Twiligent/1.0 (social analytics dashboard; personal use)';
+const REDDIT_OAUTH_BASE = 'https://oauth.reddit.com';
+// Reddit requires: <platform>:<appid>:<version> (by /u/<username>)
+const USER_AGENT = 'script:twiligent:v1.0 (by /u/spacesdrive)';
 
-async function redditFetch(path, cookie = null) {
+// Module-level token cache. Cloudflare isolates are reused within a data center,
+// so this reduces token fetches. On fresh isolates it re-fetches transparently.
+let _cachedToken = null;
+let _tokenExpiry = 0;
+
+async function getAppOnlyToken(env) {
+    if (!env?.REDDIT_CLIENT_ID || !env?.REDDIT_CLIENT_SECRET) return null;
+    if (_cachedToken && Date.now() < _tokenExpiry) return _cachedToken;
+    try {
+        const creds = btoa(`${env.REDDIT_CLIENT_ID}:${env.REDDIT_CLIENT_SECRET}`);
+        const res = await fetch('https://www.reddit.com/api/v1/access_token', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Basic ${creds}`,
+                'User-Agent': USER_AGENT,
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'grant_type=client_credentials',
+        });
+        if (!res.ok) return null;
+        const data = await res.json();
+        if (!data.access_token) return null;
+        _cachedToken = data.access_token;
+        _tokenExpiry = Date.now() + Math.max(0, (data.expires_in ?? 3600) - 60) * 1000;
+        return _cachedToken;
+    } catch {
+        return null;
+    }
+}
+
+async function redditFetch(path, cookie = null, token = null) {
+    const base = token ? REDDIT_OAUTH_BASE : REDDIT_BASE;
     const headers = {
         'User-Agent': USER_AGENT,
         'Accept': 'application/json',
     };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
     if (cookie) headers['Cookie'] = `reddit_session=${cookie}`;
 
-    const res = await fetch(`${REDDIT_BASE}${path}`, { headers });
+    const res = await fetch(`${base}${path}`, { headers });
 
     if (res.status === 404) throw new Error('Reddit user not found - check the username');
-    if (res.status === 403) throw new Error('Account is private or suspended');
+    if (res.status === 403) {
+        if (token) throw new Error('Account is private or suspended');
+        throw new Error('Reddit blocked the request - set REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET on the server to enable authenticated API access');
+    }
     if (res.status === 429) throw new Error('Reddit rate limit hit - try again in a moment');
     if (!res.ok) throw new Error(`Reddit API ${res.status}: ${res.statusText}`);
 
@@ -24,8 +61,9 @@ async function redditFetch(path, cookie = null) {
     return data;
 }
 
-export async function fetchRedditProfile(username, cookie = null) {
-    const data = await redditFetch(`/user/${username}/about.json`, cookie);
+export async function fetchRedditProfile(username, cookie = null, env = null) {
+    const token = await getAppOnlyToken(env);
+    const data = await redditFetch(`/user/${username}/about.json`, cookie, token);
     const u = data.data;
     return {
         username: u.name,
@@ -42,7 +80,8 @@ export async function fetchRedditProfile(username, cookie = null) {
     };
 }
 
-export async function fetchRedditPosts(username, cookie = null, limit = 100) {
+export async function fetchRedditPosts(username, cookie = null, limit = 100, env = null) {
+    const token = await getAppOnlyToken(env);
     let allPosts = [];
     let after = null;
     let pages = 0;
@@ -54,7 +93,7 @@ export async function fetchRedditPosts(username, cookie = null, limit = 100) {
         });
         if (after) qs.set('after', after);
 
-        const data = await redditFetch(`/user/${username}/submitted.json?${qs}`, cookie);
+        const data = await redditFetch(`/user/${username}/submitted.json?${qs}`, cookie, token);
         const children = data.data?.children ?? [];
         if (children.length === 0) break;
 
