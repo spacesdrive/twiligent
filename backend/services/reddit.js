@@ -1,6 +1,6 @@
 // fetch is a global in Cloudflare Workers - no import needed.
-import { decryptPassword, generateTOTP } from '../lib/crypto.js';
-import { getAccounts, updateAccount } from '../lib/db.js';
+// No crypto or DB imports needed - Reddit uses the public JSON API.
+// Session cookies are stored as-is (not encrypted) and used directly in requests.
 
 const REDDIT_BASE = 'https://www.reddit.com';
 const USER_AGENT = 'Twiligent/1.0 (social analytics dashboard; personal use)';
@@ -242,99 +242,18 @@ export function computeRedditAnalytics(profile, posts) {
     };
 }
 
-// Strips sensitive fields before any API response. Exposes hasTotpSecret as a boolean so the
-// frontend can show 2FA status without revealing the secret itself.
+// Strips the session cookie before any API response - treat it like an access token.
+// Exposes hasCookie as a boolean so the frontend can show session status without the value.
 export function safeRedditAccount(account) {
     const copy = { ...account };
-    copy.hasTotpSecret = !!copy.encryptedTotpSecret;
+    copy.hasCookie = !!copy.cookie;
     delete copy.cookie;
     delete copy.encryptedPassword;
     delete copy.encryptedTotpSecret;
     return copy;
 }
 
-// Browser-like User-Agent required for the login endpoint - Reddit blocks custom UAs on ssl.reddit.com.
-const LOGIN_USER_AGENT = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
-
-// Log in to Reddit using the old JSON API (returns session cookie in body, no redirect needed).
-// When the account has 2FA enabled, pass the Base32 TOTP secret as totpSecret and the current
-// 6-digit code is appended to the password automatically: "password:123456"
-export async function loginToReddit(username, password, totpSecret = null) {
-    let passwd = password;
-    if (totpSecret) {
-        const code = await generateTOTP(totpSecret);
-        passwd = `${password}:${code}`;
-    }
-
-    const body = new URLSearchParams({ user: username, passwd, api_type: 'json' });
-    const res = await fetch('https://ssl.reddit.com/api/login', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'User-Agent': LOGIN_USER_AGENT,
-            'Origin': 'https://ssl.reddit.com',
-            'Referer': 'https://www.reddit.com/',
-        },
-        body: body.toString(),
-    });
-
-    if (res.status === 429) throw new Error('Reddit rate limit - try again in a few minutes');
-    if (!res.ok) throw new Error(`Reddit login request failed with status ${res.status}`);
-
-    const data = await res.json();
-    const errors = data?.json?.errors ?? [];
-    if (errors.length > 0) {
-        const [[code, message]] = errors;
-        if (code === 'WRONG_PASSWORD') throw new Error('Incorrect Reddit password');
-        if (code === 'TWO_FA_REQUIRED') throw new Error('This account has two-factor authentication enabled. Enter your TOTP secret when adding the account to enable automatic login.');
-        if (code === 'RATELIMIT') throw new Error('Too many login attempts - wait a few minutes and try again');
-        if (code === 'BAD_CAPTCHA') throw new Error('CAPTCHA required - try again in a few minutes');
-        throw new Error(message || 'Reddit login failed');
-    }
-
-    const cookieValue = data?.json?.data?.cookie;
-    if (!cookieValue) throw new Error('Login succeeded but Reddit returned no session cookie');
-
-    return {
-        cookie: cookieValue,
-        cookieAcquiredAt: new Date().toISOString(),
-        // Reddit session cookies from this API last approximately 24 hours
-        cookieExpiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    };
-}
-
-// Cron handler: refresh Reddit session cookies for accounts with stored credentials
-// whose cookie is approaching expiry (older than 23 hours).
-export async function autoRefreshRedditSessions(supabase, encryptionKey) {
-    if (!encryptionKey) return;
-
-    let accounts;
-    try {
-        accounts = await getAccounts(supabase);
-    } catch (err) {
-        console.error('autoRefreshRedditSessions: failed to query accounts:', err.message);
-        return;
-    }
-
-    const threshold = 23 * 60 * 60 * 1000;
-    const stale = accounts.filter(a =>
-        a.platform === 'reddit' &&
-        a.encryptedPassword &&
-        a.cookieAcquiredAt &&
-        (Date.now() - new Date(a.cookieAcquiredAt).getTime()) > threshold
-    );
-
-    for (const account of stale) {
-        try {
-            const password = await decryptPassword(account.encryptedPassword, encryptionKey);
-            const totpSecret = account.encryptedTotpSecret
-                ? await decryptPassword(account.encryptedTotpSecret, encryptionKey)
-                : null;
-            const { cookie, cookieAcquiredAt, cookieExpiresAt } = await loginToReddit(account.username, password, totpSecret);
-            await updateAccount(supabase, account.id, { cookie, cookieAcquiredAt, cookieExpiresAt, lastUpdated: new Date().toISOString() });
-            console.log(`Refreshed Reddit session for u/${account.username}`);
-        } catch (err) {
-            console.error(`Failed to refresh Reddit session for u/${account.username}:`, err.message);
-        }
-    }
-}
+// No-op: Reddit auto-refresh via automated login is not supported from server IPs.
+// Reddit's login endpoint (ssl.reddit.com/api/login) blocks datacenter IPs.
+// Session cookies must be refreshed manually by the user via the Account Manager.
+export async function autoRefreshRedditSessions() {}

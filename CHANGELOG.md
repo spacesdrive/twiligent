@@ -9,16 +9,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
-**Reddit 2FA Support and Login Fix**
-- `loginToReddit` now sends `Origin`, `Referer`, and a browser User-Agent to satisfy Reddit's login endpoint, resolving the 403 error from server IPs
-- `generateTOTP(base32Secret)` added to `backend/lib/crypto.js` - RFC 6238 TOTP via `crypto.subtle` HMAC-SHA1, no npm dependency
-- `POST /api/accounts/reddit` accepts optional `totpSecret` (Base32 setup key from authenticator app); stored AES-256-GCM encrypted as `encryptedTotpSecret`
-- `loginToReddit(username, password, totpSecret)` generates the current 6-digit code and appends it as `password:123456` when a TOTP secret is stored
-- `TWO_FA_REQUIRED` Reddit error code is now caught and returns a clear message directing the user to enter their TOTP secret
-- `safeAccount()` and `safeRedditAccount()` strip `encryptedTotpSecret` and expose `hasTotpSecret: boolean` so the frontend shows 2FA status without revealing the secret
-- `ensureFreshCookie` and `autoRefreshRedditSessions` decrypt and pass `totpSecret` to `loginToReddit` so 2FA accounts auto-refresh correctly
-- AccountManager Reddit tab shows TOTP secret field when a password is entered
-- AccountCard shows a 2FA badge when `hasTotpSecret` is true
+**Reddit Login Fix - Remove Broken Auto-Login**
+- Removed `loginToReddit` password-based auto-login; Reddit's `ssl.reddit.com/api/login` blocks all server/datacenter IPs and cannot be used from Cloudflare Workers
+- `POST /api/accounts/reddit` now accepts `{ username, cookie }` - cookie is optional and manually provided by the user from browser DevTools for private accounts
+- Public Reddit accounts work without any session cookie - all analytics data is fetched from Reddit's public JSON API which requires no authentication
+- `autoRefreshRedditSessions` replaced with a no-op; session cookies must be refreshed manually by re-adding the account
+- AccountManager Reddit tab updated: password and TOTP fields removed; replaced with optional session cookie field with clear browser DevTools instructions
+- AccountCard badge shows "Session cookie stored" or "Public access" based on `hasCookie`
+- `safeAccount` and `safeRedditAccount` now expose `hasCookie: boolean` instead of `hasTotpSecret`
+- `generateTOTP` remains in `crypto.js` for potential future use
 
 **Reddit Automatic Session Refresh**
 - `backend/lib/crypto.js` - AES-256-GCM encrypt/decrypt using `crypto.subtle` (Web Crypto API, no npm dependency)
