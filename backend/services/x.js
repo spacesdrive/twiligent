@@ -1,17 +1,19 @@
 // X (Twitter) internal GraphQL API access via session cookies.
 // Requires auth_token + ct0 from a logged-in x.com browser session.
 // Bearer token and query IDs come from X's own web client JS bundles.
-// Query IDs rotate when X ships a frontend update - update X_QUERY_IDS when 400s appear.
+// Query IDs rotate when X ships a frontend update. Symptom: 400 or 422 GRAPHQL_VALIDATION_FAILED.
+// Get current IDs from https://github.com/vladkens/twscrape (twscrape/api.py OP_* constants).
 // Bearer token is more stable but may also change - update X_BEARER if all requests return 401/403.
-// Last verified: 2026-01
+// Last verified: 2026-07
 
 const X_BEARER = 'AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA';
 const X_GQL_BASE = 'https://x.com/i/api/graphql';
 
-// GraphQL query IDs change when X rotates its web client. Update here if requests return 400.
+// GraphQL query IDs change when X rotates its web client. Update here if requests return 400/422.
+// Source: https://github.com/vladkens/twscrape/blob/main/twscrape/api.py
 const X_QUERY_IDS = {
-    UserByScreenName: '-oaLodhGbbnzJBACb1kk2Q',
-    UserTweets: 'oPHs3ydu7ZOOy2f02soaPA',
+    UserByScreenName: '2qvSHpkWTMS9i0zJAwDNiA',
+    UserTweets: 'hr4gzZONlq23okjU8fIe_A',
 };
 
 // Minimal feature flags - required by X's GraphQL alongside variables.
@@ -75,8 +77,8 @@ function xHeaders(authToken, ct0) {
 async function xFetch(url, authToken, ct0) {
     const res = await fetch(url, { headers: xHeaders(authToken, ct0) });
 
-    if (res.status === 400) {
-        throw new Error('X GraphQL query ID is outdated. Update X_QUERY_IDS in backend/services/x.js - get current IDs from X\'s web client JS bundles or from github.com/she-llac/twitter-graphql-scraper');
+    if (res.status === 400 || res.status === 422) {
+        throw new Error('X GraphQL query ID is outdated. Update X_QUERY_IDS in backend/services/x.js - get current IDs from https://github.com/vladkens/twscrape (twscrape/api.py OP_UserByScreenName / OP_UserTweets constants)');
     }
     if (res.status === 401) {
         // Try to read the body for more detail before throwing
