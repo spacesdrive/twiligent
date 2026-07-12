@@ -10,53 +10,53 @@ const X_BEARER = 'AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D
 const X_GQL_BASE = 'https://x.com/i/api/graphql';
 
 // GraphQL query IDs change when X rotates its web client. Update here if requests return 400/422.
-// Source: https://github.com/vladkens/twscrape/blob/main/twscrape/api.py
+// Cross-reference: https://github.com/vladkens/twscrape (api.py OP_*) and
+//                  https://github.com/trevorhobenshield/twitter-api-client (twitter/constants.py)
 const X_QUERY_IDS = {
-    UserByScreenName: '2qvSHpkWTMS9i0zJAwDNiA',
-    UserTweets: 'hr4gzZONlq23okjU8fIe_A',
+    UserByScreenName: 'sLVLhk0bGj3MVFEKTdax1w',
+    UserTweets: 'HuTx74BxAnezK1gWvYY7zg',
 };
 
-// Minimal feature flags - required by X's GraphQL alongside variables.
+// Feature flags sent with every GraphQL request - sourced from twscrape GQL_FEATURES.
+// Profile queries add the highlights/subscriptions flags on top of this base set.
+const BASE_FEATURES = {
+    articles_preview_enabled: false,
+    c9s_tweet_anatomy_moderator_badge_enabled: true,
+    communities_web_enable_tweet_community_results_fetch: true,
+    creator_subscriptions_quote_tweet_preview_enabled: false,
+    creator_subscriptions_tweet_preview_api_enabled: true,
+    freedom_of_speech_not_reach_fetch_enabled: true,
+    graphql_is_translatable_rweb_tweet_is_translatable_enabled: true,
+    longform_notetweets_consumption_enabled: true,
+    longform_notetweets_inline_media_enabled: true,
+    longform_notetweets_rich_text_read_enabled: true,
+    responsive_web_edit_tweet_api_enabled: true,
+    responsive_web_enhance_cards_enabled: false,
+    responsive_web_graphql_exclude_directive_enabled: true,
+    responsive_web_graphql_skip_user_profile_image_extensions_enabled: false,
+    responsive_web_graphql_timeline_navigation_enabled: true,
+    responsive_web_media_download_video_enabled: false,
+    responsive_web_twitter_article_tweet_consumption_enabled: true,
+    rweb_tipjar_consumption_enabled: true,
+    rweb_video_timestamps_enabled: true,
+    standardized_nudges_misinfo: true,
+    tweet_awards_web_tipping_enabled: false,
+    tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: true,
+    verified_phone_label_enabled: false,
+    view_counts_everywhere_api_enabled: true,
+};
+
 const PROFILE_FEATURES = JSON.stringify({
+    ...BASE_FEATURES,
     hidden_profile_likes_enabled: true,
     hidden_profile_subscriptions_enabled: true,
-    rweb_tipjar_consumption_enabled: true,
-    responsive_web_graphql_exclude_directive_enabled: true,
-    verified_phone_label_enabled: false,
-    subscriptions_verification_info_is_identity_verified_enabled: true,
-    subscriptions_verification_info_verified_since_enabled: true,
     highlights_tweets_tab_ui_enabled: true,
     responsive_web_twitter_article_notes_tab_enabled: true,
-    creator_subscriptions_tweet_preview_api_enabled: true,
-    responsive_web_graphql_skip_user_profile_image_extensions_enabled: false,
-    responsive_web_graphql_timeline_navigation_enabled: true,
+    subscriptions_verification_info_is_identity_verified_enabled: true,
+    subscriptions_verification_info_verified_since_enabled: true,
 });
 
-const TWEETS_FEATURES = JSON.stringify({
-    rweb_tipjar_consumption_enabled: true,
-    responsive_web_graphql_exclude_directive_enabled: true,
-    verified_phone_label_enabled: false,
-    creator_subscriptions_tweet_preview_api_enabled: true,
-    responsive_web_graphql_timeline_navigation_enabled: true,
-    responsive_web_graphql_skip_user_profile_image_extensions_enabled: false,
-    communities_web_enable_tweet_community_results_fetch: true,
-    c9s_tweet_anatomy_moderator_badge_enabled: true,
-    articles_preview_enabled: true,
-    responsive_web_edit_tweet_api_enabled: true,
-    graphql_is_translatable_rweb_tweet_is_translatable_enabled: true,
-    view_counts_everywhere_api_enabled: true,
-    longform_notetweets_consumption_enabled: true,
-    responsive_web_twitter_article_tweet_consumption_enabled: true,
-    tweet_awards_web_tipping_enabled: false,
-    creator_subscriptions_quote_tweet_preview_enabled: false,
-    freedom_of_speech_not_reach_fetch_enabled: true,
-    standardized_nudges_misinfo: true,
-    tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled: true,
-    rweb_video_timestamps_enabled: true,
-    longform_notetweets_rich_text_read_enabled: true,
-    longform_notetweets_inline_media_enabled: true,
-    responsive_web_enhance_cards_enabled: false,
-});
+const TWEETS_FEATURES = JSON.stringify(BASE_FEATURES);
 
 function xHeaders(authToken, ct0) {
     return {
@@ -78,7 +78,10 @@ async function xFetch(url, authToken, ct0) {
     const res = await fetch(url, { headers: xHeaders(authToken, ct0) });
 
     if (res.status === 400 || res.status === 422) {
-        throw new Error('X GraphQL query ID is outdated. Update X_QUERY_IDS in backend/services/x.js - get current IDs from https://github.com/vladkens/twscrape (twscrape/api.py OP_UserByScreenName / OP_UserTweets constants)');
+        let body = '';
+        try { body = await res.text(); } catch { /* ignore */ }
+        const hint = 'Update X_QUERY_IDS in backend/services/x.js - get current IDs from https://github.com/vladkens/twscrape (twscrape/api.py OP_UserByScreenName / OP_UserTweets constants)';
+        throw new Error(`X API error ${res.status}: ${body.slice(0, 300) || res.statusText} | ${hint}`);
     }
     if (res.status === 401) {
         // Try to read the body for more detail before throwing
