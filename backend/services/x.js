@@ -1,14 +1,17 @@
 // X (Twitter) internal GraphQL API access via session cookies.
 // Requires auth_token + ct0 from a logged-in x.com browser session.
-// The bearer token below is X's own web client token and has been stable for years.
-// Query IDs rotate when X deploys frontend changes - update X_QUERY_IDS when that happens.
+// Bearer token and query IDs come from X's own web client JS bundles.
+// Query IDs rotate when X ships a frontend update - update X_QUERY_IDS when 400s appear.
+// Bearer token is more stable but may also change - update X_BEARER if all requests return 401/403.
+// Last verified: 2026-01
 
-const X_BEARER = 'AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I6BeUge4%2Brkgmgd4%2FRwvXXGPvJQ8bGVNHSqcLRGrC%2FoLqEQ%3D';
+const X_BEARER = 'AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA';
+const X_GQL_BASE = 'https://x.com/i/api/graphql';
 
 // GraphQL query IDs change when X rotates its web client. Update here if requests return 400.
 const X_QUERY_IDS = {
-    UserByScreenName: 'qW5u-DAuXpMEG0zaGVs2dA',
-    UserTweets: 'V7H0Ap3_Hh2FyS75OCDO3Q',
+    UserByScreenName: '-oaLodhGbbnzJBACb1kk2Q',
+    UserTweets: 'oPHs3ydu7ZOOy2f02soaPA',
 };
 
 // Minimal feature flags - required by X's GraphQL alongside variables.
@@ -73,7 +76,7 @@ async function xFetch(url, authToken, ct0) {
     const res = await fetch(url, { headers: xHeaders(authToken, ct0) });
 
     if (res.status === 400) {
-        throw new Error('X API query ID is outdated - update X_QUERY_IDS in backend/services/x.js');
+        throw new Error('X GraphQL query ID is outdated. Update X_QUERY_IDS in backend/services/x.js - get current IDs from X\'s web client JS bundles or from github.com/she-llac/twitter-graphql-scraper');
     }
     if (res.status === 401) {
         // Try to read the body for more detail before throwing
@@ -109,7 +112,7 @@ export async function fetchXProfile(username, authToken, ct0) {
         screen_name: username,
         withSafetyModeUserFields: true,
     });
-    const url = `https://api.x.com/graphql/${X_QUERY_IDS.UserByScreenName}/UserByScreenName?variables=${encodeURIComponent(variables)}&features=${encodeURIComponent(PROFILE_FEATURES)}`;
+    const url = `${X_GQL_BASE}/${X_QUERY_IDS.UserByScreenName}/UserByScreenName?variables=${encodeURIComponent(variables)}&features=${encodeURIComponent(PROFILE_FEATURES)}`;
     const data = await xFetch(url, authToken, ct0);
 
     const u = (
@@ -146,7 +149,7 @@ export async function fetchXProfile(username, authToken, ct0) {
 export async function fetchXTweets(username, authToken, ct0, limit = 200) {
     // First resolve the userId from the profile query
     const profileVariables = JSON.stringify({ screen_name: username, withSafetyModeUserFields: true });
-    const profileUrl = `https://api.x.com/graphql/${X_QUERY_IDS.UserByScreenName}/UserByScreenName?variables=${encodeURIComponent(profileVariables)}&features=${encodeURIComponent(PROFILE_FEATURES)}`;
+    const profileUrl = `${X_GQL_BASE}/${X_QUERY_IDS.UserByScreenName}/UserByScreenName?variables=${encodeURIComponent(profileVariables)}&features=${encodeURIComponent(PROFILE_FEATURES)}`;
     const profileData = await xFetch(profileUrl, authToken, ct0);
 
     const userId = (
@@ -170,7 +173,7 @@ export async function fetchXTweets(username, authToken, ct0, limit = 200) {
             ...(cursor ? { cursor } : {}),
         });
 
-        const url = `https://api.x.com/graphql/${X_QUERY_IDS.UserTweets}/UserTweets?variables=${encodeURIComponent(variables)}&features=${encodeURIComponent(TWEETS_FEATURES)}`;
+        const url = `${X_GQL_BASE}/${X_QUERY_IDS.UserTweets}/UserTweets?variables=${encodeURIComponent(variables)}&features=${encodeURIComponent(TWEETS_FEATURES)}`;
         const data = await xFetch(url, authToken, ct0);
 
         const instructions = data?.data?.user?.result?.timeline_v2?.timeline?.instructions ?? [];
