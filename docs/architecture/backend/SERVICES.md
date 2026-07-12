@@ -128,7 +128,7 @@ Reddit integration requires no Worker secrets. The session cookie is a per-user 
 
 ### HTTP Client
 
-All X (Twitter) internal GraphQL API calls go through `xFetch(url, authToken, ct0)`. Requests include the X web client bearer token in `Authorization`, the `ct0` value in `x-csrf-token`, and both cookies in `Cookie`. The bearer token (`X_BEARER` constant) is X's own web client token and has been stable for years. GraphQL query IDs (`X_QUERY_IDS`) rotate when X deploys frontend changes and must be updated in the service file when HTTP 400 errors appear.
+All X (Twitter) internal GraphQL API calls go through `xFetch(url, authToken, ct0)`. Requests include the X web client bearer token in `Authorization`, the `ct0` value in `x-csrf-token`, and both cookies in `Cookie`. The bearer token (`X_BEARER` constant) is X's own web client token and changes infrequently. GraphQL query IDs (`X_QUERY_IDS`) rotate when X deploys frontend changes — symptoms are HTTP 400 or 422 `GRAPHQL_VALIDATION_FAILED`. Get current IDs from `OP_UserByScreenName` / `OP_UserTweets` in https://github.com/vladkens/twscrape (twscrape/api.py).
 
 ### Key Functions
 
