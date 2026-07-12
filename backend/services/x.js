@@ -59,21 +59,45 @@ function xHeaders(authToken, ct0) {
         'x-csrf-token': ct0,
         'Cookie': `auth_token=${authToken}; ct0=${ct0}`,
         'Content-Type': 'application/json',
+        'Accept': '*/*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Origin': 'https://x.com',
+        'Referer': 'https://x.com/',
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
         'x-twitter-client-language': 'en',
         'x-twitter-active-user': 'yes',
-        'x-twitter-auth-type': 'OAuth2Session',
     };
 }
 
 async function xFetch(url, authToken, ct0) {
     const res = await fetch(url, { headers: xHeaders(authToken, ct0) });
 
-    if (res.status === 400) throw new Error('X API query ID is outdated - update X_QUERY_IDS in backend/services/x.js');
-    if (res.status === 401) throw new Error('X session cookies are invalid or expired - open x.com in your browser, get fresh auth_token and ct0 values from DevTools, and re-add this account');
-    if (res.status === 403) throw new Error('X rejected the request - your auth_token may be expired or your account may be suspended');
+    if (res.status === 400) {
+        throw new Error('X API query ID is outdated - update X_QUERY_IDS in backend/services/x.js');
+    }
+    if (res.status === 401) {
+        // Try to read the body for more detail before throwing
+        let body = '';
+        try { body = await res.text(); } catch { /* ignore */ }
+        throw new Error(
+            'X session cookies are invalid or expired. ' +
+            'Open x.com, sign in, then go to DevTools (F12) > Application > Cookies > https://x.com ' +
+            'and copy fresh auth_token and ct0 values. ' +
+            (body ? `(X said: ${body.slice(0, 120)})` : '')
+        );
+    }
+    if (res.status === 403) {
+        throw new Error(
+            'X blocked the request (403). This can mean your auth_token is expired, your account is suspended, ' +
+            'or the server IP is being rate-limited by X. Try again in a few minutes.'
+        );
+    }
     if (res.status === 429) throw new Error('X rate limit reached - wait a few minutes and try again');
-    if (!res.ok) throw new Error(`X API ${res.status}: ${res.statusText}`);
+    if (!res.ok) {
+        let body = '';
+        try { body = await res.text(); } catch { /* ignore */ }
+        throw new Error(`X API error ${res.status}: ${body.slice(0, 200) || res.statusText}`);
+    }
 
     const json = await res.json();
     if (json.errors?.length) throw new Error(json.errors[0].message || 'X API error');
