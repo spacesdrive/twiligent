@@ -277,7 +277,9 @@ XAnalytics.jsx mounts -> api.getXAnalytics(id)
 
 Note: `impressionCount` requires authentication as the account owner. It is available for own tweets via X's `views.count` field in the GraphQL response. Older tweets or tweets viewed without authentication return 0.
 
-Note: X's GraphQL `queryId` values in `X_QUERY_IDS` (backend/services/x.js) rotate when X deploys frontend updates. Symptoms are HTTP 400 or HTTP 422 with `GRAPHQL_VALIDATION_FAILED`. Get current IDs from https://github.com/vladkens/twscrape — look for `OP_UserByScreenName` and `OP_UserTweets` in `twscrape/api.py`.
+Note: X's GraphQL `queryId` values in `X_QUERY_IDS` (backend/services/x.js) rotate frequently when X deploys frontend updates. Symptoms are HTTP 400 or HTTP 422 with `GRAPHQL_VALIDATION_FAILED`. Cross-reference both sources, as either can lag X's rotation:
+- https://github.com/vladkens/twscrape — `OP_UserByScreenName` / `OP_UserTweets` in `twscrape/api.py`
+- https://github.com/trevorhobenshield/twitter-api-client — `UserByScreenName` / `UserTweets` in `twitter/constants.py`
 
 ## Overview Dashboard (Cross-Account)
 
