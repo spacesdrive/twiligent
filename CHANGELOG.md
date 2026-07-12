@@ -47,6 +47,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+**X (Twitter) API fixes**
+- Replaced `Twitter` Lucide icon (removed in lucide-react 1.17.0) with an inline `XIcon` SVG component in `Sidebar.jsx` and `AccountManager.jsx`; resolves build failure
+- Updated `X_BEARER` from the rotated January 2024 token to the current web client token; error code 89 on HTTP 401 is the symptom of a stale bearer token, not expired user cookies
+- Updated `X_GQL_BASE` from `api.x.com/graphql` to `x.com/i/api/graphql` to match the live endpoint
+- Updated `UserByScreenName` and `UserTweets` query IDs; 400/422 `GRAPHQL_VALIDATION_FAILED` is the symptom of stale query IDs which X rotates on every frontend deploy
+- Replaced two sparse feature flag objects with a unified `BASE_FEATURES` dict aligned with twscrape's `GQL_FEATURES`; profile queries extend it with subscription/highlights flags
+- Improved 400/422 error handler to read and expose the actual X response body rather than returning a generic message
+- Added `Origin` and `Referer` headers required by X's GraphQL endpoints
+
 **Reddit Application-Only OAuth**
 - Added `REDDIT_CLIENT_ID` and `REDDIT_CLIENT_SECRET` optional Worker secrets for application-only OAuth (client credentials grant)
 - `getAppOnlyToken(env)` in `backend/services/reddit.js` - exchanges client credentials for a bearer token via `POST /api/v1/access_token` with `grant_type=client_credentials`; token cached in isolate memory with expiry
