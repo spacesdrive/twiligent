@@ -19,8 +19,8 @@ import {
 
 const MEDIA_TYPE_LABELS = { text: 'Text', image: 'Image', video: 'Video', link: 'Link' };
 const SORT_OPTIONS = [
-  { value: 'score-desc',    label: 'Score (high to low)' },
-  { value: 'score-asc',     label: 'Score (low to high)' },
+  { value: 'score-desc',    label: 'Karma (high to low)' },
+  { value: 'score-asc',     label: 'Karma (low to high)' },
   { value: 'comments-desc', label: 'Comments (most)' },
   { value: 'date-desc',     label: 'Newest first' },
   { value: 'date-asc',      label: 'Oldest first' },
@@ -174,7 +174,7 @@ export default function RedditPostsAll() {
           {/* Summary stats */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <StatCard icon={<TrendingUp />}    label="Posts Shown"    value={fmtNum(totals.posts)}    subtitle={`${posts.length} total fetched`} gradient="orange" />
-            <StatCard icon={<Award />}         label="Combined Score" value={fmtNum(totals.score)}    subtitle={filtered.length > 0 ? `Avg ${fmtNum(Math.round(totals.score / filtered.length))} per post` : ''} gradient="red" />
+            <StatCard icon={<Award />}         label="Combined Karma" value={fmtNum(totals.score)}    subtitle={filtered.length > 0 ? `Avg ${fmtNum(Math.round(totals.score / filtered.length))} per post` : ''} gradient="red" />
             <StatCard icon={<MessageSquare />} label="Total Comments" value={fmtNum(totals.comments)} subtitle={filtered.length > 0 ? `Avg ${fmtNum(Math.round(totals.comments / filtered.length))} per post` : ''} gradient="blue" />
           </div>
 
@@ -253,7 +253,7 @@ export default function RedditPostsAll() {
                   <TableHead>Post</TableHead>
                   {redditAccounts.length > 1 && <TableHead className="w-36">Account</TableHead>}
                   <TableHead className="w-24">Type</TableHead>
-                  <TableHead className="text-right w-24">Score</TableHead>
+                  <TableHead className="text-right w-24">Karma</TableHead>
                   <TableHead className="text-right w-28">Comments</TableHead>
                   <TableHead className="text-right w-20">Upvote %</TableHead>
                   <TableHead className="text-right w-28">Date</TableHead>

@@ -6,11 +6,11 @@ import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
-  ResponsiveContainer, Cell,
-} from 'recharts';
+  Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent,
+} from '@/components/ui/empty';
 import StatCard from '../../../components/ui/StatCard';
 import MainCard from '../../../components/MainCard';
+import MetricAreaChart from '../../../components/MetricAreaChart';
 import { useAppContext } from '../../../context/AppContext';
 import { api } from '../../../services/api';
 import { fmtNum, fmtNumFull, fmtDate } from '../../../utils/formatters';
@@ -19,21 +19,9 @@ import {
   ThumbsUp, MessageSquare, Tag, TrendingUp, BarChart2,
 } from 'lucide-react';
 
-function ContentTypeBadge({ type }) {
-  if (type === 'youtube') {
-    return (
-      <Badge variant="outline" className="text-[10px] border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-400 gap-1 px-1.5 py-0">
-        <CirclePlay className="h-2.5 w-2.5" />
-        YouTube
-      </Badge>
-    );
-  }
-  return (
-    <Badge variant="outline" className="text-[10px] border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-900 dark:bg-orange-950 dark:text-orange-400 gap-1 px-1.5 py-0">
-      <Flame className="h-2.5 w-2.5" />
-      Reddit
-    </Badge>
-  );
+// fmtNum abbreviates only at 1000 and above, so the full value is redundant below that
+function showsFullValue(n) {
+  return Math.abs(Number(n) || 0) >= 1000;
 }
 
 export default function TrackedCategory() {
@@ -69,32 +57,35 @@ export default function TrackedCategory() {
       views,
       likes,
       comments,
-      avgViews: count ? Math.round(views / count)    : 0,
-      avgLikes: count ? Math.round(likes / count)    : 0,
+      avgViews:    count ? Math.round(views / count)    : 0,
+      avgLikes:    count ? Math.round(likes / count)    : 0,
+      avgComments: count ? Math.round(comments / count) : 0,
       likeRatio: views > 0 ? ((likes / views) * 100).toFixed(2) : '0',
     };
   }, [ytItems]);
 
+  // Reddit post score is karma, so it is named and labelled as karma throughout
   const rdStats = useMemo(() => {
     const count    = rdItems.length;
-    const score    = rdItems.reduce((s, p) => s + (p.score       ?? 0), 0);
+    const karma    = rdItems.reduce((s, p) => s + (p.score       ?? 0), 0);
     const comments = rdItems.reduce((s, p) => s + (p.numComments ?? 0), 0);
     const ratioSum = rdItems.reduce((s, p) => s + (p.upvoteRatio ?? 0), 0);
     return {
       count,
-      score,
+      karma,
       comments,
-      avgScore:  count ? Math.round(score / count)    : 0,
-      avgRatio:  count ? ratioSum / count              : 0,
+      avgKarma:    count ? Math.round(karma / count)    : 0,
+      avgComments: count ? Math.round(comments / count) : 0,
+      avgRatio:    count ? ratioSum / count             : 0,
     };
   }, [rdItems]);
 
   const ytChartData = useMemo(() =>
     [...ytItems]
       .sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0))
-      .slice(0, 10)
+      .slice(0, 12)
       .map(p => ({
-        name:  (p.title || p.url || '').slice(0, 30),
+        name:  (p.title || p.url || '').slice(0, 16),
         views: p.viewCount ?? 0,
       })),
     [ytItems]
@@ -103,10 +94,10 @@ export default function TrackedCategory() {
   const rdChartData = useMemo(() =>
     [...rdItems]
       .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
-      .slice(0, 10)
+      .slice(0, 12)
       .map(p => ({
-        name:  (p.title || p.url || '').slice(0, 30),
-        score: p.score ?? 0,
+        name:  (p.title || p.url || '').slice(0, 16),
+        karma: p.score ?? 0,
       })),
     [rdItems]
   );
@@ -146,18 +137,20 @@ export default function TrackedCategory() {
           </div>
         </div>
         <MainCard>
-          <div className="flex flex-col items-center text-center py-12 gap-3">
-            <div className="h-14 w-14 rounded-full bg-purple-500/10 flex items-center justify-center">
-              <Tag className="h-7 w-7 text-purple-500" />
-            </div>
-            <div>
-              <p className="text-sm font-semibold">No tracked items in "{categoryName}"</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                Add content and assign this category in Tracked Content to see analytics here
-              </p>
-            </div>
-            <Button size="sm" onClick={() => navigate('/tracked-content')}>Manage Tracked Content</Button>
-          </div>
+          <Empty className="py-8">
+            <EmptyHeader>
+              <EmptyMedia variant="icon">
+                <Tag />
+              </EmptyMedia>
+              <EmptyTitle>Nothing tracked in {categoryName}</EmptyTitle>
+              <EmptyDescription>
+                Assign this category to a Reddit post or YouTube video in Tracked Content and its analytics will appear here.
+              </EmptyDescription>
+            </EmptyHeader>
+            <EmptyContent>
+              <Button size="sm" onClick={() => navigate('/tracked-content')}>Manage Tracked Content</Button>
+            </EmptyContent>
+          </Empty>
         </MainCard>
       </div>
     );
@@ -193,26 +186,26 @@ export default function TrackedCategory() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           icon={<Tag />}
-          label="Total Items"
+          label="Total Content"
           value={items.length}
           subtitle={[
-            ytItems.length > 0 ? `${ytItems.length} YouTube` : null,
-            rdItems.length > 0 ? `${rdItems.length} Reddit`  : null,
+            ytItems.length > 0 ? `${ytItems.length} YouTube video${ytItems.length !== 1 ? 's' : ''}` : null,
+            rdItems.length > 0 ? `${rdItems.length} Reddit post${rdItems.length !== 1 ? 's' : ''}`   : null,
           ].filter(Boolean).join(' · ')}
           gradient="purple"
         />
         <StatCard
           icon={<Eye />}
-          label="Total Views"
+          label="YouTube Views"
           value={ytItems.length > 0 ? fmtNum(ytStats.views) : '-'}
-          subtitle={ytItems.length > 0 ? `avg ${fmtNum(ytStats.avgViews)} per video` : 'no YouTube videos'}
+          subtitle={ytItems.length > 0 ? `avg ${fmtNum(ytStats.avgViews)} per video` : 'no YouTube videos in this category'}
           gradient="red"
         />
         <StatCard
           icon={<Flame />}
-          label="Reddit Score"
-          value={rdItems.length > 0 ? fmtNum(rdStats.score) : '-'}
-          subtitle={rdItems.length > 0 ? `avg ${fmtNum(rdStats.avgScore)} per post` : 'no Reddit posts'}
+          label="Reddit Karma"
+          value={rdItems.length > 0 ? fmtNum(rdStats.karma) : '-'}
+          subtitle={rdItems.length > 0 ? `avg ${fmtNum(rdStats.avgKarma)} per post` : 'no Reddit posts in this category'}
           gradient="orange"
         />
         <StatCard
@@ -220,9 +213,9 @@ export default function TrackedCategory() {
           label="Total Comments"
           value={fmtNum(ytStats.comments + rdStats.comments)}
           subtitle={[
-            ytItems.length > 0 ? 'YouTube' : null,
-            rdItems.length > 0 ? 'Reddit'  : null,
-          ].filter(Boolean).join(' + ') + ' combined'}
+            ytItems.length > 0 ? `${fmtNum(ytStats.comments)} YouTube` : null,
+            rdItems.length > 0 ? `${fmtNum(rdStats.comments)} Reddit`  : null,
+          ].filter(Boolean).join(' · ')}
           gradient="blue"
         />
       </div>
@@ -242,23 +235,23 @@ export default function TrackedCategory() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
               icon={<Eye />}
-              label="Total Views"
+              label="Video Views"
               value={fmtNum(ytStats.views)}
               subtitle={`avg ${fmtNum(ytStats.avgViews)} per video`}
               gradient="red"
             />
             <StatCard
               icon={<ThumbsUp />}
-              label="Total Likes"
+              label="Video Likes"
               value={fmtNum(ytStats.likes)}
               subtitle={`avg ${fmtNum(ytStats.avgLikes)} per video`}
               gradient="orange"
             />
             <StatCard
               icon={<MessageSquare />}
-              label="Total Comments"
+              label="Video Comments"
               value={fmtNum(ytStats.comments)}
-              subtitle="across all videos"
+              subtitle={`avg ${fmtNum(ytStats.avgComments)} per video`}
               gradient="blue"
             />
             <StatCard
@@ -271,44 +264,17 @@ export default function TrackedCategory() {
           </div>
 
           {ytChartData.length > 1 && (
-            <MainCard title="Top Videos by Views">
-              <ResponsiveContainer
-                width="100%"
-                height={Math.max(ytChartData.length * 44, 200)}
-                debounce={200}
-              >
-                <BarChart
-                  data={ytChartData}
-                  layout="vertical"
-                  margin={{ top: 0, right: 56, left: 0, bottom: 0 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-                  <XAxis
-                    type="number"
-                    tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
-                    tickFormatter={fmtNum}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    width={196}
-                    tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <ReTooltip
-                    contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
-                    formatter={(v) => [fmtNumFull(v), 'Views']}
-                  />
-                  <Bar dataKey="views" radius={[0, 4, 4, 0]} maxBarSize={22}>
-                    {ytChartData.map((_, i) => (
-                      <Cell key={i} fill="#ef4444" fillOpacity={Math.max(1 - i * 0.07, 0.4)} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+            <MainCard
+              title="Video Views"
+              subheader={`Top ${ytChartData.length} video${ytChartData.length !== 1 ? 's' : ''} in this category ranked by views`}
+            >
+              <MetricAreaChart
+                data={ytChartData}
+                dataKey="views"
+                label="Views"
+                color="#ef4444"
+                height={260}
+              />
             </MainCard>
           )}
 
@@ -366,7 +332,9 @@ export default function TrackedCategory() {
                       </TableCell>
                       <TableCell className="text-right">
                         <p className="text-sm font-bold tabular-nums">{fmtNum(item.viewCount ?? 0)}</p>
-                        <p className="text-xs text-muted-foreground">{fmtNumFull(item.viewCount ?? 0)}</p>
+                        {showsFullValue(item.viewCount) && (
+                          <p className="text-xs text-muted-foreground tabular-nums">{fmtNumFull(item.viewCount)}</p>
+                        )}
                       </TableCell>
                       <TableCell className="text-right text-sm font-semibold tabular-nums text-red-500">
                         {fmtNum(item.likeCount ?? 0)}
@@ -407,16 +375,16 @@ export default function TrackedCategory() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
               icon={<Flame />}
-              label="Net Upvotes"
-              value={fmtNum(rdStats.score)}
+              label="Post Karma"
+              value={fmtNum(rdStats.karma)}
               subtitle="upvotes minus downvotes"
               gradient="orange"
             />
             <StatCard
               icon={<MessageSquare />}
-              label="Total Comments"
+              label="Post Comments"
               value={fmtNum(rdStats.comments)}
-              subtitle="across all posts"
+              subtitle={`avg ${fmtNum(rdStats.avgComments)} per post`}
               gradient="blue"
             />
             <StatCard
@@ -428,52 +396,25 @@ export default function TrackedCategory() {
             />
             <StatCard
               icon={<BarChart2 />}
-              label="Avg Net Upvotes"
-              value={fmtNum(rdStats.avgScore)}
-              subtitle={`${rdItems.length} post${rdItems.length !== 1 ? 's' : ''} tracked`}
+              label="Avg Karma per Post"
+              value={fmtNum(rdStats.avgKarma)}
+              subtitle={`across ${rdItems.length} post${rdItems.length !== 1 ? 's' : ''}`}
               gradient="purple"
             />
           </div>
 
           {rdChartData.length > 1 && (
-            <MainCard title="Top Posts by Score">
-              <ResponsiveContainer
-                width="100%"
-                height={Math.max(rdChartData.length * 44, 200)}
-                debounce={200}
-              >
-                <BarChart
-                  data={rdChartData}
-                  layout="vertical"
-                  margin={{ top: 0, right: 56, left: 0, bottom: 0 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-                  <XAxis
-                    type="number"
-                    tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
-                    tickFormatter={fmtNum}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    width={196}
-                    tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
-                    axisLine={false}
-                    tickLine={false}
-                  />
-                  <ReTooltip
-                    contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
-                    formatter={(v) => [fmtNumFull(v), 'Score']}
-                  />
-                  <Bar dataKey="score" radius={[0, 4, 4, 0]} maxBarSize={22}>
-                    {rdChartData.map((_, i) => (
-                      <Cell key={i} fill="#f97316" fillOpacity={Math.max(1 - i * 0.07, 0.4)} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+            <MainCard
+              title="Post Karma"
+              subheader={`Top ${rdChartData.length} post${rdChartData.length !== 1 ? 's' : ''} in this category ranked by karma`}
+            >
+              <MetricAreaChart
+                data={rdChartData}
+                dataKey="karma"
+                label="Karma"
+                color="#f97316"
+                height={260}
+              />
             </MainCard>
           )}
 
@@ -483,7 +424,7 @@ export default function TrackedCategory() {
                 <TableRow>
                   <TableHead className="w-8">#</TableHead>
                   <TableHead>Post</TableHead>
-                  <TableHead className="text-right w-28">Score</TableHead>
+                  <TableHead className="text-right w-28">Karma</TableHead>
                   <TableHead className="text-right w-20">Upvote %</TableHead>
                   <TableHead className="text-right w-24">Comments</TableHead>
                   <TableHead className="text-right w-28">Fetched</TableHead>
@@ -517,7 +458,9 @@ export default function TrackedCategory() {
                         <p className="text-sm font-bold tabular-nums text-orange-500">
                           {fmtNum(item.score ?? 0)}
                         </p>
-                        <p className="text-xs text-muted-foreground">{fmtNumFull(item.score ?? 0)}</p>
+                        {showsFullValue(item.score) && (
+                          <p className="text-xs text-muted-foreground tabular-nums">{fmtNumFull(item.score)}</p>
+                        )}
                       </TableCell>
                       <TableCell className="text-right text-sm tabular-nums text-muted-foreground">
                         {(item.upvoteRatio != null && (item.score ?? 0) >= 10)
