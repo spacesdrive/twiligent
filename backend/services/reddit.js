@@ -7,13 +7,9 @@ const REDDIT_BASE = 'https://www.reddit.com';
 const USER_AGENT = 'script:twiligent:v1.0 (by /u/spacesdrive)';
 
 async function redditFetch(path, cookie) {
-    const res = await fetch(`${REDDIT_BASE}${path}`, {
-        headers: {
-            'User-Agent': USER_AGENT,
-            'Accept': 'application/json',
-            'Cookie': `reddit_session=${cookie}`,
-        },
-    });
+    const headers = { 'User-Agent': USER_AGENT, 'Accept': 'application/json' };
+    if (cookie) headers['Cookie'] = `reddit_session=${cookie}`;
+    const res = await fetch(`${REDDIT_BASE}${path}`, { headers });
 
     if (res.status === 404) throw new Error('Reddit user not found - check the username');
     if (res.status === 403) throw new Error('Session cookie is invalid or expired - open reddit.com in your browser, copy a fresh reddit_session value from DevTools (Application > Cookies > reddit.com), delete this account, and re-add it');
@@ -262,3 +258,34 @@ export function safeRedditAccount(account) {
 
 // No-op: kept for compatibility with server.js cron handler.
 export async function autoRefreshRedditSessions() {}
+
+function parseRedditPostUrl(rawUrl) {
+    let u;
+    try { u = new URL(rawUrl); } catch { throw new Error('Invalid URL - paste the full post link from reddit.com'); }
+    if (!u.hostname.includes('reddit.com')) throw new Error('Not a Reddit URL - paste a link from reddit.com');
+    const match = u.pathname.match(/^(\/r\/[^/]+\/comments\/[^/]+(?:\/[^/]+)?)\/?$/);
+    if (!match) throw new Error('Not a Reddit post URL - paste the full post link including /r/.../comments/...');
+    return match[1];
+}
+
+export async function fetchTrackedPostData(postUrl, cookie) {
+    const path = parseRedditPostUrl(postUrl);
+    const data = await redditFetch(`${path}.json`, cookie);
+    if (!Array.isArray(data) || !data[0]) throw new Error('Unexpected Reddit response - post may be deleted or private');
+    const post = data[0]?.data?.children?.[0]?.data;
+    if (!post) throw new Error('Post not found or has been deleted');
+    return {
+        postId: post.id,
+        title: post.title,
+        subreddit: post.subreddit,
+        subredditPrefixed: post.subreddit_name_prefixed ?? `r/${post.subreddit}`,
+        author: post.author ?? '[deleted]',
+        score: post.score ?? 0,
+        upvoteRatio: post.upvote_ratio ?? 0,
+        numComments: post.num_comments ?? 0,
+        permalink: `https://reddit.com${post.permalink}`,
+        isNsfw: post.over_18 ?? false,
+        createdAt: post.created_utc ? new Date(post.created_utc * 1000).toISOString() : '',
+        lastFetchedAt: new Date().toISOString(),
+    };
+}

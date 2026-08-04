@@ -23,6 +23,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+**Tracked Reddit Posts feature**
+- New `tracked_posts` Supabase table: stores post URLs, an optional account cookie reference, label, category, and cached Reddit data as jsonb
+- `backend/routes/trackedPosts.js` - 5 routes under `/api/reddit/tracked-posts`: GET (list), POST (add + fetch), PUT (update label/category/account), DELETE, and POST `:id/refresh`
+- `fetchTrackedPostData(postUrl, cookie)` added to `backend/services/reddit.js` - uses the `.json` trick to retrieve score, upvote ratio, comment count, and metadata for any public Reddit post
+- `backend/lib/db.js` - 5 new functions: `getTrackedPosts`, `getTrackedPostById`, `createTrackedPost`, `updateTrackedPost`, `deleteTrackedPost`
+- `frontend/src/features/analytics/reddit/RedditTracked.jsx` - new page at `/reddit-tracked`:
+  - StatCards: Tracked Posts, Categories, Avg Score
+  - "Track Post" dialog: URL input, account cookie selector (nullable), label, category
+  - Table with score, comment count, upvote%, last fetched, per-row refresh/edit/delete/open
+  - Checkbox selection with bulk category assignment bar
+  - "Edit" dialog with category quick-select from existing categories
+  - Filters: text search, category filter, sort by date/score/comments
+  - Empty state with CTA
+- Route `/reddit-tracked` added to `App.jsx`
+- "Tracked Posts" nav item with `BookmarkCheck` icon added to Analytics group in `Sidebar.jsx`
+- `api.js` - 5 new methods: `getTrackedPosts`, `addTrackedPost`, `updateTrackedPost`, `deleteTrackedPost`, `refreshTrackedPost`
+- `Overview.jsx` - category stats section below Reddit karma card; lazily fetches tracked posts and groups by category showing total score, avg score, upvote%; hidden when no categories assigned
+
 **Reddit Analytics improvements**
 - Karma separated into its own dedicated card in `RedditAnalytics.jsx` (total, post, comment, awardee karma); previously karma was mixed into the profile header
 - KPI cards: Posts Fetched, Total Score, Total Comments, Awards Received - replacing the previous generic set

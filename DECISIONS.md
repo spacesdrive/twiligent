@@ -419,3 +419,25 @@ Records every significant architectural decision, the alternatives considered, a
 - The maintenance overhead exceeded the value delivered relative to the project's primary focus (YouTube and Instagram)
 
 **Supersedes:** ADR-017
+
+---
+
+## ADR-019: Tracked posts fetch data on create and manual refresh only
+
+**Date:** 2026-08-04
+**Status:** Accepted
+
+**Decision:** When a user adds a tracked Reddit post URL, the backend fetches live data once (score, upvote ratio, comment count, title, subreddit) and stores it in `tracked_posts.data` as a jsonb cache. Subsequent GET requests return only the cached data. Live data is re-fetched only when the user explicitly triggers a refresh on a specific post.
+
+**Alternatives considered:**
+- Fetch live data on every GET: would fire N Reddit API requests on each page load, hitting rate limits immediately for users with many tracked posts
+- Background cron refresh: would require a new cron trigger and add Worker scheduling complexity for a feature where staleness is acceptable
+
+**Reasoning:**
+- Reddit's public JSON API is rate-limited to ~60 requests per 10 minutes unauthenticated. Fetching 20 posts on page load would consume the rate limit in one request cycle.
+- Score and comment count are not real-time metrics for typical use (monitoring campaign performance, not live event tracking). Manual refresh on demand is sufficient.
+- Storing data in jsonb keeps the fetch result queryable without an extra API call round-trip.
+- `account_id` is nullable with `ON DELETE SET NULL` so tracked posts survive account deletion and fall back to public (cookieless) access on refresh.
+
+**Trade-offs:**
+- Data shown on the page may be hours or days stale if the user does not refresh manually. The `lastFetchedAt` timestamp is displayed in the table so staleness is visible.

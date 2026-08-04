@@ -141,6 +141,74 @@ The `publishing` status is a mutex - it prevents double-publishing when both the
 
 ---
 
+## Table: `tracked_posts`
+
+Stores Reddit post URLs the user wants to monitor for score and comment count changes.
+
+| Column | Type | Nullable | Description |
+|---|---|---|---|
+| `id` | text | NOT NULL | PK. Client-generated: `Date.now().toString(36) + Math.random().toString(36).slice(2)` |
+| `user_id` | uuid | NOT NULL | FK -> `auth.users.id` ON DELETE CASCADE |
+| `account_id` | text | NULL | FK -> `accounts.id` ON DELETE SET NULL. Which account's cookie to use when fetching |
+| `url` | text | NOT NULL | Full Reddit post URL (e.g. `https://www.reddit.com/r/.../comments/...`) |
+| `label` | text | NOT NULL DEFAULT '' | User-defined name for the post |
+| `category` | text | NOT NULL DEFAULT '' | User-defined grouping label (used for category stats on Overview) |
+| `created_at` | timestamptz | NOT NULL DEFAULT now() | When the user added the tracked post |
+| `updated_at` | timestamptz | NOT NULL DEFAULT now() | Last time any field or the cached data was changed |
+| `data` | jsonb | NULL | Cached post data fetched from Reddit (see below) |
+
+### `data` jsonb shape
+
+Populated by `fetchTrackedPostData()` in `backend/services/reddit.js`:
+
+```json
+{
+    "postId": "abc123",
+    "title": "Post title from Reddit",
+    "subreddit": "programming",
+    "subredditPrefixed": "r/programming",
+    "author": "username",
+    "score": 1234,
+    "upvoteRatio": 0.97,
+    "numComments": 56,
+    "permalink": "https://reddit.com/r/programming/comments/abc123/...",
+    "isNsfw": false,
+    "createdAt": "2026-01-01T00:00:00Z",
+    "lastFetchedAt": "2026-08-04T10:00:00Z"
+}
+```
+
+Data is fetched on create and on manual refresh. It is not re-fetched on every GET to avoid Reddit rate limits.
+
+### `account_id` nullable logic
+
+`account_id` is nullable with `ON DELETE SET NULL`. If the user deletes the Reddit account whose cookie was used, the tracked post is kept but `account_id` becomes `null`. Subsequent refreshes access the post as public (no cookie).
+
+### Indexes
+
+```sql
+CREATE INDEX tracked_posts_user_id_idx ON tracked_posts(user_id);
+```
+
+### Migration SQL
+
+```sql
+CREATE TABLE tracked_posts (
+    id text PRIMARY KEY,
+    user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    account_id text REFERENCES accounts(id) ON DELETE SET NULL,
+    url text NOT NULL,
+    label text NOT NULL DEFAULT '',
+    category text NOT NULL DEFAULT '',
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+    data jsonb
+);
+CREATE INDEX tracked_posts_user_id_idx ON tracked_posts(user_id);
+```
+
+---
+
 ## `lib/db.js` - Query Layer
 
 All SQL operations are centralized in `backend/lib/db.js`. Route handlers and cron handlers import named functions from this file - they never call `supabase.from()` directly.
@@ -167,6 +235,13 @@ createPost(supabase, post, userId)
 updatePost(supabase, id, updates, userId?)
 deletePost(supabase, id, userId?)
 deleteAllPosts(supabase, userId)     // skips 'publishing' status posts
+
+// Tracked Reddit Posts
+getTrackedPosts(supabase, userId)
+getTrackedPostById(supabase, id, userId)
+createTrackedPost(supabase, post, userId)
+updateTrackedPost(supabase, id, updates, userId)
+deleteTrackedPost(supabase, id, userId)
 ```
 
 ## Adding a New Table

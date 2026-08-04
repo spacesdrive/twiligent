@@ -8,7 +8,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   LayoutDashboard, PlaySquare, Scissors, Camera,
-  Upload, Users, Settings, Flame,
+  Upload, Users, Settings, Flame, BookmarkCheck,
 } from 'lucide-react';
 
 import { useAppContext } from '../context/AppContext';
@@ -21,7 +21,8 @@ const NAV_GROUPS = [
       { path: '/videos',       label: 'All Videos',    icon: PlaySquare },
       { path: '/shorts',       label: 'Shorts',        icon: Scissors },
       { path: '/reels',        label: 'IG Content',    icon: Camera },
-      { path: '/reddit-posts', label: 'Reddit Posts',  icon: Flame },
+      { path: '/reddit-posts',    label: 'Reddit Posts',    icon: Flame },
+      { path: '/reddit-tracked',  label: 'Tracked Posts',   icon: BookmarkCheck },
     ],
   },
   {

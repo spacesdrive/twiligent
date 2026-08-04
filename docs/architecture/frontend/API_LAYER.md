@@ -87,6 +87,20 @@ async function handleAction() {
 }
 ```
 
+## Tracked Reddit Post Methods
+
+Added to the `api` object in `api.js`:
+
+```js
+getTrackedPosts: () => request('/reddit/tracked-posts'),
+addTrackedPost: (url, accountId, label, category) => request('/reddit/tracked-posts', { method: 'POST', body: JSON.stringify({ url, accountId, label, category }) }),
+updateTrackedPost: (id, updates) => request(`/reddit/tracked-posts/${id}`, { method: 'PUT', body: JSON.stringify(updates) }),
+deleteTrackedPost: (id) => request(`/reddit/tracked-posts/${id}`, { method: 'DELETE' }),
+refreshTrackedPost: (id) => request(`/reddit/tracked-posts/${id}/refresh`, { method: 'POST' }),
+```
+
+`accountId` may be `null` (public access without a session cookie).
+
 ## Authentication
 
 The `request()` function automatically attaches the JWT. Components do not need to handle auth tokens - the API layer manages this transparently. If the user is not logged in, the token will be absent and the backend will return 401, which `request()` will throw as an error.

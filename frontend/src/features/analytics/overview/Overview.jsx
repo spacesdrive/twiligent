@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,14 +14,41 @@ import {
 import StatCard from '../../../components/ui/StatCard';
 import MainCard from '../../../components/MainCard';
 import { useAppContext } from '../../../context/AppContext';
+import { api } from '../../../services/api';
 import { fmtNum, fmtNumFull, timeAgo } from '../../../utils/formatters';
-import { RefreshCw, Users, Eye, VideoIcon, BarChart3, ExternalLink, Tv, Camera, MessageSquare, Flame } from 'lucide-react';
+import { RefreshCw, Users, Eye, VideoIcon, BarChart3, ExternalLink, Tv, Camera, MessageSquare, Flame, Tag, TrendingUp } from 'lucide-react';
 
 const CHART_COLORS = ['hsl(221.2,83.2%,53.3%)', '#22c55e', '#f97316', '#a855f7', '#06b6d4', '#ec4899', '#6366f1', '#eab308'];
 
 export default function Overview() {
   const { accounts, loading, refreshAll } = useAppContext();
   const navigate = useNavigate();
+
+  const [trackedPosts, setTrackedPosts] = useState([]);
+  useEffect(() => {
+    api.getTrackedPosts().then(data => {
+      if (Array.isArray(data)) setTrackedPosts(data);
+    }).catch(() => {});
+  }, []);
+
+  const categoryStats = useMemo(() => {
+    const withCategory = trackedPosts.filter(p => p.category);
+    if (withCategory.length === 0) return [];
+    const map = {};
+    withCategory.forEach(p => {
+      if (!map[p.category]) map[p.category] = { category: p.category, count: 0, totalScore: 0, totalComments: 0, upvoteRatios: [] };
+      map[p.category].count++;
+      map[p.category].totalScore += p.score ?? 0;
+      map[p.category].totalComments += p.numComments ?? 0;
+      if (p.upvoteRatio != null) map[p.category].upvoteRatios.push(p.upvoteRatio);
+    });
+    return Object.values(map).map(s => ({
+      ...s,
+      avgScore: Math.round(s.totalScore / s.count),
+      avgComments: Math.round(s.totalComments / s.count),
+      avgUpvoteRatio: s.upvoteRatios.length > 0 ? Math.round(s.upvoteRatios.reduce((a, b) => a + b, 0) / s.upvoteRatios.length * 100) : 0,
+    })).sort((a, b) => b.totalScore - a.totalScore);
+  }, [trackedPosts]);
 
   const ytAccounts     = accounts.filter(a => a.platform !== 'instagram' && a.platform !== 'reddit');
   const igAccounts     = accounts.filter(a => a.platform === 'instagram');
@@ -161,6 +188,50 @@ export default function Overview() {
               ))}
             </div>
           )}
+        </MainCard>
+      )}
+
+      {/* Tracked post category stats */}
+      {categoryStats.length > 0 && (
+        <MainCard
+          title="Tracked Post Categories"
+          secondary={
+            <button
+              onClick={() => navigate('/reddit-tracked')}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
+            >
+              <Tag className="h-3 w-3" />
+              Manage
+            </button>
+          }
+        >
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {categoryStats.map(stat => (
+              <div
+                key={stat.category}
+                className="rounded-lg border border-border p-3 space-y-2"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-semibold truncate">{stat.category}</span>
+                  <span className="text-xs text-muted-foreground shrink-0">{stat.count} post{stat.count !== 1 ? 's' : ''}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-1 text-center">
+                  <div>
+                    <p className="text-sm font-bold tabular-nums text-orange-500">{fmtNum(stat.totalScore)}</p>
+                    <p className="text-[10px] text-muted-foreground">total score</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold tabular-nums">{fmtNum(stat.avgScore)}</p>
+                    <p className="text-[10px] text-muted-foreground">avg score</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold tabular-nums">{stat.avgUpvoteRatio}%</p>
+                    <p className="text-[10px] text-muted-foreground">upvote %</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </MainCard>
       )}
 
