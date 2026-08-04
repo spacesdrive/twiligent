@@ -15,7 +15,7 @@ import { api } from '../../../services/api';
 import { fmtNum, fmtDate } from '../../../utils/formatters';
 import {
   Plus, RefreshCw, Trash2, Pencil, ExternalLink,
-  Tag, Bookmark, TrendingUp, BookmarkCheck, Youtube, Flame,
+  Tag, Bookmark, TrendingUp, BookmarkCheck, CirclePlay, Flame,
 } from 'lucide-react';
 
 function detectContentType(url) {
@@ -39,7 +39,7 @@ function ContentTypeBadge({ type }) {
   if (type === 'youtube') {
     return (
       <Badge variant="outline" className="text-[10px] border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-400 gap-1 px-1.5 py-0">
-        <Youtube className="h-2.5 w-2.5" />
+        <CirclePlay className="h-2.5 w-2.5" />
         YouTube
       </Badge>
     );
@@ -267,7 +267,7 @@ export default function TrackedContent() {
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard icon={<BookmarkCheck />} label="Tracked Content" value={stats.total}    subtitle="across all categories" gradient="orange" />
         <StatCard icon={<Tag />}           label="Categories"      value={stats.categories} subtitle={stats.categories === 0 ? 'none assigned yet' : `${stats.categories} group${stats.categories !== 1 ? 's' : ''}`} gradient="blue" />
-        <StatCard icon={<Youtube />}       label="YouTube"         value={stats.youtube}  subtitle={stats.youtube === 0 ? 'no videos tracked' : `video${stats.youtube !== 1 ? 's' : ''} tracked`} gradient="red" />
+        <StatCard icon={<CirclePlay />}       label="YouTube"         value={stats.youtube}  subtitle={stats.youtube === 0 ? 'no videos tracked' : `video${stats.youtube !== 1 ? 's' : ''} tracked`} gradient="red" />
         <StatCard icon={<Flame />}         label="Reddit"          value={stats.reddit}   subtitle={stats.reddit === 0 ? 'no posts tracked' : `post${stats.reddit !== 1 ? 's' : ''} tracked`} gradient="purple" />
       </div>
 
