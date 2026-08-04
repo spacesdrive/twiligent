@@ -16,7 +16,7 @@ import MainCard from '../../../components/MainCard';
 import { useAppContext } from '../../../context/AppContext';
 import { api } from '../../../services/api';
 import { fmtNum, fmtNumFull, timeAgo } from '../../../utils/formatters';
-import { RefreshCw, Users, Eye, VideoIcon, BarChart3, ExternalLink, Tv, Camera, MessageSquare, Flame, Tag, TrendingUp } from 'lucide-react';
+import { RefreshCw, Users, Eye, VideoIcon, BarChart3, ExternalLink, Flame, Tag } from 'lucide-react';
 
 const CHART_COLORS = ['hsl(221.2,83.2%,53.3%)', '#22c55e', '#f97316', '#a855f7', '#06b6d4', '#ec4899', '#6366f1', '#eab308'];
 
@@ -31,23 +31,19 @@ export default function Overview() {
     }).catch(() => {});
   }, []);
 
+  const totalTrackedScore    = useMemo(() => trackedPosts.reduce((s, p) => s + (p.score ?? 0), 0), [trackedPosts]);
+  const totalTrackedComments = useMemo(() => trackedPosts.reduce((s, p) => s + (p.numComments ?? 0), 0), [trackedPosts]);
+
   const categoryStats = useMemo(() => {
     const withCategory = trackedPosts.filter(p => p.category);
     if (withCategory.length === 0) return [];
     const map = {};
     withCategory.forEach(p => {
-      if (!map[p.category]) map[p.category] = { category: p.category, count: 0, totalScore: 0, totalComments: 0, upvoteRatios: [] };
+      if (!map[p.category]) map[p.category] = { category: p.category, count: 0, totalScore: 0 };
       map[p.category].count++;
       map[p.category].totalScore += p.score ?? 0;
-      map[p.category].totalComments += p.numComments ?? 0;
-      if (p.upvoteRatio != null) map[p.category].upvoteRatios.push(p.upvoteRatio);
     });
-    return Object.values(map).map(s => ({
-      ...s,
-      avgScore: Math.round(s.totalScore / s.count),
-      avgComments: Math.round(s.totalComments / s.count),
-      avgUpvoteRatio: s.upvoteRatios.length > 0 ? Math.round(s.upvoteRatios.reduce((a, b) => a + b, 0) / s.upvoteRatios.length * 100) : 0,
-    })).sort((a, b) => b.totalScore - a.totalScore);
+    return Object.values(map).sort((a, b) => b.totalScore - a.totalScore);
   }, [trackedPosts]);
 
   const ytAccounts     = accounts.filter(a => a.platform !== 'instagram' && a.platform !== 'reddit');
@@ -152,86 +148,103 @@ export default function Overview() {
         ))}
       </div>
 
-      {/* Reddit karma summary - separate from audience since karma is not an audience metric */}
+      {/* Reddit section - accounts, karma totals, and tracked categories in one card */}
       {redditAccounts.length > 0 && (
         <MainCard>
-          <div className="flex items-center justify-between mb-3">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Flame className="h-4 w-4 text-orange-500" />
               <span className="text-sm font-semibold">Reddit</span>
-              <span className="text-xs text-muted-foreground">{redditAccounts.length} account{redditAccounts.length !== 1 ? 's' : ''}</span>
+              <span className="text-xs text-muted-foreground">
+                {redditAccounts.length} account{redditAccounts.length !== 1 ? 's' : ''}
+              </span>
+            </div>
+            <button
+              onClick={() => navigate('/reddit-tracked')}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Tracked posts
+            </button>
+          </div>
+
+          {/* Stats row */}
+          <div className="grid grid-cols-3 gap-3 mb-4">
+            <div className="text-center p-3 rounded-lg bg-muted/40">
+              <p className="text-lg font-bold tabular-nums text-orange-500">{fmtNum(totals.karma)}</p>
+              <p className="text-xs font-medium text-muted-foreground mt-0.5">Total Karma</p>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-muted/40">
+              <p className="text-lg font-bold tabular-nums">{fmtNum(totalTrackedScore)}</p>
+              <p className="text-xs font-medium text-muted-foreground mt-0.5">Total Upvotes</p>
+              <p className="text-[10px] text-muted-foreground">tracked posts</p>
+            </div>
+            <div className="text-center p-3 rounded-lg bg-muted/40">
+              <p className="text-lg font-bold tabular-nums">{fmtNum(totalTrackedComments)}</p>
+              <p className="text-xs font-medium text-muted-foreground mt-0.5">Total Comments</p>
+              <p className="text-[10px] text-muted-foreground">tracked posts</p>
             </div>
           </div>
-          <div className="grid grid-cols-3 gap-4">
-            {[
-              { label: 'Total Karma',   value: fmtNum(totals.karma) },
-              { label: 'Post Karma',    value: fmtNum(totals.postKarma) },
-              { label: 'Comment Karma', value: fmtNum(totals.commentKarma) },
-            ].map(item => (
-              <div key={item.label} className="text-center p-3 rounded-lg bg-muted/40">
-                <p className="text-lg font-bold tabular-nums text-orange-500">{item.value}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{item.label}</p>
-              </div>
-            ))}
-          </div>
-          {redditAccounts.length > 1 && (
-            <div className="mt-3 space-y-1">
-              {[...redditAccounts].sort((a, b) => (b.totalKarma || 0) - (a.totalKarma || 0)).map(a => (
+
+          {/* Account rows */}
+          <div className="space-y-0.5">
+            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-2 mb-1">
+              Accounts
+            </p>
+            {[...redditAccounts]
+              .sort((a, b) => (b.totalKarma || 0) - (a.totalKarma || 0))
+              .map(a => (
                 <button
                   key={a.id}
                   onClick={() => navigate(`/reddit/${a.id}`)}
-                  className="w-full flex items-center justify-between px-2 py-1.5 rounded-lg hover:bg-muted/60 transition-colors text-left"
+                  className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-muted/60 transition-colors text-left"
                 >
-                  <span className="text-sm font-medium">u/{a.username}</span>
-                  <span className="text-sm tabular-nums text-muted-foreground">{fmtNum(a.totalKarma)} karma</span>
+                  <Avatar className="h-6 w-6 flex-shrink-0">
+                    <AvatarImage src={a.thumbnail || a.iconUrl} />
+                    <AvatarFallback className="bg-orange-500 text-white text-[0.5rem] font-bold">
+                      {(a.username || '?').slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="flex-1 text-sm font-medium">u/{a.username}</span>
+                  <span className="text-sm tabular-nums text-muted-foreground">{fmtNum(a.totalKarma || 0)} karma</span>
+                </button>
+              ))}
+          </div>
+
+          {/* Category rows - only when tracked posts with categories exist */}
+          {categoryStats.length > 0 && (
+            <div className="border-t border-border mt-3 pt-3 space-y-0.5">
+              <div className="flex items-center justify-between px-2 mb-1">
+                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
+                  Tracked Categories
+                </p>
+                <button
+                  onClick={() => navigate('/reddit-tracked')}
+                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Manage
+                </button>
+              </div>
+              {categoryStats.map(stat => (
+                <button
+                  key={stat.category}
+                  onClick={() => navigate('/reddit-tracked')}
+                  className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-muted/60 transition-colors text-left"
+                >
+                  <div className="h-6 w-6 rounded-md bg-orange-500/10 flex items-center justify-center flex-shrink-0">
+                    <Tag className="h-3.5 w-3.5 text-orange-500" />
+                  </div>
+                  <span className="flex-1 text-sm font-medium">{stat.category}</span>
+                  <span className="text-xs text-muted-foreground mr-2">
+                    {stat.count} post{stat.count !== 1 ? 's' : ''}
+                  </span>
+                  <span className="text-sm font-semibold tabular-nums text-orange-500">
+                    {fmtNum(stat.totalScore)}
+                  </span>
                 </button>
               ))}
             </div>
           )}
-        </MainCard>
-      )}
-
-      {/* Tracked post category stats */}
-      {categoryStats.length > 0 && (
-        <MainCard
-          title="Tracked Post Categories"
-          secondary={
-            <button
-              onClick={() => navigate('/reddit-tracked')}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1"
-            >
-              <Tag className="h-3 w-3" />
-              Manage
-            </button>
-          }
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {categoryStats.map(stat => (
-              <div
-                key={stat.category}
-                className="rounded-lg border border-border p-3 space-y-2"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-semibold truncate">{stat.category}</span>
-                  <span className="text-xs text-muted-foreground shrink-0">{stat.count} post{stat.count !== 1 ? 's' : ''}</span>
-                </div>
-                <div className="grid grid-cols-3 gap-1 text-center">
-                  <div>
-                    <p className="text-sm font-bold tabular-nums text-orange-500">{fmtNum(stat.totalScore)}</p>
-                    <p className="text-[10px] text-muted-foreground">total score</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold tabular-nums">{fmtNum(stat.avgScore)}</p>
-                    <p className="text-[10px] text-muted-foreground">avg score</p>
-                  </div>
-                  <div>
-                    <p className="text-sm font-bold tabular-nums">{stat.avgUpvoteRatio}%</p>
-                    <p className="text-[10px] text-muted-foreground">upvote %</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
         </MainCard>
       )}
 

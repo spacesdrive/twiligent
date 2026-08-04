@@ -397,8 +397,10 @@ export default function RedditTracked() {
                       <TableCell className="text-right text-sm tabular-nums">
                         {post.numComments !== undefined ? fmtNum(post.numComments) : '-'}
                       </TableCell>
-                      <TableCell className="text-right text-sm tabular-nums">
-                        {post.upvoteRatio !== undefined ? `${Math.round(post.upvoteRatio * 100)}%` : '-'}
+                      <TableCell className="text-right text-sm tabular-nums text-muted-foreground">
+                        {post.upvoteRatio !== undefined && (post.score ?? 0) >= 10
+                          ? `${Math.round(post.upvoteRatio * 100)}%`
+                          : '-'}
                       </TableCell>
                       <TableCell className="text-right text-xs text-muted-foreground">
                         {post.lastFetchedAt ? fmtDate(post.lastFetchedAt) : '-'}
