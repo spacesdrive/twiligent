@@ -185,6 +185,7 @@ function rowToTrackedPost(row) {
         url: row.url,
         label: row.label || '',
         category: row.category || '',
+        contentType: row.content_type || 'reddit',
         createdAt: row.created_at,
         updatedAt: row.updated_at,
         ...(row.data || {}),
@@ -194,7 +195,7 @@ function rowToTrackedPost(row) {
 export async function getTrackedPosts(supabase, userId) {
     const { data, error } = await supabase
         .from('tracked_posts')
-        .select('id, account_id, url, label, category, created_at, updated_at, data')
+        .select('id, account_id, url, label, category, content_type, created_at, updated_at, data')
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
     if (error) throw error;
@@ -204,7 +205,7 @@ export async function getTrackedPosts(supabase, userId) {
 export async function getTrackedPostById(supabase, id, userId) {
     const { data, error } = await supabase
         .from('tracked_posts')
-        .select('id, account_id, url, label, category, created_at, updated_at, data')
+        .select('id, account_id, url, label, category, content_type, created_at, updated_at, data')
         .eq('id', id)
         .eq('user_id', userId)
         .single();
@@ -213,7 +214,7 @@ export async function getTrackedPostById(supabase, id, userId) {
 }
 
 export async function createTrackedPost(supabase, post, userId) {
-    const { id, accountId, url, label, category } = post;
+    const { id, accountId, url, label, category, contentType } = post;
     const { error } = await supabase.from('tracked_posts').insert({
         id,
         user_id: userId,
@@ -221,6 +222,7 @@ export async function createTrackedPost(supabase, post, userId) {
         url,
         label: label || '',
         category: category || '',
+        content_type: contentType || 'reddit',
     });
     if (error) throw error;
 }

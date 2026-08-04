@@ -441,3 +441,47 @@ Records every significant architectural decision, the alternatives considered, a
 
 **Trade-offs:**
 - Data shown on the page may be hours or days stale if the user does not refresh manually. The `lastFetchedAt` timestamp is displayed in the table so staleness is visible.
+
+---
+
+## ADR-020: Tracked Content expanded to support YouTube videos alongside Reddit posts
+
+**Date:** 2026-08-04
+**Status:** Accepted
+
+**Decision:** The "Tracked Posts" feature is renamed "Tracked Content" and extended to support YouTube video and Shorts URLs in addition to Reddit post URLs. A `content_type` column (`'reddit'` | `'youtube'`) is added to the `tracked_posts` table. URL platform detection (`detectContentType()`) routes each add/refresh request to the appropriate fetch function.
+
+**Alternatives considered:**
+- Separate `tracked_youtube` table: cleaner schema but duplicates all the category/label/CRUD infrastructure; categories could not be shared between Reddit and YouTube items
+- A separate page for YouTube tracking: splits the UI unnecessarily; categories work best when unified across content types
+
+**Reasoning:**
+- Users often run campaigns or track performance across both YouTube and Reddit simultaneously. Sharing categories between content types enables cross-platform campaign tracking without duplication.
+- `content_type` defaulting to `'reddit'` makes the migration backward-compatible: all existing rows remain valid.
+- `fetchTrackedYouTubeData()` reuses the existing `ytFetch()` helper and `YOUTUBE_API_KEY` already required for channel analytics; no new Worker secrets are needed.
+- YouTube video likes and comment counts require per-video API calls, which the existing per-account analytics endpoints do not aggregate. Tracked content provides the only granular YouTube engagement data available on the Overview.
+
+**Trade-offs:**
+- YouTube comments are disabled on some videos (`commentCount` may be 0 even when comments exist but are restricted by the creator).
+- YouTube `likeCount` is no longer public on some videos - the API returns 0 in those cases; this is an API limitation, not a code bug.
+- The `tracked_posts` table name now refers to a broader concept than posts; a future refactor could rename it to `tracked_content` but the migration overhead is not justified at this scale.
+
+---
+
+## ADR-021: Overview redesigned with tab interface; karma included in Total Audience
+
+**Date:** 2026-08-04
+**Status:** Accepted
+
+**Decision:** The Overview's four StatCards are replaced with a 6-tab interface (Total Audience, Total Views, Total Content, Accounts, Total Comments, Total Likes). Reddit karma is included in the Total Audience metric. The Audience Comparison bar chart includes Reddit accounts and tracked categories. The standalone Reddit section card is removed.
+
+**Supersedes:** ADR-015 (karma excluded from audience metrics)
+
+**Reasoning:**
+- Reddit karma, while not a subscriber count, represents the user's reach and credibility on the platform - it is the closest available proxy for "audience" a Reddit account has, and the user explicitly requested it be included.
+- The tab interface gives each metric a dedicated content area rather than cramming everything into a single scrolling page. This scales better as more platforms and metrics are added.
+- Total Comments and Total Likes tabs provide engagement-focused views of tracked content, fulfilling the need for cross-platform engagement analytics without requiring expensive per-account API calls on every page load.
+
+**Trade-offs:**
+- Including karma in Total Audience makes the number less directly comparable to subscriber/follower counts; this is mitigated by clearly labeling each component (`X subs · Y followers · Z karma`).
+- The tab interface requires the user to click between views rather than seeing everything at once; this is the correct tradeoff for a dense analytics dashboard.

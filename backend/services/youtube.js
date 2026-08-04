@@ -154,6 +154,53 @@ function formatCompact(n) {
     return n.toString();
 }
 
+function extractYouTubeVideoId(url) {
+    try {
+        const u = new URL(url.trim());
+        if (u.hostname === 'youtu.be') return u.pathname.slice(1).split('?')[0];
+        if (u.hostname.includes('youtube.com')) {
+            if (u.pathname.startsWith('/shorts/')) return u.pathname.split('/')[2];
+            if (u.pathname.startsWith('/embed/')) return u.pathname.split('/')[2];
+            return u.searchParams.get('v');
+        }
+    } catch {}
+    return null;
+}
+
+export async function fetchTrackedYouTubeData(videoUrl, apiKey) {
+    const videoId = extractYouTubeVideoId(videoUrl);
+    if (!videoId) throw new Error('Invalid YouTube URL - could not extract video ID');
+
+    const data = await ytFetch('videos', {
+        part: 'snippet,statistics',
+        id: videoId,
+    }, apiKey);
+
+    if (!data.items || data.items.length === 0) throw new Error('YouTube video not found - check the URL');
+
+    const item = data.items[0];
+    const s = item.snippet;
+    const st = item.statistics;
+    const isShort = videoUrl.includes('/shorts/');
+
+    return {
+        contentType: 'youtube',
+        title: s.title,
+        channelTitle: s.channelTitle,
+        channelId: s.channelId,
+        thumbnail: s.thumbnails?.medium?.url || s.thumbnails?.default?.url || '',
+        publishedAt: s.publishedAt,
+        viewCount: parseInt(st.viewCount || '0', 10),
+        likeCount: parseInt(st.likeCount || '0', 10),
+        commentCount: parseInt(st.commentCount || '0', 10),
+        isShort,
+        permalink: isShort
+            ? `https://www.youtube.com/shorts/${videoId}`
+            : `https://www.youtube.com/watch?v=${videoId}`,
+        lastFetchedAt: new Date().toISOString(),
+    };
+}
+
 export function computeVideoAnalytics(videos) {
     if (!videos || videos.length === 0) {
         return {

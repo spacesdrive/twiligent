@@ -87,19 +87,19 @@ async function handleAction() {
 }
 ```
 
-## Tracked Reddit Post Methods
+## Tracked Content Methods
 
-Added to the `api` object in `api.js`:
+Added to the `api` object in `api.js`. Handles both Reddit posts and YouTube videos:
 
 ```js
-getTrackedPosts: () => request('/reddit/tracked-posts'),
-addTrackedPost: (url, accountId, label, category) => request('/reddit/tracked-posts', { method: 'POST', body: JSON.stringify({ url, accountId, label, category }) }),
-updateTrackedPost: (id, updates) => request(`/reddit/tracked-posts/${id}`, { method: 'PUT', body: JSON.stringify(updates) }),
-deleteTrackedPost: (id) => request(`/reddit/tracked-posts/${id}`, { method: 'DELETE' }),
-refreshTrackedPost: (id) => request(`/reddit/tracked-posts/${id}/refresh`, { method: 'POST' }),
+getTrackedContent: () => request('/tracked-content'),
+addTrackedContent: (url, accountId, label, category) => request('/tracked-content', { method: 'POST', body: JSON.stringify({ url, accountId, label, category }) }),
+updateTrackedContent: (id, updates) => request(`/tracked-content/${id}`, { method: 'PUT', body: JSON.stringify(updates) }),
+deleteTrackedContent: (id) => request(`/tracked-content/${id}`, { method: 'DELETE' }),
+refreshTrackedContent: (id) => request(`/tracked-content/${id}/refresh`, { method: 'POST' }),
 ```
 
-`accountId` may be `null` (public access without a session cookie).
+`accountId` may be `null`. For YouTube items, `accountId` is always `null` (fetched via the server's `YOUTUBE_API_KEY`). For Reddit items, `accountId` is optional and refers to a Reddit account whose cookie improves datacenter IP access.
 
 ## Authentication
 
