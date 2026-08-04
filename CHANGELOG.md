@@ -35,6 +35,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Reddit section card removed; Reddit data fully integrated into the tab views
 - Accounts tab now shows all accounts including Reddit in a unified table
 
+**Overview metrics fixed**
+- New `/api/overview` backend endpoint reads per-account analytics from Redis cache (YouTube video likes/comments, Instagram media likes/comments, Reddit account posts/score/comments)
+- Total Comments and Total Likes now include YouTube channel video data and Instagram media data, not just tracked content
+- Total Content now includes Reddit account posts from analytics cache
+- Audience Comparison changed from BarChart to AreaChart with gradient fill and platform-colored custom dots per account
+- Top by Audience list simplified: shows rank, avatar, account name, and platform badge only (no metric value)
+- Tab trigger subtitles now truncated cleanly; no visual overflow between adjacent triggers
+- When any account's analytics cache is cold, backend fires a background warm-up task (YouTube fetchAllVideos, Instagram fetchInstagramMedia); frontend shows "Syncing analytics..." and auto-refreshes after 6 seconds
+
 ### Removed
 
 **X (Twitter) integration removed**
