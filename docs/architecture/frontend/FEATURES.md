@@ -79,7 +79,8 @@ Each page manages its own loading/data/error state. Pages do not write to `AppCo
 | Reddit Analytics | `/reddit/:id` | Reddit analytics for one account - karma breakdown, score timeline, post type distribution, day/hour analysis, subreddit breakdown, top posts |
 | Reddit Posts (global) | `/reddit-posts` | Combined post explorer across all Reddit accounts with account and subreddit filters |
 | Reddit Posts (per account) | `/reddit-posts/:id` | Searchable and sortable post list for a single Reddit account |
-| Tracked Posts | `/reddit-tracked` | Monitor specific Reddit post URLs for score and comment changes; bulk category assignment; category stats shown on Overview |
+| Tracked Content | `/tracked-content` | Monitor Reddit posts and YouTube videos; add by URL, assign categories, bulk edit, per-row refresh |
+| Tracked Category | `/tracked-content/category/:name` | Detailed per-category analytics; YouTube section (views, likes, comments, bar chart, table) and Reddit section (score, ratio, comments, bar chart, table) rendered separately |
 | Video Explorer | `/videos/:id` | YouTube video library with search and sort |
 | Publish | `/publish/:id` | Publish a post to Instagram immediately |
 | Schedule | `/schedule/:id` | View and manage the scheduled post queue |

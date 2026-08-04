@@ -22,6 +22,7 @@ const RedditAnalytics    = lazy(() => import('./features/analytics/reddit/Reddit
 const RedditPosts        = lazy(() => import('./features/analytics/reddit/RedditPosts'));
 const RedditPostsAll     = lazy(() => import('./features/analytics/reddit/RedditPostsAll'));
 const TrackedContent     = lazy(() => import('./features/analytics/tracked/TrackedContent'));
+const TrackedCategory    = lazy(() => import('./features/analytics/tracked/TrackedCategory'));
 
 const router = createBrowserRouter([
   {
@@ -50,8 +51,9 @@ const router = createBrowserRouter([
       { path: 'reddit/:id',         element: <RedditAnalytics /> },
       { path: 'reddit-posts',         element: <RedditPostsAll /> },
       { path: 'reddit-posts/:id',   element: <RedditPosts /> },
-      { path: 'tracked-content',     element: <TrackedContent /> },
-      { path: 'reddit-tracked',     element: <Navigate to="/tracked-content" replace /> },
+      { path: 'tracked-content',                  element: <TrackedContent /> },
+      { path: 'tracked-content/category/:name', element: <TrackedCategory /> },
+      { path: 'reddit-tracked',                 element: <Navigate to="/tracked-content" replace /> },
       { path: '*',             element: <Navigate to="/" replace /> },
     ],
   },

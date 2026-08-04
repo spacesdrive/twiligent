@@ -169,11 +169,30 @@ export default function Overview() {
     if (!withCat.length) return [];
     const map = {};
     withCat.forEach(p => {
-      if (!map[p.category]) map[p.category] = { category: p.category, count: 0, totalScore: 0 };
-      map[p.category].count++;
-      map[p.category].totalScore += p.contentType === 'youtube' ? (p.viewCount ?? 0) : (p.score ?? 0);
+      if (!map[p.category]) {
+        map[p.category] = {
+          category: p.category,
+          count: 0, ytCount: 0, rdCount: 0,
+          ytViews: 0, ytLikes: 0, ytComments: 0,
+          rdScore: 0, rdComments: 0,
+        };
+      }
+      const c = map[p.category];
+      c.count++;
+      if (p.contentType === 'youtube') {
+        c.ytCount++;
+        c.ytViews    += p.viewCount    ?? 0;
+        c.ytLikes    += p.likeCount    ?? 0;
+        c.ytComments += p.commentCount ?? 0;
+      } else {
+        c.rdCount++;
+        c.rdScore    += p.score       ?? 0;
+        c.rdComments += p.numComments ?? 0;
+      }
     });
-    return Object.values(map).sort((a, b) => b.totalScore - a.totalScore);
+    return Object.values(map).sort((a, b) =>
+      (b.rdScore + b.ytViews) - (a.rdScore + a.ytViews)
+    );
   }, [trackedContent]);
 
   // ── Audience metric per account ────────────────────────────────────────────────
@@ -211,7 +230,7 @@ export default function Overview() {
     })),
     ...categoryStats.map(c => ({
       name:  c.category.slice(0, 12) + (c.category.length > 12 ? '…' : ''),
-      value: c.totalScore,
+      value: c.rdScore + c.ytViews,
       type:  'category',
     })),
   ], [ytAccounts, igAccounts, redditAccounts, categoryStats]);
@@ -225,7 +244,7 @@ export default function Overview() {
       })),
       ...categoryStats.map((c, i) => ({
         name:  c.category.slice(0, 14),
-        value: c.totalScore,
+        value: c.rdScore + c.ytViews,
         color: CHART_COLORS[(accounts.length + i) % CHART_COLORS.length],
       })),
     ].filter(e => e.value > 0);
@@ -386,7 +405,7 @@ export default function Overview() {
                       <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} tickFormatter={fmtNum} axisLine={false} tickLine={false} width={48} />
                       <ReTooltip
                         contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
-                        formatter={(v, name, props) => [fmtNumFull(v), props.payload.type === 'category' ? 'Score' : 'Audience']}
+                        formatter={(v, name, props) => [fmtNumFull(v), props.payload.type === 'category' ? 'Views + Score' : 'Audience']}
                       />
                       <Area
                         type="monotone"
@@ -418,7 +437,7 @@ export default function Overview() {
                     ytAccounts.length     ? { color: PLATFORM_COLORS.youtube,   label: 'YouTube (subs)'        } : null,
                     igAccounts.length     ? { color: PLATFORM_COLORS.instagram, label: 'Instagram (followers)' } : null,
                     redditAccounts.length ? { color: PLATFORM_COLORS.reddit,    label: 'Reddit (karma)'        } : null,
-                    categoryStats.length  ? { color: PLATFORM_COLORS.category,  label: 'Category (score)'      } : null,
+                    categoryStats.length  ? { color: PLATFORM_COLORS.category,  label: 'Category (views + score)' } : null,
                   ].filter(Boolean).map(({ color, label }) => (
                     <div key={label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ background: color }} />
@@ -476,7 +495,7 @@ export default function Overview() {
                 {categoryStats.map(stat => (
                   <button
                     key={stat.category}
-                    onClick={() => navigate('/tracked-content')}
+                    onClick={() => navigate(`/tracked-content/category/${encodeURIComponent(stat.category)}`)}
                     className="w-full flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-muted/60 transition-colors text-left"
                   >
                     <span className="w-5 text-xs font-bold tabular-nums text-muted-foreground">#</span>
@@ -484,9 +503,14 @@ export default function Overview() {
                       <Tag className="h-3.5 w-3.5 text-purple-500" />
                     </div>
                     <span className="flex-1 text-sm font-medium truncate">{stat.category}</span>
-                    <Badge variant="outline" className="text-[10px] border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-900 dark:bg-purple-950 dark:text-purple-400">
-                      Category
-                    </Badge>
+                    <div className="text-right">
+                      {stat.ytCount > 0 && (
+                        <p className="text-[10px] text-red-500 tabular-nums leading-none">{fmtNum(stat.ytViews)} views</p>
+                      )}
+                      {stat.rdCount > 0 && (
+                        <p className="text-[10px] text-orange-500 tabular-nums leading-none mt-0.5">{fmtNum(stat.rdScore)} score</p>
+                      )}
+                    </div>
                   </button>
                 ))}
               </div>
@@ -605,29 +629,37 @@ export default function Overview() {
                   </p>
                 ) : (
                   <div className="space-y-1">
-                    {categoryStats.map(stat => {
-                      const ytInCat = trackedStats.ytItems.filter(p => p.category === stat.category).length;
-                      const rdInCat = trackedStats.rdItems.filter(p => p.category === stat.category).length;
-                      return (
-                        <button
-                          key={stat.category}
-                          onClick={() => navigate('/tracked-content')}
-                          className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-muted/60 transition-colors text-left"
-                        >
-                          <div className="h-7 w-7 rounded-md bg-purple-500/10 flex items-center justify-center flex-shrink-0">
-                            <Tag className="h-3.5 w-3.5 text-purple-500" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{stat.category}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {stat.count} item{stat.count !== 1 ? 's' : ''}
-                              {ytInCat > 0 && rdInCat > 0 ? ` · ${ytInCat} YT · ${rdInCat} Reddit` : ''}
+                    {categoryStats.map(stat => (
+                      <button
+                        key={stat.category}
+                        onClick={() => navigate(`/tracked-content/category/${encodeURIComponent(stat.category)}`)}
+                        className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-muted/60 transition-colors text-left"
+                      >
+                        <div className="h-7 w-7 rounded-md bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+                          <Tag className="h-3.5 w-3.5 text-purple-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium truncate">{stat.category}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {stat.count} item{stat.count !== 1 ? 's' : ''}
+                            {stat.ytCount > 0 && ` · ${stat.ytCount} YouTube`}
+                            {stat.rdCount > 0 && ` · ${stat.rdCount} Reddit`}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          {stat.ytCount > 0 && (
+                            <p className="text-xs font-semibold tabular-nums text-red-500 leading-none">
+                              {fmtNum(stat.ytViews)} views
                             </p>
-                          </div>
-                          <span className="text-sm font-semibold tabular-nums text-purple-500">{fmtNum(stat.totalScore)}</span>
-                        </button>
-                      );
-                    })}
+                          )}
+                          {stat.rdCount > 0 && (
+                            <p className="text-xs font-semibold tabular-nums text-orange-500 leading-none mt-0.5">
+                              {fmtNum(stat.rdScore)} score
+                            </p>
+                          )}
+                        </div>
+                      </button>
+                    ))}
                   </div>
                 )}
               </MainCard>
