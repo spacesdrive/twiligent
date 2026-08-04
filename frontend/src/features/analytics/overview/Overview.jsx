@@ -19,7 +19,7 @@ import { api } from '../../../services/api';
 import { fmtNum, fmtNumFull, timeAgo } from '../../../utils/formatters';
 import {
   RefreshCw, Users, VideoIcon, ExternalLink,
-  Tag, ThumbsUp, MessageSquare, Youtube, Flame, BookmarkCheck,
+  Tag, ThumbsUp, MessageSquare, CirclePlay, Flame, BookmarkCheck,
 } from 'lucide-react';
 
 const PLATFORM_COLORS = {
@@ -496,7 +496,7 @@ export default function Overview() {
           {/* ── CONTENT TAB ──────────────────────────────────────────────── */}
           <TabsContent value="content" className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <StatCard icon={<Youtube />}  label="YouTube Videos"  value={fmtNum(totals.videos)} subtitle={`${ytAccounts.length} channel${ytAccounts.length !== 1 ? 's' : ''}`} gradient="red" />
+              <StatCard icon={<CirclePlay />}  label="YouTube Videos"  value={fmtNum(totals.videos)} subtitle={`${ytAccounts.length} channel${ytAccounts.length !== 1 ? 's' : ''}`} gradient="red" />
               <StatCard icon={<VideoIcon />} label="Instagram Posts" value={fmtNum(totals.posts)}  subtitle={`${igAccounts.length} account${igAccounts.length !== 1 ? 's' : ''}`} gradient="blue" />
               <StatCard icon={<BookmarkCheck />} label="Tracked Content" value={fmtNum(trackedStats.total)} subtitle={`${trackedStats.ytItems.length} YouTube · ${trackedStats.rdItems.length} Reddit`} gradient="orange" />
             </div>
@@ -650,7 +650,7 @@ export default function Overview() {
           <TabsContent value="comments" className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <StatCard icon={<MessageSquare />} label="Total Comments" value={fmtNum(trackedStats.totalComments)} subtitle="from tracked content" gradient="blue" />
-              <StatCard icon={<Youtube />}       label="YouTube Comments" value={fmtNum(trackedStats.ytItems.reduce((s, p) => s + (p.commentCount ?? 0), 0))} subtitle={`${trackedStats.ytItems.length} video${trackedStats.ytItems.length !== 1 ? 's' : ''} tracked`} gradient="red" />
+              <StatCard icon={<CirclePlay />}       label="YouTube Comments" value={fmtNum(trackedStats.ytItems.reduce((s, p) => s + (p.commentCount ?? 0), 0))} subtitle={`${trackedStats.ytItems.length} video${trackedStats.ytItems.length !== 1 ? 's' : ''} tracked`} gradient="red" />
               <StatCard icon={<Flame />}         label="Reddit Comments" value={fmtNum(trackedStats.rdItems.reduce((s, p) => s + (p.numComments ?? 0), 0))} subtitle={`${trackedStats.rdItems.length} post${trackedStats.rdItems.length !== 1 ? 's' : ''} tracked`} gradient="orange" />
             </div>
 
@@ -692,7 +692,7 @@ export default function Overview() {
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 {isYT ? (
-                                  <Youtube className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
+                                  <CirclePlay className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
                                 ) : (
                                   <Flame className="h-3.5 w-3.5 text-orange-500 flex-shrink-0" />
                                 )}
@@ -729,7 +729,7 @@ export default function Overview() {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <StatCard icon={<ThumbsUp />}      label="Total Likes"    value={fmtNum(totalLikes)} subtitle="karma + YouTube likes" gradient="purple" />
               <StatCard icon={<Flame />}          label="Reddit Karma"   value={fmtNum(totals.postKarma)} subtitle="post upvotes across accounts" gradient="orange" />
-              <StatCard icon={<Youtube />}        label="YouTube Likes"  value={fmtNum(trackedStats.totalYTLikes)} subtitle={`${trackedStats.ytItems.length} tracked video${trackedStats.ytItems.length !== 1 ? 's' : ''}`} gradient="red" />
+              <StatCard icon={<CirclePlay />}        label="YouTube Likes"  value={fmtNum(trackedStats.totalYTLikes)} subtitle={`${trackedStats.ytItems.length} tracked video${trackedStats.ytItems.length !== 1 ? 's' : ''}`} gradient="red" />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -766,7 +766,7 @@ export default function Overview() {
               <MainCard title="Tracked YouTube by Likes">
                 {trackedStats.ytItems.length === 0 ? (
                   <div className="flex flex-col items-center text-center py-8 gap-3">
-                    <Youtube className="h-7 w-7 text-muted-foreground" />
+                    <CirclePlay className="h-7 w-7 text-muted-foreground" />
                     <div>
                       <p className="text-sm font-medium">No YouTube videos tracked</p>
                       <p className="text-xs text-muted-foreground mt-1">Track YouTube videos to see their like counts</p>
@@ -787,7 +787,7 @@ export default function Overview() {
                             <img src={item.thumbnail} alt="" className="h-9 w-14 rounded object-cover flex-shrink-0" />
                           ) : (
                             <div className="h-9 w-14 rounded bg-red-500/10 flex items-center justify-center flex-shrink-0">
-                              <Youtube className="h-4 w-4 text-red-500" />
+                              <CirclePlay className="h-4 w-4 text-red-500" />
                             </div>
                           )}
                           <div className="flex-1 min-w-0">
