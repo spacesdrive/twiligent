@@ -192,7 +192,14 @@ export default function RedditPostsAll() {
               </div>
 
               {redditAccounts.length > 1 && (
-                <Select value={accountFilter} onValueChange={setAccountFilter}>
+                <Select
+                  value={accountFilter}
+                  onValueChange={setAccountFilter}
+                  items={[
+                    { value: 'all', label: 'All accounts' },
+                    ...redditAccounts.map(a => ({ value: a.id, label: `u/${a.username}` })),
+                  ]}
+                >
                   <SelectTrigger className="w-full sm:w-48">
                     <SelectValue placeholder="All accounts" />
                   </SelectTrigger>
@@ -205,7 +212,14 @@ export default function RedditPostsAll() {
                 </Select>
               )}
 
-              <Select value={subFilter} onValueChange={setSubFilter}>
+              <Select
+                value={subFilter}
+                onValueChange={setSubFilter}
+                items={[
+                  { value: 'all', label: 'All subreddits' },
+                  ...subreddits.map(s => ({ value: s, label: `r/${s}` })),
+                ]}
+              >
                 <SelectTrigger className="w-full sm:w-48">
                   <SelectValue placeholder="All subreddits" />
                 </SelectTrigger>
@@ -217,7 +231,7 @@ export default function RedditPostsAll() {
                 </SelectContent>
               </Select>
 
-              <Select value={sort} onValueChange={setSort}>
+              <Select value={sort} onValueChange={setSort} items={SORT_OPTIONS}>
                 <SelectTrigger className="w-full sm:w-52">
                   <SelectValue />
                 </SelectTrigger>
