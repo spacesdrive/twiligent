@@ -210,7 +210,7 @@ export default function TrackedCategory() {
         />
         <StatCard
           icon={<Flame />}
-          label="Total Score"
+          label="Reddit Score"
           value={rdItems.length > 0 ? fmtNum(rdStats.score) : '-'}
           subtitle={rdItems.length > 0 ? `avg ${fmtNum(rdStats.avgScore)} per post` : 'no Reddit posts'}
           gradient="orange"
@@ -407,9 +407,9 @@ export default function TrackedCategory() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
               icon={<Flame />}
-              label="Total Score"
+              label="Net Upvotes"
               value={fmtNum(rdStats.score)}
-              subtitle={`avg ${fmtNum(rdStats.avgScore)} per post`}
+              subtitle="upvotes minus downvotes"
               gradient="orange"
             />
             <StatCard
@@ -428,7 +428,7 @@ export default function TrackedCategory() {
             />
             <StatCard
               icon={<BarChart2 />}
-              label="Avg Score"
+              label="Avg Net Upvotes"
               value={fmtNum(rdStats.avgScore)}
               subtitle={`${rdItems.length} post${rdItems.length !== 1 ? 's' : ''} tracked`}
               gradient="purple"

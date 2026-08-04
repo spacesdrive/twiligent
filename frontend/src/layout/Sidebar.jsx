@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup,
@@ -8,10 +8,11 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
   LayoutDashboard, PlaySquare, Scissors, Camera,
-  Upload, Users, Settings, Flame, Bookmark,
+  Upload, Users, Settings, Flame, Bookmark, Tag,
 } from 'lucide-react';
 
 import { useAppContext } from '../context/AppContext';
+import { api } from '../services/api';
 
 const NAV_GROUPS = [
   {
@@ -44,6 +45,18 @@ export default function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { accounts } = useAppContext();
+
+  const [categories, setCategories] = useState([]);
+
+  useEffect(() => {
+    api.getTrackedContent()
+      .then(data => {
+        const all = Array.isArray(data) ? data : [];
+        const cats = [...new Set(all.map(p => p.category).filter(Boolean))].sort();
+        setCategories(cats);
+      })
+      .catch(() => {});
+  }, []);
 
   const isActive = (path) => {
     if (path === '/') return location.pathname === '/';
@@ -129,6 +142,31 @@ export default function AppSidebar() {
                         </AvatarFallback>
                       </Avatar>
                       <span className="truncate text-sm">{acc.title}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroup>
+        )}
+
+        {/* Categories quick list */}
+        {categories.length > 0 && (
+          <SidebarGroup>
+            <SidebarSeparator />
+            <SidebarGroupLabel>Categories</SidebarGroupLabel>
+            <SidebarMenu>
+              {categories.map((cat) => {
+                const path = `/tracked-content/category/${encodeURIComponent(cat)}`;
+                return (
+                  <SidebarMenuItem key={cat}>
+                    <SidebarMenuButton
+                      isActive={location.pathname === path}
+                      onClick={() => navigate(path)}
+                      tooltip={cat}
+                    >
+                      <Tag className="size-4 text-purple-500 flex-shrink-0" />
+                      <span className="truncate text-sm">{cat}</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
