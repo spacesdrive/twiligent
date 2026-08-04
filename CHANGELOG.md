@@ -7,6 +7,34 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed
+
+**Tracked Content (expanded from Tracked Reddit Posts)**
+- Renamed feature from "Tracked Posts" / "Tracked Reddit Posts" to "Tracked Content" throughout the UI, routing, and API
+- Route changed from `/reddit-tracked` to `/tracked-content` (old route redirects to new)
+- API endpoint changed from `/api/reddit/tracked-posts` to `/api/tracked-content`
+- Frontend page moved from `features/analytics/reddit/RedditTracked.jsx` to `features/analytics/tracked/TrackedContent.jsx`
+- YouTube video and Shorts tracking added: paste any YouTube URL to track viewCount, likeCount, commentCount
+- `content_type` column added to `tracked_posts` table: `'reddit'` (default) or `'youtube'`
+- YouTube and Reddit tracked items share the same categories (categories are plain text labels)
+- `fetchTrackedYouTubeData(videoUrl, apiKey)` added to `backend/services/youtube.js`
+- Route handler now auto-detects URL platform and calls the appropriate fetch function
+- TrackedContent page table: type badge per row, YouTube shows views/likes/comments, Reddit shows score/upvote%/comments
+- Sidebar nav label changed from "Tracked Posts" to "Tracked Content" with updated route
+
+**Overview dashboard redesigned**
+- KPI StatCards replaced with a 6-tab interface: Total Audience, Total Views, Total Content, Accounts, Total Comments, Total Likes
+- Reddit karma now included in Total Audience metric (subs + followers + karma)
+- Tracked content count included in Total Content metric
+- Audience Comparison chart replaced from AreaChart to BarChart; now includes all platforms (YouTube, Instagram, Reddit) and tracked categories
+- Audience Share pie chart now includes Reddit accounts and tracked categories
+- Top by Audience list now includes Reddit accounts (with karma metric)
+- Top by Content list now shows all platforms
+- Total Comments tab: aggregate comment counts from tracked content (Reddit numComments + YouTube commentCount)
+- Total Likes tab: Reddit post karma from connected accounts + tracked YouTube video likes
+- Reddit section card removed; Reddit data fully integrated into the tab views
+- Accounts tab now shows all accounts including Reddit in a unified table
+
 ### Removed
 
 **X (Twitter) integration removed**

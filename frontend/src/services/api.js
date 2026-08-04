@@ -65,12 +65,12 @@ export const api = {
     getRedditAnalytics: (id) => request(`/accounts/${id}/reddit-analytics`),
     getRedditPosts: (id) => request(`/accounts/${id}/reddit-posts`),
 
-    // Tracked Reddit posts
-    getTrackedPosts: () => request('/reddit/tracked-posts'),
-    addTrackedPost: (url, accountId, label, category) => request('/reddit/tracked-posts', { method: 'POST', body: JSON.stringify({ url, accountId, label, category }) }),
-    updateTrackedPost: (id, updates) => request(`/reddit/tracked-posts/${id}`, { method: 'PUT', body: JSON.stringify(updates) }),
-    deleteTrackedPost: (id) => request(`/reddit/tracked-posts/${id}`, { method: 'DELETE' }),
-    refreshTrackedPost: (id) => request(`/reddit/tracked-posts/${id}/refresh`, { method: 'POST' }),
+    // Tracked Content (Reddit posts and YouTube videos)
+    getTrackedContent: () => request('/tracked-content'),
+    addTrackedContent: (url, accountId, label, category) => request('/tracked-content', { method: 'POST', body: JSON.stringify({ url, accountId, label, category }) }),
+    updateTrackedContent: (id, updates) => request(`/tracked-content/${id}`, { method: 'PUT', body: JSON.stringify(updates) }),
+    deleteTrackedContent: (id) => request(`/tracked-content/${id}`, { method: 'DELETE' }),
+    refreshTrackedContent: (id) => request(`/tracked-content/${id}/refresh`, { method: 'POST' }),
 
     // GitHub settings
     getGithubSettings: () => request('/settings/github'),

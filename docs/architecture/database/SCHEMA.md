@@ -143,46 +143,61 @@ The `publishing` status is a mutex - it prevents double-publishing when both the
 
 ## Table: `tracked_posts`
 
-Stores Reddit post URLs the user wants to monitor for score and comment count changes.
+Stores Reddit posts and YouTube videos the user wants to monitor. Previously Reddit-only; extended to support YouTube via the `content_type` column.
 
 | Column | Type | Nullable | Description |
 |---|---|---|---|
 | `id` | text | NOT NULL | PK. Client-generated: `Date.now().toString(36) + Math.random().toString(36).slice(2)` |
 | `user_id` | uuid | NOT NULL | FK -> `auth.users.id` ON DELETE CASCADE |
-| `account_id` | text | NULL | FK -> `accounts.id` ON DELETE SET NULL. Which account's cookie to use when fetching |
-| `url` | text | NOT NULL | Full Reddit post URL (e.g. `https://www.reddit.com/r/.../comments/...`) |
-| `label` | text | NOT NULL DEFAULT '' | User-defined name for the post |
-| `category` | text | NOT NULL DEFAULT '' | User-defined grouping label (used for category stats on Overview) |
-| `created_at` | timestamptz | NOT NULL DEFAULT now() | When the user added the tracked post |
+| `account_id` | text | NULL | FK -> `accounts.id` ON DELETE SET NULL. Reddit only: which account's cookie to use |
+| `url` | text | NOT NULL | Full URL of the Reddit post or YouTube video |
+| `label` | text | NOT NULL DEFAULT '' | User-defined name for the item |
+| `category` | text | NOT NULL DEFAULT '' | User-defined grouping label; shared across Reddit and YouTube items |
+| `content_type` | text | NOT NULL DEFAULT 'reddit' | `'reddit'` or `'youtube'` |
+| `created_at` | timestamptz | NOT NULL DEFAULT now() | When the user added the item |
 | `updated_at` | timestamptz | NOT NULL DEFAULT now() | Last time any field or the cached data was changed |
-| `data` | jsonb | NULL | Cached post data fetched from Reddit (see below) |
+| `data` | jsonb | NULL | Cached data fetched from the platform API (see below) |
 
-### `data` jsonb shape
+### `data` jsonb shape for Reddit items
 
 Populated by `fetchTrackedPostData()` in `backend/services/reddit.js`:
 
 ```json
 {
-    "postId": "abc123",
+    "contentType": "reddit",
     "title": "Post title from Reddit",
     "subreddit": "programming",
     "subredditPrefixed": "r/programming",
-    "author": "username",
     "score": 1234,
     "upvoteRatio": 0.97,
     "numComments": 56,
     "permalink": "https://reddit.com/r/programming/comments/abc123/...",
-    "isNsfw": false,
-    "createdAt": "2026-01-01T00:00:00Z",
     "lastFetchedAt": "2026-08-04T10:00:00Z"
 }
 ```
 
-Data is fetched on create and on manual refresh. It is not re-fetched on every GET to avoid Reddit rate limits.
+### `data` jsonb shape for YouTube items
 
-### `account_id` nullable logic
+Populated by `fetchTrackedYouTubeData()` in `backend/services/youtube.js`:
 
-`account_id` is nullable with `ON DELETE SET NULL`. If the user deletes the Reddit account whose cookie was used, the tracked post is kept but `account_id` becomes `null`. Subsequent refreshes access the post as public (no cookie).
+```json
+{
+    "contentType": "youtube",
+    "title": "Video Title",
+    "channelTitle": "Channel Name",
+    "channelId": "UCxxxxxx",
+    "thumbnail": "https://i.ytimg.com/vi/xxxx/mqdefault.jpg",
+    "publishedAt": "2026-01-01T00:00:00Z",
+    "viewCount": 12345,
+    "likeCount": 567,
+    "commentCount": 89,
+    "isShort": false,
+    "permalink": "https://www.youtube.com/watch?v=xxxx",
+    "lastFetchedAt": "2026-08-04T10:00:00Z"
+}
+```
+
+Data is fetched on create and on manual refresh only. Not re-fetched on every GET.
 
 ### Indexes
 
@@ -190,7 +205,7 @@ Data is fetched on create and on manual refresh. It is not re-fetched on every G
 CREATE INDEX tracked_posts_user_id_idx ON tracked_posts(user_id);
 ```
 
-### Migration SQL
+### Migration SQL (initial table + content_type addition)
 
 ```sql
 CREATE TABLE tracked_posts (
@@ -205,6 +220,9 @@ CREATE TABLE tracked_posts (
     data jsonb
 );
 CREATE INDEX tracked_posts_user_id_idx ON tracked_posts(user_id);
+
+-- Added in Tracked Content expansion
+ALTER TABLE tracked_posts ADD COLUMN IF NOT EXISTS content_type text NOT NULL DEFAULT 'reddit';
 ```
 
 ---

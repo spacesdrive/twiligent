@@ -7,8 +7,9 @@ import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from 'recharts';
 import StatCard from '../../../components/ui/StatCard';
@@ -16,46 +17,64 @@ import MainCard from '../../../components/MainCard';
 import { useAppContext } from '../../../context/AppContext';
 import { api } from '../../../services/api';
 import { fmtNum, fmtNumFull, timeAgo } from '../../../utils/formatters';
-import { RefreshCw, Users, Eye, VideoIcon, BarChart3, ExternalLink, Flame, Tag } from 'lucide-react';
+import {
+  RefreshCw, Users, VideoIcon, ExternalLink,
+  Tag, ThumbsUp, MessageSquare, Youtube, Flame, BookmarkCheck,
+} from 'lucide-react';
 
-const CHART_COLORS = ['hsl(221.2,83.2%,53.3%)', '#22c55e', '#f97316', '#a855f7', '#06b6d4', '#ec4899', '#6366f1', '#eab308'];
+const PLATFORM_COLORS = {
+  youtube:  '#ef4444',
+  instagram: '#ec4899',
+  reddit:   '#f97316',
+  category: '#a855f7',
+};
+
+const CHART_COLORS = [
+  '#ef4444', '#ec4899', '#f97316', '#a855f7',
+  '#06b6d4', '#22c55e', '#6366f1', '#eab308',
+];
+
+function PlatformBadge({ platform }) {
+  const map = {
+    youtube:   'border-red-200 bg-red-50 text-red-700 dark:border-red-900 dark:bg-red-950 dark:text-red-400',
+    instagram: 'border-pink-200 bg-pink-50 text-pink-700 dark:border-pink-900 dark:bg-pink-950 dark:text-pink-400',
+    reddit:    'border-orange-200 bg-orange-50 text-orange-700 dark:border-orange-900 dark:bg-orange-950 dark:text-orange-400',
+  };
+  const labels = { youtube: 'YouTube', instagram: 'Instagram', reddit: 'Reddit' };
+  return (
+    <Badge variant="outline" className={`text-xs ${map[platform] || ''}`}>
+      {labels[platform] || platform}
+    </Badge>
+  );
+}
 
 export default function Overview() {
   const { accounts, loading, refreshAll } = useAppContext();
   const navigate = useNavigate();
 
-  const [trackedPosts, setTrackedPosts] = useState([]);
+  const [trackedContent, setTrackedContent] = useState([]);
   useEffect(() => {
-    api.getTrackedPosts().then(data => {
-      if (Array.isArray(data)) setTrackedPosts(data);
+    api.getTrackedContent().then(data => {
+      if (Array.isArray(data)) setTrackedContent(data);
     }).catch(() => {});
   }, []);
-
-  const totalTrackedScore    = useMemo(() => trackedPosts.reduce((s, p) => s + (p.score ?? 0), 0), [trackedPosts]);
-  const totalTrackedComments = useMemo(() => trackedPosts.reduce((s, p) => s + (p.numComments ?? 0), 0), [trackedPosts]);
-
-  const categoryStats = useMemo(() => {
-    const withCategory = trackedPosts.filter(p => p.category);
-    if (withCategory.length === 0) return [];
-    const map = {};
-    withCategory.forEach(p => {
-      if (!map[p.category]) map[p.category] = { category: p.category, count: 0, totalScore: 0 };
-      map[p.category].count++;
-      map[p.category].totalScore += p.score ?? 0;
-    });
-    return Object.values(map).sort((a, b) => b.totalScore - a.totalScore);
-  }, [trackedPosts]);
 
   const ytAccounts     = accounts.filter(a => a.platform !== 'instagram' && a.platform !== 'reddit');
   const igAccounts     = accounts.filter(a => a.platform === 'instagram');
   const redditAccounts = accounts.filter(a => a.platform === 'reddit');
 
-  const totals = accounts.reduce((acc, a) => {
+  // Aggregate totals
+  const totals = useMemo(() => accounts.reduce((acc, a) => {
     if (a.platform === 'instagram') {
       return { ...acc, followers: acc.followers + (a.followersCount || 0), posts: acc.posts + (a.mediaCount || 0) };
     }
     if (a.platform === 'reddit') {
-      return { ...acc, karma: acc.karma + (a.totalKarma || 0), postKarma: acc.postKarma + (a.postKarma || 0), commentKarma: acc.commentKarma + (a.commentKarma || 0) };
+      return {
+        ...acc,
+        karma: acc.karma + (a.totalKarma || 0),
+        postKarma: acc.postKarma + (a.postKarma || 0),
+        commentKarma: acc.commentKarma + (a.commentKarma || 0),
+      };
     }
     return {
       ...acc,
@@ -63,47 +82,115 @@ export default function Overview() {
       views: acc.views + (a.viewCount || 0),
       videos: acc.videos + (a.videoCount || 0),
     };
-  }, { subscribers: 0, views: 0, videos: 0, followers: 0, posts: 0, karma: 0, postKarma: 0, commentKarma: 0 });
+  }, { subscribers: 0, views: 0, videos: 0, followers: 0, posts: 0, karma: 0, postKarma: 0, commentKarma: 0 }), [accounts]);
 
-  // Karma is engagement-based, not audience-based — excluded from totalAudience
-  const totalAudience = totals.subscribers + totals.followers;
+  // Tracked content aggregates
+  const trackedStats = useMemo(() => {
+    const ytItems = trackedContent.filter(p => p.contentType === 'youtube');
+    const rdItems = trackedContent.filter(p => (p.contentType || 'reddit') === 'reddit');
+    return {
+      total: trackedContent.length,
+      ytItems,
+      rdItems,
+      totalComments: trackedContent.reduce((s, p) => {
+        const c = p.contentType === 'youtube' ? (p.commentCount ?? 0) : (p.numComments ?? 0);
+        return s + c;
+      }, 0),
+      totalYTLikes: ytItems.reduce((s, p) => s + (p.likeCount ?? 0), 0),
+      totalRdScore: rdItems.reduce((s, p) => s + (p.score ?? 0), 0),
+    };
+  }, [trackedContent]);
 
-  const audienceMetric = (a) => {
+  // Total Likes = Reddit account postKarma + tracked YouTube likeCount
+  const totalLikes = totals.postKarma + trackedStats.totalYTLikes;
+  // Total Audience = subs + followers + karma (per user request)
+  const totalAudience = totals.subscribers + totals.followers + totals.karma;
+  // Total Content = videos + IG posts + tracked content
+  const totalContent = totals.videos + totals.posts + trackedStats.total;
+
+  // Category stats for tracked content
+  const categoryStats = useMemo(() => {
+    const withCategory = trackedContent.filter(p => p.category);
+    if (withCategory.length === 0) return [];
+    const map = {};
+    withCategory.forEach(p => {
+      if (!map[p.category]) map[p.category] = { category: p.category, count: 0, totalScore: 0, totalLikes: 0 };
+      map[p.category].count++;
+      if (p.contentType === 'youtube') {
+        map[p.category].totalLikes += p.likeCount ?? 0;
+        map[p.category].totalScore += p.viewCount ?? 0;
+      } else {
+        map[p.category].totalScore += p.score ?? 0;
+      }
+    });
+    return Object.values(map).sort((a, b) => b.totalScore - a.totalScore);
+  }, [trackedContent]);
+
+  // Audience metric per account (platform-appropriate)
+  function audienceMetric(a) {
     if (a.platform === 'instagram') return a.followersCount || 0;
-    if (a.platform === 'reddit')    return 0;
+    if (a.platform === 'reddit')    return a.totalKarma || 0;
     return a.subscriberCount || 0;
-  };
-  const contentMetric = (a) => {
-    if (a.platform === 'reddit')    return 0;
-    if (a.platform === 'instagram') return a.mediaCount  || 0;
+  }
+
+  function contentMetric(a) {
+    if (a.platform === 'instagram') return a.mediaCount || 0;
+    if (a.platform === 'reddit')    return a.totalKarma || 0;
     return a.viewCount || 0;
-  };
-  const karmaMetric = (a) => (a.platform === 'reddit' ? a.totalKarma || 0 : 0);
+  }
 
-  // Audience charts exclude Reddit - karma is not an audience metric
-  const nonRedditAccounts = accounts.filter(a => a.platform !== 'reddit');
+  // All accounts sorted
+  const allSortedByAudience = [...accounts].sort((a, b) => audienceMetric(b) - audienceMetric(a));
+  const allSortedByContent  = [...accounts].sort((a, b) => contentMetric(b) - contentMetric(a));
 
-  const sorted = {
-    byAudience: [...nonRedditAccounts].sort((a, b) => audienceMetric(b) - audienceMetric(a)),
-    byContent:  [...nonRedditAccounts].sort((a, b) => contentMetric(b) - contentMetric(a)),
-  };
+  // Chart data: all accounts + tracked categories
+  const audienceChartData = useMemo(() => [
+    ...ytAccounts.map(a => ({
+      name: (a.title || '').slice(0, 12) + ((a.title || '').length > 12 ? '…' : ''),
+      value: a.subscriberCount || 0,
+      type: 'youtube',
+    })),
+    ...igAccounts.map(a => ({
+      name: (a.title || '').slice(0, 12) + ((a.title || '').length > 12 ? '…' : ''),
+      value: a.followersCount || 0,
+      type: 'instagram',
+    })),
+    ...redditAccounts.map(a => ({
+      name: `u/${a.username || ''}`.slice(0, 12),
+      value: a.totalKarma || 0,
+      type: 'reddit',
+    })),
+    ...categoryStats.map(c => ({
+      name: c.category.slice(0, 12) + (c.category.length > 12 ? '…' : ''),
+      value: c.totalScore,
+      type: 'category',
+    })),
+  ], [ytAccounts, igAccounts, redditAccounts, categoryStats]);
 
-  const chartData = nonRedditAccounts.map(a => ({
-    name: (a.title || '').slice(0, 14) + ((a.title || '').length > 14 ? '…' : ''),
-    audience: audienceMetric(a),
-  }));
+  // Pie chart: all accounts + categories
+  const pieData = useMemo(() => {
+    const entries = [
+      ...accounts.map((a, i) => ({
+        name: (a.title || a.username || '?').slice(0, 14),
+        value: audienceMetric(a),
+        color: CHART_COLORS[i % CHART_COLORS.length],
+      })),
+      ...categoryStats.map((c, i) => ({
+        name: c.category.slice(0, 14),
+        value: c.totalScore,
+        color: CHART_COLORS[(accounts.length + i) % CHART_COLORS.length],
+      })),
+    ].filter(e => e.value > 0);
+    return entries;
+  }, [accounts, categoryStats]);
 
-  const pieData = nonRedditAccounts.map((a, i) => ({
-    name: (a.title || '').slice(0, 14) + ((a.title || '').length > 14 ? '…' : ''),
-    value: audienceMetric(a),
-    color: CHART_COLORS[i % CHART_COLORS.length],
-  }));
-
-  const handleViewChannel = (acc) => {
+  function handleViewChannel(acc) {
     if (acc.platform === 'instagram') navigate(`/instagram/${acc.id}`);
     else if (acc.platform === 'reddit') navigate(`/reddit/${acc.id}`);
     else navigate(`/channel/${acc.id}`);
-  };
+  }
+
+  const tabTriggerCls = 'flex flex-col items-start gap-0 h-auto py-3 px-4 text-left min-w-[140px]';
 
   return (
     <div className="space-y-6">
@@ -129,124 +216,11 @@ export default function Overview() {
           className="gap-2 shrink-0"
         >
           <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-          {loading ? 'Refreshing…' : 'Refresh All'}
+          {loading ? 'Refreshing...' : 'Refresh All'}
         </Button>
       </div>
 
-      {/* Loading bar */}
       {loading && <Progress className="h-1" value={undefined} />}
-
-      {/* KPI cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        {[
-          { icon: <Users />,    label: 'Total Audience', value: fmtNum(totalAudience), subtitle: `${fmtNum(totals.subscribers)} subs · ${fmtNum(totals.followers)} followers`, gradient: 'purple' },
-          { icon: <Eye />,      label: 'Total Views',    value: fmtNum(totals.views),  subtitle: fmtNumFull(totals.views), gradient: 'red' },
-          { icon: <VideoIcon />, label: 'Total Content', value: fmtNum(totals.videos + totals.posts), subtitle: `${fmtNum(totals.videos)} videos · ${fmtNum(totals.posts)} IG posts`, gradient: 'blue' },
-          { icon: <BarChart3 />, label: 'Accounts', value: accounts.length, subtitle: [ytAccounts.length ? `${ytAccounts.length} YouTube` : null, igAccounts.length ? `${igAccounts.length} Instagram` : null, redditAccounts.length ? `${redditAccounts.length} Reddit` : null].filter(Boolean).join(' · '), gradient: 'orange' },
-        ].map((card, i) => (
-          <StatCard key={i} {...card} loading={loading} />
-        ))}
-      </div>
-
-      {/* Reddit section - accounts, karma totals, and tracked categories in one card */}
-      {redditAccounts.length > 0 && (
-        <MainCard>
-          {/* Header */}
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Flame className="h-4 w-4 text-orange-500" />
-              <span className="text-sm font-semibold">Reddit</span>
-              <span className="text-xs text-muted-foreground">
-                {redditAccounts.length} account{redditAccounts.length !== 1 ? 's' : ''}
-              </span>
-            </div>
-            <button
-              onClick={() => navigate('/reddit-tracked')}
-              className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Tracked posts
-            </button>
-          </div>
-
-          {/* Stats row */}
-          <div className="grid grid-cols-3 gap-3 mb-4">
-            <div className="text-center p-3 rounded-lg bg-muted/40">
-              <p className="text-lg font-bold tabular-nums text-orange-500">{fmtNum(totals.karma)}</p>
-              <p className="text-xs font-medium text-muted-foreground mt-0.5">Total Karma</p>
-            </div>
-            <div className="text-center p-3 rounded-lg bg-muted/40">
-              <p className="text-lg font-bold tabular-nums">{fmtNum(totalTrackedScore)}</p>
-              <p className="text-xs font-medium text-muted-foreground mt-0.5">Total Upvotes</p>
-              <p className="text-[10px] text-muted-foreground">tracked posts</p>
-            </div>
-            <div className="text-center p-3 rounded-lg bg-muted/40">
-              <p className="text-lg font-bold tabular-nums">{fmtNum(totalTrackedComments)}</p>
-              <p className="text-xs font-medium text-muted-foreground mt-0.5">Total Comments</p>
-              <p className="text-[10px] text-muted-foreground">tracked posts</p>
-            </div>
-          </div>
-
-          {/* Account rows */}
-          <div className="space-y-0.5">
-            <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-2 mb-1">
-              Accounts
-            </p>
-            {[...redditAccounts]
-              .sort((a, b) => (b.totalKarma || 0) - (a.totalKarma || 0))
-              .map(a => (
-                <button
-                  key={a.id}
-                  onClick={() => navigate(`/reddit/${a.id}`)}
-                  className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-muted/60 transition-colors text-left"
-                >
-                  <Avatar className="h-6 w-6 flex-shrink-0">
-                    <AvatarImage src={a.thumbnail || a.iconUrl} />
-                    <AvatarFallback className="bg-orange-500 text-white text-[0.5rem] font-bold">
-                      {(a.username || '?').slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span className="flex-1 text-sm font-medium">u/{a.username}</span>
-                  <span className="text-sm tabular-nums text-muted-foreground">{fmtNum(a.totalKarma || 0)} karma</span>
-                </button>
-              ))}
-          </div>
-
-          {/* Category rows - only when tracked posts with categories exist */}
-          {categoryStats.length > 0 && (
-            <div className="border-t border-border mt-3 pt-3 space-y-0.5">
-              <div className="flex items-center justify-between px-2 mb-1">
-                <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
-                  Tracked Categories
-                </p>
-                <button
-                  onClick={() => navigate('/reddit-tracked')}
-                  className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  Manage
-                </button>
-              </div>
-              {categoryStats.map(stat => (
-                <button
-                  key={stat.category}
-                  onClick={() => navigate('/reddit-tracked')}
-                  className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-muted/60 transition-colors text-left"
-                >
-                  <div className="h-6 w-6 rounded-md bg-orange-500/10 flex items-center justify-center flex-shrink-0">
-                    <Tag className="h-3.5 w-3.5 text-orange-500" />
-                  </div>
-                  <span className="flex-1 text-sm font-medium">{stat.category}</span>
-                  <span className="text-xs text-muted-foreground mr-2">
-                    {stat.count} post{stat.count !== 1 ? 's' : ''}
-                  </span>
-                  <span className="text-sm font-semibold tabular-nums text-orange-500">
-                    {fmtNum(stat.totalScore)}
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-        </MainCard>
-      )}
 
       {accounts.length === 0 ? (
         <MainCard>
@@ -264,164 +238,574 @@ export default function Overview() {
           </div>
         </MainCard>
       ) : (
-        <>
-          {/* Audience charts - YouTube + Instagram only */}
-          {nonRedditAccounts.length > 0 && <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-            <MainCard title="Audience Comparison" className="xl:col-span-2">
-              <ResponsiveContainer width="100%" height={260} debounce={200}>
-                <AreaChart data={chartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="audGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%"  stopColor="hsl(221.2,83.2%,53.3%)" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="hsl(221.2,83.2%,53.3%)" stopOpacity={0.01} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                  <XAxis dataKey="name" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} tickFormatter={fmtNum} axisLine={false} tickLine={false} width={48} />
-                  <ReTooltip
-                    contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
-                    formatter={(v) => [fmtNumFull(v), 'Audience']}
-                  />
-                  <Area type="monotone" dataKey="audience" stroke="hsl(221.2,83.2%,53.3%)" strokeWidth={2} fill="url(#audGrad)" dot={{ fill: 'hsl(221.2,83.2%,53.3%)', r: 4, strokeWidth: 0 }} />
-                </AreaChart>
-              </ResponsiveContainer>
-            </MainCard>
+        <Tabs defaultValue="audience" className="space-y-6">
+          {/* Tab triggers - scrollable metric cards */}
+          <div className="overflow-x-auto pb-1">
+            <TabsList className="w-max flex gap-1 bg-muted/50 p-1 rounded-xl" style={{ height: 'auto' }}>
+              {/* Total Audience */}
+              <TabsTrigger value="audience" className={tabTriggerCls}>
+                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Total Audience</span>
+                <span className="text-2xl font-bold tabular-nums leading-tight mt-0.5">{fmtNum(totalAudience)}</span>
+                <span className="text-[11px] text-muted-foreground mt-0.5">
+                  {[
+                    totals.subscribers ? `${fmtNum(totals.subscribers)} subs` : null,
+                    totals.followers   ? `${fmtNum(totals.followers)} followers` : null,
+                    totals.karma       ? `${fmtNum(totals.karma)} karma` : null,
+                  ].filter(Boolean).join(' · ') || 'no data yet'}
+                </span>
+              </TabsTrigger>
 
-            <MainCard title="Audience Share">
-              <ResponsiveContainer width="100%" height={260} debounce={200}>
-                <PieChart>
-                  <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="44%" outerRadius={85} innerRadius={48} paddingAngle={3} strokeWidth={0}>
-                    {pieData.map((entry, i) => (
-                      <Cell key={i} fill={entry.color} />
+              {/* Total Views */}
+              <TabsTrigger value="views" className={tabTriggerCls}>
+                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Total Views</span>
+                <span className="text-2xl font-bold tabular-nums leading-tight mt-0.5">{fmtNum(totals.views)}</span>
+                <span className="text-[11px] text-muted-foreground mt-0.5">
+                  {ytAccounts.length > 0 ? `${ytAccounts.length} YouTube channel${ytAccounts.length !== 1 ? 's' : ''}` : 'no YouTube accounts'}
+                </span>
+              </TabsTrigger>
+
+              {/* Total Content */}
+              <TabsTrigger value="content" className={tabTriggerCls}>
+                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Total Content</span>
+                <span className="text-2xl font-bold tabular-nums leading-tight mt-0.5">{fmtNum(totalContent)}</span>
+                <span className="text-[11px] text-muted-foreground mt-0.5">
+                  {[
+                    totals.videos ? `${fmtNum(totals.videos)} videos` : null,
+                    totals.posts  ? `${fmtNum(totals.posts)} IG posts` : null,
+                    trackedStats.total ? `${fmtNum(trackedStats.total)} tracked` : null,
+                  ].filter(Boolean).join(' · ') || 'no content yet'}
+                </span>
+              </TabsTrigger>
+
+              {/* Accounts */}
+              <TabsTrigger value="accounts" className={tabTriggerCls}>
+                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Accounts</span>
+                <span className="text-2xl font-bold tabular-nums leading-tight mt-0.5">{accounts.length}</span>
+                <span className="text-[11px] text-muted-foreground mt-0.5">
+                  {[
+                    ytAccounts.length     ? `${ytAccounts.length} YouTube`     : null,
+                    igAccounts.length     ? `${igAccounts.length} Instagram`   : null,
+                    redditAccounts.length ? `${redditAccounts.length} Reddit`  : null,
+                  ].filter(Boolean).join(' · ')}
+                </span>
+              </TabsTrigger>
+
+              {/* Total Comments */}
+              <TabsTrigger value="comments" className={tabTriggerCls}>
+                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Total Comments</span>
+                <span className="text-2xl font-bold tabular-nums leading-tight mt-0.5">{fmtNum(trackedStats.totalComments)}</span>
+                <span className="text-[11px] text-muted-foreground mt-0.5">
+                  {trackedStats.total > 0 ? `from ${trackedStats.total} tracked item${trackedStats.total !== 1 ? 's' : ''}` : 'track content to see data'}
+                </span>
+              </TabsTrigger>
+
+              {/* Total Likes */}
+              <TabsTrigger value="likes" className={tabTriggerCls}>
+                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Total Likes</span>
+                <span className="text-2xl font-bold tabular-nums leading-tight mt-0.5">{fmtNum(totalLikes)}</span>
+                <span className="text-[11px] text-muted-foreground mt-0.5">
+                  {[
+                    totals.postKarma ? `${fmtNum(totals.postKarma)} karma` : null,
+                    trackedStats.totalYTLikes ? `${fmtNum(trackedStats.totalYTLikes)} YT likes` : null,
+                  ].filter(Boolean).join(' · ') || 'track content to see data'}
+                </span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
+
+          {/* ── AUDIENCE TAB ─────────────────────────────────────────────── */}
+          <TabsContent value="audience" className="space-y-4">
+            {/* Audience Comparison + Share */}
+            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+              <MainCard title="Audience Comparison" className="xl:col-span-2">
+                <p className="text-xs text-muted-foreground mb-3">
+                  YouTube = subscribers · Instagram = followers · Reddit = karma · Categories = total score
+                </p>
+                {audienceChartData.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-8 text-center">No data to display</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={240} debounce={200}>
+                    <BarChart data={audienceChartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                      <XAxis dataKey="name" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                      <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} tickFormatter={fmtNum} axisLine={false} tickLine={false} width={48} />
+                      <ReTooltip
+                        contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
+                        formatter={(v, name, props) => [fmtNumFull(v), props.payload.type === 'category' ? 'Score' : 'Audience']}
+                      />
+                      <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                        {audienceChartData.map((entry, i) => (
+                          <Cell key={i} fill={PLATFORM_COLORS[entry.type] || CHART_COLORS[i % CHART_COLORS.length]} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+                {/* Legend */}
+                <div className="flex flex-wrap gap-3 mt-2">
+                  {[
+                    ytAccounts.length     ? { color: PLATFORM_COLORS.youtube,   label: 'YouTube (subs)' }    : null,
+                    igAccounts.length     ? { color: PLATFORM_COLORS.instagram, label: 'Instagram (followers)' } : null,
+                    redditAccounts.length ? { color: PLATFORM_COLORS.reddit,    label: 'Reddit (karma)' }     : null,
+                    categoryStats.length  ? { color: PLATFORM_COLORS.category,  label: 'Tracked categories (score)' } : null,
+                  ].filter(Boolean).map(({ color, label }) => (
+                    <div key={label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ background: color }} />
+                      {label}
+                    </div>
+                  ))}
+                </div>
+              </MainCard>
+
+              <MainCard title="Audience Share">
+                {pieData.length === 0 ? (
+                  <p className="text-sm text-muted-foreground py-8 text-center">No data to display</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={260} debounce={200}>
+                    <PieChart>
+                      <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="44%" outerRadius={85} innerRadius={48} paddingAngle={3} strokeWidth={0}>
+                        {pieData.map((entry, i) => (
+                          <Cell key={i} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <ReTooltip contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }} formatter={(v) => fmtNumFull(v)} />
+                      <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </MainCard>
+            </div>
+
+            {/* Top by Audience (all platforms) */}
+            <MainCard title="Top by Audience">
+              <div className="space-y-1">
+                {allSortedByAudience.map((a, i) => {
+                  const medalColor = i === 0 ? 'text-yellow-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-orange-400' : 'text-muted-foreground';
+                  const fallbackBg = a.platform === 'instagram' ? 'bg-pink-500' : a.platform === 'reddit' ? 'bg-orange-500' : 'bg-red-500';
+                  const metric = a.platform === 'instagram'
+                    ? `${fmtNum(a.followersCount)} followers`
+                    : a.platform === 'reddit'
+                      ? `${fmtNum(a.totalKarma)} karma`
+                      : `${fmtNum(a.subscriberCount)} subs`;
+                  return (
+                    <button
+                      key={a.id}
+                      onClick={() => handleViewChannel(a)}
+                      className="w-full flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-muted/60 transition-colors text-left"
+                    >
+                      <span className={`w-5 text-xs font-bold tabular-nums ${medalColor}`}>{i + 1}</span>
+                      <Avatar className="h-7 w-7 flex-shrink-0">
+                        <AvatarImage src={a.thumbnail || a.profilePictureUrl || a.thumbnails?.default || a.iconUrl} />
+                        <AvatarFallback className={`text-[0.55rem] font-bold text-white ${fallbackBg}`}>
+                          {(a.title || a.username || '?').slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="flex-1 text-sm font-medium truncate">
+                        {a.platform === 'reddit' ? `u/${a.username}` : a.title}
+                      </span>
+                      <PlatformBadge platform={a.platform} />
+                      <span className="text-sm font-semibold text-muted-foreground tabular-nums">{metric}</span>
+                    </button>
+                  );
+                })}
+                {/* Tracked categories */}
+                {categoryStats.map(stat => (
+                  <button
+                    key={stat.category}
+                    onClick={() => navigate('/tracked-content')}
+                    className="w-full flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-muted/60 transition-colors text-left"
+                  >
+                    <span className="w-5 text-xs font-bold tabular-nums text-muted-foreground">#</span>
+                    <div className="h-7 w-7 rounded-full bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+                      <Tag className="h-3.5 w-3.5 text-purple-500" />
+                    </div>
+                    <span className="flex-1 text-sm font-medium truncate">{stat.category}</span>
+                    <Badge variant="outline" className="text-[10px] border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-900 dark:bg-purple-950 dark:text-purple-400">
+                      Category
+                    </Badge>
+                    <span className="text-sm font-semibold text-muted-foreground tabular-nums">{fmtNum(stat.totalScore)} score</span>
+                  </button>
+                ))}
+              </div>
+            </MainCard>
+          </TabsContent>
+
+          {/* ── VIEWS TAB ────────────────────────────────────────────────── */}
+          <TabsContent value="views" className="space-y-4">
+            {ytAccounts.length === 0 ? (
+              <MainCard>
+                <p className="text-sm text-muted-foreground text-center py-8">No YouTube accounts connected</p>
+              </MainCard>
+            ) : (
+              <MainCard title="YouTube Views by Channel" content={false}>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-10">#</TableHead>
+                      <TableHead>Channel</TableHead>
+                      <TableHead className="text-right">Total Views</TableHead>
+                      <TableHead className="text-right">Subscribers</TableHead>
+                      <TableHead className="text-right">Videos</TableHead>
+                      <TableHead className="text-right">Updated</TableHead>
+                      <TableHead className="w-10" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {[...ytAccounts].sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0)).map((a, i) => (
+                      <TableRow key={a.id} className="cursor-pointer" onClick={() => navigate(`/channel/${a.id}`)}>
+                        <TableCell>
+                          <span className={`text-xs font-bold ${i === 0 ? 'text-yellow-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-orange-400' : 'text-muted-foreground'}`}>{i + 1}</span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2.5">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={a.thumbnail || a.thumbnails?.default} />
+                              <AvatarFallback className="bg-red-500 text-xs font-bold text-white">
+                                {(a.title || '?').slice(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="text-sm font-semibold leading-none">{a.title}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">{a.customUrl || a.channelId || ''}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <p className="text-sm font-bold">{fmtNum(a.viewCount)}</p>
+                          <p className="text-xs text-muted-foreground">{fmtNumFull(a.viewCount)}</p>
+                        </TableCell>
+                        <TableCell className="text-right text-sm">{fmtNum(a.subscriberCount)}</TableCell>
+                        <TableCell className="text-right text-sm">{fmtNum(a.videoCount)}</TableCell>
+                        <TableCell className="text-right text-xs text-muted-foreground">{timeAgo(a.lastUpdated)}</TableCell>
+                        <TableCell>
+                          <Tooltip>
+                            <TooltipTrigger render={<Button variant="ghost" size="icon" className="size-7" onClick={(e) => { e.stopPropagation(); navigate(`/channel/${a.id}`); }} />}>
+                              <ExternalLink />
+                            </TooltipTrigger>
+                            <TooltipContent>View Analytics</TooltipContent>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
                     ))}
-                  </Pie>
-                  <ReTooltip contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }} formatter={(v) => fmtNumFull(v)} />
-                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </MainCard>
-          </div>}
+                  </TableBody>
+                </Table>
+              </MainCard>
+            )}
+          </TabsContent>
 
-          {nonRedditAccounts.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
-              {
-                title: 'Top by Audience',
-                list: sorted.byAudience,
-                metric: a => a.platform === 'instagram' ? `${fmtNum(a.followersCount)} followers` : `${fmtNum(a.subscriberCount)} subs`,
-              },
-              {
-                title: 'Top by Content',
-                list: sorted.byContent,
-                metric: a => a.platform === 'instagram' ? `${fmtNum(a.mediaCount)} posts` : `${fmtNum(a.viewCount)} views`,
-              },
-            ].map(({ title, list, metric }) => (
-              <MainCard key={title} title={title}>
+          {/* ── CONTENT TAB ──────────────────────────────────────────────── */}
+          <TabsContent value="content" className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <StatCard icon={<Youtube />}  label="YouTube Videos"  value={fmtNum(totals.videos)} subtitle={`${ytAccounts.length} channel${ytAccounts.length !== 1 ? 's' : ''}`} gradient="red" />
+              <StatCard icon={<VideoIcon />} label="Instagram Posts" value={fmtNum(totals.posts)}  subtitle={`${igAccounts.length} account${igAccounts.length !== 1 ? 's' : ''}`} gradient="blue" />
+              <StatCard icon={<BookmarkCheck />} label="Tracked Content" value={fmtNum(trackedStats.total)} subtitle={`${trackedStats.ytItems.length} YouTube · ${trackedStats.rdItems.length} Reddit`} gradient="orange" />
+            </div>
+
+            {/* Top by Content */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <MainCard title="Top by Content">
                 <div className="space-y-1">
-                  {list.map((a, i) => {
-                    const ig = a.platform === 'instagram';
-                    const medalColor = i === 0 ? 'text-yellow-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-orange-400' : 'text-muted-foreground';
-                    const fallbackBg = ig ? 'bg-pink-500' : 'bg-red-500';
-                    const badgeCls   = ig ? 'border-pink-200 bg-pink-50 text-pink-700' : 'border-green-200 bg-green-50 text-green-700';
+                  {allSortedByContent.map((a, i) => {
+                    const metric = a.platform === 'instagram'
+                      ? `${fmtNum(a.mediaCount)} posts`
+                      : a.platform === 'reddit'
+                        ? `${fmtNum(a.totalKarma)} karma`
+                        : `${fmtNum(a.viewCount)} views`;
+                    const fallbackBg = a.platform === 'instagram' ? 'bg-pink-500' : a.platform === 'reddit' ? 'bg-orange-500' : 'bg-red-500';
                     return (
                       <button
                         key={a.id}
                         onClick={() => handleViewChannel(a)}
                         className="w-full flex items-center gap-3 px-2 py-1.5 rounded-lg hover:bg-muted/60 transition-colors text-left"
                       >
-                        <span className={`w-5 text-xs font-bold tabular-nums ${medalColor}`}>{i + 1}</span>
+                        <span className={`w-5 text-xs font-bold ${i === 0 ? 'text-yellow-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-orange-400' : 'text-muted-foreground'}`}>{i + 1}</span>
                         <Avatar className="h-7 w-7 flex-shrink-0">
-                          <AvatarImage src={a.thumbnail || a.profilePictureUrl || a.thumbnails?.default} />
+                          <AvatarImage src={a.thumbnail || a.profilePictureUrl || a.thumbnails?.default || a.iconUrl} />
                           <AvatarFallback className={`text-[0.55rem] font-bold text-white ${fallbackBg}`}>
-                            {(a.title || '?').slice(0, 2).toUpperCase()}
+                            {(a.title || a.username || '?').slice(0, 2).toUpperCase()}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="flex-1 text-sm font-medium truncate">{a.title}</span>
-                        <Badge variant="outline" className={`text-xs font-semibold ${badgeCls}`}>
-                          {metric(a)}
-                        </Badge>
+                        <span className="flex-1 text-sm font-medium truncate">
+                          {a.platform === 'reddit' ? `u/${a.username}` : a.title}
+                        </span>
+                        <span className="text-sm font-semibold text-muted-foreground tabular-nums">{metric}</span>
                       </button>
                     );
                   })}
                 </div>
               </MainCard>
-            ))}
-          </div>
-          )}
 
-          {nonRedditAccounts.length > 0 && (
-          <MainCard title="All Accounts" content={false}>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-10">#</TableHead>
-                  <TableHead>Account</TableHead>
-                  <TableHead className="text-center">Platform</TableHead>
-                  <TableHead className="text-right">Audience</TableHead>
-                  <TableHead className="text-right">Content</TableHead>
-                  <TableHead className="text-right">Updated</TableHead>
-                  <TableHead className="w-10" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sorted.byAudience.map((a, i) => {
-                  const ig = a.platform === 'instagram';
-                  const medalColor = i === 0 ? 'text-yellow-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-orange-400' : 'text-muted-foreground';
-                  const fallbackBg = ig ? 'bg-pink-500' : 'bg-red-500';
-                  const platformBadgeCls = ig ? 'border-pink-200 bg-pink-50 text-pink-700' : 'border-red-200 bg-red-50 text-red-700';
-                  return (
-                    <TableRow key={a.id} className="cursor-pointer" onClick={() => handleViewChannel(a)}>
-                      <TableCell>
-                        <span className={`text-xs font-bold ${medalColor}`}>{i + 1}</span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2.5">
-                          <Avatar className="h-8 w-8">
-                            <AvatarImage src={a.thumbnail || a.profilePictureUrl || a.thumbnails?.default} />
-                            <AvatarFallback className={`text-xs font-bold text-white ${fallbackBg}`}>
-                              {(a.title || '?').slice(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div>
-                            <p className="text-sm font-semibold leading-none">{a.title}</p>
-                            <p className="text-xs text-muted-foreground mt-0.5">
-                              {ig ? `@${a.username || ''}` : (a.customUrl || a.channelId || '')}
+              {/* Tracked categories breakdown */}
+              <MainCard title="Tracked Categories">
+                {categoryStats.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-8">
+                    Assign categories to tracked content to see breakdown
+                  </p>
+                ) : (
+                  <div className="space-y-1">
+                    {categoryStats.map(stat => {
+                      const ytInCat = trackedStats.ytItems.filter(p => p.category === stat.category).length;
+                      const rdInCat = trackedStats.rdItems.filter(p => p.category === stat.category).length;
+                      return (
+                        <button
+                          key={stat.category}
+                          onClick={() => navigate('/tracked-content')}
+                          className="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-muted/60 transition-colors text-left"
+                        >
+                          <div className="h-7 w-7 rounded-md bg-purple-500/10 flex items-center justify-center flex-shrink-0">
+                            <Tag className="h-3.5 w-3.5 text-purple-500" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{stat.category}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {stat.count} item{stat.count !== 1 ? 's' : ''}
+                              {ytInCat > 0 && rdInCat > 0 ? ` · ${ytInCat} YT · ${rdInCat} Reddit` : ''}
                             </p>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="outline" className={`text-xs ${platformBadgeCls}`}>
-                          {ig ? 'Instagram' : 'YouTube'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <p className="text-sm font-semibold">{fmtNum(ig ? a.followersCount : a.subscriberCount)}</p>
-                        <p className="text-xs text-muted-foreground">{ig ? 'followers' : 'subscribers'}</p>
-                      </TableCell>
-                      <TableCell className="text-right text-sm">
-                        {ig ? `${fmtNum(a.mediaCount)} posts` : `${fmtNum(a.viewCount)} views · ${fmtNum(a.videoCount)} vids`}
-                      </TableCell>
-                      <TableCell className="text-right text-xs text-muted-foreground">
-                        {timeAgo(a.lastUpdated)}
-                      </TableCell>
-                      <TableCell>
-                        <Tooltip>
-                          <TooltipTrigger render={<Button variant="ghost" size="icon" className="size-7" onClick={(e) => { e.stopPropagation(); handleViewChannel(a); }} />}>
-                            <ExternalLink />
-                          </TooltipTrigger>
-                          <TooltipContent>View Analytics</TooltipContent>
-                        </Tooltip>
-                      </TableCell>
+                          <span className="text-sm font-semibold tabular-nums text-purple-500">{fmtNum(stat.totalScore)}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </MainCard>
+            </div>
+          </TabsContent>
+
+          {/* ── ACCOUNTS TAB ─────────────────────────────────────────────── */}
+          <TabsContent value="accounts" className="space-y-4">
+            <MainCard content={false}>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-10">#</TableHead>
+                    <TableHead>Account</TableHead>
+                    <TableHead className="text-center">Platform</TableHead>
+                    <TableHead className="text-right">Audience</TableHead>
+                    <TableHead className="text-right">Content</TableHead>
+                    <TableHead className="text-right">Updated</TableHead>
+                    <TableHead className="w-10" />
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {allSortedByAudience.map((a, i) => {
+                    const audience = a.platform === 'instagram'
+                      ? `${fmtNum(a.followersCount)} followers`
+                      : a.platform === 'reddit'
+                        ? `${fmtNum(a.totalKarma)} karma`
+                        : `${fmtNum(a.subscriberCount)} subs`;
+                    const content = a.platform === 'instagram'
+                      ? `${fmtNum(a.mediaCount)} posts`
+                      : a.platform === 'reddit'
+                        ? `${fmtNum(a.postKarma)} post karma`
+                        : `${fmtNum(a.viewCount)} views · ${fmtNum(a.videoCount)} vids`;
+                    const fallbackBg = a.platform === 'instagram' ? 'bg-pink-500' : a.platform === 'reddit' ? 'bg-orange-500' : 'bg-red-500';
+                    const medalColor = i === 0 ? 'text-yellow-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-orange-400' : 'text-muted-foreground';
+                    return (
+                      <TableRow key={a.id} className="cursor-pointer" onClick={() => handleViewChannel(a)}>
+                        <TableCell>
+                          <span className={`text-xs font-bold ${medalColor}`}>{i + 1}</span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2.5">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={a.thumbnail || a.profilePictureUrl || a.thumbnails?.default || a.iconUrl} />
+                              <AvatarFallback className={`text-xs font-bold text-white ${fallbackBg}`}>
+                                {(a.title || a.username || '?').slice(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="text-sm font-semibold leading-none">
+                                {a.platform === 'reddit' ? `u/${a.username}` : a.title}
+                              </p>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {a.platform === 'instagram' ? `@${a.username || ''}` : a.platform === 'reddit' ? 'Reddit' : (a.customUrl || a.channelId || '')}
+                              </p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <PlatformBadge platform={a.platform} />
+                        </TableCell>
+                        <TableCell className="text-right text-sm">{audience}</TableCell>
+                        <TableCell className="text-right text-sm text-muted-foreground">{content}</TableCell>
+                        <TableCell className="text-right text-xs text-muted-foreground">{timeAgo(a.lastUpdated)}</TableCell>
+                        <TableCell>
+                          <Tooltip>
+                            <TooltipTrigger render={<Button variant="ghost" size="icon" className="size-7" onClick={(e) => { e.stopPropagation(); handleViewChannel(a); }} />}>
+                              <ExternalLink />
+                            </TooltipTrigger>
+                            <TooltipContent>View Analytics</TooltipContent>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </MainCard>
+          </TabsContent>
+
+          {/* ── COMMENTS TAB ─────────────────────────────────────────────── */}
+          <TabsContent value="comments" className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <StatCard icon={<MessageSquare />} label="Total Comments" value={fmtNum(trackedStats.totalComments)} subtitle="from tracked content" gradient="blue" />
+              <StatCard icon={<Youtube />}       label="YouTube Comments" value={fmtNum(trackedStats.ytItems.reduce((s, p) => s + (p.commentCount ?? 0), 0))} subtitle={`${trackedStats.ytItems.length} video${trackedStats.ytItems.length !== 1 ? 's' : ''} tracked`} gradient="red" />
+              <StatCard icon={<Flame />}         label="Reddit Comments" value={fmtNum(trackedStats.rdItems.reduce((s, p) => s + (p.numComments ?? 0), 0))} subtitle={`${trackedStats.rdItems.length} post${trackedStats.rdItems.length !== 1 ? 's' : ''} tracked`} gradient="orange" />
+            </div>
+
+            {trackedContent.length === 0 ? (
+              <MainCard>
+                <div className="flex flex-col items-center text-center py-10 gap-3">
+                  <MessageSquare className="h-8 w-8 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-semibold">No tracked content yet</p>
+                    <p className="text-xs text-muted-foreground mt-1">Track Reddit posts or YouTube videos to see comment counts here</p>
+                  </div>
+                  <Button size="sm" onClick={() => navigate('/tracked-content')}>Track Content</Button>
+                </div>
+              </MainCard>
+            ) : (
+              <MainCard title="Tracked Content by Comments" content={false}>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Title</TableHead>
+                      <TableHead className="w-28">Category</TableHead>
+                      <TableHead className="text-right w-28">Comments</TableHead>
+                      <TableHead className="text-right w-28">Likes / Score</TableHead>
                     </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </MainCard>
-          )}
-        </>
+                  </TableHeader>
+                  <TableBody>
+                    {[...trackedContent]
+                      .sort((a, b) => {
+                        const ca = a.contentType === 'youtube' ? (a.commentCount ?? 0) : (a.numComments ?? 0);
+                        const cb = b.contentType === 'youtube' ? (b.commentCount ?? 0) : (b.numComments ?? 0);
+                        return cb - ca;
+                      })
+                      .map(item => {
+                        const isYT = item.contentType === 'youtube';
+                        const comments = isYT ? (item.commentCount ?? 0) : (item.numComments ?? 0);
+                        const engagement = isYT ? (item.likeCount ?? 0) : (item.score ?? 0);
+                        return (
+                          <TableRow key={item.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                {isYT ? (
+                                  <Youtube className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
+                                ) : (
+                                  <Flame className="h-3.5 w-3.5 text-orange-500 flex-shrink-0" />
+                                )}
+                                <span className="text-sm font-medium truncate max-w-xs">
+                                  {item.title || item.label || item.url}
+                                </span>
+                              </div>
+                              <p className="text-xs text-muted-foreground ml-5 mt-0.5">
+                                {isYT ? item.channelTitle : item.subredditPrefixed}
+                              </p>
+                            </TableCell>
+                            <TableCell>
+                              {item.category ? (
+                                <Badge variant="outline" className="text-xs">{item.category}</Badge>
+                              ) : <span className="text-xs text-muted-foreground">-</span>}
+                            </TableCell>
+                            <TableCell className="text-right text-sm font-semibold tabular-nums">
+                              {fmtNum(comments)}
+                            </TableCell>
+                            <TableCell className={`text-right text-sm font-semibold tabular-nums ${isYT ? 'text-red-500' : 'text-orange-500'}`}>
+                              {fmtNum(engagement)}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                  </TableBody>
+                </Table>
+              </MainCard>
+            )}
+          </TabsContent>
+
+          {/* ── LIKES TAB ────────────────────────────────────────────────── */}
+          <TabsContent value="likes" className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <StatCard icon={<ThumbsUp />}      label="Total Likes"    value={fmtNum(totalLikes)} subtitle="karma + YouTube likes" gradient="purple" />
+              <StatCard icon={<Flame />}          label="Reddit Karma"   value={fmtNum(totals.postKarma)} subtitle="post upvotes across accounts" gradient="orange" />
+              <StatCard icon={<Youtube />}        label="YouTube Likes"  value={fmtNum(trackedStats.totalYTLikes)} subtitle={`${trackedStats.ytItems.length} tracked video${trackedStats.ytItems.length !== 1 ? 's' : ''}`} gradient="red" />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Reddit accounts by karma */}
+              {redditAccounts.length > 0 && (
+                <MainCard title="Reddit Accounts by Karma">
+                  <div className="space-y-1">
+                    {[...redditAccounts]
+                      .sort((a, b) => (b.postKarma || 0) - (a.postKarma || 0))
+                      .map(a => (
+                        <button
+                          key={a.id}
+                          onClick={() => navigate(`/reddit/${a.id}`)}
+                          className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-muted/60 transition-colors text-left"
+                        >
+                          <Avatar className="h-6 w-6 flex-shrink-0">
+                            <AvatarImage src={a.iconUrl} />
+                            <AvatarFallback className="bg-orange-500 text-white text-[0.5rem] font-bold">
+                              {(a.username || '?').slice(0, 2).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="flex-1 text-sm font-medium">u/{a.username}</span>
+                          <div className="text-right">
+                            <p className="text-sm font-bold tabular-nums text-orange-500">{fmtNum(a.postKarma || 0)}</p>
+                            <p className="text-[10px] text-muted-foreground">post karma</p>
+                          </div>
+                        </button>
+                      ))}
+                  </div>
+                </MainCard>
+              )}
+
+              {/* Tracked YouTube by likes */}
+              <MainCard title="Tracked YouTube by Likes">
+                {trackedStats.ytItems.length === 0 ? (
+                  <div className="flex flex-col items-center text-center py-8 gap-3">
+                    <Youtube className="h-7 w-7 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium">No YouTube videos tracked</p>
+                      <p className="text-xs text-muted-foreground mt-1">Track YouTube videos to see their like counts</p>
+                    </div>
+                    <Button size="sm" variant="outline" onClick={() => navigate('/tracked-content')}>Track Videos</Button>
+                  </div>
+                ) : (
+                  <div className="space-y-1">
+                    {[...trackedStats.ytItems]
+                      .sort((a, b) => (b.likeCount ?? 0) - (a.likeCount ?? 0))
+                      .map(item => (
+                        <button
+                          key={item.id}
+                          onClick={() => window.open(item.permalink || item.url, '_blank')}
+                          className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-muted/60 transition-colors text-left"
+                        >
+                          {item.thumbnail ? (
+                            <img src={item.thumbnail} alt="" className="h-9 w-14 rounded object-cover flex-shrink-0" />
+                          ) : (
+                            <div className="h-9 w-14 rounded bg-red-500/10 flex items-center justify-center flex-shrink-0">
+                              <Youtube className="h-4 w-4 text-red-500" />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{item.title || item.url}</p>
+                            <p className="text-xs text-muted-foreground">{item.channelTitle}</p>
+                          </div>
+                          <div className="text-right flex-shrink-0">
+                            <p className="text-sm font-bold tabular-nums text-red-500">{fmtNum(item.likeCount ?? 0)}</p>
+                            <p className="text-[10px] text-muted-foreground">likes</p>
+                          </div>
+                        </button>
+                      ))}
+                  </div>
+                )}
+              </MainCard>
+            </div>
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );
