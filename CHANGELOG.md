@@ -7,21 +7,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
-### Added
+### Removed
 
-**X (Twitter) integration**
-- `POST /api/accounts/x` - add X account by username, auth_token, and ct0 session cookies
-- `GET /api/accounts/:id/x-analytics` - full analytics: profile, tweet stats, engagement rate, impressions, posting time patterns, monthly breakdown, virality and consistency scores; cached in Redis at `x:{userId}:{accountId}`
-- `GET /api/accounts/:id/x-tweets` - tweet list with likes, retweets, replies, quotes, bookmarks, impressions per tweet
-- `backend/services/x.js` - X GraphQL API client (`xFetch`), `fetchXProfile`, `fetchXTweets`, `computeXAnalytics`, `safeXAccount`
-- `frontend/src/features/analytics/x/XAnalytics.jsx` - detailed analytics page with follower stats, KPI cards, impressions timeline, tweet type breakdown pie, posting time charts, engagement breakdown, top tweets table
-- `frontend/src/features/analytics/x/XTweets.jsx` - filterable/sortable tweet explorer with type filter (original/retweet/reply/quote), text search, sort by likes/retweets/impressions/date
-- X tab in Account Manager dialog (username + auth_token + ct0 with DevTools instructions)
-- X accounts section in Account Manager accounts list with follower/following/tweet metrics
-- X accounts in Sidebar quick navigation (routes to `/x/:id`) with blue avatar
-- "X Tweets" nav item in Analytics sidebar section
-- Routes `/x/:id` and `/x-tweets/:id` in App.jsx
-- X normalization in `formatters.js` normalizeAccount()
+**X (Twitter) integration removed**
+- Removed `backend/routes/x.js`, `backend/services/x.js` and all X API client code
+- Removed `GET /api/accounts/:id/x-analytics` and `GET /api/accounts/:id/x-tweets` routes
+- Removed `POST /api/accounts/x` route and X account creation handler from `routes/accounts.js`
+- Removed X cache functions (`getXCache`, `setXCache`, `deleteXCache`) from `lib/cache.js`
+- Removed `frontend/src/features/analytics/x/` directory (`XAnalytics.jsx`, `XTweets.jsx`)
+- Removed X routes (`/x/:id`, `/x-tweets/:id`) from `App.jsx`
+- Removed X tab and X accounts section from `AccountManager.jsx`
+- Removed X nav item ("X Tweets") from `Sidebar.jsx`
+- Removed X normalization block from `formatters.js`
+- Removed X methods (`addXAccount`, `getXAnalytics`, `getXTweets`) from `api.js`
+
+### Added
 
 **Reddit Analytics improvements**
 - Karma separated into its own dedicated card in `RedditAnalytics.jsx` (total, post, comment, awardee karma); previously karma was mixed into the profile header
@@ -46,15 +46,6 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Reddit accounts display a dedicated karma card (total, post, comment karma per account) below the main KPI row
 
 ### Fixed
-
-**X (Twitter) API fixes**
-- Replaced `Twitter` Lucide icon (removed in lucide-react 1.17.0) with an inline `XIcon` SVG component in `Sidebar.jsx` and `AccountManager.jsx`; resolves build failure
-- Updated `X_BEARER` from the rotated January 2024 token to the current web client token; error code 89 on HTTP 401 is the symptom of a stale bearer token, not expired user cookies
-- Updated `X_GQL_BASE` from `api.x.com/graphql` to `x.com/i/api/graphql` to match the live endpoint
-- Updated `UserByScreenName` and `UserTweets` query IDs; 400/422 `GRAPHQL_VALIDATION_FAILED` is the symptom of stale query IDs which X rotates on every frontend deploy
-- Replaced two sparse feature flag objects with a unified `BASE_FEATURES` dict aligned with twscrape's `GQL_FEATURES`; profile queries extend it with subscription/highlights flags
-- Improved 400/422 error handler to read and expose the actual X response body rather than returning a generic message
-- Added `Origin` and `Referer` headers required by X's GraphQL endpoints
 
 **Reddit Application-Only OAuth**
 - Added `REDDIT_CLIENT_ID` and `REDDIT_CLIENT_SECRET` optional Worker secrets for application-only OAuth (client credentials grant)

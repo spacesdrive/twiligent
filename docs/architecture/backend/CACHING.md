@@ -25,7 +25,6 @@ export async function getVideosCache(redis, userId, accountId) {
 | `videos:{userId}:{accountId}` | Array of YouTube video objects with stats | `GET /api/accounts/:id/analytics` succeeds | `DELETE /api/accounts/:id` |
 | `ig:{userId}:{accountId}` | Array of Instagram media objects | `GET /api/accounts/:id/ig-analytics` succeeds | `DELETE /api/accounts/:id` |
 | `reddit:{userId}:{accountId}` | Object `{ profile, analytics, posts }` for Reddit account | `GET /api/accounts/:id/reddit-analytics` succeeds | `DELETE /api/accounts/:id` |
-| `x:{userId}:{accountId}` | Object `{ profile, analytics, tweets }` for X account | `GET /api/accounts/:id/x-analytics` succeeds | `DELETE /api/accounts/:id` |
 | `oauth_ig:{state}` | userId string (legacy, Redis-backed) | Instagram OAuth URL generation | Consumed on callback; 10-min TTL |
 
 **Note:** The `oauth_ig:` key is a legacy path. The current OAuth implementation uses HMAC-signed state tokens that don't require Redis. This key is set and consumed only when Redis is available, as a secondary verification layer.

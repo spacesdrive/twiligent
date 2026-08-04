@@ -16,9 +16,6 @@ frontend/src/
 │   │       ├── RedditAnalytics.jsx         <- Reddit account analytics (karma, scores, subreddits)
 │   │       ├── RedditPosts.jsx             <- Per-account post explorer
 │   │       └── RedditPostsAll.jsx          <- Global post explorer (all Reddit accounts)
-│   │   └── x/
-│   │       ├── XAnalytics.jsx              <- X account analytics (followers, impressions, engagement, top tweets)
-│   │       └── XTweets.jsx                 <- Per-account tweet explorer with type filter and sort
 │   ├── accounts/
 │   │   └── AccountManager.jsx              <- Add/remove connected accounts
 │   ├── publishing/
@@ -75,14 +72,12 @@ Each page manages its own loading/data/error state. Pages do not write to `AppCo
 | Feature | Path | Description |
 |---|---|---|
 | Overview | `/` | Aggregate KPIs across all connected accounts (YouTube, Instagram, Reddit) |
-| Accounts | `/accounts` | Connect/disconnect social accounts (YouTube, Instagram, Reddit) |
+| Accounts | `/accounts` | Connect/disconnect accounts (YouTube, Instagram, Reddit) |
 | Channel Analytics | `/channel/:id` | YouTube analytics for one channel |
 | Instagram Analytics | `/instagram/:id` | Instagram analytics for one account |
 | Reddit Analytics | `/reddit/:id` | Reddit analytics for one account - karma breakdown, score timeline, post type distribution, day/hour analysis, subreddit breakdown, top posts |
 | Reddit Posts (global) | `/reddit-posts` | Combined post explorer across all Reddit accounts with account and subreddit filters |
 | Reddit Posts (per account) | `/reddit-posts/:id` | Searchable and sortable post list for a single Reddit account |
-| X Analytics | `/x/:id` | X account analytics - follower stats, impressions timeline, tweet type breakdown, posting time charts, top tweets table |
-| X Tweets | `/x-tweets/:id` | Searchable tweet explorer with type filter (original/retweet/reply/quote) and sort by likes/retweets/impressions |
 | Video Explorer | `/videos/:id` | YouTube video library with search and sort |
 | Publish | `/publish/:id` | Publish a post to Instagram immediately |
 | Schedule | `/schedule/:id` | View and manage the scheduled post queue |

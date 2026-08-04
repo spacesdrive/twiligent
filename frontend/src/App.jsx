@@ -21,8 +21,6 @@ const Settings           = lazy(() => import('./features/settings/Settings'));
 const RedditAnalytics    = lazy(() => import('./features/analytics/reddit/RedditAnalytics'));
 const RedditPosts        = lazy(() => import('./features/analytics/reddit/RedditPosts'));
 const RedditPostsAll     = lazy(() => import('./features/analytics/reddit/RedditPostsAll'));
-const XAnalytics         = lazy(() => import('./features/analytics/x/XAnalytics'));
-const XTweets            = lazy(() => import('./features/analytics/x/XTweets'));
 
 const router = createBrowserRouter([
   {
@@ -51,8 +49,6 @@ const router = createBrowserRouter([
       { path: 'reddit/:id',         element: <RedditAnalytics /> },
       { path: 'reddit-posts',       element: <RedditPostsAll /> },
       { path: 'reddit-posts/:id',   element: <RedditPosts /> },
-      { path: 'x/:id',              element: <XAnalytics /> },
-      { path: 'x-tweets/:id',       element: <XTweets /> },
       { path: '*',             element: <Navigate to="/" replace /> },
     ],
   },
