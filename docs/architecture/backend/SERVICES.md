@@ -111,6 +111,7 @@ All Reddit public JSON API calls go through `redditFetch(path, cookie)`. Request
 | `fetchRedditPosts(username, cookie, limit)` | Paginates submitted posts up to `limit` (default 100) via `/user/{username}/submitted.json` |
 | `computeRedditAnalytics(profile, posts)` | Computes score stats, subreddit breakdown, posting time patterns, monthly breakdown, virality/consistency scores |
 | `safeRedditAccount(account)` | Strips the `cookie` field before any API response |
+| `fetchTrackedPostData(postUrl, cookie)` | Fetches score, comments, and metadata for any public Reddit post URL using the `.json` trick; optionally uses a session cookie |
 
 ### `safeRedditAccount(account)`
 

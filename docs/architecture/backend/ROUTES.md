@@ -68,6 +68,15 @@ All routes live under `/api`. Routes under the `api` sub-app require a valid Sup
 | GET | `/api/accounts/:id/reddit-analytics` | `routes/reddit.js` | Fetch profile + posts + computed analytics; cached in Redis |
 | GET | `/api/accounts/:id/reddit-posts` | `routes/reddit.js` | Returns cached post list or live-fetched posts |
 
+### Tracked Reddit Posts
+| Method | Path | File | Purpose |
+|---|---|---|---|
+| GET | `/api/reddit/tracked-posts` | `routes/trackedPosts.js` | List all tracked posts for the current user (returns cached data from `data` column) |
+| POST | `/api/reddit/tracked-posts` | `routes/trackedPosts.js` | Add a post URL to track; fetches live data immediately using the selected account's cookie |
+| PUT | `/api/reddit/tracked-posts/:id` | `routes/trackedPosts.js` | Update label, category, or accountId for a tracked post |
+| DELETE | `/api/reddit/tracked-posts/:id` | `routes/trackedPosts.js` | Remove a tracked post |
+| POST | `/api/reddit/tracked-posts/:id/refresh` | `routes/trackedPosts.js` | Re-fetch live score/comment data from Reddit for one tracked post |
+
 ### Settings
 | Method | Path | File | Purpose |
 |---|---|---|---|

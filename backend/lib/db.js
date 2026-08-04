@@ -175,3 +175,75 @@ export async function deleteAllPosts(supabase, userId) {
     if (error) throw error;
     return { deleted: (total || 0) - (keeping || 0), kept: keeping || 0 };
 }
+
+// ── Tracked Posts ─────────────────────────────────────────────────────────────
+
+function rowToTrackedPost(row) {
+    return {
+        id: row.id,
+        accountId: row.account_id,
+        url: row.url,
+        label: row.label || '',
+        category: row.category || '',
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        ...(row.data || {}),
+    };
+}
+
+export async function getTrackedPosts(supabase, userId) {
+    const { data, error } = await supabase
+        .from('tracked_posts')
+        .select('id, account_id, url, label, category, created_at, updated_at, data')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+    if (error) throw error;
+    return (data || []).map(rowToTrackedPost);
+}
+
+export async function getTrackedPostById(supabase, id, userId) {
+    const { data, error } = await supabase
+        .from('tracked_posts')
+        .select('id, account_id, url, label, category, created_at, updated_at, data')
+        .eq('id', id)
+        .eq('user_id', userId)
+        .single();
+    if (error || !data) return null;
+    return rowToTrackedPost(data);
+}
+
+export async function createTrackedPost(supabase, post, userId) {
+    const { id, accountId, url, label, category } = post;
+    const { error } = await supabase.from('tracked_posts').insert({
+        id,
+        user_id: userId,
+        account_id: accountId || null,
+        url,
+        label: label || '',
+        category: category || '',
+    });
+    if (error) throw error;
+}
+
+export async function updateTrackedPost(supabase, id, updates, userId) {
+    const colUpdates = { updated_at: new Date().toISOString() };
+    if (updates.label    !== undefined) colUpdates.label    = updates.label;
+    if (updates.category !== undefined) colUpdates.category = updates.category;
+    if (updates.accountId !== undefined) colUpdates.account_id = updates.accountId || null;
+    if (updates.data     !== undefined) colUpdates.data     = updates.data;
+    const { error } = await supabase
+        .from('tracked_posts')
+        .update(colUpdates)
+        .eq('id', id)
+        .eq('user_id', userId);
+    if (error) throw error;
+}
+
+export async function deleteTrackedPost(supabase, id, userId) {
+    const { error } = await supabase
+        .from('tracked_posts')
+        .delete()
+        .eq('id', id)
+        .eq('user_id', userId);
+    if (error) throw error;
+}
