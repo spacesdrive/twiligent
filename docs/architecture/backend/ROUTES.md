@@ -68,6 +68,11 @@ All routes live under `/api`. Routes under the `api` sub-app require a valid Sup
 | GET | `/api/accounts/:id/reddit-analytics` | `routes/reddit.js` | Fetch profile + posts + computed analytics; cached in Redis |
 | GET | `/api/accounts/:id/reddit-posts` | `routes/reddit.js` | Returns cached post list or live-fetched posts |
 
+### Overview
+| Method | Path | File | Purpose |
+|---|---|---|---|
+| GET | `/api/overview` | `routes/overview.js` | Returns tracked content list + per-account analytics summary from Redis cache (no live API calls); used by the Overview dashboard to aggregate Total Content, Total Comments, Total Likes across all platforms |
+
 ### Tracked Content
 | Method | Path | File | Purpose |
 |---|---|---|---|

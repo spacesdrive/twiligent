@@ -87,6 +87,16 @@ async function handleAction() {
 }
 ```
 
+## Overview Method
+
+```js
+getOverview: () => request('/overview'),
+```
+
+Returns `{ tracked: TrackedItem[], analyticsCache: { [accountId]: { fetchedPosts?, totalLikes?, totalComments?, totalScore? } } }`.
+
+The `analyticsCache` is populated from Redis on the backend — no live API calls are made. Data is only present for accounts whose analytics pages have been previously visited (which populates the Redis cache). The Overview dashboard uses this to compute Total Content, Total Comments, and Total Likes across all platforms without expensive per-account API calls on load.
+
 ## Tracked Content Methods
 
 Added to the `api` object in `api.js`. Handles both Reddit posts and YouTube videos:

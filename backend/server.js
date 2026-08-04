@@ -11,6 +11,7 @@ import scheduledPostsRouter from './routes/scheduledPosts.js';
 import settingsRouter from './routes/settings.js';
 import redditRouter from './routes/reddit.js';
 import trackedContentRouter from './routes/trackedContent.js';
+import overviewRouter from './routes/overview.js';
 import { urlHandler, callbackHandler } from './routes/instagramAuth.js';
 import { processScheduledPosts } from './utils/scheduler.js';
 import { autoRefreshInstagramTokens } from './services/instagram.js';
@@ -56,6 +57,7 @@ api.route('/', scheduledPostsRouter);
 api.route('/', settingsRouter);
 api.route('/', redditRouter);
 api.route('/', trackedContentRouter);
+api.route('/', overviewRouter);
 
 // Instagram OAuth URL generator - protected (needs userId to create state token)
 api.get('/auth/instagram/url', urlHandler);
