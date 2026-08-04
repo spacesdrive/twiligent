@@ -4,6 +4,9 @@
 
 ```
 frontend/src/
+├── components/
+│   ├── MainCard.jsx                        <- Card wrapper with optional title/subheader/separator
+│   └── MetricAreaChart.jsx                 <- Shared Recharts area chart for single-metric comparisons
 ├── features/
 │   ├── analytics/
 │   │   ├── channel/
@@ -12,11 +15,13 @@ frontend/src/
 │   │   │   └── InstagramAnalytics.jsx      <- Instagram account analytics
 │   │   ├── overview/
 │   │   │   └── Overview.jsx                <- Cross-platform aggregate dashboard
-│   │   └── reddit/
-│   │       ├── RedditAnalytics.jsx         <- Reddit account analytics (karma, scores, subreddits)
-│   │       ├── RedditPosts.jsx             <- Per-account post explorer
-│   │       ├── RedditPostsAll.jsx          <- Global post explorer (all Reddit accounts)
-│   │       └── RedditTracked.jsx           <- Tracked post monitor (URL-based, live score/comments)
+│   │   ├── reddit/
+│   │   │   ├── RedditAnalytics.jsx         <- Reddit account analytics (karma, subreddits)
+│   │   │   ├── RedditPosts.jsx             <- Per-account post explorer
+│   │   │   └── RedditPostsAll.jsx          <- Global post explorer (all Reddit accounts)
+│   │   └── tracked/
+│   │       ├── TrackedContent.jsx          <- Tracked Reddit posts and YouTube videos
+│   │       └── TrackedCategory.jsx         <- Per-category analytics for tracked content
 │   ├── accounts/
 │   │   └── AccountManager.jsx              <- Add/remove connected accounts
 │   ├── publishing/
@@ -28,6 +33,34 @@ frontend/src/
 │       ├── ShortsExplorer.jsx              <- YouTube Shorts-filtered view
 │       └── ReelsExplorer.jsx               <- Instagram Reels-filtered view
 ```
+
+## Metric Naming
+
+Reddit exposes a post's net upvotes as `score` in its JSON API. In the UI this is always
+labelled **karma**, never "score", so it matches the vocabulary Reddit shows its own users.
+The raw `score` field name is kept when reading API responses; every aggregate derived from
+it is named `karma` (`rdKarma`, `avgKarma`, `redditKarma`).
+
+"Virality Score" and "Consistency Score" are separate computed indices, not karma, and keep
+the word "score".
+
+## Shared Chart Component
+
+`components/MetricAreaChart.jsx` renders a single-series area chart with the project's axis,
+grid, gradient, and tooltip styling. Use it instead of hand-rolling a Recharts `AreaChart`:
+
+```jsx
+<MetricAreaChart
+  data={[{ name: 'Item', karma: 42 }]}
+  dataKey="karma"
+  label="Karma"
+  color="#f97316"
+  emptyMessage="Track content to compare karma"
+/>
+```
+
+Each instance generates its own gradient id via `useId()`, so multiple charts on one page
+never collide.
 
 ## Feature Conventions
 
@@ -72,7 +105,7 @@ Each page manages its own loading/data/error state. Pages do not write to `AppCo
 
 | Feature | Path | Description |
 |---|---|---|
-| Overview | `/` | Aggregate KPIs across all connected accounts (YouTube, Instagram, Reddit) |
+| Overview | `/` | Aggregate KPIs across all connected accounts (YouTube, Instagram, Reddit); six metric tabs, each with area charts |
 | Accounts | `/accounts` | Connect/disconnect accounts (YouTube, Instagram, Reddit) |
 | Channel Analytics | `/channel/:id` | YouTube analytics for one channel |
 | Instagram Analytics | `/instagram/:id` | Instagram analytics for one account |

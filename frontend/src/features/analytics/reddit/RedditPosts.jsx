@@ -15,8 +15,8 @@ import { ArrowLeft, Search, ExternalLink, TrendingUp, MessageSquare, FileText, I
 
 const MEDIA_TYPE_LABELS = { text: 'Text', image: 'Image', video: 'Video', link: 'Link' };
 const SORT_OPTIONS = [
-  { value: 'score-desc',    label: 'Score (high to low)' },
-  { value: 'score-asc',     label: 'Score (low to high)' },
+  { value: 'score-desc',    label: 'Karma (high to low)' },
+  { value: 'score-asc',     label: 'Karma (low to high)' },
   { value: 'comments-desc', label: 'Comments (most)' },
   { value: 'date-desc',     label: 'Newest first' },
   { value: 'date-asc',      label: 'Oldest first' },
@@ -156,7 +156,7 @@ export default function RedditPosts() {
                   <TableHead className="w-8">#</TableHead>
                   <TableHead>Post</TableHead>
                   <TableHead className="w-24">Type</TableHead>
-                  <TableHead className="text-right w-24">Score</TableHead>
+                  <TableHead className="text-right w-24">Karma</TableHead>
                   <TableHead className="text-right w-28">Comments</TableHead>
                   <TableHead className="text-right w-20">Upvote %</TableHead>
                   <TableHead className="text-right w-28">Date</TableHead>

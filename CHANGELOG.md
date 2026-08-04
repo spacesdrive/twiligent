@@ -9,6 +9,40 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+**Reddit score renamed to karma across the UI**
+- Every user-facing "score" label for a Reddit post now reads "karma", matching the vocabulary Reddit shows its own users
+- `RedditAnalytics.jsx`: "Total Score" to "Total Karma", "Score Over Time" to "Karma Over Time", "Score Breakdown" to "Karma Breakdown", "Top Posts by Score" to "Top Posts by Karma", table headers and tooltips updated
+- `RedditPosts.jsx`, `RedditPostsAll.jsx`: sort options and table headers now read "Karma"; "Combined Score" to "Combined Karma"
+- `TrackedContent.jsx`: "Likes / Score" to "Likes / Karma" in the sort select and table header
+- `TrackedCategory.jsx`: "Reddit Score" to "Reddit Karma", "Net Upvotes" to "Post Karma", "Avg Net Upvotes" to "Avg Karma per Post"
+- `Overview.jsx`: `categoryStats.rdScore` renamed to `rdKarma`, `trackedStats.rdScore` to `rdKarma`, `cacheTotals.rdScore` to `rdKarma`; chart tooltip now reads "Views + Karma" and the legend "Category (views + karma)"
+- Backend field names are unchanged; Reddit's API still returns `score` and it is read as-is
+- "Virality Score" and "Consistency Score" keep the word "score" - they are computed indices, not karma
+
+**Overview metric totals corrected**
+- Tracked Reddit post karma moved out of Total Audience into Total Likes; a monitored post is content, not owned audience
+- Total Comments and Total Likes now sum the analytics cache and tracked content instead of preferring one over the other; tracked items are third-party URLs and never overlap with connected-account content
+- Reddit Karma stat now shows account karma plus tracked post karma with both parts in the subtitle
+
+**Overview charts replaced with area charts**
+- Audience Share pie chart removed; Audience Comparison now spans the full width
+- Comments tab: "Tracked Content by Comments" table replaced with two area charts - "Comments by Tracked Content" and "Comments by Category" - plus a "Comments per Content" stat and per-platform comment share percentages
+- Likes tab: "Reddit Accounts by Karma" and "Tracked YouTube by Likes" lists replaced with two area charts - "Karma by Reddit Account" and "Engagement by Tracked Content" - plus an Instagram Likes stat and per-platform like share percentages
+- `components/MetricAreaChart.jsx` added: shared single-series area chart with project axis, grid, gradient, and tooltip styling; generates a unique gradient id per instance via `useId()`
+
+**Tracked Category page**
+- Horizontal bar charts replaced with area charts for both the YouTube and Reddit sections
+- Duplicate value display fixed: the full number below the abbreviated one is now only rendered when `fmtNum` actually abbreviated it (values of 1000 and above)
+- Stat card labels now name the metric precisely: "Total Items" to "Total Content", "Total Views" to "YouTube Views" and "Video Views", "Total Likes" to "Video Likes", "Total Comments" to "Video Comments" and "Post Comments"
+- Empty state rebuilt on the shadcn `Empty` component
+
+**Sidebar**
+- Categories section added below Accounts, listing every tracked-content category with a link to its analytics page
+
+### Removed
+
+- `features/analytics/reddit/RedditTracked.jsx` deleted; superseded by `features/analytics/tracked/TrackedContent.jsx` and unreferenced since the Tracked Content rename
+
 **Tracked Content (expanded from Tracked Reddit Posts)**
 - Renamed feature from "Tracked Posts" / "Tracked Reddit Posts" to "Tracked Content" throughout the UI, routing, and API
 - Route changed from `/reddit-tracked` to `/tracked-content` (old route redirects to new)

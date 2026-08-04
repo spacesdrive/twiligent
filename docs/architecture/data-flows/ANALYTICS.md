@@ -211,10 +211,35 @@ User navigates to /
     ▼
 Overview.jsx uses accounts from AppContext
     -> Combined totals computed from account.subscriberCount, viewCount, etc.
-    -> api.getComparison() -> GET /api/comparison
-        -> returns all accounts sorted by view count, subscriber count
+    -> api.getOverview() -> GET /api/overview
+        -> returns { tracked: [...], analyticsCache: { [accountId]: {...} } }
 ```
 
-The Overview doesn't fetch fresh analytics - it uses the cached account metadata (subscriber counts, view counts) already in `AppContext.accounts`. Deep per-account analytics (video lists, engagement rates) are only fetched when the user navigates to a specific account page.
+The Overview does not fetch fresh per-account analytics. It combines account metadata already
+in `AppContext.accounts` with whatever each account's Redis analytics cache holds. When any
+account's cache is cold the backend fires a background warm-up and returns `cacheWarmed: false`,
+and the page re-fetches once after 6 seconds.
 
-Reddit accounts are excluded from the audience totals, audience comparison chart, and audience share pie chart. Karma is not equivalent to subscribers or followers - it is an engagement/reputation metric. Reddit accounts get their own karma summary card in the Overview showing totalKarma, postKarma, and commentKarma. The audience charts and leaderboard tables only include YouTube and Instagram accounts.
+### Metric definitions
+
+| Metric | Formula |
+|---|---|
+| Total Audience | YouTube subscribers + Instagram followers + Reddit account karma |
+| Total Views | YouTube channel view counts |
+| Total Content | YouTube videos + Instagram posts + Reddit account posts (cache) + tracked items |
+| Total Comments | cache comments (YouTube + Instagram + Reddit) + tracked item comments |
+| Total Likes | Reddit karma (account + tracked) + YouTube likes (cache + tracked) + Instagram likes |
+
+Tracked items are third-party URLs the user monitors, never their own connected-account
+content, so cache totals and tracked totals are disjoint and are summed rather than
+one taking precedence over the other.
+
+Tracked Reddit post karma counts toward Total Likes, not Total Audience - a monitored post is
+content, not an audience the user owns. Connected-account karma does count toward Total
+Audience as that account's reputation.
+
+### Naming
+
+Reddit's API returns a post's net upvotes as `score`. Every aggregate the frontend derives from
+it is named and labelled **karma**. The word "score" is reserved for the computed Virality Score
+and Consistency Score indices, which are unrelated to karma.

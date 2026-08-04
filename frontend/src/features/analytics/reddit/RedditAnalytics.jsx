@@ -184,15 +184,15 @@ export default function RedditAnalytics() {
       {/* KPI cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
         <StatCard icon={<TrendingUp />}    label="Posts Fetched"   value={fmtNum(a.fetchedPosts)} subtitle={`${a.postsLast30Days ?? 0} in the last 30 days`} gradient="orange" />
-        <StatCard icon={<Award />}         label="Total Score"     value={fmtNum(a.totalScore)} subtitle={`Avg ${fmtNum(a.avgScore)} per post`} gradient="red" />
+        <StatCard icon={<Award />}         label="Total Karma"     value={fmtNum(a.totalScore)} subtitle={`Avg ${fmtNum(a.avgScore)} per post`} gradient="red" />
         <StatCard icon={<MessageSquare />} label="Total Comments"  value={fmtNum(a.totalComments)} subtitle={`Avg ${fmtNum(a.avgComments)} per post`} gradient="blue" />
         <StatCard icon={<Star />}          label="Awards Received" value={fmtNum(a.totalAwards ?? 0)} subtitle={`Avg ${a.avgAwards ?? 0} per post`} gradient="purple" />
       </div>
 
-      {/* Score timeline + media type pie */}
+      {/* Karma timeline + media type pie */}
       {a.monthlyBreakdown?.length > 0 && (
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-          <MainCard title="Score Over Time" className="xl:col-span-2">
+          <MainCard title="Karma Over Time" className="xl:col-span-2">
             <ResponsiveContainer width="100%" height={240} debounce={200}>
               <AreaChart data={a.monthlyBreakdown} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
                 <defs>
@@ -204,7 +204,7 @@ export default function RedditAnalytics() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="month" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} tickFormatter={fmtNum} axisLine={false} tickLine={false} width={48} />
-                <ReTooltip contentStyle={TS} formatter={(v, n) => [fmtNumFull(v), n === 'score' ? 'Total Score' : 'Posts']} />
+                <ReTooltip contentStyle={TS} formatter={(v, n) => [fmtNumFull(v), n === 'score' ? 'Total Karma' : 'Posts']} />
                 <Area type="monotone" dataKey="score" stroke="#FF4500" strokeWidth={2} fill="url(#redditGrad)" dot={{ fill: '#FF4500', r: 3, strokeWidth: 0 }} />
               </AreaChart>
             </ResponsiveContainer>
@@ -252,11 +252,11 @@ export default function RedditAnalytics() {
           </div>
         </MainCard>
 
-        <MainCard title="Score Breakdown">
+        <MainCard title="Karma Breakdown">
           <div className="space-y-3">
             {[
-              { label: 'Average score',    value: fmtNum(a.avgScore) },
-              { label: 'Median score',     value: fmtNum(a.medianScore) },
+              { label: 'Average karma',    value: fmtNum(a.avgScore) },
+              { label: 'Median karma',     value: fmtNum(a.medianScore) },
               { label: 'Best single post', value: fmtNum(a.topPosts?.[0]?.score) },
               { label: 'Avg upvote ratio', value: `${a.avgUpvoteRatio ?? 0}%` },
               { label: 'Total comments',   value: fmtNum(a.totalComments) },
@@ -273,8 +273,8 @@ export default function RedditAnalytics() {
         <MainCard title="Performance Indicators">
           <div className="space-y-4">
             {[
-              { label: 'Virality Score', value: a.viralityScore, max: Math.max(10, a.viralityScore), desc: 'Ratio of peak post score to average - higher means bigger outlier hits' },
-              { label: 'Consistency',    value: a.consistencyScore, max: 100, desc: 'Score reliability across posts - 100 means very uniform performance' },
+              { label: 'Virality Score', value: a.viralityScore, max: Math.max(10, a.viralityScore), desc: 'Ratio of peak post karma to average - higher means bigger outlier hits' },
+              { label: 'Consistency',    value: a.consistencyScore, max: 100, desc: 'Karma reliability across posts - 100 means very uniform performance' },
             ].map(item => (
               <div key={item.label} className="space-y-1.5">
                 <div className="flex items-center justify-between text-sm">
@@ -298,7 +298,7 @@ export default function RedditAnalytics() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="shortDay" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} tickFormatter={fmtNum} axisLine={false} tickLine={false} width={36} />
-                <ReTooltip contentStyle={TS} formatter={(v, n) => [fmtNumFull(v), n === 'avgScore' ? 'Avg Score' : 'Posts']} />
+                <ReTooltip contentStyle={TS} formatter={(v, n) => [fmtNumFull(v), n === 'avgScore' ? 'Avg Karma' : 'Posts']} />
                 <Bar dataKey="posts"    fill="#FF4500" opacity={0.35} radius={[3, 3, 0, 0]} />
                 <Bar dataKey="avgScore" fill="#FF4500" radius={[3, 3, 0, 0]} />
               </BarChart>
@@ -316,7 +316,7 @@ export default function RedditAnalytics() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="hour" tickFormatter={h => `${h}h`} tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }} axisLine={false} tickLine={false} interval={3} />
                 <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} tickFormatter={fmtNum} axisLine={false} tickLine={false} width={36} />
-                <ReTooltip contentStyle={TS} formatter={(v, n) => [fmtNumFull(v), n === 'avgScore' ? 'Avg Score' : 'Posts']} />
+                <ReTooltip contentStyle={TS} formatter={(v, n) => [fmtNumFull(v), n === 'avgScore' ? 'Avg Karma' : 'Posts']} />
                 <Bar dataKey="avgScore" fill="#FF6534" radius={[3, 3, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -338,8 +338,8 @@ export default function RedditAnalytics() {
                 <TableHead className="w-8">#</TableHead>
                 <TableHead>Subreddit</TableHead>
                 <TableHead className="text-right">Posts</TableHead>
-                <TableHead className="text-right">Total Score</TableHead>
-                <TableHead className="text-right">Avg Score</TableHead>
+                <TableHead className="text-right">Total Karma</TableHead>
+                <TableHead className="text-right">Avg Karma</TableHead>
                 <TableHead className="text-right">Avg Comments</TableHead>
               </TableRow>
             </TableHeader>
@@ -371,13 +371,13 @@ export default function RedditAnalytics() {
 
       {/* Top posts */}
       {a.topPosts?.length > 0 && (
-        <MainCard title="Top Posts by Score" content={false}>
+        <MainCard title="Top Posts by Karma" content={false}>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead className="w-8">#</TableHead>
                 <TableHead>Post</TableHead>
-                <TableHead className="text-right">Score</TableHead>
+                <TableHead className="text-right">Karma</TableHead>
                 <TableHead className="text-right">Comments</TableHead>
                 <TableHead className="text-right">Upvote %</TableHead>
                 <TableHead className="text-right">Posted</TableHead>

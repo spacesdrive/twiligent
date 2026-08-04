@@ -4,21 +4,24 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
+  Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent,
+} from '@/components/ui/empty';
+import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
-  ResponsiveContainer, PieChart, Pie, Cell, Legend,
+  ResponsiveContainer,
 } from 'recharts';
 import StatCard from '../../../components/ui/StatCard';
 import MainCard from '../../../components/MainCard';
+import MetricAreaChart from '../../../components/MetricAreaChart';
 import { useAppContext } from '../../../context/AppContext';
 import { api } from '../../../services/api';
-import { fmtNum, fmtNumFull, timeAgo } from '../../../utils/formatters';
+import { fmtNum, fmtNumFull, fmtPercent, timeAgo } from '../../../utils/formatters';
 import {
-  RefreshCw, Users, VideoIcon, ExternalLink,
+  RefreshCw, Users, VideoIcon, ExternalLink, Camera, BarChart2,
   Tag, ThumbsUp, MessageSquare, CirclePlay, Flame, BookmarkCheck,
 } from 'lucide-react';
 
@@ -28,11 +31,6 @@ const PLATFORM_COLORS = {
   reddit:    '#f97316',
   category:  '#a855f7',
 };
-
-const CHART_COLORS = [
-  '#ef4444', '#ec4899', '#f97316', '#a855f7',
-  '#06b6d4', '#22c55e', '#6366f1', '#eab308',
-];
 
 function PlatformBadge({ platform }) {
   const map = {
@@ -81,9 +79,11 @@ export default function Overview() {
     return () => clearTimeout(timer);
   }, [isSyncing]);
 
-  const loading        = accountsLoading || overviewLoading;
-  const trackedContent = overviewData.tracked ?? [];
-  const analyticsCache = overviewData.analyticsCache ?? {};
+  const loading = accountsLoading || overviewLoading;
+
+  // Memoized so the ?? fallbacks keep a stable identity and the derived useMemos below actually cache
+  const trackedContent = useMemo(() => overviewData.tracked        ?? [], [overviewData.tracked]);
+  const analyticsCache = useMemo(() => overviewData.analyticsCache ?? {}, [overviewData.analyticsCache]);
 
   const ytAccounts     = accounts.filter(a => a.platform !== 'instagram' && a.platform !== 'reddit');
   const igAccounts     = accounts.filter(a => a.platform === 'instagram');
@@ -112,7 +112,7 @@ export default function Overview() {
 
   // Per-account analytics from Redis cache (populated when user visits individual analytics pages)
   const cacheTotals = useMemo(() => {
-    const result = { ytLikes: 0, ytComments: 0, igLikes: 0, igComments: 0, rdPosts: 0, rdScore: 0, rdComments: 0 };
+    const result = { ytLikes: 0, ytComments: 0, igLikes: 0, igComments: 0, rdPosts: 0, rdKarma: 0, rdComments: 0 };
     accounts.forEach(a => {
       const c = analyticsCache[a.id];
       if (!c) return;
@@ -124,14 +124,14 @@ export default function Overview() {
         result.igComments += c.totalComments ?? 0;
       } else if (a.platform === 'reddit') {
         result.rdPosts    += c.fetchedPosts  ?? 0;
-        result.rdScore    += c.totalScore    ?? 0;
+        result.rdKarma    += c.totalScore    ?? 0;
         result.rdComments += c.totalComments ?? 0;
       }
     });
     return result;
   }, [accounts, analyticsCache]);
 
-  // Tracked content aggregates
+  // Tracked content aggregates. Reddit post score is karma, so it rolls into karma totals.
   const trackedStats = useMemo(() => {
     const ytItems = trackedContent.filter(p => p.contentType === 'youtube');
     const rdItems = trackedContent.filter(p => (p.contentType || 'reddit') === 'reddit');
@@ -139,29 +139,43 @@ export default function Overview() {
       total:       trackedContent.length,
       ytItems,
       rdItems,
-      ytLikes:     ytItems.reduce((s, p) => s + (p.likeCount  ?? 0), 0),
+      ytLikes:     ytItems.reduce((s, p) => s + (p.likeCount    ?? 0), 0),
       ytComments:  ytItems.reduce((s, p) => s + (p.commentCount ?? 0), 0),
-      rdScore:     rdItems.reduce((s, p) => s + (p.score       ?? 0), 0),
-      rdComments:  rdItems.reduce((s, p) => s + (p.numComments ?? 0), 0),
+      rdKarma:     rdItems.reduce((s, p) => s + (p.score        ?? 0), 0),
+      rdComments:  rdItems.reduce((s, p) => s + (p.numComments  ?? 0), 0),
     };
   }, [trackedContent]);
 
   // ── Metric totals ──────────────────────────────────────────────────────────────
 
-  // Total Audience = subs + followers + karma + tracked Reddit scores
-  const totalAudience = totals.subscribers + totals.followers + totals.karma + trackedStats.rdScore;
+  // Total Audience = subs + followers + account karma. Tracked posts are content, not audience.
+  const totalAudience = totals.subscribers + totals.followers + totals.karma;
 
   // Total Content = YT videos + IG posts + Reddit account posts (from cache) + tracked items
   const totalContent = totals.videos + totals.posts + cacheTotals.rdPosts + trackedStats.total;
 
-  // Total Comments: prefer cache (complete) over tracked subset to avoid double-counting
-  const ytComments = cacheTotals.ytComments > 0 ? cacheTotals.ytComments : trackedStats.ytComments;
-  const rdComments = cacheTotals.rdComments > 0 ? cacheTotals.rdComments : trackedStats.rdComments;
+  // Tracked items are third-party URLs the user monitors, never their own account content,
+  // so cache totals and tracked totals are disjoint and sum without double-counting.
+  const ytComments = cacheTotals.ytComments + trackedStats.ytComments;
+  const rdComments = cacheTotals.rdComments + trackedStats.rdComments;
   const totalComments = ytComments + cacheTotals.igComments + rdComments;
 
-  // Total Likes: prefer cache for YouTube; include IG; Reddit postKarma covers account posts
-  const ytLikes   = cacheTotals.ytLikes > 0 ? cacheTotals.ytLikes : trackedStats.ytLikes;
-  const totalLikes = totals.postKarma + ytLikes + cacheTotals.igLikes;
+  // Reddit karma = account post karma + tracked post karma
+  const redditKarma = totals.postKarma + trackedStats.rdKarma;
+  const ytLikes     = cacheTotals.ytLikes + trackedStats.ytLikes;
+  const totalLikes  = redditKarma + ytLikes + cacheTotals.igLikes;
+
+  const avgCommentsPerContent = totalContent > 0 ? Math.round(totalComments / totalContent) : 0;
+
+  const commentShare = {
+    youtube: totalComments > 0 ? (ytComments / totalComments) * 100 : 0,
+    reddit:  totalComments > 0 ? (rdComments / totalComments) * 100 : 0,
+  };
+
+  const likeShare = {
+    youtube:   totalLikes > 0 ? (ytLikes / totalLikes) * 100              : 0,
+    instagram: totalLikes > 0 ? (cacheTotals.igLikes / totalLikes) * 100  : 0,
+  };
 
   // ── Category stats for tracked content ────────────────────────────────────────
   const categoryStats = useMemo(() => {
@@ -174,7 +188,7 @@ export default function Overview() {
           category: p.category,
           count: 0, ytCount: 0, rdCount: 0,
           ytViews: 0, ytLikes: 0, ytComments: 0,
-          rdScore: 0, rdComments: 0,
+          rdKarma: 0, rdComments: 0,
         };
       }
       const c = map[p.category];
@@ -186,12 +200,12 @@ export default function Overview() {
         c.ytComments += p.commentCount ?? 0;
       } else {
         c.rdCount++;
-        c.rdScore    += p.score       ?? 0;
+        c.rdKarma    += p.score       ?? 0;
         c.rdComments += p.numComments ?? 0;
       }
     });
     return Object.values(map).sort((a, b) =>
-      (b.rdScore + b.ytViews) - (a.rdScore + a.ytViews)
+      (b.rdKarma + b.ytViews) - (a.rdKarma + a.ytViews)
     );
   }, [trackedContent]);
 
@@ -230,26 +244,47 @@ export default function Overview() {
     })),
     ...categoryStats.map(c => ({
       name:  c.category.slice(0, 12) + (c.category.length > 12 ? '…' : ''),
-      value: c.rdScore + c.ytViews,
+      value: c.rdKarma + c.ytViews,
       type:  'category',
     })),
   ], [ytAccounts, igAccounts, redditAccounts, categoryStats]);
 
-  const pieData = useMemo(() => {
-    const entries = [
-      ...accounts.map((a, i) => ({
-        name:  (a.title || a.username || '?').slice(0, 14),
-        value: audienceMetric(a),
-        color: CHART_COLORS[i % CHART_COLORS.length],
-      })),
-      ...categoryStats.map((c, i) => ({
-        name:  c.category.slice(0, 14),
-        value: c.rdScore + c.ytViews,
-        color: CHART_COLORS[(accounts.length + i) % CHART_COLORS.length],
-      })),
-    ].filter(e => e.value > 0);
-    return entries;
-  }, [accounts, categoryStats]);
+  // ── Comment and engagement chart data ─────────────────────────────────────────
+  const commentByContentData = useMemo(() =>
+    trackedContent
+      .map(p => ({
+        name: (p.title || p.label || p.url || '').slice(0, 16),
+        comments: p.contentType === 'youtube' ? (p.commentCount ?? 0) : (p.numComments ?? 0),
+      }))
+      .sort((a, b) => b.comments - a.comments)
+      .slice(0, 12),
+    [trackedContent]
+  );
+
+  const commentByCategoryData = useMemo(() =>
+    categoryStats
+      .map(c => ({ name: c.category.slice(0, 16), comments: c.ytComments + c.rdComments }))
+      .sort((a, b) => b.comments - a.comments),
+    [categoryStats]
+  );
+
+  const karmaByAccountData = useMemo(() =>
+    [...redditAccounts]
+      .sort((a, b) => (b.postKarma || 0) - (a.postKarma || 0))
+      .map(a => ({ name: `u/${a.username || ''}`.slice(0, 16), karma: a.postKarma || 0 })),
+    [redditAccounts]
+  );
+
+  const engagementByContentData = useMemo(() =>
+    trackedContent
+      .map(p => ({
+        name: (p.title || p.label || p.url || '').slice(0, 16),
+        engagement: p.contentType === 'youtube' ? (p.likeCount ?? 0) : (p.score ?? 0),
+      }))
+      .sort((a, b) => b.engagement - a.engagement)
+      .slice(0, 12),
+    [trackedContent]
+  );
 
   function handleViewChannel(acc) {
     if (acc.platform === 'instagram') navigate(`/instagram/${acc.id}`);
@@ -384,87 +419,67 @@ export default function Overview() {
 
           {/* ── AUDIENCE TAB ──────────────────────────────────────────────── */}
           <TabsContent value="audience" className="space-y-4">
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-              <MainCard title="Audience Comparison" className="xl:col-span-2">
-                <p className="text-xs text-muted-foreground mb-3">
-                  YouTube = subscribers · Instagram = followers · Reddit = karma · Categories = total score
-                </p>
-                {audienceChartData.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-8 text-center">No data to display</p>
-                ) : (
-                  <ResponsiveContainer width="100%" height={240} debounce={200}>
-                    <AreaChart data={audienceChartData} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}>
-                      <defs>
-                        <linearGradient id="audienceAreaGrad" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%"  stopColor="var(--primary)" stopOpacity={0.15} />
-                          <stop offset="95%" stopColor="var(--primary)" stopOpacity={0}    />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                      <XAxis dataKey="name" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                      <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} tickFormatter={fmtNum} axisLine={false} tickLine={false} width={48} />
-                      <ReTooltip
-                        contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
-                        formatter={(v, name, props) => [fmtNumFull(v), props.payload.type === 'category' ? 'Views + Score' : 'Audience']}
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="value"
-                        stroke="var(--primary)"
-                        strokeWidth={2}
-                        fill="url(#audienceAreaGrad)"
-                        dot={(props) => {
-                          const { cx, cy, payload, index } = props;
-                          return (
-                            <circle
-                              key={`dot-${index}`}
-                              cx={cx}
-                              cy={cy}
-                              r={5}
-                              fill={PLATFORM_COLORS[payload.type] || '#6366f1'}
-                              stroke="var(--card)"
-                              strokeWidth={2}
-                            />
-                          );
-                        }}
-                        activeDot={{ r: 7 }}
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                )}
-                <div className="flex flex-wrap gap-3 mt-2">
-                  {[
-                    ytAccounts.length     ? { color: PLATFORM_COLORS.youtube,   label: 'YouTube (subs)'        } : null,
-                    igAccounts.length     ? { color: PLATFORM_COLORS.instagram, label: 'Instagram (followers)' } : null,
-                    redditAccounts.length ? { color: PLATFORM_COLORS.reddit,    label: 'Reddit (karma)'        } : null,
-                    categoryStats.length  ? { color: PLATFORM_COLORS.category,  label: 'Category (views + score)' } : null,
-                  ].filter(Boolean).map(({ color, label }) => (
-                    <div key={label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ background: color }} />
-                      {label}
-                    </div>
-                  ))}
-                </div>
-              </MainCard>
-
-              <MainCard title="Audience Share">
-                {pieData.length === 0 ? (
-                  <p className="text-sm text-muted-foreground py-8 text-center">No data to display</p>
-                ) : (
-                  <ResponsiveContainer width="100%" height={260} debounce={200}>
-                    <PieChart>
-                      <Pie data={pieData} dataKey="value" nameKey="name" cx="50%" cy="44%" outerRadius={85} innerRadius={48} paddingAngle={3} strokeWidth={0}>
-                        {pieData.map((entry, i) => (
-                          <Cell key={i} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <ReTooltip contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }} formatter={(v) => fmtNumFull(v)} />
-                      <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                )}
-              </MainCard>
-            </div>
+            <MainCard title="Audience Comparison">
+              <p className="text-xs text-muted-foreground mb-3">
+                YouTube = subscribers · Instagram = followers · Reddit = karma · Categories = views + karma
+              </p>
+              {audienceChartData.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-8 text-center">No data to display</p>
+              ) : (
+                <ResponsiveContainer width="100%" height={260} debounce={200}>
+                  <AreaChart data={audienceChartData} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="audienceAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor="var(--primary)" stopOpacity={0.28} />
+                        <stop offset="95%" stopColor="var(--primary)" stopOpacity={0}    />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                    <XAxis dataKey="name" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
+                    <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} tickFormatter={fmtNum} axisLine={false} tickLine={false} width={48} />
+                    <ReTooltip
+                      contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
+                      formatter={(v, name, props) => [fmtNumFull(v), props.payload.type === 'category' ? 'Views + Karma' : 'Audience']}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="value"
+                      stroke="var(--primary)"
+                      strokeWidth={2}
+                      fill="url(#audienceAreaGrad)"
+                      dot={(props) => {
+                        const { cx, cy, payload, index } = props;
+                        return (
+                          <circle
+                            key={`dot-${index}`}
+                            cx={cx}
+                            cy={cy}
+                            r={5}
+                            fill={PLATFORM_COLORS[payload.type] || '#6366f1'}
+                            stroke="var(--card)"
+                            strokeWidth={2}
+                          />
+                        );
+                      }}
+                      activeDot={{ r: 7 }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+              <div className="flex flex-wrap gap-3 mt-2">
+                {[
+                  ytAccounts.length     ? { color: PLATFORM_COLORS.youtube,   label: 'YouTube (subs)'        } : null,
+                  igAccounts.length     ? { color: PLATFORM_COLORS.instagram, label: 'Instagram (followers)' } : null,
+                  redditAccounts.length ? { color: PLATFORM_COLORS.reddit,    label: 'Reddit (karma)'        } : null,
+                  categoryStats.length  ? { color: PLATFORM_COLORS.category,  label: 'Category (views + karma)' } : null,
+                ].filter(Boolean).map(({ color, label }) => (
+                  <div key={label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ background: color }} />
+                    {label}
+                  </div>
+                ))}
+              </div>
+            </MainCard>
 
             {/* Top by Audience - accounts only, no metric label */}
             <MainCard title="Top by Audience">
@@ -649,7 +664,7 @@ export default function Overview() {
                           )}
                           {stat.rdCount > 0 && (
                             <p className="text-xs font-semibold tabular-nums text-orange-500 leading-none mt-0.5">
-                              {fmtNum(stat.rdScore)} score
+                              {fmtNum(stat.rdKarma)} karma
                             </p>
                           )}
                         </div>
@@ -737,161 +752,116 @@ export default function Overview() {
 
           {/* ── COMMENTS TAB ──────────────────────────────────────────────── */}
           <TabsContent value="comments" className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <StatCard icon={<MessageSquare />} label="Total Comments"    value={fmtNum(totalComments)}            subtitle={totalComments > 0 ? 'across all platforms' : 'visit analytics pages to load'} gradient="blue"   />
-              <StatCard icon={<CirclePlay />}    label="YouTube Comments"  value={fmtNum(ytComments)}               subtitle={cacheTotals.ytComments > 0 ? 'from video cache' : `${trackedStats.ytItems.length} tracked videos`}  gradient="red"    />
-              <StatCard icon={<Flame />}         label="Reddit Comments"   value={fmtNum(rdComments)}               subtitle={cacheTotals.rdComments > 0 ? 'from analytics cache' : `${trackedStats.rdItems.length} tracked posts`} gradient="orange" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+              <StatCard icon={<MessageSquare />} label="Total Comments"       value={fmtNum(totalComments)}         subtitle={totalComments > 0 ? 'across all platforms' : 'visit analytics pages to load'}                       gradient="blue"   />
+              <StatCard icon={<CirclePlay />}    label="YouTube Comments"     value={fmtNum(ytComments)}            subtitle={`${fmtPercent(commentShare.youtube)} of all comments`}                                              gradient="red"    />
+              <StatCard icon={<Flame />}         label="Reddit Comments"      value={fmtNum(rdComments)}            subtitle={`${fmtPercent(commentShare.reddit)} of all comments`}                                               gradient="orange" />
+              <StatCard icon={<BarChart2 />}     label="Comments per Content" value={fmtNum(avgCommentsPerContent)} subtitle={`average across ${fmtNum(totalContent)} item${totalContent !== 1 ? 's' : ''}`}                       gradient="purple" />
             </div>
 
-            {trackedContent.length === 0 && totalComments === 0 ? (
+            {totalComments === 0 ? (
               <MainCard>
-                <div className="flex flex-col items-center text-center py-10 gap-3">
-                  <MessageSquare className="h-8 w-8 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-semibold">No comment data available yet</p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Visit Reddit Analytics or YouTube Analytics pages to load data, or track content via Tracked Content
-                    </p>
-                  </div>
-                  <Button size="sm" onClick={() => navigate('/tracked-content')}>Track Content</Button>
-                </div>
+                <Empty>
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <MessageSquare />
+                    </EmptyMedia>
+                    <EmptyTitle>No comment data yet</EmptyTitle>
+                    <EmptyDescription>
+                      Open a channel or account analytics page to load its comment data, or track individual posts and videos.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                  <EmptyContent>
+                    <Button size="sm" onClick={() => navigate('/tracked-content')}>Track Content</Button>
+                  </EmptyContent>
+                </Empty>
               </MainCard>
-            ) : trackedContent.length > 0 ? (
-              <MainCard title="Tracked Content by Comments" content={false}>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Title</TableHead>
-                      <TableHead className="w-28">Category</TableHead>
-                      <TableHead className="text-right w-28">Comments</TableHead>
-                      <TableHead className="text-right w-28">Likes / Score</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {[...trackedContent]
-                      .sort((a, b) => {
-                        const ca = a.contentType === 'youtube' ? (a.commentCount ?? 0) : (a.numComments ?? 0);
-                        const cb = b.contentType === 'youtube' ? (b.commentCount ?? 0) : (b.numComments ?? 0);
-                        return cb - ca;
-                      })
-                      .map(item => {
-                        const isYT       = item.contentType === 'youtube';
-                        const comments   = isYT ? (item.commentCount ?? 0) : (item.numComments ?? 0);
-                        const engagement = isYT ? (item.likeCount    ?? 0) : (item.score        ?? 0);
-                        return (
-                          <TableRow key={item.id}>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                {isYT
-                                  ? <CirclePlay className="h-3.5 w-3.5 text-red-500 flex-shrink-0"    />
-                                  : <Flame      className="h-3.5 w-3.5 text-orange-500 flex-shrink-0" />
-                                }
-                                <span className="text-sm font-medium truncate max-w-xs">
-                                  {item.title || item.label || item.url}
-                                </span>
-                              </div>
-                              <p className="text-xs text-muted-foreground ml-5 mt-0.5">
-                                {isYT ? item.channelTitle : item.subredditPrefixed}
-                              </p>
-                            </TableCell>
-                            <TableCell>
-                              {item.category
-                                ? <Badge variant="outline" className="text-xs">{item.category}</Badge>
-                                : <span className="text-xs text-muted-foreground">-</span>}
-                            </TableCell>
-                            <TableCell className="text-right text-sm font-semibold tabular-nums">
-                              {fmtNum(comments)}
-                            </TableCell>
-                            <TableCell className={`text-right text-sm font-semibold tabular-nums ${isYT ? 'text-red-500' : 'text-orange-500'}`}>
-                              {fmtNum(engagement)}
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                  </TableBody>
-                </Table>
-              </MainCard>
-            ) : null}
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <MainCard
+                  title="Comments by Tracked Content"
+                  subheader="Top 12 tracked items ranked by comment count"
+                >
+                  <MetricAreaChart
+                    data={commentByContentData}
+                    dataKey="comments"
+                    label="Comments"
+                    color="#06b6d4"
+                    emptyMessage="Track content to compare comment volume"
+                  />
+                </MainCard>
+
+                <MainCard
+                  title="Comments by Category"
+                  subheader="Total comments across every item in each category"
+                >
+                  <MetricAreaChart
+                    data={commentByCategoryData}
+                    dataKey="comments"
+                    label="Comments"
+                    color="#a855f7"
+                    emptyMessage="Assign categories to tracked content to see this breakdown"
+                  />
+                </MainCard>
+              </div>
+            )}
           </TabsContent>
 
           {/* ── LIKES TAB ──────────────────────────────────────────────────── */}
           <TabsContent value="likes" className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <StatCard icon={<ThumbsUp />}   label="Total Likes"     value={fmtNum(totalLikes)}          subtitle={totalLikes > 0 ? 'across all platforms' : 'visit analytics pages to load'} gradient="purple" />
-              <StatCard icon={<Flame />}      label="Reddit Karma"    value={fmtNum(totals.postKarma)}    subtitle="post upvotes across accounts"                                               gradient="orange" />
-              <StatCard icon={<CirclePlay />} label="YouTube Likes"   value={fmtNum(ytLikes)}             subtitle={cacheTotals.ytLikes > 0 ? 'from video cache' : `${trackedStats.ytItems.length} tracked videos`} gradient="red" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+              <StatCard icon={<ThumbsUp />}   label="Total Likes"      value={fmtNum(totalLikes)}     subtitle={totalLikes > 0 ? 'YouTube likes, Instagram likes, Reddit karma' : 'visit analytics pages to load'} gradient="purple" />
+              <StatCard icon={<Flame />}      label="Reddit Karma"     value={fmtNum(redditKarma)}    subtitle={`${fmtNum(totals.postKarma)} account · ${fmtNum(trackedStats.rdKarma)} tracked`}                    gradient="orange" />
+              <StatCard icon={<CirclePlay />} label="YouTube Likes"    value={fmtNum(ytLikes)}        subtitle={`${fmtPercent(likeShare.youtube)} of all likes`}                                                     gradient="red"    />
+              <StatCard icon={<Camera />}     label="Instagram Likes"  value={fmtNum(cacheTotals.igLikes)} subtitle={igAccounts.length > 0 ? `${fmtPercent(likeShare.instagram)} of all likes` : 'no Instagram accounts'} gradient="pink" />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {redditAccounts.length > 0 && (
-                <MainCard title="Reddit Accounts by Karma">
-                  <div className="space-y-1">
-                    {[...redditAccounts]
-                      .sort((a, b) => (b.postKarma || 0) - (a.postKarma || 0))
-                      .map(a => (
-                        <button
-                          key={a.id}
-                          onClick={() => navigate(`/reddit/${a.id}`)}
-                          className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-muted/60 transition-colors text-left"
-                        >
-                          <Avatar className="h-6 w-6 flex-shrink-0">
-                            <AvatarImage src={a.iconUrl} />
-                            <AvatarFallback className="bg-orange-500 text-white text-[0.5rem] font-bold">
-                              {(a.username || '?').slice(0, 2).toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="flex-1 text-sm font-medium">u/{a.username}</span>
-                          <div className="text-right">
-                            <p className="text-sm font-bold tabular-nums text-orange-500">{fmtNum(a.postKarma || 0)}</p>
-                            <p className="text-[10px] text-muted-foreground">post karma</p>
-                          </div>
-                        </button>
-                      ))}
-                  </div>
-                </MainCard>
-              )}
-
-              <MainCard title="Tracked YouTube by Likes">
-                {trackedStats.ytItems.length === 0 ? (
-                  <div className="flex flex-col items-center text-center py-8 gap-3">
-                    <CirclePlay className="h-7 w-7 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium">No YouTube videos tracked</p>
-                      <p className="text-xs text-muted-foreground mt-1">Track YouTube videos to see their like counts</p>
-                    </div>
-                    <Button size="sm" variant="outline" onClick={() => navigate('/tracked-content')}>Track Videos</Button>
-                  </div>
-                ) : (
-                  <div className="space-y-1">
-                    {[...trackedStats.ytItems]
-                      .sort((a, b) => (b.likeCount ?? 0) - (a.likeCount ?? 0))
-                      .map(item => (
-                        <button
-                          key={item.id}
-                          onClick={() => window.open(item.permalink || item.url, '_blank')}
-                          className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-muted/60 transition-colors text-left"
-                        >
-                          {item.thumbnail ? (
-                            <img src={item.thumbnail} alt="" className="h-9 w-14 rounded object-cover flex-shrink-0" />
-                          ) : (
-                            <div className="h-9 w-14 rounded bg-red-500/10 flex items-center justify-center flex-shrink-0">
-                              <CirclePlay className="h-4 w-4 text-red-500" />
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{item.title || item.url}</p>
-                            <p className="text-xs text-muted-foreground">{item.channelTitle}</p>
-                          </div>
-                          <div className="text-right flex-shrink-0">
-                            <p className="text-sm font-bold tabular-nums text-red-500">{fmtNum(item.likeCount ?? 0)}</p>
-                            <p className="text-[10px] text-muted-foreground">likes</p>
-                          </div>
-                        </button>
-                      ))}
-                  </div>
-                )}
+            {totalLikes === 0 ? (
+              <MainCard>
+                <Empty>
+                  <EmptyHeader>
+                    <EmptyMedia variant="icon">
+                      <ThumbsUp />
+                    </EmptyMedia>
+                    <EmptyTitle>No engagement data yet</EmptyTitle>
+                    <EmptyDescription>
+                      Open a channel or account analytics page to load its like data, or track individual posts and videos.
+                    </EmptyDescription>
+                  </EmptyHeader>
+                  <EmptyContent>
+                    <Button size="sm" onClick={() => navigate('/tracked-content')}>Track Content</Button>
+                  </EmptyContent>
+                </Empty>
               </MainCard>
-            </div>
+            ) : (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <MainCard
+                  title="Karma by Reddit Account"
+                  subheader="Post karma earned by each connected account"
+                >
+                  <MetricAreaChart
+                    data={karmaByAccountData}
+                    dataKey="karma"
+                    label="Post karma"
+                    color="#f97316"
+                    emptyMessage="Connect a Reddit account to see karma"
+                  />
+                </MainCard>
+
+                <MainCard
+                  title="Engagement by Tracked Content"
+                  subheader="YouTube likes and Reddit karma for the top 12 tracked items"
+                >
+                  <MetricAreaChart
+                    data={engagementByContentData}
+                    dataKey="engagement"
+                    label="Likes / karma"
+                    color="#a855f7"
+                    emptyMessage="Track content to compare engagement"
+                  />
+                </MainCard>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       )}

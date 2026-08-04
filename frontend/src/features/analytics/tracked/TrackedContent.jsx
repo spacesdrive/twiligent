@@ -254,7 +254,7 @@ export default function TrackedContent() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Tracked Content</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Monitor Reddit posts and YouTube videos - track scores, likes, and comments over time
+            Monitor Reddit posts and YouTube videos - track karma, likes, and comments over time
           </p>
         </div>
         <Button size="sm" className="gap-2 shrink-0" onClick={() => setAddOpen(true)}>
@@ -343,7 +343,7 @@ export default function TrackedContent() {
             onValueChange={setSort}
             items={[
               { value: 'date-desc',        label: 'Newest first' },
-              { value: 'engagement-desc',  label: 'Likes / Score' },
+              { value: 'engagement-desc',  label: 'Likes / Karma' },
               { value: 'comments-desc',    label: 'Most comments' },
               { value: 'views-desc',       label: 'Most views' },
             ]}
@@ -353,7 +353,7 @@ export default function TrackedContent() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="date-desc">Newest first</SelectItem>
-              <SelectItem value="engagement-desc">Likes / Score</SelectItem>
+              <SelectItem value="engagement-desc">Likes / Karma</SelectItem>
               <SelectItem value="comments-desc">Most comments</SelectItem>
               <SelectItem value="views-desc">Most views (YouTube)</SelectItem>
             </SelectContent>
@@ -389,7 +389,7 @@ export default function TrackedContent() {
                 <TableHead>Title</TableHead>
                 <TableHead className="w-28">Category</TableHead>
                 <TableHead className="text-right w-24">Views</TableHead>
-                <TableHead className="text-right w-24">Likes / Score</TableHead>
+                <TableHead className="text-right w-24">Likes / Karma</TableHead>
                 <TableHead className="text-right w-24">Comments</TableHead>
                 <TableHead className="text-right w-20">Ratio</TableHead>
                 <TableHead className="text-right w-28">Fetched</TableHead>
