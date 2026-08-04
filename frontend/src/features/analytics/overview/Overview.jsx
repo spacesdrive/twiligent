@@ -503,14 +503,9 @@ export default function Overview() {
                       <Tag className="h-3.5 w-3.5 text-purple-500" />
                     </div>
                     <span className="flex-1 text-sm font-medium truncate">{stat.category}</span>
-                    <div className="text-right">
-                      {stat.ytCount > 0 && (
-                        <p className="text-[10px] text-red-500 tabular-nums leading-none">{fmtNum(stat.ytViews)} views</p>
-                      )}
-                      {stat.rdCount > 0 && (
-                        <p className="text-[10px] text-orange-500 tabular-nums leading-none mt-0.5">{fmtNum(stat.rdScore)} score</p>
-                      )}
-                    </div>
+                    <Badge variant="outline" className="text-xs border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-900 dark:bg-purple-950 dark:text-purple-400 shrink-0">
+                      Category
+                    </Badge>
                   </button>
                 ))}
               </div>
