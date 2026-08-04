@@ -35,6 +35,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Reddit section card removed; Reddit data fully integrated into the tab views
 - Accounts tab now shows all accounts including Reddit in a unified table
 
+**Tracked Content category analytics**
+- New page at `/tracked-content/category/:name` showing detailed analytics per category
+- YouTube section: views, likes, comments, like-to-view ratio StatCards; top videos horizontal bar chart; full table sorted by views
+- Reddit section: total score, comments, avg upvote ratio, avg score StatCards; top posts horizontal bar chart; full table sorted by score
+- Category name decoded from URL param; handles mixed categories (YouTube + Reddit items in the same category)
+- Overview category cards now navigate to `/tracked-content/category/:name` instead of the general Tracked Content page
+- `categoryStats` in Overview now tracks `ytViews`, `ytLikes`, `ytComments`, `rdScore`, `rdComments` per platform separately; no longer mixes YouTube views and Reddit score under a single "totalScore" label
+- Audience Comparison chart tooltip for categories now shows "Views + Score" instead of "Score"
+- Audience chart legend updated to "Category (views + score)"
+- Tracked Categories card in the Content tab now shows platform-specific metrics: YouTube views in red, Reddit score in orange
+
 **Overview metrics fixed**
 - New `/api/overview` backend endpoint reads per-account analytics from Redis cache (YouTube video likes/comments, Instagram media likes/comments, Reddit account posts/score/comments)
 - Total Comments and Total Likes now include YouTube channel video data and Instagram media data, not just tracked content

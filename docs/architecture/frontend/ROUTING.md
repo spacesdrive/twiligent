@@ -17,7 +17,9 @@ The app uses React Router v6 in `frontend/src/App.jsx`. The router uses `Browser
 | `/reddit/:id` | `RedditAnalytics.jsx` | `:id` = account.id for Reddit accounts |
 | `/reddit-posts` | `RedditPostsAll.jsx` | Combined post explorer across all connected Reddit accounts |
 | `/reddit-posts/:id` | `RedditPosts.jsx` | `:id` = account.id; filterable/sortable post explorer for one account |
-| `/reddit-tracked` | `RedditTracked.jsx` | Tracked post URL monitor - paste any Reddit URL, watch score and comment count |
+| `/tracked-content` | `TrackedContent.jsx` | Tracked Reddit posts and YouTube videos - add, manage, categorize, refresh |
+| `/tracked-content/category/:name` | `TrackedCategory.jsx` | Per-category analytics page; `:name` is URL-encoded category label; shows YouTube and Reddit sections separately |
+| `/reddit-tracked` | redirect | Redirects to `/tracked-content` |
 | `/videos/:id` | `VideoExplorer.jsx` | `:id` = account.id for YouTube accounts |
 | `/publish/:id` | `Publish.jsx` | `:id` = account.id for Instagram accounts |
 | `/schedule/:id` | `Schedule.jsx` | `:id` = account.id for Instagram accounts |
