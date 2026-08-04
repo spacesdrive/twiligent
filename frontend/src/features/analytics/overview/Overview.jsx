@@ -64,6 +64,23 @@ export default function Overview() {
       .finally(() => setOverviewLoading(false));
   }, []);
 
+  // When the backend returns cacheWarmed: false for any account, it has fired a background
+  // analytics fetch. Auto-refresh once after 6 seconds to pick up the newly warmed data.
+  const isSyncing = !overviewLoading && accounts.some(a => {
+    const entry = overviewData.analyticsCache[a.id];
+    return entry?.cacheWarmed === false;
+  });
+
+  useEffect(() => {
+    if (!isSyncing) return;
+    const timer = setTimeout(() => {
+      api.getOverview()
+        .then(data => { if (data && !data.error) setOverviewData(data); })
+        .catch(() => {});
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, [isSyncing]);
+
   const loading        = accountsLoading || overviewLoading;
   const trackedContent = overviewData.tracked ?? [];
   const analyticsCache = overviewData.analyticsCache ?? {};
@@ -221,7 +238,7 @@ export default function Overview() {
     else navigate(`/channel/${acc.id}`);
   }
 
-  const tabTriggerCls = 'flex flex-col items-start gap-0 h-auto py-3 px-4 text-left min-w-[140px]';
+  const tabTriggerCls = 'flex flex-col items-start gap-0 h-auto py-3 px-4 text-left w-[175px] overflow-hidden';
 
   return (
     <div className="space-y-6">
@@ -240,15 +257,23 @@ export default function Overview() {
                 ].filter(Boolean).join(' · ')}
           </p>
         </div>
-        <Button
-          onClick={refreshAll}
-          disabled={loading || accounts.length === 0}
-          size="sm"
-          className="gap-2 shrink-0"
-        >
-          <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
-          {loading ? 'Refreshing...' : 'Refresh All'}
-        </Button>
+        <div className="flex items-center gap-2 shrink-0">
+          {isSyncing && (
+            <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+              <RefreshCw className="h-3 w-3 animate-spin" />
+              Syncing analytics...
+            </span>
+          )}
+          <Button
+            onClick={refreshAll}
+            disabled={loading || accounts.length === 0}
+            size="sm"
+            className="gap-2"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${loading ? 'animate-spin' : ''}`} />
+            {loading ? 'Refreshing...' : 'Refresh All'}
+          </Button>
+        </div>
       </div>
 
       {loading && <Progress className="h-1" value={undefined} />}
@@ -275,43 +300,42 @@ export default function Overview() {
             <TabsList className="w-max flex gap-1 bg-muted/50 p-1 rounded-xl" style={{ height: 'auto' }}>
 
               <TabsTrigger value="audience" className={tabTriggerCls}>
-                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Total Audience</span>
+                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide truncate w-full">Total Audience</span>
                 <span className="text-2xl font-bold tabular-nums leading-tight mt-0.5">{fmtNum(totalAudience)}</span>
-                <span className="text-[11px] text-muted-foreground mt-0.5">
+                <span className="text-[11px] text-muted-foreground mt-0.5 truncate w-full">
                   {[
-                    totals.subscribers ? `${fmtNum(totals.subscribers)} subs`      : null,
-                    totals.followers   ? `${fmtNum(totals.followers)} followers`   : null,
-                    totals.karma       ? `${fmtNum(totals.karma)} karma`           : null,
-                    trackedStats.rdScore ? `${fmtNum(trackedStats.rdScore)} tracked` : null,
+                    totals.subscribers   ? `${fmtNum(totals.subscribers)} subs`    : null,
+                    totals.followers     ? `${fmtNum(totals.followers)} followers`  : null,
+                    totals.karma         ? `${fmtNum(totals.karma)} karma`          : null,
                   ].filter(Boolean).join(' · ') || 'no data yet'}
                 </span>
               </TabsTrigger>
 
               <TabsTrigger value="views" className={tabTriggerCls}>
-                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Total Views</span>
+                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide truncate w-full">Total Views</span>
                 <span className="text-2xl font-bold tabular-nums leading-tight mt-0.5">{fmtNum(totals.views)}</span>
-                <span className="text-[11px] text-muted-foreground mt-0.5">
+                <span className="text-[11px] text-muted-foreground mt-0.5 truncate w-full">
                   {ytAccounts.length > 0 ? `${ytAccounts.length} YouTube channel${ytAccounts.length !== 1 ? 's' : ''}` : 'no YouTube accounts'}
                 </span>
               </TabsTrigger>
 
               <TabsTrigger value="content" className={tabTriggerCls}>
-                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Total Content</span>
+                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide truncate w-full">Total Content</span>
                 <span className="text-2xl font-bold tabular-nums leading-tight mt-0.5">{fmtNum(totalContent)}</span>
-                <span className="text-[11px] text-muted-foreground mt-0.5">
+                <span className="text-[11px] text-muted-foreground mt-0.5 truncate w-full">
                   {[
-                    totals.videos         ? `${fmtNum(totals.videos)} videos`         : null,
-                    totals.posts          ? `${fmtNum(totals.posts)} IG posts`         : null,
-                    cacheTotals.rdPosts   ? `${fmtNum(cacheTotals.rdPosts)} Reddit`    : null,
-                    trackedStats.total    ? `${fmtNum(trackedStats.total)} tracked`    : null,
+                    totals.videos       ? `${fmtNum(totals.videos)} videos`      : null,
+                    totals.posts        ? `${fmtNum(totals.posts)} IG posts`      : null,
+                    cacheTotals.rdPosts ? `${fmtNum(cacheTotals.rdPosts)} Reddit` : null,
+                    trackedStats.total  ? `${fmtNum(trackedStats.total)} tracked` : null,
                   ].filter(Boolean).join(' · ') || 'no content yet'}
                 </span>
               </TabsTrigger>
 
               <TabsTrigger value="accounts" className={tabTriggerCls}>
-                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Accounts</span>
+                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide truncate w-full">Accounts</span>
                 <span className="text-2xl font-bold tabular-nums leading-tight mt-0.5">{accounts.length}</span>
-                <span className="text-[11px] text-muted-foreground mt-0.5">
+                <span className="text-[11px] text-muted-foreground mt-0.5 truncate w-full">
                   {[
                     ytAccounts.length     ? `${ytAccounts.length} YouTube`    : null,
                     igAccounts.length     ? `${igAccounts.length} Instagram`  : null,
@@ -321,18 +345,18 @@ export default function Overview() {
               </TabsTrigger>
 
               <TabsTrigger value="comments" className={tabTriggerCls}>
-                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Total Comments</span>
+                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide truncate w-full">Total Comments</span>
                 <span className="text-2xl font-bold tabular-nums leading-tight mt-0.5">{fmtNum(totalComments)}</span>
-                <span className="text-[11px] text-muted-foreground mt-0.5">
-                  {totalComments > 0 ? 'across all platforms' : 'visit analytics pages to load'}
+                <span className="text-[11px] text-muted-foreground mt-0.5 truncate w-full">
+                  {isSyncing ? 'syncing analytics...' : totalComments > 0 ? 'across all platforms' : 'visit analytics pages to load'}
                 </span>
               </TabsTrigger>
 
               <TabsTrigger value="likes" className={tabTriggerCls}>
-                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Total Likes</span>
+                <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide truncate w-full">Total Likes</span>
                 <span className="text-2xl font-bold tabular-nums leading-tight mt-0.5">{fmtNum(totalLikes)}</span>
-                <span className="text-[11px] text-muted-foreground mt-0.5">
-                  {totalLikes > 0 ? 'across all platforms' : 'visit analytics pages to load'}
+                <span className="text-[11px] text-muted-foreground mt-0.5 truncate w-full">
+                  {isSyncing ? 'syncing analytics...' : totalLikes > 0 ? 'across all platforms' : 'visit analytics pages to load'}
                 </span>
               </TabsTrigger>
 
