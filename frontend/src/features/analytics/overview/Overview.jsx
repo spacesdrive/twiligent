@@ -9,7 +9,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from 'recharts';
 import StatCard from '../../../components/ui/StatCard';
@@ -23,10 +23,10 @@ import {
 } from 'lucide-react';
 
 const PLATFORM_COLORS = {
-  youtube:  '#ef4444',
+  youtube:   '#ef4444',
   instagram: '#ec4899',
-  reddit:   '#f97316',
-  category: '#a855f7',
+  reddit:    '#f97316',
+  category:  '#a855f7',
 };
 
 const CHART_COLORS = [
@@ -49,21 +49,30 @@ function PlatformBadge({ platform }) {
 }
 
 export default function Overview() {
-  const { accounts, loading, refreshAll } = useAppContext();
+  const { accounts, loading: accountsLoading, refreshAll } = useAppContext();
   const navigate = useNavigate();
 
-  const [trackedContent, setTrackedContent] = useState([]);
+  const [overviewData, setOverviewData]   = useState({ tracked: [], analyticsCache: {} });
+  const [overviewLoading, setOverviewLoading] = useState(true);
+
   useEffect(() => {
-    api.getTrackedContent().then(data => {
-      if (Array.isArray(data)) setTrackedContent(data);
-    }).catch(() => {});
+    api.getOverview()
+      .then(data => {
+        if (data && !data.error) setOverviewData(data);
+      })
+      .catch(() => {})
+      .finally(() => setOverviewLoading(false));
   }, []);
+
+  const loading        = accountsLoading || overviewLoading;
+  const trackedContent = overviewData.tracked ?? [];
+  const analyticsCache = overviewData.analyticsCache ?? {};
 
   const ytAccounts     = accounts.filter(a => a.platform !== 'instagram' && a.platform !== 'reddit');
   const igAccounts     = accounts.filter(a => a.platform === 'instagram');
   const redditAccounts = accounts.filter(a => a.platform === 'reddit');
 
-  // Aggregate totals
+  // Account metadata totals
   const totals = useMemo(() => accounts.reduce((acc, a) => {
     if (a.platform === 'instagram') {
       return { ...acc, followers: acc.followers + (a.followersCount || 0), posts: acc.posts + (a.mediaCount || 0) };
@@ -71,112 +80,134 @@ export default function Overview() {
     if (a.platform === 'reddit') {
       return {
         ...acc,
-        karma: acc.karma + (a.totalKarma || 0),
-        postKarma: acc.postKarma + (a.postKarma || 0),
-        commentKarma: acc.commentKarma + (a.commentKarma || 0),
+        karma:        acc.karma        + (a.totalKarma    || 0),
+        postKarma:    acc.postKarma    + (a.postKarma     || 0),
+        commentKarma: acc.commentKarma + (a.commentKarma  || 0),
       };
     }
     return {
       ...acc,
       subscribers: acc.subscribers + (a.subscriberCount || 0),
-      views: acc.views + (a.viewCount || 0),
-      videos: acc.videos + (a.videoCount || 0),
+      views:       acc.views       + (a.viewCount       || 0),
+      videos:      acc.videos      + (a.videoCount      || 0),
     };
   }, { subscribers: 0, views: 0, videos: 0, followers: 0, posts: 0, karma: 0, postKarma: 0, commentKarma: 0 }), [accounts]);
+
+  // Per-account analytics from Redis cache (populated when user visits individual analytics pages)
+  const cacheTotals = useMemo(() => {
+    const result = { ytLikes: 0, ytComments: 0, igLikes: 0, igComments: 0, rdPosts: 0, rdScore: 0, rdComments: 0 };
+    accounts.forEach(a => {
+      const c = analyticsCache[a.id];
+      if (!c) return;
+      if (a.platform === 'youtube') {
+        result.ytLikes    += c.totalLikes    ?? 0;
+        result.ytComments += c.totalComments ?? 0;
+      } else if (a.platform === 'instagram') {
+        result.igLikes    += c.totalLikes    ?? 0;
+        result.igComments += c.totalComments ?? 0;
+      } else if (a.platform === 'reddit') {
+        result.rdPosts    += c.fetchedPosts  ?? 0;
+        result.rdScore    += c.totalScore    ?? 0;
+        result.rdComments += c.totalComments ?? 0;
+      }
+    });
+    return result;
+  }, [accounts, analyticsCache]);
 
   // Tracked content aggregates
   const trackedStats = useMemo(() => {
     const ytItems = trackedContent.filter(p => p.contentType === 'youtube');
     const rdItems = trackedContent.filter(p => (p.contentType || 'reddit') === 'reddit');
     return {
-      total: trackedContent.length,
+      total:       trackedContent.length,
       ytItems,
       rdItems,
-      totalComments: trackedContent.reduce((s, p) => {
-        const c = p.contentType === 'youtube' ? (p.commentCount ?? 0) : (p.numComments ?? 0);
-        return s + c;
-      }, 0),
-      totalYTLikes: ytItems.reduce((s, p) => s + (p.likeCount ?? 0), 0),
-      totalRdScore: rdItems.reduce((s, p) => s + (p.score ?? 0), 0),
+      ytLikes:     ytItems.reduce((s, p) => s + (p.likeCount  ?? 0), 0),
+      ytComments:  ytItems.reduce((s, p) => s + (p.commentCount ?? 0), 0),
+      rdScore:     rdItems.reduce((s, p) => s + (p.score       ?? 0), 0),
+      rdComments:  rdItems.reduce((s, p) => s + (p.numComments ?? 0), 0),
     };
   }, [trackedContent]);
 
-  // Total Likes = Reddit account postKarma + tracked YouTube likeCount
-  const totalLikes = totals.postKarma + trackedStats.totalYTLikes;
-  // Total Audience = subs + followers + karma (per user request)
-  const totalAudience = totals.subscribers + totals.followers + totals.karma;
-  // Total Content = videos + IG posts + tracked content
-  const totalContent = totals.videos + totals.posts + trackedStats.total;
+  // ── Metric totals ──────────────────────────────────────────────────────────────
 
-  // Category stats for tracked content
+  // Total Audience = subs + followers + karma + tracked Reddit scores
+  const totalAudience = totals.subscribers + totals.followers + totals.karma + trackedStats.rdScore;
+
+  // Total Content = YT videos + IG posts + Reddit account posts (from cache) + tracked items
+  const totalContent = totals.videos + totals.posts + cacheTotals.rdPosts + trackedStats.total;
+
+  // Total Comments: prefer cache (complete) over tracked subset to avoid double-counting
+  const ytComments = cacheTotals.ytComments > 0 ? cacheTotals.ytComments : trackedStats.ytComments;
+  const rdComments = cacheTotals.rdComments > 0 ? cacheTotals.rdComments : trackedStats.rdComments;
+  const totalComments = ytComments + cacheTotals.igComments + rdComments;
+
+  // Total Likes: prefer cache for YouTube; include IG; Reddit postKarma covers account posts
+  const ytLikes   = cacheTotals.ytLikes > 0 ? cacheTotals.ytLikes : trackedStats.ytLikes;
+  const totalLikes = totals.postKarma + ytLikes + cacheTotals.igLikes;
+
+  // ── Category stats for tracked content ────────────────────────────────────────
   const categoryStats = useMemo(() => {
-    const withCategory = trackedContent.filter(p => p.category);
-    if (withCategory.length === 0) return [];
+    const withCat = trackedContent.filter(p => p.category);
+    if (!withCat.length) return [];
     const map = {};
-    withCategory.forEach(p => {
-      if (!map[p.category]) map[p.category] = { category: p.category, count: 0, totalScore: 0, totalLikes: 0 };
+    withCat.forEach(p => {
+      if (!map[p.category]) map[p.category] = { category: p.category, count: 0, totalScore: 0 };
       map[p.category].count++;
-      if (p.contentType === 'youtube') {
-        map[p.category].totalLikes += p.likeCount ?? 0;
-        map[p.category].totalScore += p.viewCount ?? 0;
-      } else {
-        map[p.category].totalScore += p.score ?? 0;
-      }
+      map[p.category].totalScore += p.contentType === 'youtube' ? (p.viewCount ?? 0) : (p.score ?? 0);
     });
     return Object.values(map).sort((a, b) => b.totalScore - a.totalScore);
   }, [trackedContent]);
 
-  // Audience metric per account (platform-appropriate)
+  // ── Audience metric per account ────────────────────────────────────────────────
   function audienceMetric(a) {
     if (a.platform === 'instagram') return a.followersCount || 0;
-    if (a.platform === 'reddit')    return a.totalKarma || 0;
+    if (a.platform === 'reddit')    return a.totalKarma    || 0;
     return a.subscriberCount || 0;
   }
 
   function contentMetric(a) {
-    if (a.platform === 'instagram') return a.mediaCount || 0;
-    if (a.platform === 'reddit')    return a.totalKarma || 0;
+    if (a.platform === 'instagram') return a.mediaCount  || 0;
+    if (a.platform === 'reddit')    return a.totalKarma  || 0;
     return a.viewCount || 0;
   }
 
-  // All accounts sorted
   const allSortedByAudience = [...accounts].sort((a, b) => audienceMetric(b) - audienceMetric(a));
-  const allSortedByContent  = [...accounts].sort((a, b) => contentMetric(b) - contentMetric(a));
+  const allSortedByContent  = [...accounts].sort((a, b) => contentMetric(b)  - contentMetric(a));
 
-  // Chart data: all accounts + tracked categories
+  // ── Chart data ────────────────────────────────────────────────────────────────
   const audienceChartData = useMemo(() => [
     ...ytAccounts.map(a => ({
-      name: (a.title || '').slice(0, 12) + ((a.title || '').length > 12 ? '…' : ''),
+      name:  (a.title || '').slice(0, 12) + ((a.title || '').length > 12 ? '…' : ''),
       value: a.subscriberCount || 0,
-      type: 'youtube',
+      type:  'youtube',
     })),
     ...igAccounts.map(a => ({
-      name: (a.title || '').slice(0, 12) + ((a.title || '').length > 12 ? '…' : ''),
+      name:  (a.title || a.username || '').slice(0, 12) + ((a.title || a.username || '').length > 12 ? '…' : ''),
       value: a.followersCount || 0,
-      type: 'instagram',
+      type:  'instagram',
     })),
     ...redditAccounts.map(a => ({
-      name: `u/${a.username || ''}`.slice(0, 12),
+      name:  `u/${(a.username || '')}`.slice(0, 12),
       value: a.totalKarma || 0,
-      type: 'reddit',
+      type:  'reddit',
     })),
     ...categoryStats.map(c => ({
-      name: c.category.slice(0, 12) + (c.category.length > 12 ? '…' : ''),
+      name:  c.category.slice(0, 12) + (c.category.length > 12 ? '…' : ''),
       value: c.totalScore,
-      type: 'category',
+      type:  'category',
     })),
   ], [ytAccounts, igAccounts, redditAccounts, categoryStats]);
 
-  // Pie chart: all accounts + categories
   const pieData = useMemo(() => {
     const entries = [
       ...accounts.map((a, i) => ({
-        name: (a.title || a.username || '?').slice(0, 14),
+        name:  (a.title || a.username || '?').slice(0, 14),
         value: audienceMetric(a),
         color: CHART_COLORS[i % CHART_COLORS.length],
       })),
       ...categoryStats.map((c, i) => ({
-        name: c.category.slice(0, 14),
+        name:  c.category.slice(0, 14),
         value: c.totalScore,
         color: CHART_COLORS[(accounts.length + i) % CHART_COLORS.length],
       })),
@@ -203,9 +234,9 @@ export default function Overview() {
               ? 'Add your first account to start tracking'
               : [
                   `Tracking ${accounts.length} account${accounts.length !== 1 ? 's' : ''}`,
-                  ytAccounts.length     ? `${ytAccounts.length} YouTube`     : null,
-                  igAccounts.length     ? `${igAccounts.length} Instagram`   : null,
-                  redditAccounts.length ? `${redditAccounts.length} Reddit`  : null,
+                  ytAccounts.length     ? `${ytAccounts.length} YouTube`    : null,
+                  igAccounts.length     ? `${igAccounts.length} Instagram`  : null,
+                  redditAccounts.length ? `${redditAccounts.length} Reddit` : null,
                 ].filter(Boolean).join(' · ')}
           </p>
         </div>
@@ -239,23 +270,23 @@ export default function Overview() {
         </MainCard>
       ) : (
         <Tabs defaultValue="audience" className="space-y-6">
-          {/* Tab triggers - scrollable metric cards */}
+          {/* Tab triggers */}
           <div className="overflow-x-auto pb-1">
             <TabsList className="w-max flex gap-1 bg-muted/50 p-1 rounded-xl" style={{ height: 'auto' }}>
-              {/* Total Audience */}
+
               <TabsTrigger value="audience" className={tabTriggerCls}>
                 <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Total Audience</span>
                 <span className="text-2xl font-bold tabular-nums leading-tight mt-0.5">{fmtNum(totalAudience)}</span>
                 <span className="text-[11px] text-muted-foreground mt-0.5">
                   {[
-                    totals.subscribers ? `${fmtNum(totals.subscribers)} subs` : null,
-                    totals.followers   ? `${fmtNum(totals.followers)} followers` : null,
-                    totals.karma       ? `${fmtNum(totals.karma)} karma` : null,
+                    totals.subscribers ? `${fmtNum(totals.subscribers)} subs`      : null,
+                    totals.followers   ? `${fmtNum(totals.followers)} followers`   : null,
+                    totals.karma       ? `${fmtNum(totals.karma)} karma`           : null,
+                    trackedStats.rdScore ? `${fmtNum(trackedStats.rdScore)} tracked` : null,
                   ].filter(Boolean).join(' · ') || 'no data yet'}
                 </span>
               </TabsTrigger>
 
-              {/* Total Views */}
               <TabsTrigger value="views" className={tabTriggerCls}>
                 <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Total Views</span>
                 <span className="text-2xl font-bold tabular-nums leading-tight mt-0.5">{fmtNum(totals.views)}</span>
@@ -264,58 +295,52 @@ export default function Overview() {
                 </span>
               </TabsTrigger>
 
-              {/* Total Content */}
               <TabsTrigger value="content" className={tabTriggerCls}>
                 <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Total Content</span>
                 <span className="text-2xl font-bold tabular-nums leading-tight mt-0.5">{fmtNum(totalContent)}</span>
                 <span className="text-[11px] text-muted-foreground mt-0.5">
                   {[
-                    totals.videos ? `${fmtNum(totals.videos)} videos` : null,
-                    totals.posts  ? `${fmtNum(totals.posts)} IG posts` : null,
-                    trackedStats.total ? `${fmtNum(trackedStats.total)} tracked` : null,
+                    totals.videos         ? `${fmtNum(totals.videos)} videos`         : null,
+                    totals.posts          ? `${fmtNum(totals.posts)} IG posts`         : null,
+                    cacheTotals.rdPosts   ? `${fmtNum(cacheTotals.rdPosts)} Reddit`    : null,
+                    trackedStats.total    ? `${fmtNum(trackedStats.total)} tracked`    : null,
                   ].filter(Boolean).join(' · ') || 'no content yet'}
                 </span>
               </TabsTrigger>
 
-              {/* Accounts */}
               <TabsTrigger value="accounts" className={tabTriggerCls}>
                 <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Accounts</span>
                 <span className="text-2xl font-bold tabular-nums leading-tight mt-0.5">{accounts.length}</span>
                 <span className="text-[11px] text-muted-foreground mt-0.5">
                   {[
-                    ytAccounts.length     ? `${ytAccounts.length} YouTube`     : null,
-                    igAccounts.length     ? `${igAccounts.length} Instagram`   : null,
-                    redditAccounts.length ? `${redditAccounts.length} Reddit`  : null,
+                    ytAccounts.length     ? `${ytAccounts.length} YouTube`    : null,
+                    igAccounts.length     ? `${igAccounts.length} Instagram`  : null,
+                    redditAccounts.length ? `${redditAccounts.length} Reddit` : null,
                   ].filter(Boolean).join(' · ')}
                 </span>
               </TabsTrigger>
 
-              {/* Total Comments */}
               <TabsTrigger value="comments" className={tabTriggerCls}>
                 <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Total Comments</span>
-                <span className="text-2xl font-bold tabular-nums leading-tight mt-0.5">{fmtNum(trackedStats.totalComments)}</span>
+                <span className="text-2xl font-bold tabular-nums leading-tight mt-0.5">{fmtNum(totalComments)}</span>
                 <span className="text-[11px] text-muted-foreground mt-0.5">
-                  {trackedStats.total > 0 ? `from ${trackedStats.total} tracked item${trackedStats.total !== 1 ? 's' : ''}` : 'track content to see data'}
+                  {totalComments > 0 ? 'across all platforms' : 'visit analytics pages to load'}
                 </span>
               </TabsTrigger>
 
-              {/* Total Likes */}
               <TabsTrigger value="likes" className={tabTriggerCls}>
                 <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">Total Likes</span>
                 <span className="text-2xl font-bold tabular-nums leading-tight mt-0.5">{fmtNum(totalLikes)}</span>
                 <span className="text-[11px] text-muted-foreground mt-0.5">
-                  {[
-                    totals.postKarma ? `${fmtNum(totals.postKarma)} karma` : null,
-                    trackedStats.totalYTLikes ? `${fmtNum(trackedStats.totalYTLikes)} YT likes` : null,
-                  ].filter(Boolean).join(' · ') || 'track content to see data'}
+                  {totalLikes > 0 ? 'across all platforms' : 'visit analytics pages to load'}
                 </span>
               </TabsTrigger>
+
             </TabsList>
           </div>
 
-          {/* ── AUDIENCE TAB ─────────────────────────────────────────────── */}
+          {/* ── AUDIENCE TAB ──────────────────────────────────────────────── */}
           <TabsContent value="audience" className="space-y-4">
-            {/* Audience Comparison + Share */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
               <MainCard title="Audience Comparison" className="xl:col-span-2">
                 <p className="text-xs text-muted-foreground mb-3">
@@ -325,7 +350,13 @@ export default function Overview() {
                   <p className="text-sm text-muted-foreground py-8 text-center">No data to display</p>
                 ) : (
                   <ResponsiveContainer width="100%" height={240} debounce={200}>
-                    <BarChart data={audienceChartData} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+                    <AreaChart data={audienceChartData} margin={{ top: 8, right: 4, left: 0, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="audienceAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%"  stopColor="var(--primary)" stopOpacity={0.15} />
+                          <stop offset="95%" stopColor="var(--primary)" stopOpacity={0}    />
+                        </linearGradient>
+                      </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                       <XAxis dataKey="name" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
                       <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} tickFormatter={fmtNum} axisLine={false} tickLine={false} width={48} />
@@ -333,21 +364,37 @@ export default function Overview() {
                         contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
                         formatter={(v, name, props) => [fmtNumFull(v), props.payload.type === 'category' ? 'Score' : 'Audience']}
                       />
-                      <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                        {audienceChartData.map((entry, i) => (
-                          <Cell key={i} fill={PLATFORM_COLORS[entry.type] || CHART_COLORS[i % CHART_COLORS.length]} />
-                        ))}
-                      </Bar>
-                    </BarChart>
+                      <Area
+                        type="monotone"
+                        dataKey="value"
+                        stroke="var(--primary)"
+                        strokeWidth={2}
+                        fill="url(#audienceAreaGrad)"
+                        dot={(props) => {
+                          const { cx, cy, payload, index } = props;
+                          return (
+                            <circle
+                              key={`dot-${index}`}
+                              cx={cx}
+                              cy={cy}
+                              r={5}
+                              fill={PLATFORM_COLORS[payload.type] || '#6366f1'}
+                              stroke="var(--card)"
+                              strokeWidth={2}
+                            />
+                          );
+                        }}
+                        activeDot={{ r: 7 }}
+                      />
+                    </AreaChart>
                   </ResponsiveContainer>
                 )}
-                {/* Legend */}
                 <div className="flex flex-wrap gap-3 mt-2">
                   {[
-                    ytAccounts.length     ? { color: PLATFORM_COLORS.youtube,   label: 'YouTube (subs)' }    : null,
+                    ytAccounts.length     ? { color: PLATFORM_COLORS.youtube,   label: 'YouTube (subs)'        } : null,
                     igAccounts.length     ? { color: PLATFORM_COLORS.instagram, label: 'Instagram (followers)' } : null,
-                    redditAccounts.length ? { color: PLATFORM_COLORS.reddit,    label: 'Reddit (karma)' }     : null,
-                    categoryStats.length  ? { color: PLATFORM_COLORS.category,  label: 'Tracked categories (score)' } : null,
+                    redditAccounts.length ? { color: PLATFORM_COLORS.reddit,    label: 'Reddit (karma)'        } : null,
+                    categoryStats.length  ? { color: PLATFORM_COLORS.category,  label: 'Category (score)'      } : null,
                   ].filter(Boolean).map(({ color, label }) => (
                     <div key={label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                       <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ background: color }} />
@@ -376,17 +423,12 @@ export default function Overview() {
               </MainCard>
             </div>
 
-            {/* Top by Audience (all platforms) */}
+            {/* Top by Audience - accounts only, no metric label */}
             <MainCard title="Top by Audience">
               <div className="space-y-1">
                 {allSortedByAudience.map((a, i) => {
                   const medalColor = i === 0 ? 'text-yellow-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-orange-400' : 'text-muted-foreground';
                   const fallbackBg = a.platform === 'instagram' ? 'bg-pink-500' : a.platform === 'reddit' ? 'bg-orange-500' : 'bg-red-500';
-                  const metric = a.platform === 'instagram'
-                    ? `${fmtNum(a.followersCount)} followers`
-                    : a.platform === 'reddit'
-                      ? `${fmtNum(a.totalKarma)} karma`
-                      : `${fmtNum(a.subscriberCount)} subs`;
                   return (
                     <button
                       key={a.id}
@@ -404,11 +446,9 @@ export default function Overview() {
                         {a.platform === 'reddit' ? `u/${a.username}` : a.title}
                       </span>
                       <PlatformBadge platform={a.platform} />
-                      <span className="text-sm font-semibold text-muted-foreground tabular-nums">{metric}</span>
                     </button>
                   );
                 })}
-                {/* Tracked categories */}
                 {categoryStats.map(stat => (
                   <button
                     key={stat.category}
@@ -423,14 +463,13 @@ export default function Overview() {
                     <Badge variant="outline" className="text-[10px] border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-900 dark:bg-purple-950 dark:text-purple-400">
                       Category
                     </Badge>
-                    <span className="text-sm font-semibold text-muted-foreground tabular-nums">{fmtNum(stat.totalScore)} score</span>
                   </button>
                 ))}
               </div>
             </MainCard>
           </TabsContent>
 
-          {/* ── VIEWS TAB ────────────────────────────────────────────────── */}
+          {/* ── VIEWS TAB ──────────────────────────────────────────────────── */}
           <TabsContent value="views" className="space-y-4">
             {ytAccounts.length === 0 ? (
               <MainCard>
@@ -493,15 +532,15 @@ export default function Overview() {
             )}
           </TabsContent>
 
-          {/* ── CONTENT TAB ──────────────────────────────────────────────── */}
+          {/* ── CONTENT TAB ────────────────────────────────────────────────── */}
           <TabsContent value="content" className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <StatCard icon={<CirclePlay />}  label="YouTube Videos"  value={fmtNum(totals.videos)} subtitle={`${ytAccounts.length} channel${ytAccounts.length !== 1 ? 's' : ''}`} gradient="red" />
-              <StatCard icon={<VideoIcon />} label="Instagram Posts" value={fmtNum(totals.posts)}  subtitle={`${igAccounts.length} account${igAccounts.length !== 1 ? 's' : ''}`} gradient="blue" />
-              <StatCard icon={<BookmarkCheck />} label="Tracked Content" value={fmtNum(trackedStats.total)} subtitle={`${trackedStats.ytItems.length} YouTube · ${trackedStats.rdItems.length} Reddit`} gradient="orange" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <StatCard icon={<CirclePlay />}    label="YouTube Videos"   value={fmtNum(totals.videos)}       subtitle={`${ytAccounts.length} channel${ytAccounts.length !== 1 ? 's' : ''}`}                                    gradient="red"    />
+              <StatCard icon={<VideoIcon />}     label="Instagram Posts"  value={fmtNum(totals.posts)}        subtitle={`${igAccounts.length} account${igAccounts.length !== 1 ? 's' : ''}`}                                   gradient="blue"   />
+              <StatCard icon={<Flame />}         label="Reddit Posts"     value={fmtNum(cacheTotals.rdPosts)} subtitle={cacheTotals.rdPosts > 0 ? 'from analytics cache' : 'visit Reddit analytics to load'}                   gradient="orange" />
+              <StatCard icon={<BookmarkCheck />} label="Tracked Content"  value={fmtNum(trackedStats.total)}  subtitle={`${trackedStats.ytItems.length} YouTube · ${trackedStats.rdItems.length} Reddit`}                 gradient="purple" />
             </div>
 
-            {/* Top by Content */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <MainCard title="Top by Content">
                 <div className="space-y-1">
@@ -535,7 +574,6 @@ export default function Overview() {
                 </div>
               </MainCard>
 
-              {/* Tracked categories breakdown */}
               <MainCard title="Tracked Categories">
                 {categoryStats.length === 0 ? (
                   <p className="text-sm text-muted-foreground text-center py-8">
@@ -572,7 +610,7 @@ export default function Overview() {
             </div>
           </TabsContent>
 
-          {/* ── ACCOUNTS TAB ─────────────────────────────────────────────── */}
+          {/* ── ACCOUNTS TAB ──────────────────────────────────────────────── */}
           <TabsContent value="accounts" className="space-y-4">
             <MainCard content={false}>
               <Table>
@@ -646,26 +684,28 @@ export default function Overview() {
             </MainCard>
           </TabsContent>
 
-          {/* ── COMMENTS TAB ─────────────────────────────────────────────── */}
+          {/* ── COMMENTS TAB ──────────────────────────────────────────────── */}
           <TabsContent value="comments" className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <StatCard icon={<MessageSquare />} label="Total Comments" value={fmtNum(trackedStats.totalComments)} subtitle="from tracked content" gradient="blue" />
-              <StatCard icon={<CirclePlay />}       label="YouTube Comments" value={fmtNum(trackedStats.ytItems.reduce((s, p) => s + (p.commentCount ?? 0), 0))} subtitle={`${trackedStats.ytItems.length} video${trackedStats.ytItems.length !== 1 ? 's' : ''} tracked`} gradient="red" />
-              <StatCard icon={<Flame />}         label="Reddit Comments" value={fmtNum(trackedStats.rdItems.reduce((s, p) => s + (p.numComments ?? 0), 0))} subtitle={`${trackedStats.rdItems.length} post${trackedStats.rdItems.length !== 1 ? 's' : ''} tracked`} gradient="orange" />
+              <StatCard icon={<MessageSquare />} label="Total Comments"    value={fmtNum(totalComments)}            subtitle={totalComments > 0 ? 'across all platforms' : 'visit analytics pages to load'} gradient="blue"   />
+              <StatCard icon={<CirclePlay />}    label="YouTube Comments"  value={fmtNum(ytComments)}               subtitle={cacheTotals.ytComments > 0 ? 'from video cache' : `${trackedStats.ytItems.length} tracked videos`}  gradient="red"    />
+              <StatCard icon={<Flame />}         label="Reddit Comments"   value={fmtNum(rdComments)}               subtitle={cacheTotals.rdComments > 0 ? 'from analytics cache' : `${trackedStats.rdItems.length} tracked posts`} gradient="orange" />
             </div>
 
-            {trackedContent.length === 0 ? (
+            {trackedContent.length === 0 && totalComments === 0 ? (
               <MainCard>
                 <div className="flex flex-col items-center text-center py-10 gap-3">
                   <MessageSquare className="h-8 w-8 text-muted-foreground" />
                   <div>
-                    <p className="text-sm font-semibold">No tracked content yet</p>
-                    <p className="text-xs text-muted-foreground mt-1">Track Reddit posts or YouTube videos to see comment counts here</p>
+                    <p className="text-sm font-semibold">No comment data available yet</p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Visit Reddit Analytics or YouTube Analytics pages to load data, or track content via Tracked Content
+                    </p>
                   </div>
                   <Button size="sm" onClick={() => navigate('/tracked-content')}>Track Content</Button>
                 </div>
               </MainCard>
-            ) : (
+            ) : trackedContent.length > 0 ? (
               <MainCard title="Tracked Content by Comments" content={false}>
                 <Table>
                   <TableHeader>
@@ -684,18 +724,17 @@ export default function Overview() {
                         return cb - ca;
                       })
                       .map(item => {
-                        const isYT = item.contentType === 'youtube';
-                        const comments = isYT ? (item.commentCount ?? 0) : (item.numComments ?? 0);
-                        const engagement = isYT ? (item.likeCount ?? 0) : (item.score ?? 0);
+                        const isYT       = item.contentType === 'youtube';
+                        const comments   = isYT ? (item.commentCount ?? 0) : (item.numComments ?? 0);
+                        const engagement = isYT ? (item.likeCount    ?? 0) : (item.score        ?? 0);
                         return (
                           <TableRow key={item.id}>
                             <TableCell>
                               <div className="flex items-center gap-2">
-                                {isYT ? (
-                                  <CirclePlay className="h-3.5 w-3.5 text-red-500 flex-shrink-0" />
-                                ) : (
-                                  <Flame className="h-3.5 w-3.5 text-orange-500 flex-shrink-0" />
-                                )}
+                                {isYT
+                                  ? <CirclePlay className="h-3.5 w-3.5 text-red-500 flex-shrink-0"    />
+                                  : <Flame      className="h-3.5 w-3.5 text-orange-500 flex-shrink-0" />
+                                }
                                 <span className="text-sm font-medium truncate max-w-xs">
                                   {item.title || item.label || item.url}
                                 </span>
@@ -705,9 +744,9 @@ export default function Overview() {
                               </p>
                             </TableCell>
                             <TableCell>
-                              {item.category ? (
-                                <Badge variant="outline" className="text-xs">{item.category}</Badge>
-                              ) : <span className="text-xs text-muted-foreground">-</span>}
+                              {item.category
+                                ? <Badge variant="outline" className="text-xs">{item.category}</Badge>
+                                : <span className="text-xs text-muted-foreground">-</span>}
                             </TableCell>
                             <TableCell className="text-right text-sm font-semibold tabular-nums">
                               {fmtNum(comments)}
@@ -721,19 +760,18 @@ export default function Overview() {
                   </TableBody>
                 </Table>
               </MainCard>
-            )}
+            ) : null}
           </TabsContent>
 
-          {/* ── LIKES TAB ────────────────────────────────────────────────── */}
+          {/* ── LIKES TAB ──────────────────────────────────────────────────── */}
           <TabsContent value="likes" className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <StatCard icon={<ThumbsUp />}      label="Total Likes"    value={fmtNum(totalLikes)} subtitle="karma + YouTube likes" gradient="purple" />
-              <StatCard icon={<Flame />}          label="Reddit Karma"   value={fmtNum(totals.postKarma)} subtitle="post upvotes across accounts" gradient="orange" />
-              <StatCard icon={<CirclePlay />}        label="YouTube Likes"  value={fmtNum(trackedStats.totalYTLikes)} subtitle={`${trackedStats.ytItems.length} tracked video${trackedStats.ytItems.length !== 1 ? 's' : ''}`} gradient="red" />
+              <StatCard icon={<ThumbsUp />}   label="Total Likes"     value={fmtNum(totalLikes)}          subtitle={totalLikes > 0 ? 'across all platforms' : 'visit analytics pages to load'} gradient="purple" />
+              <StatCard icon={<Flame />}      label="Reddit Karma"    value={fmtNum(totals.postKarma)}    subtitle="post upvotes across accounts"                                               gradient="orange" />
+              <StatCard icon={<CirclePlay />} label="YouTube Likes"   value={fmtNum(ytLikes)}             subtitle={cacheTotals.ytLikes > 0 ? 'from video cache' : `${trackedStats.ytItems.length} tracked videos`} gradient="red" />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Reddit accounts by karma */}
               {redditAccounts.length > 0 && (
                 <MainCard title="Reddit Accounts by Karma">
                   <div className="space-y-1">
@@ -762,7 +800,6 @@ export default function Overview() {
                 </MainCard>
               )}
 
-              {/* Tracked YouTube by likes */}
               <MainCard title="Tracked YouTube by Likes">
                 {trackedStats.ytItems.length === 0 ? (
                   <div className="flex flex-col items-center text-center py-8 gap-3">

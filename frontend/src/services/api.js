@@ -65,6 +65,9 @@ export const api = {
     getRedditAnalytics: (id) => request(`/accounts/${id}/reddit-analytics`),
     getRedditPosts: (id) => request(`/accounts/${id}/reddit-posts`),
 
+    // Overview dashboard (tracked content + per-account analytics cache)
+    getOverview: () => request('/overview'),
+
     // Tracked Content (Reddit posts and YouTube videos)
     getTrackedContent: () => request('/tracked-content'),
     addTrackedContent: (url, accountId, label, category) => request('/tracked-content', { method: 'POST', body: JSON.stringify({ url, accountId, label, category }) }),
