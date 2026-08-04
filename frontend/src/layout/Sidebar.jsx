@@ -11,13 +11,6 @@ import {
   Upload, Users, Settings, Flame,
 } from 'lucide-react';
 
-function XIcon(props) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" width="1em" height="1em" {...props}>
-      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.253 5.622L18.244 2.25zm-1.161 17.52h1.833L7.084 4.126H5.117L17.083 19.77z" />
-    </svg>
-  );
-}
 import { useAppContext } from '../context/AppContext';
 
 const NAV_GROUPS = [
@@ -29,7 +22,6 @@ const NAV_GROUPS = [
       { path: '/shorts',       label: 'Shorts',        icon: Scissors },
       { path: '/reels',        label: 'IG Content',    icon: Camera },
       { path: '/reddit-posts', label: 'Reddit Posts',  icon: Flame },
-      { path: '/x-tweets',    label: 'X Tweets',      icon: XIcon },
     ],
   },
   {
@@ -113,10 +105,9 @@ export default function AppSidebar() {
               {accounts.map((acc) => {
                 const isIG     = acc.platform === 'instagram';
                 const isReddit = acc.platform === 'reddit';
-                const isX      = acc.platform === 'x';
-                const path     = isIG ? `/instagram/${acc.id}` : isReddit ? `/reddit/${acc.id}` : isX ? `/x/${acc.id}` : `/channel/${acc.id}`;
+                const path     = isIG ? `/instagram/${acc.id}` : isReddit ? `/reddit/${acc.id}` : `/channel/${acc.id}`;
                 const initials = (acc.title || '?').slice(0, 2).toUpperCase();
-                const avatarBg = isIG ? '#ec4899' : isReddit ? '#f97316' : isX ? '#1D9BF0' : '#ef4444';
+                const avatarBg = isIG ? '#ec4899' : isReddit ? '#f97316' : '#ef4444';
                 return (
                   <SidebarMenuItem key={acc.id}>
                     <SidebarMenuButton

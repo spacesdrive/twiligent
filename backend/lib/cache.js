@@ -47,21 +47,6 @@ export async function deleteRedditCache(redis, userId, accountId) {
     try { await redis.del(`reddit:${userId}:${accountId}`); } catch { /* non-fatal */ }
 }
 
-export async function getXCache(redis, userId, accountId) {
-    if (!redis) return null;
-    try { return (await redis.get(`x:${userId}:${accountId}`)) || null; } catch { return null; }
-}
-
-export async function setXCache(redis, userId, accountId, data) {
-    if (!redis) return;
-    try { await redis.set(`x:${userId}:${accountId}`, data); } catch { /* non-fatal */ }
-}
-
-export async function deleteXCache(redis, userId, accountId) {
-    if (!redis) return;
-    try { await redis.del(`x:${userId}:${accountId}`); } catch { /* non-fatal */ }
-}
-
 // ---- OAuth state via HMAC (no Redis required) --------------------------------
 // State format: base64url(userId:timestamp) . base64url(HMAC-SHA256 signature)
 // Expires after 10 minutes. Secret is INSTAGRAM_APP_SECRET.

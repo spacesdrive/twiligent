@@ -68,13 +68,6 @@ All routes live under `/api`. Routes under the `api` sub-app require a valid Sup
 | GET | `/api/accounts/:id/reddit-analytics` | `routes/reddit.js` | Fetch profile + posts + computed analytics; cached in Redis |
 | GET | `/api/accounts/:id/reddit-posts` | `routes/reddit.js` | Returns cached post list or live-fetched posts |
 
-### X (Twitter)
-| Method | Path | File | Purpose |
-|---|---|---|---|
-| POST | `/api/accounts/x` | `routes/accounts.js` | Add X account by username + auth_token + ct0 session cookies |
-| GET | `/api/accounts/:id/x-analytics` | `routes/x.js` | Fetch profile + tweets + computed analytics; cached in Redis |
-| GET | `/api/accounts/:id/x-tweets` | `routes/x.js` | Returns cached tweet list or live-fetched tweets |
-
 ### Settings
 | Method | Path | File | Purpose |
 |---|---|---|---|

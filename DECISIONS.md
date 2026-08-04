@@ -402,3 +402,20 @@ Records every significant architectural decision, the alternatives considered, a
 - X's internal GraphQL contract is undocumented. Response shapes may change without notice.
 - Session cookies expire or are revoked when the user logs out, changes their password, or X detects automation patterns. Users must re-add the account with fresh cookies.
 - Cloudflare Worker IP ranges may be rate-limited or blocked by X more aggressively than residential IPs. Users experiencing consistent failures should verify with a personal IP.
+
+---
+
+## ADR-018: X (Twitter) integration removed
+
+**Date:** 2026-08-04
+**Status:** Accepted
+
+**Decision:** Remove the X (Twitter) integration entirely. All X-related backend routes, services, frontend components, and documentation have been deleted.
+
+**Reasoning:**
+- X's internal GraphQL API rotated query IDs repeatedly, requiring manual intervention every time X shipped a frontend update with no reliable automated detection
+- X's undocumented internal GraphQL contract offers no stability guarantees; response shapes changed without notice
+- Cookie-based authentication requires users to manually re-add accounts whenever session cookies expire or are revoked
+- The maintenance overhead exceeded the value delivered relative to the project's primary focus (YouTube and Instagram)
+
+**Supersedes:** ADR-017
