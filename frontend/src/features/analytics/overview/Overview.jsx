@@ -20,8 +20,9 @@ import MetricAreaChart from '../../../components/MetricAreaChart';
 import { useAppContext } from '../../../context/AppContext';
 import { api } from '../../../services/api';
 import { fmtNum, fmtNumFull, fmtPercent, timeAgo } from '../../../utils/formatters';
+import { trackedViews } from '../../../utils/trackedContent';
 import {
-  RefreshCw, Users, VideoIcon, ExternalLink, Camera, BarChart2,
+  RefreshCw, Users, VideoIcon, ExternalLink, Camera, BarChart2, Eye,
   Tag, ThumbsUp, MessageSquare, CirclePlay, Flame, BookmarkCheck,
 } from 'lucide-react';
 
@@ -139,8 +140,10 @@ export default function Overview() {
       total:       trackedContent.length,
       ytItems,
       rdItems,
+      ytViews:     ytItems.reduce((s, p) => s + trackedViews(p), 0),
       ytLikes:     ytItems.reduce((s, p) => s + (p.likeCount    ?? 0), 0),
       ytComments:  ytItems.reduce((s, p) => s + (p.commentCount ?? 0), 0),
+      rdViews:     rdItems.reduce((s, p) => s + trackedViews(p), 0),
       rdKarma:     rdItems.reduce((s, p) => s + (p.score        ?? 0), 0),
       rdComments:  rdItems.reduce((s, p) => s + (p.numComments  ?? 0), 0),
     };
@@ -153,6 +156,10 @@ export default function Overview() {
 
   // Total Content = YT videos + IG posts + Reddit account posts (from cache) + tracked items
   const totalContent = totals.videos + totals.posts + cacheTotals.rdPosts + trackedStats.total;
+
+  // Total Views = YouTube channel views + tracked video views + manually entered Reddit post views
+  const trackedViewTotal = trackedStats.ytViews + trackedStats.rdViews;
+  const totalViews = totals.views + trackedViewTotal;
 
   // Tracked items are third-party URLs the user monitors, never their own account content,
   // so cache totals and tracked totals are disjoint and sum without double-counting.
@@ -188,25 +195,26 @@ export default function Overview() {
           category: p.category,
           count: 0, ytCount: 0, rdCount: 0,
           ytViews: 0, ytLikes: 0, ytComments: 0,
-          rdKarma: 0, rdComments: 0,
+          rdViews: 0, rdKarma: 0, rdComments: 0,
         };
       }
       const c = map[p.category];
       c.count++;
       if (p.contentType === 'youtube') {
         c.ytCount++;
-        c.ytViews    += p.viewCount    ?? 0;
+        c.ytViews    += trackedViews(p);
         c.ytLikes    += p.likeCount    ?? 0;
         c.ytComments += p.commentCount ?? 0;
       } else {
         c.rdCount++;
+        c.rdViews    += trackedViews(p);
         c.rdKarma    += p.score       ?? 0;
         c.rdComments += p.numComments ?? 0;
       }
     });
-    return Object.values(map).sort((a, b) =>
-      (b.rdKarma + b.ytViews) - (a.rdKarma + a.ytViews)
-    );
+    return Object.values(map)
+      .map(c => ({ ...c, views: c.ytViews + c.rdViews }))
+      .sort((a, b) => (b.views + b.rdKarma) - (a.views + a.rdKarma));
   }, [trackedContent]);
 
   // ── Audience metric per account ────────────────────────────────────────────────
@@ -242,9 +250,11 @@ export default function Overview() {
       value: a.totalKarma || 0,
       type:  'reddit',
     })),
+    // Karma only. Adding views would mix an audience metric with a reach metric and
+    // inflate the category far above the accounts it sits beside.
     ...categoryStats.map(c => ({
       name:  c.category.slice(0, 12) + (c.category.length > 12 ? '…' : ''),
-      value: c.rdKarma + c.ytViews,
+      value: c.rdKarma,
       type:  'category',
     })),
   ], [ytAccounts, igAccounts, redditAccounts, categoryStats]);
@@ -259,6 +269,13 @@ export default function Overview() {
       .sort((a, b) => b.comments - a.comments)
       .slice(0, 12),
     [trackedContent]
+  );
+
+  const categoryViewData = useMemo(() =>
+    categoryStats
+      .map(c => ({ name: c.category.slice(0, 16), views: c.views }))
+      .sort((a, b) => b.views - a.views),
+    [categoryStats]
   );
 
   const commentByCategoryData = useMemo(() =>
@@ -367,9 +384,12 @@ export default function Overview() {
 
               <TabsTrigger value="views" className={tabTriggerCls}>
                 <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide truncate w-full">Total Views</span>
-                <span className="text-2xl font-bold tabular-nums leading-tight mt-0.5">{fmtNum(totals.views)}</span>
+                <span className="text-2xl font-bold tabular-nums leading-tight mt-0.5">{fmtNum(totalViews)}</span>
                 <span className="text-[11px] text-muted-foreground mt-0.5 truncate w-full">
-                  {ytAccounts.length > 0 ? `${ytAccounts.length} YouTube channel${ytAccounts.length !== 1 ? 's' : ''}` : 'no YouTube accounts'}
+                  {[
+                    totals.views       ? `${fmtNum(totals.views)} channels`      : null,
+                    trackedViewTotal   ? `${fmtNum(trackedViewTotal)} tracked`   : null,
+                  ].filter(Boolean).join(' · ') || 'no views recorded yet'}
                 </span>
               </TabsTrigger>
 
@@ -421,7 +441,7 @@ export default function Overview() {
           <TabsContent value="audience" className="space-y-4">
             <MainCard title="Audience Comparison">
               <p className="text-xs text-muted-foreground mb-3">
-                YouTube = subscribers · Instagram = followers · Reddit = karma · Categories = views + karma
+                YouTube = subscribers · Instagram = followers · Reddit = karma · Categories = karma
               </p>
               {audienceChartData.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-8 text-center">No data to display</p>
@@ -439,7 +459,7 @@ export default function Overview() {
                     <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} tickFormatter={fmtNum} axisLine={false} tickLine={false} width={48} />
                     <ReTooltip
                       contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
-                      formatter={(v, name, props) => [fmtNumFull(v), props.payload.type === 'category' ? 'Views + Karma' : 'Audience']}
+                      formatter={(v, name, props) => [fmtNumFull(v), props.payload.type === 'category' ? 'Karma' : 'Audience']}
                     />
                     <Area
                       type="monotone"
@@ -471,7 +491,7 @@ export default function Overview() {
                   ytAccounts.length     ? { color: PLATFORM_COLORS.youtube,   label: 'YouTube (subs)'        } : null,
                   igAccounts.length     ? { color: PLATFORM_COLORS.instagram, label: 'Instagram (followers)' } : null,
                   redditAccounts.length ? { color: PLATFORM_COLORS.reddit,    label: 'Reddit (karma)'        } : null,
-                  categoryStats.length  ? { color: PLATFORM_COLORS.category,  label: 'Category (views + karma)' } : null,
+                  categoryStats.length  ? { color: PLATFORM_COLORS.category,  label: 'Category (karma)' } : null,
                 ].filter(Boolean).map(({ color, label }) => (
                   <div key={label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <span className="h-2.5 w-2.5 rounded-full flex-shrink-0" style={{ background: color }} />
@@ -529,11 +549,28 @@ export default function Overview() {
 
           {/* ── VIEWS TAB ──────────────────────────────────────────────────── */}
           <TabsContent value="views" className="space-y-4">
-            {ytAccounts.length === 0 ? (
-              <MainCard>
-                <p className="text-sm text-muted-foreground text-center py-8">No YouTube accounts connected</p>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <StatCard icon={<Eye />}        label="Total Views"    value={fmtNum(totalViews)}             subtitle="channels and tracked content combined"                                                     gradient="blue"   />
+              <StatCard icon={<CirclePlay />} label="Channel Views"  value={fmtNum(totals.views)}           subtitle={`${ytAccounts.length} YouTube channel${ytAccounts.length !== 1 ? 's' : ''}`}                gradient="red"    />
+              <StatCard icon={<BookmarkCheck />} label="Tracked Views" value={fmtNum(trackedViewTotal)}     subtitle={`${fmtNum(trackedStats.ytViews)} YouTube · ${fmtNum(trackedStats.rdViews)} Reddit`}        gradient="purple" />
+            </div>
+
+            {categoryStats.length > 0 && (
+              <MainCard
+                title="Views by Category"
+                subheader="YouTube video views plus manually entered Reddit post views"
+              >
+                <MetricAreaChart
+                  data={categoryViewData}
+                  dataKey="views"
+                  label="Views"
+                  color="#06b6d4"
+                  emptyMessage="No views recorded for these categories yet"
+                />
               </MainCard>
-            ) : (
+            )}
+
+            {ytAccounts.length === 0 ? null : (
               <MainCard title="YouTube Views by Channel" content={false}>
                 <Table>
                   <TableHeader>
@@ -657,9 +694,9 @@ export default function Overview() {
                           </p>
                         </div>
                         <div className="text-right">
-                          {stat.ytCount > 0 && (
-                            <p className="text-xs font-semibold tabular-nums text-red-500 leading-none">
-                              {fmtNum(stat.ytViews)} views
+                          {stat.views > 0 && (
+                            <p className="text-xs font-semibold tabular-nums text-cyan-500 leading-none">
+                              {fmtNum(stat.views)} views
                             </p>
                           )}
                           {stat.rdCount > 0 && (

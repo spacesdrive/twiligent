@@ -4,6 +4,7 @@ import {
     getTrackedPostById,
     createTrackedPost,
     updateTrackedPost,
+    patchTrackedPostData,
     deleteTrackedPost,
     getAccountById,
 } from '../lib/db.js';
@@ -80,23 +81,42 @@ router.post('/tracked-content', async (c) => {
     }
 });
 
-// Update label, category, or account on a tracked content item
+// Update label, category, account, or manually entered view count
 router.put('/tracked-content/:id', async (c) => {
     const id = c.req.param('id');
     const userId = c.get('userId');
     const supabase = c.get('supabase');
     const body = await c.req.json();
-    const { label, category, accountId } = body;
+    const { label, category, accountId, manualViews } = body;
 
     try {
         const existing = await getTrackedPostById(supabase, id, userId);
         if (!existing) return c.json({ error: 'Tracked content not found' }, 404);
 
+        // Reddit removed view_count from their API in 2018, so views can only be entered by hand.
+        // YouTube returns a real view count, so accepting a manual one would silently override it.
+        if (manualViews !== undefined) {
+            if ((existing.contentType || 'reddit') === 'youtube') {
+                return c.json({ error: 'YouTube view counts are fetched automatically and cannot be set by hand' }, 400);
+            }
+            if (manualViews === null || manualViews === '') {
+                await patchTrackedPostData(supabase, id, { manualViews: null }, userId);
+            } else {
+                const views = Number(manualViews);
+                if (!Number.isInteger(views) || views < 0) {
+                    return c.json({ error: 'Views must be a whole number of 0 or more' }, 400);
+                }
+                await patchTrackedPostData(supabase, id, { manualViews: views }, userId);
+            }
+        }
+
         const updates = {};
         if (label     !== undefined) updates.label     = label;
         if (category  !== undefined) updates.category  = category;
         if (accountId !== undefined) updates.accountId = accountId;
-        await updateTrackedPost(supabase, id, updates, userId);
+        if (Object.keys(updates).length > 0) {
+            await updateTrackedPost(supabase, id, updates, userId);
+        }
 
         const updated = await getTrackedPostById(supabase, id, userId);
         return c.json(updated);
@@ -147,7 +167,8 @@ router.post('/tracked-content/:id/refresh', async (c) => {
             fetchedData = await fetchTrackedPostData(existing.url, cookie);
         }
 
-        await updateTrackedPost(supabase, id, { data: fetchedData }, userId);
+        // Patch rather than replace so a manually entered view count survives the refresh
+        await patchTrackedPostData(supabase, id, fetchedData, userId);
         const updated = await getTrackedPostById(supabase, id, userId);
         return c.json(updated);
     } catch (err) {

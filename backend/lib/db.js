@@ -241,6 +241,26 @@ export async function updateTrackedPost(supabase, id, updates, userId) {
     if (error) throw error;
 }
 
+// Merges keys into the data jsonb instead of replacing it, so manually entered
+// fields survive a live refresh and vice versa
+export async function patchTrackedPostData(supabase, id, patch, userId) {
+    const { data: row, error: readError } = await supabase
+        .from('tracked_posts')
+        .select('data')
+        .eq('id', id)
+        .eq('user_id', userId)
+        .single();
+    if (readError || !row) throw readError || new Error('Tracked content not found');
+
+    const merged = { ...(row.data || {}), ...patch };
+    const { error } = await supabase
+        .from('tracked_posts')
+        .update({ data: merged, updated_at: new Date().toISOString() })
+        .eq('id', id)
+        .eq('user_id', userId);
+    if (error) throw error;
+}
+
 export async function deleteTrackedPost(supabase, id, userId) {
     const { error } = await supabase
         .from('tracked_posts')

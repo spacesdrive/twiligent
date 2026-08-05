@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -13,9 +12,10 @@ import MainCard from '../../../components/MainCard';
 import { useAppContext } from '../../../context/AppContext';
 import { api } from '../../../services/api';
 import { fmtNum, fmtDate } from '../../../utils/formatters';
+import { trackedViews, hasTrackedViews } from '../../../utils/trackedContent';
 import {
   Plus, RefreshCw, Trash2, Pencil, ExternalLink,
-  Tag, Bookmark, TrendingUp, BookmarkCheck, CirclePlay, Flame,
+  Tag, Bookmark, BookmarkCheck, CirclePlay, Flame, Eye,
 } from 'lucide-react';
 
 function detectContentType(url) {
@@ -33,6 +33,10 @@ function getEngagement(item) {
 function getComments(item) {
   if (item.contentType === 'youtube') return item.commentCount ?? 0;
   return item.numComments ?? 0;
+}
+
+function isRedditItem(item) {
+  return (item?.contentType || 'reddit') === 'reddit';
 }
 
 function ContentTypeBadge({ type }) {
@@ -79,6 +83,7 @@ export default function TrackedContent() {
   // Edit dialog state
   const [editLabel,    setEditLabel]    = useState('');
   const [editCategory, setEditCategory] = useState('');
+  const [editViews,    setEditViews]    = useState('');
   const [saving,       setSaving]       = useState(false);
 
   const load = useCallback(async () => {
@@ -121,7 +126,7 @@ export default function TrackedContent() {
     return [...result].sort((a, b) => {
       if (sort === 'engagement-desc') return getEngagement(b) - getEngagement(a);
       if (sort === 'comments-desc')   return getComments(b) - getComments(a);
-      if (sort === 'views-desc')      return (b.viewCount ?? 0) - (a.viewCount ?? 0);
+      if (sort === 'views-desc')      return trackedViews(b) - trackedViews(a);
       return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
     });
   }, [items, query, typeFilter, categoryFilter, sort]);
@@ -175,13 +180,31 @@ export default function TrackedContent() {
     setEditItem(item);
     setEditLabel(item.label || '');
     setEditCategory(item.category || '');
+    setEditViews(item.manualViews != null ? String(item.manualViews) : '');
   }
 
   async function handleSaveEdit() {
     if (!editItem) return;
+
+    const updates = { label: editLabel, category: editCategory };
+
+    if (isRedditItem(editItem)) {
+      const raw = editViews.trim();
+      if (raw === '') {
+        updates.manualViews = null;
+      } else {
+        const views = Number(raw);
+        if (!Number.isInteger(views) || views < 0) {
+          showToast('Views must be a whole number of 0 or more', 'error');
+          return;
+        }
+        updates.manualViews = views;
+      }
+    }
+
     setSaving(true);
     try {
-      const updated = await api.updateTrackedContent(editItem.id, { label: editLabel, category: editCategory });
+      const updated = await api.updateTrackedContent(editItem.id, updates);
       setItems(prev => prev.map(p => p.id === editItem.id ? updated : p));
       setEditItem(null);
       showToast('Updated');
@@ -406,7 +429,6 @@ export default function TrackedContent() {
               ) : (
                 filtered.map(item => {
                   const isYT = item.contentType === 'youtube';
-                  const acc = !isYT ? accounts.find(a => a.id === item.accountId) : null;
                   const isRefreshing = refreshingIds.has(item.id);
                   return (
                     <TableRow key={item.id} className={selected.has(item.id) ? 'bg-muted/30' : ''}>
@@ -455,7 +477,22 @@ export default function TrackedContent() {
                         )}
                       </TableCell>
                       <TableCell className="text-right text-sm tabular-nums text-muted-foreground">
-                        {isYT && item.viewCount !== undefined ? fmtNum(item.viewCount) : '-'}
+                        {hasTrackedViews(item) ? (
+                          <span className={isYT ? '' : 'text-foreground'}>{fmtNum(trackedViews(item))}</span>
+                        ) : isYT ? (
+                          '-'
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 px-1.5 text-xs font-normal text-muted-foreground gap-1"
+                            onClick={() => openEdit(item)}
+                            title="Reddit does not report views - enter them manually"
+                          >
+                            <Eye className="h-3 w-3" />
+                            Set
+                          </Button>
+                        )}
                       </TableCell>
                       <TableCell className="text-right text-sm font-semibold tabular-nums">
                         {isYT
@@ -644,6 +681,26 @@ export default function TrackedContent() {
                 </div>
               )}
             </div>
+            {editItem && isRedditItem(editItem) && (
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">
+                  Views <span className="text-muted-foreground font-normal">(optional)</span>
+                </label>
+                <Input
+                  type="number"
+                  min="0"
+                  step="1"
+                  inputMode="numeric"
+                  value={editViews}
+                  onChange={e => setEditViews(e.target.value)}
+                  placeholder="e.g. 12500"
+                />
+                <p className="text-xs text-muted-foreground">
+                  Reddit does not report view counts through its API. Copy the number from the post
+                  insights page to include it in your totals. Leave empty to remove it.
+                </p>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditItem(null)} disabled={saving}>Cancel</Button>

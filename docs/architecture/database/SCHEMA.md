@@ -172,9 +172,21 @@ Populated by `fetchTrackedPostData()` in `backend/services/reddit.js`:
     "upvoteRatio": 0.97,
     "numComments": 56,
     "permalink": "https://reddit.com/r/programming/comments/abc123/...",
-    "lastFetchedAt": "2026-08-04T10:00:00Z"
+    "lastFetchedAt": "2026-08-04T10:00:00Z",
+    "manualViews": 12500
 }
 ```
+
+`manualViews` is the one key in `data` that is not fetched from Reddit. Reddit removed
+`view_count` from its API in December 2018, so view counts can only be entered by hand
+through `PUT /api/tracked-content/:id`. It is `null` or absent until the user sets one.
+
+Because of this, the refresh route calls `patchTrackedPostData()` rather than
+`updateTrackedPost({ data })` - the former merges freshly fetched keys into the existing
+blob so a manually entered view count survives a refresh. Anything writing to `data` for a
+Reddit item must merge, never replace.
+
+`manualViews` is rejected for YouTube items; YouTube returns a real `viewCount`.
 
 ### `data` jsonb shape for YouTube items
 
