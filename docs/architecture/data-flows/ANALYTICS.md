@@ -225,7 +225,7 @@ and the page re-fetches once after 6 seconds.
 | Metric | Formula |
 |---|---|
 | Total Audience | YouTube subscribers + Instagram followers + Reddit account karma |
-| Total Views | YouTube channel view counts |
+| Total Views | YouTube channel views + tracked YouTube video views + manually entered Reddit post views |
 | Total Content | YouTube videos + Instagram posts + Reddit account posts (cache) + tracked items |
 | Total Comments | cache comments (YouTube + Instagram + Reddit) + tracked item comments |
 | Total Likes | Reddit karma (account + tracked) + YouTube likes (cache + tracked) + Instagram likes |
@@ -237,6 +237,24 @@ one taking precedence over the other.
 Tracked Reddit post karma counts toward Total Likes, not Total Audience - a monitored post is
 content, not an audience the user owns. Connected-account karma does count toward Total
 Audience as that account's reputation.
+
+### Tracked content views
+
+Reddit removed `view_count` from its API in December 2018, so a tracked Reddit post's views are
+whatever the user typed into the edit dialog, stored as `data.manualViews`. `trackedViews()` in
+`frontend/src/utils/trackedContent.js` is the single place that decides which field to read:
+`viewCount` for YouTube items, `manualViews` for Reddit items. Every view total in the UI goes
+through it, so a post with no manual figure contributes 0 rather than breaking the sum.
+
+`hasTrackedViews()` distinguishes "no figure recorded" from a real zero, so tables can render a
+dash and a "Set" action instead of a misleading `0`.
+
+### Audience Comparison chart
+
+Categories plot **karma only**, never karma plus views. Views are a reach metric an order of
+magnitude larger than karma; adding them would push a category far above the accounts it sits
+beside on the same axis and misrepresent its audience. Category view totals belong in the Views
+tab, where they are compared against other view figures.
 
 ### Naming
 

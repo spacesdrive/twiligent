@@ -7,7 +7,30 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+**Manual view counts for tracked Reddit posts**
+- Reddit removed `view_count` from its API in December 2018, so views for a tracked Reddit post can now be entered by hand
+- `PUT /api/tracked-content/:id` accepts `manualViews`: a whole number of 0 or more, `null` to clear, rejected with a 400 for YouTube items which report a real view count
+- `patchTrackedPostData()` added to `backend/lib/db.js` - merges keys into the `data` jsonb instead of replacing it
+- `POST /api/tracked-content/:id/refresh` now patches rather than replaces `data`, so a manually entered view count survives a live refresh
+- `frontend/src/utils/trackedContent.js` added with `trackedViews()` and `hasTrackedViews()`; every view total in the UI reads through them so YouTube and Reddit items resolve the right field
+- Tracked Content table: Views column now shows the manual figure for Reddit posts, with a "Set" button on posts that have none; the Views sort covers both platforms
+- Tracked Content edit dialog: Views field for Reddit posts, with an explanation of why it is manual
+
 ### Changed
+
+**Views now include tracked content everywhere**
+- Overview Total Views tab: channel views plus tracked YouTube views plus manual Reddit views; tab subtitle breaks the two apart
+- Views tab gained Total Views, Channel Views, and Tracked Views stat cards, plus a "Views by Category" area chart
+- Tracked Category page: "YouTube Views" replaced with a combined "Total Views" card showing the YouTube and Reddit split
+- Tracked Category Reddit section: "Post Views" stat card added showing how many posts have a figure recorded; "Avg Karma per Post" folded into the Post Karma subtitle to keep the grid at four cards
+- Tracked Category Reddit table: Views column added
+- Overview Tracked Categories card: view figure is now the YouTube plus Reddit total rather than YouTube alone
+
+**Audience Comparison plots category karma only**
+- Categories previously plotted karma plus views, which mixed an audience metric with a reach metric an order of magnitude larger and pushed categories far above the accounts beside them
+- Tooltip now reads "Karma", the legend reads "Category (karma)", and the caption reads "Categories = karma"
 
 **Reddit score renamed to karma across the UI**
 - Every user-facing "score" label for a Reddit post now reads "karma", matching the vocabulary Reddit shows its own users

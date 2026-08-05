@@ -111,6 +111,10 @@ refreshTrackedContent: (id) => request(`/tracked-content/${id}/refresh`, { metho
 
 `accountId` may be `null`. For YouTube items, `accountId` is always `null` (fetched via the server's `YOUTUBE_API_KEY`). For Reddit items, `accountId` is optional and refers to a Reddit account whose cookie improves datacenter IP access.
 
+`updateTrackedContent` takes a partial object, so only the keys present are changed. Accepted
+keys are `label`, `category`, `accountId`, and `manualViews`. `manualViews` is Reddit-only and
+sending it for a YouTube item returns a 400; pass `null` to clear a previously entered figure.
+
 ## Authentication
 
 The `request()` function automatically attaches the JWT. Components do not need to handle auth tokens - the API layer manages this transparently. If the user is not logged in, the token will be absent and the backend will return 401, which `request()` will throw as an error.

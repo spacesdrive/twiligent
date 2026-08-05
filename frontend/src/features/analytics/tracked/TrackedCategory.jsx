@@ -14,9 +14,10 @@ import MetricAreaChart from '../../../components/MetricAreaChart';
 import { useAppContext } from '../../../context/AppContext';
 import { api } from '../../../services/api';
 import { fmtNum, fmtNumFull, fmtDate } from '../../../utils/formatters';
+import { trackedViews, hasTrackedViews } from '../../../utils/trackedContent';
 import {
   ArrowLeft, CirclePlay, Flame, ExternalLink, Eye,
-  ThumbsUp, MessageSquare, Tag, TrendingUp, BarChart2,
+  ThumbsUp, MessageSquare, Tag, TrendingUp,
 } from 'lucide-react';
 
 // fmtNum abbreviates only at 1000 and above, so the full value is redundant below that
@@ -49,7 +50,7 @@ export default function TrackedCategory() {
 
   const ytStats = useMemo(() => {
     const count    = ytItems.length;
-    const views    = ytItems.reduce((s, p) => s + (p.viewCount    ?? 0), 0);
+    const views    = ytItems.reduce((s, p) => s + trackedViews(p), 0);
     const likes    = ytItems.reduce((s, p) => s + (p.likeCount    ?? 0), 0);
     const comments = ytItems.reduce((s, p) => s + (p.commentCount ?? 0), 0);
     return {
@@ -70,15 +71,21 @@ export default function TrackedCategory() {
     const karma    = rdItems.reduce((s, p) => s + (p.score       ?? 0), 0);
     const comments = rdItems.reduce((s, p) => s + (p.numComments ?? 0), 0);
     const ratioSum = rdItems.reduce((s, p) => s + (p.upvoteRatio ?? 0), 0);
+    const views    = rdItems.reduce((s, p) => s + trackedViews(p), 0);
+    const withViews = rdItems.filter(hasTrackedViews).length;
     return {
       count,
       karma,
       comments,
+      views,
+      withViews,
       avgKarma:    count ? Math.round(karma / count)    : 0,
       avgComments: count ? Math.round(comments / count) : 0,
       avgRatio:    count ? ratioSum / count             : 0,
     };
   }, [rdItems]);
+
+  const totalViews = ytStats.views + rdStats.views;
 
   const ytChartData = useMemo(() =>
     [...ytItems]
@@ -196,9 +203,16 @@ export default function TrackedCategory() {
         />
         <StatCard
           icon={<Eye />}
-          label="YouTube Views"
-          value={ytItems.length > 0 ? fmtNum(ytStats.views) : '-'}
-          subtitle={ytItems.length > 0 ? `avg ${fmtNum(ytStats.avgViews)} per video` : 'no YouTube videos in this category'}
+          label="Total Views"
+          value={totalViews > 0 ? fmtNum(totalViews) : '-'}
+          subtitle={
+            totalViews > 0
+              ? [
+                  ytItems.length > 0 ? `${fmtNum(ytStats.views)} YouTube` : null,
+                  rdItems.length > 0 ? `${fmtNum(rdStats.views)} Reddit`  : null,
+                ].filter(Boolean).join(' · ')
+              : 'no views recorded yet'
+          }
           gradient="red"
         />
         <StatCard
@@ -377,8 +391,19 @@ export default function TrackedCategory() {
               icon={<Flame />}
               label="Post Karma"
               value={fmtNum(rdStats.karma)}
-              subtitle="upvotes minus downvotes"
+              subtitle={`avg ${fmtNum(rdStats.avgKarma)} per post`}
               gradient="orange"
+            />
+            <StatCard
+              icon={<Eye />}
+              label="Post Views"
+              value={rdStats.withViews > 0 ? fmtNum(rdStats.views) : '-'}
+              subtitle={
+                rdStats.withViews > 0
+                  ? `entered by hand on ${rdStats.withViews} of ${rdItems.length} post${rdItems.length !== 1 ? 's' : ''}`
+                  : 'Reddit does not report views - add them per post'
+              }
+              gradient="teal"
             />
             <StatCard
               icon={<MessageSquare />}
@@ -393,13 +418,6 @@ export default function TrackedCategory() {
               value={rdStats.avgRatio > 0 ? Math.round(rdStats.avgRatio * 100) + '%' : '-'}
               subtitle="upvotes as share of total votes"
               gradient="green"
-            />
-            <StatCard
-              icon={<BarChart2 />}
-              label="Avg Karma per Post"
-              value={fmtNum(rdStats.avgKarma)}
-              subtitle={`across ${rdItems.length} post${rdItems.length !== 1 ? 's' : ''}`}
-              gradient="purple"
             />
           </div>
 
@@ -425,6 +443,7 @@ export default function TrackedCategory() {
                   <TableHead className="w-8">#</TableHead>
                   <TableHead>Post</TableHead>
                   <TableHead className="text-right w-28">Karma</TableHead>
+                  <TableHead className="text-right w-24">Views</TableHead>
                   <TableHead className="text-right w-20">Upvote %</TableHead>
                   <TableHead className="text-right w-24">Comments</TableHead>
                   <TableHead className="text-right w-28">Fetched</TableHead>
@@ -461,6 +480,11 @@ export default function TrackedCategory() {
                         {showsFullValue(item.score) && (
                           <p className="text-xs text-muted-foreground tabular-nums">{fmtNumFull(item.score)}</p>
                         )}
+                      </TableCell>
+                      <TableCell className="text-right text-sm tabular-nums">
+                        {hasTrackedViews(item)
+                          ? fmtNum(trackedViews(item))
+                          : <span className="text-muted-foreground">-</span>}
                       </TableCell>
                       <TableCell className="text-right text-sm tabular-nums text-muted-foreground">
                         {(item.upvoteRatio != null && (item.score ?? 0) >= 10)
