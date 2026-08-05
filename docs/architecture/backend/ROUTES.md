@@ -78,7 +78,7 @@ All routes live under `/api`. Routes under the `api` sub-app require a valid Sup
 |---|---|---|---|
 | GET | `/api/tracked-content` | `routes/trackedContent.js` | List all tracked items for the current user (Reddit posts and YouTube videos) |
 | POST | `/api/tracked-content` | `routes/trackedContent.js` | Add a URL to track; auto-detects Reddit or YouTube; fetches live data immediately |
-| PUT | `/api/tracked-content/:id` | `routes/trackedContent.js` | Update `label`, `category`, `accountId`, or `manualViews` for a tracked item. `manualViews` is Reddit-only (400 for YouTube), must be a whole number of 0 or more, and `null` clears it |
+| PUT | `/api/tracked-content/:id` | `routes/trackedContent.js` | Update `label`, `category`, `accountId`, `manualViews`, or `imageUrl` for a tracked item. `manualViews` and `imageUrl` are Reddit-only (400 for YouTube) and `null` clears either. `manualViews` must be a whole number of 0 or more; `imageUrl` must parse as an `https:` URL |
 | DELETE | `/api/tracked-content/:id` | `routes/trackedContent.js` | Remove a tracked item |
 | POST | `/api/tracked-content/:id/refresh` | `routes/trackedContent.js` | Re-fetch live data from Reddit or YouTube API for one tracked item |
 

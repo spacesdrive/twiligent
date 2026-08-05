@@ -173,20 +173,28 @@ Populated by `fetchTrackedPostData()` in `backend/services/reddit.js`:
     "numComments": 56,
     "permalink": "https://reddit.com/r/programming/comments/abc123/...",
     "lastFetchedAt": "2026-08-04T10:00:00Z",
-    "manualViews": 12500
+    "manualViews": 12500,
+    "imageUrl": "https://res.cloudinary.com/mycloud/image/upload/v1/abc.jpg"
 }
 ```
 
-`manualViews` is the one key in `data` that is not fetched from Reddit. Reddit removed
-`view_count` from its API in December 2018, so view counts can only be entered by hand
-through `PUT /api/tracked-content/:id`. It is `null` or absent until the user sets one.
+`manualViews` and `imageUrl` are the two keys in `data` that are not fetched from Reddit.
+Both are set by the user through `PUT /api/tracked-content/:id` and are `null` or absent
+until then.
+
+- `manualViews` - Reddit removed `view_count` from its API in December 2018, so view counts
+  can only be entered by hand.
+- `imageUrl` - Reddit's public JSON API carries no usable thumbnail, so the user uploads a
+  screenshot. The browser posts it directly to Cloudinary and only the returned `secure_url`
+  reaches the Worker, which stores it after checking the URL parses and uses `https:`. That
+  check matters because the value is rendered straight into an `img src`.
 
 Because of this, the refresh route calls `patchTrackedPostData()` rather than
 `updateTrackedPost({ data })` - the former merges freshly fetched keys into the existing
 blob so a manually entered view count survives a refresh. Anything writing to `data` for a
 Reddit item must merge, never replace.
 
-`manualViews` is rejected for YouTube items; YouTube returns a real `viewCount`.
+Both keys are rejected for YouTube items, which already carry a real `viewCount` and `thumbnail`.
 
 ### `data` jsonb shape for YouTube items
 

@@ -81,22 +81,24 @@ router.post('/tracked-content', async (c) => {
     }
 });
 
-// Update label, category, account, or manually entered view count
+// Update label, category, account, manually entered view count, or attached image
 router.put('/tracked-content/:id', async (c) => {
     const id = c.req.param('id');
     const userId = c.get('userId');
     const supabase = c.get('supabase');
     const body = await c.req.json();
-    const { label, category, accountId, manualViews } = body;
+    const { label, category, accountId, manualViews, imageUrl } = body;
 
     try {
         const existing = await getTrackedPostById(supabase, id, userId);
         if (!existing) return c.json({ error: 'Tracked content not found' }, 404);
 
+        const isYouTube = (existing.contentType || 'reddit') === 'youtube';
+
         // Reddit removed view_count from their API in 2018, so views can only be entered by hand.
         // YouTube returns a real view count, so accepting a manual one would silently override it.
         if (manualViews !== undefined) {
-            if ((existing.contentType || 'reddit') === 'youtube') {
+            if (isYouTube) {
                 return c.json({ error: 'YouTube view counts are fetched automatically and cannot be set by hand' }, 400);
             }
             if (manualViews === null || manualViews === '') {
@@ -107,6 +109,27 @@ router.put('/tracked-content/:id', async (c) => {
                     return c.json({ error: 'Views must be a whole number of 0 or more' }, 400);
                 }
                 await patchTrackedPostData(supabase, id, { manualViews: views }, userId);
+            }
+        }
+
+        // Reddit posts carry no thumbnail in the public JSON API, so the user uploads one to
+        // Cloudinary from the browser and only the resulting URL reaches the Worker. YouTube
+        // items already have a real thumbnail and must not be overridden.
+        if (imageUrl !== undefined) {
+            if (isYouTube) {
+                return c.json({ error: 'Images can only be attached to Reddit posts' }, 400);
+            }
+            if (imageUrl === null || imageUrl === '') {
+                await patchTrackedPostData(supabase, id, { imageUrl: null }, userId);
+            } else {
+                let parsed = null;
+                try { parsed = new URL(String(imageUrl)); } catch { parsed = null; }
+                // https only - the value is rendered straight into an img src, so a
+                // javascript: or data: URL must never be stored
+                if (!parsed || parsed.protocol !== 'https:') {
+                    return c.json({ error: 'Image must be an https URL returned by the uploader' }, 400);
+                }
+                await patchTrackedPostData(supabase, id, { imageUrl: parsed.toString() }, userId);
             }
         }
 
