@@ -6,7 +6,8 @@
 frontend/src/
 ├── components/
 │   ├── MainCard.jsx                        <- Card wrapper with optional title/subheader/separator
-│   └── MetricAreaChart.jsx                 <- Shared Recharts area chart for single-metric comparisons
+│   ├── MetricAreaChart.jsx                 <- Shared Recharts area chart for single-metric comparisons
+│   └── ImageLightbox.jsx                   <- Thumbnail that opens the full image in a Dialog
 ├── features/
 │   ├── analytics/
 │   │   ├── channel/
@@ -61,6 +62,20 @@ grid, gradient, and tooltip styling. Use it instead of hand-rolling a Recharts `
 
 Each instance generates its own gradient id via `useId()`, so multiple charts on one page
 never collide.
+
+## Image Lightbox
+
+`components/ImageLightbox.jsx` renders a thumbnail that opens the full image in a shadcn
+`Dialog`. Used for tracked Reddit post images, which have no platform thumbnail:
+
+```jsx
+<ImageLightbox src={item.imageUrl} alt={item.title} thumbClassName="size-14" />
+```
+
+Base UI supports nested dialogs, so this works inside the Tracked Content edit dialog. Child
+dialogs skip the backdrop and only the topmost one responds to Escape and outside clicks.
+
+Note the Base UI composition rule: the trigger takes a `render` prop, not `asChild`.
 
 ## Feature Conventions
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -7,14 +7,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Spinner } from '@/components/ui/spinner';
 import StatCard from '../../../components/ui/StatCard';
 import MainCard from '../../../components/MainCard';
+import ImageLightbox from '../../../components/ImageLightbox';
 import { useAppContext } from '../../../context/AppContext';
 import { api } from '../../../services/api';
 import { fmtNum, fmtDate } from '../../../utils/formatters';
 import { trackedViews, hasTrackedViews } from '../../../utils/trackedContent';
 import {
-  Plus, RefreshCw, Trash2, Pencil, ExternalLink,
+  Plus, RefreshCw, Trash2, Pencil, ExternalLink, Upload, X,
   Tag, Bookmark, BookmarkCheck, CirclePlay, Flame, Eye,
 } from 'lucide-react';
 
@@ -38,6 +40,8 @@ function getComments(item) {
 function isRedditItem(item) {
   return (item?.contentType || 'reddit') === 'reddit';
 }
+
+const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
 function ContentTypeBadge({ type }) {
   if (type === 'youtube') {
@@ -84,7 +88,12 @@ export default function TrackedContent() {
   const [editLabel,    setEditLabel]    = useState('');
   const [editCategory, setEditCategory] = useState('');
   const [editViews,    setEditViews]    = useState('');
+  const [editImageUrl, setEditImageUrl] = useState(null);
+  const [uploading,    setUploading]    = useState(false);
   const [saving,       setSaving]       = useState(false);
+
+  const [cloudConfig,  setCloudConfig]  = useState(null);
+  const imageInputRef = useRef(null);
 
   const load = useCallback(async () => {
     try {
@@ -98,6 +107,13 @@ export default function TrackedContent() {
   }, [showToast]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Cloudinary config is only needed for Reddit image uploads; a missing config disables that field
+  useEffect(() => {
+    api.getCloudinaryConfig()
+      .then(res => { if (res?.success) setCloudConfig(res); })
+      .catch(() => {});
+  }, []);
 
   function handleUrlChange(val) {
     setAddUrl(val);
@@ -181,6 +197,51 @@ export default function TrackedContent() {
     setEditLabel(item.label || '');
     setEditCategory(item.category || '');
     setEditViews(item.manualViews != null ? String(item.manualViews) : '');
+    setEditImageUrl(item.imageUrl || null);
+    if (imageInputRef.current) imageInputRef.current.value = '';
+  }
+
+  // The Worker never handles binary uploads - the browser posts straight to Cloudinary with the
+  // unsigned preset and only the returned URL is saved on the tracked item
+  async function handleImageSelect(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!cloudConfig) {
+      showToast('Cloudinary is not configured on this server, so images cannot be uploaded', 'error');
+      return;
+    }
+    if (!file.type.startsWith('image/')) {
+      showToast('Choose an image file', 'error');
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      showToast(`Images must be under ${MAX_IMAGE_BYTES / 1024 / 1024}MB`, 'error');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', cloudConfig.uploadPreset);
+
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudConfig.cloudName}/image/upload`,
+        { method: 'POST', body: formData }
+      );
+      const json = await res.json();
+      if (!res.ok || !json.secure_url) {
+        throw new Error(json.error?.message || 'Upload failed');
+      }
+      setEditImageUrl(json.secure_url);
+      showToast('Image uploaded');
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      setUploading(false);
+      if (imageInputRef.current) imageInputRef.current.value = '';
+    }
   }
 
   async function handleSaveEdit() {
@@ -200,6 +261,7 @@ export default function TrackedContent() {
         }
         updates.manualViews = views;
       }
+      updates.imageUrl = editImageUrl || null;
     }
 
     setSaving(true);
@@ -443,6 +505,12 @@ export default function TrackedContent() {
                         <div className="max-w-sm flex items-start gap-2.5">
                           {isYT && item.thumbnail ? (
                             <img src={item.thumbnail} alt="" className="h-10 w-16 rounded object-cover flex-shrink-0 mt-0.5" />
+                          ) : !isYT && item.imageUrl ? (
+                            <ImageLightbox
+                              src={item.imageUrl}
+                              alt={item.title || item.label || 'Reddit post'}
+                              className="mt-0.5"
+                            />
                           ) : null}
                           <div className="min-w-0">
                             <p className="text-sm font-medium leading-snug line-clamp-2">
@@ -698,6 +766,64 @@ export default function TrackedContent() {
                 <p className="text-xs text-muted-foreground">
                   Reddit does not report view counts through its API. Copy the number from the post
                   insights page to include it in your totals. Leave empty to remove it.
+                </p>
+              </div>
+            )}
+
+            {editItem && isRedditItem(editItem) && (
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium">
+                  Image <span className="text-muted-foreground font-normal">(optional)</span>
+                </label>
+
+                <input
+                  ref={imageInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                />
+
+                {editImageUrl ? (
+                  <div className="flex items-center gap-3 rounded-lg border border-border p-2">
+                    <ImageLightbox
+                      src={editImageUrl}
+                      alt={editItem.title || 'Reddit post'}
+                      thumbClassName="size-14"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-muted-foreground">
+                        Click the image to view it full size
+                      </p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="size-7 shrink-0"
+                      onClick={() => setEditImageUrl(null)}
+                      title="Remove image"
+                      disabled={uploading}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ) : (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="justify-start gap-2"
+                    onClick={() => imageInputRef.current?.click()}
+                    disabled={uploading || !cloudConfig}
+                  >
+                    {uploading ? <Spinner /> : <Upload className="h-3.5 w-3.5" />}
+                    {uploading ? 'Uploading...' : 'Upload image'}
+                  </Button>
+                )}
+
+                <p className="text-xs text-muted-foreground">
+                  {cloudConfig
+                    ? 'Reddit posts have no thumbnail in the public API. Upload a screenshot to recognise the post at a glance.'
+                    : 'Image uploads need Cloudinary configured on the server. Check Settings.'}
                 </p>
               </div>
             )}

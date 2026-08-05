@@ -11,6 +11,7 @@ import {
 import StatCard from '../../../components/ui/StatCard';
 import MainCard from '../../../components/MainCard';
 import MetricAreaChart from '../../../components/MetricAreaChart';
+import ImageLightbox from '../../../components/ImageLightbox';
 import { useAppContext } from '../../../context/AppContext';
 import { api } from '../../../services/api';
 import { fmtNum, fmtNumFull, fmtDate } from '../../../utils/formatters';
@@ -400,7 +401,7 @@ export default function TrackedCategory() {
               value={rdStats.withViews > 0 ? fmtNum(rdStats.views) : '-'}
               subtitle={
                 rdStats.withViews > 0
-                  ? `entered by hand on ${rdStats.withViews} of ${rdItems.length} post${rdItems.length !== 1 ? 's' : ''}`
+                  ? `across ${rdItems.length} post${rdItems.length !== 1 ? 's' : ''}`
                   : 'Reddit does not report views - add them per post'
               }
               gradient="teal"
@@ -459,17 +460,26 @@ export default function TrackedCategory() {
                         <span className={`text-xs font-bold tabular-nums ${medalColor(i)}`}>{i + 1}</span>
                       </TableCell>
                       <TableCell>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium leading-snug line-clamp-2">
-                            {item.title || item.url}
-                          </p>
-                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                            {item.subredditPrefixed && (
-                              <span className="text-xs text-muted-foreground">{item.subredditPrefixed}</span>
-                            )}
-                            {item.label && (
-                              <span className="text-xs text-muted-foreground italic">{item.label}</span>
-                            )}
+                        <div className="flex items-start gap-2.5">
+                          {item.imageUrl && (
+                            <ImageLightbox
+                              src={item.imageUrl}
+                              alt={item.title || 'Reddit post'}
+                              className="mt-0.5"
+                            />
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium leading-snug line-clamp-2">
+                              {item.title || item.url}
+                            </p>
+                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                              {item.subredditPrefixed && (
+                                <span className="text-xs text-muted-foreground">{item.subredditPrefixed}</span>
+                              )}
+                              {item.label && (
+                                <span className="text-xs text-muted-foreground italic">{item.label}</span>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </TableCell>

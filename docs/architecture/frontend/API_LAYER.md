@@ -112,8 +112,13 @@ refreshTrackedContent: (id) => request(`/tracked-content/${id}/refresh`, { metho
 `accountId` may be `null`. For YouTube items, `accountId` is always `null` (fetched via the server's `YOUTUBE_API_KEY`). For Reddit items, `accountId` is optional and refers to a Reddit account whose cookie improves datacenter IP access.
 
 `updateTrackedContent` takes a partial object, so only the keys present are changed. Accepted
-keys are `label`, `category`, `accountId`, and `manualViews`. `manualViews` is Reddit-only and
-sending it for a YouTube item returns a 400; pass `null` to clear a previously entered figure.
+keys are `label`, `category`, `accountId`, `manualViews`, and `imageUrl`. `manualViews` and
+`imageUrl` are Reddit-only and sending either for a YouTube item returns a 400; pass `null` to
+clear a previously set value.
+
+`imageUrl` must already be a hosted `https:` URL. The Worker never accepts binary uploads, so
+the browser posts the file straight to Cloudinary with the unsigned preset from
+`getCloudinaryConfig()` and sends only the returned `secure_url`.
 
 ## Authentication
 

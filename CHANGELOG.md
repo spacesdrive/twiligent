@@ -9,6 +9,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+**Images on tracked Reddit posts**
+- Reddit's public JSON API carries no usable thumbnail, so a screenshot can now be uploaded per tracked Reddit post
+- The browser posts the file directly to Cloudinary with the unsigned preset and sends only the returned `secure_url`, keeping the Worker free of binary uploads as the architecture requires
+- `PUT /api/tracked-content/:id` accepts `imageUrl`: Reddit-only (400 for YouTube, which has a real thumbnail), must parse as an `https:` URL since the value is rendered into an `img src`, and `null` clears it
+- Stored as `data.imageUrl` and merged through `patchTrackedPostData()`, so it survives a live refresh
+- `components/ImageLightbox.jsx` added: a thumbnail that opens the full image in a shadcn `Dialog`, with `cursor-zoom-in`, keyboard focus ring, and an `sr-only` title
+- Tracked Content: upload, preview, and remove controls in the edit dialog; 10MB and image-only client-side checks; the field explains itself when Cloudinary is not configured
+- Tracked Content and Tracked Category tables: Reddit posts with an image show it at the left of the row, matching where YouTube thumbnails already sit, and clicking it opens the full size view
+
 **Manual view counts for tracked Reddit posts**
 - Reddit removed `view_count` from its API in December 2018, so views for a tracked Reddit post can now be entered by hand
 - `PUT /api/tracked-content/:id` accepts `manualViews`: a whole number of 0 or more, `null` to clear, rejected with a 400 for YouTube items which report a real view count
@@ -20,11 +29,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- Tracked Category "Post Views" subtitle now reads "across 9 posts" rather than "entered by hand on 9 of 9 posts"
+
 **Views now include tracked content everywhere**
 - Overview Total Views tab: channel views plus tracked YouTube views plus manual Reddit views; tab subtitle breaks the two apart
 - Views tab gained Total Views, Channel Views, and Tracked Views stat cards, plus a "Views by Category" area chart
 - Tracked Category page: "YouTube Views" replaced with a combined "Total Views" card showing the YouTube and Reddit split
-- Tracked Category Reddit section: "Post Views" stat card added showing how many posts have a figure recorded; "Avg Karma per Post" folded into the Post Karma subtitle to keep the grid at four cards
+- Tracked Category Reddit section: "Post Views" stat card added; "Avg Karma per Post" folded into the Post Karma subtitle to keep the grid at four cards
 - Tracked Category Reddit table: Views column added
 - Overview Tracked Categories card: view figure is now the YouTube plus Reddit total rather than YouTube alone
 

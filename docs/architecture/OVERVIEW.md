@@ -100,6 +100,7 @@ Cloudflare scheduler fires cron trigger
 | Scheduled posts | `scheduled_posts` table | Queryable by status + scheduled_at |
 | Video/media analytics | Upstash Redis (`videos:` / `ig:` keys) | Avoids repeated heavy API calls |
 | Media files (for publishing) | Cloudinary CDN | Instagram requires public URL |
+| Tracked Reddit post images | Cloudinary CDN | Reddit's public JSON API carries no usable thumbnail |
 | API secrets | Cloudflare Worker secrets | Encrypted at rest, never in responses |
 
 ## Environment Configuration
