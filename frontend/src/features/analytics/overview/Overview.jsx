@@ -21,6 +21,7 @@ import { useAppContext } from '../../../context/AppContext';
 import { api } from '../../../services/api';
 import { fmtNum, fmtNumFull, fmtPercent, timeAgo } from '../../../utils/formatters';
 import { trackedViews } from '../../../utils/trackedContent';
+import { IG_CONTENT_TYPES, IG_CONTENT_TYPE_META } from '../../../utils/instagramContent';
 import {
   RefreshCw, Users, VideoIcon, ExternalLink, Camera, BarChart2, Eye,
   Tag, ThumbsUp, MessageSquare, CirclePlay, Flame, BookmarkCheck,
@@ -113,7 +114,10 @@ export default function Overview() {
 
   // Per-account analytics from Redis cache (populated when user visits individual analytics pages)
   const cacheTotals = useMemo(() => {
-    const result = { ytLikes: 0, ytComments: 0, igLikes: 0, igComments: 0, rdPosts: 0, rdKarma: 0, rdComments: 0 };
+    const result = {
+      ytLikes: 0, ytComments: 0, igLikes: 0, igComments: 0, igViews: 0, rdPosts: 0, rdKarma: 0, rdComments: 0,
+      igTypes: Object.fromEntries(IG_CONTENT_TYPES.map(t => [t, { count: 0, views: 0 }])),
+    };
     accounts.forEach(a => {
       const c = analyticsCache[a.id];
       if (!c) return;
@@ -123,6 +127,11 @@ export default function Overview() {
       } else if (a.platform === 'instagram') {
         result.igLikes    += c.totalLikes    ?? 0;
         result.igComments += c.totalComments ?? 0;
+        result.igViews    += c.totalViews    ?? 0;
+        IG_CONTENT_TYPES.forEach(t => {
+          result.igTypes[t].count += c.contentTypes?.[t]?.count ?? 0;
+          result.igTypes[t].views += c.contentTypes?.[t]?.views ?? 0;
+        });
       } else if (a.platform === 'reddit') {
         result.rdPosts    += c.fetchedPosts  ?? 0;
         result.rdKarma    += c.totalScore    ?? 0;
@@ -157,9 +166,15 @@ export default function Overview() {
   // Total Content = YT videos + IG posts + Reddit account posts (from cache) + tracked items
   const totalContent = totals.videos + totals.posts + cacheTotals.rdPosts + trackedStats.total;
 
-  // Total Views = YouTube channel views + tracked video views + manually entered Reddit post views
+  // Total Views = YouTube channel views + Instagram reel, post, and video views + tracked views
   const trackedViewTotal = trackedStats.ytViews + trackedStats.rdViews;
-  const totalViews = totals.views + trackedViewTotal;
+  const totalViews = totals.views + cacheTotals.igViews + trackedViewTotal;
+  const igTypeSummary = (field) => IG_CONTENT_TYPES
+    .map(t => `${fmtNum(cacheTotals.igTypes[t][field])} ${IG_CONTENT_TYPE_META[t].plural.toLowerCase()}`)
+    .join(' · ');
+  const igAccountRows = igAccounts
+    .map(a => ({ account: a, cache: analyticsCache[a.id] }))
+    .sort((x, y) => (y.cache?.totalViews ?? 0) - (x.cache?.totalViews ?? 0));
 
   // Tracked items are third-party URLs the user monitors, never their own account content,
   // so cache totals and tracked totals are disjoint and sum without double-counting.
@@ -387,8 +402,9 @@ export default function Overview() {
                 <span className="text-2xl font-bold tabular-nums leading-tight mt-0.5">{fmtNum(totalViews)}</span>
                 <span className="text-[11px] text-muted-foreground mt-0.5 truncate w-full">
                   {[
-                    totals.views       ? `${fmtNum(totals.views)} channels`      : null,
-                    trackedViewTotal   ? `${fmtNum(trackedViewTotal)} tracked`   : null,
+                    totals.views          ? `${fmtNum(totals.views)} YouTube`             : null,
+                    cacheTotals.igViews   ? `${fmtNum(cacheTotals.igViews)} Instagram`    : null,
+                    trackedViewTotal      ? `${fmtNum(trackedViewTotal)} tracked`         : null,
                   ].filter(Boolean).join(' · ') || 'no views recorded yet'}
                 </span>
               </TabsTrigger>
@@ -399,7 +415,7 @@ export default function Overview() {
                 <span className="text-[11px] text-muted-foreground mt-0.5 truncate w-full">
                   {[
                     totals.videos       ? `${fmtNum(totals.videos)} videos`      : null,
-                    totals.posts        ? `${fmtNum(totals.posts)} IG posts`      : null,
+                    totals.posts        ? `${fmtNum(totals.posts)} Instagram`     : null,
                     cacheTotals.rdPosts ? `${fmtNum(cacheTotals.rdPosts)} Reddit` : null,
                     trackedStats.total  ? `${fmtNum(trackedStats.total)} tracked` : null,
                   ].filter(Boolean).join(' · ') || 'no content yet'}
@@ -549,11 +565,70 @@ export default function Overview() {
 
           {/* ── VIEWS TAB ──────────────────────────────────────────────────── */}
           <TabsContent value="views" className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <StatCard icon={<Eye />}        label="Total Views"    value={fmtNum(totalViews)}             subtitle="channels and tracked content combined"                                                     gradient="blue"   />
-              <StatCard icon={<CirclePlay />} label="Channel Views"  value={fmtNum(totals.views)}           subtitle={`${ytAccounts.length} YouTube channel${ytAccounts.length !== 1 ? 's' : ''}`}                gradient="red"    />
-              <StatCard icon={<BookmarkCheck />} label="Tracked Views" value={fmtNum(trackedViewTotal)}     subtitle={`${fmtNum(trackedStats.ytViews)} YouTube · ${fmtNum(trackedStats.rdViews)} Reddit`}        gradient="purple" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+              <StatCard icon={<Eye />}           label="Total Views"     value={fmtNum(totalViews)}          subtitle="YouTube, Instagram, and tracked content combined"                                          gradient="blue"   />
+              <StatCard icon={<CirclePlay />}    label="Channel Views"   value={fmtNum(totals.views)}        subtitle={`${ytAccounts.length} YouTube channel${ytAccounts.length !== 1 ? 's' : ''}`}                gradient="red"    />
+              <StatCard icon={<Camera />}        label="Instagram Views" value={fmtNum(cacheTotals.igViews)} subtitle={igAccounts.length > 0 ? igTypeSummary('views') : 'no Instagram accounts'}                  gradient="pink"   />
+              <StatCard icon={<BookmarkCheck />} label="Tracked Views"   value={fmtNum(trackedViewTotal)}    subtitle={`${fmtNum(trackedStats.ytViews)} YouTube · ${fmtNum(trackedStats.rdViews)} Reddit`}        gradient="purple" />
             </div>
+
+            {igAccounts.length > 0 && (
+              <MainCard title="Instagram Views by Content Type" content={false}>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Account</TableHead>
+                      {IG_CONTENT_TYPES.map(t => (
+                        <TableHead key={t} className="text-right">{IG_CONTENT_TYPE_META[t].plural}</TableHead>
+                      ))}
+                      <TableHead className="text-right">Total Views</TableHead>
+                      <TableHead className="w-10" />
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {igAccountRows.map(({ account: a, cache }) => (
+                      <TableRow key={a.id} className="cursor-pointer" onClick={() => navigate(`/instagram/${a.id}`)}>
+                        <TableCell>
+                          <div className="flex items-center gap-2.5">
+                            <Avatar className="h-8 w-8">
+                              <AvatarImage src={a.profilePictureUrl} />
+                              <AvatarFallback className="bg-pink-500 text-xs font-bold text-white">
+                                {(a.title || a.username || '?').slice(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="text-sm font-semibold leading-none">{a.title || a.username}</p>
+                              <p className="text-xs text-muted-foreground mt-0.5">@{a.username || ''}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        {IG_CONTENT_TYPES.map(t => (
+                          <TableCell key={t} className="text-right">
+                            {cache?.cacheWarmed ? (
+                              <>
+                                <p className="text-sm font-semibold">{fmtNum(cache.contentTypes?.[t]?.views)}</p>
+                                <p className="text-xs text-muted-foreground">{fmtNum(cache.contentTypes?.[t]?.count)} {IG_CONTENT_TYPE_META[t].plural.toLowerCase()}</p>
+                              </>
+                            ) : <span className="text-sm text-muted-foreground">-</span>}
+                          </TableCell>
+                        ))}
+                        <TableCell className="text-right text-sm font-bold">
+                          {cache?.cacheWarmed ? fmtNum(cache.totalViews) : <span className="font-normal text-muted-foreground">{isSyncing ? 'syncing...' : '-'}</span>}
+                        </TableCell>
+                        <TableCell>
+                          <Tooltip>
+                            <TooltipTrigger render={<Button variant="ghost" size="icon" className="size-7" onClick={(e) => { e.stopPropagation(); navigate(`/instagram/${a.id}`); }} />}>
+                              <ExternalLink />
+                            </TooltipTrigger>
+                            <TooltipContent>View Analytics</TooltipContent>
+                          </Tooltip>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </MainCard>
+            )}
 
             {categoryStats.length > 0 && (
               <MainCard
@@ -631,7 +706,7 @@ export default function Overview() {
           <TabsContent value="content" className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatCard icon={<CirclePlay />}    label="YouTube Videos"   value={fmtNum(totals.videos)}       subtitle={`${ytAccounts.length} channel${ytAccounts.length !== 1 ? 's' : ''}`}                                    gradient="red"    />
-              <StatCard icon={<VideoIcon />}     label="Instagram Posts"  value={fmtNum(totals.posts)}        subtitle={`${igAccounts.length} account${igAccounts.length !== 1 ? 's' : ''}`}                                   gradient="blue"   />
+              <StatCard icon={<VideoIcon />}     label="Instagram Content" value={fmtNum(totals.posts)}       subtitle={IG_CONTENT_TYPES.some(t => cacheTotals.igTypes[t].count > 0) ? igTypeSummary('count') : `${igAccounts.length} account${igAccounts.length !== 1 ? 's' : ''}`} gradient="blue"   />
               <StatCard icon={<Flame />}         label="Reddit Posts"     value={fmtNum(cacheTotals.rdPosts)} subtitle={cacheTotals.rdPosts > 0 ? 'from analytics cache' : 'visit Reddit analytics to load'}                   gradient="orange" />
               <StatCard icon={<BookmarkCheck />} label="Tracked Content"  value={fmtNum(trackedStats.total)}  subtitle={`${trackedStats.ytItems.length} YouTube · ${trackedStats.rdItems.length} Reddit`}                 gradient="purple" />
             </div>
@@ -641,7 +716,7 @@ export default function Overview() {
                 <div className="space-y-1">
                   {allSortedByContent.map((a, i) => {
                     const metric = a.platform === 'instagram'
-                      ? `${fmtNum(a.mediaCount)} posts`
+                      ? `${fmtNum(a.mediaCount)} items`
                       : a.platform === 'reddit'
                         ? `${fmtNum(a.totalKarma)} karma`
                         : `${fmtNum(a.viewCount)} views`;
@@ -736,7 +811,7 @@ export default function Overview() {
                         ? `${fmtNum(a.totalKarma)} karma`
                         : `${fmtNum(a.subscriberCount)} subs`;
                     const content = a.platform === 'instagram'
-                      ? `${fmtNum(a.mediaCount)} posts`
+                      ? `${fmtNum(a.mediaCount)} items`
                       : a.platform === 'reddit'
                         ? `${fmtNum(a.postKarma)} post karma`
                         : `${fmtNum(a.viewCount)} views · ${fmtNum(a.videoCount)} vids`;

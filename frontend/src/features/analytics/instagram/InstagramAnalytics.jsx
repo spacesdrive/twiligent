@@ -18,15 +18,16 @@ import MainCard from '../../../components/MainCard';
 import { useAppContext } from '../../../context/AppContext';
 import { api } from '../../../services/api';
 import { fmtNum, fmtNumFull, fmtDate, timeAgo } from '../../../utils/formatters';
+import { IG_CONTENT_TYPES, IG_CONTENT_TYPE_META, igContentTypeMeta, fmtIGViews } from '../../../utils/instagramContent';
 import {
   ArrowLeft, RefreshCw, Heart, MessageCircle, Users, UserPlus, Image,
   TrendingUp, Calendar, Clock, Zap, Flame, Trophy, Star, Camera,
-  ExternalLink, BarChart2, Hash,
+  ExternalLink, BarChart2, Hash, Eye, Clapperboard, Film,
 } from 'lucide-react';
 
 const IG_COLORS = ['#F58529', '#DD2A7B', '#8134AF', '#515BD4', '#FEDA77', '#405DE6'];
-const MEDIA_TYPE_NAMES  = { IMAGE: 'Photos', VIDEO: 'Videos', CAROUSEL_ALBUM: 'Carousels', REEL: 'Reels' };
-const MEDIA_TYPE_COLORS = { IMAGE: '#F58529', VIDEO: '#DD2A7B', CAROUSEL_ALBUM: '#8134AF', REEL: '#515BD4' };
+const CONTENT_TYPE_ICONS = { reel: <Clapperboard />, post: <Image />, video: <Film /> };
+const CONTENT_TYPE_GRADIENTS = { reel: 'pink', post: 'orange', video: 'purple' };
 
 const TS = { background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 };
 
@@ -95,13 +96,12 @@ export default function InstagramAnalytics() {
   const p = profile || account;
   const a = analytics || {};
 
-  const mediaTypeData = a.mediaTypeDistribution
-    ? Object.entries(a.mediaTypeDistribution).map(([key, value], i) => ({ name: MEDIA_TYPE_NAMES[key] || key, value, color: MEDIA_TYPE_COLORS[key] || IG_COLORS[i % IG_COLORS.length] }))
-    : [];
+  const typeStats = a.contentTypeStats || {};
+  const typeRows = IG_CONTENT_TYPES
+    .filter(type => typeStats[type]?.count > 0)
+    .map(type => ({ type, ...typeStats[type], name: IG_CONTENT_TYPE_META[type].plural, color: IG_CONTENT_TYPE_META[type].color }));
+  const contentMixData = typeRows.map(row => ({ name: row.name, value: row.count, color: row.color }));
   const topPostsData = (a.topPosts || []).slice(0, 8).map((post, i) => ({ name: `#${i + 1}`, likes: post.likeCount, comments: post.commentsCount }));
-  const perfByTypeData = a.performanceByType
-    ? Object.entries(a.performanceByType).map(([type, s]) => ({ name: MEDIA_TYPE_NAMES[type] || type, avgLikes: s.avgLikes, avgComments: s.avgComments, count: s.count, color: MEDIA_TYPE_COLORS[type] || '#999' }))
-    : [];
   const dayOfWeekData = (a.postsByDayOfWeek || []).map(d => ({ name: d.shortDay, posts: d.posts, avgEngagement: d.avgEngagement, avgLikes: d.avgLikes }));
   const timelineData  = (a.engagementTimeline || []).map(m => ({ name: m.month, posts: m.posts, likes: m.likes, comments: m.comments, avgLikes: m.avgLikes }));
   const captionData   = a.captionLengthCorrelation || [];
@@ -145,6 +145,23 @@ export default function InstagramAnalytics() {
         <StatCard icon={<Heart />}         label="Total Likes"     value={fmtNum(a.totalLikes)}                      subtitle={fmtNumFull(a.totalLikes)}     gradient="red"    small />
         <StatCard icon={<MessageCircle />} label="Total Comments"  value={fmtNum(a.totalComments)}                   subtitle={fmtNumFull(a.totalComments)}  gradient="teal"   small />
         <StatCard icon={<TrendingUp />}    label="Engagement Rate" value={`${a.engagementRate || 0}%`}               subtitle={`Avg ${fmtNum(a.avgLikes)} likes/post`} gradient="green" small />
+      </div>
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+        <StatCard icon={<Eye />} label="Total Views" value={fmtNum(a.totalViews)} subtitle={`${a.mediaWithViews || 0} of ${a.fetchedPosts || 0} items report views`} gradient="blue" small />
+        {IG_CONTENT_TYPES.map(type => {
+          const stats = typeStats[type] || {};
+          return (
+            <StatCard
+              key={type}
+              icon={CONTENT_TYPE_ICONS[type]}
+              label={IG_CONTENT_TYPE_META[type].plural}
+              value={fmtNum(stats.count)}
+              subtitle={stats.viewsReported > 0 ? `${fmtNum(stats.totalViews)} views, ${fmtNum(stats.avgViews)} avg` : 'no views reported'}
+              gradient={CONTENT_TYPE_GRADIENTS[type]}
+              small
+            />
+          );
+        })}
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
         <StatCard icon={<Zap />}          label="Avg Likes/Post" value={fmtNum(a.avgLikes)}             gradient="cyan"   small />
@@ -202,11 +219,11 @@ export default function InstagramAnalytics() {
           ) : <p className="text-sm text-muted-foreground text-center py-10">Not enough data for timeline</p>}
         </MainCard>
         <MainCard title="Content Type Mix" contentClassName="p-3">
-          {mediaTypeData.length > 0 ? (
+          {contentMixData.length > 0 ? (
             <ResponsiveContainer width="100%" height={280} debounce={200}>
               <PieChart>
-                <Pie data={mediaTypeData} dataKey="value" nameKey="name" cx="50%" cy="44%" outerRadius={80} innerRadius={42} paddingAngle={3} strokeWidth={0}>
-                  {mediaTypeData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                <Pie data={contentMixData} dataKey="value" nameKey="name" cx="50%" cy="44%" outerRadius={80} innerRadius={42} paddingAngle={3} strokeWidth={0}>
+                  {contentMixData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                 </Pie>
                 <ReTooltip contentStyle={TS} formatter={(v, n) => [`${v} posts`, n]} />
                 <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
@@ -219,9 +236,9 @@ export default function InstagramAnalytics() {
       {/* Performance by type + Day of week */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <MainCard title="Performance by Content Type" contentClassName="p-3">
-          {perfByTypeData.length > 0 ? (
+          {typeRows.length > 0 ? (
             <ResponsiveContainer width="100%" height={260} debounce={200}>
-              <BarChart data={perfByTypeData}>
+              <BarChart data={typeRows}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="name" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
                 <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} width={44} />
@@ -329,14 +346,15 @@ export default function InstagramAnalytics() {
                 className="relative aspect-square rounded-lg overflow-hidden border border-border cursor-pointer group hover:shadow-md transition-shadow"
                 onClick={() => post.permalink && window.open(post.permalink, '_blank')}
               >
-                <img src={post.thumbnailUrl || post.mediaUrl} className="w-full h-full object-cover" alt=""
+                <img src={post.contentType === 'post' ? (post.thumbnailUrl || post.mediaUrl) : post.thumbnailUrl} className="w-full h-full object-cover" alt=""
                   onError={e => { e.target.style.display = 'none'; }} />
-                {post.mediaType !== 'IMAGE' && (
+                {post.contentType !== 'post' && (
                   <span className="absolute top-1 right-1 bg-black/65 text-white text-[9px] font-semibold px-1 rounded">
-                    {MEDIA_TYPE_NAMES[post.mediaType]?.[0] || 'V'}
+                    {igContentTypeMeta(post.contentType).label}
                   </span>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-1 gap-2">
+                  <span className="flex items-center gap-0.5 text-white text-[10px] font-semibold"><Eye className="h-2.5 w-2.5" />{fmtIGViews(post.viewCount)}</span>
                   <span className="flex items-center gap-0.5 text-white text-[10px] font-semibold"><Heart className="h-2.5 w-2.5" />{fmtNum(post.likeCount)}</span>
                   <span className="flex items-center gap-0.5 text-white text-[10px] font-semibold"><MessageCircle className="h-2.5 w-2.5" />{fmtNum(post.commentsCount)}</span>
                 </div>
@@ -355,6 +373,7 @@ export default function InstagramAnalytics() {
                 <TableHead className="w-8">#</TableHead>
                 <TableHead>Caption</TableHead>
                 <TableHead>Type</TableHead>
+                <TableHead className="text-right">Views</TableHead>
                 <TableHead className="text-right">Likes</TableHead>
                 <TableHead className="text-right">Comments</TableHead>
                 <TableHead className="text-right">Engagement</TableHead>
@@ -363,58 +382,66 @@ export default function InstagramAnalytics() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {a.topPosts.slice(0, 10).map((post, i) => (
-                <TableRow key={post.id}>
-                  <TableCell className="text-xs text-muted-foreground">{i + 1}</TableCell>
-                  <TableCell className="max-w-[200px]"><p className="text-sm truncate">{post.caption || '(no caption)'}</p></TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="text-[10px] h-5" style={{ borderColor: `${MEDIA_TYPE_COLORS[post.mediaType] || '#999'}50`, color: MEDIA_TYPE_COLORS[post.mediaType] || '#999', background: `${MEDIA_TYPE_COLORS[post.mediaType] || '#999'}10` }}>
-                      {MEDIA_TYPE_NAMES[post.mediaType] || post.mediaType}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right text-sm">{fmtNum(post.likeCount)}</TableCell>
-                  <TableCell className="text-right text-sm">{fmtNum(post.commentsCount)}</TableCell>
-                  <TableCell className="text-right text-sm">{fmtNum(post.engagement)}</TableCell>
-                  <TableCell className="text-xs text-muted-foreground">{fmtDate(post.timestamp)}</TableCell>
-                  <TableCell>
-                    {post.permalink && (
-                      <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => window.open(post.permalink, '_blank')}>
-                        <ExternalLink className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
+              {a.topPosts.slice(0, 10).map((post, i) => {
+                const meta = igContentTypeMeta(post.contentType);
+                return (
+                  <TableRow key={post.id}>
+                    <TableCell className="text-xs text-muted-foreground">{i + 1}</TableCell>
+                    <TableCell className="max-w-[200px]"><p className="text-sm truncate">{post.caption || '(no caption)'}</p></TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-[10px] h-5" style={{ borderColor: `${meta.color}50`, color: meta.color, background: `${meta.color}10` }}>
+                        {meta.label}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-right text-sm">{fmtIGViews(post.viewCount)}</TableCell>
+                    <TableCell className="text-right text-sm">{fmtNum(post.likeCount)}</TableCell>
+                    <TableCell className="text-right text-sm">{fmtNum(post.commentsCount)}</TableCell>
+                    <TableCell className="text-right text-sm">{fmtNum(post.engagement)}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{fmtDate(post.timestamp)}</TableCell>
+                    <TableCell>
+                      {post.permalink && (
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => window.open(post.permalink, '_blank')}>
+                          <ExternalLink className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </MainCard>
       )}
 
       {/* Performance by type table */}
-      {perfByTypeData.length > 0 && (
+      {typeRows.length > 0 && (
         <MainCard title="Performance Summary by Content Type" content={false}>
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Type</TableHead>
                 <TableHead className="text-right">Count</TableHead>
+                <TableHead className="text-right">Total Views</TableHead>
+                <TableHead className="text-right">Avg Views</TableHead>
                 <TableHead className="text-right">Avg Likes</TableHead>
                 <TableHead className="text-right">Avg Comments</TableHead>
                 <TableHead className="text-right">Avg Engagement</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {perfByTypeData.map(row => (
-                <TableRow key={row.name}>
+              {typeRows.map(row => (
+                <TableRow key={row.type}>
                   <TableCell>
                     <Badge variant="outline" className="text-xs" style={{ borderColor: `${row.color}50`, color: row.color, background: `${row.color}10` }}>
                       {row.name}
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right">{row.count}</TableCell>
+                  <TableCell className="text-right">{row.viewsReported > 0 ? fmtNum(row.totalViews) : '-'}</TableCell>
+                  <TableCell className="text-right">{row.viewsReported > 0 ? fmtNum(row.avgViews) : '-'}</TableCell>
                   <TableCell className="text-right">{fmtNum(row.avgLikes)}</TableCell>
                   <TableCell className="text-right">{fmtNum(row.avgComments)}</TableCell>
-                  <TableCell className="text-right">{fmtNum(row.avgLikes + row.avgComments)}</TableCell>
+                  <TableCell className="text-right">{fmtNum(row.avgEngagement)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

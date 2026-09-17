@@ -2,7 +2,13 @@
 
 ## Current State
 
-This project has no automated test suite. Testing is currently manual. This is a known gap - see ROADMAP.md.
+Most testing is manual. The backend has unit tests for pure service logic using Node's built-in test runner (no dependencies). Broader coverage is a known gap - see ROADMAP.md.
+
+```bash
+cd backend && npm test
+```
+
+Test files sit next to the module they cover as `*.test.js` (for example `services/instagram.test.js`). Wrangler only bundles files reachable from `server.js`, so test files never ship in the Worker.
 
 The testing workflow documented here describes what should run before shipping any change.
 
@@ -67,6 +73,9 @@ Open the app in a browser. For each changed area, test:
 - [ ] Overview page loads with correct totals
 - [ ] Channel analytics page loads for a YouTube account
 - [ ] Instagram analytics page loads for an Instagram account
+- [ ] Reels show as Reels (not Videos) on the Instagram analytics page and IG Content Explorer; Reels, Posts, and Videos counts add up to the items analyzed
+- [ ] Views appear per content type; items without insights show `-`
+- [ ] Overview Total Views includes Instagram views, and the Views tab shows the per-account content type table
 - [ ] Video explorer shows all videos, filtering works
 
 **Publishing (if changed):**

@@ -7,7 +7,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Fixed
+
+**Instagram Reels counted as Videos**
+- Reels were labelled Videos everywhere because the backend only requested `media_type`, which Instagram reports as `VIDEO` for reels, and checked for a `REEL` value the API never returns
+- Media is now classified from `media_product_type` into exactly one of Reels, Posts (photos and carousels), or Videos (in-feed videos), with a `/reel/` permalink fallback and case-insensitive matching
+- IG Content Explorer: Newest First sorting works, Best Engagement is (likes + comments) / views, and filter dropdowns show their labels instead of raw values
+- Cached Instagram media from older versions is refetched automatically
+
 ### Added
+
+**Instagram views by content type**
+- Views are fetched from the Instagram `views` insight alongside media, with no extra requests per item; items without insights show `-` instead of 0
+- Instagram analytics page: Total Views plus Reels, Posts, and Videos cards; views columns in the top posts and content type tables
+- IG Content Explorer: views on every card, per-type count and view totals, and a Most Viewed sort
+- Overview: Total Views now includes Instagram views; the Views tab adds an Instagram Views card and a per-account Reels / Posts / Videos views table; the Content tab breaks Instagram content down by type
+- Backend unit tests for classification, views parsing, pagination fallback, and per-type totals (`cd backend && npm test`)
+
 
 **Images on tracked Reddit posts**
 - Reddit's public JSON API carries no usable thumbnail, so a screenshot can now be uploaded per tracked Reddit post
