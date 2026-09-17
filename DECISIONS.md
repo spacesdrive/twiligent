@@ -485,3 +485,24 @@ Records every significant architectural decision, the alternatives considered, a
 **Trade-offs:**
 - Including karma in Total Audience makes the number less directly comparable to subscriber/follower counts; this is mitigated by clearly labeling each component (`X subs · Y followers · Z karma`).
 - The tab interface requires the user to click between views rather than seeing everything at once; this is the correct tradeoff for a dense analytics dashboard.
+
+---
+
+## ADR-022: Instagram content classified by media_product_type; views read from insights
+
+**Date:** 2026-09-17
+**Status:** Accepted
+
+**Decision:** Instagram media is classified into exactly one of `reel`, `post`, or `video` by `classifyInstagramMedia()`, using `media_product_type` first, the `/reel/` permalink when the product type is missing, and `media_type` last. Views come from the `views` media insight, requested inline with the `insights.metric(views)` field expansion. Views are counted in Overview Total Views. The `ig:` cache entry gains a `version` so older entries are refetched.
+
+**Context:** Reels were labelled Videos because the code only requested `media_type` and checked for a `REEL` value that the Graph API never returns. Reels come back as `VIDEO`, and only `media_product_type: REELS` identifies them. No views were fetched at all.
+
+**Alternatives considered:**
+- One `/{media-id}/insights` request per item: gives views even when a single item's insights fail, but costs up to 500 extra subrequests per refresh, which exceeds Cloudflare Workers subrequest limits on the free plan.
+- Keeping `media_type` keys (`IMAGE`, `CAROUSEL_ALBUM`, ...) and adding `REELS` next to them: photos and carousels are both posts to the user, and mixing format with surface allows the same item to look like two categories.
+- Changing the cache key prefix instead of versioning: would leave old `ig:` keys orphaned forever, since these keys have no TTL.
+
+**Trade-offs:**
+- When any item on a page cannot return insights (for example media posted before the account became professional), Instagram fails the entire page. That page is refetched without views, so its items show `-` rather than a number. Page size is 50 to limit the impact.
+- Meta's reference labels `media_product_type` as Facebook Login only, but it is returned for Instagram Login in practice. The permalink fallback keeps classification correct if it is ever omitted.
+- Views are organic Instagram views only and can lag by up to 48 hours, per Meta.

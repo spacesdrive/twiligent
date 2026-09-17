@@ -32,8 +32,8 @@ All routes live under `/api`. Routes under the `api` sub-app require a valid Sup
 |---|---|---|---|
 | GET | `/api/accounts/:id/analytics` | `routes/analytics.js` | Full YouTube analytics - fetches up to 500 videos, runs `computeVideoAnalytics()`, returns 50+ metrics |
 | GET | `/api/accounts/:id/videos` | `routes/analytics.js` | Returns cached video list (from Redis if available) |
-| GET | `/api/accounts/:id/ig-analytics` | `routes/analytics.js` | Instagram analytics - fetches up to 500 media, runs `computeInstagramAnalytics()` |
-| GET | `/api/accounts/:id/ig-media` | `routes/analytics.js` | Returns cached Instagram media list |
+| GET | `/api/accounts/:id/ig-analytics` | `routes/analytics.js` | Instagram analytics - fetches up to 500 media with views, classifies each as reel, post, or video, runs `computeInstagramAnalytics()` |
+| GET | `/api/accounts/:id/ig-media` | `routes/analytics.js` | Returns the Instagram media list (with `contentType` and `viewCount`) from cache, fetching live on a miss |
 | GET | `/api/comparison` | `routes/analytics.js` | Cross-account comparison data for the Overview dashboard |
 
 ### Instagram OAuth

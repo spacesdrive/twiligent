@@ -112,45 +112,114 @@ export async function fetchInstagramProfile(igUserId, accessToken) {
     };
 }
 
-export async function fetchInstagramMedia(igUserId, accessToken, limit = 500) {
-    let allMedia = [];
-    let url = `${IG_GRAPH_URL}/${IG_API_VERSION}/${igUserId}/media?access_token=${accessToken}&fields=id,caption,media_type,media_url,thumbnail_url,cover_url,permalink,timestamp,like_count,comments_count&limit=${Math.min(limit, 100)}`;
+export const CONTENT_TYPES = ['reel', 'post', 'video'];
 
-    let pages = 0;
-    while (url && pages < 10 && allMedia.length < limit) {
-        const controller = new AbortController();
-        const timer = setTimeout(() => controller.abort(), 15000);
-        let res;
-        try {
-            res = await fetch(url, { signal: controller.signal });
-        } catch (err) {
-            clearTimeout(timer);
-            if (err.name === 'AbortError') throw new Error('Instagram API request timed out');
-            throw new Error(`Instagram API unreachable (${err.message})`);
-        }
-        clearTimeout(timer);
-        const data = await res.json();
-        if (data.error) throw new Error(data.error.message || data.error.error_message);
-        if (data.data) allMedia = allMedia.concat(data.data);
-        url = data.paging?.next || null;
-        pages++;
+const MEDIA_FIELDS = 'id,caption,media_type,media_product_type,media_url,thumbnail_url,cover_url,permalink,timestamp,like_count,comments_count';
+const VIEWS_FIELD = 'insights.metric(views)';
+const MEDIA_PAGE_SIZE = 50;
+const MAX_MEDIA_PAGES = 10;
+const REEL_PERMALINK = /instagram\.com\/reels?\//i;
+
+// media_type never says REELS - Instagram reports reels as VIDEO and only media_product_type tells them apart.
+export function classifyInstagramMedia(raw) {
+    const productType = String(raw?.media_product_type || '').toUpperCase();
+    const mediaType = String(raw?.media_type || '').toUpperCase();
+
+    if (productType === 'REELS') return 'reel';
+    if (!productType && REEL_PERMALINK.test(raw?.permalink || '')) return 'reel';
+    if (mediaType === 'REELS' || mediaType === 'REEL') return 'reel';
+    if (mediaType === 'VIDEO') return 'video';
+    return 'post';
+}
+
+export function extractInstagramViews(raw) {
+    const metric = raw?.insights?.data?.find(d => d.name === 'views');
+    const value = metric?.values?.[0]?.value ?? metric?.total_value?.value;
+    const views = Number(value);
+    return value !== undefined && value !== null && Number.isFinite(views) ? views : null;
+}
+
+export function normalizeInstagramMedia(raw) {
+    const contentType = classifyInstagramMedia(raw);
+    const mediaType = String(raw.media_type || 'IMAGE').toUpperCase();
+    return {
+        id: raw.id,
+        caption: raw.caption || '',
+        contentType,
+        mediaType,
+        mediaUrl: raw.media_url || '',
+        thumbnailUrl: raw.cover_url || raw.thumbnail_url || (contentType === 'post' ? raw.media_url || '' : ''),
+        permalink: raw.permalink || '',
+        timestamp: raw.timestamp || '',
+        likeCount: raw.like_count || 0,
+        commentsCount: raw.comments_count || 0,
+        viewCount: extractInstagramViews(raw),
+    };
+}
+
+async function fetchMediaPage(igUserId, accessToken, after) {
+    const params = { access_token: accessToken, limit: String(MEDIA_PAGE_SIZE) };
+    if (after) params.after = after;
+    try {
+        return await igFetch(`/${igUserId}/media`, { ...params, fields: `${MEDIA_FIELDS},${VIEWS_FIELD}` });
+    } catch {
+        // One item without insights (e.g. posted before the account went professional) fails the whole page.
+        return igFetch(`/${igUserId}/media`, { ...params, fields: MEDIA_FIELDS });
+    }
+}
+
+export async function fetchInstagramMedia(igUserId, accessToken, limit = 500) {
+    const allMedia = [];
+    let after = null;
+
+    for (let page = 0; page < MAX_MEDIA_PAGES && allMedia.length < limit; page++) {
+        const data = await fetchMediaPage(igUserId, accessToken, after);
+        if (Array.isArray(data.data)) allMedia.push(...data.data);
+        after = data.paging?.next ? data.paging?.cursors?.after : null;
+        if (!after) break;
     }
 
-    return allMedia.slice(0, limit).map(m => {
-        const isVideo = m.media_type === 'REEL' || m.media_type === 'VIDEO';
-        const thumbnailUrl = m.cover_url || m.thumbnail_url || (isVideo ? '' : m.media_url || '');
-        return {
-            id: m.id,
-            caption: m.caption || '',
-            mediaType: m.media_type || 'IMAGE',
-            mediaUrl: m.media_url || '',
-            thumbnailUrl,
-            permalink: m.permalink || '',
-            timestamp: m.timestamp || '',
-            likeCount: m.like_count || 0,
-            commentsCount: m.comments_count || 0,
+    const unique = new Map();
+    allMedia.forEach(m => { if (m?.id && !unique.has(m.id)) unique.set(m.id, m); });
+    return [...unique.values()].slice(0, limit).map(normalizeInstagramMedia);
+}
+
+export function summarizeContentTypes(media) {
+    const summary = {};
+    CONTENT_TYPES.forEach(type => {
+        summary[type] = { count: 0, likes: 0, comments: 0, views: 0, viewsReported: 0 };
+    });
+    (media || []).forEach(m => {
+        const s = summary[CONTENT_TYPES.includes(m.contentType) ? m.contentType : 'post'];
+        s.count++;
+        s.likes += m.likeCount || 0;
+        s.comments += m.commentsCount || 0;
+        if (typeof m.viewCount === 'number') {
+            s.views += m.viewCount;
+            s.viewsReported++;
+        }
+    });
+    return summary;
+}
+
+function buildContentTypeStats(media) {
+    const summary = summarizeContentTypes(media);
+    const stats = {};
+    CONTENT_TYPES.forEach(type => {
+        const s = summary[type];
+        stats[type] = {
+            count: s.count,
+            totalLikes: s.likes,
+            totalComments: s.comments,
+            totalViews: s.views,
+            viewsReported: s.viewsReported,
+            avgLikes: s.count > 0 ? Math.round(s.likes / s.count) : 0,
+            avgComments: s.count > 0 ? Math.round(s.comments / s.count) : 0,
+            avgEngagement: s.count > 0 ? Math.round((s.likes + s.comments) / s.count) : 0,
+            avgViews: s.viewsReported > 0 ? Math.round(s.views / s.viewsReported) : 0,
         };
     });
+    return stats;
 }
 
 export function computeInstagramAnalytics(profile, media) {
@@ -160,10 +229,11 @@ export function computeInstagramAnalytics(profile, media) {
         avgLikes: 0, avgComments: 0, avgEngagement: 0,
         medianLikes: 0, medianComments: 0,
         engagementRate: 0, likesPerFollower: 0, commentsPerFollower: 0,
+        totalViews: 0, avgViews: 0, mediaWithViews: 0,
         bestByLikes: null, bestByComments: null, worstByLikes: null,
-        recentMedia: [], mediaTypeDistribution: {},
+        recentMedia: [], contentTypeStats: buildContentTypeStats([]),
         postFrequency: { perWeek: 0, perMonth: 0 },
-        topPosts: [], performanceByType: {},
+        topPosts: [],
         hashtagAnalysis: [], captionLengthCorrelation: [],
         postsByDayOfWeek: [], postsByHour: [],
         engagementTimeline: [], monthlyBreakdown: [],
@@ -197,27 +267,10 @@ export function computeInstagramAnalytics(profile, media) {
     const byComments = [...media].sort((a, b) => b.commentsCount - a.commentsCount);
     const likesToCommentsRatio = totalComments > 0 ? parseFloat((totalLikes / totalComments).toFixed(1)) : 0;
 
-    const mediaTypes = {};
-    const typeStats = {};
-    media.forEach(m => {
-        const t = m.mediaType;
-        mediaTypes[t] = (mediaTypes[t] || 0) + 1;
-        if (!typeStats[t]) typeStats[t] = { likes: 0, comments: 0, count: 0 };
-        typeStats[t].likes += m.likeCount;
-        typeStats[t].comments += m.commentsCount;
-        typeStats[t].count++;
-    });
-    const performanceByType = {};
-    Object.entries(typeStats).forEach(([type, s]) => {
-        performanceByType[type] = {
-            count: s.count,
-            avgLikes: Math.round(s.likes / s.count),
-            avgComments: Math.round(s.comments / s.count),
-            avgEngagement: Math.round((s.likes + s.comments) / s.count),
-            totalLikes: s.likes,
-            totalComments: s.comments,
-        };
-    });
+    const contentTypeStats = buildContentTypeStats(media);
+    const mediaWithViews = CONTENT_TYPES.reduce((s, t) => s + contentTypeStats[t].viewsReported, 0);
+    const totalViews = CONTENT_TYPES.reduce((s, t) => s + contentTypeStats[t].totalViews, 0);
+    const avgViews = mediaWithViews > 0 ? Math.round(totalViews / mediaWithViews) : 0;
 
     const dates = media.map(m => new Date(m.timestamp)).filter(d => !isNaN(d));
     let perWeek = 0, perMonth = 0;
@@ -348,12 +401,12 @@ export function computeInstagramAnalytics(profile, media) {
         medianLikes, medianComments,
         engagementRate, likesPerFollower, commentsPerFollower,
         likesToCommentsRatio,
+        totalViews, avgViews, mediaWithViews,
         bestByLikes: byLikes[0] || null,
         bestByComments: byComments[0] || null,
         worstByLikes,
         recentMedia: media.slice(0, 20),
-        mediaTypeDistribution: mediaTypes,
-        performanceByType,
+        contentTypeStats,
         postFrequency: { perWeek, perMonth },
         topPosts,
         postsByDayOfWeek, bestPostingDay: bestDayObj?.day || '',

@@ -73,53 +73,55 @@ InstagramAnalytics.jsx mounts -> api.getIGAnalytics(id)
         ▼
     Worker: analyticsRouter
         1. getAccountById(supabase, id, userId) - verify ownership + get accessToken
-        2. redis cache check: getIGCache(redis, userId, id)
-           -> cache hit: return immediately
-           -> cache miss: continue
-        3. Fetch from Instagram Graph API:
-           a. GET /me?fields=id,username,account_type,media_count,followers_count
+        2. Fetch from Instagram Graph API (always live; the cache is written, not read):
+           a. GET /{igUserId}?fields=user_id,username,name,followers_count,follows_count,media_count,...
               -> profile data
-           b. Paginate /me/media?fields=id,media_type,timestamp,like_count,comments_count,
-              caption,permalink,thumbnail_url,media_url
-              -> up to 500 media items (10 pages × 50)
-        4. computeInstagramAnalytics(media, profile)
-           -> engagement metrics
-        5. setIGCache(redis, userId, id, result)
-        6. Return JSON
+           b. Paginate /{igUserId}/media?fields=id,caption,media_type,media_product_type,
+              media_url,thumbnail_url,cover_url,permalink,timestamp,like_count,
+              comments_count,insights.metric(views)
+              -> up to 500 media items (10 pages x 50)
+              -> a page that fails with insights is refetched without them (viewCount: null)
+           c. normalizeInstagramMedia() classifies each item as reel, post, or video
+        3. setIGCache(redis, userId, id, { media, fetchedAt }) and update account counts
+        4. computeInstagramAnalytics(profile, media)
+        5. Return JSON
+
+GET /api/accounts/:id/ig-media (IG Content Explorer) returns the cached media when the
+cache entry is current, otherwise fetches with the same pipeline and caches it.
+```
+
+### Instagram media item (cached shape)
+
+```js
+{
+    id, caption, permalink, timestamp, mediaUrl, thumbnailUrl,
+    contentType: 'reel',     // 'reel' | 'post' | 'video' - see SERVICES.md for the rules
+    mediaType: 'VIDEO',      // raw format: IMAGE | VIDEO | CAROUSEL_ALBUM
+    likeCount: 44,
+    commentsCount: 6,
+    viewCount: 1830,         // null when Instagram reports no views insight
+}
 ```
 
 ### computeInstagramAnalytics() Output (partial)
 
 ```js
 {
-    profile: { username, followersCount, mediaCount },
-    totals: {
-        totalMedia: 200,
-        avgLikes: 234,
-        avgComments: 12,
-        engagementRate: 4.92,    // (avg likes + avg comments) / followers × 100
-        bestPost: { /* highest likes */ },
+    totalPosts: 200,          // profile media_count
+    fetchedPosts: 200,        // items analyzed (max 500)
+    totalLikes, totalComments, avgLikes, avgComments,
+    engagementRate: 4.92,     // (likes + comments) / items / followers x 100
+    totalViews: 48210,        // sum of reported views
+    avgViews: 402,            // totalViews / mediaWithViews
+    mediaWithViews: 120,      // items that reported a views insight
+    contentTypeStats: {       // always contains all three keys; counts sum to fetchedPosts
+        reel:  { count, totalViews, viewsReported, avgViews, totalLikes, totalComments, avgLikes, avgComments, avgEngagement },
+        post:  { /* same */ },
+        video: { /* same */ },
     },
-    mediaTypeBreakdown: [
-        { type: 'IMAGE', count: 120, avgLikes: 200 },
-        { type: 'REELS', count: 80, avgLikes: 310 },
-    ],
-    postingTimeDistribution: {
-        byHour: [/* 0-23 */],
-        byDayOfWeek: [/* 0-6 */]
-    },
-    hashtagAnalysis: [
-        { tag: '#travel', count: 45, avgLikes: 280 },
-        // ...
-    ],
-    captionLengthCorrelation: [
-        /* { lengthBucket, avgLikes } showing if longer captions perform better */
-    ],
-    monthlyBreakdown: [
-        { month: '2025-06', posts: 8, avgLikes: 245 },
-        // ...
-    ],
-    media: [ /* all 500 media objects */ ]
+    topPosts: [ /* top 10 media items by likes + comments, with engagement */ ],
+    postsByDayOfWeek, postsByHour, hashtagAnalysis, captionLengthCorrelation,
+    monthlyBreakdown: [ { month: '2025-06', posts: 8, likes, comments, avgLikes, avgComments, engagement } ],
 }
 ```
 
@@ -225,8 +227,8 @@ and the page re-fetches once after 6 seconds.
 | Metric | Formula |
 |---|---|
 | Total Audience | YouTube subscribers + Instagram followers + Reddit account karma |
-| Total Views | YouTube channel views + tracked YouTube video views + manually entered Reddit post views |
-| Total Content | YouTube videos + Instagram posts + Reddit account posts (cache) + tracked items |
+| Total Views | YouTube channel views + Instagram views (cache, reels + posts + videos) + tracked YouTube video views + manually entered Reddit post views |
+| Total Content | YouTube videos + Instagram media count (profile) + Reddit account posts (cache) + tracked items |
 | Total Comments | cache comments (YouTube + Instagram + Reddit) + tracked item comments |
 | Total Likes | Reddit karma (account + tracked) + YouTube likes (cache + tracked) + Instagram likes |
 

@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { getAccounts, getTrackedPosts } from '../lib/db.js';
 import { getVideosCache, setVideosCache, getIGCache, setIGCache, getRedditCache } from '../lib/cache.js';
 import { fetchAllVideos } from '../services/youtube.js';
-import { fetchInstagramMedia } from '../services/instagram.js';
+import { fetchInstagramMedia, summarizeContentTypes } from '../services/instagram.js';
 
 const router = new Hono();
 
@@ -47,11 +47,15 @@ router.get('/overview', async (c) => {
                         }
                         return { id: a.id, cacheWarmed: false };
                     }
+                    const contentTypes = summarizeContentTypes(media);
+                    const types = Object.values(contentTypes);
                     return {
                         id: a.id,
                         cacheWarmed: true,
-                        totalLikes:    media.reduce((s, m) => s + (m.likeCount     ?? 0), 0),
-                        totalComments: media.reduce((s, m) => s + (m.commentsCount ?? 0), 0),
+                        totalLikes:    types.reduce((s, t) => s + t.likes, 0),
+                        totalComments: types.reduce((s, t) => s + t.comments, 0),
+                        totalViews:    types.reduce((s, t) => s + t.views, 0),
+                        contentTypes,
                     };
                 }
 

@@ -28,12 +28,34 @@ async function igFetch(path, token, options = {}) {
 | `exchangeCodeForToken(code, env)` | Short-lived code -> short-lived token (Instagram OAuth step 1) |
 | `exchangeForLongLivedToken(shortToken, env)` | Short-lived -> 60-day long-lived token (Instagram OAuth step 2) |
 | `getIGProfile(accessToken)` | Fetches `id, username, account_type, media_count` for the token |
-| `getIGMedia(accessToken, limit)` | Paginates media items up to `limit` (default 500) |
+| `fetchInstagramMedia(igUserId, accessToken, limit)` | Paginates media (50 per page, 10 pages max) up to `limit` (default 500), requesting `views` insights inline; returns normalized items |
+| `classifyInstagramMedia(raw)` | Returns `'reel'`, `'post'`, or `'video'` for a raw Graph API media item |
+| `extractInstagramViews(raw)` | Reads the `views` insight from a raw item; `null` when Instagram reports none |
+| `normalizeInstagramMedia(raw)` | Maps a raw item to the cached media shape (`contentType`, `viewCount`, counts, URLs) |
+| `summarizeContentTypes(media)` | Per content type `{ count, likes, comments, views, viewsReported }`; always returns all three types |
 | `refreshLongLivedToken(accessToken)` | Extends a long-lived token; call before expiry |
 | `autoRefreshInstagramTokens(supabase)` | Cron handler - refreshes all tokens expiring within 15 days |
-| `computeInstagramAnalytics(media, profile)` | Computes engagement rates, hashtag analysis, timing patterns, monthly breakdown |
+| `computeInstagramAnalytics(profile, media)` | Computes engagement rates, views, per-content-type stats, hashtag analysis, timing patterns, monthly breakdown |
 | `publishIGContainer(igUserId, params, token)` | Creates a media container via Graph API |
 | `publishIGMedia(igUserId, containerId, token)` | Publishes a container; returns `mediaId` |
+
+### Content type classification
+
+Instagram's `media_type` is only ever `IMAGE`, `VIDEO`, or `CAROUSEL_ALBUM`. Reels are returned as `VIDEO`; the separate `media_product_type` field (`FEED`, `REELS`, `STORY`, `AD`) is what identifies them. `classifyInstagramMedia()` applies these rules in order, so every item lands in exactly one type:
+
+| Rule | Result |
+|---|---|
+| `media_product_type` is `REELS` | `reel` |
+| `media_product_type` is absent and `permalink` contains `/reel/` | `reel` |
+| `media_type` is a legacy `REEL` or `REELS` value | `reel` |
+| `media_type` is `VIDEO` (in-feed video published before Reels, or an ad video) | `video` |
+| Anything else (`IMAGE`, `CAROUSEL_ALBUM`, unknown) | `post` |
+
+Values are compared case-insensitively.
+
+### Views
+
+Views come from the media insights `views` metric (the replacement for `plays`, `video_views`, and `impressions`, which Meta deprecated in April 2025). They are requested inline with the `insights.metric(views)` field expansion, so views cost no extra requests. If any item on a page cannot return insights, Instagram fails the whole page; `fetchMediaPage()` then refetches that page without the expansion and those items get `viewCount: null`. `null` means "not reported" and is shown as `-`, never counted as zero. This requires the `instagram_business_manage_insights` scope, which the OAuth flow already requests.
 
 ### `safeAccount(account)`
 

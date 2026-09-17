@@ -17,14 +17,20 @@ export async function deleteVideosCache(redis, userId, accountId) {
     try { await redis.del(`videos:${userId}:${accountId}`); } catch { /* non-fatal */ }
 }
 
+// Bump when the cached media shape changes so entries written by older code read as a miss.
+const IG_CACHE_VERSION = 2;
+
 export async function getIGCache(redis, userId, accountId) {
     if (!redis) return null;
-    try { return (await redis.get(`ig:${userId}:${accountId}`)) || null; } catch { return null; }
+    try {
+        const cached = await redis.get(`ig:${userId}:${accountId}`);
+        return cached?.version === IG_CACHE_VERSION ? cached : null;
+    } catch { return null; }
 }
 
 export async function setIGCache(redis, userId, accountId, data) {
     if (!redis) return;
-    try { await redis.set(`ig:${userId}:${accountId}`, data); } catch { /* non-fatal */ }
+    try { await redis.set(`ig:${userId}:${accountId}`, { ...data, version: IG_CACHE_VERSION }); } catch { /* non-fatal */ }
 }
 
 export async function deleteIGCache(redis, userId, accountId) {
