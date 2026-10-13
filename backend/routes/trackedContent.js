@@ -10,14 +10,16 @@ import {
 } from '../lib/db.js';
 import { fetchTrackedPostData } from '../services/reddit.js';
 import { fetchTrackedYouTubeData } from '../services/youtube.js';
+import { detectContentType, manualViewsPatch, imageUrlPatch } from '../services/trackedContent.js';
 
 const router = new Hono();
 
-function detectContentType(url) {
-    const lower = (url || '').toLowerCase();
-    if (lower.includes('reddit.com') || lower.includes('redd.it')) return 'reddit';
-    if (lower.includes('youtube.com') || lower.includes('youtu.be')) return 'youtube';
-    return null;
+// no account means no cookie; a missing or non-reddit account is reported as not found
+async function redditCookieFor(supabase, accountId, userId) {
+    if (!accountId) return { cookie: null };
+    const account = await getAccountById(supabase, accountId, userId);
+    if (!account || account.platform !== 'reddit') return { notFound: true };
+    return { cookie: account.cookie || null };
 }
 
 // List all tracked content for the current user
@@ -53,13 +55,9 @@ router.post('/tracked-content', async (c) => {
             if (!apiKey) return c.json({ error: 'YouTube API key not configured on this server' }, 400);
             fetchedData = await fetchTrackedYouTubeData(url.trim(), apiKey);
         } else {
-            let cookie = null;
-            if (accountId) {
-                const account = await getAccountById(supabase, accountId, userId);
-                if (!account || account.platform !== 'reddit') return c.json({ error: 'Reddit account not found' }, 404);
-                cookie = account.cookie || null;
-            }
-            fetchedData = await fetchTrackedPostData(url.trim(), cookie);
+            const reddit = await redditCookieFor(supabase, accountId, userId);
+            if (reddit.notFound) return c.json({ error: 'Reddit account not found' }, 404);
+            fetchedData = await fetchTrackedPostData(url.trim(), reddit.cookie);
         }
 
         const id = Date.now().toString(36) + Math.random().toString(36).slice(2);
@@ -95,42 +93,16 @@ router.put('/tracked-content/:id', async (c) => {
 
         const isYouTube = (existing.contentType || 'reddit') === 'youtube';
 
-        // Reddit removed view_count from their API in 2018, so views can only be entered by hand.
-        // YouTube returns a real view count, so accepting a manual one would silently override it.
         if (manualViews !== undefined) {
-            if (isYouTube) {
-                return c.json({ error: 'YouTube view counts are fetched automatically and cannot be set by hand' }, 400);
-            }
-            if (manualViews === null || manualViews === '') {
-                await patchTrackedPostData(supabase, id, { manualViews: null }, userId);
-            } else {
-                const views = Number(manualViews);
-                if (!Number.isInteger(views) || views < 0) {
-                    return c.json({ error: 'Views must be a whole number of 0 or more' }, 400);
-                }
-                await patchTrackedPostData(supabase, id, { manualViews: views }, userId);
-            }
+            const views = manualViewsPatch(manualViews, isYouTube);
+            if (views.error) return c.json({ error: views.error }, 400);
+            await patchTrackedPostData(supabase, id, views.patch, userId);
         }
 
-        // Reddit posts carry no thumbnail in the public JSON API, so the user uploads one to
-        // Cloudinary from the browser and only the resulting URL reaches the Worker. YouTube
-        // items already have a real thumbnail and must not be overridden.
         if (imageUrl !== undefined) {
-            if (isYouTube) {
-                return c.json({ error: 'Images can only be attached to Reddit posts' }, 400);
-            }
-            if (imageUrl === null || imageUrl === '') {
-                await patchTrackedPostData(supabase, id, { imageUrl: null }, userId);
-            } else {
-                let parsed = null;
-                try { parsed = new URL(String(imageUrl)); } catch { parsed = null; }
-                // https only - the value is rendered straight into an img src, so a
-                // javascript: or data: URL must never be stored
-                if (!parsed || parsed.protocol !== 'https:') {
-                    return c.json({ error: 'Image must be an https URL returned by the uploader' }, 400);
-                }
-                await patchTrackedPostData(supabase, id, { imageUrl: parsed.toString() }, userId);
-            }
+            const image = imageUrlPatch(imageUrl, isYouTube);
+            if (image.error) return c.json({ error: image.error }, 400);
+            await patchTrackedPostData(supabase, id, image.patch, userId);
         }
 
         const updates = {};

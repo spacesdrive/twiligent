@@ -1,0 +1,424 @@
+{
+    "result": {
+        "responses": [
+            {
+                "call": "GET /tracked-content",
+                "status": 200,
+                "body": "[{\"id\":\"t-reddit\",\"accountId\":\"rd1\",\"url\":\"https://www.reddit.com/r/webdev/comments/p1/tracked/\",\"label\":\"\",\"category\":\"\",\"contentType\":\"reddit\",\"createdAt\":\"2026-08-01T00:00:00Z\",\"updatedAt\":\"2026-08-01T00:00:00Z\",\"title\":\"Old\",\"manualViews\":5},{\"id\":\"t-youtube\",\"accountId\":null,\"url\":\"https://www.youtube.com/watch?v=abc\",\"label\":\"\",\"category\":\"\",\"contentType\":\"youtube\",\"createdAt\":\"2026-08-01T00:00:00Z\",\"updatedAt\":\"2026-08-01T00:00:00Z\",\"title\":\"Video\"},{\"id\":\"t-orphan\",\"accountId\":\"gone\",\"url\":\"https://www.reddit.com/r/webdev/comments/p1/tracked/\",\"label\":\"\",\"category\":\"\",\"contentType\":\"reddit\",\"createdAt\":\"2026-08-01T00:00:00Z\",\"updatedAt\":\"2026-08-01T00:00:00Z\"}]"
+            },
+            {
+                "call": "POST /tracked-content/t-reddit/refresh",
+                "status": 200,
+                "body": "{\"id\":\"t-reddit\",\"accountId\":\"rd1\",\"url\":\"https://www.reddit.com/r/webdev/comments/p1/tracked/\",\"label\":\"\",\"category\":\"\",\"contentType\":\"reddit\",\"createdAt\":\"2026-07-25T17:20:00.000Z\",\"updatedAt\":\"2026-09-01T12:00:00.000Z\",\"title\":\"Tracked\",\"manualViews\":5,\"postId\":\"p1\",\"subreddit\":\"webdev\",\"subredditPrefixed\":\"r/webdev\",\"author\":\"[deleted]\",\"score\":77,\"upvoteRatio\":0.93,\"numComments\":8,\"permalink\":\"https://reddit.com/r/webdev/comments/p1/tracked/\",\"isNsfw\":false,\"lastFetchedAt\":\"2026-09-01T12:00:00.000Z\"}"
+            },
+            {
+                "call": "POST /tracked-content/t-orphan/refresh",
+                "status": 200,
+                "body": "{\"id\":\"t-orphan\",\"accountId\":\"gone\",\"url\":\"https://www.reddit.com/r/webdev/comments/p1/tracked/\",\"label\":\"\",\"category\":\"\",\"contentType\":\"reddit\",\"createdAt\":\"2026-07-25T17:20:00.000Z\",\"updatedAt\":\"2026-09-01T12:00:00.000Z\",\"postId\":\"p1\",\"title\":\"Tracked\",\"subreddit\":\"webdev\",\"subredditPrefixed\":\"r/webdev\",\"author\":\"[deleted]\",\"score\":77,\"upvoteRatio\":0.93,\"numComments\":8,\"permalink\":\"https://reddit.com/r/webdev/comments/p1/tracked/\",\"isNsfw\":false,\"lastFetchedAt\":\"2026-09-01T12:00:00.000Z\"}"
+            },
+            {
+                "call": "POST /tracked-content/t-youtube/refresh",
+                "status": 200,
+                "body": "{\"id\":\"t-youtube\",\"accountId\":null,\"url\":\"https://www.youtube.com/watch?v=abc\",\"label\":\"\",\"category\":\"\",\"contentType\":\"youtube\",\"createdAt\":\"2026-08-01T00:00:00Z\",\"updatedAt\":\"2026-09-01T12:00:00.000Z\",\"title\":\"Watch\",\"channelTitle\":\"Ribbon\",\"channelId\":\"UC1\",\"thumbnail\":\"m\",\"publishedAt\":\"2026-08-01T10:00:00Z\",\"viewCount\":1500,\"likeCount\":40,\"commentCount\":3,\"isShort\":false,\"permalink\":\"https://www.youtube.com/watch?v=abc\",\"lastFetchedAt\":\"2026-09-01T12:00:00.000Z\"}"
+            },
+            {
+                "call": "POST /tracked-content/nope/refresh",
+                "status": 404,
+                "body": "{\"error\":\"Tracked content not found\"}"
+            },
+            {
+                "call": "DELETE /tracked-content/t-youtube",
+                "status": 200,
+                "body": "{\"success\":true}"
+            },
+            {
+                "call": "DELETE /tracked-content/t-youtube",
+                "status": 404,
+                "body": "{\"error\":\"Tracked content not found\"}"
+            }
+        ],
+        "queries": [
+            {
+                "type": "select",
+                "table": "tracked_posts",
+                "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+                "filters": [
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "select",
+                "table": "tracked_posts",
+                "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+                "filters": [
+                    [
+                        "id",
+                        "t-reddit"
+                    ],
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "select",
+                "table": "accounts",
+                "columns": "id, platform, data",
+                "filters": [
+                    [
+                        "id",
+                        "rd1"
+                    ],
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "select",
+                "table": "tracked_posts",
+                "columns": "data",
+                "filters": [
+                    [
+                        "id",
+                        "t-reddit"
+                    ],
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "update",
+                "table": "tracked_posts",
+                "values": {
+                    "data": {
+                        "title": "Tracked",
+                        "manualViews": 5,
+                        "postId": "p1",
+                        "subreddit": "webdev",
+                        "subredditPrefixed": "r/webdev",
+                        "author": "[deleted]",
+                        "score": 77,
+                        "upvoteRatio": 0.93,
+                        "numComments": 8,
+                        "permalink": "https://reddit.com/r/webdev/comments/p1/tracked/",
+                        "isNsfw": false,
+                        "createdAt": "2026-07-25T17:20:00.000Z",
+                        "lastFetchedAt": "2026-09-01T12:00:00.000Z"
+                    },
+                    "updated_at": "2026-09-01T12:00:00.000Z"
+                },
+                "filters": [
+                    [
+                        "id",
+                        "t-reddit"
+                    ],
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "select",
+                "table": "tracked_posts",
+                "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+                "filters": [
+                    [
+                        "id",
+                        "t-reddit"
+                    ],
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "select",
+                "table": "tracked_posts",
+                "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+                "filters": [
+                    [
+                        "id",
+                        "t-orphan"
+                    ],
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "select",
+                "table": "accounts",
+                "columns": "id, platform, data",
+                "filters": [
+                    [
+                        "id",
+                        "gone"
+                    ],
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "select",
+                "table": "tracked_posts",
+                "columns": "data",
+                "filters": [
+                    [
+                        "id",
+                        "t-orphan"
+                    ],
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "update",
+                "table": "tracked_posts",
+                "values": {
+                    "data": {
+                        "postId": "p1",
+                        "title": "Tracked",
+                        "subreddit": "webdev",
+                        "subredditPrefixed": "r/webdev",
+                        "author": "[deleted]",
+                        "score": 77,
+                        "upvoteRatio": 0.93,
+                        "numComments": 8,
+                        "permalink": "https://reddit.com/r/webdev/comments/p1/tracked/",
+                        "isNsfw": false,
+                        "createdAt": "2026-07-25T17:20:00.000Z",
+                        "lastFetchedAt": "2026-09-01T12:00:00.000Z"
+                    },
+                    "updated_at": "2026-09-01T12:00:00.000Z"
+                },
+                "filters": [
+                    [
+                        "id",
+                        "t-orphan"
+                    ],
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "select",
+                "table": "tracked_posts",
+                "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+                "filters": [
+                    [
+                        "id",
+                        "t-orphan"
+                    ],
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "select",
+                "table": "tracked_posts",
+                "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+                "filters": [
+                    [
+                        "id",
+                        "t-youtube"
+                    ],
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "select",
+                "table": "tracked_posts",
+                "columns": "data",
+                "filters": [
+                    [
+                        "id",
+                        "t-youtube"
+                    ],
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "update",
+                "table": "tracked_posts",
+                "values": {
+                    "data": {
+                        "title": "Watch",
+                        "contentType": "youtube",
+                        "channelTitle": "Ribbon",
+                        "channelId": "UC1",
+                        "thumbnail": "m",
+                        "publishedAt": "2026-08-01T10:00:00Z",
+                        "viewCount": 1500,
+                        "likeCount": 40,
+                        "commentCount": 3,
+                        "isShort": false,
+                        "permalink": "https://www.youtube.com/watch?v=abc",
+                        "lastFetchedAt": "2026-09-01T12:00:00.000Z"
+                    },
+                    "updated_at": "2026-09-01T12:00:00.000Z"
+                },
+                "filters": [
+                    [
+                        "id",
+                        "t-youtube"
+                    ],
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "select",
+                "table": "tracked_posts",
+                "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+                "filters": [
+                    [
+                        "id",
+                        "t-youtube"
+                    ],
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "select",
+                "table": "tracked_posts",
+                "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+                "filters": [
+                    [
+                        "id",
+                        "nope"
+                    ],
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "select",
+                "table": "tracked_posts",
+                "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+                "filters": [
+                    [
+                        "id",
+                        "t-youtube"
+                    ],
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "delete",
+                "table": "tracked_posts",
+                "filters": [
+                    [
+                        "id",
+                        "t-youtube"
+                    ],
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "select",
+                "table": "tracked_posts",
+                "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+                "filters": [
+                    [
+                        "id",
+                        "t-youtube"
+                    ],
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            }
+        ],
+        "requests": [
+            {
+                "url": "https://www.reddit.com/r/webdev/comments/p1/tracked.json",
+                "method": "GET",
+                "headers": {
+                    "User-Agent": "script:twiligent:v1.0 (by /u/spacesdrive)",
+                    "Accept": "application/json",
+                    "Cookie": "reddit_session=COOKIE"
+                }
+            },
+            {
+                "url": "https://www.reddit.com/r/webdev/comments/p1/tracked.json",
+                "method": "GET",
+                "headers": {
+                    "User-Agent": "script:twiligent:v1.0 (by /u/spacesdrive)",
+                    "Accept": "application/json"
+                }
+            },
+            {
+                "url": "https://www.googleapis.com/youtube/v3/videos?part=snippet%2Cstatistics&id=abc&key=YTKEY",
+                "method": "GET"
+            }
+        ],
+        "logLines": []
+    },
+    "withoutKey": {
+        "responses": [
+            {
+                "call": "POST /tracked-content/t-youtube/refresh",
+                "status": 400,
+                "body": "{\"error\":\"YouTube API key not configured on this server\"}"
+            }
+        ],
+        "queries": [
+            {
+                "type": "select",
+                "table": "tracked_posts",
+                "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+                "filters": [
+                    [
+                        "id",
+                        "t-youtube"
+                    ],
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            }
+        ],
+        "requests": [],
+        "logLines": []
+    }
+}

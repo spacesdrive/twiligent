@@ -24,27 +24,19 @@ app.onError((err, c) => {
     return c.json({ error: 'Internal server error' }, 500);
 });
 
-// ── Global middleware ─────────────────────────────────────────────────────────
-
 app.use('*', cors());
 
-// Attach Supabase and Redis clients to context for every request.
-// Both are stateless HTTP clients - safe to create per-request in Workers.
+// both clients are stateless http clients, so creating them per request is safe
 app.use('*', async (c, next) => {
     c.set('supabase', getSupabase(c.env));
     c.set('redis', getRedis(c.env));
     await next();
 });
 
-// ── Public routes ─────────────────────────────────────────────────────────────
-
 app.get('/api/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
-// Instagram OAuth callback - public because it's a browser redirect (no JWT available).
-// The userId is recovered from the Redis state token instead.
+// public: the oauth redirect carries no jwt, so the user comes from the redis state token
 app.get('/api/auth/instagram/callback', callbackHandler);
-
-// ── Protected routes (require valid Supabase JWT) ─────────────────────────────
 
 const api = new Hono();
 api.use('*', requireAuth);
@@ -59,20 +51,15 @@ api.route('/', redditRouter);
 api.route('/', trackedContentRouter);
 api.route('/', overviewRouter);
 
-// Instagram OAuth URL generator - protected (needs userId to create state token)
+// protected: the state token needs the user id
 api.get('/auth/instagram/url', urlHandler);
 
 app.route('/api', api);
 
-// ── Cloudflare Workers export ─────────────────────────────────────────────────
-
 export default {
-    // Handles all HTTP requests
     fetch: app.fetch,
 
-    // Cron trigger handler - runs on the schedule defined in wrangler.toml:
-    //   "*/15 * * * *" → publish due scheduled posts
-    //   "0 0 * * *"    → refresh expiring Instagram tokens
+    // schedules come from wrangler.toml: due posts every 15 minutes, token refresh daily
     async scheduled(event, env, ctx) {
         const supabase = getSupabase(env);
 

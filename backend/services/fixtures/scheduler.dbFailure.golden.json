@@ -1,0 +1,13 @@
+{
+    "result": {
+        "processed": 0,
+        "errors": []
+    },
+    "logLines": [
+        [
+            "error",
+            "Scheduler error:",
+            "Error: db down"
+        ]
+    ]
+}

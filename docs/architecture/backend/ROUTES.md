@@ -31,6 +31,9 @@ Handlers delegate to `services/accountConnect.js` and `services/accountRefresh.j
 | POST | `/api/accounts/:id/refresh-ig-token` | `routes/accounts.js` | Extend Instagram long-lived token (valid up to 60 days; refresh when < 15 days remain) |
 
 ### Analytics
+
+Channel metrics, the comparison and the all videos filter live in `services/youtubeLibrary.js`; the channel backfill lives in `services/accountRefresh.js`.
+
 | Method | Path | File | Purpose |
 |---|---|---|---|
 | GET | `/api/accounts/:id/analytics` | `routes/analytics.js` | Full YouTube analytics - fetches up to 500 videos, runs `computeVideoAnalytics()`, returns 50+ metrics |
@@ -77,6 +80,9 @@ Handlers delegate to `services/accountConnect.js` and `services/accountRefresh.j
 | GET | `/api/overview` | `routes/overview.js` | Returns tracked content list + per-account analytics summary from Redis cache (no live API calls); used by the Overview dashboard to aggregate Total Content, Total Comments, Total Likes across all platforms |
 
 ### Tracked Content
+
+Link detection and the manual views and image checks live in `services/trackedContent.js`.
+
 | Method | Path | File | Purpose |
 |---|---|---|---|
 | GET | `/api/tracked-content` | `routes/trackedContent.js` | List all tracked items for the current user (Reddit posts and YouTube videos) |

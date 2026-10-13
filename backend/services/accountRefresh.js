@@ -52,6 +52,27 @@ function youtubeUpdates(channelData, full) {
     };
 }
 
+// accounts added before creation dates were stored get them once; a failure only skips the extras
+export async function backfillChannelData(supabase, account, apiKey, userId) {
+    try {
+        const channelData = await fetchChannelData(account.channelId, apiKey);
+        await updateAccount(supabase, account.id, {
+            publishedAt: channelData.publishedAt,
+            subscriberCount: channelData.subscriberCount,
+            viewCount: channelData.viewCount,
+            videoCount: channelData.videoCount,
+            title: channelData.title,
+            thumbnails: channelData.thumbnails,
+            customUrl: channelData.customUrl,
+            country: channelData.country,
+            lastUpdated: new Date().toISOString(),
+        }, userId);
+        Object.assign(account, channelData);
+    } catch (e) {
+        console.error('Failed to backfill channel data:', e.message);
+    }
+}
+
 export async function fetchAccountUpdates(account, apiKey, full) {
     if (account.platform === 'instagram') {
         const profile = await fetchInstagramProfile(account.igUserId, account.accessToken);

@@ -4,8 +4,7 @@ function clean(s) {
     return s?.replace(/^﻿/, '').trim();
 }
 
-// Cloudflare Workers does not support the `cache` field on RequestInit.
-// Strip it from all fetch calls made by the Supabase client.
+// workers reject the `cache` field on RequestInit, so it is dropped from supabase requests
 function workerFetch(url, options = {}) {
     const { cache, ...rest } = options;
     return fetch(url, rest);

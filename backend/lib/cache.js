@@ -4,8 +4,7 @@ export { createOAuthState, verifyOAuthState } from './oauthState.js';
 // stats change constantly, so cached analytics expire instead of going stale
 const ANALYTICS_TTL_SECONDS = 6 * 60 * 60;
 
-// bump a version when the cached shape changes, so old entries read as a miss
-// v2: likeCount and commentCount are null when youtube hides them
+// bump when the cached shape changes so old entries miss (v2: hidden youtube counts are null)
 const VIDEOS_CACHE_VERSION = 2;
 const IG_CACHE_VERSION = 2;
 

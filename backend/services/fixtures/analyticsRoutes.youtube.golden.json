@@ -1,0 +1,293 @@
+{
+    "result": {
+        "responses": [
+            {
+                "call": "GET /comparison",
+                "status": 200,
+                "body": "{\"success\":true,\"comparison\":{\"rankings\":{\"bySubscribers\":[{\"id\":\"yt2\",\"platform\":\"youtube\",\"channelId\":\"UC2\",\"uploadsPlaylistId\":\"UU2\",\"title\":\"Beta\",\"subscriberCount\":300,\"viewCount\":1000,\"videoCount\":0},{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UC1\",\"uploadsPlaylistId\":\"UU1\",\"title\":\"Alpha\",\"subscriberCount\":100,\"viewCount\":5000,\"videoCount\":10,\"publishedAt\":\"2024-09-01T00:00:00Z\",\"thumbnails\":{\"default\":\"a.jpg\"}},{\"id\":\"yt3\",\"platform\":\"youtube\",\"channelId\":\"UC3\",\"title\":\"Gamma\"},{\"id\":\"ig1\",\"platform\":\"instagram\",\"igUserId\":\"IG1\",\"accessToken\":\"T1\",\"username\":\"ribbon\"},{\"id\":\"rd1\",\"platform\":\"reddit\",\"username\":\"ribbon\",\"cookie\":\"COOKIE\"},{\"id\":\"rd2\",\"platform\":\"reddit\",\"username\":\"nocookie\"}],\"byViews\":[{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UC1\",\"uploadsPlaylistId\":\"UU1\",\"title\":\"Alpha\",\"subscriberCount\":100,\"viewCount\":5000,\"videoCount\":10,\"publishedAt\":\"2024-09-01T00:00:00Z\",\"thumbnails\":{\"default\":\"a.jpg\"}},{\"id\":\"yt2\",\"platform\":\"youtube\",\"channelId\":\"UC2\",\"uploadsPlaylistId\":\"UU2\",\"title\":\"Beta\",\"subscriberCount\":300,\"viewCount\":1000,\"videoCount\":0},{\"id\":\"yt3\",\"platform\":\"youtube\",\"channelId\":\"UC3\",\"title\":\"Gamma\"},{\"id\":\"ig1\",\"platform\":\"instagram\",\"igUserId\":\"IG1\",\"accessToken\":\"T1\",\"username\":\"ribbon\"},{\"id\":\"rd1\",\"platform\":\"reddit\",\"username\":\"ribbon\",\"cookie\":\"COOKIE\"},{\"id\":\"rd2\",\"platform\":\"reddit\",\"username\":\"nocookie\"}],\"byVideos\":[{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UC1\",\"uploadsPlaylistId\":\"UU1\",\"title\":\"Alpha\",\"subscriberCount\":100,\"viewCount\":5000,\"videoCount\":10,\"publishedAt\":\"2024-09-01T00:00:00Z\",\"thumbnails\":{\"default\":\"a.jpg\"}},{\"id\":\"yt2\",\"platform\":\"youtube\",\"channelId\":\"UC2\",\"uploadsPlaylistId\":\"UU2\",\"title\":\"Beta\",\"subscriberCount\":300,\"viewCount\":1000,\"videoCount\":0},{\"id\":\"yt3\",\"platform\":\"youtube\",\"channelId\":\"UC3\",\"title\":\"Gamma\"},{\"id\":\"ig1\",\"platform\":\"instagram\",\"igUserId\":\"IG1\",\"accessToken\":\"T1\",\"username\":\"ribbon\"},{\"id\":\"rd1\",\"platform\":\"reddit\",\"username\":\"ribbon\",\"cookie\":\"COOKIE\"},{\"id\":\"rd2\",\"platform\":\"reddit\",\"username\":\"nocookie\"}]},\"totals\":{\"subscribers\":400,\"views\":6000,\"videos\":10},\"accountCount\":6,\"bestBySubscribers\":{\"id\":\"yt2\",\"platform\":\"youtube\",\"channelId\":\"UC2\",\"uploadsPlaylistId\":\"UU2\",\"title\":\"Beta\",\"subscriberCount\":300,\"viewCount\":1000,\"videoCount\":0},\"bestByViews\":{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UC1\",\"uploadsPlaylistId\":\"UU1\",\"title\":\"Alpha\",\"subscriberCount\":100,\"viewCount\":5000,\"videoCount\":10,\"publishedAt\":\"2024-09-01T00:00:00Z\",\"thumbnails\":{\"default\":\"a.jpg\"}},\"bestByVideos\":{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UC1\",\"uploadsPlaylistId\":\"UU1\",\"title\":\"Alpha\",\"subscriberCount\":100,\"viewCount\":5000,\"videoCount\":10,\"publishedAt\":\"2024-09-01T00:00:00Z\",\"thumbnails\":{\"default\":\"a.jpg\"}}}}"
+            },
+            {
+                "call": "GET /videos/all",
+                "status": 200,
+                "body": "{\"success\":true,\"videos\":[{\"videoId\":\"b\",\"title\":\"Travel diary\",\"tags\":[\"Trip\",\"pasta\"],\"viewCount\":50,\"likeCount\":null,\"commentCount\":4,\"publishedAt\":\"2026-02-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"},{\"videoId\":\"c\",\"title\":\"Zebra facts\",\"viewCount\":300,\"likeCount\":2,\"commentCount\":1,\"publishedAt\":\"2025-12-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"},{\"videoId\":\"d\",\"title\":\"Another pasta\",\"tags\":[],\"viewCount\":300,\"likeCount\":1,\"commentCount\":1,\"publishedAt\":\"2026-03-01T00:00:00Z\",\"channelTitle\":\"Beta\",\"channelId\":\"yt2\",\"channelThumbnail\":\"\"},{\"videoId\":\"a\",\"title\":\"Cooking pasta\",\"tags\":[\"food\"],\"viewCount\":900,\"likeCount\":10,\"commentCount\":null,\"publishedAt\":\"2026-01-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"}],\"total\":4,\"channels\":[{\"id\":\"yt1\",\"title\":\"Alpha\"},{\"id\":\"yt2\",\"title\":\"Beta\"},{\"id\":\"yt3\",\"title\":\"Gamma\"},{\"id\":\"ig1\"},{\"id\":\"rd1\"},{\"id\":\"rd2\"}]}"
+            },
+            {
+                "call": "GET /videos/all?search=PASTA&sort=title&order=asc",
+                "status": 200,
+                "body": "{\"success\":true,\"videos\":[{\"videoId\":\"d\",\"title\":\"Another pasta\",\"tags\":[],\"viewCount\":300,\"likeCount\":1,\"commentCount\":1,\"publishedAt\":\"2026-03-01T00:00:00Z\",\"channelTitle\":\"Beta\",\"channelId\":\"yt2\",\"channelThumbnail\":\"\"},{\"videoId\":\"a\",\"title\":\"Cooking pasta\",\"tags\":[\"food\"],\"viewCount\":900,\"likeCount\":10,\"commentCount\":null,\"publishedAt\":\"2026-01-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"},{\"videoId\":\"b\",\"title\":\"Travel diary\",\"tags\":[\"Trip\",\"pasta\"],\"viewCount\":50,\"likeCount\":null,\"commentCount\":4,\"publishedAt\":\"2026-02-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"}],\"total\":3,\"channels\":[{\"id\":\"yt1\",\"title\":\"Alpha\"},{\"id\":\"yt2\",\"title\":\"Beta\"},{\"id\":\"yt3\",\"title\":\"Gamma\"},{\"id\":\"ig1\"},{\"id\":\"rd1\"},{\"id\":\"rd2\"}]}"
+            },
+            {
+                "call": "GET /videos/all?channelId=yt1&minViews=100&maxViews=899",
+                "status": 200,
+                "body": "{\"success\":true,\"videos\":[{\"videoId\":\"c\",\"title\":\"Zebra facts\",\"viewCount\":300,\"likeCount\":2,\"commentCount\":1,\"publishedAt\":\"2025-12-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"}],\"total\":1,\"channels\":[{\"id\":\"yt1\",\"title\":\"Alpha\"},{\"id\":\"yt2\",\"title\":\"Beta\"},{\"id\":\"yt3\",\"title\":\"Gamma\"},{\"id\":\"ig1\"},{\"id\":\"rd1\"},{\"id\":\"rd2\"}]}"
+            },
+            {
+                "call": "GET /videos/all?sort=likeCount",
+                "status": 200,
+                "body": "{\"success\":true,\"videos\":[{\"videoId\":\"b\",\"title\":\"Travel diary\",\"tags\":[\"Trip\",\"pasta\"],\"viewCount\":50,\"likeCount\":null,\"commentCount\":4,\"publishedAt\":\"2026-02-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"},{\"videoId\":\"d\",\"title\":\"Another pasta\",\"tags\":[],\"viewCount\":300,\"likeCount\":1,\"commentCount\":1,\"publishedAt\":\"2026-03-01T00:00:00Z\",\"channelTitle\":\"Beta\",\"channelId\":\"yt2\",\"channelThumbnail\":\"\"},{\"videoId\":\"c\",\"title\":\"Zebra facts\",\"viewCount\":300,\"likeCount\":2,\"commentCount\":1,\"publishedAt\":\"2025-12-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"},{\"videoId\":\"a\",\"title\":\"Cooking pasta\",\"tags\":[\"food\"],\"viewCount\":900,\"likeCount\":10,\"commentCount\":null,\"publishedAt\":\"2026-01-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"}],\"total\":4,\"channels\":[{\"id\":\"yt1\",\"title\":\"Alpha\"},{\"id\":\"yt2\",\"title\":\"Beta\"},{\"id\":\"yt3\",\"title\":\"Gamma\"},{\"id\":\"ig1\"},{\"id\":\"rd1\"},{\"id\":\"rd2\"}]}"
+            },
+            {
+                "call": "GET /accounts/yt1/analytics",
+                "status": 200,
+                "body": "{\"success\":true,\"channel\":{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UC1\",\"uploadsPlaylistId\":\"UU1\",\"title\":\"Alpha\",\"subscriberCount\":100,\"viewCount\":5000,\"videoCount\":10,\"publishedAt\":\"2024-09-01T00:00:00Z\",\"thumbnails\":{\"default\":\"a.jpg\"},\"channelAge\":730,\"channelAgeYears\":\"2.0\",\"viewsPerSubscriber\":50,\"subscriberToViewRatio\":2,\"avgViewsPerVideo\":500,\"avgSubGainPerDay\":0,\"avgViewsPerDay\":7,\"estimatedMonthlyViews\":210,\"estimatedMonthlySubGain\":0,\"estimatedYearlyViews\":2555,\"estimatedYearlySubGain\":0},\"analytics\":{\"totalVideos\":1,\"totalViews\":70,\"totalLikes\":7,\"totalComments\":1,\"avgViews\":70,\"avgLikes\":7,\"avgComments\":1,\"medianViews\":70,\"totalEngagement\":8,\"overallEngagementRate\":\"11.43\",\"avgDurationSeconds\":45,\"avgDurationFormatted\":\"0m 45s\",\"totalDurationSeconds\":45,\"totalDurationFormatted\":\"0m 45s\",\"estimatedTotalWatchTimeHours\":1,\"bestByViews\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"bestByLikes\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"bestByComments\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"bestByEngagement\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"worstByViews\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"mostRecent\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"oldest\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"top10ByViews\":[{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45}],\"top10ByLikes\":[{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45}],\"top10ByComments\":[{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45}],\"top10ByEngagement\":[{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45}],\"shortsCount\":1,\"regularCount\":0,\"avgShortViews\":70,\"avgRegularViews\":0,\"avgShortLikes\":7,\"avgRegularLikes\":0,\"hdCount\":1,\"sdCount\":0,\"hdPercentage\":\"100.0\",\"captionCount\":0,\"captionPercentage\":\"0.0\",\"licensedCount\":0,\"licensedPercentage\":\"0.0\",\"madeForKidsCount\":0,\"embeddableCount\":0,\"embeddablePercentage\":\"0.0\",\"publishDayDistribution\":{\"Thursday\":1},\"publishHourDistribution\":{\"10\":1},\"peakPublishDay\":\"Thursday\",\"peakPublishHour\":10,\"durationDistribution\":{\"short\":1,\"medium\":0,\"long\":0,\"veryLong\":0},\"categoryDistribution\":{\"Unknown\":1},\"tagFrequency\":[],\"videosLast7Days\":0,\"videosLast30Days\":1,\"videosLast90Days\":1,\"videosLast365Days\":1,\"uploadFrequencyPerWeek\":\"0.6\",\"uploadFrequencyPerMonth\":\"1.0\",\"consistencyScore\":100,\"viralityScore\":1,\"viewsDistribution\":{\"ranges\":[\"0-7\",\"7-14\",\"14-21\",\"21-28\",\"28-35\",\"35-42\",\"42-49\",\"49-56\",\"56-63\",\"63-70\"],\"counts\":[0,0,0,0,0,0,0,0,0,0]},\"viewsTrend\":[{\"month\":\"2026-08\",\"value\":70,\"count\":1}],\"engagementTrend\":[{\"month\":\"2026-08\",\"value\":\"11.43\"}],\"likeRateTrend\":[{\"month\":\"2026-08\",\"value\":\"10.00\"}]},\"videoCount\":1}"
+            },
+            {
+                "call": "GET /accounts/yt2/analytics",
+                "status": 200,
+                "body": "{\"success\":true,\"channel\":{\"id\":\"yt2\",\"platform\":\"youtube\",\"channelId\":\"UC2\",\"uploadsPlaylistId\":\"UU2\",\"title\":\"Beta\",\"subscriberCount\":300,\"viewCount\":1000,\"videoCount\":0,\"channelAge\":365,\"channelAgeYears\":\"1.0\",\"viewsPerSubscriber\":3.3,\"subscriberToViewRatio\":30,\"avgViewsPerVideo\":0,\"avgSubGainPerDay\":1,\"avgViewsPerDay\":3,\"estimatedMonthlyViews\":90,\"estimatedMonthlySubGain\":30,\"estimatedYearlyViews\":1095,\"estimatedYearlySubGain\":365},\"analytics\":{\"totalVideos\":1,\"totalViews\":70,\"totalLikes\":7,\"totalComments\":1,\"avgViews\":70,\"avgLikes\":7,\"avgComments\":1,\"medianViews\":70,\"totalEngagement\":8,\"overallEngagementRate\":\"11.43\",\"avgDurationSeconds\":45,\"avgDurationFormatted\":\"0m 45s\",\"totalDurationSeconds\":45,\"totalDurationFormatted\":\"0m 45s\",\"estimatedTotalWatchTimeHours\":1,\"bestByViews\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"bestByLikes\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"bestByComments\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"bestByEngagement\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"worstByViews\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"mostRecent\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"oldest\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"top10ByViews\":[{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45}],\"top10ByLikes\":[{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45}],\"top10ByComments\":[{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45}],\"top10ByEngagement\":[{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45}],\"shortsCount\":1,\"regularCount\":0,\"avgShortViews\":70,\"avgRegularViews\":0,\"avgShortLikes\":7,\"avgRegularLikes\":0,\"hdCount\":1,\"sdCount\":0,\"hdPercentage\":\"100.0\",\"captionCount\":0,\"captionPercentage\":\"0.0\",\"licensedCount\":0,\"licensedPercentage\":\"0.0\",\"madeForKidsCount\":0,\"embeddableCount\":0,\"embeddablePercentage\":\"0.0\",\"publishDayDistribution\":{\"Thursday\":1},\"publishHourDistribution\":{\"10\":1},\"peakPublishDay\":\"Thursday\",\"peakPublishHour\":10,\"durationDistribution\":{\"short\":1,\"medium\":0,\"long\":0,\"veryLong\":0},\"categoryDistribution\":{\"Unknown\":1},\"tagFrequency\":[],\"videosLast7Days\":0,\"videosLast30Days\":1,\"videosLast90Days\":1,\"videosLast365Days\":1,\"uploadFrequencyPerWeek\":\"0.6\",\"uploadFrequencyPerMonth\":\"1.0\",\"consistencyScore\":100,\"viralityScore\":1,\"viewsDistribution\":{\"ranges\":[\"0-7\",\"7-14\",\"14-21\",\"21-28\",\"28-35\",\"35-42\",\"42-49\",\"49-56\",\"56-63\",\"63-70\"],\"counts\":[0,0,0,0,0,0,0,0,0,0]},\"viewsTrend\":[{\"month\":\"2026-08\",\"value\":70,\"count\":1}],\"engagementTrend\":[{\"month\":\"2026-08\",\"value\":\"11.43\"}],\"likeRateTrend\":[{\"month\":\"2026-08\",\"value\":\"10.00\"}]},\"videoCount\":1}"
+            },
+            {
+                "call": "GET /accounts/yt3/analytics",
+                "status": 200,
+                "body": "{\"success\":true,\"channel\":{\"id\":\"yt3\",\"platform\":\"youtube\",\"channelId\":\"UC3\",\"title\":\"Gamma\",\"customUrl\":\"@gamma\",\"publishedAt\":\"2025-09-01T00:00:00Z\",\"country\":\"Unknown\",\"thumbnails\":{\"default\":\"\",\"medium\":\"\",\"high\":\"\"},\"subscriberCount\":20,\"viewCount\":400,\"videoCount\":2,\"hiddenSubscriberCount\":false,\"uploadsPlaylistId\":\"UU3\",\"keywords\":\"\",\"bannerUrl\":\"\",\"madeForKids\":false,\"topicCategories\":[],\"isLinked\":false,\"channelAge\":365,\"channelAgeYears\":\"1.0\",\"viewsPerSubscriber\":20,\"subscriberToViewRatio\":5,\"avgViewsPerVideo\":200,\"avgSubGainPerDay\":0,\"avgViewsPerDay\":1,\"estimatedMonthlyViews\":30,\"estimatedMonthlySubGain\":0,\"estimatedYearlyViews\":365,\"estimatedYearlySubGain\":0},\"analytics\":{\"totalVideos\":1,\"totalViews\":70,\"totalLikes\":7,\"totalComments\":1,\"avgViews\":70,\"avgLikes\":7,\"avgComments\":1,\"medianViews\":70,\"totalEngagement\":8,\"overallEngagementRate\":\"11.43\",\"avgDurationSeconds\":45,\"avgDurationFormatted\":\"0m 45s\",\"totalDurationSeconds\":45,\"totalDurationFormatted\":\"0m 45s\",\"estimatedTotalWatchTimeHours\":1,\"bestByViews\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"bestByLikes\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"bestByComments\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"bestByEngagement\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"worstByViews\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"mostRecent\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"oldest\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"top10ByViews\":[{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45}],\"top10ByLikes\":[{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45}],\"top10ByComments\":[{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45}],\"top10ByEngagement\":[{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45}],\"shortsCount\":1,\"regularCount\":0,\"avgShortViews\":70,\"avgRegularViews\":0,\"avgShortLikes\":7,\"avgRegularLikes\":0,\"hdCount\":1,\"sdCount\":0,\"hdPercentage\":\"100.0\",\"captionCount\":0,\"captionPercentage\":\"0.0\",\"licensedCount\":0,\"licensedPercentage\":\"0.0\",\"madeForKidsCount\":0,\"embeddableCount\":0,\"embeddablePercentage\":\"0.0\",\"publishDayDistribution\":{\"Thursday\":1},\"publishHourDistribution\":{\"10\":1},\"peakPublishDay\":\"Thursday\",\"peakPublishHour\":10,\"durationDistribution\":{\"short\":1,\"medium\":0,\"long\":0,\"veryLong\":0},\"categoryDistribution\":{\"Unknown\":1},\"tagFrequency\":[],\"videosLast7Days\":0,\"videosLast30Days\":1,\"videosLast90Days\":1,\"videosLast365Days\":1,\"uploadFrequencyPerWeek\":\"0.6\",\"uploadFrequencyPerMonth\":\"1.0\",\"consistencyScore\":100,\"viralityScore\":1,\"viewsDistribution\":{\"ranges\":[\"0-7\",\"7-14\",\"14-21\",\"21-28\",\"28-35\",\"35-42\",\"42-49\",\"49-56\",\"56-63\",\"63-70\"],\"counts\":[0,0,0,0,0,0,0,0,0,0]},\"viewsTrend\":[{\"month\":\"2026-08\",\"value\":70,\"count\":1}],\"engagementTrend\":[{\"month\":\"2026-08\",\"value\":\"11.43\"}],\"likeRateTrend\":[{\"month\":\"2026-08\",\"value\":\"10.00\"}]},\"videoCount\":1}"
+            },
+            {
+                "call": "GET /accounts/missing/analytics",
+                "status": 404,
+                "body": "{\"success\":false,\"message\":\"Account not found\"}"
+            }
+        ],
+        "queries": [
+            {
+                "type": "select",
+                "table": "accounts",
+                "columns": "id, platform, data",
+                "filters": [
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "select",
+                "table": "accounts",
+                "columns": "id, platform, data",
+                "filters": [
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "select",
+                "table": "accounts",
+                "columns": "id, platform, data",
+                "filters": [
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "select",
+                "table": "accounts",
+                "columns": "id, platform, data",
+                "filters": [
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "select",
+                "table": "accounts",
+                "columns": "id, platform, data",
+                "filters": [
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "select",
+                "table": "accounts",
+                "columns": "id, platform, data",
+                "filters": [
+                    [
+                        "id",
+                        "yt1"
+                    ],
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "select",
+                "table": "accounts",
+                "columns": "id, platform, data",
+                "filters": [
+                    [
+                        "id",
+                        "yt2"
+                    ],
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "select",
+                "table": "accounts",
+                "columns": "id, platform, data",
+                "filters": [
+                    [
+                        "id",
+                        "yt3"
+                    ],
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "select",
+                "table": "accounts",
+                "columns": "id, platform, data",
+                "filters": [
+                    [
+                        "id",
+                        "yt3"
+                    ],
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "update",
+                "table": "accounts",
+                "values": {
+                    "platform": "youtube",
+                    "data": {
+                        "channelId": "UC3",
+                        "title": "Gamma",
+                        "publishedAt": "2025-09-01T00:00:00Z",
+                        "subscriberCount": 20,
+                        "viewCount": 400,
+                        "videoCount": 2,
+                        "thumbnails": {
+                            "default": "",
+                            "medium": "",
+                            "high": ""
+                        },
+                        "customUrl": "@gamma",
+                        "country": "Unknown",
+                        "lastUpdated": "2026-09-01T12:00:00.000Z"
+                    }
+                },
+                "filters": [
+                    [
+                        "id",
+                        "yt3"
+                    ],
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "select",
+                "table": "accounts",
+                "columns": "id, platform, data",
+                "filters": [
+                    [
+                        "id",
+                        "missing"
+                    ],
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            }
+        ],
+        "requests": [
+            {
+                "url": "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet%2CcontentDetails&playlistId=UU1&maxResults=50&key=YTKEY",
+                "method": "GET"
+            },
+            {
+                "url": "https://www.googleapis.com/youtube/v3/videos?part=statistics%2CcontentDetails%2Csnippet%2Cstatus&id=v1&key=YTKEY",
+                "method": "GET"
+            },
+            {
+                "url": "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet%2CcontentDetails&playlistId=UU2&maxResults=50&key=YTKEY",
+                "method": "GET"
+            },
+            {
+                "url": "https://www.googleapis.com/youtube/v3/videos?part=statistics%2CcontentDetails%2Csnippet%2Cstatus&id=v1&key=YTKEY",
+                "method": "GET"
+            },
+            {
+                "url": "https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics%2CcontentDetails%2CbrandingSettings%2Cstatus%2CtopicDetails&id=UC2&key=YTKEY",
+                "method": "GET"
+            },
+            {
+                "url": "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet%2CcontentDetails&playlistId=undefined&maxResults=50&key=YTKEY",
+                "method": "GET"
+            },
+            {
+                "url": "https://www.googleapis.com/youtube/v3/videos?part=statistics%2CcontentDetails%2Csnippet%2Cstatus&id=v1&key=YTKEY",
+                "method": "GET"
+            },
+            {
+                "url": "https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics%2CcontentDetails%2CbrandingSettings%2Cstatus%2CtopicDetails&id=UC3&key=YTKEY",
+                "method": "GET"
+            }
+        ],
+        "logLines": [
+            [
+                "error",
+                "Failed to backfill channel data:",
+                "Channel lookup failed"
+            ]
+        ],
+        "redisWrites": [
+            {
+                "key": "videos:user-1:yt1",
+                "options": {
+                    "ex": 21600
+                },
+                "version": 2
+            },
+            {
+                "key": "videos:user-1:yt2",
+                "options": {
+                    "ex": 21600
+                },
+                "version": 2
+            },
+            {
+                "key": "videos:user-1:yt3",
+                "options": {
+                    "ex": 21600
+                },
+                "version": 2
+            }
+        ]
+    },
+    "withoutKey": {
+        "responses": [
+            {
+                "call": "GET /accounts/yt1/analytics",
+                "status": 400,
+                "body": "{\"success\":false,\"message\":\"No API key\"}"
+            }
+        ],
+        "queries": [],
+        "requests": [],
+        "logLines": [],
+        "redisWrites": null
+    }
+}

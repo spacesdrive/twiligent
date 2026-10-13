@@ -13,6 +13,8 @@ Frontend tests cover `src/lib/`: hold-to-confirm timing, command palette ranking
 
 Test files sit next to the module they cover as `*.test.js` (for example `services/instagram.test.js`). Wrangler only bundles files reachable from `server.js`, so test files never ship in the Worker.
 
+Backend route and scheduler tests (`routes/*.test.js`, `utils/scheduler.test.js`) run the real handlers against `services/fixtures/fakeSupabase.js` and a scripted `fetch`, then compare responses, queries and outgoing requests with the `services/fixtures/*.golden.json` snapshots. Rows tagged with `tableRow(name, row)` are only visible to that table; untagged rows are visible to every table. A refactor must leave the snapshots unchanged.
+
 The testing workflow documented here describes what should run before shipping any change.
 
 ## Pre-Deployment Checklist

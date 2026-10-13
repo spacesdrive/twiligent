@@ -1,22 +1,16 @@
-// All functions accept `supabase` as first argument so they work both in
-// request handlers (where supabase comes from context) and in cron handlers
-// (where supabase is created from env). userId=null means service-level
-// (no user filter) - used by the scheduler and token refresh cron.
-
-// ── Accounts ──────────────────────────────────────────────────────────────────
-
+// supabase comes first so crons can call these too; a null userId skips the user filter
 export async function getAccounts(supabase, userId = null) {
-    let q = supabase.from('accounts').select('id, platform, data');
-    if (userId) q = q.eq('user_id', userId);
-    const { data, error } = await q;
+    let query = supabase.from('accounts').select('id, platform, data');
+    if (userId) query = query.eq('user_id', userId);
+    const { data, error } = await query;
     if (error) throw error;
     return (data || []).map(row => ({ id: row.id, platform: row.platform, ...row.data }));
 }
 
 export async function getAccountById(supabase, id, userId = null) {
-    let q = supabase.from('accounts').select('id, platform, data').eq('id', id);
-    if (userId) q = q.eq('user_id', userId);
-    const { data, error } = await q.single();
+    let query = supabase.from('accounts').select('id, platform, data').eq('id', id);
+    if (userId) query = query.eq('user_id', userId);
+    const { data, error } = await query.single();
     if (error || !data) return null;
     return { id: data.id, platform: data.platform, ...data.data };
 }
@@ -34,25 +28,23 @@ export async function updateAccount(supabase, id, updates, userId = null) {
     if (!current) throw new Error('Account not found: ' + id);
     const { id: _, platform: currentPlatform, ...currentData } = current;
     const { platform: newPlatform, ...dataUpdates } = updates;
-    let q = supabase.from('accounts').update({
+    let query = supabase.from('accounts').update({
         platform: newPlatform || currentPlatform,
         data: { ...currentData, ...dataUpdates },
     }).eq('id', id);
-    if (userId) q = q.eq('user_id', userId);
-    const { error } = await q;
+    if (userId) query = query.eq('user_id', userId);
+    const { error } = await query;
     if (error) throw error;
 }
 
 export async function deleteAccount(supabase, id, userId = null) {
-    let q = supabase.from('accounts').delete().eq('id', id);
-    if (userId) q = q.eq('user_id', userId);
-    const { error } = await q;
+    let query = supabase.from('accounts').delete().eq('id', id);
+    if (userId) query = query.eq('user_id', userId);
+    const { error } = await query;
     if (error) throw error;
 }
 
-// ── Settings (API Keys) ───────────────────────────────────────────────────────
-// Table: settings (user_id uuid, key text, value jsonb) - PK is (user_id, key)
-
+// settings rows are keyed by (user_id, key); every saved value lives under 'api_keys'
 const DEFAULT_KEYS = {};
 
 export async function getSettings(supabase, userId) {
@@ -73,8 +65,6 @@ export async function saveSettings(supabase, keys, userId) {
     if (error) throw error;
 }
 
-// ── Scheduled Posts ───────────────────────────────────────────────────────────
-
 function rowToPost(row) {
     return {
         id: row.id,
@@ -86,23 +76,23 @@ function rowToPost(row) {
 }
 
 export async function getPosts(supabase, userId) {
-    let q = supabase
+    let query = supabase
         .from('scheduled_posts')
         .select('id, account_id, status, scheduled_at, data')
         .order('scheduled_at', { ascending: true });
-    if (userId) q = q.eq('user_id', userId);
-    const { data, error } = await q;
+    if (userId) query = query.eq('user_id', userId);
+    const { data, error } = await query;
     if (error) throw error;
     return (data || []).map(rowToPost);
 }
 
 export async function getPostById(supabase, id, userId = null) {
-    let q = supabase
+    let query = supabase
         .from('scheduled_posts')
         .select('id, account_id, status, scheduled_at, data')
         .eq('id', id);
-    if (userId) q = q.eq('user_id', userId);
-    const { data, error } = await q.single();
+    if (userId) query = query.eq('user_id', userId);
+    const { data, error } = await query.single();
     if (error || !data) return null;
     return rowToPost(data);
 }
@@ -117,8 +107,7 @@ export async function getDuePosts(supabase) {
     return (data || []).map(rowToPost);
 }
 
-// Atomically moves a due post from pending to publishing. Returns false when another scheduler
-// (the Worker cron or the GitHub Actions workflow) already claimed it.
+// atomic pending to publishing; false means the worker cron or the github workflow got it first
 export async function claimPost(supabase, id) {
     const { data, error } = await supabase
         .from('scheduled_posts')
@@ -151,23 +140,23 @@ export async function updatePost(supabase, id, updates, userId = null) {
     if (scheduledAt !== undefined) colUpdates.scheduled_at = scheduledAt;
 
     if (Object.keys(dataUpdates).length > 0) {
-        let q = supabase.from('scheduled_posts').select('data').eq('id', id);
-        if (userId) q = q.eq('user_id', userId);
-        const { data: rows } = await q;
+        let readQuery = supabase.from('scheduled_posts').select('data').eq('id', id);
+        if (userId) readQuery = readQuery.eq('user_id', userId);
+        const { data: rows } = await readQuery;
         const currentData = rows?.[0]?.data || {};
         colUpdates.data = { ...currentData, ...dataUpdates };
     }
 
-    let q = supabase.from('scheduled_posts').update(colUpdates).eq('id', id);
-    if (userId) q = q.eq('user_id', userId);
-    const { error } = await q;
+    let query = supabase.from('scheduled_posts').update(colUpdates).eq('id', id);
+    if (userId) query = query.eq('user_id', userId);
+    const { error } = await query;
     if (error) throw error;
 }
 
 export async function deletePost(supabase, id, userId = null) {
-    let q = supabase.from('scheduled_posts').delete().eq('id', id);
-    if (userId) q = q.eq('user_id', userId);
-    const { error } = await q;
+    let query = supabase.from('scheduled_posts').delete().eq('id', id);
+    if (userId) query = query.eq('user_id', userId);
+    const { error } = await query;
     if (error) throw error;
 }
 
@@ -188,8 +177,6 @@ export async function deleteAllPosts(supabase, userId) {
     if (error) throw error;
     return { deleted: (total || 0) - (keeping || 0), kept: keeping || 0 };
 }
-
-// ── Tracked Posts ─────────────────────────────────────────────────────────────
 
 function rowToTrackedPost(row) {
     return {
@@ -254,8 +241,7 @@ export async function updateTrackedPost(supabase, id, updates, userId) {
     if (error) throw error;
 }
 
-// Merges keys into the data jsonb instead of replacing it, so manually entered
-// fields survive a live refresh and vice versa
+// merges into data instead of replacing it, so manual fields survive a live refresh and vice versa
 export async function patchTrackedPostData(supabase, id, patch, userId) {
     const { data: row, error: readError } = await supabase
         .from('tracked_posts')

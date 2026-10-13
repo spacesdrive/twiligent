@@ -3,8 +3,18 @@ function copy(value) {
     return value === undefined ? undefined : structuredClone(value);
 }
 
+function matchesFilter(row, [column, value, operator]) {
+    if (operator === 'lte') return row[column] <= value;
+    return row[column] === value;
+}
+
 function matchesFilters(row, filters) {
-    return filters.every(([column, value]) => row[column] === value);
+    return filters.every(filter => matchesFilter(row, filter));
+}
+
+// rows without a _table tag are visible to every table, as the older tests expect
+function inTable(row, name) {
+    return row._table === undefined || row._table === name;
 }
 
 function queryBuilder(action, run) {
@@ -15,6 +25,11 @@ function queryBuilder(action, run) {
             filters.push([column, value]);
             return query;
         },
+        lte(column, value) {
+            filters.push([column, value, 'lte']);
+            return query;
+        },
+        order() { return query; },
         single() {
             const found = run(action, filters);
             if (found.length === 0) return Promise.resolve({ data: null, error: { message: 'no rows' } });
@@ -33,7 +48,7 @@ export function fakeSupabase(rows = []) {
 
     function run(action, filters) {
         calls.push({ ...copy(action), filters: copy(filters) });
-        const found = table.filter(row => matchesFilters(row, filters));
+        const found = table.filter(row => inTable(row, action.table) && matchesFilters(row, filters));
         if (action.type === 'update') found.forEach(row => Object.assign(row, copy(action.values)));
         if (action.type === 'insert') table.push(copy(action.values));
         if (action.type === 'delete') {
@@ -54,6 +69,10 @@ export function fakeSupabase(rows = []) {
             };
         },
     };
+}
+
+export function tableRow(name, row) {
+    return { _table: name, ...row };
 }
 
 export function accountRow(account, userId = 'user-1') {

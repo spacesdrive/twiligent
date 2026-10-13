@@ -68,22 +68,22 @@ describe('extractInstagramViews', () => {
 
 describe('normalizeInstagramMedia', () => {
     test('reel keeps its cover as the thumbnail and never uses the video file', () => {
-        const m = normalizeInstagramMedia({
+        const item = normalizeInstagramMedia({
             id: '1', media_type: 'VIDEO', media_product_type: 'REELS',
             media_url: 'https://cdn/video.mp4', like_count: 44, comments_count: 6,
             insights: viewsInsight(900),
         });
-        assert.equal(m.contentType, 'reel');
-        assert.equal(m.thumbnailUrl, '');
-        assert.equal(m.viewCount, 900);
-        assert.equal(m.likeCount, 44);
+        assert.equal(item.contentType, 'reel');
+        assert.equal(item.thumbnailUrl, '');
+        assert.equal(item.viewCount, 900);
+        assert.equal(item.likeCount, 44);
     });
 
     test('image post uses media_url as the thumbnail', () => {
-        const m = normalizeInstagramMedia({ id: '2', media_type: 'IMAGE', media_product_type: 'FEED', media_url: 'https://cdn/img.jpg' });
-        assert.equal(m.contentType, 'post');
-        assert.equal(m.thumbnailUrl, 'https://cdn/img.jpg');
-        assert.equal(m.viewCount, null);
+        const item = normalizeInstagramMedia({ id: '2', media_type: 'IMAGE', media_product_type: 'FEED', media_url: 'https://cdn/img.jpg' });
+        assert.equal(item.contentType, 'post');
+        assert.equal(item.thumbnailUrl, 'https://cdn/img.jpg');
+        assert.equal(item.viewCount, null);
     });
 });
 
@@ -137,38 +137,38 @@ describe('content type tracking', () => {
     ];
 
     test('summarizeContentTypes counts each item exactly once', () => {
-        const s = summarizeContentTypes(media);
-        assert.equal(s.reel.count + s.post.count + s.video.count, media.length);
-        assert.deepEqual(s.reel, { count: 2, likes: 55, comments: 14, views: 1000, viewsReported: 1 });
-        assert.deepEqual(s.post, { count: 1, likes: 2, comments: 0, views: 50, viewsReported: 1 });
-        assert.deepEqual(s.video, { count: 1, likes: 7, comments: 1, views: 300, viewsReported: 1 });
+        const summary = summarizeContentTypes(media);
+        assert.equal(summary.reel.count + summary.post.count + summary.video.count, media.length);
+        assert.deepEqual(summary.reel, { count: 2, likes: 55, comments: 14, views: 1000, viewsReported: 1 });
+        assert.deepEqual(summary.post, { count: 1, likes: 2, comments: 0, views: 50, viewsReported: 1 });
+        assert.deepEqual(summary.video, { count: 1, likes: 7, comments: 1, views: 300, viewsReported: 1 });
     });
 
     test('summarizeContentTypes always returns all three types', () => {
-        const s = summarizeContentTypes([]);
-        assert.deepEqual(Object.keys(s), ['reel', 'post', 'video']);
-        assert.equal(s.reel.count, 0);
+        const summary = summarizeContentTypes([]);
+        assert.deepEqual(Object.keys(summary), ['reel', 'post', 'video']);
+        assert.equal(summary.reel.count, 0);
     });
 
     test('computeInstagramAnalytics splits counts and views by type without double counting', () => {
-        const a = computeInstagramAnalytics({ followersCount: 100, mediaCount: 4 }, media);
-        const { reel, post, video } = a.contentTypeStats;
+        const analytics = computeInstagramAnalytics({ followersCount: 100, mediaCount: 4 }, media);
+        const { reel, post, video } = analytics.contentTypeStats;
 
         assert.equal(reel.count, 2);
         assert.equal(post.count, 1);
         assert.equal(video.count, 1);
         assert.equal(reel.totalViews, 1000);
         assert.equal(reel.avgViews, 1000);
-        assert.equal(a.totalViews, reel.totalViews + post.totalViews + video.totalViews);
-        assert.equal(a.totalLikes, reel.totalLikes + post.totalLikes + video.totalLikes);
-        assert.equal(a.mediaWithViews, 3);
-        assert.equal(a.avgViews, Math.round(1350 / 3));
+        assert.equal(analytics.totalViews, reel.totalViews + post.totalViews + video.totalViews);
+        assert.equal(analytics.totalLikes, reel.totalLikes + post.totalLikes + video.totalLikes);
+        assert.equal(analytics.mediaWithViews, 3);
+        assert.equal(analytics.avgViews, Math.round(1350 / 3));
     });
 
     test('computeInstagramAnalytics returns empty type stats with no media', () => {
-        const a = computeInstagramAnalytics({ mediaCount: 0 }, []);
-        assert.equal(a.totalViews, 0);
-        assert.equal(a.contentTypeStats.reel.count, 0);
-        assert.equal(a.contentTypeStats.video.avgViews, 0);
+        const analytics = computeInstagramAnalytics({ mediaCount: 0 }, []);
+        assert.equal(analytics.totalViews, 0);
+        assert.equal(analytics.contentTypeStats.reel.count, 0);
+        assert.equal(analytics.contentTypeStats.video.avgViews, 0);
     });
 });

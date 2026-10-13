@@ -1,0 +1,74 @@
+{
+    "cached": {
+        "responses": [
+            {
+                "call": "GET /overview",
+                "status": 200,
+                "body": "{\"tracked\":[{\"id\":\"t1\",\"accountId\":null,\"url\":\"https://youtu.be/x\",\"label\":\"\",\"category\":\"\",\"contentType\":\"youtube\",\"createdAt\":\"2026-08-01T00:00:00Z\",\"updatedAt\":\"2026-08-01T00:00:00Z\",\"title\":\"Tracked\"}],\"analyticsCache\":{\"yt1\":{\"id\":\"yt1\",\"cacheWarmed\":true,\"totalLikes\":12,\"totalComments\":5},\"yt2\":{\"id\":\"yt2\",\"cacheWarmed\":true,\"totalLikes\":1,\"totalComments\":1},\"yt3\":{\"id\":\"yt3\",\"cacheWarmed\":false,\"syncing\":false},\"ig1\":{\"id\":\"ig1\",\"cacheWarmed\":true,\"totalLikes\":6,\"totalComments\":2,\"totalViews\":90,\"contentTypes\":{\"reel\":{\"count\":1,\"likes\":5,\"comments\":2,\"views\":90,\"viewsReported\":1},\"post\":{\"count\":1,\"likes\":1,\"comments\":0,\"views\":0,\"viewsReported\":0},\"video\":{\"count\":0,\"likes\":0,\"comments\":0,\"views\":0,\"viewsReported\":0}}},\"rd1\":{\"id\":\"rd1\",\"cacheWarmed\":true,\"fetchedPosts\":4,\"totalScore\":40,\"totalComments\":0},\"rd2\":{\"id\":\"rd2\",\"cacheWarmed\":false,\"syncing\":false}}}"
+            }
+        ],
+        "queries": [
+            {
+                "type": "select",
+                "table": "accounts",
+                "columns": "id, platform, data",
+                "filters": [
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "select",
+                "table": "tracked_posts",
+                "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+                "filters": [
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            }
+        ],
+        "requests": [],
+        "logLines": [],
+        "redisWrites": []
+    },
+    "noRedis": {
+        "responses": [
+            {
+                "call": "GET /overview",
+                "status": 200,
+                "body": "{\"tracked\":[{\"id\":\"t1\",\"accountId\":null,\"url\":\"https://youtu.be/x\",\"label\":\"\",\"category\":\"\",\"contentType\":\"youtube\",\"createdAt\":\"2026-08-01T00:00:00Z\",\"updatedAt\":\"2026-08-01T00:00:00Z\",\"title\":\"Tracked\"}],\"analyticsCache\":{\"yt1\":{\"id\":\"yt1\",\"cacheWarmed\":false,\"syncing\":false},\"yt2\":{\"id\":\"yt2\",\"cacheWarmed\":false,\"syncing\":false},\"yt3\":{\"id\":\"yt3\",\"cacheWarmed\":false,\"syncing\":false},\"ig1\":{\"id\":\"ig1\",\"cacheWarmed\":false,\"syncing\":false},\"rd1\":{\"id\":\"rd1\",\"cacheWarmed\":false,\"syncing\":false},\"rd2\":{\"id\":\"rd2\",\"cacheWarmed\":false,\"syncing\":false}}}"
+            }
+        ],
+        "queries": [
+            {
+                "type": "select",
+                "table": "accounts",
+                "columns": "id, platform, data",
+                "filters": [
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            },
+            {
+                "type": "select",
+                "table": "tracked_posts",
+                "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+                "filters": [
+                    [
+                        "user_id",
+                        "user-1"
+                    ]
+                ]
+            }
+        ],
+        "requests": [],
+        "logLines": [],
+        "redisWrites": null
+    }
+}

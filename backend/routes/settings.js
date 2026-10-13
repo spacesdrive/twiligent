@@ -7,13 +7,13 @@ app.get('/settings/github', async (c) => {
     const supabase = c.get('supabase');
     const userId = c.get('userId');
     const settings = await getSettings(supabase, userId);
-    const gh = settings.github || {};
+    const github = settings.github || {};
     return c.json({
-        configured: !!(gh.pat && gh.repoOwner && gh.repoName),
-        repoOwner: gh.repoOwner || '',
-        repoName: gh.repoName || '',
-        branch: gh.branch || 'main',
-        patSet: !!gh.pat,
+        configured: !!(github.pat && github.repoOwner && github.repoName),
+        repoOwner: github.repoOwner || '',
+        repoName: github.repoName || '',
+        branch: github.branch || 'main',
+        patSet: !!github.pat,
     });
 });
 

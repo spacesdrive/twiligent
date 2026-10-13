@@ -19,10 +19,10 @@ app.get('/accounts/:id/ig-publishing-limit', async (c) => {
         if (!acct || acct.platform !== 'instagram') {
             return c.json({ success: false, message: 'Instagram account not found' }, 404);
         }
-        const r = await fetch(
+        const response = await fetch(
             `https://graph.instagram.com/v25.0/${acct.igUserId}/content_publishing_limit?fields=quota_usage,config&access_token=${acct.accessToken}`
         );
-        const data = await r.json();
+        const data = await response.json();
         if (data.error) throw new Error(data.error.message);
         return c.json({ success: true, ...data });
     } catch (err) {
@@ -40,9 +40,9 @@ app.post('/accounts/:id/ig-publish', async (c) => {
         const igId = acct.igUserId;
         const params = buildMediaParams(await c.req.json(), acct.accessToken);
 
-        const qs = new URLSearchParams(params).toString();
-        const r = await fetch(`https://graph.instagram.com/v25.0/${igId}/media?${qs}`, { method: 'POST' });
-        const data = await r.json();
+        const query = new URLSearchParams(params).toString();
+        const response = await fetch(`https://graph.instagram.com/v25.0/${igId}/media?${query}`, { method: 'POST' });
+        const data = await response.json();
         if (data.error) throw new Error(data.error.message);
 
         return c.json({ success: true, containerId: data.id });
@@ -58,10 +58,10 @@ app.get('/ig-container/:containerId/status', async (c) => {
         const acct = await getAccountById(c.get('supabase'), accountId, c.get('userId'));
         if (!acct) return c.json({ success: false, message: 'Account not found' }, 404);
 
-        const r = await fetch(
+        const response = await fetch(
             `https://graph.instagram.com/v25.0/${containerId}?fields=status_code,status&access_token=${acct.accessToken}`
         );
-        const data = await r.json();
+        const data = await response.json();
         if (data.error) throw new Error(data.error.message);
 
         return c.json({ success: true, statusCode: data.status_code, status: data.status });
@@ -78,11 +78,11 @@ app.post('/accounts/:id/ig-media-publish', async (c) => {
         }
 
         const { containerId } = await c.req.json();
-        const r = await fetch(
+        const response = await fetch(
             `https://graph.instagram.com/v25.0/${acct.igUserId}/media_publish?creation_id=${containerId}&access_token=${acct.accessToken}`,
             { method: 'POST' }
         );
-        const data = await r.json();
+        const data = await response.json();
         if (data.error) throw new Error(data.error.message);
 
         return c.json({ success: true, mediaId: data.id });

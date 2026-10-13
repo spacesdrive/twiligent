@@ -85,6 +85,7 @@ function safeAccount(account) {
 | `youtubeFormat.js` | `parseDuration`, `formatCompact`, `formatDuration`, `formatVideoSummary` |
 | `youtubeAnalytics.js` | `computeVideoAnalytics` orchestrator, the empty state, totals, durations, rankings, Shorts split, format flags |
 | `youtubeTrends.js` | Publish day and hour distribution, categories, tags, recency counts, upload frequency, weekly consistency, views histogram, monthly trends |
+| `youtubeLibrary.js` | Pure helpers for `routes/analytics.js`: `channelMetrics` (channel age, ratios and estimates; a channel without `publishedAt` counts as 365 days old), `accountComparison` (rankings and totals for `/comparison`), `filterAndSortVideos` (search, view range and sort for `/videos/all`) |
 
 ### Key Functions
 
@@ -150,9 +151,15 @@ The account routes in `routes/accounts.js` only parse the request, check require
 |---|---|
 | `accountFactory.js` | Pure builders: `newAccountId`, `tokenExpiryIso` (null without a lifetime), `buildYouTubeAccount`, `buildRedditAccount`, `buildInstagramAccount` |
 | `accountConnect.js` | `addYouTubeAccount`, `addRedditAccount`, `addInstagramAccount` (tries the long-lived exchange when `INSTAGRAM_APP_SECRET` is set and keeps the pasted token if it fails), `refreshInstagramToken` |
-| `accountRefresh.js` | `fetchAccountUpdates` (profile fields per platform; a single refresh updates more fields than refresh-all), `refreshAccount`, `refreshAllAccounts` (`Promise.allSettled`, results aligned with the account list by index) |
+| `accountRefresh.js` | `fetchAccountUpdates` (profile fields per platform; a single refresh updates more fields than refresh-all), `refreshAccount`, `refreshAllAccounts` (`Promise.allSettled`, results aligned with the account list by index), `backfillChannelData` (fills channel fields for a YouTube account without `publishedAt` when its analytics load; a failure is logged and skipped) |
 
 Duplicate accounts throw an `Error` whose message the route returns with status 400, the same shape as any other failure. Failures that need another status (404 for a missing account, 400 for a missing credential) come back as `{ failure: { status, message } }`.
+
+---
+
+## Tracked content (`trackedContent.js`)
+
+Pure rules for `routes/trackedContent.js`: `detectContentType(url)` (`reddit`, `youtube` or `null`), `manualViewsPatch(value, isYouTube)` and `imageUrlPatch(value, isYouTube)`. The two patch helpers return `{ patch }` for the route to merge into the item's `data`, or `{ error }` for a 400 response. Empty values clear the field, YouTube items refuse both, views must be whole numbers of 0 or more, and images must be `https` URLs.
 
 ---
 

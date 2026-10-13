@@ -1,0 +1,80 @@
+{
+    "status": 200,
+    "body": "{\"tracked\":[{\"id\":\"t1\",\"accountId\":null,\"url\":\"https://youtu.be/x\",\"label\":\"\",\"category\":\"\",\"contentType\":\"youtube\",\"createdAt\":\"2026-08-01T00:00:00Z\",\"updatedAt\":\"2026-08-01T00:00:00Z\",\"title\":\"Tracked\"}],\"analyticsCache\":{\"yt1\":{\"id\":\"yt1\",\"cacheWarmed\":false,\"syncing\":true},\"yt2\":{\"id\":\"yt2\",\"cacheWarmed\":false,\"syncing\":true},\"yt3\":{\"id\":\"yt3\",\"cacheWarmed\":false,\"syncing\":false},\"ig1\":{\"id\":\"ig1\",\"cacheWarmed\":false,\"syncing\":true},\"rd1\":{\"id\":\"rd1\",\"cacheWarmed\":false,\"syncing\":true},\"rd2\":{\"id\":\"rd2\",\"cacheWarmed\":false,\"syncing\":false}}}",
+    "waitUntilCalls": 1,
+    "settled": [
+        [
+            {
+                "status": "fulfilled",
+                "value": "[undefined]"
+            },
+            {
+                "status": "fulfilled",
+                "value": "[undefined]"
+            },
+            {
+                "status": "fulfilled",
+                "value": "[undefined]"
+            },
+            {
+                "status": "fulfilled",
+                "value": "[undefined]"
+            }
+        ]
+    ],
+    "requests": [
+        {
+            "url": "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet%2CcontentDetails&playlistId=UU1&maxResults=50&key=YTKEY",
+            "method": "GET"
+        },
+        {
+            "url": "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet%2CcontentDetails&playlistId=UU2&maxResults=50&key=YTKEY",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/IG1/media?access_token=T1&limit=50&fields=id%2Ccaption%2Cmedia_type%2Cmedia_product_type%2Cmedia_url%2Cthumbnail_url%2Ccover_url%2Cpermalink%2Ctimestamp%2Clike_count%2Ccomments_count%2Cinsights.metric%28views%29",
+            "method": "GET"
+        },
+        {
+            "url": "https://www.reddit.com/user/ribbon/about.json",
+            "method": "GET",
+            "headers": {
+                "User-Agent": "script:twiligent:v1.0 (by /u/spacesdrive)",
+                "Accept": "application/json",
+                "Cookie": "reddit_session=COOKIE"
+            }
+        },
+        {
+            "url": "https://www.reddit.com/user/ribbon/submitted.json?limit=100&sort=new",
+            "method": "GET",
+            "headers": {
+                "User-Agent": "script:twiligent:v1.0 (by /u/spacesdrive)",
+                "Accept": "application/json",
+                "Cookie": "reddit_session=COOKIE"
+            }
+        }
+    ],
+    "redisWrites": [
+        {
+            "key": "videos:user-1:yt1",
+            "options": {
+                "ex": 21600
+            },
+            "version": 2
+        },
+        {
+            "key": "videos:user-1:yt2",
+            "options": {
+                "ex": 21600
+            },
+            "version": 2
+        },
+        {
+            "key": "ig:user-1:ig1",
+            "options": {
+                "ex": 21600
+            },
+            "version": 2
+        }
+    ]
+}

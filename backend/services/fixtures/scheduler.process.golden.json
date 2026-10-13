@@ -1,0 +1,1224 @@
+{
+    "result": {
+        "processed": 4,
+        "errors": [
+            {
+                "id": "p-story",
+                "error": "Processing failed: Bad video"
+            },
+            {
+                "id": "p-expired",
+                "error": "Container expired"
+            },
+            {
+                "id": "p-missing",
+                "error": "Account not found: gone"
+            },
+            {
+                "id": "p-create",
+                "error": "Invalid image"
+            },
+            {
+                "id": "p-publish",
+                "error": "Publish refused"
+            }
+        ]
+    },
+    "delays": [
+        2000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        2000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        3000,
+        2000
+    ],
+    "logLines": [
+        [
+            "log",
+            "Published scheduled post p-image → media m-c-IG1"
+        ],
+        [
+            "log",
+            "Published scheduled post p-reel → media m-c-IG1"
+        ],
+        [
+            "error",
+            "Failed to publish scheduled post p-story: Processing failed: Bad video"
+        ],
+        [
+            "error",
+            "Failed to publish scheduled post p-expired: Container expired"
+        ],
+        [
+            "error",
+            "Failed to publish scheduled post p-missing: Account not found: gone"
+        ],
+        [
+            "error",
+            "Failed to publish scheduled post p-create: Invalid image"
+        ],
+        [
+            "error",
+            "Failed to publish scheduled post p-publish: Publish refused"
+        ],
+        [
+            "log",
+            "Published scheduled post p-slow → media m-c-SLOW"
+        ],
+        [
+            "log",
+            "Published scheduled post p-dup → media m-c-IG1"
+        ]
+    ],
+    "requests": [
+        {
+            "url": "https://graph.instagram.com/v25.0/IG1/media?access_token=T1&image_url=https%3A%2F%2Fcdn%2Fa.jpg&caption=Hello",
+            "method": "POST"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/IG1/media_publish?creation_id=c-IG1&access_token=T1",
+            "method": "POST"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/IG1/media?access_token=T1&media_type=REELS&video_url=https%3A%2F%2Fcdn%2Fr.mp4&share_to_feed=true",
+            "method": "POST"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-IG1?fields=status_code,status&access_token=T1",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-IG1?fields=status_code,status&access_token=T1",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/IG1/media_publish?creation_id=c-IG1&access_token=T1",
+            "method": "POST"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/ERR/media?access_token=T2&media_type=STORIES&video_url=https%3A%2F%2Fcdn%2Fs.mp4",
+            "method": "POST"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-ERR?fields=status_code,status&access_token=T2",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/EXP/media?access_token=T3&media_type=REELS&video_url=https%3A%2F%2Fcdn%2Fe.mp4",
+            "method": "POST"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-EXP?fields=status_code,status&access_token=T3",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-EXP?fields=status_code,status&access_token=T3",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/BAD/media?access_token=T4&image_url=https%3A%2F%2Fcdn%2Fb.jpg",
+            "method": "POST"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/PUB/media?access_token=T5&image_url=https%3A%2F%2Fcdn%2Fp.jpg",
+            "method": "POST"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/PUB/media_publish?creation_id=c-PUB&access_token=T5",
+            "method": "POST"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/SLOW/media?access_token=T6&media_type=REELS&video_url=https%3A%2F%2Fcdn%2Fslow.mp4",
+            "method": "POST"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/SLOW/media_publish?creation_id=c-SLOW&access_token=T6",
+            "method": "POST"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/IG1/media?access_token=T1&image_url=https%3A%2F%2Fcdn%2Fd.jpg",
+            "method": "POST"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/IG1/media_publish?creation_id=c-IG1&access_token=T1",
+            "method": "POST"
+        }
+    ],
+    "queries": [
+        {
+            "type": "select",
+            "table": "scheduled_posts",
+            "columns": "id, account_id, status, scheduled_at, data",
+            "filters": [
+                [
+                    "status",
+                    "pending"
+                ],
+                [
+                    "scheduled_at",
+                    "2026-09-01T12:00:00.000Z",
+                    "lte"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
+                "status": "publishing"
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-image"
+                ],
+                [
+                    "status",
+                    "pending"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "id",
+                    "ig1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "scheduled_posts",
+            "columns": "data",
+            "filters": [
+                [
+                    "id",
+                    "p-image"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
+                "status": "published",
+                "data": {
+                    "mediaType": "IMAGE",
+                    "mediaUrl": "https://cdn/a.jpg",
+                    "caption": "Hello",
+                    "publishedMediaId": "m-c-IG1",
+                    "publishedAt": "2026-09-01T12:00:00.000Z"
+                }
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-image"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
+                "status": "publishing"
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-reel"
+                ],
+                [
+                    "status",
+                    "pending"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "id",
+                    "ig1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "scheduled_posts",
+            "columns": "data",
+            "filters": [
+                [
+                    "id",
+                    "p-reel"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
+                "status": "published",
+                "data": {
+                    "mediaType": "REELS",
+                    "mediaUrl": "https://cdn/r.mp4",
+                    "shareToFeed": true,
+                    "publishedMediaId": "m-c-IG1",
+                    "publishedAt": "2026-09-01T12:00:00.000Z"
+                }
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-reel"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
+                "status": "publishing"
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-story"
+                ],
+                [
+                    "status",
+                    "pending"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "id",
+                    "igErr"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "scheduled_posts",
+            "columns": "data",
+            "filters": [
+                [
+                    "id",
+                    "p-story"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
+                "status": "failed",
+                "data": {
+                    "mediaType": "STORIES",
+                    "mediaUrl": "https://cdn/s.mp4",
+                    "error": "Processing failed: Bad video"
+                }
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-story"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
+                "status": "publishing"
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-expired"
+                ],
+                [
+                    "status",
+                    "pending"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "id",
+                    "igExp"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "scheduled_posts",
+            "columns": "data",
+            "filters": [
+                [
+                    "id",
+                    "p-expired"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
+                "status": "failed",
+                "data": {
+                    "mediaType": "REELS",
+                    "mediaUrl": "https://cdn/e.mp4",
+                    "error": "Container expired"
+                }
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-expired"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
+                "status": "publishing"
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-missing"
+                ],
+                [
+                    "status",
+                    "pending"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "id",
+                    "gone"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "scheduled_posts",
+            "columns": "data",
+            "filters": [
+                [
+                    "id",
+                    "p-missing"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
+                "status": "failed",
+                "data": {
+                    "mediaType": "IMAGE",
+                    "mediaUrl": "https://cdn/m.jpg",
+                    "error": "Account not found: gone"
+                }
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-missing"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
+                "status": "publishing"
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-create"
+                ],
+                [
+                    "status",
+                    "pending"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "id",
+                    "igBad"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "scheduled_posts",
+            "columns": "data",
+            "filters": [
+                [
+                    "id",
+                    "p-create"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
+                "status": "failed",
+                "data": {
+                    "mediaType": "IMAGE",
+                    "mediaUrl": "https://cdn/b.jpg",
+                    "error": "Invalid image"
+                }
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-create"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
+                "status": "publishing"
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-publish"
+                ],
+                [
+                    "status",
+                    "pending"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "id",
+                    "igPub"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "scheduled_posts",
+            "columns": "data",
+            "filters": [
+                [
+                    "id",
+                    "p-publish"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
+                "status": "failed",
+                "data": {
+                    "mediaType": "IMAGE",
+                    "mediaUrl": "https://cdn/p.jpg",
+                    "error": "Publish refused"
+                }
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-publish"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
+                "status": "publishing"
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-slow"
+                ],
+                [
+                    "status",
+                    "pending"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "id",
+                    "igSlow"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "scheduled_posts",
+            "columns": "data",
+            "filters": [
+                [
+                    "id",
+                    "p-slow"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
+                "status": "published",
+                "data": {
+                    "mediaType": "REELS",
+                    "mediaUrl": "https://cdn/slow.mp4",
+                    "publishedMediaId": "m-c-SLOW",
+                    "publishedAt": "2026-09-01T12:00:00.000Z"
+                }
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-slow"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
+                "status": "publishing"
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-dup"
+                ],
+                [
+                    "status",
+                    "pending"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "id",
+                    "ig1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "scheduled_posts",
+            "columns": "data",
+            "filters": [
+                [
+                    "id",
+                    "p-dup"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
+                "status": "published",
+                "data": {
+                    "mediaType": "IMAGE",
+                    "mediaUrl": "https://cdn/d.jpg",
+                    "publishedMediaId": "m-c-IG1",
+                    "publishedAt": "2026-09-01T12:00:00.000Z"
+                }
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-dup"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
+                "status": "publishing"
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-dup"
+                ],
+                [
+                    "status",
+                    "pending"
+                ]
+            ]
+        }
+    ],
+    "table": [
+        {
+            "_table": "accounts",
+            "id": "ig1",
+            "platform": "instagram",
+            "user_id": "user-1",
+            "data": {
+                "igUserId": "IG1",
+                "accessToken": "T1"
+            }
+        },
+        {
+            "_table": "accounts",
+            "id": "igErr",
+            "platform": "instagram",
+            "user_id": "user-1",
+            "data": {
+                "igUserId": "ERR",
+                "accessToken": "T2"
+            }
+        },
+        {
+            "_table": "accounts",
+            "id": "igExp",
+            "platform": "instagram",
+            "user_id": "user-1",
+            "data": {
+                "igUserId": "EXP",
+                "accessToken": "T3"
+            }
+        },
+        {
+            "_table": "accounts",
+            "id": "igBad",
+            "platform": "instagram",
+            "user_id": "user-1",
+            "data": {
+                "igUserId": "BAD",
+                "accessToken": "T4"
+            }
+        },
+        {
+            "_table": "accounts",
+            "id": "igPub",
+            "platform": "instagram",
+            "user_id": "user-1",
+            "data": {
+                "igUserId": "PUB",
+                "accessToken": "T5"
+            }
+        },
+        {
+            "_table": "accounts",
+            "id": "igSlow",
+            "platform": "instagram",
+            "user_id": "user-1",
+            "data": {
+                "igUserId": "SLOW",
+                "accessToken": "T6"
+            }
+        },
+        {
+            "_table": "scheduled_posts",
+            "id": "p-image",
+            "user_id": "user-1",
+            "account_id": "ig1",
+            "status": "published",
+            "scheduled_at": "2026-09-01T11:00:00.000Z",
+            "data": {
+                "mediaType": "IMAGE",
+                "mediaUrl": "https://cdn/a.jpg",
+                "caption": "Hello",
+                "publishedMediaId": "m-c-IG1",
+                "publishedAt": "2026-09-01T12:00:00.000Z"
+            }
+        },
+        {
+            "_table": "scheduled_posts",
+            "id": "p-reel",
+            "user_id": "user-1",
+            "account_id": "ig1",
+            "status": "published",
+            "scheduled_at": "2026-09-01T11:00:00.000Z",
+            "data": {
+                "mediaType": "REELS",
+                "mediaUrl": "https://cdn/r.mp4",
+                "shareToFeed": true,
+                "publishedMediaId": "m-c-IG1",
+                "publishedAt": "2026-09-01T12:00:00.000Z"
+            }
+        },
+        {
+            "_table": "scheduled_posts",
+            "id": "p-story",
+            "user_id": "user-1",
+            "account_id": "igErr",
+            "status": "failed",
+            "scheduled_at": "2026-09-01T11:00:00.000Z",
+            "data": {
+                "mediaType": "STORIES",
+                "mediaUrl": "https://cdn/s.mp4",
+                "error": "Processing failed: Bad video"
+            }
+        },
+        {
+            "_table": "scheduled_posts",
+            "id": "p-expired",
+            "user_id": "user-1",
+            "account_id": "igExp",
+            "status": "failed",
+            "scheduled_at": "2026-09-01T11:00:00.000Z",
+            "data": {
+                "mediaType": "REELS",
+                "mediaUrl": "https://cdn/e.mp4",
+                "error": "Container expired"
+            }
+        },
+        {
+            "_table": "scheduled_posts",
+            "id": "p-missing",
+            "user_id": "user-1",
+            "account_id": "gone",
+            "status": "failed",
+            "scheduled_at": "2026-09-01T11:00:00.000Z",
+            "data": {
+                "mediaType": "IMAGE",
+                "mediaUrl": "https://cdn/m.jpg",
+                "error": "Account not found: gone"
+            }
+        },
+        {
+            "_table": "scheduled_posts",
+            "id": "p-create",
+            "user_id": "user-1",
+            "account_id": "igBad",
+            "status": "failed",
+            "scheduled_at": "2026-09-01T11:00:00.000Z",
+            "data": {
+                "mediaType": "IMAGE",
+                "mediaUrl": "https://cdn/b.jpg",
+                "error": "Invalid image"
+            }
+        },
+        {
+            "_table": "scheduled_posts",
+            "id": "p-publish",
+            "user_id": "user-1",
+            "account_id": "igPub",
+            "status": "failed",
+            "scheduled_at": "2026-09-01T11:00:00.000Z",
+            "data": {
+                "mediaType": "IMAGE",
+                "mediaUrl": "https://cdn/p.jpg",
+                "error": "Publish refused"
+            }
+        },
+        {
+            "_table": "scheduled_posts",
+            "id": "p-slow",
+            "user_id": "user-1",
+            "account_id": "igSlow",
+            "status": "published",
+            "scheduled_at": "2026-09-01T11:00:00.000Z",
+            "data": {
+                "mediaType": "REELS",
+                "mediaUrl": "https://cdn/slow.mp4",
+                "publishedMediaId": "m-c-SLOW",
+                "publishedAt": "2026-09-01T12:00:00.000Z"
+            }
+        },
+        {
+            "_table": "scheduled_posts",
+            "id": "p-dup",
+            "user_id": "user-1",
+            "account_id": "ig1",
+            "status": "published",
+            "scheduled_at": "2026-09-01T11:00:00.000Z",
+            "data": {
+                "mediaType": "IMAGE",
+                "mediaUrl": "https://cdn/d.jpg",
+                "publishedMediaId": "m-c-IG1",
+                "publishedAt": "2026-09-01T12:00:00.000Z"
+            }
+        },
+        {
+            "_table": "scheduled_posts",
+            "id": "p-dup",
+            "user_id": "user-1",
+            "account_id": "ig1",
+            "status": "published",
+            "scheduled_at": "2026-09-01T11:00:00.000Z",
+            "data": {
+                "mediaType": "IMAGE",
+                "mediaUrl": "https://cdn/d.jpg",
+                "publishedMediaId": "m-c-IG1",
+                "publishedAt": "2026-09-01T12:00:00.000Z"
+            }
+        },
+        {
+            "_table": "scheduled_posts",
+            "id": "p-busy",
+            "user_id": "user-1",
+            "account_id": "ig1",
+            "status": "publishing",
+            "scheduled_at": "2026-09-01T11:00:00.000Z",
+            "data": {
+                "mediaType": "IMAGE"
+            }
+        },
+        {
+            "_table": "scheduled_posts",
+            "id": "p-later",
+            "user_id": "user-1",
+            "account_id": "ig1",
+            "status": "pending",
+            "scheduled_at": "2026-09-02T00:00:00.000Z",
+            "data": {
+                "mediaType": "IMAGE"
+            }
+        }
+    ]
+}

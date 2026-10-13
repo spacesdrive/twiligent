@@ -1,5 +1,4 @@
-// AES-256-GCM encryption and TOTP generation using the Web Crypto API (built into Cloudflare Workers).
-// AES key is a 64-char hex string (32 bytes). Ciphertext format: "<iv_hex>:<ciphertext_hex>"
+// web crypto only, no npm dependency; the key is 64 hex chars and output is "<iv_hex>:<cipher_hex>"
 
 function hexToBuffer(hex) {
     const bytes = new Uint8Array(hex.length / 2);
@@ -17,13 +16,13 @@ async function importKey(keyHex) {
 
 export async function encryptPassword(plaintext, keyHex) {
     const key = await importKey(keyHex);
-    const iv = crypto.getRandomValues(new Uint8Array(12));
+    const initVector = crypto.getRandomValues(new Uint8Array(12));
     const ciphertext = await crypto.subtle.encrypt(
-        { name: 'AES-GCM', iv },
+        { name: 'AES-GCM', iv: initVector },
         key,
         new TextEncoder().encode(plaintext)
     );
-    return `${bufferToHex(iv.buffer)}:${bufferToHex(ciphertext)}`;
+    return `${bufferToHex(initVector.buffer)}:${bufferToHex(ciphertext)}`;
 }
 
 export async function decryptPassword(encrypted, keyHex) {
@@ -37,8 +36,7 @@ export async function decryptPassword(encrypted, keyHex) {
     return new TextDecoder().decode(plaintext);
 }
 
-// TOTP (RFC 6238) using HMAC-SHA1 via crypto.subtle. No npm dependency.
-// base32Secret is the raw Base32 string from the authenticator app QR code.
+// totp (rfc 6238) takes the raw base32 secret from the authenticator app qr code
 function base32Decode(base32) {
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
     const cleaned = base32.toUpperCase().replace(/[^A-Z2-7]/g, '');

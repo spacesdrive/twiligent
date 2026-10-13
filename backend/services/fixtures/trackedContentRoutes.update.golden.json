@@ -1,0 +1,579 @@
+{
+    "responses": [
+        {
+            "call": "PUT /tracked-content/nope",
+            "status": 404,
+            "body": "{\"error\":\"Tracked content not found\"}"
+        },
+        {
+            "call": "PUT /tracked-content/t-youtube",
+            "status": 400,
+            "body": "{\"error\":\"YouTube view counts are fetched automatically and cannot be set by hand\"}"
+        },
+        {
+            "call": "PUT /tracked-content/t-youtube",
+            "status": 400,
+            "body": "{\"error\":\"Images can only be attached to Reddit posts\"}"
+        },
+        {
+            "call": "PUT /tracked-content/t-reddit",
+            "status": 200,
+            "body": "{\"id\":\"t-reddit\",\"accountId\":\"rd1\",\"url\":\"https://www.reddit.com/r/webdev/comments/p1/tracked/\",\"label\":\"\",\"category\":\"\",\"contentType\":\"reddit\",\"createdAt\":\"2026-08-01T00:00:00Z\",\"updatedAt\":\"2026-09-01T12:00:00.000Z\",\"title\":\"Old\",\"manualViews\":null}"
+        },
+        {
+            "call": "PUT /tracked-content/t-reddit",
+            "status": 200,
+            "body": "{\"id\":\"t-reddit\",\"accountId\":\"rd1\",\"url\":\"https://www.reddit.com/r/webdev/comments/p1/tracked/\",\"label\":\"\",\"category\":\"\",\"contentType\":\"reddit\",\"createdAt\":\"2026-08-01T00:00:00Z\",\"updatedAt\":\"2026-09-01T12:00:00.000Z\",\"title\":\"Old\",\"manualViews\":12}"
+        },
+        {
+            "call": "PUT /tracked-content/t-reddit",
+            "status": 400,
+            "body": "{\"error\":\"Views must be a whole number of 0 or more\"}"
+        },
+        {
+            "call": "PUT /tracked-content/t-reddit",
+            "status": 400,
+            "body": "{\"error\":\"Views must be a whole number of 0 or more\"}"
+        },
+        {
+            "call": "PUT /tracked-content/t-reddit",
+            "status": 200,
+            "body": "{\"id\":\"t-reddit\",\"accountId\":\"rd1\",\"url\":\"https://www.reddit.com/r/webdev/comments/p1/tracked/\",\"label\":\"\",\"category\":\"\",\"contentType\":\"reddit\",\"createdAt\":\"2026-08-01T00:00:00Z\",\"updatedAt\":\"2026-09-01T12:00:00.000Z\",\"title\":\"Old\",\"manualViews\":12,\"imageUrl\":\"https://img/a%20b.png\"}"
+        },
+        {
+            "call": "PUT /tracked-content/t-reddit",
+            "status": 200,
+            "body": "{\"id\":\"t-reddit\",\"accountId\":\"rd1\",\"url\":\"https://www.reddit.com/r/webdev/comments/p1/tracked/\",\"label\":\"\",\"category\":\"\",\"contentType\":\"reddit\",\"createdAt\":\"2026-08-01T00:00:00Z\",\"updatedAt\":\"2026-09-01T12:00:00.000Z\",\"title\":\"Old\",\"manualViews\":12,\"imageUrl\":null}"
+        },
+        {
+            "call": "PUT /tracked-content/t-reddit",
+            "status": 400,
+            "body": "{\"error\":\"Image must be an https URL returned by the uploader\"}"
+        },
+        {
+            "call": "PUT /tracked-content/t-reddit",
+            "status": 400,
+            "body": "{\"error\":\"Image must be an https URL returned by the uploader\"}"
+        },
+        {
+            "call": "PUT /tracked-content/t-reddit",
+            "status": 200,
+            "body": "{\"id\":\"t-reddit\",\"accountId\":null,\"url\":\"https://www.reddit.com/r/webdev/comments/p1/tracked/\",\"label\":\"New\",\"category\":\"Cat\",\"contentType\":\"reddit\",\"createdAt\":\"2026-08-01T00:00:00Z\",\"updatedAt\":\"2026-09-01T12:00:00.000Z\",\"title\":\"Old\",\"manualViews\":7,\"imageUrl\":null}"
+        },
+        {
+            "call": "PUT /tracked-content/t-youtube",
+            "status": 200,
+            "body": "{\"id\":\"t-youtube\",\"accountId\":null,\"url\":\"https://www.youtube.com/watch?v=abc\",\"label\":\"Only label\",\"category\":\"\",\"contentType\":\"youtube\",\"createdAt\":\"2026-08-01T00:00:00Z\",\"updatedAt\":\"2026-09-01T12:00:00.000Z\",\"title\":\"Video\"}"
+        }
+    ],
+    "queries": [
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+            "filters": [
+                [
+                    "id",
+                    "nope"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+            "filters": [
+                [
+                    "id",
+                    "t-youtube"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+            "filters": [
+                [
+                    "id",
+                    "t-youtube"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+            "filters": [
+                [
+                    "id",
+                    "t-reddit"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "data",
+            "filters": [
+                [
+                    "id",
+                    "t-reddit"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "tracked_posts",
+            "values": {
+                "data": {
+                    "title": "Old",
+                    "manualViews": null
+                },
+                "updated_at": "2026-09-01T12:00:00.000Z"
+            },
+            "filters": [
+                [
+                    "id",
+                    "t-reddit"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+            "filters": [
+                [
+                    "id",
+                    "t-reddit"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+            "filters": [
+                [
+                    "id",
+                    "t-reddit"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "data",
+            "filters": [
+                [
+                    "id",
+                    "t-reddit"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "tracked_posts",
+            "values": {
+                "data": {
+                    "title": "Old",
+                    "manualViews": 12
+                },
+                "updated_at": "2026-09-01T12:00:00.000Z"
+            },
+            "filters": [
+                [
+                    "id",
+                    "t-reddit"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+            "filters": [
+                [
+                    "id",
+                    "t-reddit"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+            "filters": [
+                [
+                    "id",
+                    "t-reddit"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+            "filters": [
+                [
+                    "id",
+                    "t-reddit"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+            "filters": [
+                [
+                    "id",
+                    "t-reddit"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "data",
+            "filters": [
+                [
+                    "id",
+                    "t-reddit"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "tracked_posts",
+            "values": {
+                "data": {
+                    "title": "Old",
+                    "manualViews": 12,
+                    "imageUrl": "https://img/a%20b.png"
+                },
+                "updated_at": "2026-09-01T12:00:00.000Z"
+            },
+            "filters": [
+                [
+                    "id",
+                    "t-reddit"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+            "filters": [
+                [
+                    "id",
+                    "t-reddit"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+            "filters": [
+                [
+                    "id",
+                    "t-reddit"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "data",
+            "filters": [
+                [
+                    "id",
+                    "t-reddit"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "tracked_posts",
+            "values": {
+                "data": {
+                    "title": "Old",
+                    "manualViews": 12,
+                    "imageUrl": null
+                },
+                "updated_at": "2026-09-01T12:00:00.000Z"
+            },
+            "filters": [
+                [
+                    "id",
+                    "t-reddit"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+            "filters": [
+                [
+                    "id",
+                    "t-reddit"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+            "filters": [
+                [
+                    "id",
+                    "t-reddit"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+            "filters": [
+                [
+                    "id",
+                    "t-reddit"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "data",
+            "filters": [
+                [
+                    "id",
+                    "t-reddit"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "tracked_posts",
+            "values": {
+                "data": {
+                    "title": "Old",
+                    "manualViews": 7,
+                    "imageUrl": null
+                },
+                "updated_at": "2026-09-01T12:00:00.000Z"
+            },
+            "filters": [
+                [
+                    "id",
+                    "t-reddit"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+            "filters": [
+                [
+                    "id",
+                    "t-reddit"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "tracked_posts",
+            "values": {
+                "updated_at": "2026-09-01T12:00:00.000Z",
+                "label": "New",
+                "category": "Cat",
+                "account_id": null
+            },
+            "filters": [
+                [
+                    "id",
+                    "t-reddit"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+            "filters": [
+                [
+                    "id",
+                    "t-reddit"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+            "filters": [
+                [
+                    "id",
+                    "t-youtube"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "tracked_posts",
+            "values": {
+                "updated_at": "2026-09-01T12:00:00.000Z",
+                "label": "Only label"
+            },
+            "filters": [
+                [
+                    "id",
+                    "t-youtube"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+            "filters": [
+                [
+                    "id",
+                    "t-youtube"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        }
+    ],
+    "requests": [],
+    "logLines": []
+}

@@ -7,6 +7,17 @@ import { fetchRedditProfile, fetchRedditPosts, computeRedditAnalytics } from '..
 
 const router = new Hono();
 
+// the client re-polls while any account reports syncing, so warming never blocks the response
+function runInBackground(c, tasks) {
+    if (tasks.length === 0) return;
+    const ctx = c.executionCtx;
+    if (ctx?.waitUntil) {
+        ctx.waitUntil(Promise.allSettled(tasks));
+        return;
+    }
+    Promise.allSettled(tasks).catch(() => {});
+}
+
 router.get('/overview', async (c) => {
     const userId = c.get('userId');
     const supabase = c.get('supabase');
@@ -20,8 +31,7 @@ router.get('/overview', async (c) => {
         ]);
 
         const warmTasks = [];
-        // Starts a background fetch and reports syncing: true only when one actually started, so the
-        // client never waits on an account that cannot be fetched (no Redis, no key, no cookie).
+        // syncing is true only when a fetch started, so the client never waits on an unfetchable account
         const warm = (id, task) => {
             if (!redis || !task) return { id, cacheWarmed: false, syncing: false };
             warmTasks.push(task().catch(() => {}));
@@ -87,15 +97,7 @@ router.get('/overview', async (c) => {
             })
         );
 
-        // Fire warming tasks without blocking the response; the client re-polls while any account reports syncing.
-        if (warmTasks.length > 0) {
-            const ctx = c.executionCtx;
-            if (ctx?.waitUntil) {
-                ctx.waitUntil(Promise.allSettled(warmTasks));
-            } else {
-                Promise.allSettled(warmTasks).catch(() => {});
-            }
-        }
+        runInBackground(c, warmTasks);
 
         const analyticsCache = {};
         cacheResults.forEach(r => {

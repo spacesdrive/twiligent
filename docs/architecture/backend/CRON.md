@@ -18,11 +18,13 @@ Both cron triggers invoke the `scheduled` export from `backend/server.js`.
 **What it does:**
 1. Queries `scheduled_posts` where `status = 'pending'` and `scheduled_at <= now()`
 2. For each due post:
-   - Fetches the associated account from `accounts` table
-   - Sets post status to `'publishing'` (prevents double-publish if two schedulers run concurrently)
-   - Calls `publishToInstagram(post, account)` in `backend/services/instagram.js`
+   - Claims it with `claimPost()` (pending to `'publishing'`); a post another scheduler already claimed is skipped
+   - Fetches the associated account from `accounts` table and builds the container parameters with `buildMediaParams()`
+   - Creates the Graph API container, waits for it (Reels and Stories poll the status every 3 seconds, up to 60 times; other media wait 2 seconds), then publishes it
    - On success: sets status to `'published'`, stores `publishedMediaId` and `publishedAt` in `data`
    - On failure: sets status to `'failed'`, stores `error` message in `data`
+
+`utils/scheduler.test.js` pins this sequence, the log lines and the stored results against a fake Supabase client and Graph API.
 
 **No userId filter** - the scheduler operates across all users. It uses the service-role Supabase client.
 
