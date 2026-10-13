@@ -117,6 +117,19 @@ export async function getDuePosts(supabase) {
     return (data || []).map(rowToPost);
 }
 
+// Atomically moves a due post from pending to publishing. Returns false when another scheduler
+// (the Worker cron or the GitHub Actions workflow) already claimed it.
+export async function claimPost(supabase, id) {
+    const { data, error } = await supabase
+        .from('scheduled_posts')
+        .update({ status: 'publishing' })
+        .eq('id', id)
+        .eq('status', 'pending')
+        .select('id');
+    if (error) throw error;
+    return (data || []).length > 0;
+}
+
 export async function createPost(supabase, post, userId) {
     const { id, accountId, status, scheduledAt, ...rest } = post;
     const { error } = await supabase.from('scheduled_posts').insert({

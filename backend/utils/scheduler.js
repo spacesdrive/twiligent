@@ -1,5 +1,5 @@
 // fetch is a global in Cloudflare Workers.
-import { getDuePosts, updatePost, getAccountById } from '../lib/db.js';
+import { getDuePosts, updatePost, getAccountById, claimPost } from '../lib/db.js';
 import { buildMediaParams } from '../services/instagram.js';
 
 export function generateId() {
@@ -16,7 +16,7 @@ export async function processScheduledPosts(supabase) {
         const duePosts = await getDuePosts(supabase);
 
         for (const post of duePosts) {
-            await updatePost(supabase, post.id, { status: 'publishing' });
+            if (!(await claimPost(supabase, post.id))) continue;
 
             try {
                 const acct = await getAccountById(supabase, post.accountId);

@@ -34,7 +34,7 @@ WHERE id = :id AND status = 'pending'
 
 The `AND status = 'pending'` condition means only one scheduler can successfully claim a post. The second scheduler to run will find no matching rows for that post ID and skip it.
 
-**Race condition window:** There is a small window between the `SELECT` (fetch due posts) and the `UPDATE` (claim as publishing) where both schedulers could claim the same post. Supabase/PostgreSQL serializes these writes, so one will win and the other will find `status ≠ pending` and skip.
+Both schedulers implement this claim: `claimPost()` in `backend/lib/db.js` for the Worker, and `claimPost()` in `scripts/publish-scheduled.js` (a `PATCH` filtered on `status=eq.pending` with `Prefer: return=representation`). A scheduler that gets no row back skips the post. PostgreSQL serializes the two updates, so exactly one scheduler publishes each post even when both run at the same moment.
 
 ## Post Status Lifecycle
 
@@ -74,5 +74,14 @@ Both schedulers implement the same logic:
 
 ### For GitHub Actions (System B)
 - GitHub repo secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`
-- The `publish-scheduled.yml` workflow must be enabled
+- The `publish-scheduled.yml` workflow must be enabled. Forks start with Actions disabled, and GitHub pauses scheduled workflows in public repositories after 60 days without commits.
+- No personal access token is needed. The workflow only reads and updates Supabase.
+- Private repositories: a 15-minute schedule exceeds the 2,000 free Actions minutes a month; use `*/30 * * * *`.
+
+The same steps are shown in the app under Settings, Scheduled publishing, with direct links once the repository owner and name are saved.
+
+## What users see
+
+- Publish explains, next to the schedule fields, that the server publishes within 15 minutes after the chosen time.
+- Posts still `pending` more than 30 minutes after their time trigger an alert in Publish that names the administrator contact (`VITE_ADMIN_EMAIL`).
 - Note: These GitHub secrets are only required for System B - the main deploy workflows (`deploy-backend.yml`, `deploy-frontend.yml`) do not need them

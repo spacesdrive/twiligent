@@ -78,6 +78,19 @@ async function updatePostStatus(id, updates) {
     await sbPatch(`/scheduled_posts?id=eq.${id}`, patch);
 }
 
+// Moves a post from pending to publishing only if it is still pending, so this workflow and the
+// Worker cron never publish the same post twice. Returns false when the other one claimed it.
+async function claimPost(id) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/scheduled_posts?id=eq.${id}&status=eq.pending`, {
+        method: 'PATCH',
+        headers: { ...sbHeaders, 'Prefer': 'return=representation' },
+        body: JSON.stringify({ status: 'publishing' }),
+    });
+    if (!res.ok) throw new Error(`Supabase PATCH claim ${id}: ${await res.text()}`);
+    const rows = await res.json();
+    return Array.isArray(rows) && rows.length > 0;
+}
+
 // ─── Instagram publishing ─────────────────────────────────────────────────────
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -164,7 +177,10 @@ async function main() {
 
     for (const post of duePosts) {
         console.log(`  Publishing: ${post.id} (${post.mediaType}) - scheduled ${post.scheduledAt}`);
-        await updatePostStatus(post.id, { status: 'publishing' });
+        if (!(await claimPost(post.id))) {
+            console.log('  Skipped: already claimed by the other scheduler');
+            continue;
+        }
 
         try {
             const account = await getAccount(post.accountId);
