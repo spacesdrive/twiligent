@@ -2,11 +2,13 @@
 
 ## Overview
 
-Supabase (PostgreSQL) with three application tables. All tables include `user_id` (UUID) referencing `auth.users` to scope data per user.
+Supabase (PostgreSQL) with four application tables. All tables include `user_id` (UUID) referencing `auth.users` to scope data per user.
 
 The backend uses the **service-role key** (bypasses Row Level Security) but enforces isolation by always appending `.eq('user_id', userId)` on user-scoped queries. The `userId` comes exclusively from the verified JWT - never from request input.
 
 Cron handlers (`processScheduledPosts`, `autoRefreshInstagramTokens`) intentionally omit the `userId` filter to operate across all users.
+
+RLS must be enabled on all four tables, with no policies, so the public anon key cannot reach them. See `SECURITY.md`.
 
 ---
 

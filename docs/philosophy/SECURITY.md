@@ -4,7 +4,7 @@
 
 | Credential | Where stored | Who reads it | Exposed to client? |
 |---|---|---|---|
-| Supabase anon key | `VITE_SUPABASE_ANON_KEY` (env var in frontend build) | Frontend (Supabase JS auth) | **Yes - intentionally public** |
+| Supabase anon key | `VITE_SUPABASE_ANON_KEY` (env var in frontend build) | Frontend (Supabase JS auth) | **Yes - intentionally public**, which is why RLS must be enabled on every application table (see `docs/architecture/database/SECURITY.md`) |
 | Supabase service role key | Worker secret | Worker only | **Never** |
 | Instagram App ID | Worker secret | Worker only | **Never** |
 | Instagram App Secret | Worker secret | Worker only | **Never** |

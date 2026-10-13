@@ -9,6 +9,7 @@ The app uses React Router v6 in `frontend/src/App.jsx`. The router uses `Browser
 | Path | Component | Notes |
 |---|---|---|
 | `/login` | `Login.jsx` | Public - redirects to `/` if already authenticated |
+| `/docs`, `/docs/*` | `docs/DocsLayout.jsx` | Public documentation. Child routes come from `docsChildRoutes` in `docs/routes.js`; unknown paths redirect to `/docs` |
 | `/` (layout) | `AppLayout` (inline) | Protected - redirects to `/login` if unauthenticated |
 | `/` (index) | `Overview.jsx` | Default page after login |
 | `/accounts` | `AccountManager.jsx` | Connect and remove accounts. `?add=1` opens the add flow; `?ig_connected` and `?ig_error` report the Instagram OAuth result |
@@ -28,7 +29,7 @@ The app uses React Router v6 in `frontend/src/App.jsx`. The router uses `Browser
 
 ## Auth Guard
 
-Auth protection is applied via a `<ProtectedRoute>` component wrapping the layout route in `App.jsx`. All child routes are protected. `/login` is the only public route.
+Auth protection is applied via a `<ProtectedRoute>` component wrapping the layout route in `App.jsx`. All child routes are protected. `/login` and `/docs` are the only public routes.
 
 ## Lazy Loading
 

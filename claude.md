@@ -97,6 +97,7 @@ docs/
     SECURITY.md            Security model, key handling, isolation
     PERFORMANCE.md         Caching strategy, edge optimization
 
+frontend/src/docs/  Public user and self-hosting docs served at /docs (in-app, JSX)
 DECISIONS.md       Architectural decision log
 CHANGELOG.md       Version history and feature changes
 ROADMAP.md         Planned features and priorities

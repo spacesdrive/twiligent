@@ -557,3 +557,20 @@ Records every significant architectural decision, the alternatives considered, a
 **Trade-offs:**
 - Saving the GitHub section now clears any previously stored token. That token was never used.
 - The default contact address is specific to the original deployment; other self-hosters should set `VITE_ADMIN_EMAIL`.
+
+---
+
+## ADR-026: Public documentation inside the frontend at /docs
+
+**Date:** 2026-10-13
+**Status:** Accepted
+
+**Decision:** User and self-hosting documentation lives in the React app under `frontend/src/docs/`, served at the public route `/docs` outside `ProtectedRoute`. Pages are JSX built from a small set of doc components (headings with anchors, callouts, steps, tables, code blocks). The navigation is defined once in `docs/nav.js`; `docs/routes.js` maps each slug to a lazily loaded named export, and a test checks the two stay in sync. Content is split into two audiences: members of an instance, who need nothing beyond signing in, and administrators, who run their own instance.
+
+**Context:** People using a hosted instance were following GitHub and Supabase setup steps they could not complete, because step 2 needs the instance's Supabase secret key. Self-hosters had no single place that explained every key, where to get it and where it goes.
+
+**Trade-offs:**
+- No Markdown pipeline or docs framework: no new dependencies, and the docs share the app's tokens, theme and components. Writing pages needs JSX rather than Markdown.
+- Docs ship with each frontend deploy, so they always match the deployed version, but cannot be updated without a frontend deploy.
+- Each section is one code-split chunk, so the docs add nothing to the dashboard's initial load.
+

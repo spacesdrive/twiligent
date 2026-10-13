@@ -146,6 +146,10 @@ cd frontend && npm run dev
 
 Open [http://localhost:5173](http://localhost:5173) and sign up for an account, then go to **Accounts** to add your first YouTube channel or Instagram account.
 
+The full documentation, including a step-by-step self-hosting guide that explains every key, is built into the app at `/docs` (for example [http://localhost:5173/docs](http://localhost:5173/docs)). It is public, so you can share the link with members before they sign in.
+
+**Using someone else's Twiligent?** You need none of this. Sign in with the link you were given; the server, keys and scheduled publishing are already handled by the administrator.
+
 ---
 
 ## Prerequisites
@@ -208,7 +212,30 @@ create table scheduled_posts (
   scheduled_at timestamptz not null,
   data jsonb
 );
+
+-- Tracked content table
+create table tracked_posts (
+  id text primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  account_id text references accounts(id) on delete set null,
+  url text not null,
+  label text not null default '',
+  category text not null default '',
+  content_type text not null default 'reddit',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  data jsonb
+);
+
+-- Row level security: the backend uses the secret key, which bypasses it.
+-- With no policies, the public publishable key cannot read or change any table.
+alter table accounts enable row level security;
+alter table settings enable row level security;
+alter table scheduled_posts enable row level security;
+alter table tracked_posts enable row level security;
 ```
+
+If you created the tables from an earlier version of this README, run the `tracked_posts` and `alter table` statements above as well. Then, in Supabase Authentication, turn off **Confirm email** unless you have set up an email provider, and turn off new signups once your team has accounts if the instance is private.
 
 **4. Configure credentials**
 
@@ -256,7 +283,7 @@ UPSTASH_REDIS_REST_TOKEN=...
 ```
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-VITE_API_URL=http://localhost:8787
+VITE_API_URL=http://localhost:8787/api
 # Optional: who users contact for Instagram tester access and scheduling problems
 VITE_ADMIN_EMAIL=you@example.com
 ```

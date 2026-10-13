@@ -109,6 +109,8 @@ See `docs/architecture/cloudflare/WORKERS.md` for the full list of required Work
 
 Frontend env vars are documented in `docs/architecture/cloudflare/PAGES.md`.
 
+The SPA also serves public documentation at `/docs` (no sign-in, no API calls). It is static JSX in `frontend/src/docs/`, code-split per section; see `docs/architecture/frontend/FEATURES.md`.
+
 ## Key Architectural Invariants
 
 1. **The Worker never receives binary file uploads.** Cloudinary handles file ingestion directly from the browser. The Worker only receives Cloudinary URLs.

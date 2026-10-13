@@ -1,5 +1,7 @@
 # Set Up Your Own Scheduling With GitHub
 
+> **Who this is for:** the administrator of a Twiligent instance. Step 2 needs the secret key of the instance's Supabase project. If you only sign in to someone else's Twiligent, you need none of this: the server already publishes your scheduled posts. This backup is optional even for administrators; the Worker cron publishes on its own once the backend is deployed. The public docs cover the same steps at `/docs/self-host/github`.
+
 GitHub can check your scheduled Instagram posts every 15 minutes and publish the ones that are due, for free. It runs alongside the server's own scheduler as a backup, so posts still go out if the server is paused. You set it up once. It takes about 5 minutes.
 
 The same steps are in the app under **Settings, Scheduled publishing**, where typing your GitHub username turns every step into a direct link.

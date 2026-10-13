@@ -7,6 +7,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+**Documentation site at `/docs`**
+- Public documentation built into the app, laid out like a modern developer docs site: section tabs, grouped sidebar, "On this page" outline with scroll tracking, search with `/` or Ctrl K, previous and next links, copy-page and copy-code buttons, light and dark themes and a phone layout
+- Separate paths for members (sign in, connect accounts, analytics, publishing, tracked content, troubleshooting) and administrators (Supabase, YouTube, Instagram, Cloudinary, Redis, backend and frontend deploys, GitHub automation, launch checklist)
+- Reference pages for every environment variable, how scheduling works, the security model and common questions
+- Links to the docs from the sign-in page, the user menu, the command palette and Settings
+
 ### Changed
 
 **Interface redesign in the Twiligent brand**
@@ -19,10 +27,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Settings reorganised into labelled sections, with a theme picker
 - UI copy in sentence case, without exclamation marks; error messages say what to do next
 - Charts use the brand data-visualisation series in both themes
+- Settings, Scheduled publishing now says who needs to set anything up: members nothing, administrators only the backend deploy. The GitHub backup guide is marked optional and for administrators, and starts folded
 
 ### Fixed
 
 - The Worker cron and the GitHub Actions workflow could both publish the same scheduled post; posts are now claimed atomically
+- README: `VITE_API_URL` example now ends in `/api`; the setup SQL now creates `tracked_posts` and turns on row level security for all four tables
+- Buttons rendered as links no longer log a Base UI native-button warning
 
 ### Removed
 

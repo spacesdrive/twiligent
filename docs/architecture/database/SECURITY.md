@@ -24,7 +24,24 @@ See `DECISIONS.md` ADR-011 for the full reasoning. Summary:
 | `SUPABASE_ANON_KEY` | Cloudflare Worker (`requireAuth` only) | Only `getUser(token)` - JWT verification |
 | `VITE_SUPABASE_ANON_KEY` | Frontend browser | Supabase Auth (sign in, sign up, sign out, session management) |
 
-The anon key has no meaningful permissions beyond what Supabase Auth allows. It cannot read or write application tables unless RLS policies explicitly permit it.
+The anon key is public: it ships in the frontend bundle. It cannot read or write application tables **only if RLS is enabled on them**. With RLS disabled, Supabase's Data API lets anyone holding the anon key query the tables directly, bypassing the Worker.
+
+## Required: RLS Enabled With No Policies
+
+Every application table must have RLS enabled and no policies:
+
+```sql
+alter table accounts enable row level security;
+alter table settings enable row level security;
+alter table scheduled_posts enable row level security;
+alter table tracked_posts enable row level security;
+```
+
+This denies the anon and authenticated roles everything, while the service-role key used by the Worker and the GitHub Actions scheduler still bypasses RLS. The frontend never queries tables directly (it uses Supabase only for Auth), so no policies are needed. Supabase's Table Editor flags any table with RLS disabled. The setup SQL in the README and on the `/docs/self-host/supabase` page includes these statements.
+
+## Signups
+
+Supabase Auth accepts signups from anyone who knows the project URL and anon key. Private instances should turn off new signups in Supabase Authentication settings once their members have accounts.
 
 **The service-role key must never appear in:**
 - Frontend code

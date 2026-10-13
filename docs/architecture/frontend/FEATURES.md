@@ -9,6 +9,12 @@ frontend/src/
 │   ├── MetricAreaChart.jsx                 <- Shared Recharts area chart for single-metric comparisons
 │   ├── ChartPanel.jsx                      <- Titled chart container with an empty state
 │   └── ImageLightbox.jsx                   <- Thumbnail that opens the full image in a Dialog
+├── docs/                                   <- Public documentation at /docs (outside the feature tree: no auth, no AppContext)
+│   ├── DocsLayout.jsx                      <- Header, tabs, sidebar, outline, search, previous and next
+│   ├── components.jsx                      <- DocTitle, H2, H3, Callout, Steps, CodeBlock, Table, PathCards, Badge
+│   ├── nav.js                              <- Tabs, groups and pages; the single source for navigation
+│   ├── routes.js                           <- Slug to lazy page map; nav.test.js checks it matches nav.js
+│   └── pages/                              <- Overview, Use, SelfHost, Reference (one chunk each)
 ├── features/
 │   ├── analytics/
 │   │   ├── channel/
@@ -31,7 +37,8 @@ frontend/src/
 │   ├── publishing/
 │   │   └── UploadContent.jsx               <- Instagram publish + scheduled post queue
 │   ├── settings/
-│   │   └── Settings.jsx                    <- GitHub PAT and other settings
+│   │   ├── Settings.jsx                    <- Theme, server keys, scheduling, platform requirements, links
+│   │   └── SchedulingSetupGuide.jsx        <- Optional GitHub backup scheduler steps for administrators
 │   ├── analytics/videos/
 │   │   ├── VideoExplorer.jsx               <- YouTube video library with filtering
 │   │   └── useChannelVideos.js             <- Loads every channel's videos; shared with Shorts
@@ -134,9 +141,9 @@ Each page manages its own loading/data/error state. Pages do not write to `AppCo
 | Tracked Content | `/tracked-content` | Monitor Reddit posts and YouTube videos; add by URL, assign categories, bulk edit, per-row refresh |
 | Tracked Category | `/tracked-content/category/:name` | Detailed per-category analytics; YouTube section (views, likes, comments, bar chart, table) and Reddit section (score, ratio, comments, bar chart, table) rendered separately |
 | Video Explorer | `/videos/:id` | YouTube video library with search and sort |
-| Publish | `/publish/:id` | Publish a post to Instagram immediately |
-| Schedule | `/schedule/:id` | View and manage the scheduled post queue |
-| Settings | `/settings` | GitHub PAT and platform settings |
+| Publish | `/upload` | Publish or schedule to Instagram, bulk upload, and the scheduled post queue |
+| Settings | `/settings` | Theme, server key status, who sets up scheduling, the optional GitHub backup guide |
+| Documentation | `/docs` | Public guides for members and administrators, and the environment variable reference |
 
 ## Adding a New Feature
 
