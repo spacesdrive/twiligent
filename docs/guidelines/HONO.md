@@ -1,135 +1,141 @@
 # Hono Guidelines
 
-## Route Handler Structure
+The backend is split into layers: middleware, route tables, controllers, services and repositories. `docs/architecture/backend/REQUEST_PIPELINE.md` describes each layer and the order a request passes through them. These rules cover the Hono-facing parts: route tables, controllers and middleware.
 
-Every router is `new Hono<AppEnv>()`, so `c.get()`, `c.set()` and `c.env` are typed from `backend/types/app.ts` and `backend/types/env.ts`. Every route handler follows this exact shape:
+## Controller Structure
+
+Every controller is built with `controller.createHandlers(...)` from `backend/controllers/http.ts`, so `c.get()`, `c.set()`, `c.env` and `c.req.valid()` are typed from `backend/types/app.ts`. Every controller follows this shape:
 
 ```ts
-router.METHOD('/path', async (c) => {
-    const userId = c.get('userId');         // from requireAuth middleware
-    const supabase = c.get('supabase');     // from client injection middleware
-    const redis = c.get('redis');           // may be null - always guard
-    
-    // 1. Read inputs
-    const id = c.req.param('id');
-    const body = await c.req.json() as MyThingRequest;  // POST/PUT only
-
-    // 2. Validate inputs early
-    if (!body.name) return c.json({ error: 'Missing required field: name' }, 400);
-
-    // 3. Execute business logic (in try/catch)
-    try {
-        const result = await doSomething(supabase, userId, id);
-        return c.json(result satisfies MyThingResponse);
-    } catch (err) {
-        console.error('METHOD /path:', (err as Error).message);
-        return c.json({ error: (err as Error).message }, 500);
-    }
+export const updateScheduledPost = controller.createHandlers(jsonBody(parseScheduledPostUpdate), async c => {
+    // 1. read the verified user id, path parameters and the validated input
+    // 2. call one service method
+    const post = await servicesFor(c).scheduledPosts.update(c.get('userId'), pathParam(c, 'id'), c.req.valid('json'));
+    // 3. pick the status and build the response, checked against the shared type
+    return c.json({ success: true, post } satisfies ScheduledPostUpdateResponse);
 });
 ```
 
-Request and response types (`MyThingRequest`, `MyThingResponse`) live in `shared/types/` so the frontend reads the same shape. A handler extracted from the router (like `callbackHandler` in `routes/instagramAuth.ts`) takes `c: AppContext`.
+A controller does nothing else. It does not validate fields by hand (the validator ran first), does not query Supabase or Redis (repositories do), does not hold business rules (services do), and does not catch errors (the error handler does).
+
+Request and response types live in `shared/types/` so the frontend reads the same shape. Controllers check every response with `satisfies`.
 
 ## Context Values
 
-Access these via `c.get()` - never reconstruct them inside handlers. They are declared in `AppVariables` in `backend/types/app.ts`; add a key there before setting a new one.
+Access these via `c.get()` - never reconstruct them inside controllers. They are declared in `AppVariables` in `backend/types/app.ts`; add a key there before setting a new one, and keep each one small and request-scoped.
 
 | Key | Type | Notes |
 |---|---|---|
+| `requestId` | `string` | Set by `hono/request-id`. Returned in `X-Request-Id` and in every error body |
+| `signal` | `AbortSignal` | Set by `requestContext`. Aborts on client disconnect or after 30 seconds |
 | `userId` | `string` (UUID) | Set by `requireAuth`. Always present on protected routes |
 | `userEmail` | `string \| undefined` | Set by `requireAuth`. May be undefined on older JWTs |
-| `supabase` | `SupabaseClient` | Set by client injection middleware |
-| `redis` | `Redis \| null` | Set by client injection middleware. Null if not configured |
-| `rateLimitRedis` | `Redis \| null` | Set by client injection middleware for the rate limiter only. See `docs/architecture/backend/RATE_LIMITING.md` |
+| `supabase` | `SupabaseClient` | Set by `injectClients`. Read by `servicesFor(c)`, not by controllers |
+| `redis` | `Redis \| null` | Set by `injectClients`. Null if not configured. Read by `servicesFor(c)` |
+| `rateLimitRedis` | `Redis \| null` | Set by `injectClients` for the rate limiter only. See `docs/architecture/backend/RATE_LIMITING.md` |
+
+Services never receive the Hono context. `servicesFor(c)` builds the request's services with a `RequestContext` (`requestId`, `signal`, `log`) from `requestContextOf(c)`, and the controller passes the user id as an argument.
 
 ## Reading Request Data
 
 ```ts
-// URL params (/accounts/:id)
-const id = c.req.param('id');
+// path parameters (/accounts/:id); throws ValidationError when missing
+const id = pathParam(c, 'id');
 
-// Query string (?limit=10), string | undefined
-const limit = c.req.query('limit');
+// JSON body or query string, parsed and checked by the validator passed to createHandlers
+const changes = c.req.valid('json');
+const query = c.req.valid('query');
 
-// JSON body (POST/PUT): cast once to the shared request type
-const body = await c.req.json() as ScheduledPostRequest;
-
-// Headers
-const auth = c.req.header('Authorization');
+// the verified user id from requireAuth
+const userId = c.get('userId');
 ```
 
-Never destructure `c.req` directly - always call the method. `c.req.json()` returns untyped JSON, so cast it once where it enters and validate the fields the handler needs before using them.
+Input enters through a validator, never through `c.req.json()` or `c.req.query()` in a controller. `jsonBody(parse)` and `queryParams(parse)` in `backend/middleware/validate.ts` wrap Hono's `validator`; each parser lives in `backend/validators/<feature>Validators.ts`, reads fields with the helpers in `validators/fields.ts` (`requiredString`, `optionalString`, `optionalNumber`, `optionalBoolean`, `optionalArray`, `presentField`) and throws `ValidationError` with a message the user can act on:
+
+```ts
+export function parseRedditAccount(body: Fields): RedditAccountInput {
+    return {
+        username: requiredString(body, 'username', 'Username is required'),
+        cookie: requiredString(body, 'cookie', 'Session cookie is required - ...'),
+    };
+}
+```
+
+Validators check shape and presence. Rules that need stored data (a post must be pending, an account must be Instagram) belong in the service.
 
 ## Returning Responses
 
 ```ts
 // JSON success, checked against the shared response type
 return c.json({ success: true, posts } satisfies ScheduledPostListResponse);  // 200
-return c.json(data, 201);                   // 201 Created
+return c.json(item, 201);                                                     // 201 Created
 
-// JSON error
-return c.json({ error: 'message' }, 400);  // client error
-return c.json({ error: (err as Error).message }, 500); // server error
-
-// Early return (validation fail)
-if (!id) return c.json({ error: 'Missing id' }, 400);
+// a failure: throw a typed error from lib/errors.ts, usually in the service
+throw new NotFoundError('Scheduled post not found');                         // 404
 ```
 
-Always return `c.json()`. Never use `return new Response()` inside app route handlers (that is for the Worker's `fetch()` export).
+Always return `c.json()` (or `c.redirect()` for the OAuth callback). Never build an error body by hand: `{ error }` and `{ success: false, message }` bodies are not used. Never use `return new Response()` inside app controllers (that is for the Worker's `fetch()` export).
 
-## Router Organization
+## Route Table Organization
 
 ```ts
-// backend/routes/myFeature.ts
+// backend/routes/myFeatureRoutes.ts
 import { Hono } from 'hono';
+import { listMyResources, createMyResource, deleteMyResource } from '../controllers/myFeatureController.ts';
 import type { AppEnv } from '../types/app.ts';
 
 const router = new Hono<AppEnv>();
 
-router.get('/my-resources', async (c) => { ... });
-router.post('/my-resources', async (c) => { ... });
-router.delete('/my-resources/:id', async (c) => { ... });
+router.get('/my-resources', ...listMyResources);
+router.post('/my-resources', ...createMyResource);
+router.delete('/my-resources/:id', ...deleteMyResource);
 
 export default router;
 ```
 
-Mount in `server.ts`:
+Add the table to the list in `backend/routes/index.ts`, which mounts every protected table on `protectedRoutes`:
 
 ```ts
-import myFeatureRouter from './routes/myFeature.ts';
-api.route('/', myFeatureRouter);
+import myFeatureRoutes from './myFeatureRoutes.ts';
+// ...
+for (const routes of [accountRoutes, /* ... */, myFeatureRoutes]) {
+    protectedRoutes.route('/', routes);
+}
 ```
+
+A route that must answer without a token is registered on `publicRoutes` in the same file. Register a fixed path before a parameterized one that could match it (`/accounts/refresh-all` before `/accounts/:id/refresh`).
 
 ## Middleware
 
-Middleware is `async (c: AppContext, next: Next) => { ... await next(); }`. Never skip `next()` unless intentionally short-circuiting:
+Middleware is `async (c: AppContext, next: Next): Promise<void> => { ... await next(); }`. To reject a request, throw a typed error; the error handler formats it:
 
 ```ts
-// backend/middleware/auth.ts: short-circuits (returns early without calling next)
-import type { Next } from 'hono';
-import type { AppContext } from '../types/app.ts';
-
-export async function requireAuth(c: AppContext, next: Next) {
-    const token = c.req.header('Authorization')?.replace('Bearer ', '');
-    if (!token) return c.json({ error: 'Unauthorized' }, 401);
+// backend/middleware/auth.ts
+export async function requireAuth(c: AppContext, next: Next): Promise<void> {
+    const token = c.req.header('Authorization')?.match(BEARER)?.[1];
+    if (!token) throw new UnauthorizedError('Sign in to use the API');
     // verify the token, set context, then continue
     c.set('userId', user.id);
     await next();
 }
 ```
 
+The rate limiter is the one middleware that answers directly (`429`), using `errorBody()` from `middleware/errorHandler.ts` so its body matches every other failure. See `docs/architecture/backend/MIDDLEWARE.md` for the stack and its order.
+
 ## Error Handling Rules
 
-- Always wrap external calls (Supabase, platform APIs) in try/catch
-- Log with `console.error('VERB /path:', (err as Error).message)` - include the route in the log
-- Never throw from a route handler - catch and return `c.json({ error }, status)`
-- 400 for client errors (missing fields, invalid format, resource not found)
-- 500 for server errors (DB failures, external API failures)
-- Never expose stack traces in the response body
+- Throw typed errors from `backend/lib/errors.ts`; never catch an error only to turn it into JSON
+- Pick the error by what went wrong: `ValidationError` (400), `NotFoundError` (404, also for another user's record), `ConflictError` (409), `NotConfiguredError` (503), `UpstreamError` (502), `UpstreamTimeoutError` (504); a failed query becomes `DatabaseError` (500) in the repository helpers
+- Log through `requestLogger(c)` or the service's `context.log`, never `console`; the error handler already logs every failure with the request id
+- Never expose stack traces or driver messages in the response body
+- The Instagram OAuth callback is the only controller that catches errors, because it must always redirect the browser
+
+See `docs/guidelines/ERROR_HANDLING.md`.
 
 ## What Not To Do
 
-- Do not import `env` directly - access it via `c.env` or via the middleware-injected clients
-- Do not use `c.env` directly in route handlers - always use `c.get('supabase')` / `c.get('redis')`
-- Do not build Supabase clients inside route handlers - the middleware does this once per request
+- Do not import `env` directly - services get the cleaned `AppConfig` from `lib/config.ts` through `servicesFor(c)`
+- Do not read `c.env` in controllers, and do not pass the Hono context to services
+- Do not build Supabase or Redis clients inside controllers or services - the middleware does this once per request
+- Do not call `supabase.from()` outside `backend/repositories/`
 - Do not use `app.use()` for business logic - that is for cross-cutting middleware only

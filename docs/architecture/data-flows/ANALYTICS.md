@@ -10,23 +10,23 @@ ChannelAnalytics.tsx mounts -> api.getAnalytics(id)
     -> GET /api/accounts/:id/analytics
         │
         ▼
-    Worker: analyticsRouter
-        1. getAccountById(supabase, id, userId) - verify ownership
-        2. redis cache check: getVideosCache(redis, userId, id)
-           -> cache hit: return cached data immediately
-           -> cache miss: continue
-        3. Fetch from YouTube Data API:
-           a. GET /channels?part=snippet,statistics,contentDetails&id={channelId}
-              -> channel metadata + subscriber/view/video counts + uploadPlaylistId
-           b. Paginate /playlistItems?part=contentDetails&playlistId={uploadPlaylistId}
+    Worker: analyticsRoutes -> analyticsController.getChannelAnalytics
+        -> youtubeAnalytics.channelAnalytics(userId, id)   [services/youtubeAnalyticsService.ts]
+        1. 503 when the Worker has no YouTube API key
+        2. accounts.findForUser(id, userId) - verify ownership
+           -> 404 unless it is a YouTube channel, 400 when no uploads playlist is stored
+        3. Fetch from YouTube Data API (always live; the cache is written, not read):
+           a. Paginate /playlistItems?part=contentDetails&playlistId={uploadsPlaylistId}
               -> up to 10 pages × 50 items = 500 video IDs
-           c. Batch /videos?part=snippet,statistics&id={id1,id2,...}
+           b. Batch /videos?part=snippet,statistics&id={id1,id2,...}
               -> 50 videos per batch request -> statistics (views, likes, comments, duration)
-        4. computeVideoAnalytics(videos, channel)
+        4. cache.setVideos(userId, id, { videos, fetchedAt })
+           -> GET /api/accounts/:id/videos and the video library read this entry
+        5. computeVideoAnalytics(videos)
            -> 50+ computed metrics
-        5. setVideosCache(redis, userId, id, result)
-           -> cache result for future requests
-        6. Return JSON
+        6. For an account without publishedAt, fetch /channels once and save the
+           channel fields (a failure is logged and skipped)
+        7. Return JSON
 ```
 
 ### computeVideoAnalytics() Output (partial)
@@ -92,8 +92,10 @@ InstagramAnalytics.tsx mounts -> api.getIGAnalytics(id)
     -> GET /api/accounts/:id/ig-analytics
         │
         ▼
-    Worker: analyticsRouter
-        1. getAccountById(supabase, id, userId) - verify ownership + get accessToken
+    Worker: analyticsRoutes -> analyticsController.getInstagramAnalytics
+        -> instagramAnalytics.analytics(userId, id)   [services/instagramAnalyticsService.ts]
+        1. accounts.findForUser(id, userId) - verify ownership + get accessToken
+           -> 404 unless it is an Instagram account, 400 without a stored token
         2. Fetch from Instagram Graph API (always live; the cache is written, not read):
            a. GET /{igUserId}?fields=user_id,username,name,followers_count,follows_count,media_count,...
               -> profile data
@@ -103,7 +105,7 @@ InstagramAnalytics.tsx mounts -> api.getIGAnalytics(id)
               -> up to 500 media items (10 pages x 50)
               -> a page that fails with insights is refetched without them (viewCount: null)
            c. normalizeInstagramMedia() classifies each item as reel, post, or video
-        3. setIGCache(redis, userId, id, { media, fetchedAt }) and update account counts
+        3. cache.setInstagramMedia(userId, id, { media, fetchedAt }) and update account counts
         4. computeInstagramAnalytics(profile, media)
         5. Return JSON
 
@@ -160,19 +162,21 @@ RedditAnalytics.tsx mounts -> api.getRedditAnalytics(id)
     -> GET /api/accounts/:id/reddit-analytics
         │
         ▼
-    Worker: redditRouter
-        1. getAccountById(supabase, id, userId) - verify ownership
-        2. redis cache check: key reddit:{userId}:{accountId}
+    Worker: redditRoutes -> redditController.getRedditAnalytics
+        -> redditAnalytics.analytics(userId, id)   [services/redditAnalyticsService.ts]
+        1. accounts.findForUser(id, userId) - verify ownership
+           -> 404 unless it is a Reddit account, 400 without a stored cookie or username
+        2. cache.getReddit(userId, id): key reddit:{userId}:{accountId}
            -> cache hit: return immediately
            -> cache miss: continue
-        3. Fetch from Reddit public JSON API (with optional session cookie):
+        3. Fetch from Reddit public JSON API (with the stored session cookie):
            a. GET /user/{username}/about.json
               -> profile: totalKarma, postKarma, commentKarma, awardeeKarma, iconUrl, createdAt
-           b. Paginate /user/{username}/submitted.json?limit=100
-              -> up to 10 pages x 100 items = up to 1000 posts
+           b. GET /user/{username}/submitted.json?limit=100&sort=new
+              -> up to 100 posts
         4. computeRedditAnalytics(profile, posts)
            -> score stats, subreddit breakdown, timing analysis
-        5. Cache result in Redis
+        5. cache.setReddit(userId, id, result)
         6. Return { profile, analytics, posts } (RedditCacheData)
 ```
 

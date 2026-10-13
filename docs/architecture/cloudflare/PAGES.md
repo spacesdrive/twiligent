@@ -68,6 +68,8 @@ The app is accessible at both:
 - `twiligent.pages.dev` (Cloudflare Pages default)
 - Custom domain configured in Cloudflare Pages -> Custom domains
 
+The Worker's CORS policy only answers the origins it knows: `FRONTEND_URL` and the comma-separated `ALLOWED_ORIGINS` Worker secrets. Set `FRONTEND_URL` to the main address and list any other address the site is served from (such as `pages.dev` next to a custom domain) in `ALLOWED_ORIGINS`, or the browser blocks the API calls from that address. See `WORKERS.md`.
+
 ## Local Development
 
 From the repository root, start the Vite dev server (port 5173) and the backend Worker (port 8787) together:
@@ -76,7 +78,7 @@ From the repository root, start the Vite dev server (port 5173) and the backend 
 npm run dev
 ```
 
-The frontend calls the Worker at `VITE_API_URL`, which defaults to `http://localhost:8787/api` when unset (see `frontend/src/services/api.ts`); Vite does not proxy requests. To run the frontend alone, use `npm run dev:frontend`.
+The frontend calls the Worker at `VITE_API_URL`, which defaults to `http://localhost:8787/api` when unset (see `frontend/src/services/api.ts`); Vite does not proxy requests. A Worker running on `localhost` allows the Vite dev server origin (`http://localhost:5173` or `http://127.0.0.1:5173`) without any setting. To run the frontend alone, use `npm run dev:frontend`.
 
 ## First-Time Setup
 

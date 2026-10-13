@@ -271,7 +271,7 @@ Add a dependency to the app that uses it: `npm install <package> --workspace bac
 
 The whole project is TypeScript in `strict` mode. Nothing is compiled ahead of time: Wrangler and Vite strip the types while bundling, and Node strips them when it runs the tests and `scripts/publish-scheduled.ts`. None of them checks types, so run `npm run typecheck` before you commit; CI runs it on every pull request and before every deploy. The API request and response types live once in `shared/types/` and are used by both the backend and the frontend. See `docs/guidelines/TYPESCRIPT.md`.
 
-Tests live outside the source folders, in `backend/tests/` and `frontend/tests/`, and mirror the source tree: the test for `backend/services/youtube.ts` is `backend/tests/services/youtube.test.ts`, and the test for `frontend/src/lib/accounts.ts` is `frontend/tests/lib/accounts.test.ts`. Backend fixtures and golden snapshots are in `backend/tests/fixtures/`.
+Tests live outside the source folders, in `backend/tests/` and `frontend/tests/`, and mirror the source tree: the test for `backend/services/youtube/youtubeChannels.ts` is `backend/tests/services/youtube/youtubeChannels.test.ts`, and the test for `frontend/src/lib/accounts.ts` is `frontend/tests/lib/accounts.test.ts`. Backend fixtures and golden snapshots are in `backend/tests/fixtures/`.
 
 ESLint (with `typescript-eslint`), Prettier and EditorConfig are configured once at the root, and the shared compiler settings are in `tsconfig.base.json`. The existing code has not been reformatted in bulk, so run `npm run format` only when you mean to reformat.
 
@@ -300,6 +300,8 @@ UPSTASH_REDIS_REST_TOKEN=...
 
 `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are optional. The app works without Redis - analytics are fetched live on every request with caching disabled.
 
+`FRONTEND_URL` is also the only browser origin the API accepts. To serve the app from more than one address, list the others in the optional `ALLOWED_ORIGINS` (comma-separated, for example `ALLOWED_ORIGINS=https://twiligent.pages.dev`). A Worker running on `localhost` also accepts the Vite dev server on port 5173.
+
 ### Frontend environment variables (`frontend/.env.local`)
 
 ```
@@ -327,8 +329,9 @@ npx wrangler secret put CLOUDINARY_CLOUD_NAME
 npx wrangler secret put CLOUDINARY_UPLOAD_PRESET
 npx wrangler secret put BACKEND_URL
 npx wrangler secret put FRONTEND_URL
-npx wrangler secret put UPSTASH_REDIS_REST_URL
-npx wrangler secret put UPSTASH_REDIS_REST_TOKEN
+npx wrangler secret put ALLOWED_ORIGINS             # optional
+npx wrangler secret put UPSTASH_REDIS_REST_URL      # optional
+npx wrangler secret put UPSTASH_REDIS_REST_TOKEN    # optional
 ```
 
 ### Getting API credentials
@@ -411,10 +414,10 @@ flowchart TD
 **Request lifecycle:**
 
 1. The browser sends a request with a Supabase JWT in the `Authorization: Bearer` header
-2. The Cloudflare Worker verifies the JWT and extracts the user ID
-3. Route handlers query Supabase using the verified user ID as an isolation filter
+2. The Cloudflare Worker checks the origin (CORS), gives the request an id, applies rate limits and verifies the JWT to get the user ID
+3. A route table hands the request to a controller, which calls a service; the service reads and writes Supabase through repositories that filter by the verified user ID
 4. Frequently accessed data (analytics) is read from Upstash Redis if available; otherwise fetched live from the platform APIs and cached
-5. Responses are returned as JSON; access tokens are always stripped before leaving the Worker
+5. Responses are returned as JSON with an `X-Request-Id` header; access tokens are always stripped before leaving the Worker, and every failure has the same body: `{ success: false, code, message, requestId }`
 
 **Cron lifecycle:**
 
@@ -437,32 +440,36 @@ twiligent/
 │       └── publish-scheduled.yml    # Scheduled post fallback (every 15 minutes, Node 24)
 │
 ├── backend/
-│   ├── lib/
-│   │   ├── db.ts                    # All Supabase query functions (single source)
-│   │   ├── cache.ts                 # Redis cache helpers (silent fail on error)
-│   │   ├── redis.ts                 # Upstash Redis client factory
-│   │   ├── safeAccount.ts           # Strips tokens and cookies from accounts in responses
-│   │   ├── rateLimit/               # Rate limit rules, algorithms and Lua scripts
-│   │   └── supabase.ts              # Supabase client factory
-│   ├── middleware/
-│   │   ├── auth.ts                  # requireAuth: JWT verification, sets userId
-│   │   └── rateLimit.ts             # Per-IP and per-user rate limits
-│   ├── routes/
-│   │   ├── accounts.ts              # Add, remove, and refresh accounts
-│   │   ├── analytics.ts             # YouTube and Instagram analytics
-│   │   ├── publishing.ts            # Instagram Graph API publish flow
-│   │   ├── scheduledPosts.ts        # CRUD for scheduled post queue
-│   │   ├── instagramAuth.ts         # Instagram OAuth flow
-│   │   ├── settings.ts              # User settings (GitHub repository for setup links)
-│   │   └── keys.ts                  # API key presence check
+│   ├── app.ts                       # createApp(): the ordered middleware pipeline and route groups
+│   ├── server.ts                    # Worker export (fetch + scheduled)
+│   ├── container.ts                 # Composition root: builds repositories and services per request
+│   ├── middleware/                  # cors, requestContext, securityHeaders, clients, rateLimit, auth, validate, errorHandler
+│   ├── routes/                      # One route table per feature (<feature>Routes.ts) and index.ts (public and protected)
+│   ├── controllers/                 # HTTP only: read input, call one service method, build the response
+│   ├── validators/                  # Request body and query parsers
 │   ├── services/
-│   │   ├── youtube.ts               # YouTube Data API v3 client
-│   │   └── instagram.ts             # Instagram Graph API client
+│   │   ├── *Service.ts              # Feature services: business rules, no Hono types
+│   │   ├── scheduledPublisher.ts    # Publishes due scheduled posts (cron and manual trigger)
+│   │   ├── youtube/                 # YouTube Data API v3 client and analytics
+│   │   ├── instagram/               # Instagram Graph API client, OAuth, publishing and analytics
+│   │   └── reddit/                  # Reddit public JSON API client and analytics
+│   ├── repositories/                # All Supabase queries and the Redis analytics cache
+│   ├── database/                    # Supabase and Upstash Redis client factories
+│   ├── jobs/
+│   │   └── scheduled.ts             # Cron entry point: publish due posts, refresh Instagram tokens
+│   ├── lib/
+│   │   ├── errors.ts                # Typed errors; the error handler maps each code to a status
+│   │   ├── logger.ts                # Structured JSON log lines
+│   │   ├── config.ts                # Cleaned Worker settings and allowed CORS origins
+│   │   ├── safeAccount.ts           # Strips tokens and cookies from accounts in responses
+│   │   ├── oauthState.ts            # HMAC-signed Instagram OAuth state
+│   │   ├── analyticsMath.ts         # Shared analytics formulas
+│   │   └── rateLimit/               # Rate limit rules, algorithms and Lua scripts
 │   ├── types/
 │   │   ├── env.ts                   # Env: Worker secrets and bindings
-│   │   └── app.ts                   # AppEnv, AppContext: Hono context typing
-│   ├── tests/                       # Node tests (*.test.ts) mirroring lib/, middleware/, routes/, services/, utils/; fixtures/ holds fakes and golden snapshots
-│   ├── server.ts                    # Hono app + Worker export (fetch + scheduled)
+│   │   ├── app.ts                   # AppEnv, AppContext: Hono context typing
+│   │   └── context.ts               # RequestContext: request id, signal and logger for services
+│   ├── tests/                       # Node tests (*.test.ts) mirroring lib/, middleware/, repositories/, routes/, services/, validators/; fixtures/ holds fakes and golden snapshots
 │   ├── wrangler.toml                # Cloudflare Worker config (main = "server.ts") and cron triggers
 │   ├── tsconfig.json                # Worker type check (Workers types, no DOM or Node)
 │   └── package.json                 # Backend workspace: hono, supabase-js, upstash redis, wrangler, workers-types

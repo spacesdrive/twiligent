@@ -106,7 +106,7 @@ YouTube's upload API requires OAuth with the `youtube.upload` scope. The archite
 
 ### Multi-User Teams
 
-Each Supabase auth user is completely isolated. A team feature would let several users share the same accounts. Requires a `teams` table, a `team_members` join table, and query changes across `lib/db`.
+Each Supabase auth user is completely isolated. A team feature would let several users share the same accounts. Requires a `teams` table, a `team_members` join table, and query changes across the repositories in `backend/repositories/`.
 
 ### Mobile App
 
@@ -117,7 +117,7 @@ React Native app using the same Cloudflare Worker backend.
 ## Known Issues / Tech Debt
 
 - `wrangler.toml` has no `vars` section for non-secret configuration - any non-sensitive config currently requires a redeploy to change.
-- The scheduled publishers (`backend/utils/scheduler` and `scripts/publish-scheduled`) publish due posts one after another in a single run. A large batch due at the same moment can exceed the Worker's or the Actions job's time limit; the rest wait for the next run.
+- The scheduled publishers (`backend/services/scheduledPublisher` and `scripts/publish-scheduled`) publish due posts one after another in a single run. A large batch due at the same moment can exceed the Worker's or the Actions job's time limit; the rest wait for the next run.
 - Rate limits are counted per Worker isolate when Redis is not configured, which is looser than one global count (see `docs/architecture/backend/RATE_LIMITING.md`).
 - The project stays on TypeScript 6.0 until `typescript-eslint` supports TypeScript 7.
 - No end-to-end tests; see `docs/workflows/TESTING.md` for the planned Playwright coverage.

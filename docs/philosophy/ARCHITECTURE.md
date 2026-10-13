@@ -10,13 +10,13 @@ The Cloudflare Worker sits at the edge, close to the user. All data fetching - f
 
 ### 2. One source of auth truth
 
-Authentication is Supabase JWTs. The Worker verifies the JWT on every protected request. `userId` derived from the verified JWT is the only identity that matters. No session state. No cookies. The JWT is verified by checking its signature against the Supabase JWT secret - not by calling Supabase on every request.
+Authentication is Supabase JWTs. The Worker verifies the JWT on every protected request by asking Supabase Auth (`auth.getUser(token)` with the anon key, in `requireAuth`), which checks the signature, the expiry and whether the session was revoked. `userId` derived from the verified JWT is the only identity that matters. No session state in the Worker. No cookies. The per-IP rate limit runs before this check, so a flood of bad tokens never reaches Supabase Auth.
 
-**Why:** Stateless auth scales to zero infrastructure. JWTs are self-verifying.
+**Why:** The Worker keeps no auth state of its own, and a signed-out session stops working at once.
 
 ### 3. Application-layer isolation instead of RLS
 
-Every DB query appends `.eq('user_id', userId)` where `userId` comes from the verified JWT. The Worker uses the service-role key (which bypasses RLS). RLS is not relied upon for security.
+Every user-scoped repository method (named `...ForUser`) appends `.eq('user_id', userId)` where `userId` comes from the verified JWT and is passed down from the controller. The Worker uses the service-role key (which bypasses RLS). RLS is enabled with no policies only to keep the public anon key away from the tables; it is not relied upon for isolation.
 
 **Why:** RLS adds complexity without benefit when the application layer already enforces isolation. The service-role key is needed for admin operations (cron jobs, token refresh) that run without a user JWT. See `ADR-011`.
 
@@ -24,7 +24,7 @@ Every DB query appends `.eq('user_id', userId)` where `userId` comes from the ve
 
 ### 4. Fail silently on the cache
 
-Redis is optional infrastructure. The cache layer always catches errors and returns `null` on failure. The application falls through to the source of truth (Supabase / platform API). A Redis outage is invisible to users.
+Redis is optional infrastructure. The cache repository (`analyticsCacheRepository.ts`) always catches errors and returns `null` on failure. The application falls through to the source of truth (Supabase / platform API). A Redis outage is invisible to users.
 
 **Why:** Cache is a performance optimization, not a correctness requirement. Making it optional makes the system more resilient. See `ADR-008`.
 
@@ -41,6 +41,12 @@ New platform-specific fields go into the `data jsonb` column on `accounts` or `s
 ### 7. Strict TypeScript, stripped rather than compiled
 
 Every layer is TypeScript in `strict` mode, and the API contract lives once in `shared/types/`, used by both the Worker and the frontend. Nothing is compiled ahead of time: Wrangler, Vite and Node strip the types, and `npm run typecheck` gates every deploy and pull request. Only erasable syntax is allowed, so any file can run directly under Node. See `ADR-030` (which replaces `ADR-010`) and `docs/guidelines/TYPESCRIPT.md`.
+
+### 8. One job per layer, one error contract
+
+A request passes through middleware, a route table, a controller, a service and a repository, and each layer has one job: HTTP concerns in middleware and controllers, business rules in services, queries in repositories. Services never see the Hono context, so a cron job runs the same code with its own request context. Every failure is a typed error that one error handler turns into `{ success: false, code, message, requestId }`. See `ADR-032` and `docs/architecture/backend/REQUEST_PIPELINE.md`.
+
+**Why:** Each rule has one place to live and one place to test, and the client handles every failure the same way.
 
 ## What This Architecture Is Not
 

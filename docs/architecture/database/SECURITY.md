@@ -4,11 +4,11 @@
 
 The backend uses the **service-role key** for all database operations. This key bypasses Row Level Security (RLS). Data isolation is enforced by the application:
 
-1. `requireAuth` middleware verifies the JWT and sets `c.userId` from Supabase's response - this is the only trusted source of `userId`
-2. Every user-scoped query in `lib/db.ts` appends `.eq('user_id', userId)` using this verified value
+1. `requireAuth` middleware verifies the JWT and sets `userId` on the Hono context from Supabase's response - this is the only trusted source of `userId`
+2. Controllers pass that `userId` to services, and every user-scoped repository method (named `...ForUser`) appends `.eq('user_id', userId)` using this verified value
 3. `userId` is never accepted from request body, query params, or any other user-controlled input
 
-**This means a missing `.eq('user_id', userId)` call is a security bug.** The centralization of all queries in `lib/db.ts` makes this auditable - every public function signature documents whether it accepts a userId.
+**This means a missing `.eq('user_id', userId)` call is a security bug.** The centralization of all queries in `backend/repositories/` makes this auditable: a method that takes a `userId` ends in `ForUser`, and the few that reach every user (`listAll`, `findById`, `updateById`, `listDue`, `claim`) are used only by the cron services. Because ownership is a query filter, another user's record is simply not found (404).
 
 ## Why Not Use RLS?
 
@@ -58,12 +58,12 @@ The Instagram `accessToken` stored in `accounts.data.accessToken` is a long-live
 1. Stored only in the Supabase `accounts` table (server-side)
 2. Never returned in API responses - `safeAccount()` strips it
 3. Only used server-side, by these modules:
-   - Graph API calls: `services/instagramApi.ts`, `services/instagramMedia.ts` and `services/instagramPublishing.ts` (the token is passed in as `access_token`)
-   - Obtaining and storing tokens: `services/instagramTokens.ts` (long-lived exchange and refresh), `services/instagramOAuth.ts` (OAuth code exchange), `services/accountConnect.ts` and `services/accountFactory.ts` (pasted tokens and new account rows)
-   - Reading the stored token: `routes/publishing.ts` and `utils/scheduler.ts` (publishing), `routes/analytics.ts` (Instagram analytics and media), `services/accountRefresh.ts` (profile refresh) and `services/overviewSummary.ts` (overview cache warm-up)
+   - Graph API calls: `services/instagram/instagramApi.ts`, `instagramMedia.ts` and `instagramPublishing.ts` (the token is passed in as `access_token`)
+   - Obtaining and storing tokens: `services/instagram/instagramTokens.ts` (long-lived exchange and refresh), `services/instagram/instagramOAuth.ts` (OAuth code exchange), `services/instagramConnectService.ts` (OAuth connect), `services/accountService.ts` and `services/accountFactory.ts` (pasted tokens and new account rows)
+   - Reading the stored token: `services/publishingService.ts` and `services/scheduledPublisher.ts` (publishing), `services/instagramAnalyticsService.ts` (Instagram analytics and media), `services/accountService.ts` (profile and token refresh), `services/tokenRefreshService.ts` (daily refresh) and `services/overviewService.ts` (overview cache warm-up)
 4. The `GET /api/accounts` endpoint passes all accounts through `safeAccount()` before returning
 
-**If you add a new route that returns account data, you must call `safeAccount()`.** There is no automatic stripping - it is an explicit step in route handlers.
+**If you add a route that returns account data, you must call `safeAccount()`.** Repositories return full accounts and there is no automatic stripping - it is an explicit step in controllers (and in the services that embed an account in a larger result).
 
 ## GitHub Settings
 
@@ -73,6 +73,7 @@ The Instagram `accessToken` stored in `accounts.data.accessToken` is a long-live
 
 When reviewing security, check these files:
 - `backend/middleware/auth.ts` - JWT verification
-- `backend/lib/db.ts` - every function that accepts an optional `userId` should either: require it explicitly, or have a documented reason for omitting it (cron use case)
+- `backend/repositories/` - every user-scoped method ends in `ForUser` and filters by `user_id`; the methods without a `userId` are used only by `scheduledPublisher.ts` and `tokenRefreshService.ts`
+- `backend/controllers/` and `backend/services/` - the `userId` passed to a repository always comes from `c.get('userId')`, never from the body or query
 - `backend/lib/safeAccount.ts` - `safeAccount()` definition; it strips every stored credential for all platforms
-- All route files in `backend/routes/` - verify `safeAccount()` is called on every account response
+- All controllers in `backend/controllers/` - verify `safeAccount()` is called on every account response

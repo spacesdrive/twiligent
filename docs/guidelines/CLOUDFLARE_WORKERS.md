@@ -2,20 +2,22 @@
 
 ## Environment Access
 
-Access environment variables and secrets via `c.env` (in Hono handlers) or `env` (in the `scheduled` cron handler). Never use `process.env` - it does not exist in the Workers runtime.
+Environment variables and secrets arrive as `c.env` (in middleware and controllers) or `env` (in the `scheduled` cron handler). Never use `process.env` - it does not exist in the Workers runtime.
 
-Every binding is declared in the `Env` interface in `backend/types/env.ts`. Add a new secret there (optional ones as `?: string`) before reading it, or the type checker rejects `c.env.MY_SECRET`.
+Every binding is declared in the `Env` interface in `backend/types/env.ts`. Add a new secret there (optional ones as `?: string`) before reading it, or the type checker rejects `c.env.MY_SECRET`. Application code does not read `c.env` directly: `readConfig(env)` in `backend/lib/config.ts` cleans the values into an `AppConfig`, and services receive that config from `createServices()`. Only `lib/config.ts` and the client factories in `backend/database/` read the raw variables.
 
 ```ts
-// In a Hono handler or middleware (the router is new Hono<AppEnv>()):
-const apiKey = c.env.YOUTUBE_API_KEY;   // string | undefined
-const url = c.env.SUPABASE_URL;         // string
+// backend/lib/config.ts: pasted secrets can carry a byte order mark or stray whitespace
+youtubeApiKey: cleanSecret(env.YOUTUBE_API_KEY),
 
-// In the cron handler (backend/server.ts):
+// a service reads the cleaned value
+if (!config.youtubeApiKey) throw new NotConfiguredError(NO_YOUTUBE_KEY_MESSAGE);
+
+// the cron handler (backend/server.ts) hands env to the job
 export default {
     fetch: app.fetch,
     async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext) {
-        const supabase = getSupabase(env);
+        ctx.waitUntil(runScheduledJob(event.cron, env));
     },
 } satisfies ExportedHandler<Env>;
 ```
@@ -44,17 +46,25 @@ The Workers runtime does not have Node.js built-ins. These are unavailable:
 
 ## `ctx.waitUntil()`
 
-In cron handlers, use `ctx.waitUntil()` to keep the Worker alive for async background work:
+In the cron handler, use `ctx.waitUntil()` to keep the Worker alive for async background work:
 
 ```ts
 async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext) {
-    ctx.waitUntil(myAsyncJob(getSupabase(env)));
+    ctx.waitUntil(runScheduledJob(event.cron, env));
 }
 ```
 
 Without `ctx.waitUntil()`, the Worker isolate may terminate before the promise resolves.
 
-Do not use `ctx.waitUntil()` in HTTP request handlers - just `await` the work normally.
+In controllers, `await` the work the response needs. Use `c.executionCtx.waitUntil()` only for work that must outlive the response, as the Overview does for cache warming, and give that work its own deadline, because the request's `signal` aborts when the client disconnects:
+
+```ts
+if (warmTasks.length > 0) c.executionCtx.waitUntil(Promise.allSettled(warmTasks));
+```
+
+## Cancellation
+
+Every platform `fetch` receives an `AbortSignal`. In a request it is the context's `signal` (client disconnect or a 30 second deadline); in a cron run it is a 14 minute deadline built in `backend/jobs/scheduled.ts`. Services get it from their `RequestContext` and pass it down, so abandoned work stops instead of spending CPU time and platform quota.
 
 ## Stateless Requests
 
@@ -69,13 +79,14 @@ export default { fetch: async (request: Request, env: Env) => {
     return Response.json(cachedData);
 }};
 
-// GOOD - use Redis or Supabase for persistence
-const cached = await redis.get<MyData>('my-key');
-if (cached) return c.json(cached);
-const fresh = await fetchData(env);
-await redis.set('my-key', fresh);
-return c.json(fresh);
+// GOOD - use Redis or Supabase for persistence, through a repository
+const cached = await cache.getVideos(userId, accountId);
+if (cached?.videos) return { videos: cached.videos, fetchedAt: cached.fetchedAt };
+const videos = await fetchAllVideos(playlistId, apiKey, MAX_PLAYLIST_PAGES, signal);
+await cache.setVideos(userId, accountId, { videos, fetchedAt: new Date().toISOString() });
 ```
+
+Module-level state is acceptable only as a per-isolate optimization that is safe to lose, such as the cache cooldown in `analyticsCacheRepository.ts` and the rate limiter's in-memory fallback.
 
 ## Bundle Size
 
@@ -134,15 +145,14 @@ Or push to `main` with changes in `backend/`, `shared/`, `tsconfig.base.json` or
 
 ## CORS
 
-The current CORS configuration in `server.ts`, `cors({ exposeHeaders: RATE_LIMIT_HEADERS })`, allows all origins and lets the browser read the rate limit headers. For a more restrictive policy, return the `FRONTEND_URL` as the allowed origin. `c.env` only exists inside a request, so pass a function:
+`backend/middleware/cors.ts` allows only the app's own origins: `FRONTEND_URL` and the comma-separated `ALLOWED_ORIGINS`, read through `corsOrigins()` in `backend/lib/config.ts`. `c.env` only exists inside a request, so the origin is a function:
 
 ```ts
-app.use('*', cors({
-    origin: (origin, c) => c.env.FRONTEND_URL ?? origin,
-    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'Authorization'],
-    exposeHeaders: RATE_LIMIT_HEADERS,
-}));
+export const apiCors = cors({
+    origin: (origin, c) => (corsOrigins(readConfig(c.env), c.req.url).includes(origin) ? origin : null),
+    exposeHeaders: [...RATE_LIMIT_HEADERS, 'X-Request-Id'],
+    maxAge: 600,
+});
 ```
 
-This change would need to be applied carefully - it would break requests from local development (`localhost:5173`) unless the allowed origin list includes it.
+When the Worker itself runs on `localhost` or `127.0.0.1`, `corsOrigins()` adds the Vite dev server (`http://localhost:5173` and `http://127.0.0.1:5173`), so local development works without extra settings while a deployed Worker never allows them. To allow another browser origin, add it to `ALLOWED_ORIGINS`; do not widen the function. See `docs/architecture/backend/MIDDLEWARE.md`.

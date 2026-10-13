@@ -17,7 +17,7 @@ User selects account + uploads media + fills caption
 2. Frontend: Create media container
    api.createIGContainer(accountId, { mediaUrl, caption, mediaType, ... })
    -> POST /api/accounts/:id/ig-publish
-   -> Backend: calls Instagram Graph API
+   -> Backend: publishing.createContainer() -> buildMediaParams() and createMediaContainer()
        POST https://graph.instagram.com/v25.0/{igUserId}/media
        params: { image_url|video_url, caption, media_type, access_token }
    -> 404 when the account is not an Instagram account of this user, 400 when it has no stored token
@@ -56,12 +56,13 @@ User creates a scheduled post
         ▼
 1. Frontend: api.createScheduledPost({ accountId, scheduledAt, mediaUrl, caption, ... })
    -> POST /api/scheduled-posts
-   -> Backend: db.createPost(supabase, post, userId)
+   -> Backend: scheduledPosts.create(userId, request) -> posts.create(post, userId)
+       (400 unless scheduledAt is a future date)
        INSERT INTO scheduled_posts (id, user_id, account_id, status='pending', scheduled_at, data)
         │
         ▼
 2. Every 15 minutes, one of two schedulers fires:
-   A. Cloudflare Worker cron -> processScheduledPosts(supabase)
+   A. Cloudflare Worker cron -> runScheduledJob() -> scheduledPublisher.publishDue()
    B. GitHub Actions -> node scripts/publish-scheduled.ts -> direct Supabase REST calls
         │
         ▼
@@ -100,6 +101,6 @@ User creates a scheduled post
 |---|---|---|
 | Container `ERROR` | Instagram processing failed (bad codec, too long, etc.) | User must re-upload |
 | Container `EXPIRED` | >24 hours since container was created | User must re-create container |
-| `media_publish` 400 | Usually quota exceeded or invalid containerId | Check publishing limit |
+| `media_publish` rejected | Usually quota exceeded or invalid containerId; the Worker answers 502 (`UPSTREAM_ERROR`) with Instagram's message | Check publishing limit |
 | Processing timeout | The container was still processing after the last poll | Try again later, or use a shorter or smaller video |
 | `status=failed` in scheduled post | Any of the above, plus `accessToken` expired | Re-connect the account |

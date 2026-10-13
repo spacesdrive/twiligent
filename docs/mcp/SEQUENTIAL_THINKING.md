@@ -67,7 +67,7 @@ Sequential Thinking would work through:
 - How to store credentials (in `accounts.data` jsonb alongside Instagram pattern)
 - Token refresh strategy (poll `Set-Cookie` header on each API call)
 - Which shapes go in `shared/types/reddit.ts` (profile, post, analytics, cache entry)
-- New cache keys to add to `cache.ts`
+- New cache keys to add to `repositories/analyticsCacheRepository.ts`
 - New routes to add to backend
 - New analytics page structure
 - How the sidebar/nav changes

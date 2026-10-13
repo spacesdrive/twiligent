@@ -4,10 +4,15 @@
 
 | Location | Convention | Examples |
 |---|---|---|
-| Backend routes | `camelCase.ts` | `accounts.ts`, `scheduledPosts.ts`, `instagramAuth.ts` |
-| Backend services | `camelCase.ts` | `instagram.ts`, `youtube.ts` |
-| Backend lib | `camelCase.ts` | `db.ts`, `cache.ts`, `supabase.ts`, `redis.ts` |
-| Backend middleware | `camelCase.ts` | `auth.ts`, `rateLimit.ts` |
+| Backend route tables | `<feature>Routes.ts` | `accountRoutes.ts`, `scheduledPostRoutes.ts`, `instagramAuthRoutes.ts` |
+| Backend controllers | `<feature>Controller.ts` | `accountController.ts`, `scheduledPostController.ts` |
+| Backend validators | `<feature>Validators.ts` | `accountValidators.ts`, `publishingValidators.ts` |
+| Backend feature services | `<feature>Service.ts` | `accountService.ts`, `youtubeAnalyticsService.ts` |
+| Backend platform modules | `<platform><Topic>.ts` in `services/<platform>/` | `youtube/youtubeApi.ts`, `instagram/instagramPublishing.ts`, `reddit/redditApi.ts` |
+| Backend repositories | `<table>Repository.ts` | `accountRepository.ts`, `scheduledPostRepository.ts`, `analyticsCacheRepository.ts` |
+| Backend database clients | `camelCase.ts` in `database/` | `supabase.ts`, `redis.ts` |
+| Backend lib | `camelCase.ts` | `errors.ts`, `logger.ts`, `config.ts`, `safeAccount.ts` |
+| Backend middleware | `camelCase.ts` | `auth.ts`, `cors.ts`, `rateLimit.ts`, `errorHandler.ts` |
 | Type-only modules | `camelCase.ts` | `shared/types/domain.ts`, `backend/types/env.ts`, `backend/types/app.ts` |
 | Frontend pages | `PascalCase.tsx` | `Login.tsx`, `Overview.tsx` |
 | Frontend feature components | `PascalCase.tsx` | `ChannelAnalytics.tsx`, `AccountManager.tsx` |
@@ -17,16 +22,18 @@
 | Frontend shared hooks | `use-kebab-case.ts` in `src/hooks` | `use-mobile.ts` |
 | Frontend utilities | `camelCase.ts` | `formatters.ts`, `api.ts`, `utils.ts` |
 | shadcn components | `kebab-case.tsx` | `button.tsx`, `card.tsx` (generated - do not rename) |
-| Tests | `<source name>.test.ts` in the workspace `tests/` folder | `backend/tests/services/youtube.test.ts` |
+| Tests | `<source name>.test.ts` in the workspace `tests/` folder | `backend/tests/routes/accountRoutes.test.ts`, `backend/tests/services/youtube/youtubeChannels.test.ts` |
 | Documentation | `SCREAMING_SNAKE_CASE.md` | `OVERVIEW.md`, `TYPESCRIPT.md`, `SCHEMA.md` |
 
 Use `.tsx` only for files that contain JSX; everything else is `.ts`.
 
 ## Functions
 
-- Backend route handlers: `camelCase` verb + noun - `getAnalytics(c)`, `createAccount(c)`, `deletePost(c)`
-- Backend service functions: `camelCase` verb + noun - `fetchChannelData()`, `computeVideoAnalytics()`, `publishIGContainer()`
-- Backend db functions: `camelCase` verb + noun - `getAccounts()`, `createPost()`, `updateAccount()`, `deletePost()`
+- Backend controllers: `camelCase` verb + noun - `getChannelAnalytics`, `addYouTubeAccount`, `deleteScheduledPost`
+- Backend validators: `parse` + noun - `parseScheduledPost`, `parseVideoLibraryQuery`
+- Backend service factories: `create` + service name - `createAccountService`, `createScheduledPublisher`; their methods are short verbs, because the service names the noun - `accounts.list`, `accounts.refresh`, `scheduledPosts.removeAll`
+- Backend platform functions: `camelCase` verb + noun - `fetchChannelData()`, `computeVideoAnalytics()`, `createMediaContainer()`
+- Backend repository methods: verb + `ForUser` when scoped to the verified user - `listForUser()`, `findForUser()`, `updateForUser()`, `deleteForUser()`; the cross-user methods for cron jobs have no suffix - `listAll()`, `findById()`, `updateById()`, `listDue()`, `claim()`
 - Frontend API methods: `camelCase` verb + noun - `getAnalytics()`, `createScheduledPost()`, `deleteAccount()`
 - React event handlers: `handle` + PascalCase noun/event - `handleSubmit()`, `handleDeleteClick()`, `handleInputChange()`
 - React custom hooks: `use` + PascalCase noun - `useAppContext()`, `useIsMobile()`
@@ -37,6 +44,8 @@ Use `.tsx` only for files that contain JSX; everything else is `.ts`.
 - Component props: `<Component>Props` - `ChannelHeaderProps`
 - Request and response bodies: `<Thing>Request`, `<Thing>Response` - `ScheduledPostRequest`, `ScheduledPostListResponse`
 - Raw upstream payloads: platform name + `Api` + entity - `YouTubeApiVideo`
+- Services and their dependencies: `<Name>Service` and `<Name>Deps` - `AccountService`, `AccountServiceDeps`; repositories: `<Table>Repository` - `AccountRepository`
+- Errors: `<Reason>Error` extending `AppError` - `NotFoundError`, `UpstreamTimeoutError`; error codes are `SCREAMING_SNAKE_CASE` - `NOT_FOUND`
 
 ## Variables
 
@@ -65,9 +74,9 @@ Use `.tsx` only for files that contain JSX; everything else is `.ts`.
 - Resource nesting: `/accounts/:id/ig-analytics` (not `/ig-analytics/:accountId`)
 - Kebab-case multi-word paths - `/refresh-all`, `/ig-publish`, `/process-scheduled`
 
-## Supabase Cache Keys
+## Redis Cache Keys
 
-`{entity}:{userId}:{accountId}` - `videos:abc-123:def-456`, `ig:abc-123:def-456`
+`{entity}:{userId}:{accountId}` - `videos:abc-123:def-456`, `ig:abc-123:def-456`, `reddit:abc-123:def-456` (defined only in `repositories/analyticsCacheRepository.ts`)
 
 ## Environment Variables
 

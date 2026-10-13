@@ -7,8 +7,9 @@ Two independent systems check for due posts every 15 minutes. Both target the sa
 ## System A: Cloudflare Worker Cron
 
 **Trigger:** `*/15 * * * *` cron in `wrangler.toml`  
-**Handler:** `backend/utils/scheduler.ts` -> `processScheduledPosts(supabase)`  
-**Supabase client:** service-role (created from Worker env)
+**Handler:** `backend/jobs/scheduled.ts` -> `runScheduledJob()` -> `scheduledPublisher.publishDue()` in `backend/services/scheduledPublisher.ts`  
+**Supabase client:** service-role (created from Worker env)  
+**Manual trigger:** `GET` or `POST /api/process-scheduled` runs the same `publishDue()`
 
 ## System B: GitHub Actions
 
@@ -34,7 +35,7 @@ WHERE id = :id AND status = 'pending'
 
 The `AND status = 'pending'` condition means only one scheduler can successfully claim a post. The second scheduler to run will find no matching rows for that post ID and skip it.
 
-Both schedulers implement this claim: `claimPost()` in `backend/lib/db.ts` for the Worker, and `claimPost()` in `scripts/publish-scheduled.ts` (a `PATCH` filtered on `status=eq.pending` with `Prefer: return=representation`). A scheduler that gets no row back skips the post. PostgreSQL serializes the two updates, so exactly one scheduler publishes each post even when both run at the same moment.
+Both schedulers implement this claim: `claim()` in `backend/repositories/scheduledPostRepository.ts` for the Worker, and `claimPost()` in `scripts/publish-scheduled.ts` (a `PATCH` filtered on `status=eq.pending` with `Prefer: return=representation`). A scheduler that gets no row back skips the post. PostgreSQL serializes the two updates, so exactly one scheduler publishes each post even when both run at the same moment.
 
 ## Post Status Lifecycle
 
@@ -58,13 +59,15 @@ publishing           Claimed by a scheduler - in-flight
 
 Both schedulers implement the same logic:
 
-| Step | Worker (`scheduler.ts`) | GitHub Actions (`publish-scheduled.ts`) |
+| Step | Worker (`scheduledPublisher.ts`) | GitHub Actions (`publish-scheduled.ts`) |
 |---|---|---|
-| Fetch due posts | `db.getDuePosts(supabase)` | `GET /scheduled_posts?status=eq.pending&scheduled_at=lte.now` |
-| Fetch account | `db.getAccountById(supabase, accountId)` | `GET /accounts?id=eq.{accountId}` |
-| Mark publishing | `db.updatePost(...)` | `PATCH /scheduled_posts?id=eq.{id}` |
-| Publish to IG | Instagram Graph API calls | Same |
-| Update status | `db.updatePost(...)` | `PATCH /scheduled_posts?id=eq.{id}` |
+| Fetch due posts | `posts.listDue()` | `GET /scheduled_posts?status=eq.pending&scheduled_at=lte.now` |
+| Mark publishing | `posts.claim(id)` | `PATCH /scheduled_posts?id=eq.{id}&status=eq.pending` |
+| Fetch account | `accounts.findById(accountId)`, checked by `publishableAccount()` | `GET /accounts?id=eq.{accountId}` |
+| Publish to IG | `createMediaContainer`, `fetchContainerStatus`, `publishMediaContainer` from `services/instagram/instagramPublishing.ts` | Its own Graph API calls |
+| Update status | `posts.updateById(id, ...)` | `PATCH /scheduled_posts?id=eq.{id}` |
+
+The Worker's repository methods `listDue`, `claim`, `findById` and `updateById` have no `userId` filter; only the schedulers use them.
 
 ## Configuration Requirements
 

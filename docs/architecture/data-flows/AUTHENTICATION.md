@@ -88,7 +88,9 @@ requireAuth middleware
     -> On success: { user: { id, email } }
     -> c.set('userId', user.id)
     -> c.set('userEmail', user.email)
-    -> await next() -> route handler executes
+    -> await next() -> per-user rate limits, route table, controller
+    -> On a missing, invalid or expired token: throws UnauthorizedError
+        -> errorHandler answers 401 { success: false, code: 'UNAUTHORIZED', message, requestId }
 ```
 
 ## Sign Out Flow

@@ -47,6 +47,8 @@ A type error or failing test stops the run before the deploy step.
 - `CLOUDFLARE_API_TOKEN` - API token with Worker deploy permission
 - `CLOUDFLARE_ACCOUNT_ID` - your Cloudflare account ID
 
+The workflow does not set the Worker's own secrets (`SUPABASE_*`, `FRONTEND_URL`, the optional `ALLOWED_ORIGINS` and the rest). They are set once with `npx wrangler secret put` and kept across deploys; see `WORKERS.md`.
+
 **Does not** redeploy on frontend-only changes, documentation changes, or script changes.
 
 ---

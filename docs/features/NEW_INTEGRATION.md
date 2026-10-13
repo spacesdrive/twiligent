@@ -1,6 +1,6 @@
 # Guide: Adding a New Platform Integration
 
-A "platform integration" is a new social or content platform (e.g., Reddit, Twitter/X, TikTok, LinkedIn). This guide walks through every layer that needs to change. Read `docs/guidelines/TYPESCRIPT.md` first: the types for the new platform are written before the code that uses them.
+A "platform integration" is a new social or content platform (e.g., Reddit, Twitter/X, TikTok, LinkedIn). This guide walks through every layer that needs to change. Read `docs/architecture/backend/REQUEST_PIPELINE.md` for the backend layers and `docs/guidelines/TYPESCRIPT.md` for the typing rules: the types for the new platform are written before the code that uses them. The Reddit integration (`services/reddit/`, `redditAnalyticsService.ts`, `redditController.ts`, `redditRoutes.ts`) is the smallest complete example.
 
 ## Decision Checklist Before Starting
 
@@ -20,13 +20,16 @@ Document the answers in `DECISIONS.md` as a new ADR before writing any code.
 |---|---|---|
 | Shared | `shared/types/{platform}.ts` | Create: profile, post, analytics and cache types |
 | Shared | `shared/types/domain.ts` | Add the platform to `Platform` and its fields to `Account` |
-| Backend | `backend/services/{platform}.ts` | Create |
-| Backend | `backend/routes/{platform}.ts` | Create |
-| Backend | `backend/lib/db.ts` | Extend (if needed) |
-| Backend | `backend/lib/cache.ts` | Extend |
+| Backend | `backend/services/{platform}/` | Create: API client and pure analytics modules |
+| Backend | `backend/services/{platform}AnalyticsService.ts` | Create: the feature service |
+| Backend | `backend/services/accountService.ts`, `accountFactory.ts` | Extend: add and refresh accounts of the new platform |
+| Backend | `backend/repositories/analyticsCacheRepository.ts` | Extend: cache methods and `deleteAllForAccount()` |
+| Backend | `backend/validators/{platform}Validators.ts` | Create (for routes that take input) |
+| Backend | `backend/controllers/{platform}Controller.ts` | Create |
+| Backend | `backend/routes/{platform}Routes.ts`, `backend/routes/index.ts` | Create the route table and add it to `protectedRoutes` |
+| Backend | `backend/container.ts` | Wire the new service |
 | Backend | `backend/lib/safeAccount.ts` | Add secret fields to `SECRET_FIELDS` (and to `SafeAccount` in `shared/types/domain.ts`) |
-| Backend | `backend/types/env.ts` | Add new secrets to `Env` |
-| Backend | `backend/server.ts` | Mount router |
+| Backend | `backend/types/env.ts`, `backend/lib/config.ts` | Add new secrets to `Env` and read them into `AppConfig` |
 | Frontend | `frontend/src/services/api.ts` | Add methods |
 | Frontend | `frontend/src/features/` | Create page(s) |
 | Frontend | `frontend/src/App.tsx` | Add routes |
@@ -85,22 +88,22 @@ export interface TweetPostResponse {
 }
 ```
 
-## Step 2: Create the Service File
+## Step 2: Create the Platform Modules
 
-Raw API payloads get interfaces in the service file, covering only the fields the code reads.
+Platform modules in `backend/services/twitter/` talk to the API and compute analytics. They know nothing about users, the database or the cache. Raw API payloads get interfaces in the module, covering only the fields the code reads. Every call accepts an `AbortSignal`, and every failure is a typed error, so the error handler can answer it with the right status.
 
 ```ts
-// backend/services/twitter.ts
-import type { TwitterAnalytics, TwitterTweet } from '../../shared/types/twitter.ts';
+// backend/services/twitter/twitterApi.ts
+import { UpstreamError, UpstreamTimeoutError, isAbortError } from '../../lib/errors.ts';
 
-interface TwitterApiUser {
+export interface TwitterApiUser {
     id: string;
     username: string;
     name: string;
     public_metrics: { followers_count: number; following_count: number; tweet_count: number };
 }
 
-interface TwitterApiTweet {
+export interface TwitterApiTweet {
     id: string;
     text: string;
     created_at: string;
@@ -112,37 +115,58 @@ interface TwitterApiError {
     detail?: string;
 }
 
-async function twitterFetch<T>(path: string, accessToken: string, method = 'GET', body: unknown = null): Promise<T> {
+async function twitterFetch<T>(path: string, accessToken: string, signal?: AbortSignal, method = 'GET', body: unknown = null): Promise<T> {
     const options: RequestInit = {
         method,
         headers: {
             'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
         },
+        signal,
     };
     if (body) options.body = JSON.stringify(body);
-    const res = await fetch(`https://api.twitter.com/2${path}`, options);
+    let res: Response;
+    try {
+        res = await fetch(`https://api.twitter.com/2${path}`, options);
+    } catch (err) {
+        if (isAbortError(err)) throw new UpstreamTimeoutError('Twitter', err);
+        throw new UpstreamError(`Twitter could not be reached (${(err as Error).message})`, { cause: err });
+    }
     if (!res.ok) {
         const err = await res.json().catch(() => ({ title: res.statusText })) as TwitterApiError;
-        throw new Error(`Twitter API ${res.status}: ${err.title || err.detail || res.statusText}`);
+        throw new UpstreamError(`Twitter API ${res.status}: ${err.title || err.detail || res.statusText}`, { status: res.status });
     }
     return await res.json() as T;
 }
 
-export async function getTwitterProfile(accessToken: string): Promise<TwitterApiUser> {
-    const { data } = await twitterFetch<{ data: TwitterApiUser }>('/users/me?user.fields=public_metrics,profile_image_url', accessToken);
+export async function fetchTwitterProfile(accessToken: string, signal?: AbortSignal): Promise<TwitterApiUser> {
+    const { data } = await twitterFetch<{ data: TwitterApiUser }>('/users/me?user.fields=public_metrics,profile_image_url', accessToken, signal);
     return data;
 }
 
-export async function getTwitterTweets(userId: string, accessToken: string): Promise<TwitterApiTweet[]> {
+export async function fetchTwitterTweets(userId: string, accessToken: string, signal?: AbortSignal): Promise<TwitterApiTweet[]> {
     const { data } = await twitterFetch<{ data?: TwitterApiTweet[] }>(
         `/users/${userId}/tweets?max_results=100&tweet.fields=public_metrics,created_at`,
         accessToken,
+        signal,
     );
     return data || [];
 }
 
-// Analytics computation (pure function - easy to test)
+// POST is never retried: a repeated request could publish twice
+export async function postTweet(text: string, accessToken: string, signal?: AbortSignal): Promise<{ data?: { id: string } }> {
+    return twitterFetch('/tweets', accessToken, signal, 'POST', { text });
+}
+```
+
+Analytics computation is a pure function in its own module, which is easy to test. Use the shared helpers in `backend/lib/analyticsMath.ts` (`sumOf`, `roundedAverage`, `medianOf`, ...) where the formula is the same as for the other platforms.
+
+```ts
+// backend/services/twitter/twitterAnalytics.ts
+import { sumOf } from '../../lib/analyticsMath.ts';
+import type { TwitterApiTweet, TwitterApiUser } from './twitterApi.ts';
+import type { TwitterAnalytics, TwitterTweet } from '../../../shared/types/twitter.ts';
+
 export function computeTwitterAnalytics(apiTweets: TwitterApiTweet[], profile: TwitterApiUser): TwitterAnalytics {
     const tweets: TwitterTweet[] = apiTweets.map(t => ({
         id: t.id,
@@ -152,9 +176,9 @@ export function computeTwitterAnalytics(apiTweets: TwitterApiTweet[], profile: T
         retweetCount: t.public_metrics?.retweet_count || 0,
         replyCount: t.public_metrics?.reply_count || 0,
     }));
-    const totalLikes = tweets.reduce((sum, t) => sum + t.likeCount, 0);
-    const totalRetweets = tweets.reduce((sum, t) => sum + t.retweetCount, 0);
-    const totalReplies = tweets.reduce((sum, t) => sum + t.replyCount, 0);
+    const totalLikes = sumOf(tweets, t => t.likeCount);
+    const totalRetweets = sumOf(tweets, t => t.retweetCount);
+    const totalReplies = sumOf(tweets, t => t.replyCount);
     const avgEngagement = tweets.length > 0
         ? Number(((totalLikes + totalRetweets + totalReplies) / tweets.length).toFixed(2))
         : 0;
@@ -171,11 +195,6 @@ export function computeTwitterAnalytics(apiTweets: TwitterApiTweet[], profile: T
         tweets: tweets.slice(0, 50),
     };
 }
-
-// Publishing (if applicable)
-export async function postTweet(text: string, accessToken: string): Promise<{ data?: { id: string } }> {
-    return twitterFetch('/tweets', accessToken, 'POST', { text });
-}
 ```
 
 ## Step 3: Strip Secrets From Responses
@@ -188,111 +207,120 @@ const SECRET_FIELDS: (keyof Account)[] = ['accessToken', 'cookie', 'encryptedPas
 
 Add the same field to the `Omit` list of `SafeAccount` in `shared/types/domain.ts`, so the frontend type does not claim the field exists.
 
-## Step 4: Create Cache Functions
+## Step 4: Add Cache Methods
 
-Use the private `readKey`, `writeKey` and `deleteKey` helpers in `cache.ts`; they return early without Redis and swallow Redis errors.
+Add the methods to the `AnalyticsCacheRepository` interface and its factory in `backend/repositories/analyticsCacheRepository.ts`. Build them on the private `readKey` and `writeKey` helpers, which return early without Redis, apply the TTL and the failure cooldown, and swallow Redis errors:
 
 ```ts
-// Additions to backend/lib/cache.ts
+// in the AnalyticsCacheRepository interface
+getTwitter(userId: string, accountId: string): Promise<TwitterAnalytics | null>;
+setTwitter(userId: string, accountId: string, data: TwitterAnalytics): Promise<void>;
+
+// in createAnalyticsCacheRepository()
+async getTwitter(userId, accountId) {
+    return (await readKey<TwitterAnalytics>(`twitter:${userId}:${accountId}`)) || null;
+},
+
+setTwitter: (userId, accountId, data) => writeKey(`twitter:${userId}:${accountId}`, data),
+```
+
+Add `deleteKey(`twitter:${userId}:${accountId}`)` to `deleteAllForAccount()`, so deleting the account also clears its cache (`AccountService.remove()` already calls it). Add a test to `backend/tests/repositories/analyticsCacheRepository.test.ts`.
+
+## Step 5: Create the Feature Service
+
+The service holds the rules: find the user's account, check it is on the right platform and has the credential it needs, read the cache, call the platform, write the cache.
+
+```ts
+// backend/services/twitterAnalyticsService.ts
+import { fetchTwitterProfile, fetchTwitterTweets, postTweet } from './twitter/twitterApi.ts';
+import { computeTwitterAnalytics } from './twitter/twitterAnalytics.ts';
+import { NotFoundError, ValidationError } from '../lib/errors.ts';
+import type { AccountRepository } from '../repositories/accountRepository.ts';
+import type { AnalyticsCacheRepository } from '../repositories/analyticsCacheRepository.ts';
+import type { RequestContext } from '../types/context.ts';
 import type { TwitterAnalytics } from '../../shared/types/twitter.ts';
 
-export async function getTwitterCache(redis: Redis | null, userId: string, accountId: string): Promise<TwitterAnalytics | null> {
-    return (await readKey<TwitterAnalytics>(redis, `twitter:${userId}:${accountId}`)) || null;
+export interface TwitterAnalyticsDeps {
+    accounts: AccountRepository;
+    cache: AnalyticsCacheRepository;
+    context: RequestContext;
 }
 
-export async function setTwitterCache(redis: Redis | null, userId: string, accountId: string, data: TwitterAnalytics): Promise<void> {
-    await writeKey(redis, `twitter:${userId}:${accountId}`, data);
+export interface TwitterAnalyticsService {
+    analytics(userId: string, accountId: string): Promise<TwitterAnalytics>;
+    tweet(userId: string, accountId: string, text: string): Promise<string | undefined>;
 }
 
-export async function deleteTwitterCache(redis: Redis | null, userId: string, accountId: string): Promise<void> {
-    await deleteKey(redis, `twitter:${userId}:${accountId}`);
+export function createTwitterAnalyticsService({ accounts, cache, context }: TwitterAnalyticsDeps): TwitterAnalyticsService {
+    const { signal } = context;
+
+    async function tokenFor(userId: string, accountId: string): Promise<string> {
+        const account = await accounts.findForUser(accountId, userId);
+        if (!account || account.platform !== 'twitter') throw new NotFoundError('Twitter account not found');
+        if (!account.accessToken) throw new ValidationError('No access token stored - reconnect this Twitter account');
+        return account.accessToken;
+    }
+
+    return {
+        async analytics(userId, accountId) {
+            const accessToken = await tokenFor(userId, accountId);
+            const cached = await cache.getTwitter(userId, accountId);
+            if (cached) return cached;
+
+            const profile = await fetchTwitterProfile(accessToken, signal);
+            const tweets = await fetchTwitterTweets(profile.id, accessToken, signal);
+            const analytics = computeTwitterAnalytics(tweets, profile);
+            await cache.setTwitter(userId, accountId, analytics);
+            return analytics;
+        },
+
+        async tweet(userId, accountId, text) {
+            const result = await postTweet(text, await tokenFor(userId, accountId), signal);
+            return result.data?.id;
+        },
+    };
 }
 ```
 
-## Step 5: Create Route File
+Wire it in `backend/container.ts`: add `twitterAnalytics: TwitterAnalyticsService` to `Services` and `twitterAnalytics: createTwitterAnalyticsService({ accounts, cache, context })` to `createServices()`. Adding and refreshing accounts of the new platform goes in `AccountService` (`accountService.ts`) and a builder in `accountFactory.ts`, following the Reddit and Instagram branches.
+
+## Step 6: Add the Validator, Controller and Route Table
 
 ```ts
-// backend/routes/twitter.ts
-import { Hono } from 'hono';
-import { getAccountById } from '../lib/db.ts';
-import { getTwitterCache, setTwitterCache } from '../lib/cache.ts';
-import { getTwitterProfile, getTwitterTweets, computeTwitterAnalytics, postTweet } from '../services/twitter.ts';
-import type { AppEnv } from '../types/app.ts';
-import type { TweetPostResponse } from '../../shared/types/twitter.ts';
-
-interface TweetRequest {
-    text?: string;
+// backend/validators/twitterValidators.ts
+export function parseTweet(body: Fields): TweetRequest {
+    return { text: requiredString(body, 'text', 'Write the text of the tweet') };
 }
 
+// backend/controllers/twitterController.ts
+export const getTwitterAnalytics = controller.createHandlers(async c => {
+    const analytics = await servicesFor(c).twitterAnalytics.analytics(c.get('userId'), pathParam(c, 'id'));
+    return c.json(analytics satisfies TwitterAnalytics);
+});
+
+export const postTweetToAccount = controller.createHandlers(jsonBody(parseTweet), async c => {
+    const tweetId = await servicesFor(c).twitterAnalytics.tweet(c.get('userId'), pathParam(c, 'id'), c.req.valid('json').text);
+    return c.json({ success: true, tweetId } satisfies TweetPostResponse);
+});
+
+// backend/routes/twitterRoutes.ts
 const router = new Hono<AppEnv>();
 
-// Analytics
-router.get('/accounts/:id/twitter-analytics', async (c) => {
-    const id = c.req.param('id');
-    const userId = c.get('userId');
-    const supabase = c.get('supabase');
-    const redis = c.get('redis');
-    try {
-        const account = await getAccountById(supabase, id, userId);
-        if (!account || account.platform !== 'twitter' || !account.accessToken) return c.json({ error: 'Account not found' }, 404);
-
-        const cached = await getTwitterCache(redis, userId, id);
-        if (cached) return c.json(cached);
-
-        const profile = await getTwitterProfile(account.accessToken);
-        const tweets = await getTwitterTweets(profile.id, account.accessToken);
-        const analytics = computeTwitterAnalytics(tweets, profile);
-
-        await setTwitterCache(redis, userId, id, analytics);
-        return c.json(analytics);
-    } catch (err) {
-        console.error(`GET /accounts/${id}/twitter-analytics:`, (err as Error).message);
-        return c.json({ error: (err as Error).message }, 500);
-    }
-});
-
-// Post a tweet
-router.post('/accounts/:id/tweet', async (c) => {
-    const id = c.req.param('id');
-    const userId = c.get('userId');
-    const supabase = c.get('supabase');
-    const { text } = await c.req.json() as TweetRequest;
-    if (!text) return c.json({ error: 'Missing text' }, 400);
-    try {
-        const account = await getAccountById(supabase, id, userId);
-        if (!account || !account.accessToken) return c.json({ error: 'Account not found' }, 404);
-        const result = await postTweet(text, account.accessToken);
-        return c.json({ success: true, tweetId: result.data?.id } satisfies TweetPostResponse);
-    } catch (err) {
-        console.error(`POST /accounts/${id}/tweet:`, (err as Error).message);
-        return c.json({ error: (err as Error).message }, 500);
-    }
-});
+router.get('/accounts/:id/twitter-analytics', ...getTwitterAnalytics);
+router.post('/accounts/:id/tweet', ...postTweetToAccount);
 
 export default router;
 ```
 
-## Step 6: Mount in server.ts
+Add `twitterRoutes` to the list in `backend/routes/index.ts`. Add publishing and quota-spending routes to `PUBLISH_ROUTES` or `QUOTA_ROUTES` in `backend/lib/rateLimit/rules.ts` (see `docs/architecture/backend/RATE_LIMITING.md`). Put `TweetRequest` in `shared/types/twitter.ts` with the other shapes.
 
-```ts
-// backend/server.ts
-import twitterRouter from './routes/twitter.ts';
-api.route('/', twitterRouter);
-```
+## Step 7: Account Deletion
 
-Add publishing and quota-spending routes to `PUBLISH_ROUTES` or `QUOTA_ROUTES` in `backend/lib/rateLimit/rules.ts` (see `docs/architecture/backend/RATE_LIMITING.md`).
-
-## Step 7: Add Cache Invalidation on Account Delete
-
-In `backend/routes/accounts.ts`, add the cache delete alongside existing ones:
-
-```ts
-await deleteTwitterCache(redis, userId, id);
-```
+`AccountService.remove()` deletes the account row and calls `cache.deleteAllForAccount()`. Once Step 4 adds the new key there, nothing else changes.
 
 ## Step 8: Declare New Secrets
 
-Declare each secret in the `Env` interface in `backend/types/env.ts`, so `c.env.TWITTER_CLIENT_ID` type-checks. Use `?: string` for optional secrets and handle the missing case.
+Declare each secret in the `Env` interface in `backend/types/env.ts`, then read it into `AppConfig` in `backend/lib/config.ts` with `cleanSecret()`, so services receive a trimmed value. Use `?: string` for optional secrets; a service that needs a missing one throws `NotConfiguredError` (503).
 
 ```ts
 // backend/types/env.ts
@@ -344,14 +372,15 @@ postTweet: (id: string, text: string) => request<TweetPostResponse>(`/accounts/$
 ## Step 11: OAuth Flow (if applicable)
 
 If the platform uses OAuth:
-- Backend: add `GET /auth/{platform}/start` and `GET /auth/{platform}/callback` routes
+- Backend: add `GET /auth/{platform}/url` to the protected routes and `GET /auth/{platform}/callback` to `publicRoutes` in `backend/routes/index.ts` (with the `oauth` rate limit), following `instagramAuthController.ts` and `instagramConnectService.ts`
+- The callback is the one controller that catches errors: it must always redirect the browser back to the app
 - Use the HMAC-signed state pattern in `backend/lib/oauthState.ts` (see `docs/architecture/backend/CACHING.md` and `ADR-006` in `DECISIONS.md`)
 - Store tokens in `accounts.data` - never in a separate table
 - Delete cache on every token refresh
 
 ## Step 12: Verify
 
-Run `npm run typecheck`, `npm run lint` and `npm test` from the repository root. Add tests for the pure helpers (such as `computeTwitterAnalytics`) in `backend/tests/services/twitter.test.ts`.
+Run `npm run typecheck`, `npm run lint` and `npm test` from the repository root. Add tests for the pure helpers (such as `computeTwitterAnalytics`) in `backend/tests/services/twitter/twitterAnalytics.test.ts`, the API client against `fixtures/fakeFetch.ts` in `backend/tests/services/twitter/twitterApi.test.ts`, and the route table in `backend/tests/routes/twitterRoutes.test.ts`.
 
 ## Security Checklist
 

@@ -13,7 +13,8 @@ const BACKEND_VARS: [string, Need, boolean, string, string][] = [
   ['CLOUDINARY_CLOUD_NAME', 'publishing', false, 'Cloudinary dashboard', 'Where uploaded media goes.'],
   ['CLOUDINARY_UPLOAD_PRESET', 'publishing', false, 'Cloudinary, Settings, Upload, Upload presets (unsigned)', 'Lets browsers upload without the Cloudinary API secret.'],
   ['BACKEND_URL', 'instagram', false, 'Your Worker address, no trailing slash', 'Builds the Instagram redirect URI.'],
-  ['FRONTEND_URL', 'instagram', false, 'Your Pages address', 'Where members land after Instagram sign-in.'],
+  ['FRONTEND_URL', 'required', false, 'Your Pages address', 'The only site the backend accepts requests from, and where members land after Instagram sign-in.'],
+  ['ALLOWED_ORIGINS', 'optional', false, 'Other addresses the site is served from, comma-separated, for example https://twiligent.pages.dev', 'Lets the site call the backend from more than one address.'],
   ['UPSTASH_REDIS_REST_URL', 'optional', false, 'Upstash database, REST API', 'Cache address.'],
   ['UPSTASH_REDIS_REST_TOKEN', 'optional', true, 'Upstash database, REST API', 'Cache password.'],
 ];
@@ -45,6 +46,7 @@ export default function Environment() {
 
       <H2>Backend (Cloudflare Worker)</H2>
       <P>Set each one with <Code>npx wrangler secret put NAME</Code> in <Code>backend/</Code>. For local development, put them in <Code>backend/.dev.vars</Code>, which Git ignores. See <A to="/docs/self-host/deploy-backend">Deploy the backend</A>.</P>
+      <P>The backend only answers browsers on <Code>FRONTEND_URL</Code> and the addresses in <Code>ALLOWED_ORIGINS</Code>. If the site loads but every page fails to load data, check that <Code>FRONTEND_URL</Code> matches the address in the browser exactly, including <Code>https://</Code>. A backend running on your own computer also accepts the local website on port 5173.</P>
       <Table
         head={['Name', 'Needed', 'Where to get it', 'Used for']}
         rows={BACKEND_VARS.map(([name, need, secret, from, use]) => [

@@ -23,20 +23,13 @@ Request
 | Reddit analytics | `reddit:{userId}:{accountId}` | 6 hours | |
 | OAuth state | none (HMAC-signed token, see `lib/oauthState.ts`) | 10 minutes | Security-critical - do not extend |
 
-Cache invalidation happens on:
-- Account deletion (explicit `redis.del()`)
-- Token refresh (explicit `redis.del()`)
-- Manual "Refresh" action in the UI (calls the API which skips cache)
+Cache entries change on:
+- Expiry: every analytics key is written with a 6 hour TTL (`ANALYTICS_TTL_SECONDS` in `repositories/analyticsCacheRepository.ts`)
+- Account deletion: `cache.deleteAllForAccount()` removes the account's three keys
+- Opening YouTube or Instagram analytics: those load live and overwrite the entry
+- A cache version bump: an entry with an old `version` reads as a miss
 
-There is no time-based expiration for analytics caches yet (known issue). Until TTLs are set, users see stale analytics until they explicitly refresh.
-
-### Adding TTLs
-
-When fixing the known TTL issue, use the Upstash Redis `EX` option:
-
-```ts
-await redis.set(key, data, { ex: 3600 }); // expire after 1 hour
-```
+All Redis access goes through `analyticsCacheRepository.ts`, which applies the TTL, the version check and the failure cooldown in one place.
 
 ## Rate Limiting Cost
 

@@ -11,16 +11,19 @@ Every `/api` request is rate limited inside the Worker. Cloudflare does not limi
 ```
 Request
   -> CORS (exposes the rate limit headers to the browser)
+  -> request id and request context, security headers
   -> client injection (supabase, redis, rateLimitRedis)
   -> rateLimit(ip)         every /api request, keyed by client IP, before authentication
   -> requireAuth           protected routes only
   -> rateLimit(user)       every protected request, keyed by user id
   -> rateLimit(quota)      routes that spend platform API quota, keyed by user id
   -> rateLimit(publish)    Instagram container and publish routes, keyed by user id
-  -> route handler
+  -> route table and controller
 ```
 
-The public OAuth callback (`GET /api/auth/instagram/callback`) also passes `rateLimit(oauth)`, keyed by IP.
+The order is set in `backend/app.ts`; see `REQUEST_PIPELINE.md`.
+
+The public OAuth callback (`GET /api/auth/instagram/callback`) also passes `rateLimit(oauth)`, keyed by IP; it is registered in `routes/index.ts`.
 
 ## Rules
 
@@ -65,7 +68,7 @@ Bucket levels are rounded to a millionth after each step, so the saved value sur
 Rate limiting never fails a request because of its own storage:
 
 - **No Redis configured:** every rule counts in memory.
-- **Redis fails or times out:** the limiter uses a separate client (`getRateLimitRedis()` in `lib/redis.ts`) that does not retry and gives up after 1 second. On a failure the isolate logs once and counts in memory for 30 seconds before it tries Redis again, so an outage costs at most one second per isolate every 30 seconds.
+- **Redis fails or times out:** the limiter uses a separate client (`getRateLimitRedis()` in `database/redis.ts`) that does not retry and gives up after 1 second. On a failure the isolate logs once and counts in memory for 30 seconds before it tries Redis again, so an outage costs at most one second per isolate every 30 seconds.
 - **Deny cache:** when Redis rejects a key, the isolate remembers the retry time and rejects that key locally until then. A client flooding a limit costs no Redis commands.
 
 ## Responses
@@ -86,10 +89,10 @@ RateLimit-Limit: 300
 RateLimit-Remaining: 0
 RateLimit-Reset: 12
 
-{ "success": false, "error": "Too many requests from your network - try again in 12 seconds.", "retryAfter": 12 }
+{ "success": false, "code": "RATE_LIMITED", "message": "Too many requests from your network - try again in 12 seconds.", "requestId": "3f2a...", "retryAfter": 12 }
 ```
 
-CORS exposes the four headers. The frontend needs no special handling: `request()` in `services/api.ts` throws the `error` text, and pages show it in a toast.
+The body is the standard error body every failure gets (built by `errorBody()` in `middleware/errorHandler.ts`), plus `retryAfter` in seconds. CORS exposes the four headers. The frontend needs no special handling: `request()` in `services/api.ts` throws the `message` text, and pages show it in a toast.
 
 ## Redis Keys
 
