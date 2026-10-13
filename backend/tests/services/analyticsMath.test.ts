@@ -55,7 +55,7 @@ describe('analyticsMath', () => {
         assert.equal(bestToAverageRatio(50, 12), 4.2);
         assert.equal(bestToAverageRatio(50, 0), 0);
         const items = [{ id: 'a', value: 1 }, { id: 'b', value: 3 }, { id: 'c', value: 3 }];
-        assert.equal(pickHighest(items, 'value').id, 'b');
+        assert.equal(pickHighest(items, 'value')?.id, 'b');
         assert.equal(pickHighest([], 'value'), undefined);
     });
 

@@ -7,6 +7,29 @@ export function sumOf<T>(items: T[], pickValue: (item: T) => number): number {
     return items.reduce((total, item) => total + pickValue(item), 0);
 }
 
+// a hidden count (null) is left out: not added, and its views are not in the rate's base
+export interface ReportedCount {
+    total: number;
+    items: number;
+    views: number;
+}
+
+export function reportedCount<T extends { viewCount: number }>(items: T[], pick: (item: T) => number | null | undefined): ReportedCount {
+    const counted: ReportedCount = { total: 0, items: 0, views: 0 };
+    for (const item of items) {
+        const value = pick(item);
+        if (value === null || value === undefined) continue;
+        counted.total += value;
+        counted.items++;
+        counted.views += item.viewCount;
+    }
+    return counted;
+}
+
+export function percentOfReportedViews(count: ReportedCount): number {
+    return count.views > 0 ? (count.total / count.views) * 100 : 0;
+}
+
 export function roundedAverage(total: number, count: number): number {
     return count > 0 ? Math.round(total / count) : 0;
 }
@@ -50,8 +73,8 @@ export function bestToAverageRatio(best: number, average: number): number {
     return average > 0 ? parseFloat((best / average).toFixed(1)) : 0;
 }
 
-// undefined for an empty array
-export function pickHighest<T extends Record<K, number>, K extends keyof T>(items: T[], field: K): T {
+export function pickHighest<T extends Record<K, number>, K extends keyof T>(items: T[], field: K): T | undefined {
+    if (items.length === 0) return undefined;
     return items.reduce((best, item) => item[field] > best[field] ? item : best, items[0]);
 }
 

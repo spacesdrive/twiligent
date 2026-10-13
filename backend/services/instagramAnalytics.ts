@@ -102,7 +102,7 @@ export function computeInstagramAnalytics(profile: AnalyticsProfile, media: Inst
 
     const engagement = summarizeEngagement(profile, media);
     const contentTypeStats = buildContentTypeStats(media);
-    const dates = media.map(item => new Date(item.timestamp)).filter(date => !isNaN(date as unknown as number));
+    const dates = media.map(item => new Date(item.timestamp)).filter(date => !Number.isNaN(date.getTime()));
     const topPosts = rankTopPosts(media);
     const bestEngagement = topPosts[0] ? topPosts[0].engagement : 0;
 

@@ -12,11 +12,11 @@ test('watch links point at YouTube', () => {
 });
 
 test('channel meta skips an unknown country and a missing handle', () => {
-  const meta = channelMeta({ country: 'Unknown', channelAgeYears: 3 as unknown as string, publishedAt: '2023-01-05T12:00:00Z' });
+  const meta = channelMeta({ country: 'Unknown', channelAgeYears: '3.0', publishedAt: '2023-01-05T12:00:00Z' });
   assert.equal(meta.length, 2);
-  assert.equal(meta[0], '3 years old');
+  assert.equal(meta[0], '3.0 years old');
   assert.ok(meta[1].startsWith('Since '));
-  assert.equal(channelMeta({ customUrl: '@dusk', country: 'IN', channelAgeYears: 1 as unknown as string })[1], 'IN');
+  assert.equal(channelMeta({ customUrl: '@dusk', country: 'IN', channelAgeYears: '1.0' })[1], 'IN');
 });
 
 test('publish distributions become chart rows', () => {
@@ -57,7 +57,7 @@ test('view ranges, uploads and comparisons', () => {
   assert.deepEqual(viewRangeDataOf({ ranges: ['0-1K', '1K+'], counts: [3] }), [{ range: '0-1K', count: 3 }, { range: '1K+', count: 0 }]);
   assert.deepEqual(viewRangeDataOf(undefined), []);
   assert.deepEqual(uploadsByMonthOf([{ month: 'Jan', count: 2, value: 9 }]), [{ month: 'Jan', uploads: 2 }]);
-  assert.equal(shortsComparisonOf({ avgShortViews: 1, avgRegularViews: 2 })[0].Regular, 2);
+  assert.deepEqual(shortsComparisonOf({ avgShortViews: 1, avgRegularViews: 2, avgShortLikes: 3, avgRegularLikes: 4 })[1], { metric: 'Average likes', Shorts: 3, Regular: 4 });
 });
 
 test('rates and ratios guard against zero', () => {

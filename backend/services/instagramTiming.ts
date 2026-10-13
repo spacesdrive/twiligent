@@ -56,7 +56,7 @@ function buildMonthlyBreakdown(media: InstagramMedia[]): InstagramMonthStats[] {
     const months: Record<string, MonthTotals> = {};
     media.forEach(item => {
         const date = new Date(item.timestamp);
-        if (isNaN(date as unknown as number)) return;
+        if (Number.isNaN(date.getTime())) return;
         const key = monthKey(date);
         if (!months[key]) months[key] = { posts: 0, likes: 0, comments: 0 };
         months[key].posts++;
@@ -82,7 +82,7 @@ export function summarizeTiming(dates: Date[], media: InstagramMedia[]): Instagr
     const bestHour = pickHighest(postsByHour, 'avgEngagement');
     return {
         postsByDayOfWeek, bestPostingDay: bestDay?.day || '',
-        postsByHour, bestPostingHour: bestHour?.posts > 0 ? bestHour.label : '',
+        postsByHour, bestPostingHour: bestHour && bestHour.posts > 0 ? bestHour.label : '',
         engagementTimeline: monthlyBreakdown, monthlyBreakdown,
     };
 }

@@ -28,7 +28,7 @@
         },
         {
             "username": "empty",
-            "totalKarma": "[NaN]",
+            "totalKarma": 0,
             "postKarma": 0,
             "commentKarma": 0,
             "awardeeKarma": 0,

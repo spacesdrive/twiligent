@@ -247,11 +247,11 @@
         "totalLikes": 210,
         "totalComments": 31,
         "avgViews": 5400,
-        "avgLikes": 105,
-        "avgComments": 16,
+        "avgLikes": 210,
+        "avgComments": 31,
         "medianViews": 5400,
         "totalEngagement": 241,
-        "overallEngagementRate": "2.23",
+        "overallEngagementRate": "4.46",
         "avgDurationSeconds": 276,
         "avgDurationFormatted": "4m 36s",
         "totalDurationSeconds": 552,
@@ -518,13 +518,13 @@
         "engagementTrend": [
             {
                 "month": "2026-08",
-                "value": "2.23"
+                "value": "4.46"
             }
         ],
         "likeRateTrend": [
             {
                 "month": "2026-08",
-                "value": "1.94"
+                "value": "3.89"
             }
         ]
     },

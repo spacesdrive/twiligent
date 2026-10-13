@@ -134,7 +134,7 @@ export interface VideoAnalytics extends YouTubeMonthlyTrends {
     avgDurationFormatted: string;
     totalDurationSeconds: number;
     totalDurationFormatted: string;
-    estimatedTotalWatchTimeHours?: number;
+    estimatedTotalWatchTimeHours: number;
     bestByViews: YouTubeVideoSummary | null;
     bestByLikes: YouTubeVideoSummary | null;
     bestByComments: YouTubeVideoSummary | null;
@@ -150,18 +150,18 @@ export interface VideoAnalytics extends YouTubeMonthlyTrends {
     regularCount: number;
     avgShortViews: number;
     avgRegularViews: number;
-    avgShortLikes?: number;
-    avgRegularLikes?: number;
+    avgShortLikes: number;
+    avgRegularLikes: number;
     hdCount: number;
     sdCount: number;
-    hdPercentage: FormattedRate;
+    hdPercentage: string;
     captionCount: number;
-    captionPercentage: FormattedRate;
+    captionPercentage: string;
     licensedCount: number;
-    licensedPercentage: FormattedRate;
+    licensedPercentage: string;
     madeForKidsCount: number;
     embeddableCount: number;
-    embeddablePercentage?: string;
+    embeddablePercentage: string;
     // keyed by day name and by UTC hour
     publishDayDistribution: Record<string, number>;
     publishHourDistribution: Record<string, number>;
@@ -175,8 +175,8 @@ export interface VideoAnalytics extends YouTubeMonthlyTrends {
     videosLast30Days: number;
     videosLast90Days: number;
     videosLast365Days: number;
-    uploadFrequencyPerWeek: FormattedRate;
-    uploadFrequencyPerMonth: FormattedRate;
+    uploadFrequencyPerWeek: string;
+    uploadFrequencyPerMonth: string;
     consistencyScore: number;
     viralityScore: number;
     viewsDistribution: YouTubeViewsDistribution;

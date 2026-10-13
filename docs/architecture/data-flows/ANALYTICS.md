@@ -63,6 +63,25 @@ Typed as `VideoAnalytics` in `shared/types/youtube.ts`.
 }
 ```
 
+### Hidden like and comment counts
+
+YouTube hides a video's like count when the owner turns likes off, and its comment count when comments are off. Since cache version 2 these arrive as `null`, and the analytics never count them as zero:
+
+| Metric | Rule |
+|---|---|
+| `totalLikes`, `totalComments`, `totalEngagement` | Sum of the reported counts; a hidden count adds nothing |
+| `avgLikes`, `avgComments`, `avgShortLikes`, `avgRegularLikes` | Divided by the number of videos that report the count, not by every video |
+| `overallEngagementRate`, `engagementTrend` | Likes as a percentage of the views of videos that report likes, plus comments as a percentage of the views of videos that report comments. With every count reported this equals (likes + comments) / views |
+| `likeRateTrend` | Likes as a percentage of the views of videos that report likes, per month |
+| A video's own `engagementRate` | Counts what that video reports |
+| `bestByLikes`, `top10ByLikes`, and the comment equivalents | Videos with a hidden count sort after every reported count, including zero |
+
+The same rule applies to Instagram views (`viewCount: null`), which are shown as `-`.
+
+### Empty channels
+
+A channel with no public videos returns the same fields and formats as a full result: zero counts, `null` rankings, `'0m 0s'` durations and `'0.0'` percentages and upload frequencies.
+
 ## Instagram Analytics Flow
 
 ```

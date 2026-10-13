@@ -1,4 +1,4 @@
-import { DAY_NAMES, DAY_MS, monthKey } from './analyticsMath.ts';
+import { DAY_NAMES, DAY_MS, monthKey, reportedCount, percentOfReportedViews } from './analyticsMath.ts';
 import { formatCompact } from './youtubeFormat.ts';
 import type {
     VideoAnalytics, YouTubeVideo, YouTubeTagCount, YouTubeViewsDistribution, YouTubeMonthlyTrends, FormattedRate,
@@ -10,13 +10,6 @@ export type YouTubeRecentUploads = Pick<VideoAnalytics, 'videosLast7Days' | 'vid
 export interface YouTubeUploadFrequency {
     uploadFrequencyPerWeek: string;
     uploadFrequencyPerMonth: string;
-}
-
-interface MonthTotals {
-    views: number;
-    likes: number;
-    comments: number;
-    count: number;
 }
 
 const WEEK_MS = 7 * DAY_MS;
@@ -72,7 +65,7 @@ export function buildTagFrequency(videos: YouTubeVideo[]): YouTubeTagCount[] {
 
 // strict < unlike instagram and reddit (inclusive), to match stored analytics
 export function countRecentUploads(videos: YouTubeVideo[], now: Date): YouTubeRecentUploads {
-    const uploadedWithin = (days: number) => videos.filter(video => ((now as unknown as number) - (new Date(video.publishedAt) as unknown as number)) < days * DAY_MS).length;
+    const uploadedWithin = (days: number) => videos.filter(video => (now.getTime() - new Date(video.publishedAt).getTime()) < days * DAY_MS).length;
     return {
         videosLast7Days: uploadedWithin(7),
         videosLast30Days: uploadedWithin(30),
@@ -83,7 +76,7 @@ export function countRecentUploads(videos: YouTubeVideo[], now: Date): YouTubeRe
 
 export function buildUploadFrequency(videoCount: number, oldestVideo: YouTubeVideo | undefined, now: Date): YouTubeUploadFrequency {
     const oldestDate = new Date(oldestVideo?.publishedAt || now);
-    const totalWeeks = Math.max(1, ((now as unknown as number) - (oldestDate as unknown as number)) / WEEK_MS);
+    const totalWeeks = Math.max(1, (now.getTime() - oldestDate.getTime()) / WEEK_MS);
     const totalMonths = Math.max(1, totalWeeks / 4.33);
     return {
         uploadFrequencyPerWeek: (videoCount / totalWeeks).toFixed(1),
@@ -94,7 +87,7 @@ export function buildUploadFrequency(videoCount: number, oldestVideo: YouTubeVid
 // scores how evenly uploads spread across the weeks that have any
 export function weeklyConsistencyScore(videos: YouTubeVideo[], now: Date): number {
     const weeklyUploads = videos.reduce<Record<number, number>>((weeks, video) => {
-        const weekNumber = Math.floor(((now as unknown as number) - (new Date(video.publishedAt) as unknown as number)) / WEEK_MS);
+        const weekNumber = Math.floor((now.getTime() - new Date(video.publishedAt).getTime()) / WEEK_MS);
         weeks[weekNumber] = (weeks[weekNumber] || 0) + 1;
         return weeks;
     }, {});
@@ -120,29 +113,33 @@ export function buildViewsDistribution(videos: YouTubeVideo[], maxViews: number)
     return { ranges, counts };
 }
 
-function percentOfViews(count: number, views: number): FormattedRate {
-    return views > 0 ? ((count / views) * 100).toFixed(2) : 0;
+// hidden counts are left out: each rate's base is the views of the videos that report that count
+export function engagementRateOf(videos: YouTubeVideo[]): FormattedRate {
+    const likes = reportedCount(videos, video => video.likeCount);
+    const comments = reportedCount(videos, video => video.commentCount);
+    if (likes.views === 0 && comments.views === 0) return 0;
+    return (percentOfReportedViews(likes) + percentOfReportedViews(comments)).toFixed(2);
+}
+
+function likeRateOf(videos: YouTubeVideo[]): FormattedRate {
+    const likes = reportedCount(videos, video => video.likeCount);
+    return likes.views > 0 ? percentOfReportedViews(likes).toFixed(2) : 0;
 }
 
 export function buildMonthlyTrends(videos: YouTubeVideo[]): YouTubeMonthlyTrends {
-    const months: Record<string, MonthTotals> = {};
+    const months: Record<string, YouTubeVideo[]> = {};
     videos.forEach(video => {
         const key = monthKey(new Date(video.publishedAt));
-        if (!months[key]) months[key] = { views: 0, likes: 0, comments: 0, count: 0 };
-        months[key].views += video.viewCount;
-        months[key].likes += video.likeCount as number;
-        months[key].comments += video.commentCount as number;
-        months[key].count++;
+        (months[key] ??= []).push(video);
     });
     const sortedMonths = Object.keys(months).sort();
     return {
-        viewsTrend: sortedMonths.map(month => ({ month, value: months[month].views, count: months[month].count })),
-        engagementTrend: sortedMonths.map(month => ({
+        viewsTrend: sortedMonths.map(month => ({
             month,
-            value: months[month].views > 0
-                ? ((months[month].likes + months[month].comments) / months[month].views * 100).toFixed(2)
-                : 0,
+            value: months[month].reduce((total, video) => total + video.viewCount, 0),
+            count: months[month].length,
         })),
-        likeRateTrend: sortedMonths.map(month => ({ month, value: percentOfViews(months[month].likes, months[month].views) })),
+        engagementTrend: sortedMonths.map(month => ({ month, value: engagementRateOf(months[month]) })),
+        likeRateTrend: sortedMonths.map(month => ({ month, value: likeRateOf(months[month]) })),
     };
 }

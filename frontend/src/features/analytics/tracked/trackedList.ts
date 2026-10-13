@@ -50,7 +50,7 @@ function compareTracked(sort: string, first: TrackedContentItem, second: Tracked
   if (sort === 'engagement-desc') return trackedEngagement(second) - trackedEngagement(first);
   if (sort === 'comments-desc') return trackedComments(second) - trackedComments(first);
   if (sort === 'views-desc') return trackedViews(second) - trackedViews(first);
-  return (new Date(second.createdAt || 0) as unknown as number) - (new Date(first.createdAt || 0) as unknown as number);
+  return new Date(second.createdAt || 0).getTime() - new Date(first.createdAt || 0).getTime();
 }
 
 export function filterAndSortTracked(items: TrackedContentItem[], { typeFilter, categoryFilter, query, sort }: TrackedFilterOptions): TrackedContentItem[] {

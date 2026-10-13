@@ -36,7 +36,7 @@ export function scheduledStatusChips(posts: readonly ScheduleTiming[]): StatusCh
 export function filterScheduledPosts<T extends ScheduleTiming>(posts: T[], statusFilter: StatusFilter): T[] {
   return posts
     .filter(post => statusFilter === 'all' || post.status === statusFilter)
-    .sort((first, second) => (new Date(second.scheduledAt) as unknown as number) - (new Date(first.scheduledAt) as unknown as number));
+    .sort((first, second) => new Date(second.scheduledAt).getTime() - new Date(first.scheduledAt).getTime());
 }
 
 export function overduePostsOf<T extends ScheduleTiming>(posts: T[], now: number = Date.now()): T[] {

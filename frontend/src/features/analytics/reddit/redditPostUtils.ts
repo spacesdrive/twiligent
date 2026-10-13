@@ -41,8 +41,8 @@ export function filterAndSortRedditPosts<T extends RedditPostRow>(posts: T[], { 
     if (sort === 'score-desc')    return b.score - a.score;
     if (sort === 'score-asc')     return a.score - b.score;
     if (sort === 'comments-desc') return b.numComments - a.numComments;
-    if (sort === 'date-desc')     return (new Date(b.createdAt) as unknown as number) - (new Date(a.createdAt) as unknown as number);
-    if (sort === 'date-asc')      return (new Date(a.createdAt) as unknown as number) - (new Date(b.createdAt) as unknown as number);
+    if (sort === 'date-desc')     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    if (sort === 'date-asc')      return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     return 0;
   });
 }

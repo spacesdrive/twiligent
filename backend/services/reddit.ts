@@ -15,8 +15,8 @@ interface RedditApiError {
 interface RedditApiUser {
     name: string;
     total_karma?: number;
-    link_karma: number;
-    comment_karma: number;
+    link_karma?: number;
+    comment_karma?: number;
     awardee_karma?: number;
     awarder_karma?: number;
     icon_img?: string;
@@ -82,7 +82,7 @@ export async function fetchRedditProfile(username: string, cookie: RedditCookie)
     const user = data.data;
     return {
         username: user.name,
-        totalKarma: user.total_karma ?? (user.link_karma + user.comment_karma),
+        totalKarma: user.total_karma ?? ((user.link_karma ?? 0) + (user.comment_karma ?? 0)),
         postKarma: user.link_karma ?? 0,
         commentKarma: user.comment_karma ?? 0,
         awardeeKarma: user.awardee_karma ?? 0,

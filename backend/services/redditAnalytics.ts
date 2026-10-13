@@ -105,7 +105,7 @@ function summarizeTiming(dates: Date[], posts: RedditPost[]): TimingSummary {
     const bestHour = pickHighest(postsByHour, 'avgScore');
     return {
         postsByDayOfWeek, bestPostingDay: bestDay?.day ?? '',
-        postsByHour, bestPostingHour: bestHour?.posts > 0 ? bestHour.label : '',
+        postsByHour, bestPostingHour: bestHour && bestHour.posts > 0 ? bestHour.label : '',
     };
 }
 
@@ -120,7 +120,7 @@ function buildMonthlyBreakdown(posts: RedditPost[]): RedditMonthStats[] {
     posts.forEach(post => {
         if (!post.createdAt) return;
         const date = new Date(post.createdAt);
-        if (isNaN(date as unknown as number)) return;
+        if (Number.isNaN(date.getTime())) return;
         const key = monthKey(date);
         if (!months[key]) months[key] = { posts: 0, score: 0, comments: 0 };
         months[key].posts++;

@@ -4,11 +4,11 @@
     "totalLikes": 11590,
     "totalComments": 1575,
     "avgViews": 23305,
-    "avgLikes": 322,
-    "avgComments": 44,
+    "avgLikes": 414,
+    "avgComments": 53,
     "medianViews": 22745,
     "totalEngagement": 13165,
-    "overallEngagementRate": "1.57",
+    "overallEngagementRate": "2.05",
     "avgDurationSeconds": 5379,
     "avgDurationFormatted": "1h 29m",
     "totalDurationSeconds": 193650,
@@ -544,7 +544,7 @@
     "avgShortViews": 0,
     "avgRegularViews": 23971,
     "avgShortLikes": 0,
-    "avgRegularLikes": 331,
+    "avgRegularLikes": 414,
     "hdCount": 36,
     "sdCount": 0,
     "hdPercentage": "100.0",
@@ -800,23 +800,23 @@
     "engagementTrend": [
         {
             "month": "2025-10",
-            "value": "1.09"
+            "value": "1.96"
         },
         {
             "month": "2025-11",
-            "value": "1.09"
+            "value": "1.52"
         },
         {
             "month": "2025-12",
-            "value": "6.44"
+            "value": "6.87"
         },
         {
             "month": "2026-01",
-            "value": "1.39"
+            "value": "2.20"
         },
         {
             "month": "2026-02",
-            "value": "2.98"
+            "value": "3.68"
         },
         {
             "month": "2026-03",
@@ -824,19 +824,19 @@
         },
         {
             "month": "2026-04",
-            "value": "2.83"
+            "value": "6.45"
         },
         {
             "month": "2026-05",
-            "value": "0.73"
+            "value": "0.96"
         },
         {
             "month": "2026-06",
-            "value": "1.98"
+            "value": "2.00"
         },
         {
             "month": "2026-07",
-            "value": "0.30"
+            "value": "0.43"
         },
         {
             "month": "2026-08",
@@ -846,11 +846,11 @@
     "likeRateTrend": [
         {
             "month": "2025-10",
-            "value": "0.60"
+            "value": "1.09"
         },
         {
             "month": "2025-11",
-            "value": "0.85"
+            "value": "1.28"
         },
         {
             "month": "2025-12",
@@ -858,11 +858,11 @@
         },
         {
             "month": "2026-01",
-            "value": "1.21"
+            "value": "2.02"
         },
         {
             "month": "2026-02",
-            "value": "2.73"
+            "value": "3.29"
         },
         {
             "month": "2026-03",
@@ -870,11 +870,11 @@
         },
         {
             "month": "2026-04",
-            "value": "2.57"
+            "value": "6.06"
         },
         {
             "month": "2026-05",
-            "value": "0.64"
+            "value": "0.87"
         },
         {
             "month": "2026-06",
@@ -882,7 +882,7 @@
         },
         {
             "month": "2026-07",
-            "value": "0.26"
+            "value": "0.39"
         },
         {
             "month": "2026-08",

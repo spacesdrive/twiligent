@@ -1,8 +1,8 @@
-import { DAY_MS, sumOf, roundedAverage, medianOf } from './analyticsMath.ts';
+import { DAY_MS, sumOf, roundedAverage, medianOf, reportedCount } from './analyticsMath.ts';
 import { parseDuration, formatDuration, formatVideoSummary } from './youtubeFormat.ts';
 import {
     buildPublishTiming, buildCategoryDistribution, buildTagFrequency, countRecentUploads,
-    buildUploadFrequency, weeklyConsistencyScore, buildViewsDistribution, buildMonthlyTrends,
+    buildUploadFrequency, weeklyConsistencyScore, buildViewsDistribution, buildMonthlyTrends, engagementRateOf,
 } from './youtubeTrends.ts';
 import type { VideoAnalytics, YouTubeVideo, YouTubeDurationDistribution } from '../../shared/types/youtube.ts';
 
@@ -54,30 +54,32 @@ interface FlagSummary {
 // shorts are judged by duration alone: any video up to 60 seconds counts
 const SHORT_MAX_SECONDS = 60;
 
+// the same fields and formats as a full result, so the client never meets a different type
 function emptyVideoAnalytics(): VideoAnalytics {
     return {
         totalVideos: 0, totalViews: 0, totalLikes: 0, totalComments: 0,
         avgViews: 0, avgLikes: 0, avgComments: 0, medianViews: 0,
         totalEngagement: 0, overallEngagementRate: 0,
-        avgDurationSeconds: 0, avgDurationFormatted: '0:00',
-        totalDurationSeconds: 0, totalDurationFormatted: '0:00',
+        avgDurationSeconds: 0, avgDurationFormatted: formatDuration(0),
+        totalDurationSeconds: 0, totalDurationFormatted: formatDuration(0),
+        estimatedTotalWatchTimeHours: 0,
         bestByViews: null, bestByLikes: null, bestByComments: null,
         bestByEngagement: null, worstByViews: null,
         mostRecent: null, oldest: null,
         top10ByViews: [], top10ByLikes: [], top10ByComments: [], top10ByEngagement: [],
         shortsCount: 0, regularCount: 0,
-        avgShortViews: 0, avgRegularViews: 0,
-        hdCount: 0, sdCount: 0, hdPercentage: 0,
-        captionCount: 0, captionPercentage: 0,
-        licensedCount: 0, licensedPercentage: 0,
-        madeForKidsCount: 0, embeddableCount: 0,
+        avgShortViews: 0, avgRegularViews: 0, avgShortLikes: 0, avgRegularLikes: 0,
+        hdCount: 0, sdCount: 0, hdPercentage: percentOf(0, 0),
+        captionCount: 0, captionPercentage: percentOf(0, 0),
+        licensedCount: 0, licensedPercentage: percentOf(0, 0),
+        madeForKidsCount: 0, embeddableCount: 0, embeddablePercentage: percentOf(0, 0),
         publishDayDistribution: {}, publishHourDistribution: {},
         peakPublishDay: '', peakPublishHour: 0,
         durationDistribution: { short: 0, medium: 0, long: 0, veryLong: 0 },
         categoryDistribution: {},
         tagFrequency: [],
         videosLast7Days: 0, videosLast30Days: 0, videosLast90Days: 0, videosLast365Days: 0,
-        uploadFrequencyPerWeek: 0, uploadFrequencyPerMonth: 0,
+        uploadFrequencyPerWeek: '0.0', uploadFrequencyPerMonth: '0.0',
         consistencyScore: 0, viralityScore: 0,
         viewsDistribution: { ranges: [], counts: [] },
         engagementTrend: [], viewsTrend: [], likeRateTrend: [],
@@ -88,40 +90,53 @@ function rateOfViews(count: number, video: YouTubeVideo): number {
     return video.viewCount > 0 ? (count / video.viewCount) * 100 : 0;
 }
 
-// hidden counts are null, which adds, subtracts and divides as zero
+// a video's own rates count what it reports; a hidden count adds nothing
 function withEngagementRates(video: YouTubeVideo, now: Date): EnrichedVideo {
+    const likes = video.likeCount ?? 0;
+    const comments = video.commentCount ?? 0;
     return {
         ...video,
-        engagementRate: rateOfViews((video.likeCount as number) + (video.commentCount as number), video),
-        likeRate: rateOfViews(video.likeCount as number, video),
-        commentRate: rateOfViews(video.commentCount as number, video),
+        engagementRate: rateOfViews(likes + comments, video),
+        likeRate: rateOfViews(likes, video),
+        commentRate: rateOfViews(comments, video),
         durationSeconds: parseDuration(video.duration),
-        daysSinceUpload: Math.max(1, Math.floor(((now as unknown as number) - (new Date(video.publishedAt) as unknown as number)) / DAY_MS)),
+        daysSinceUpload: Math.max(1, Math.floor((now.getTime() - new Date(video.publishedAt).getTime()) / DAY_MS)),
     };
+}
+
+// hidden counts sort after every reported count, zero included
+function byReportedCount(pick: (video: YouTubeVideo) => number | null) {
+    return (first: YouTubeVideo, second: YouTubeVideo) => (pick(second) ?? -1) - (pick(first) ?? -1);
 }
 
 function sortVideos(videos: EnrichedVideo[]): SortedVideos {
     return {
         byViews: [...videos].sort((first, second) => second.viewCount - first.viewCount),
-        byLikes: [...videos].sort((first, second) => (second.likeCount as number) - (first.likeCount as number)),
-        byComments: [...videos].sort((first, second) => (second.commentCount as number) - (first.commentCount as number)),
-        byDate: [...videos].sort((first, second) => (new Date(second.publishedAt) as unknown as number) - (new Date(first.publishedAt) as unknown as number)),
+        byLikes: [...videos].sort(byReportedCount(video => video.likeCount)),
+        byComments: [...videos].sort(byReportedCount(video => video.commentCount)),
+        byDate: [...videos].sort((first, second) => new Date(second.publishedAt).getTime() - new Date(first.publishedAt).getTime()),
         byEngagement: [...videos].sort((first, second) => second.engagementRate - first.engagementRate),
     };
 }
 
+function reportedAverage(videos: YouTubeVideo[], pick: (video: YouTubeVideo) => number | null): number {
+    const count = reportedCount(videos, pick);
+    return roundedAverage(count.total, count.items);
+}
+
+// averages and rates use only the videos that report a count, so hidden counts never pull them down
 function summarizeTotals(videos: YouTubeVideo[]): VideoTotals {
     const totalViews = sumOf(videos, video => video.viewCount);
-    const totalLikes = sumOf(videos, video => video.likeCount as number);
-    const totalComments = sumOf(videos, video => video.commentCount as number);
+    const totalLikes = sumOf(videos, video => video.likeCount ?? 0);
+    const totalComments = sumOf(videos, video => video.commentCount ?? 0);
     return {
         totalViews, totalLikes, totalComments,
         avgViews: Math.round(totalViews / videos.length),
-        avgLikes: Math.round(totalLikes / videos.length),
-        avgComments: Math.round(totalComments / videos.length),
+        avgLikes: reportedAverage(videos, video => video.likeCount),
+        avgComments: reportedAverage(videos, video => video.commentCount),
         medianViews: medianOf(videos.map(video => video.viewCount)),
         totalEngagement: totalLikes + totalComments,
-        overallEngagementRate: totalViews > 0 ? ((totalLikes + totalComments) / totalViews * 100).toFixed(2) : 0,
+        overallEngagementRate: engagementRateOf(videos),
     };
 }
 
@@ -161,13 +176,13 @@ function summarizeShorts(videos: EnrichedVideo[]): ShortsSummary {
         regularCount: regular.length,
         avgShortViews: roundedAverage(sumOf(shorts, video => video.viewCount), shorts.length),
         avgRegularViews: roundedAverage(sumOf(regular, video => video.viewCount), regular.length),
-        avgShortLikes: roundedAverage(sumOf(shorts, video => video.likeCount as number), shorts.length),
-        avgRegularLikes: roundedAverage(sumOf(regular, video => video.likeCount as number), regular.length),
+        avgShortLikes: reportedAverage(shorts, video => video.likeCount),
+        avgRegularLikes: reportedAverage(regular, video => video.likeCount),
     };
 }
 
 function percentOf(count: number, total: number): string {
-    return ((count / total) * 100).toFixed(1);
+    return (total > 0 ? (count / total) * 100 : 0).toFixed(1);
 }
 
 function summarizeFlags(videos: YouTubeVideo[]): FlagSummary {

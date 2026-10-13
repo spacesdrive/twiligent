@@ -4,11 +4,11 @@
     "totalLikes": 67365,
     "totalComments": 4629,
     "avgViews": 124948,
-    "avgLikes": 6124,
-    "avgComments": 421,
+    "avgLikes": 7485,
+    "avgComments": 514,
     "medianViews": 5400,
     "totalEngagement": 71994,
-    "overallEngagementRate": "5.24",
+    "overallEngagementRate": "5.26",
     "avgDurationSeconds": 1294,
     "avgDurationFormatted": "21m 34s",
     "totalDurationSeconds": 14239,
@@ -293,6 +293,17 @@
             "durationSeconds": 0
         },
         {
+            "videoId": "v11",
+            "title": "Video v11",
+            "viewCount": 1,
+            "likeCount": 0,
+            "commentCount": 0,
+            "publishedAt": "2024-01-01T00:00:00Z",
+            "thumbnail": "https://i/v11/m.jpg",
+            "engagementRate": "0.00",
+            "durationSeconds": 1800
+        },
+        {
             "videoId": "v02",
             "title": "Video v02",
             "viewCount": 5400,
@@ -302,17 +313,6 @@
             "thumbnail": "https://i/v02/m.jpg",
             "engagementRate": "0.57",
             "durationSeconds": 492
-        },
-        {
-            "videoId": "v05",
-            "title": "Video v05",
-            "viewCount": 0,
-            "likeCount": null,
-            "commentCount": null,
-            "publishedAt": "2026-07-14T06:30:00Z",
-            "thumbnail": "https://i/v05/m.jpg",
-            "engagementRate": "0.00",
-            "durationSeconds": 600
         }
     ],
     "top10ByComments": [
@@ -405,6 +405,17 @@
             "durationSeconds": 0
         },
         {
+            "videoId": "v11",
+            "title": "Video v11",
+            "viewCount": 1,
+            "likeCount": 0,
+            "commentCount": 0,
+            "publishedAt": "2024-01-01T00:00:00Z",
+            "thumbnail": "https://i/v11/m.jpg",
+            "engagementRate": "0.00",
+            "durationSeconds": 1800
+        },
+        {
             "videoId": "v03",
             "title": "Video v03",
             "viewCount": 5400,
@@ -414,17 +425,6 @@
             "thumbnail": "https://i/v03/m.jpg",
             "engagementRate": "3.89",
             "durationSeconds": 60
-        },
-        {
-            "videoId": "v05",
-            "title": "Video v05",
-            "viewCount": 0,
-            "likeCount": null,
-            "commentCount": null,
-            "publishedAt": "2026-07-14T06:30:00Z",
-            "thumbnail": "https://i/v05/m.jpg",
-            "engagementRate": "0.00",
-            "durationSeconds": 600
         }
     ],
     "top10ByEngagement": [
@@ -544,7 +544,7 @@
     "avgShortViews": 53585,
     "avgRegularViews": 184417,
     "avgShortLikes": 2629,
-    "avgRegularLikes": 9037,
+    "avgRegularLikes": 13555,
     "hdCount": 9,
     "sdCount": 2,
     "hdPercentage": "81.8",
@@ -704,7 +704,7 @@
         },
         {
             "month": "2026-08",
-            "value": "4.90"
+            "value": "5.13"
         }
     ],
     "likeRateTrend": [
@@ -734,7 +734,7 @@
         },
         {
             "month": "2026-08",
-            "value": "4.31"
+            "value": "4.51"
         }
     ]
 }
