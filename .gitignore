@@ -54,3 +54,4 @@ skills-lock.json
 
 # Third-party interface reference captures (kept local, not redistributed)
 docs/screenshots/reference/
+.gcp-authentication
