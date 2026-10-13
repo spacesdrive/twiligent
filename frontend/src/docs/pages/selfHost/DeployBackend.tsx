@@ -17,7 +17,8 @@ npx wrangler login
         </Step>
         <Step title="Deploy once to get your URL">
           <CodeBlock>{'npx wrangler deploy'}</CodeBlock>
-          <P>Wrangler prints the Worker address, for example <Code>https://twiligent.your-subdomain.workers.dev</Code>. This is your <strong>backend URL</strong>.</P>
+          <P>Wrangler builds the Worker from <Code>server.ts</Code>, the entry file named in <Code>wrangler.toml</Code>, and prints the Worker address, for example <Code>https://twiligent.your-subdomain.workers.dev</Code>. This is your <strong>backend URL</strong>.</P>
+          <P>If you changed the code, run <Code>npm run typecheck</Code> in the top folder first. Wrangler does not check TypeScript types, so this is the step that catches a type error before it reaches Cloudflare.</P>
         </Step>
         <Step title="Add the secrets">
           <P>Run each command and paste the value when asked. Values are encrypted by Cloudflare and never shown again.</P>

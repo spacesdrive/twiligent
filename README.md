@@ -7,6 +7,7 @@
   <p><strong>A self-hosted analytics and publishing dashboard for YouTube and Instagram.<br/>Your data. Your infrastructure. No subscriptions.</strong></p>
 
   <p>
+    <a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-strict-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript strict" /></a>
     <a href="https://react.dev"><img src="https://img.shields.io/badge/React-19-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React 19" /></a>
     <a href="https://vitejs.dev"><img src="https://img.shields.io/badge/Vite-7-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite 7" /></a>
     <a href="https://tailwindcss.com"><img src="https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white" alt="Tailwind CSS v4" /></a>
@@ -155,7 +156,7 @@ The full documentation, including a step-by-step self-hosting guide that explain
 
 | Requirement | Notes |
 |---|---|
-| Node.js 22 or later | Required by the dev tooling (Vite 7, concurrently); the deploy workflows use Node 24 |
+| Node.js 22.18 or later | Node runs the TypeScript tests and the scheduled publisher directly by stripping types, which needs 22.18 or newer (the `engines` field in `package.json`); the GitHub workflows use Node 24 |
 | Wrangler CLI | Installed by `npm install` at the root; run `npx wrangler login` once |
 | Cloudflare account | Free tier sufficient for Workers and Pages |
 | Supabase project | Free tier sufficient; create at [supabase.com](https://supabase.com) |
@@ -260,16 +261,19 @@ Run every command from the repository root.
 | `npm install` | Installs both workspaces and the shared tooling |
 | `npm run dev` | Starts the Worker (`wrangler dev`, port 8787) and Vite (port 5173) together |
 | `npm run dev:backend` / `npm run dev:frontend` | Starts one of them |
+| `npm run typecheck` | Type-checks every TypeScript project: backend, backend tests, frontend, frontend tooling and tests, scripts |
 | `npm run build` | Builds the frontend into `frontend/dist/` |
-| `npm test` | Runs the backend tests, then the frontend tests (Node's built-in test runner) |
+| `npm test` | Runs the backend tests, then the frontend tests (Node's built-in test runner on `tests/**/*.test.ts`) |
 | `npm run lint` | Runs ESLint over the whole repository with the shared `eslint.config.mjs` |
 | `npm run format` | Applies Prettier (`.prettierrc.json`) to the whole repository |
 
 Add a dependency to the app that uses it: `npm install <package> --workspace backend` or `npm install <package> --workspace frontend`. Only shared development tooling goes in the root `package.json`.
 
-Tests live outside the source folders, in `backend/tests/` and `frontend/tests/`, and mirror the source tree: the test for `backend/services/youtube.js` is `backend/tests/services/youtube.test.js`, and the test for `frontend/src/lib/accounts.js` is `frontend/tests/lib/accounts.test.js`. Backend fixtures and golden snapshots are in `backend/tests/fixtures/`.
+The whole project is TypeScript in `strict` mode. Nothing is compiled ahead of time: Wrangler and Vite strip the types while bundling, and Node strips them when it runs the tests and `scripts/publish-scheduled.ts`. None of them checks types, so run `npm run typecheck` before you commit; CI runs it on every pull request and before every deploy. The API request and response types live once in `shared/types/` and are used by both the backend and the frontend. See `docs/guidelines/TYPESCRIPT.md`.
 
-ESLint, Prettier and EditorConfig are configured once at the root. The existing code has not been reformatted in bulk, so run `npm run format` only when you mean to reformat.
+Tests live outside the source folders, in `backend/tests/` and `frontend/tests/`, and mirror the source tree: the test for `backend/services/youtube.ts` is `backend/tests/services/youtube.test.ts`, and the test for `frontend/src/lib/accounts.ts` is `frontend/tests/lib/accounts.test.ts`. Backend fixtures and golden snapshots are in `backend/tests/fixtures/`.
+
+ESLint (with `typescript-eslint`), Prettier and EditorConfig are configured once at the root, and the shared compiler settings are in `tsconfig.base.json`. The existing code has not been reformatted in bulk, so run `npm run format` only when you mean to reformat.
 
 ---
 
@@ -427,38 +431,52 @@ flowchart TD
 twiligent/
 ├── .github/
 │   └── workflows/
-│       ├── deploy-backend.yml       # Wrangler deploy on backend or root lockfile changes
-│       ├── deploy-frontend.yml      # Cloudflare Pages deploy on frontend or root lockfile changes
-│       └── publish-scheduled.yml    # Scheduled post fallback (every 15 minutes)
+│       ├── ci.yml                   # Type check, lint, test, build and Worker dry-run on pull requests and branches
+│       ├── deploy-backend.yml       # Type check, test, then Wrangler deploy on backend, shared or root config changes
+│       ├── deploy-frontend.yml      # Type check, test, then Cloudflare Pages deploy on frontend, shared or root config changes
+│       └── publish-scheduled.yml    # Scheduled post fallback (every 15 minutes, Node 24)
 │
 ├── backend/
 │   ├── lib/
-│   │   ├── db.js                    # All Supabase query functions (single source)
-│   │   ├── cache.js                 # Redis cache helpers (silent fail on error)
-│   │   ├── redis.js                 # Upstash Redis client factory
-│   │   └── supabase.js              # Supabase client factory
+│   │   ├── db.ts                    # All Supabase query functions (single source)
+│   │   ├── cache.ts                 # Redis cache helpers (silent fail on error)
+│   │   ├── redis.ts                 # Upstash Redis client factory
+│   │   ├── safeAccount.ts           # Strips tokens and cookies from accounts in responses
+│   │   ├── rateLimit/               # Rate limit rules, algorithms and Lua scripts
+│   │   └── supabase.ts              # Supabase client factory
 │   ├── middleware/
-│   │   └── auth.js                  # requireAuth: JWT verification, sets userId
+│   │   ├── auth.ts                  # requireAuth: JWT verification, sets userId
+│   │   └── rateLimit.ts             # Per-IP and per-user rate limits
 │   ├── routes/
-│   │   ├── accounts.js              # Add, remove, and refresh accounts
-│   │   ├── analytics.js             # YouTube and Instagram analytics
-│   │   ├── publishing.js            # Instagram Graph API publish flow
-│   │   ├── scheduledPosts.js        # CRUD for scheduled post queue
-│   │   ├── instagramAuth.js         # Instagram OAuth flow
-│   │   ├── settings.js              # User settings (GitHub repository for setup links)
-│   │   └── keys.js                  # API key presence check
+│   │   ├── accounts.ts              # Add, remove, and refresh accounts
+│   │   ├── analytics.ts             # YouTube and Instagram analytics
+│   │   ├── publishing.ts            # Instagram Graph API publish flow
+│   │   ├── scheduledPosts.ts        # CRUD for scheduled post queue
+│   │   ├── instagramAuth.ts         # Instagram OAuth flow
+│   │   ├── settings.ts              # User settings (GitHub repository for setup links)
+│   │   └── keys.ts                  # API key presence check
 │   ├── services/
-│   │   ├── youtube.js               # YouTube Data API v3 client
-│   │   └── instagram.js             # Instagram Graph API client
-│   ├── tests/                       # Node tests mirroring lib/, routes/, services/, utils/; fixtures/ holds fakes and golden snapshots
-│   ├── server.js                    # Hono app + Worker export (fetch + scheduled)
-│   ├── wrangler.toml                # Cloudflare Worker config and cron triggers
-│   └── package.json                 # Backend workspace: hono, supabase-js, upstash redis, wrangler
+│   │   ├── youtube.ts               # YouTube Data API v3 client
+│   │   └── instagram.ts             # Instagram Graph API client
+│   ├── types/
+│   │   ├── env.ts                   # Env: Worker secrets and bindings
+│   │   └── app.ts                   # AppEnv, AppContext: Hono context typing
+│   ├── tests/                       # Node tests (*.test.ts) mirroring lib/, middleware/, routes/, services/, utils/; fixtures/ holds fakes and golden snapshots
+│   ├── server.ts                    # Hono app + Worker export (fetch + scheduled)
+│   ├── wrangler.toml                # Cloudflare Worker config (main = "server.ts") and cron triggers
+│   ├── tsconfig.json                # Worker type check (Workers types, no DOM or Node)
+│   └── package.json                 # Backend workspace: hono, supabase-js, upstash redis, wrangler, workers-types
 │
 ├── frontend/
-│   ├── tests/                       # Node tests mirroring src/ (lib, utils, features, docs)
+│   ├── tests/                       # Node tests (*.test.ts) mirroring src/ (lib, utils, features, docs)
+│   ├── index.html                   # Loads /src/main.tsx
+│   ├── vite.config.ts               # Vite config: React and Tailwind plugins, @ alias
+│   ├── tsconfig.json                # Type check for src/ (DOM, JSX, @/ and @shared/ paths)
+│   ├── tsconfig.node.json           # Type check for vite.config.ts and tests/
 │   ├── package.json                 # Frontend workspace: React, Vite, Tailwind, shadcn
 │   └── src/
+│       ├── main.tsx                 # Entry point
+│       ├── App.tsx                  # Router and provider tree
 │       ├── features/
 │       │   ├── analytics/
 │       │   │   ├── overview/        # Unified cross-platform dashboard
@@ -471,19 +489,24 @@ twiligent/
 │       │   ├── publishing/          # Single and bulk upload with scheduler
 │       │   └── settings/            # Theme, server status, setup guides
 │       ├── context/
-│       │   └── AppContext.jsx       # Global accounts and loading state
+│       │   └── AppContext.tsx       # Global accounts and loading state
 │       ├── layout/
-│       │   ├── Sidebar.jsx          # Collapsible navigation sidebar
-│       │   └── Header.jsx           # Breadcrumbs, refresh, theme toggle
+│       │   ├── Sidebar.tsx          # Collapsible navigation sidebar
+│       │   └── Header.tsx           # Breadcrumbs, refresh, theme toggle
 │       ├── components/ui/           # shadcn/ui components and custom primitives
 │       └── services/
-│           └── api.js               # Frontend API client (all fetch calls)
+│           └── api.ts               # Frontend API client (all fetch calls)
+│
+├── shared/
+│   └── types/                       # API contract shared by backend and frontend (types only)
 │
 ├── scripts/
-│   └── publish-scheduled.js         # Node.js script run by GitHub Actions fallback (no dependencies)
+│   ├── publish-scheduled.ts         # TypeScript run directly by Node in the GitHub Actions fallback (no dependencies)
+│   └── tsconfig.json                # Type check for scripts/ (Node types)
 │
-├── package.json                     # npm workspaces root: scripts and shared dev tooling
+├── package.json                     # npm workspaces root: scripts, shared dev tooling, engines (Node 22.18+)
 ├── package-lock.json                # The only lockfile, for both workspaces
+├── tsconfig.base.json               # Shared strict compiler settings
 ├── eslint.config.mjs                # Shared ESLint config
 ├── .prettierrc.json                 # Shared Prettier config
 └── .editorconfig                    # Shared editor defaults
@@ -492,6 +515,14 @@ twiligent/
 ---
 
 ## Tech Stack
+
+**Language and tooling**
+
+| Tool | Version | Purpose |
+|---|---|---|
+| TypeScript | 6.0 | Strict type checking across the backend, frontend, shared types, scripts and tests |
+| typescript-eslint | 8 | TypeScript lint rules |
+| Node.js | 22.18 or later | Runs the tests and the scheduled publisher by stripping types |
 
 **Frontend**
 
@@ -515,6 +546,7 @@ twiligent/
 | @supabase/supabase-js | 2 | Supabase client for database and auth |
 | @upstash/redis | 1 | Edge-compatible Redis client for caching |
 | Wrangler | 3 | Cloudflare Workers CLI (dev and deploy) |
+| @cloudflare/workers-types | 5 | Types for the Workers runtime |
 
 **Infrastructure**
 
@@ -527,7 +559,7 @@ twiligent/
 | YouTube Data API v3 | Channel and video analytics |
 | Instagram Graph API v25 | Account analytics and content publishing |
 | Cloudinary | Media CDN (Instagram requires public URLs) |
-| GitHub Actions | Fallback cron publisher and deployment CI/CD |
+| GitHub Actions | Fallback cron publisher, pull request checks and deployment CI/CD |
 
 ---
 
@@ -560,7 +592,7 @@ Contributions are welcome. Every change starts with a GitHub issue: search the [
 git checkout -b feature/your-feature-name
 ```
 
-3. Make your changes, check them from the repository root with `npm run build`, `npm test` and `npm run lint`, and commit
+3. Make your changes, check them from the repository root with `npm run typecheck`, `npm run build`, `npm test` and `npm run lint`, and commit
 
 ```bash
 git commit -m "feat: add your feature description"

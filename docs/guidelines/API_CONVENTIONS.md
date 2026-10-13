@@ -4,6 +4,8 @@
 
 ### Success responses
 
+Every response body has a TypeScript type in `shared/types/` (`domain.ts`, `youtube.ts`, `instagram.ts`, `reddit.ts`). The route checks the object it returns with `satisfies`, and the matching `api.ts` method returns the same type, so a change to a response shape is caught by `npm run typecheck` on both sides.
+
 Most endpoints return the data directly as a JSON object or array:
 
 ```json
@@ -21,15 +23,15 @@ Most endpoints return the data directly as a JSON object or array:
 
 ### Error responses
 
-All errors return a JSON object with an `error` key:
+Errors return a JSON object with an `error` key, or, in routes whose success body has `success: true`, `success: false` with a `message` (the `ApiFailure` type in `shared/types/domain.ts`):
 
 ```json
 { "error": "Account not found" }
 { "error": "Missing required field: scheduledAt" }
-{ "error": "Instagram API: (#10) Application does not have permission" }
+{ "success": false, "message": "Account not found" }
 ```
 
-The `request()` function in `frontend/src/services/api.js` reads `data.error` and throws it as the error message.
+The `request()` function in `frontend/src/services/api.ts` throws an `Error` with `data.message` or `data.error` when the status is not 2xx. Methods whose route can send `success: false` with a 2xx status return `ApiResult<T>`, so the caller checks `success` before reading the data. Keep one shape per route.
 
 ## Status Codes
 
@@ -48,13 +50,13 @@ The `request()` function in `frontend/src/services/api.js` reads `data.error` an
 
 POST and PUT handlers read the request body via:
 
-```js
-const body = await c.req.json();
+```ts
+const body = await c.req.json() as ScheduledPostRequest;
 ```
 
-Always validate required fields and return 400 for missing ones:
+`c.req.json()` is untyped, so cast it once to the shared request type where it enters. The cast does not check anything at runtime: always validate required fields and return 400 for missing ones:
 
-```js
+```ts
 const { scheduledAt, accountId, mediaUrl } = body;
 if (!scheduledAt || !accountId || !mediaUrl) {
     return c.json({ error: 'Missing required fields: scheduledAt, accountId, mediaUrl' }, 400);
@@ -65,16 +67,16 @@ if (!scheduledAt || !accountId || !mediaUrl) {
 
 Access route params via `c.req.param('name')`:
 
-```js
+```ts
 router.delete('/accounts/:id', async (c) => {
     const id = c.req.param('id');
     // ...
 });
 ```
 
-Access query params via `c.req.query('name')`:
+Access query params via `c.req.query('name')`, which returns `string | undefined`:
 
-```js
+```ts
 router.get('/ig-container/:id/status', async (c) => {
     const containerId = c.req.param('id');
     const accountId = c.req.query('accountId');
@@ -96,18 +98,18 @@ The backend extracts and verifies it in `requireAuth`. Route handlers access the
 - Actions on resources: verb-noun - `/accounts/refresh-all`, `/accounts/:id/refresh`
 - Non-resource actions: verb noun - `/resolve-channel`, `/process-scheduled`
 
-## Frontend `api.js` Conventions
+## Frontend `api.ts` Conventions
 
-Each method in the `api` object corresponds to one backend endpoint:
+Each method in the `api` object corresponds to one backend endpoint, types its parameters, and passes the shared response type to `request<T>()`:
 
-```js
+```ts
 // Pattern: {verb}{Noun}(params) where params match what the endpoint needs
-getAccounts: () => request('/accounts'),
-addAccount: (input) => request('/accounts', { method: 'POST', body: JSON.stringify({ input }) }),
-deleteAccount: (id) => request(`/accounts/${id}`, { method: 'DELETE' }),
-refreshAccount: (id) => request(`/accounts/${id}/refresh`, { method: 'POST' }),
-getAnalytics: (id) => request(`/accounts/${id}/analytics`),
-createScheduledPost: (data) => request('/scheduled-posts', { method: 'POST', body: JSON.stringify(data) }),
+getAccounts: () => request<AccountListResponse>('/accounts'),
+addAccount: (input: string) => request<YouTubeAccountAddResponse>('/accounts', { method: 'POST', body: JSON.stringify({ input }) }),
+deleteAccount: (id: string) => request<SuccessResponse>(`/accounts/${id}`, { method: 'DELETE' }),
+refreshAccount: (id: string) => request<AccountResponse>(`/accounts/${id}/refresh`, { method: 'POST' }),
+getAnalytics: (id: string) => request<YouTubeAnalyticsPayload>(`/accounts/${id}/analytics`),
+createScheduledPost: (data: ScheduledPostRequest) => request<ApiResult<ScheduledPostResponse>>('/scheduled-posts', { method: 'POST', body: JSON.stringify(data) }),
 ```
 
 Name frontend methods to describe what they do from the user's perspective, not the HTTP method: `addAccount` not `postAccount`, `deleteAccount` not `removeAccount`.

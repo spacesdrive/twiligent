@@ -8,7 +8,7 @@ export default function GitHub() {
       <P>Both parts are optional. Fork <A href="https://github.com/spacesdrive/twiligent">spacesdrive/twiligent</A> to your own GitHub account first. Add secrets in your fork under <strong>Settings</strong>, <strong>Secrets and variables</strong>, <strong>Actions</strong>, <strong>New repository secret</strong>.</P>
 
       <H2>Deploy on push</H2>
-      <P>The workflows <Code>deploy-backend.yml</Code> and <Code>deploy-frontend.yml</Code> deploy whenever <Code>backend/</Code> or <Code>frontend/</Code> changes on <Code>main</Code>. A change to <Code>package.json</Code> or <Code>package-lock.json</Code> in the top folder deploys both, because those files list the packages for the whole project. Each workflow installs the packages itself, so there is nothing to install on GitHub.</P>
+      <P>The workflows <Code>deploy-backend.yml</Code> and <Code>deploy-frontend.yml</Code> deploy whenever <Code>backend/</Code> or <Code>frontend/</Code> changes on <Code>main</Code>. A change to <Code>shared/</Code>, <Code>tsconfig.base.json</Code>, <Code>package.json</Code> or <Code>package-lock.json</Code> in the top folder deploys both, because both parts use those files. Each workflow installs the packages itself, so there is nothing to install on GitHub. Before deploying, each one checks the TypeScript types and runs the tests, and stops if either fails. A third workflow, <Code>ci.yml</Code>, runs the same checks on every pull request and on pushes to other branches.</P>
       <Table
         head={['Secret', 'Where to get it']}
         rows={[
@@ -24,7 +24,7 @@ export default function GitHub() {
       <P>Worker secrets stay in Cloudflare; the backend workflow does not need them.</P>
 
       <H2>Backup scheduler</H2>
-      <P>The Worker already publishes scheduled posts. <Code>publish-scheduled.yml</Code> runs the same job from GitHub every 15 minutes as a safety net. Each post is claimed before publishing, so it is never posted twice even when both run at once.</P>
+      <P>The Worker already publishes scheduled posts. <Code>publish-scheduled.yml</Code> runs the same job from GitHub every 15 minutes as a safety net, with <Code>node scripts/publish-scheduled.ts</Code> on Node 24. The script needs no packages, so the workflow installs nothing. Each post is claimed before publishing, so it is never posted twice even when both run at once.</P>
       <Steps>
         <Step title="Add two secrets">
           <P><Code>SUPABASE_URL</Code> and <Code>SUPABASE_SERVICE_KEY</Code>, with the same values the Worker uses.</P>

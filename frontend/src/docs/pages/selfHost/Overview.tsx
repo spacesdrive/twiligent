@@ -40,7 +40,7 @@ export default function Overview() {
 
       <H2>What you need on your computer</H2>
       <UL>
-        <li>Node.js 22 or newer, and Git.</li>
+        <li>Node.js 22.18 or newer, and Git. The tests and the backup scheduler script are TypeScript files that Node runs directly, which older versions cannot do.</li>
         <li>A copy of the code: <Code>git clone https://github.com/spacesdrive/twiligent.git</Code></li>
         <li>The project's packages: run <Code>npm install</Code> once in the cloned <Code>twiligent</Code> folder. It installs the backend, the website and the Wrangler command used to deploy them.</li>
       </UL>

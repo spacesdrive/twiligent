@@ -9,7 +9,7 @@ User visits the app
 React Router: no session -> ProtectedRoute redirects to /login
     │
     ▼
-Login.jsx renders email/password form
+Login.tsx renders email/password form
     │
     ▼
 User submits -> AuthContext.signIn(email, password)
@@ -36,8 +36,8 @@ User sees Overview dashboard
 Optional; enabled when `VITE_GOOGLE_CLIENT_ID` is set and the Google provider is on in Supabase.
 
 ```
-Login.jsx renders GoogleSignInButton
-    -> lib/googleIdentity.js loads https://accounts.google.com/gsi/client once
+Login.tsx renders GoogleSignInButton
+    -> lib/googleIdentity.ts loads https://accounts.google.com/gsi/client once
     -> createNonce(): raw random nonce + its SHA-256 hex
     -> google.accounts.id.initialize({ client_id, nonce: hashed, callback })
     -> google.accounts.id.renderButton(...)          (Google's own button, popup or FedCM)
@@ -94,7 +94,7 @@ requireAuth middleware
 ## Sign Out Flow
 
 ```
-User clicks Sign Out (Header.jsx)
+User clicks Sign Out (Header.tsx)
     -> AuthContext.signOut()
     -> supabase.auth.signOut()
     -> Supabase invalidates refresh token server-side

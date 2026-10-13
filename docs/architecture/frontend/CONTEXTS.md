@@ -1,18 +1,20 @@
 # Frontend Contexts
 
-## AuthContext (`frontend/src/context/AuthContext.jsx`)
+## AuthContext (`frontend/src/context/AuthContext.tsx`)
 
 Wraps Supabase Auth state and exposes it to the entire app.
 
 ### What it provides
 
-```js
+```ts
 const { session, user, signIn, signUp, signInWithGoogle, signOut } = useAuth();
 ```
 
+The value is typed as `AuthContextValue`, exported from `AuthContext.tsx`.
+
 | Value | Type | Description |
 |---|---|---|
-| `session` | `Session \| null` | Current Supabase session; null if not logged in |
+| `session` | `Session \| null \| undefined` | Current Supabase session; `undefined` until the first `getSession()` resolves, `null` if not logged in |
 | `user` | `User \| null` | `session.user` shorthand |
 | `signIn(email, password)` | async function | Calls `supabase.auth.signInWithPassword()` |
 | `signUp(email, password)` | async function | Calls `supabase.auth.signUp()` |
@@ -21,8 +23,8 @@ const { session, user, signIn, signUp, signInWithGoogle, signOut } = useAuth();
 
 ### How it works
 
-```js
-const [session, setSession] = useState(null);
+```ts
+const [session, setSession] = useState<Session | null | undefined>(undefined); // undefined = still loading
 
 useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
@@ -38,30 +40,32 @@ useEffect(() => {
 ### Where to use it
 
 - `ProtectedRoute` - reads `session` to decide whether to redirect to `/login`
-- `Login.jsx` - calls `signIn()`, `signUp()` and `signInWithGoogle()`
-- `Header.jsx` - calls `signOut()`, shows `user.email`
+- `Login.tsx` - calls `signIn()`, `signUp()` and `signInWithGoogle()`
+- `Header.tsx` - calls `signOut()`, shows `user.email`
 - Do **not** use in page/feature components - they should never need auth state directly
 
 ---
 
-## AppContext (`frontend/src/context/AppContext.jsx`)
+## AppContext (`frontend/src/context/AppContext.tsx`)
 
 Provides the global accounts list and shared utilities to all feature pages.
 
 ### What it provides
 
-```js
+```ts
 const { accounts, setAccounts, loading, showToast, loadAccounts, refreshAll } = useAppContext();
 ```
 
+The value is typed as `AppContextValue`, exported from `AppContext.tsx`. `useAppContext()` throws if it is called outside `AppProvider`, so callers never handle `null`.
+
 | Value | Type | Description |
 |---|---|---|
-| `accounts` | `Account[]` | All connected accounts (YouTube + Instagram), normalized via `normalizeAccount()` |
-| `setAccounts` | setter | Direct setter (used by AccountManager after add/delete) |
+| `accounts` | `AppAccount[]` | All connected accounts (YouTube, Instagram, Reddit), normalized via `normalizeAccount()` |
+| `setAccounts` | `Dispatch<SetStateAction<AppAccount[]>>` | Direct setter (used by AccountManager after add/delete) |
 | `loading` | `boolean` | True during `refreshAll()` only |
-| `showToast(msg, severity)` | function | Shows a Sonner toast. `severity`: `'success'` (default), `'error'`, `'warning'`, `'info'` |
-| `loadAccounts()` | async function | Fetches `GET /api/accounts` and updates `accounts` |
-| `refreshAll()` | async function | Calls `POST /api/accounts/refresh-all`, sets `loading` true during request |
+| `showToast(message, severity?)` | `(message: string, severity?: ToastSeverity) => void` | Shows a Sonner toast. `ToastSeverity`: `'success'` (default), `'error'`, `'warning'`, `'info'` |
+| `loadAccounts()` | `() => Promise<void>` | Fetches `GET /api/accounts` and updates `accounts` |
+| `refreshAll()` | `() => Promise<void>` | Calls `POST /api/accounts/refresh-all`, sets `loading` true during request |
 
 ### Loading behavior
 
@@ -70,18 +74,20 @@ const { accounts, setAccounts, loading, showToast, loadAccounts, refreshAll } = 
 ### Where to use it
 
 All feature pages and layout components use `useAppContext()`:
-- `Sidebar.jsx` - generates per-account nav links from `accounts`
-- `Overview.jsx` - renders the all-accounts dashboard
-- `AccountManager.jsx` - calls `loadAccounts()` after add/delete
-- `ChannelAnalytics.jsx` - finds the account by `params.id`
+- `Sidebar.tsx` - generates per-account nav links from `accounts`
+- `Overview.tsx` - renders the all-accounts dashboard
+- `AccountManager.tsx` - calls `loadAccounts()` after add/delete
+- `ChannelAnalytics.tsx` - finds the account by `params.id`
 - All pages that show toast notifications call `showToast()`
 
 ### Account shape after `normalizeAccount()`
 
-```js
+`AppAccount` is defined in `frontend/src/utils/formatters.ts`: the `SafeAccount` type from `shared/types/domain.ts` plus fields older saved accounts can carry, with `title` and `thumbnail` filled in per platform. An example:
+
+```ts
 {
     id: 'account-id',
-    platform: 'youtube' | 'instagram',
+    platform: 'youtube' | 'instagram' | 'reddit',
     // YouTube fields:
     channelId: '...',
     title: '...',
@@ -89,13 +95,16 @@ All feature pages and layout components use `useAppContext()`:
     subscriberCount: 12345,
     viewCount: 456789,
     videoCount: 100,
-    thumbnailUrl: '...',
+    thumbnail: '...',
     // Instagram fields:
     igUserId: '...',
     username: '...',
     followersCount: 5000,
     mediaCount: 200,
-    // Note: accessToken is NEVER present - stripped by safeAccount() on the backend
+    // Reddit fields:
+    totalKarma: 1234,
+    hasCookie: true,
+    // Note: accessToken and cookie are NEVER present - stripped by safeAccount() on the backend
 }
 ```
 
@@ -107,11 +116,11 @@ Hooks used by more than one feature. Hooks used by a single feature live in that
 
 | Hook | File | Purpose |
 |---|---|---|
-| `useIsMobile()` | `use-mobile.js` | True below the mobile breakpoint |
-| `useCommandPaletteShortcut(setOpen)` | `use-command-palette-shortcut.js` | Ctrl+K / Cmd+K toggle for the command palette |
-| `useSmoothTheme()` | `use-smooth-theme.js` | Theme switch as one cross-fade |
-| `useCloudinaryConfig(reloadKey)` | `use-cloudinary-config.js` | Loads `api.getCloudinaryConfig()`; returns the config or `null` |
-| `useAccountAnalytics(account, fetchAnalytics, label)` | `use-account-analytics.js` | Loads one account's analytics and refreshes it; used by Instagram and Reddit analytics |
+| `useIsMobile()` | `use-mobile.ts` | True below the mobile breakpoint |
+| `useCommandPaletteShortcut(setOpen)` | `use-command-palette-shortcut.ts` | Ctrl+K / Cmd+K toggle for the command palette |
+| `useSmoothTheme()` | `use-smooth-theme.ts` | Theme switch as one cross-fade |
+| `useCloudinaryConfig(reloadKey)` | `use-cloudinary-config.ts` | Loads `api.getCloudinaryConfig()`; returns the config or `null` |
+| `useAccountAnalytics(account, fetchAnalytics, label)` | `use-account-analytics.ts` | Loads one account's analytics and refreshes it; used by Instagram and Reddit analytics |
 
 `useCloudinaryConfig` sets the config only when the response has `success: true`. A failed request keeps the previous value (initially `null`), and pages show a missing config as an alert or a disabled upload field. The request runs again whenever `reloadKey` changes: the Publish page passes `accounts`, Tracked Content passes nothing and loads once.
 

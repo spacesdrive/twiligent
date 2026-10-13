@@ -13,7 +13,7 @@ All tokens live in `frontend/src/index.css`: raw values on `:root` and `.dark`, 
 | Text | `text-ink`, `text-ink-muted`, `text-ink-faint`, `text-ink-inverse` | All pass WCAG AA on every surface in both themes |
 | Brand | `bg-brand`, `hover:bg-brand-hover`, `bg-brand-soft`, `text-brand-text`, `text-on-brand` | Red as text is always `text-brand-text` |
 | Status | `success`, `warning`, `danger`, `info`, each with `-soft` | Errors share the brand red, so they always carry an icon and the word "Error" |
-| Charts | `var(--chart-1)` to `var(--chart-5)` via `lib/chart.js` `SERIES` | Brand series order; platforms map to series in `lib/accounts.js` |
+| Charts | `var(--chart-1)` to `var(--chart-5)` via `lib/chart.ts` `SERIES` | Brand series order; platforms map to series in `lib/accounts.ts` |
 | Type | `font-heading` (Sora), `font-sans` (Manrope), `font-mono` (JetBrains Mono); `text-display`, `text-page-title`, `text-section`, `text-body`, `text-small`, `text-caption` | Fonts are self-hosted from `frontend/public/fonts` and preloaded in `index.html` |
 | Radius | `rounded-row` 10, `rounded-control` 10, `rounded-field` 12, `rounded-card` 16, `rounded-panel` 24, `rounded-dialog` 24, `rounded-pill` | Buttons, inputs and chips are rounded rectangles; badges keep the brand capsule |
 | Sizes | `h-(--control-h-sm)` 32, `h-(--control-h)` 36, `h-(--control-h-lg)` 40, `--nav-row-h` 32, `--topbar-h` 50, `--sidebar-w` 256 | |
@@ -64,4 +64,4 @@ Shared components live in `frontend/src/components/`. Reach for these before wri
 - Every async action disables its trigger, shows a spinner or progress, and ends in a toast that names what happened.
 - Sentence case in all UI copy. No exclamation marks. Errors say what happened and what to do.
 - Lucide icons at 1.75 stroke. 18px in navigation, 16px in controls.
-- New logic that can be pure goes in `src/lib/`, with its test at the mirrored path in `frontend/tests/` (`src/lib/library.js` -> `frontend/tests/lib/library.test.js`; run `npm test`).
+- New logic that can be pure goes in `src/lib/`, with its test at the mirrored path in `frontend/tests/` (`src/lib/library.ts` -> `frontend/tests/lib/library.test.ts`; run `npm test`).

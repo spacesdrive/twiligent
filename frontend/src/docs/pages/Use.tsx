@@ -1,4 +1,4 @@
-// each page lives in use/; this barrel keeps them in one lazy chunk for routes.js
+// each page lives in use/; this barrel keeps them in one lazy chunk for routes.ts
 export { default as GettingStarted } from './use/GettingStarted';
 export { default as ConnectAccounts } from './use/ConnectAccounts';
 export { default as Analytics } from './use/Analytics';

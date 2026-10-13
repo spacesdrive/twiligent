@@ -30,8 +30,17 @@ What Twiligent is for, and what every change should move forward.
 
 ## In Progress
 
-- **TypeScript migration** ([#2](https://github.com/spacesdrive/twiligent/issues/2)) - Backend, frontend and the scheduled publisher script rewritten in TypeScript with strict checks, without behaviour changes. Sub-issues: tooling (#3), backend (#4), frontend (#5), publisher script (#6), docs (#7).
-- **API rate limiting** ([#8](https://github.com/spacesdrive/twiligent/issues/8)) - Token bucket, leaking bucket, fixed window, sliding window log and sliding window counter limiters in Redis (atomic Lua scripts) with an in-memory fallback, applied per IP, per user and per expensive route.
+Nothing is in progress. The TypeScript migration (#2) and API rate limiting (#8) are finished and recorded in `CHANGELOG.md`.
+
+The migration found defects that are now tracked as issues, in priority order:
+
+1. **Redis outages slow cached requests** ([#10](https://github.com/spacesdrive/twiligent/issues/10)) - the local Upstash database no longer resolves, and the cache client retries for about 4 seconds per call. Check the production database first.
+2. **Instagram credential and account checks before publishing** ([#11](https://github.com/spacesdrive/twiligent/issues/11))
+3. **Required account fields before platform API calls** ([#12](https://github.com/spacesdrive/twiligent/issues/12))
+4. **Analytics edge cases** ([#15](https://github.com/spacesdrive/twiligent/issues/15)) - empty-state shape, hidden like counts, Reddit karma
+5. **Saving GitHub settings erases the stored token** ([#13](https://github.com/spacesdrive/twiligent/issues/13))
+6. **Declared variants and design tokens in three components** ([#16](https://github.com/spacesdrive/twiligent/issues/16))
+7. **Dead code from the migration** ([#14](https://github.com/spacesdrive/twiligent/issues/14))
 
 ---
 
@@ -119,8 +128,9 @@ React Native app using the same Cloudflare Worker backend.
 
 - `wrangler.toml` has no `vars` section for non-secret configuration - any non-sensitive config currently requires a redeploy to change.
 - The scheduled publishers (`backend/utils/scheduler` and `scripts/publish-scheduled`) publish due posts one after another in a single run. A large batch due at the same moment can exceed the Worker's or the Actions job's time limit; the rest wait for the next run.
-- CORS allows every origin (`cors()` with no options). Restricting it to `FRONTEND_URL` would block other sites from calling the API with a stolen token.
-- `scripts/publish-scheduled.js` prints emoji in its log output, which breaks the writing standards; it is rewritten in the TypeScript migration (#6).
+- CORS allows every origin. Restricting it to `FRONTEND_URL` would block other sites from calling the API with a stolen token.
+- Rate limits are counted per Worker isolate when Redis is not configured, which is looser than one global count (see `docs/architecture/backend/RATE_LIMITING.md`).
+- The project stays on TypeScript 6.0 until `typescript-eslint` supports TypeScript 7.
 - No end-to-end tests; see `docs/workflows/TESTING.md` for the planned Playwright coverage.
 
 ### Resolved
@@ -129,3 +139,7 @@ React Native app using the same Cloudflare Worker backend.
 - The legacy Express prototype in the root `public/` folder and its root dependencies were removed; the root `package.json` is now the npm workspaces root.
 - Reddit integration shipped (public JSON API, no cookies or OAuth).
 - Secrets with PowerShell-injected BOM characters broke the GitHub Actions publisher - it now strips non-ASCII characters from them.
+- The API had no rate limiting - every request is now limited per IP, per user and per quota-spending route (#8).
+- The codebase was JavaScript with API shapes restated on both sides - it is now strict TypeScript with shared API types (#2).
+- `GET /api/comparison` returned stored account secrets - fixed (#9).
+- The publisher log printed emoji - removed (#6).

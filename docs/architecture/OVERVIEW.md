@@ -68,7 +68,7 @@ Cloudflare Worker edge node (nearest to user)
       -> sets c.userId, c.userEmail on Hono context
   -> rateLimit(user), and rateLimit(quota) or rateLimit(publish) on the routes they cover
   -> route handler (e.g., accounts router)
-      -> db.getAccounts(supabase, userId)  [lib/db.js]
+      -> db.getAccounts(supabase, userId)  [lib/db.ts]
           -> supabase.from('accounts').select(...).eq('user_id', userId)
       -> normalizes rows
       -> returns JSON response
@@ -111,7 +111,7 @@ See `docs/architecture/cloudflare/WORKERS.md` for the full list of required Work
 
 Frontend env vars are documented in `docs/architecture/cloudflare/PAGES.md`.
 
-The SPA also serves public documentation at `/docs` (no sign-in, no API calls). It is static JSX in `frontend/src/docs/`, code-split per section; see `docs/architecture/frontend/FEATURES.md`.
+The SPA also serves public documentation at `/docs` (no sign-in, no API calls). It is static TSX in `frontend/src/docs/`, code-split per section; see `docs/architecture/frontend/FEATURES.md`.
 
 ## Key Architectural Invariants
 
@@ -123,8 +123,10 @@ The SPA also serves public documentation at `/docs` (no sign-in, no API calls). 
 
 4. **`safeAccount()` is the only place access tokens are stripped.** Any route that returns account data must pass through this function before responding.
 
-5. **`db.js` is the only file that contains Supabase queries.** Route handlers import and call db functions - they never call `supabase.from()` directly.
+5. **`db.ts` is the only file that contains Supabase queries.** Route handlers import and call db functions - they never call `supabase.from()` directly.
 
 6. **Every `/api` request is rate limited.** Per IP before authentication, per user after it, and tighter on routes that spend platform API quota. See `docs/architecture/backend/RATE_LIMITING.md`.
 
-7. **`api.js` is the only file that calls `fetch()` in the frontend.** Components call `api.methodName()` - they never construct fetch calls.
+7. **`api.ts` is the only file that calls `fetch()` in the frontend.** Components call `api.methodName()` - they never construct fetch calls.
+
+8. **The API contract is typed once, in `shared/types/`.** Routes check every response against it with `satisfies`, and `api.ts` methods return the same types, so `npm run typecheck` catches a shape change on both sides. CI runs the type check before every deploy, because Wrangler and Vite strip types without checking them. See `docs/guidelines/TYPESCRIPT.md`.

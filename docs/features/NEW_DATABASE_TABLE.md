@@ -57,72 +57,108 @@ CREATE POLICY "Users can manage their own drafts"
     USING (user_id = auth.uid());
 ```
 
-### Step 4: Add Query Functions to `lib/db.js`
+### Step 4: Add the Types
+
+Add the entity as the API returns it to `shared/types/domain.ts` (types only, no runtime code). Status columns become a union of string literals, never an `enum`:
+
+```ts
+// shared/types/domain.ts
+export type DraftStatus = 'draft' | 'ready' | 'archived';
+
+export interface ContentDraft {
+    id: string;
+    accountId: string;
+    platform: Platform;
+    status: DraftStatus;
+    createdAt: string;
+    updatedAt: string;
+    caption?: string;
+}
+
+export type ContentDraftUpdate = Partial<Omit<ContentDraft, 'id' | 'accountId' | 'platform' | 'createdAt' | 'updatedAt'>>;
+```
+
+The raw row shape stays private to `lib/db.ts`, next to the functions that read it.
+
+### Step 5: Add Query Functions to `lib/db.ts`
 
 Follow the established pattern exactly:
 
-```js
-// backend/lib/db.js
+```ts
+// backend/lib/db.ts
+interface ContentDraftRow {
+    id: string;
+    account_id: string;
+    platform: Platform;
+    status: DraftStatus;
+    created_at: string;
+    updated_at: string;
+    data: Partial<ContentDraft> | null;
+}
 
-// ── Content Drafts ────────────────────────────────────────────────────────────
-
-export async function getDrafts(supabase, userId) {
-    const { data, error } = await supabase
-        .from('content_drafts')
-        .select('id, account_id, platform, status, created_at, updated_at, data')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-    if (error) throw error;
-    return (data || []).map(row => ({
+function rowToDraft(row: ContentDraftRow): ContentDraft {
+    return {
+        ...(row.data || {}),
         id: row.id,
         accountId: row.account_id,
         platform: row.platform,
         status: row.status,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
-        ...(row.data || {}),
-    }));
+    };
 }
 
-export async function createDraft(supabase, draft, userId) {
-    const { id, accountId, platform, ...rest } = draft;
+export async function getDrafts(supabase: SupabaseClient, userId: string): Promise<ContentDraft[]> {
+    const { data, error } = await supabase
+        .from('content_drafts')
+        .select('id, account_id, platform, status, created_at, updated_at, data')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+    if (error) throw error;
+    return ((data || []) as ContentDraftRow[]).map(rowToDraft);
+}
+
+export async function createDraft(supabase: SupabaseClient, draft: ContentDraft, userId: string): Promise<void> {
+    const { id, accountId, platform, status, createdAt: _c, updatedAt: _u, ...rest } = draft;
     const { error } = await supabase.from('content_drafts').insert({
         id,
         user_id: userId,
         account_id: accountId,
         platform,
+        status,
         data: rest,
     });
     if (error) throw error;
 }
 
-export async function updateDraft(supabase, id, updates, userId) {
+export async function updateDraft(supabase: SupabaseClient, id: string, updates: ContentDraftUpdate, userId: string | null = null): Promise<void> {
     // Merge data fields with existing (never replace the whole data object)
     const current = await getDraftById(supabase, id, userId);
     if (!current) throw new Error('Draft not found: ' + id);
-    const colUpdates = { updated_at: new Date().toISOString() };
-    if (updates.status) colUpdates.status = updates.status;
-    // merge data fields
-    const { status: _, accountId: __, ...dataUpdates } = updates;
+    const colUpdates: { updated_at: string; status?: DraftStatus; data?: Partial<ContentDraft> } = { updated_at: new Date().toISOString() };
+    const { status, ...dataUpdates } = updates;
+    if (status) colUpdates.status = status;
     if (Object.keys(dataUpdates).length > 0) {
         const { id: _id, accountId: _aid, platform: _p, status: _s, createdAt: _c, updatedAt: _u, ...currentData } = current;
         colUpdates.data = { ...currentData, ...dataUpdates };
     }
-    let q = supabase.from('content_drafts').update(colUpdates).eq('id', id);
-    if (userId) q = q.eq('user_id', userId);
-    const { error } = await q;
+    let query = supabase.from('content_drafts').update(colUpdates).eq('id', id);
+    if (userId) query = query.eq('user_id', userId);
+    const { error } = await query;
     if (error) throw error;
 }
 
-export async function deleteDraft(supabase, id, userId) {
-    let q = supabase.from('content_drafts').delete().eq('id', id);
-    if (userId) q = q.eq('user_id', userId);
-    const { error } = await q;
+export async function deleteDraft(supabase: SupabaseClient, id: string, userId: string | null = null): Promise<void> {
+    let query = supabase.from('content_drafts').delete().eq('id', id);
+    if (userId) query = query.eq('user_id', userId);
+    const { error } = await query;
     if (error) throw error;
 }
 ```
 
-### Step 5: Document the Schema
+Run `npm run typecheck` from the root after adding them.
+
+### Step 6: Document the Schema
 
 Update `docs/architecture/database/SCHEMA.md` with:
 - Table name and purpose
@@ -130,12 +166,12 @@ Update `docs/architecture/database/SCHEMA.md` with:
 - The `data` jsonb shape
 - Recommended indexes
 
-### Step 6: Wire Up the Feature
+### Step 7: Wire Up the Feature
 
 Follow the guides for:
 - `docs/features/NEW_API_ENDPOINT.md` - add backend routes
 - `docs/features/NEW_REACT_PAGE.md` - add frontend page
-- `docs/features/NEW_API_ENDPOINT.md` - add frontend api.js methods
+- `docs/features/NEW_API_ENDPOINT.md` - add frontend api.ts methods
 
 ## Naming Conventions for New Tables
 

@@ -5,118 +5,118 @@
 ```
 frontend/src/
 ├── components/
-│   ├── SurfaceBox.jsx, MetricBox.jsx, PageHeader.jsx, ...   <- Shared components, see DESIGN_SYSTEM.md
-│   ├── MetricAreaChart.jsx                 <- Shared Recharts area chart for single-metric comparisons
-│   ├── ChartPanel.jsx                      <- Titled chart container with an empty state
-│   └── ImageLightbox.jsx                   <- Thumbnail that opens the full image in a Dialog
+│   ├── SurfaceBox.tsx, MetricBox.tsx, PageHeader.tsx, ...   <- Shared components, see DESIGN_SYSTEM.md
+│   ├── MetricAreaChart.tsx                 <- Shared Recharts area chart for single-metric comparisons
+│   ├── ChartPanel.tsx                      <- Titled chart container with an empty state
+│   └── ImageLightbox.tsx                   <- Thumbnail that opens the full image in a Dialog
 ├── docs/                                   <- Public documentation at /docs (outside the feature tree: no auth, no AppContext)
-│   ├── DocsLayout.jsx                      <- Page frame: theme, search shortcut, copy page, scroll to hash
-│   ├── DocsHeader.jsx, DocsSidebarNav.jsx, DocsMobileNav.jsx, DocsPager.jsx, DocsToc.jsx, DocsSearch.jsx
-│   ├── useTableOfContents.js               <- Collects page headings and tracks the one in view
-│   ├── components.jsx                      <- DocTitle, H2, H3, Callout, Steps, CodeBlock, Table, PathCards, Badge
-│   ├── nav.js                              <- Tabs, groups and pages; the single source for navigation; firstPagePath(tab)
-│   ├── routes.js                           <- Slug to lazy page map; nav.test.js checks it matches nav.js
+│   ├── DocsLayout.tsx                      <- Page frame: theme, search shortcut, copy page, scroll to hash
+│   ├── DocsHeader.tsx, DocsSidebarNav.tsx, DocsMobileNav.tsx, DocsPager.tsx, DocsToc.tsx, DocsSearch.tsx
+│   ├── useTableOfContents.ts               <- Collects page headings and tracks the one in view
+│   ├── components.tsx                      <- DocTitle, H2, H3, Callout, Steps, CodeBlock, Table, PathCards, Badge
+│   ├── nav.ts                              <- Tabs, groups and pages; the single source for navigation; firstPagePath(tab)
+│   ├── routes.ts                           <- Slug to lazy page map; nav.test.ts checks it matches nav.ts
 │   └── pages/                              <- Overview, Use, SelfHost, Reference (one chunk each)
-│       ├── use/                            <- One file per page plus AdminLink.jsx; Use.jsx re-exports them
-│       ├── reference/                      <- One file per page; Reference.jsx re-exports them
-│       └── selfHost/                       <- One file per self-hosting page plus selfHostSql.js (selfHostSql.test.js); SelfHost.jsx re-exports them
+│       ├── use/                            <- One file per page plus AdminLink.tsx; Use.tsx re-exports them
+│       ├── reference/                      <- One file per page; Reference.tsx re-exports them
+│       └── selfHost/                       <- One file per self-hosting page plus selfHostSql.ts (selfHostSql.test.ts); SelfHost.tsx re-exports them
 ├── features/
 │   ├── analytics/
 │   │   ├── channel/
-│   │   │   ├── ChannelAnalytics.jsx        <- Page: YouTube channel analytics with eight tabs
-│   │   │   ├── ChannelOverviewTab.jsx, ChannelVideosTab.jsx, ChannelEngagementTab.jsx, ChannelContentTab.jsx
-│   │   │   ├── ChannelPublishingTab.jsx, ChannelGrowthTab.jsx, ChannelShortsTab.jsx, ChannelTagsTab.jsx, TagCloud.jsx
-│   │   │   ├── ChannelHeader.jsx, ChannelNoVideos.jsx, ChannelVideoTable.jsx, TrendArea.jsx, MetricGrid.jsx
-│   │   │   ├── useChannelAnalytics.js      <- Loads api.getAnalytics(id); returns data, loading and the reload
-│   │   │   └── channelChartData.js         <- Pure chart rows and labels (channelChartData.test.js)
+│   │   │   ├── ChannelAnalytics.tsx        <- Page: YouTube channel analytics with eight tabs
+│   │   │   ├── ChannelOverviewTab.tsx, ChannelVideosTab.tsx, ChannelEngagementTab.tsx, ChannelContentTab.tsx
+│   │   │   ├── ChannelPublishingTab.tsx, ChannelGrowthTab.tsx, ChannelShortsTab.tsx, ChannelTagsTab.tsx, TagCloud.tsx
+│   │   │   ├── ChannelHeader.tsx, ChannelNoVideos.tsx, ChannelVideoTable.tsx, TrendArea.tsx, MetricGrid.tsx
+│   │   │   ├── useChannelAnalytics.ts      <- Loads api.getAnalytics(id); returns data, loading and the reload
+│   │   │   └── channelChartData.ts         <- Pure chart rows and labels (channelChartData.test.ts)
 │   │   ├── instagram/
-│   │   │   ├── InstagramAnalytics.jsx      <- Page: Instagram account analytics (loads through useAccountAnalytics)
-│   │   │   ├── InstagramHeader.jsx, InstagramMetrics.jsx, InstagramInsightChips.jsx, TypeBadge.jsx
-│   │   │   ├── InstagramEngagementCharts.jsx, InstagramPostCharts.jsx, InstagramHashtags.jsx, InstagramRecentGrid.jsx
-│   │   │   ├── InstagramTopPostsTable.jsx, InstagramTypeSummaryTable.jsx
-│   │   │   └── instagramAnalyticsData.js   <- Pure chart rows and labels (instagramAnalyticsData.test.js)
+│   │   │   ├── InstagramAnalytics.tsx      <- Page: Instagram account analytics (loads through useAccountAnalytics)
+│   │   │   ├── InstagramHeader.tsx, InstagramMetrics.tsx, InstagramInsightChips.tsx, TypeBadge.tsx
+│   │   │   ├── InstagramEngagementCharts.tsx, InstagramPostCharts.tsx, InstagramHashtags.tsx, InstagramRecentGrid.tsx
+│   │   │   ├── InstagramTopPostsTable.tsx, InstagramTypeSummaryTable.tsx
+│   │   │   └── instagramAnalyticsData.ts   <- Pure chart rows and labels (instagramAnalyticsData.test.ts)
 │   │   ├── overview/
-│   │   │   ├── Overview.jsx                <- Page: cross-platform aggregate dashboard with six metric tabs
-│   │   │   ├── OverviewHeader.jsx, QuickActions.jsx, GettingStarted.jsx, MetricTabsList.jsx
-│   │   │   ├── AudienceTab.jsx, AudienceChart.jsx, ViewsTab.jsx, ContentTab.jsx, AccountsTab.jsx, CommentsTab.jsx, LikesTab.jsx
-│   │   │   ├── InstagramViewsTable.jsx, YouTubeViewsTable.jsx, AccountCell.jsx, AccountRankRow.jsx, CategoryRow.jsx, OpenAnalytics.jsx
-│   │   │   ├── useOverviewData.js          <- Loads api.getOverview() and re-polls while accounts are syncing
-│   │   │   ├── useOverviewStats.js         <- Memoized totals, rankings and chart rows
-│   │   │   └── overviewStats.js, overviewTrackedStats.js, overviewCharts.js, overviewLabels.js, greeting.js   <- Pure helpers with *.test.js
+│   │   │   ├── Overview.tsx                <- Page: cross-platform aggregate dashboard with six metric tabs
+│   │   │   ├── OverviewHeader.tsx, QuickActions.tsx, GettingStarted.tsx, MetricTabsList.tsx
+│   │   │   ├── AudienceTab.tsx, AudienceChart.tsx, ViewsTab.tsx, ContentTab.tsx, AccountsTab.tsx, CommentsTab.tsx, LikesTab.tsx
+│   │   │   ├── InstagramViewsTable.tsx, YouTubeViewsTable.tsx, AccountCell.tsx, AccountRankRow.tsx, CategoryRow.tsx, OpenAnalytics.tsx
+│   │   │   ├── useOverviewData.ts          <- Loads api.getOverview() and re-polls while accounts are syncing
+│   │   │   ├── useOverviewStats.ts         <- Memoized totals, rankings and chart rows
+│   │   │   └── overviewStats.ts, overviewTrackedStats.ts, overviewCharts.ts, overviewLabels.ts, greeting.ts   <- Pure helpers with *.test.ts
 │   │   ├── reddit/
-│   │   │   ├── RedditAnalytics.jsx         <- Page: Reddit account analytics (loads through useAccountAnalytics)
-│   │   │   ├── RedditHeader.jsx, RedditKarmaSummary.jsx, RedditKarmaCharts.jsx, RedditStatPanels.jsx
-│   │   │   ├── RedditTimingCharts.jsx, RedditSubredditTable.jsx, RedditTopPostsTable.jsx
-│   │   │   ├── redditAnalyticsData.js      <- Pure chart rows and stat lists (redditAnalyticsData.test.js)
-│   │   │   ├── RedditPosts.jsx             <- Per-account post explorer
-│   │   │   ├── RedditPostsAll.jsx          <- Global post explorer (all Reddit accounts)
-│   │   │   ├── RedditPostFilters.jsx, RedditPostTable.jsx   <- Filters and table shared by both post explorers
-│   │   │   └── redditPostUtils.js          <- Shared sort options, filtering and sorting
+│   │   │   ├── RedditAnalytics.tsx         <- Page: Reddit account analytics (loads through useAccountAnalytics)
+│   │   │   ├── RedditHeader.tsx, RedditKarmaSummary.tsx, RedditKarmaCharts.tsx, RedditStatPanels.tsx
+│   │   │   ├── RedditTimingCharts.tsx, RedditSubredditTable.tsx, RedditTopPostsTable.tsx
+│   │   │   ├── redditAnalyticsData.ts      <- Pure chart rows and stat lists (redditAnalyticsData.test.ts)
+│   │   │   ├── RedditPosts.tsx             <- Per-account post explorer
+│   │   │   ├── RedditPostsAll.tsx          <- Global post explorer (all Reddit accounts)
+│   │   │   ├── RedditPostFilters.tsx, RedditPostTable.tsx   <- Filters and table shared by both post explorers
+│   │   │   └── redditPostUtils.ts          <- Shared sort options, filtering and sorting
 │   │   └── tracked/
-│   │       ├── TrackedContent.jsx          <- Page: tracked Reddit posts and YouTube videos
-│   │       ├── TrackedMetrics.jsx, TrackedFilters.jsx, BulkCategoryBar.jsx, TrackedTable.jsx, TrackedRow.jsx, TrackedThumbnail.jsx
-│   │       ├── AddTrackedDialog.jsx, EditTrackedDialog.jsx, TrackedImageField.jsx, CategoryPicker.jsx, RowAction.jsx
-│   │       ├── useTrackedItems.js, useTrackedFilters.js, useTrackedSelection.js, useBulkCategory.js
-│   │       ├── useTrackedDelete.js, useAddTracked.js, useTrackedEditor.js   <- Delete, add form, edit and image upload
-│   │       ├── trackedList.js              <- Pure sort, filter, stats and form helpers (trackedList.test.js)
-│   │       ├── TrackedCategory.jsx         <- Page: per-category analytics for tracked content
-│   │       ├── CategoryYouTubeSection.jsx, CategoryRedditSection.jsx, NumberCell.jsx, OpenLink.jsx
-│   │       └── trackedCategoryStats.js     <- Pure per-category totals and labels (trackedCategoryStats.test.js)
+│   │       ├── TrackedContent.tsx          <- Page: tracked Reddit posts and YouTube videos
+│   │       ├── TrackedMetrics.tsx, TrackedFilters.tsx, BulkCategoryBar.tsx, TrackedTable.tsx, TrackedRow.tsx, TrackedThumbnail.tsx
+│   │       ├── AddTrackedDialog.tsx, EditTrackedDialog.tsx, TrackedImageField.tsx, CategoryPicker.tsx, RowAction.tsx
+│   │       ├── useTrackedItems.ts, useTrackedFilters.ts, useTrackedSelection.ts, useBulkCategory.ts
+│   │       ├── useTrackedDelete.ts, useAddTracked.ts, useTrackedEditor.ts   <- Delete, add form, edit and image upload
+│   │       ├── trackedList.ts              <- Pure sort, filter, stats and form helpers (trackedList.test.ts)
+│   │       ├── TrackedCategory.tsx         <- Page: per-category analytics for tracked content
+│   │       ├── CategoryYouTubeSection.tsx, CategoryRedditSection.tsx, NumberCell.tsx, OpenLink.tsx
+│   │       └── trackedCategoryStats.ts     <- Pure per-category totals and labels (trackedCategoryStats.test.ts)
 │   ├── accounts/
-│   │   ├── AccountManager.jsx              <- Page: connected accounts by platform, refresh and remove
-│   │   ├── AccountSection.jsx, AccountCard.jsx, AccountsEmptyState.jsx
-│   │   ├── AddAccountDialog.jsx            <- Platform picker, per-platform fields and footer actions
-│   │   ├── YouTubeAccountFields.jsx, RedditAccountFields.jsx, AddAccountFooter.jsx
-│   │   ├── useAddAccount.js                <- Add dialog state; Back keeps typed fields, Cancel clears them
-│   │   ├── useAccountRefresh.js, useAccountDelete.js
-│   │   ├── useInstagramOAuthReturn.js      <- Reads ?ig_connected, ?ig_error and ?add once, then clears them
-│   │   ├── platformChoices.js              <- Platform choice titles, descriptions and icons
-│   │   └── accountManagerData.js           <- Pure OAuth return, error text, card metrics (accountManagerData.test.js)
+│   │   ├── AccountManager.tsx              <- Page: connected accounts by platform, refresh and remove
+│   │   ├── AccountSection.tsx, AccountCard.tsx, AccountsEmptyState.tsx
+│   │   ├── AddAccountDialog.tsx            <- Platform picker, per-platform fields and footer actions
+│   │   ├── YouTubeAccountFields.tsx, RedditAccountFields.tsx, AddAccountFooter.tsx
+│   │   ├── useAddAccount.ts                <- Add dialog state; Back keeps typed fields, Cancel clears them
+│   │   ├── useAccountRefresh.ts, useAccountDelete.ts
+│   │   ├── useInstagramOAuthReturn.ts      <- Reads ?ig_connected, ?ig_error and ?add once, then clears them
+│   │   ├── platformChoices.ts              <- Platform choice titles, descriptions and icons
+│   │   └── accountManagerData.ts           <- Pure OAuth return, error text, card metrics (accountManagerData.test.ts)
 │   ├── publishing/
-│   │   ├── UploadContent.jsx               <- Page: tabs, Cloudinary alert, scheduled posts (default export)
-│   │   ├── SinglePostTab.jsx               <- Single post form or its progress view
-│   │   ├── MediaPicker.jsx, CaptionBox.jsx, SinglePostSettings.jsx, ReelOptions.jsx, ScheduleFields.jsx, PostSummary.jsx
-│   │   ├── PublishProgress.jsx, PublishResult.jsx   <- Upload, processing, done, scheduled and error states
-│   │   ├── BulkUploadTab.jsx               <- Bulk queue, results and settings
-│   │   ├── BulkFileList.jsx, BulkFileItem.jsx, BulkResults.jsx, BulkSettings.jsx, BulkScheduleFields.jsx
-│   │   ├── ScheduledPostsSection.jsx       <- Scheduled post table with filters and the overdue alert
-│   │   ├── ScheduledPostRow.jsx, ScheduledPostEditRow.jsx, ScheduledPostDialogs.jsx, OverdueAlert.jsx
-│   │   ├── AccountSelect.jsx, TypePicker.jsx, ScheduleToggle.jsx, ScheduleHint.jsx, IconInput.jsx, StatusBadge.jsx, NoInstagramAccount.jsx
-│   │   ├── useSinglePostForm.js, useSinglePostMedia.js   <- Single post fields, file and cover
-│   │   ├── useSinglePublish.js, usePublishProgress.js    <- Single post publish or schedule run
-│   │   ├── useBulkSettings.js, useBulkQueue.js, useBulkPublish.js   <- Bulk settings, file queue, upload loop
-│   │   ├── useScheduledPosts.js, useScheduledPostEdit.js, useScheduledPostDelete.js
-│   │   ├── containerPolling.js             <- Waits for an Instagram container (single post and bulk)
-│   │   ├── singlePostFlow.js               <- Single post Cloudinary upload, then publish or schedule
-│   │   ├── publishConstants.js             <- Content types, statuses, intervals, caption limit
-│   │   └── publishHelpers.js, scheduleHelpers.js, queueHelpers.js   <- Pure helpers with *.test.js
+│   │   ├── UploadContent.tsx               <- Page: tabs, Cloudinary alert, scheduled posts (default export)
+│   │   ├── SinglePostTab.tsx               <- Single post form or its progress view
+│   │   ├── MediaPicker.tsx, CaptionBox.tsx, SinglePostSettings.tsx, ReelOptions.tsx, ScheduleFields.tsx, PostSummary.tsx
+│   │   ├── PublishProgress.tsx, PublishResult.tsx   <- Upload, processing, done, scheduled and error states
+│   │   ├── BulkUploadTab.tsx               <- Bulk queue, results and settings
+│   │   ├── BulkFileList.tsx, BulkFileItem.tsx, BulkResults.tsx, BulkSettings.tsx, BulkScheduleFields.tsx
+│   │   ├── ScheduledPostsSection.tsx       <- Scheduled post table with filters and the overdue alert
+│   │   ├── ScheduledPostRow.tsx, ScheduledPostEditRow.tsx, ScheduledPostDialogs.tsx, OverdueAlert.tsx
+│   │   ├── AccountSelect.tsx, TypePicker.tsx, ScheduleToggle.tsx, ScheduleHint.tsx, IconInput.tsx, StatusBadge.tsx, NoInstagramAccount.tsx
+│   │   ├── useSinglePostForm.ts, useSinglePostMedia.ts   <- Single post fields, file and cover
+│   │   ├── useSinglePublish.ts, usePublishProgress.ts    <- Single post publish or schedule run
+│   │   ├── useBulkSettings.ts, useBulkQueue.ts, useBulkPublish.ts   <- Bulk settings, file queue, upload loop
+│   │   ├── useScheduledPosts.ts, useScheduledPostEdit.ts, useScheduledPostDelete.ts
+│   │   ├── containerPolling.ts             <- Waits for an Instagram container (single post and bulk)
+│   │   ├── singlePostFlow.ts               <- Single post Cloudinary upload, then publish or schedule
+│   │   ├── publishConstants.ts             <- Content types, statuses, intervals, caption limit
+│   │   └── publishHelpers.ts, scheduleHelpers.ts, queueHelpers.ts   <- Pure helpers with *.test.ts
 │   ├── settings/
-│   │   ├── Settings.jsx                    <- Page: loads server settings, then renders each section; keeps the #hash scroll
-│   │   ├── SettingsSection.jsx, AppearanceSection.jsx, ServerKeysSection.jsx, SchedulingSection.jsx
-│   │   ├── PlatformRequirementsSection.jsx, UsefulLinksSection.jsx
-│   │   ├── SchedulingSetupGuide.jsx        <- Optional GitHub backup scheduler steps for administrators
-│   │   ├── SchedulingSetupSteps.jsx, SetupStep.jsx, GithubRepoForm.jsx, CopyChip.jsx, GuideLinkButton.jsx, RepoLinkButton.jsx
-│   │   ├── useServerSettings.js            <- Loads keys and the saved repository; saves the repository
-│   │   ├── useApiHealthCheck.js            <- Runs api.health() for the server keys section
-│   │   ├── settingsData.js                 <- Pure load sequence (api injected), links, health text (settingsData.test.js)
-│   │   └── schedulingProgress.js           <- Pure guide progress in localStorage (schedulingProgress.test.js)
+│   │   ├── Settings.tsx                    <- Page: loads server settings, then renders each section; keeps the #hash scroll
+│   │   ├── SettingsSection.tsx, AppearanceSection.tsx, ServerKeysSection.tsx, SchedulingSection.tsx
+│   │   ├── PlatformRequirementsSection.tsx, UsefulLinksSection.tsx
+│   │   ├── SchedulingSetupGuide.tsx        <- Optional GitHub backup scheduler steps for administrators
+│   │   ├── SchedulingSetupSteps.tsx, SetupStep.tsx, GithubRepoForm.tsx, CopyChip.tsx, GuideLinkButton.tsx, RepoLinkButton.tsx
+│   │   ├── useServerSettings.ts            <- Loads keys and the saved repository; saves the repository
+│   │   ├── useApiHealthCheck.ts            <- Runs api.health() for the server keys section
+│   │   ├── settingsData.ts                 <- Pure load sequence (api injected), links, health text (settingsData.test.ts)
+│   │   └── schedulingProgress.ts           <- Pure guide progress in localStorage (schedulingProgress.test.ts)
 │   ├── analytics/videos/
-│   │   ├── VideoExplorer.jsx               <- Page: YouTube video library with filtering
-│   │   ├── VideoFilters.jsx, LayoutToggle.jsx, VideoListTable.jsx, VideoSortHeader.jsx, VideoGrid.jsx
-│   │   ├── useChannelVideos.js             <- Loads every channel's videos; shared with Shorts
-│   │   └── videoLibrary.js                 <- Pure channel merge, filter, sort and totals (videoLibrary.test.js)
+│   │   ├── VideoExplorer.tsx               <- Page: YouTube video library with filtering
+│   │   ├── VideoFilters.tsx, LayoutToggle.tsx, VideoListTable.tsx, VideoSortHeader.tsx, VideoGrid.tsx
+│   │   ├── useChannelVideos.ts             <- Loads every channel's videos; shared with Shorts
+│   │   └── videoLibrary.ts                 <- Pure channel merge, filter, sort and totals (videoLibrary.test.ts)
 │   ├── analytics/shorts/
-│   │   ├── ShortsExplorer.jsx              <- Page: YouTube Shorts (60 seconds or less)
-│   │   ├── ShortsFilters.jsx, ShortsGrid.jsx
-│   │   └── shortsLibrary.js                <- Pure Shorts selection, filter, sort and description (shortsLibrary.test.js)
+│   │   ├── ShortsExplorer.tsx              <- Page: YouTube Shorts (60 seconds or less)
+│   │   ├── ShortsFilters.tsx, ShortsGrid.tsx
+│   │   └── shortsLibrary.ts                <- Pure Shorts selection, filter, sort and description (shortsLibrary.test.ts)
 │   └── analytics/reels/
-│       ├── ReelsExplorer.jsx               <- Page: Instagram reels, posts and videos
-│       ├── ReelsMetrics.jsx, ReelsFilters.jsx, ReelsGrid.jsx
-│       ├── useInstagramMedia.js            <- Loads media from every Instagram account
-│       └── reelsLibrary.js                 <- Pure merge, filter, sort and totals (reelsLibrary.test.js)
+│       ├── ReelsExplorer.tsx               <- Page: Instagram reels, posts and videos
+│       ├── ReelsMetrics.tsx, ReelsFilters.tsx, ReelsGrid.tsx
+│       ├── useInstagramMedia.ts            <- Loads media from every Instagram account
+│       └── reelsLibrary.ts                 <- Pure merge, filter, sort and totals (reelsLibrary.test.ts)
 ```
 
-Test files are not in this tree. A `(name.test.js)` or `with *.test.js` note above means the helper has a test in `frontend/tests/` at the mirrored path: `src/features/analytics/channel/channelChartData.js` is covered by `frontend/tests/features/analytics/channel/channelChartData.test.js`, and `src/docs/nav.js` by `frontend/tests/docs/nav.test.js`. See `docs/workflows/TESTING.md`.
+Test files are not in this tree. A `(name.test.ts)` or `with *.test.ts` note above means the helper has a test in `frontend/tests/` at the mirrored path: `src/features/analytics/channel/channelChartData.ts` is covered by `frontend/tests/features/analytics/channel/channelChartData.test.ts`, and `src/docs/nav.ts` by `frontend/tests/docs/nav.test.ts`. See `docs/workflows/TESTING.md`.
 
 ## Metric Naming
 
@@ -130,10 +130,10 @@ the word "score".
 
 ## Shared Chart Component
 
-`components/MetricAreaChart.jsx` renders a single-series area chart with the project's axis,
+`components/MetricAreaChart.tsx` renders a single-series area chart with the project's axis,
 grid, gradient, and tooltip styling. Use it instead of hand-rolling a Recharts `AreaChart`:
 
-```jsx
+```tsx
 <MetricAreaChart
   data={[{ name: 'Item', karma: 42 }]}
   dataKey="karma"
@@ -148,10 +148,10 @@ never collide.
 
 ## Image Lightbox
 
-`components/ImageLightbox.jsx` renders a thumbnail that opens the full image in a shadcn
+`components/ImageLightbox.tsx` renders a thumbnail that opens the full image in a shadcn
 `Dialog`. Used for tracked Reddit post images, which have no platform thumbnail:
 
-```jsx
+```tsx
 <ImageLightbox src={item.imageUrl} alt={item.title} thumbClassName="size-14" />
 ```
 
@@ -168,21 +168,22 @@ Each top-level directory under `features/` represents a product area. Sub-direct
 
 ```
 features/analytics/youtube/   <- correct
-features/ChannelAnalytics.jsx <- wrong (flat, not grouped)
+features/ChannelAnalytics.tsx <- wrong (flat, not grouped)
 ```
 
 ### One page component per file
 
-Each `.jsx` file in `features/` is a routable page. It is lazy-imported in `App.jsx` and mapped to a URL path. Shared sub-components that appear only on that page live in the same directory:
+Each feature directory has one routable page component, exported as default from a `PascalCase.tsx` file. It is lazy-imported in `App.tsx` and mapped to a URL path. Sub-components, hooks and pure helpers that serve only that page live in the same directory:
 
 ```
 features/analytics/channel/
-  ChannelAnalytics.jsx         <- page (exported as default)
-  VideoCard.jsx                <- sub-component used only here
-  useChannelData.js            <- hook used only here
+  ChannelAnalytics.tsx         <- page (exported as default)
+  ChannelHeader.tsx            <- sub-component used only here (props typed by ChannelHeaderProps)
+  useChannelAnalytics.ts       <- hook used only here (.ts: no JSX)
+  channelChartData.ts          <- pure helper, tested from frontend/tests/
 ```
 
-Shared components used across multiple features go in `components/` (shadcn UI pieces) or `components/shared/` (custom cross-feature pieces).
+Shared components used across multiple features go in `components/ui/` (shadcn primitives) or `components/` (project components such as `PageHeader` and `MetricBox`).
 
 ### Page components receive no props
 
@@ -194,9 +195,10 @@ Each page manages its own loading/data/error state. Pages do not write to `AppCo
 
 ### Naming
 
-- Page files: `PascalCase.jsx` matching the feature name - `ChannelAnalytics.jsx`, `Schedule.jsx`
-- Sub-components: `PascalCase.jsx` named for what they render - `VideoCard.jsx`, `StatRow.jsx`
-- Hooks: `camelCase.js` with `use` prefix - `useChannelData.js`
+- Page files: `PascalCase.tsx` matching the feature name - `ChannelAnalytics.tsx`, `UploadContent.tsx`
+- Sub-components: `PascalCase.tsx` named for what they render, with a `<Component>Props` interface - `ChannelHeader.tsx`, `ReelsGrid.tsx`
+- Hooks: `useCamelCase.ts` - `useChannelAnalytics.ts`; export the result type when callers need it
+- Pure helpers: `camelCase.ts` with no JSX, so Node tests can import them - `channelChartData.ts`
 - Directories: `camelCase` matching the feature - `analytics/channel/`, `publish/`
 
 ## Current Features
@@ -219,9 +221,9 @@ Each page manages its own loading/data/error state. Pages do not write to `AppCo
 
 ## Adding a New Feature
 
-1. Create `frontend/src/features/myFeature/MyPage.jsx`
+1. Create `frontend/src/features/myFeature/MyPage.tsx`
 2. Follow `docs/features/NEW_REACT_PAGE.md` for the component template
-3. Add lazy import and route in `App.jsx`
-4. Add sidebar link in `Sidebar.jsx` if it's a top-level destination or per-account page
-5. Add API methods in `api.js`
+3. Add lazy import and route in `App.tsx`
+4. Add a nav item to `NAV_GROUPS` in `layout/navigation.ts` if it's a top-level destination (accounts are listed in the sidebar automatically)
+5. Add API methods in `api.ts` that return the response types from `shared/types/`, then run `npm run typecheck`
 6. Update this file with the new entry in the Current Features table

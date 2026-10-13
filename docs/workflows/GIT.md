@@ -23,7 +23,7 @@ A meaningful change is one that:
 - Updates documentation to reflect a real change
 - Refactors without changing behavior
 
-Do not commit work-in-progress that breaks the build. Use a feature branch if the work spans multiple sessions.
+Do not commit work-in-progress that breaks the build or the type check. Use a feature branch if the work spans multiple sessions.
 
 ---
 
@@ -100,8 +100,8 @@ release: v1.1.0 - Reddit integration
 ## What to Commit Together
 
 ### Always group these in a single commit:
-- A new route + its db.js functions + its api.js method
-- A new page + its route in App.jsx + its Sidebar entry
+- A new route + its db.ts functions + its api.ts method
+- A new page + its route in App.tsx + its Sidebar entry
 - A bug fix + updated docs if the fix changes documented behavior
 - A new feature + CHANGELOG.md update + relevant architecture doc updates
 - A dependency change + the workspace `package.json` it touches + the root `package-lock.json`
@@ -199,15 +199,16 @@ Run before every commit:
 
 Run the commands from the repository root:
 
-1. `npm run build` - frontend must build without errors
-2. `npm test` - backend and frontend unit tests must pass
-3. `npm run lint` - no new lint errors (one run covers backend, frontend, tests and scripts)
-4. `git status` - verify only intended files are staged
-5. `git diff --staged` - review the full diff before committing
-6. Check no secrets or credentials appear in the diff
-7. Check no lockfile appears inside `backend/` or `frontend/`; the root `package-lock.json` is the only lockfile
-8. Verify CHANGELOG.md is updated if the commit adds a feature or fix
-9. Verify the commit body ends with `Refs #N` or `Closes #N` for the tracking issue
+1. `npm run typecheck` - every TypeScript project must type-check (Vite and Wrangler do not check types)
+2. `npm run build` - frontend must build without errors
+3. `npm test` - backend and frontend unit tests must pass
+4. `npm run lint` - no new lint errors (one run covers backend, frontend, tests and scripts)
+5. `git status` - verify only intended files are staged
+6. `git diff --staged` - review the full diff before committing
+7. Check no secrets or credentials appear in the diff
+8. Check no lockfile appears inside `backend/` or `frontend/`; the root `package-lock.json` is the only lockfile
+9. Verify CHANGELOG.md is updated if the commit adds a feature or fix
+10. Verify the commit body ends with `Refs #N` or `Closes #N` for the tracking issue
 
 ---
 
@@ -217,7 +218,8 @@ After pushing to `main`, monitor GitHub Actions:
 
 - `backend/` changes trigger `deploy-backend.yml`
 - `frontend/` changes trigger `deploy-frontend.yml`
-- Root `package.json` or `package-lock.json` changes trigger both
+- `shared/`, `tsconfig.base.json`, root `package.json` or `package-lock.json` changes trigger both
+- Every pull request and every push to another branch runs `ci.yml` (type check, lint, test, build, Worker dry-run)
 - `scripts/` changes do not trigger automatic deployment
 
 If a deployment workflow fails:

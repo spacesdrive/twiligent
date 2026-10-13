@@ -25,7 +25,7 @@ npm run build
 cd frontend
 npx wrangler pages deploy dist --project-name=twiligent
 `}</CodeBlock>
-          <P>The first time, Wrangler creates the Pages project and prints the address, for example <Code>https://twiligent.pages.dev</Code>.</P>
+          <P><Code>npm run build</Code> runs Vite with <Code>frontend/vite.config.ts</Code> and writes the site to <Code>frontend/dist</Code>. The first time, Wrangler creates the Pages project and prints the address, for example <Code>https://twiligent.pages.dev</Code>.</P>
         </Step>
         <Step title="Point the backend at it">
           <P>Set <Code>FRONTEND_URL</Code> on the Worker to that address, so Instagram sign-in returns members to the right place:</P>

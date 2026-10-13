@@ -3,8 +3,8 @@
 ## Version
 
 This project uses **Tailwind CSS v4**. The v4 API is substantially different from v3:
-- Configuration is done via CSS `@theme` instead of `tailwind.config.js`
-- No `tailwind.config.js` exists - do not create one
+- Configuration is done via CSS `@theme` in `frontend/src/index.css` instead of a Tailwind config file
+- The project has no Tailwind config file (`components.json` sets `tailwind.config` to an empty string) - do not create one
 - Use `@import "tailwindcss"` in the main CSS entry point
 - Utility classes are the same as v3 in most cases
 
@@ -28,7 +28,7 @@ The shadcn names (`bg-background`, `text-muted-foreground`, `bg-primary`) still 
 
 The app shell already pads and centres the content column. Pages start with a flex column:
 
-```jsx
+```tsx
 <div className="flex flex-col gap-6">
   <PageHeader title="Videos" description="..." actions={...} />
   {/* sections */}
@@ -37,7 +37,7 @@ The app shell already pads and centres the content column. Pages start with a fl
 
 ### Grid layouts
 
-```jsx
+```tsx
 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
   {/* stat cards */}
 </div>
@@ -45,7 +45,7 @@ The app shell already pads and centres the content column. Pages start with a fl
 
 ### Flex rows
 
-```jsx
+```tsx
 <div className="flex items-center gap-2">
   {/* icon + label */}
 </div>
@@ -65,7 +65,7 @@ Use the spacing scale consistently. Common patterns in this project:
 
 Use `PageHeader` for the page title and `SectionHeader` or a `SurfaceBox` title for sections. When writing type directly:
 
-```jsx
+```tsx
 <h1 className="font-heading text-page-title font-semibold">Page title</h1>
 <h2 className="font-heading text-section font-semibold">Section</h2>
 <p className="text-small text-ink-muted">Secondary info</p>
@@ -83,7 +83,7 @@ Mobile-first. Most pages in this app are designed primarily for desktop (analyti
 
 ## Dark Mode
 
-Light and dark values are both defined as tokens, so token utilities switch automatically. Do not use `dark:` variants for colour. The one sanctioned use of `dark:` is swapping the logo file in `components/brand/Logo.jsx`.
+Light and dark values are both defined as tokens, so token utilities switch automatically. Do not use `dark:` variants for colour. The one sanctioned use of `dark:` is swapping the logo file in `components/brand/Logo.tsx`.
 
 If you need to add a custom dark-mode variant for non-token colors, add a CSS custom property to the `@theme` block instead.
 
@@ -91,7 +91,7 @@ If you need to add a custom dark-mode variant for non-token colors, add a CSS cu
 
 Use `cn()` (from `@/lib/utils`) for conditional class merging:
 
-```jsx
+```tsx
 import { cn } from '@/lib/utils';
 
 <div className={cn(
@@ -108,5 +108,5 @@ Never use template literals for conditional classes - they won't be properly mer
 - Do not use `style={{}}` for values that can be expressed as Tailwind utilities
 - Do not hardcode colors in class names (`text-[#ff0000]`) - use design token utilities
 - Do not use `!important` (`!text-red-500`) unless debugging a specificity conflict
-- Do not create a `tailwind.config.js` - configuration lives in the CSS `@theme` block in v4
+- Do not create a Tailwind config file - configuration lives in the CSS `@theme` block in v4
 - Do not use `dark:` prefix variants - theme is token-based, not class-based

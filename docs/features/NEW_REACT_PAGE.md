@@ -1,43 +1,47 @@
 # Guide: Adding a New React Page
 
-Read `frontend/src/features/analytics/channel/ChannelAnalytics.jsx` as a reference implementation before starting.
+Read `frontend/src/features/analytics/channel/ChannelAnalytics.tsx` as a reference implementation before starting.
 
 ## Files to Create or Modify
 
 | Action | File |
 |---|---|
-| Create | `frontend/src/features/myFeature/MyPage.jsx` |
-| Modify | `frontend/src/App.jsx` (add lazy import + route) |
-| Modify | `frontend/src/layout/navigation.js` (add a nav item if the page belongs in the sidebar) |
-| Modify | `frontend/src/services/api.js` (add API methods) |
+| Modify | `shared/types/*.ts` (response type for any new endpoint, see `NEW_API_ENDPOINT.md`) |
+| Create | `frontend/src/features/myFeature/MyPage.tsx` |
+| Modify | `frontend/src/App.tsx` (add lazy import + route) |
+| Modify | `frontend/src/layout/navigation.ts` (add a nav item if the page belongs in the sidebar) |
+| Modify | `frontend/src/services/api.ts` (add API methods) |
 | Update | `docs/architecture/frontend/REACT_ARCHITECTURE.md` |
 
 ## Step 1: Create the Page Component
 
-```jsx
-// frontend/src/features/myFeature/MyPage.jsx
+```tsx
+// frontend/src/features/myFeature/MyPage.tsx
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
+import { UserX } from 'lucide-react';
+import PageHeader from '@/components/PageHeader';
+import SurfaceBox from '@/components/SurfaceBox';
+import { EmptyState, PageSkeleton } from '@/components/StateViews';
 import { useAppContext } from '../../context/AppContext';
 import { api } from '../../services/api';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import type { MyData } from '@shared/types/domain.ts';
 
 export default function MyPage() {
-    const { id } = useParams();                          // if the page has a dynamic segment
+    const { id } = useParams<{ id: string }>();          // if the page has a dynamic segment
     const { accounts, showToast } = useAppContext();
-    const [data, setData] = useState(null);
+    const [data, setData] = useState<MyData | null>(null);
     const [loading, setLoading] = useState(true);
 
     const account = accounts.find(a => a.id === id);    // find from global accounts
 
     const loadData = useCallback(async () => {
-        if (!account) return;
+        if (!account || !id) return;
         try {
-            const result = await api.getMyData(id);
+            const result = await api.getMyData(id);     // typed by api.ts, no cast needed
             setData(result);
         } catch (err) {
-            showToast(err.message, 'error');
+            showToast((err as Error).message, 'error');
         } finally {
             setLoading(false);
         }
@@ -68,10 +72,10 @@ export default function MyPage() {
 }
 ```
 
-## Step 2: Add the Route in App.jsx
+## Step 2: Add the Route in App.tsx
 
-```jsx
-// frontend/src/App.jsx
+```tsx
+// frontend/src/App.tsx
 const MyPage = lazy(() => import('./features/myFeature/MyPage'));
 
 // In the router definition, inside the children array:
@@ -80,24 +84,31 @@ const MyPage = lazy(() => import('./features/myFeature/MyPage'));
 
 ## Step 3: Add Navigation
 
-If the page belongs in the sidebar, add it to `NAV_GROUPS` in `frontend/src/layout/navigation.js`. The sidebar, top bar title and command palette pick it up automatically:
+If the page belongs in the sidebar, add it to `NAV_GROUPS` in `frontend/src/layout/navigation.ts`. The sidebar, top bar title and command palette pick it up automatically:
 
-```js
+```ts
 { path: '/my-page', label: 'My page', icon: IconName },
 ```
+
+`icon` is a `LucideIcon` (the component, not an element); the item is checked against the `NavItem` interface in the same file.
 
 Detail pages that are not in the sidebar get a top bar title in `DETAIL_ROUTES` in the same file.
 
 ## Step 4: Add API Methods
 
-```js
-// frontend/src/services/api.js
-getMyData: (id) => request(`/accounts/${id}/my-data`),
+```ts
+// frontend/src/services/api.ts
+getMyData: (id: string) => request<MyData>(`/accounts/${id}/my-data`),
 ```
+
+## Step 5: Type-check
+
+Run `npm run typecheck` from the repository root and fix every error. Vite strips types without checking them, so a page that builds can still have type errors.
 
 ## Conventions
 
 - Use `useAppContext()` - don't re-fetch the accounts list, use what's in context
+- Use the response types `api.ts` returns; do not restate them in the page. Sub-components get a `<Component>Props` interface
 - Always handle loading and error states
 - Use `PageSkeleton` or `Skeleton` for loading states, `EmptyState` for no data, and a toast for failures
 - Use semantic HTML for the page structure
@@ -109,7 +120,7 @@ getMyData: (id) => request(`/accounts/${id}/my-data`),
 
 For pages that show aggregate data across all accounts (like Overview):
 
-```jsx
+```tsx
 export default function MyAggregatePage() {
     const { accounts, loading: accountsLoading } = useAppContext();
     // accounts is already loaded - no need to fetch

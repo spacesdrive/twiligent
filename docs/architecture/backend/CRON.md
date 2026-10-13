@@ -7,13 +7,13 @@
 crons = ["*/15 * * * *", "0 0 * * *"]
 ```
 
-Both cron triggers invoke the `scheduled` export from `backend/server.js`.
+Both cron triggers invoke the `scheduled` export from `backend/server.ts`.
 
 ## Cron Handlers
 
 ### `*/15 * * * *` - Instagram Scheduled Post Publisher
 
-**Function:** `processScheduledPosts(supabase)` in `backend/utils/scheduler.js`
+**Function:** `processScheduledPosts(supabase)` in `backend/utils/scheduler.ts`
 
 **What it does:**
 1. Queries `scheduled_posts` where `status = 'pending'` and `scheduled_at <= now()`
@@ -24,17 +24,17 @@ Both cron triggers invoke the `scheduled` export from `backend/server.js`.
    - On success: sets status to `'published'`, stores `publishedMediaId` and `publishedAt` in `data`
    - On failure: sets status to `'failed'`, stores `error` message in `data`
 
-`backend/tests/utils/scheduler.test.js` pins this sequence, the log lines and the stored results against a fake Supabase client and Graph API (fixtures and golden snapshots in `backend/tests/fixtures/`).
+`backend/tests/utils/scheduler.test.ts` pins this sequence, the log lines and the stored results against a fake Supabase client and Graph API (fixtures and golden snapshots in `backend/tests/fixtures/`).
 
 **No userId filter** - the scheduler operates across all users. It uses the service-role Supabase client.
 
 **Concurrency safety:** The `'publishing'` status acts as a mutex. If the Worker cron and GitHub Actions cron overlap, the second one to claim a post will find it already in `'publishing'` state and skip it (it won't appear in the `status=pending` query).
 
-### `0 0 * * *` - Instagram Token Auto-Refresh + Reddit Session Refresh
+### `0 0 * * *` - Instagram Token Auto-Refresh and Reddit Session Hook
 
 Two functions run in parallel via `ctx.waitUntil()`:
 
-**1. `autoRefreshInstagramTokens(supabase)` in `backend/services/instagram.js`**
+**1. `autoRefreshInstagramTokens(supabase)` in `backend/services/instagram.ts`**
 
 **What it does:**
 1. Queries all accounts with `platform = 'instagram'`
@@ -48,27 +48,16 @@ Two functions run in parallel via `ctx.waitUntil()`:
 - The daily cron refreshes any token expiring within 15 days
 - This gives a 15-day window for recovery if the cron fails for a few days
 
-**2. `autoRefreshRedditSessions(supabase, encryptionKey)` in `backend/services/reddit.js`**
+**2. `autoRefreshRedditSessions()` in `backend/services/reddit.ts`**
 
-**What it does:**
-1. Queries all accounts with `platform = 'reddit'` that have `encryptedPassword` set
-2. For each, checks if `cookieAcquiredAt` is older than 23 hours
-3. If stale: decrypts the stored password using `REDDIT_ENCRYPTION_KEY` and calls `loginToReddit(username, password)`
-4. Updates `cookie`, `cookieAcquiredAt`, and `cookieExpiresAt` in Supabase
-5. Logs success or error per account; never throws - failures are non-fatal
-
-**Cookie lifecycle:**
-- Reddit session cookies obtained via `ssl.reddit.com/api/login` last approximately 24 hours
-- The daily cron refreshes cookies older than 23 hours
-- If `REDDIT_ENCRYPTION_KEY` is not set, this function exits immediately (no-op)
-- Accounts without a stored encrypted password (public-only access) are skipped
+This function is currently a no-op: it takes no arguments and returns immediately. Reddit accounts are added with a `reddit_session` cookie copied from the browser (`POST /api/accounts/reddit` with `{ username, cookie }`), and nothing logs in to Reddit or refreshes that cookie on a schedule. When the cookie expires, the user re-adds the account. `REDDIT_ENCRYPTION_KEY` is declared in `Env` but read nowhere.
 
 ## The `ctx.waitUntil()` Pattern
 
 Cron handlers use `ctx.waitUntil()` to run work after the handler returns:
 
-```js
-async scheduled(event, env, ctx) {
+```ts
+async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext) {
     const supabase = getSupabase(env);
     if (event.cron === '*/15 * * * *') {
         ctx.waitUntil(processScheduledPosts(supabase));
@@ -80,7 +69,7 @@ This is required because Workers have a request deadline. `ctx.waitUntil()` tell
 
 ## Dual-Scheduler (GitHub Actions Fallback)
 
-The same `*/15` publishing logic also runs via `scripts/publish-scheduled.js` in GitHub Actions. See `docs/architecture/data-flows/SCHEDULING.md` for details on how both systems coexist safely.
+The same `*/15` publishing logic also runs via `scripts/publish-scheduled.ts` in GitHub Actions. See `docs/architecture/data-flows/SCHEDULING.md` for details on how both systems coexist safely.
 
 ## Adding a New Cron Trigger
 
@@ -89,14 +78,14 @@ The same `*/15` publishing logic also runs via `scripts/publish-scheduled.js` in
    crons = ["*/15 * * * *", "0 0 * * *", "0 12 * * 1"]
    ```
 
-2. Add a handler branch in `server.js`:
-   ```js
+2. Add a handler branch in `server.ts`:
+   ```ts
    } else if (event.cron === '0 12 * * 1') {
        ctx.waitUntil(myWeeklyJob(supabase));
    }
    ```
 
-3. Implement `myWeeklyJob(supabase)` in the appropriate service or utils file
+3. Implement `myWeeklyJob(supabase: SupabaseClient): Promise<void>` in the appropriate service or utils file, and run `npm run typecheck`
 
 4. Update `docs/architecture/backend/CRON.md` (this file)
 

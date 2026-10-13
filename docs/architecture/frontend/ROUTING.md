@@ -2,40 +2,40 @@
 
 ## Router Configuration
 
-The app uses React Router v6 in `frontend/src/App.jsx`. The router uses `BrowserRouter` with a nested layout route.
+The app uses React Router v6 in `frontend/src/App.tsx`. The router uses `BrowserRouter` with a nested layout route.
 
 ## Route Table
 
 | Path | Component | Notes |
 |---|---|---|
-| `/login` | `Login.jsx` | Public - redirects to `/` if already authenticated |
-| `/docs`, `/docs/*` | `docs/DocsLayout.jsx` | Public documentation. Child routes come from `docsChildRoutes` in `docs/routes.js`; unknown paths redirect to `/docs` |
+| `/login` | `Login.tsx` | Public - redirects to `/` if already authenticated |
+| `/docs`, `/docs/*` | `docs/DocsLayout.tsx` | Public documentation. Child routes come from `docsChildRoutes` in `docs/routes.ts`; unknown paths redirect to `/docs` |
 | `/` (layout) | `AppLayout` (inline) | Protected - redirects to `/login` if unauthenticated |
-| `/` (index) | `Overview.jsx` | Default page after login |
-| `/accounts` | `AccountManager.jsx` | Connect and remove accounts. `?add=1` opens the add flow; `?ig_connected` and `?ig_error` report the Instagram OAuth result |
-| `/channel/:id` | `ChannelAnalytics.jsx` | `:id` = account.id for YouTube accounts |
-| `/instagram/:id` | `InstagramAnalytics.jsx` | `:id` = account.id for Instagram accounts |
-| `/reddit/:id` | `RedditAnalytics.jsx` | `:id` = account.id for Reddit accounts |
-| `/reddit-posts` | `RedditPostsAll.jsx` | Combined post explorer across all connected Reddit accounts |
-| `/reddit-posts/:id` | `RedditPosts.jsx` | `:id` = account.id; filterable/sortable post explorer for one account |
-| `/tracked-content` | `TrackedContent.jsx` | Tracked Reddit posts and YouTube videos - add, manage, categorize, refresh |
-| `/tracked-content/category/:name` | `TrackedCategory.jsx` | Per-category analytics page; `:name` is URL-encoded category label; shows YouTube and Reddit sections separately |
+| `/` (index) | `Overview.tsx` | Default page after login |
+| `/accounts` | `AccountManager.tsx` | Connect and remove accounts. `?add=1` opens the add flow; `?ig_connected` and `?ig_error` report the Instagram OAuth result |
+| `/channel/:id` | `ChannelAnalytics.tsx` | `:id` = account.id for YouTube accounts |
+| `/instagram/:id` | `InstagramAnalytics.tsx` | `:id` = account.id for Instagram accounts |
+| `/reddit/:id` | `RedditAnalytics.tsx` | `:id` = account.id for Reddit accounts |
+| `/reddit-posts` | `RedditPostsAll.tsx` | Combined post explorer across all connected Reddit accounts |
+| `/reddit-posts/:id` | `RedditPosts.tsx` | `:id` = account.id; filterable/sortable post explorer for one account |
+| `/tracked-content` | `TrackedContent.tsx` | Tracked Reddit posts and YouTube videos - add, manage, categorize, refresh |
+| `/tracked-content/category/:name` | `TrackedCategory.tsx` | Per-category analytics page; `:name` is URL-encoded category label; shows YouTube and Reddit sections separately |
 | `/reddit-tracked` | redirect | Redirects to `/tracked-content` |
-| `/videos` | `VideoExplorer.jsx` | Every video from every YouTube channel |
-| `/shorts` | `ShortsExplorer.jsx` | Videos of 60 seconds or less |
-| `/reels` | `ReelsExplorer.jsx` | Instagram reels, posts and videos |
-| `/upload` | `UploadContent.jsx` | Publish and schedule to Instagram, plus the scheduled post queue |
-| `/settings` | `Settings.jsx` | User/platform settings |
+| `/videos` | `VideoExplorer.tsx` | Every video from every YouTube channel |
+| `/shorts` | `ShortsExplorer.tsx` | Videos of 60 seconds or less |
+| `/reels` | `ReelsExplorer.tsx` | Instagram reels, posts and videos |
+| `/upload` | `UploadContent.tsx` | Publish and schedule to Instagram, plus the scheduled post queue |
+| `/settings` | `Settings.tsx` | User/platform settings |
 
 ## Auth Guard
 
-Auth protection is applied via a `<ProtectedRoute>` component wrapping the layout route in `App.jsx`. All child routes are protected. `/login` and `/docs` are the only public routes.
+Auth protection is applied via a `<ProtectedRoute>` component wrapping the layout route in `App.tsx`. All child routes are protected. `/login` and `/docs` are the only public routes.
 
 ## Lazy Loading
 
 All page components are lazy-loaded to reduce initial bundle size:
 
-```jsx
+```tsx
 const Overview = lazy(() => import('./features/analytics/overview/Overview'));
 const ChannelAnalytics = lazy(() => import('./features/analytics/channel/ChannelAnalytics'));
 // ... etc
@@ -45,17 +45,17 @@ All lazy components are wrapped in `<Suspense>` with a shared fallback.
 
 ## Adding a New Route
 
-1. Add the lazy import at the top of `App.jsx`:
-   ```jsx
+1. Add the lazy import at the top of `App.tsx`:
+   ```tsx
    const MyPage = lazy(() => import('./features/myFeature/MyPage'));
    ```
 
 2. Add the route inside the children of the layout route:
-   ```jsx
+   ```tsx
    { path: 'my-page/:id', element: <MyPage /> }
    ```
 
-3. If the page appears in the sidebar, add it to `NAV_GROUPS` in `layout/navigation.js`. The sidebar, top bar title and command palette all read from it. Detail routes get a title in `DETAIL_ROUTES` in the same file.
+3. If the page appears in the sidebar, add it to `NAV_GROUPS` in `layout/navigation.ts`. The sidebar, top bar title and command palette all read from it. Detail routes get a title in `DETAIL_ROUTES` in the same file.
 
 4. Update the Route Table in this file.
 
@@ -63,8 +63,8 @@ All lazy components are wrapped in `<Suspense>` with a shared fallback.
 
 The `:id` param in per-account routes always refers to `account.id` - the primary key of the `accounts` table. Pages look up the account from `AppContext`:
 
-```js
-const { id } = useParams();
+```ts
+const { id } = useParams<{ id: string }>();
 const account = accounts.find(a => a.id === id);
 ```
 
@@ -72,9 +72,9 @@ If `account` is undefined (invalid ID or account deleted), the page renders an e
 
 ## Navigation
 
-Navigation between routes uses React Router's `<Link>` component or the `useNavigate` hook. Sidebar items render as real links. Per-account links come from `accountPath(account)` in `lib/accounts.js`:
+Navigation between routes uses React Router's `<Link>` component or the `useNavigate` hook. Sidebar items render as real links. Per-account links come from `accountPath(account)` in `lib/accounts.ts`:
 
-```jsx
+```tsx
 accounts.map(account => ({ title: accountName(account), url: accountPath(account) }))
 ```
 

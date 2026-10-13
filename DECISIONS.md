@@ -229,7 +229,7 @@ Records every significant architectural decision, the alternatives considered, a
 ## ADR-010: No TypeScript in any layer
 
 **Date:** 2024 (initial)  
-**Status:** Accepted
+**Status:** Superseded by ADR-030 (2026-10-14)
 
 **Decision:** The entire project is plain JavaScript and JSX. No TypeScript, no JSDoc type annotations, no type checking step.
 
@@ -624,3 +624,20 @@ Records every significant architectural decision, the alternatives considered, a
 - Without Redis the limits are per isolate, which is looser than a global count. Rate limiting is still on, not off.
 - The Lua scripts and the TypeScript functions must change together. Bucket levels are rounded to a millionth so the two agree exactly; they were checked against each other in a Lua VM on 110,000 random requests.
 - Behind a shared IP (an office or a carrier NAT), many users share the `ip` rule. Its limit is high for that reason, and IPv6 is keyed per /64.
+
+---
+
+## ADR-030: TypeScript in strict mode, type-stripped at build and test time, with shared API types
+
+**Date:** 2026-10-14
+**Status:** Accepted
+
+**Decision:** The Worker, the React app, the scheduled publisher, the tests and a new `shared/types/` folder are TypeScript in `strict` mode. Nothing is compiled ahead of time: Wrangler and Vite strip types while bundling, and Node (22.18 or newer) strips them when it runs the tests and `scripts/publish-scheduled.ts`. `npm run typecheck` runs `tsc --noEmit` for every project and gates every deploy and pull request in CI. The shared compiler settings (`tsconfig.base.json`) allow only erasable syntax (`erasableSyntaxOnly`), require `import type` for types (`verbatimModuleSyntax`) and keep `.ts` extensions in relative imports, so Node can run any file directly. `shared/types/` holds the API contract (accounts, posts, analytics, request and response shapes) as types only; the backend uses it to check every response with `satisfies`, and `frontend/src/services/api.ts` returns those types. The tooling is TypeScript 6.0, `typescript-eslint`, `@types/node` and `@cloudflare/workers-types`, all development dependencies.
+
+**Context:** The codebase had grown to about 430 files with API shapes restated by hand on both sides, and several bugs only showed up at runtime. The conversion was done file by file with a rule of no runtime change, checked mechanically: every converted file, with its types stripped by esbuild, had to match the original JavaScript on `main`. Only six files differ, each intentionally. The checker surfaced real defects (an endpoint returning account secrets, missing credential checks, dead code), which were filed as separate issues instead of being fixed inside the migration.
+
+**Trade-offs:**
+- TypeScript 7 (the native compiler) is out, but `typescript-eslint` only supports TypeScript below 6.1, so the project stays on 6.0 until that changes.
+- Type stripping means no enums, namespaces or parameter properties, and type-only imports must be marked. The compiler enforces all three.
+- Node 22.18 is now the minimum for running tests and the publisher locally, and the GitHub Actions publisher moved from Node 20 to 24.
+- Some boundaries (external API JSON, test fakes) are typed by a single cast at the point where data enters, which the type checker trusts.

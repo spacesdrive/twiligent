@@ -6,7 +6,7 @@ Parallel Search fetches current web content for research tasks: UX patterns, bro
 
 ## When to Use
 
-✅ **Use Parallel Search for:**
+**Use Parallel Search for:**
 - UX patterns for a feature you're designing ("how do social media schedulers handle bulk post editing?")
 - Browser/platform compatibility ("does Instagram Graph API support carousel posts on all account types?")
 - Recent API changes not yet in Context7 ("Instagram Graph API v21 vs v25 container creation changes")
@@ -14,7 +14,7 @@ Parallel Search fetches current web content for research tasks: UX patterns, bro
 - Competitor analysis ("how does Buffer/Hootsuite handle the scheduling queue UI?")
 - Current events ("is Upstash Redis still recommended for Cloudflare Workers in 2025?")
 
-❌ **Do not use Parallel Search for:**
+**Do not use Parallel Search for:**
 - Library API docs with stable method signatures (use Context7)
 - Codebase exploration (use Filesystem)
 - Architecture planning (use Sequential Thinking)

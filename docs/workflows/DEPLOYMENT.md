@@ -9,13 +9,14 @@ Push to `main` -> GitHub Actions deploys automatically.
 | `backend/**` | `deploy-backend.yml` | Cloudflare Worker |
 | `frontend/**` | `deploy-frontend.yml` | Cloudflare Pages |
 | Both | Both workflows | Both (in parallel) |
+| `shared/**` or `tsconfig.base.json` | Both workflows | Both (in parallel) |
 | Root `package.json` or `package-lock.json` | Both workflows | Both (in parallel) |
 | `docs/`, `scripts/`, `*.md` | Neither | Nothing deployed |
 
 Monitor deployment status at:  
 `https://github.com/spacesdrive/twiligent/actions`
 
-Both deploy workflows set up Node 24, run `npm ci` once at the repository root (the root `package-lock.json` is the only lockfile), and deploy with the Wrangler version pinned in that lockfile. See `docs/architecture/cloudflare/CI_CD.md`.
+Both deploy workflows set up Node 24, run `npm ci` once at the repository root (the root `package-lock.json` is the only lockfile), type-check and test their workspace (`npm run typecheck --workspace <app>`, `npm test --workspace <app>`), and only then deploy with the Wrangler version pinned in that lockfile. A type error or failing test stops the deploy. Before code reaches `main`, `ci.yml` runs the full type check, lint, tests, frontend build and a Worker dry-run bundle on every pull request and branch push. See `docs/architecture/cloudflare/CI_CD.md`.
 
 ## Manual Deployment (Local)
 
@@ -24,6 +25,15 @@ The repository is an npm workspaces monorepo. Install once at the root; never ru
 ```bash
 npm ci
 ```
+
+This needs Node 22.18 or newer (the root `package.json` `engines` field), because the tests and `scripts/publish-scheduled.ts` run as TypeScript under Node. Before any manual deploy, run the same checks CI runs:
+
+```bash
+npm run typecheck
+npm test
+```
+
+Wrangler and Vite strip types without checking them, so skipping `npm run typecheck` can ship code with type errors.
 
 Wrangler is a backend dev dependency, so `npx wrangler` runs the lockfile version from any folder in the repo. Authenticate once with `npx wrangler login`.
 
@@ -89,7 +99,7 @@ Required for `deploy-frontend.yml` and `publish-scheduled.yml`:
 - `SUPABASE_URL`
 - `SUPABASE_SERVICE_KEY`
 
-**Windows / PowerShell note:** When setting GitHub secrets via PowerShell, use UTF-8 without BOM encoding to avoid the `ByteString` error. Write to a temp file using `[System.Text.UTF8Encoding]::new($false)` then pipe to `gh secret set`. See `scripts/publish-scheduled.js` for the defensive `.replace(/[^\x20-\x7E]/g, '').trim()` pattern that handles any remaining BOM.
+**Windows / PowerShell note:** When setting GitHub secrets via PowerShell, use UTF-8 without BOM encoding to avoid the `ByteString` error. Write to a temp file using `[System.Text.UTF8Encoding]::new($false)` then pipe to `gh secret set`. See `scripts/publish-scheduled.ts` for the defensive `.replace(/[^\x20-\x7E]/g, '').trim()` pattern that handles any remaining BOM.
 
 ## Deployment Verification
 
@@ -127,10 +137,10 @@ For a fresh deployment from this repo:
 3. Create Upstash Redis database (optional)
 4. Create Cloudinary account + upload preset
 5. Create Meta/Facebook Developer app with Instagram Graph API product
-6. `npm ci` at the repository root, then `npx wrangler login`
+6. Install Node 22.18 or newer, run `npm ci` at the repository root, then `npx wrangler login`
 7. Set all Worker secrets (see above)
 8. Set all GitHub Actions secrets (see above)
-9. `cd backend && npx wrangler deploy` (first manual deploy)
+9. `npm run typecheck`, then `cd backend && npx wrangler deploy` (first manual deploy)
 10. Verify health endpoint
 11. `npm run build` at the root, then `cd frontend && npx wrangler pages deploy dist --project-name=twiligent`
 12. Verify frontend loads

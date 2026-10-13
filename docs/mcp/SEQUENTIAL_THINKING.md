@@ -6,7 +6,7 @@ Sequential Thinking enables structured, step-by-step reasoning for complex probl
 
 ## When to Use
 
-✅ **Use Sequential Thinking for:**
+**Use Sequential Thinking for:**
 - Planning a new feature that touches more than 3 files
 - Architecture decisions with multiple viable approaches
 - Debugging when the root cause is not immediately obvious
@@ -14,7 +14,7 @@ Sequential Thinking enables structured, step-by-step reasoning for complex probl
 - Features that require coordinating frontend + backend + DB changes
 - Evaluating trade-offs between approaches
 
-❌ **Do not use Sequential Thinking for:**
+**Do not use Sequential Thinking for:**
 - Simple, well-understood tasks (adding a route that follows an existing pattern exactly)
 - Library API lookups (use Context7)
 - File searches (use Filesystem or Grep)
@@ -66,7 +66,8 @@ Sequential Thinking would work through:
 - Which endpoints to call (`/user/{username}/submitted.json`, etc.)
 - How to store credentials (in `accounts.data` jsonb alongside Instagram pattern)
 - Token refresh strategy (poll `Set-Cookie` header on each API call)
-- New cache keys to add to `cache.js`
+- Which shapes go in `shared/types/reddit.ts` (profile, post, analytics, cache entry)
+- New cache keys to add to `cache.ts`
 - New routes to add to backend
 - New analytics page structure
 - How the sidebar/nav changes

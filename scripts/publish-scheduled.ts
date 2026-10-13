@@ -1,14 +1,7 @@
 #!/usr/bin/env node
-/**
- * Instagram Scheduled Post Publisher
- *
- * Runs standalone in GitHub Actions (cron every 15 min).
- * Uses native fetch (Node 18+) and the Supabase REST API - no npm install needed.
- *
- * Required GitHub Secrets:
- *   SUPABASE_URL         - your Supabase project URL
- *   SUPABASE_SERVICE_KEY - a Supabase secret key (sb_secret_...) or the legacy service_role key
- */
+// Instagram scheduled post publisher, run by GitHub Actions every 15 minutes with no npm install.
+// Node 22.18+ runs this file directly by stripping its types; it needs SUPABASE_URL and
+// SUPABASE_SERVICE_KEY (a sb_secret_ key or the legacy service_role key) as GitHub secrets.
 
 import type { Account, Platform, PostStatus, ScheduledPost } from '../shared/types/domain.ts';
 

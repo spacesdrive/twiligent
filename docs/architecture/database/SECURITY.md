@@ -5,10 +5,10 @@
 The backend uses the **service-role key** for all database operations. This key bypasses Row Level Security (RLS). Data isolation is enforced by the application:
 
 1. `requireAuth` middleware verifies the JWT and sets `c.userId` from Supabase's response - this is the only trusted source of `userId`
-2. Every user-scoped query in `lib/db.js` appends `.eq('user_id', userId)` using this verified value
+2. Every user-scoped query in `lib/db.ts` appends `.eq('user_id', userId)` using this verified value
 3. `userId` is never accepted from request body, query params, or any other user-controlled input
 
-**This means a missing `.eq('user_id', userId)` call is a security bug.** The centralization of all queries in `lib/db.js` makes this auditable - every public function signature documents whether it accepts a userId.
+**This means a missing `.eq('user_id', userId)` call is a security bug.** The centralization of all queries in `lib/db.ts` makes this auditable - every public function signature documents whether it accepts a userId.
 
 ## Why Not Use RLS?
 
@@ -58,9 +58,9 @@ The Instagram `accessToken` stored in `accounts.data.accessToken` is a long-live
 1. Stored only in the Supabase `accounts` table (server-side)
 2. Never returned in API responses - `safeAccount()` strips it
 3. Only used server-side, by these modules:
-   - Graph API calls: `services/instagramApi.js`, `services/instagramMedia.js` and `services/instagramPublishing.js` (the token is passed in as `access_token`)
-   - Obtaining and storing tokens: `services/instagramTokens.js` (long-lived exchange and refresh), `services/instagramOAuth.js` (OAuth code exchange), `services/accountConnect.js` and `services/accountFactory.js` (pasted tokens and new account rows)
-   - Reading the stored token: `routes/publishing.js` and `utils/scheduler.js` (publishing), `routes/analytics.js` (Instagram analytics and media), `services/accountRefresh.js` (profile refresh) and `services/overviewSummary.js` (overview cache warm-up)
+   - Graph API calls: `services/instagramApi.ts`, `services/instagramMedia.ts` and `services/instagramPublishing.ts` (the token is passed in as `access_token`)
+   - Obtaining and storing tokens: `services/instagramTokens.ts` (long-lived exchange and refresh), `services/instagramOAuth.ts` (OAuth code exchange), `services/accountConnect.ts` and `services/accountFactory.ts` (pasted tokens and new account rows)
+   - Reading the stored token: `routes/publishing.ts` and `utils/scheduler.ts` (publishing), `routes/analytics.ts` (Instagram analytics and media), `services/accountRefresh.ts` (profile refresh) and `services/overviewSummary.ts` (overview cache warm-up)
 4. The `GET /api/accounts` endpoint passes all accounts through `safeAccount()` before returning
 
 **If you add a new route that returns account data, you must call `safeAccount()`.** There is no automatic stripping - it is an explicit step in route handlers.
@@ -75,7 +75,7 @@ The GitHub Personal Access Token stored in `settings.value.githubPat` is stored 
 ## Audit Points
 
 When reviewing security, check these files:
-- `backend/middleware/auth.js` - JWT verification
-- `backend/lib/db.js` - every function that accepts an optional `userId` should either: require it explicitly, or have a documented reason for omitting it (cron use case)
-- `backend/lib/safeAccount.js` - `safeAccount()` definition; it strips every stored credential for all platforms
+- `backend/middleware/auth.ts` - JWT verification
+- `backend/lib/db.ts` - every function that accepts an optional `userId` should either: require it explicitly, or have a documented reason for omitting it (cron use case)
+- `backend/lib/safeAccount.ts` - `safeAccount()` definition; it strips every stored credential for all platforms
 - All route files in `backend/routes/` - verify `safeAccount()` is called on every account response

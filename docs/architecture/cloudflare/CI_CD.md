@@ -2,15 +2,46 @@
 
 ## Workflows
 
+| Workflow | Runs on | Purpose |
+|---|---|---|
+| `ci.yml` | Pull requests, pushes to any branch except `main`, manual | Type check, lint, test, build and bundle before anything reaches `main` |
+| `deploy-backend.yml` | Pushes to `main` that touch the backend, manual | Type check and test the backend, then deploy the Worker |
+| `deploy-frontend.yml` | Pushes to `main` that touch the frontend, manual | Type check and test the frontend, then build and deploy to Pages |
+| `publish-scheduled.yml` | Every 15 minutes, manual | Publish due Instagram posts (fallback for the Worker cron) |
+
+Nothing compiles TypeScript ahead of time: Wrangler and Vite strip the types while bundling, and Node strips them when it runs tests and `scripts/publish-scheduled.ts`. None of those steps checks types, so each workflow that ships code runs `tsc` first.
+
+### `ci.yml`
+
+**Trigger:** `pull_request` (any branch), `push` to every branch except `main`, and `workflow_dispatch`. There are no path filters: every pull request and branch push is checked.
+
+**What it does (one job, "Type check, lint, test, build"):**
+1. Checkout repo
+2. `actions/setup-node@v4` with Node 24 and the npm cache keyed on the root `package-lock.json`
+3. `npm ci` at the repository root
+4. `npm run typecheck` - every TypeScript project: backend, backend tests, frontend, frontend tooling and tests, scripts
+5. `npm run lint` - ESLint over the whole repository
+6. `npm test` - backend then frontend tests
+7. `npm run build` - Vite production build of the frontend (without the `VITE_*` secrets)
+8. `npx wrangler deploy --dry-run --outdir dist` in `backend/` - bundles the Worker without deploying, which catches import and bundling errors
+
+**Required GitHub secrets:** none.
+
+---
+
 ### `deploy-backend.yml`
 
-**Trigger:** Push to `main` branch, when files under `backend/**`, the root `package.json`, the root `package-lock.json` or `.github/workflows/deploy-backend.yml` change; also `workflow_dispatch` for a manual run
+**Trigger:** Push to `main` branch, when files under `backend/**` or `shared/**`, `tsconfig.base.json`, the root `package.json`, the root `package-lock.json` or `.github/workflows/deploy-backend.yml` change; also `workflow_dispatch` for a manual run
 
 **What it does:**
 1. Checkout repo
 2. `actions/setup-node@v4` with Node 24 and the npm cache keyed on the root `package-lock.json`
 3. `npm ci` at the repository root, which installs every workspace, including Wrangler
-4. Run `wrangler deploy` via `cloudflare/wrangler-action@v4` with `workingDirectory: backend`. The action finds the Wrangler installed from the lockfile (3.114.17) and uses it instead of installing its own default version.
+4. `npm run typecheck --workspace backend` - checks the Worker source and the backend tests
+5. `npm test --workspace backend`
+6. Run `wrangler deploy` via `cloudflare/wrangler-action@v4` with `workingDirectory: backend`. The action finds the Wrangler installed from the lockfile (3.114.17) and uses it instead of installing its own default version.
+
+A type error or failing test stops the run before the deploy step.
 
 **Required GitHub secrets:**
 - `CLOUDFLARE_API_TOKEN` - API token with Worker deploy permission
@@ -22,14 +53,16 @@
 
 ### `deploy-frontend.yml`
 
-**Trigger:** Push to `main` branch, when files under `frontend/**`, the root `package.json`, the root `package-lock.json` or `.github/workflows/deploy-frontend.yml` change; also `workflow_dispatch` for a manual run
+**Trigger:** Push to `main` branch, when files under `frontend/**` or `shared/**`, `tsconfig.base.json`, the root `package.json`, the root `package-lock.json` or `.github/workflows/deploy-frontend.yml` change; also `workflow_dispatch` for a manual run
 
 **What it does:**
 1. Checkout repo
 2. `actions/setup-node@v4` with Node 24 and the npm cache keyed on the root `package-lock.json`
 3. `npm ci` at the repository root, which installs every workspace
-4. `npm run build --workspace frontend` - Vite builds to `frontend/dist/`
-5. Deploy `dist/` to Cloudflare Pages via `wrangler pages deploy` (`cloudflare/wrangler-action@v4` with `workingDirectory: frontend`, using the Wrangler from the lockfile)
+4. `npm run typecheck --workspace frontend` - checks `frontend/src` (`tsconfig.json`) and `vite.config.ts` plus the frontend tests (`tsconfig.node.json`)
+5. `npm test --workspace frontend`
+6. `npm run build --workspace frontend` - Vite builds to `frontend/dist/`
+7. Deploy `dist/` to Cloudflare Pages via `wrangler pages deploy` (`cloudflare/wrangler-action@v4` with `workingDirectory: frontend`, using the Wrangler from the lockfile)
 
 **Required GitHub secrets:**
 - `CLOUDFLARE_API_TOKEN`
@@ -40,7 +73,7 @@
 - `VITE_ADMIN_EMAIL` - optional, injected at build time; the administrator contact shown in the app
 - `VITE_GOOGLE_CLIENT_ID` - optional, injected at build time; enables the Sign in with Google button
 
-**Note:** `VITE_*` variables are baked into the built JS bundle at build time. They are not runtime environment variables.
+**Note:** `VITE_*` variables are baked into the built bundle at build time. They are not runtime environment variables.
 
 ---
 
@@ -52,8 +85,8 @@
 
 **What it does:**
 1. Checkout repo
-2. Setup Node.js 20
-3. `node scripts/publish-scheduled.js`
+2. `actions/setup-node@v4` with Node 24 (no npm cache and no install: the script has no dependencies)
+3. `node scripts/publish-scheduled.ts` - Node runs the TypeScript file directly by stripping the types (Node 22.18 or newer; the workflow uses 24)
 
 **Required GitHub secrets:**
 - `SUPABASE_URL` - the Supabase project URL
@@ -61,18 +94,24 @@
 
 **This is the GitHub Actions fallback for the Worker cron.** Both this workflow and the Worker cron (`*/15`) run the same publishing logic against the same Supabase table. The `publishing` status mutex prevents double-publishing.
 
+The script is type-checked by `npm run typecheck` (`scripts/tsconfig.json`) in `ci.yml`, not by this workflow.
+
 ---
 
 ## Path Filtering
 
-GitHub Actions path filters mean:
+The deploy workflows use path filters; `ci.yml` does not.
+
 - Editing `frontend/` only -> triggers `deploy-frontend.yml`, not `deploy-backend.yml`
 - Editing `backend/` only -> triggers `deploy-backend.yml`, not `deploy-frontend.yml`
+- Editing `shared/` or `tsconfig.base.json` -> triggers both, because both apps import the shared types and extend the base config
 - Editing the root `package.json` or `package-lock.json` -> triggers both, because the single lockfile pins the dependencies of both apps
-- Editing root tooling config (`eslint.config.mjs`, `.prettierrc.json`, `.editorconfig`) -> triggers nothing; no workflow runs lint or tests
+- Editing root tooling config (`eslint.config.mjs`, `.prettierrc.json`, `.editorconfig`) -> triggers no deploy; `ci.yml` checks it on the branch or pull request before it reaches `main`
 - Editing `scripts/` -> triggers neither deploy workflow (only `publish-scheduled.yml` on its cron)
-- Editing `docs/` -> triggers nothing
-- Editing `CLAUDE.md`, `DECISIONS.md`, etc. -> triggers nothing
+- Editing `docs/` -> triggers no deploy
+- Editing `CLAUDE.md`, `DECISIONS.md`, etc. -> triggers no deploy
+
+`ci.yml` runs on every pull request and every push to a branch other than `main`, whatever changed.
 
 ## Deployment Verification
 
@@ -94,6 +133,7 @@ Trigger `publish-scheduled.yml` manually via GitHub Actions UI -> Actions -> "In
 
 1. Create `.github/workflows/my-workflow.yml`
 2. Add appropriate path filters to avoid unnecessary runs
-3. If the workflow needs project dependencies, run `actions/setup-node` with `cache-dependency-path: package-lock.json` and `npm ci` at the repository root; there are no lockfiles inside `backend/` or `frontend/`
-4. Document it in `docs/architecture/cloudflare/CI_CD.md` (this file)
-5. Add any required secrets via GitHub repo -> Settings -> Secrets -> Actions
+3. If the workflow needs project dependencies, run `actions/setup-node` with Node 24, `cache-dependency-path: package-lock.json` and `npm ci` at the repository root; there are no lockfiles inside `backend/` or `frontend/`
+4. If it ships code, run `npm run typecheck` (or the workspace's `typecheck` script) before the deploy step
+5. Document it in `docs/architecture/cloudflare/CI_CD.md` (this file)
+6. Add any required secrets via GitHub repo -> Settings -> Secrets -> Actions

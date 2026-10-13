@@ -59,7 +59,7 @@ User creates a scheduled post
         ▼
 2. Every 15 minutes, one of two schedulers fires:
    A. Cloudflare Worker cron -> processScheduledPosts(supabase)
-   B. GitHub Actions -> node scripts/publish-scheduled.js -> direct Supabase REST calls
+   B. GitHub Actions -> node scripts/publish-scheduled.ts -> direct Supabase REST calls
         │
         ▼
 3. Scheduler queries due posts:

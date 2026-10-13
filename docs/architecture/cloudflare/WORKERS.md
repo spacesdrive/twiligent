@@ -4,7 +4,7 @@
 
 ```toml
 name = "twiligent"
-main = "server.js"
+main = "server.ts"
 compatibility_date = "2025-01-01"
 
 [triggers]
@@ -12,7 +12,7 @@ crons = ["*/15 * * * *", "0 0 * * *"]
 ```
 
 - `name` - the Worker name as deployed on Cloudflare; also determines the default URL
-- `main` - entry point file (ES module)
+- `main` - entry point file (`backend/server.ts`). Wrangler bundles it with esbuild, which strips the TypeScript types without checking them; `npm run typecheck` is the check
 - `compatibility_date` - pins the Workers runtime API version
 - `crons` - cron trigger schedules (see `docs/architecture/backend/CRON.md`)
 
@@ -20,20 +20,22 @@ crons = ["*/15 * * * *", "0 0 * * *"]
 
 The Worker exports two handlers:
 
-```js
+```ts
 export default {
     fetch: app.fetch,            // handles HTTP requests (the Hono app)
-    async scheduled(event, env, ctx) {   // handles cron triggers
+    async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext) {   // handles cron triggers
         // event.cron - the cron expression that fired
         // env - Worker environment bindings (secrets + vars)
         // ctx.waitUntil(promise) - keeps Worker alive for background work
-    }
-};
+    },
+} satisfies ExportedHandler<Env>;
 ```
+
+`ScheduledController`, `ExecutionContext` and `ExportedHandler` come from `@cloudflare/workers-types`, which `backend/tsconfig.json` loads as its only ambient types.
 
 ## Environment Bindings (Secrets)
 
-All secrets are set via `npx wrangler secret put <NAME>`, run from `backend/`. They are available at runtime as `env.NAME` or `c.env.NAME`.
+All secrets are set via `npx wrangler secret put <NAME>`, run from `backend/`. They are available at runtime as `env.NAME` or `c.env.NAME`, typed by the `Env` interface in `backend/types/env.ts`. The three Supabase values are declared as `string`; the rest are optional (`?: string`), so code that reads them handles the missing case.
 
 | Secret | Required | Purpose |
 |---|---|---|
@@ -49,6 +51,7 @@ All secrets are set via `npx wrangler secret put <NAME>`, run from `backend/`. T
 | `FRONTEND_URL` | Yes | Frontend URL (for post-OAuth redirect back to the SPA) |
 | `UPSTASH_REDIS_REST_URL` | Optional | Upstash Redis endpoint; caching disabled if absent |
 | `UPSTASH_REDIS_REST_TOKEN` | Optional | Upstash auth token |
+| `REDDIT_ENCRYPTION_KEY` | Unused | Declared in `Env` but read nowhere; Reddit accounts store a browser session cookie and no password is encrypted. Do not set it |
 
 ### Setting secrets
 
@@ -84,7 +87,7 @@ Run locally from the repository root: `npm run dev:backend` (Worker only, port 8
 
 These are hard constraints imposed by the Cloudflare Workers runtime. Violating them causes runtime errors:
 
-1. **No Node.js APIs.** No `fs`, `Buffer`, `path`, `process.env` (use `c.env`), `require()`. Everything must be ESM `import`.
+1. **No Node.js APIs.** No `fs`, `Buffer`, `path`, `process.env` (use `c.env`), `require()`. Everything must be ESM `import`. `backend/tsconfig.json` does not load the Node types, so `npm run typecheck` flags these in Worker source.
 
 2. **No binary file handling.** The Worker cannot efficiently stream large binary files. Never add routes that accept file uploads - Cloudinary handles that directly from the browser.
 
@@ -94,13 +97,14 @@ These are hard constraints imposed by the Cloudflare Workers runtime. Violating 
 
 5. **`ctx.waitUntil()` in cron handlers.** Cron handlers must use `ctx.waitUntil(promise)` for async work. Without it, the Worker may terminate before the work completes.
 
-6. **Bundle size.** The Worker bundle must be a single ESM file (Wrangler handles bundling). Avoid large dependencies.
+6. **Bundle size.** The Worker bundle must be a single ESM file (Wrangler handles bundling). Avoid large dependencies. Type-only imports, including everything in `shared/types/`, add nothing to the bundle.
 
 ## Adding a New Worker Secret
 
-1. Set via `npx wrangler secret put NEW_SECRET_NAME` from `backend/`
-2. Add to `backend/.env.example` with a placeholder value
-3. Add to `backend/.dev.vars` locally
-4. Set as a GitHub secret if needed by deploy workflow
-5. Update `docs/architecture/cloudflare/WORKERS.md` (this file)
-6. Append to `DECISIONS.md` if it represents an architectural dependency
+1. Declare it in the `Env` interface in `backend/types/env.ts` (`NEW_SECRET_NAME?: string` unless the Worker cannot run without it)
+2. Set via `npx wrangler secret put NEW_SECRET_NAME` from `backend/`
+3. Add to `backend/.env.example` with a placeholder value
+4. Add to `backend/.dev.vars` locally
+5. Set as a GitHub secret if needed by deploy workflow
+6. Update `docs/architecture/cloudflare/WORKERS.md` (this file)
+7. Append to `DECISIONS.md` if it represents an architectural dependency

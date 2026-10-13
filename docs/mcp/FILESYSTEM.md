@@ -6,14 +6,14 @@ Filesystem MCP provides advanced file operations: recursive search, directory tr
 
 ## When to Use
 
-✅ **Use Filesystem for:**
+**Use Filesystem for:**
 - Finding all files that import a specific module
 - Getting a directory tree to understand project structure
 - Searching for all uses of a function or variable name
 - Moving or renaming files and updating all imports
 - Reading multiple related files simultaneously
 
-❌ **Do not use Filesystem when:**
+**Do not use Filesystem when:**
 - You know the exact file path (use Read tool directly)
 - You're looking for a single string (use Grep tool directly)
 - You're searching for a file by pattern (use Glob tool directly)
@@ -57,7 +57,7 @@ path: frontend/src/
 The built-in Grep and Glob tools are faster for most search tasks:
 
 - `Grep pattern="useAppContext"` - faster than filesystem search for string patterns
-- `Glob pattern="backend/routes/*.js"` - faster than filesystem for file patterns
+- `Glob pattern="backend/routes/*.ts"` - faster than filesystem for file patterns
 - `Read file_path="..."` - faster than filesystem for single file reads
 
 Use Filesystem MCP when you need its specific features: recursive directory trees, multi-file reads in one call, or file move operations.

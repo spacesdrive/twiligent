@@ -39,12 +39,12 @@ Configured with defaults - allows all origins in development. For production, th
 
 ## 2. Client Injection Middleware
 
-**Source:** Inline in `backend/server.js`  
+**Source:** Inline in `backend/server.ts`  
 **Applied to:** Every request
 
 Creates per-request Supabase and Redis client instances and sets them on the Hono context. This is the correct pattern for Cloudflare Workers - clients must be created fresh per request because there is no persistent process memory.
 
-```js
+```ts
 app.use('*', async (c, next) => {
     c.set('supabase', getSupabase(c.env));
     c.set('redis', getRedis(c.env));
@@ -57,15 +57,17 @@ app.use('*', async (c, next) => {
 **`getRedis(env)`** - creates an Upstash Redis client if `UPSTASH_REDIS_REST_URL` is set, otherwise returns `null`. All cache functions in `lib/cache.ts` handle `null` silently.  
 **`getRateLimitRedis(env)`** - a second Upstash client for the rate limiter, with retries off and a 1 second timeout, so a Redis outage cannot slow every request. `null` without credentials.
 
+The keys and their types are declared in `AppVariables` in `backend/types/app.ts`, so `c.set()` rejects a value of the wrong type and `c.get()` needs no cast.
+
 ---
 
 ## 3. requireAuth Middleware
 
-**Source:** `backend/middleware/auth.js`  
+**Source:** `backend/middleware/auth.ts`  
 **Applied to:** All routes mounted under the `api` sub-application (`/api/*`)
 
-```js
-export async function requireAuth(c, next) {
+```ts
+export async function requireAuth(c: AppContext, next: Next) {
     const token = c.req.header('Authorization')?.replace('Bearer ', '');
     if (!token) return c.json({ error: 'Unauthorized' }, 401);
     const supabaseAuth = getSupabaseAuth(c.env);
@@ -81,7 +83,7 @@ export async function requireAuth(c, next) {
 1. Extracts `Authorization: Bearer <token>` header
 2. Creates a Supabase **anon** client (not service-role) to verify the JWT
 3. Calls `supabaseAuth.auth.getUser(token)` - Supabase validates the token signature
-4. Sets `userId` (UUID) and `userEmail` (string) on the Hono context
+4. Sets `userId` (UUID) and `userEmail` (`string | undefined`) on the Hono context
 5. Returns 401 JSON if token is missing, invalid, or expired
 
 **Critical:** `userId` from this middleware is the only trusted source of user identity. Route handlers must use `c.get('userId')` - never accept a userId from request body or query params.
@@ -103,21 +105,26 @@ See `RATE_LIMITING.md` for the rules, the algorithms and how failures are handle
 
 Place new middleware files in `backend/middleware/`. Follow this pattern:
 
-```js
-// backend/middleware/myMiddleware.js
-export async function myMiddleware(c, next) {
+```ts
+// backend/middleware/myMiddleware.ts
+import type { Next } from 'hono';
+import type { AppContext } from '../types/app.ts';
+
+export async function myMiddleware(c: AppContext, next: Next) {
     // do something before route handler
     await next();
     // optionally do something after route handler
 }
 ```
 
-Apply globally in `server.js`:
-```js
+A middleware that sets a new context value needs the key added to `AppVariables` in `backend/types/app.ts` first.
+
+Apply globally in `server.ts`:
+```ts
 app.use('*', myMiddleware);
 ```
 
 Or apply to a specific route group:
-```js
+```ts
 api.use('/admin/*', adminOnlyMiddleware);
 ```

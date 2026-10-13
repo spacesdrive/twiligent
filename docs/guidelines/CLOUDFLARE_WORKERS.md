@@ -4,18 +4,23 @@
 
 Access environment variables and secrets via `c.env` (in Hono handlers) or `env` (in the `scheduled` cron handler). Never use `process.env` - it does not exist in the Workers runtime.
 
-```js
-// In a Hono handler or middleware:
-const apiKey = c.env.YOUTUBE_API_KEY;
-const url = c.env.SUPABASE_URL;
+Every binding is declared in the `Env` interface in `backend/types/env.ts`. Add a new secret there (optional ones as `?: string`) before reading it, or the type checker rejects `c.env.MY_SECRET`.
 
-// In the cron handler:
+```ts
+// In a Hono handler or middleware (the router is new Hono<AppEnv>()):
+const apiKey = c.env.YOUTUBE_API_KEY;   // string | undefined
+const url = c.env.SUPABASE_URL;         // string
+
+// In the cron handler (backend/server.ts):
 export default {
-    async scheduled(event, env, ctx) {
+    fetch: app.fetch,
+    async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext) {
         const supabase = getSupabase(env);
-    }
-};
+    },
+} satisfies ExportedHandler<Env>;
 ```
+
+`ScheduledController`, `ExecutionContext` and `ExportedHandler` are globals from `@cloudflare/workers-types`, which `backend/tsconfig.json` loads instead of the DOM and Node types.
 
 ## No Node.js APIs
 
@@ -26,6 +31,8 @@ The Workers runtime does not have Node.js built-ins. These are unavailable:
 - `process` - no `process.env`, `process.exit`, etc.
 - `crypto` module - use Web Crypto API (`crypto.subtle`)
 - `require()` - use ESM `import`
+
+`backend/tsconfig.json` does not load the Node types, so `npm run typecheck` reports Node globals in Worker source as errors. Tests in `backend/tests/` run under Node and get the Node types from `backend/tests/tsconfig.json`.
 
 **Web APIs available in Workers:**
 - `fetch()` - for HTTP calls
@@ -39,9 +46,9 @@ The Workers runtime does not have Node.js built-ins. These are unavailable:
 
 In cron handlers, use `ctx.waitUntil()` to keep the Worker alive for async background work:
 
-```js
-async scheduled(event, env, ctx) {
-    ctx.waitUntil(myAsyncJob(env));
+```ts
+async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext) {
+    ctx.waitUntil(myAsyncJob(getSupabase(env)));
 }
 ```
 
@@ -53,17 +60,17 @@ Do not use `ctx.waitUntil()` in HTTP request handlers - just `await` the work no
 
 The Workers runtime does not guarantee a persistent process between requests. Do not rely on module-level variables to persist state:
 
-```js
+```ts
 // BAD - will not work reliably
-let cachedData = null;
-export default { fetch: async (request, env) => {
+let cachedData: MyData | null = null;
+export default { fetch: async (request: Request, env: Env) => {
     if (cachedData) return Response.json(cachedData); // unreliable
     cachedData = await fetchData(env);
     return Response.json(cachedData);
 }};
 
 // GOOD - use Redis or Supabase for persistence
-const cached = await redis.get('my-key');
+const cached = await redis.get<MyData>('my-key');
 if (cached) return c.json(cached);
 const fresh = await fetchData(env);
 await redis.set('my-key', fresh);
@@ -72,7 +79,7 @@ return c.json(fresh);
 
 ## Bundle Size
 
-The Worker is bundled as a single ESM file by Wrangler. Large dependencies increase cold-start time and may exceed Workers bundle size limits. The current backend has minimal dependencies:
+Wrangler bundles `backend/server.ts` and everything it imports into a single ESM file, stripping the types without checking them. Type-only imports (`import type`, including everything from `shared/types`) add nothing to the bundle. Large dependencies increase cold-start time and may exceed Workers bundle size limits. The current backend has minimal dependencies:
 
 - `hono` - ~15KB gzipped
 - `@supabase/supabase-js` - larger; mostly used for auth.getUser()
@@ -84,8 +91,8 @@ Avoid adding large dependencies. If a library is only needed for one small utili
 
 Use the native Web Crypto API for cryptographic operations:
 
-```js
-async function hmacSign(secret, message) {
+```ts
+async function hmacSign(secret: string, message: string): Promise<string> {
     const key = await crypto.subtle.importKey(
         'raw',
         new TextEncoder().encode(secret),
@@ -99,7 +106,7 @@ async function hmacSign(secret, message) {
 }
 ```
 
-This pattern is used in `backend/lib/oauthState.js` for OAuth state tokens.
+This pattern is used in `backend/lib/oauthState.ts` for OAuth state tokens.
 
 ## Local Development
 
@@ -121,17 +128,20 @@ npx wrangler deploy
 
 `npx wrangler` runs the Wrangler version pinned in the root `package-lock.json`.
 
-Or push to `main` with changes in `backend/` - GitHub Actions deploys automatically via `deploy-backend.yml`.
+Run `npm run typecheck` from the root first, because Wrangler does not check types.
+
+Or push to `main` with changes in `backend/`, `shared/`, `tsconfig.base.json` or the root package files - `deploy-backend.yml` type-checks and tests the backend, then deploys it.
 
 ## CORS
 
-The current CORS configuration (`cors()` with no options) allows all origins. For a more restrictive policy, pass the `FRONTEND_URL` as the allowed origin:
+The current CORS configuration in `server.ts`, `cors({ exposeHeaders: RATE_LIMIT_HEADERS })`, allows all origins and lets the browser read the rate limit headers. For a more restrictive policy, return the `FRONTEND_URL` as the allowed origin. `c.env` only exists inside a request, so pass a function:
 
-```js
+```ts
 app.use('*', cors({
-    origin: c.env.FRONTEND_URL,
+    origin: (origin, c) => c.env.FRONTEND_URL ?? origin,
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowHeaders: ['Content-Type', 'Authorization'],
+    exposeHeaders: RATE_LIMIT_HEADERS,
 }));
 ```
 

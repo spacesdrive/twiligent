@@ -1,4 +1,4 @@
-// tabs, sidebar groups and pages; routes.js maps each page to its component
+// tabs, sidebar groups and pages; routes.ts maps each page to its component
 
 export interface DocPage {
   slug: string;

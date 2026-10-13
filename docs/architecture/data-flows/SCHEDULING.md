@@ -7,13 +7,13 @@ Two independent systems check for due posts every 15 minutes. Both target the sa
 ## System A: Cloudflare Worker Cron
 
 **Trigger:** `*/15 * * * *` cron in `wrangler.toml`  
-**Handler:** `backend/utils/scheduler.js` -> `processScheduledPosts(supabase)`  
+**Handler:** `backend/utils/scheduler.ts` -> `processScheduledPosts(supabase)`  
 **Supabase client:** service-role (created from Worker env)
 
 ## System B: GitHub Actions
 
 **Trigger:** `publish-scheduled.yml` workflow -> `schedule: cron('*/15 * * * *')`  
-**Handler:** `scripts/publish-scheduled.js` (standalone Node.js, zero npm deps)  
+**Handler:** `scripts/publish-scheduled.ts` (standalone TypeScript run directly by Node 24 with type stripping, zero npm deps)  
 **Supabase client:** direct REST API calls using `SUPABASE_URL` + `SUPABASE_SERVICE_KEY` GitHub secrets
 
 ## Why Both?
@@ -34,7 +34,7 @@ WHERE id = :id AND status = 'pending'
 
 The `AND status = 'pending'` condition means only one scheduler can successfully claim a post. The second scheduler to run will find no matching rows for that post ID and skip it.
 
-Both schedulers implement this claim: `claimPost()` in `backend/lib/db.js` for the Worker, and `claimPost()` in `scripts/publish-scheduled.js` (a `PATCH` filtered on `status=eq.pending` with `Prefer: return=representation`). A scheduler that gets no row back skips the post. PostgreSQL serializes the two updates, so exactly one scheduler publishes each post even when both run at the same moment.
+Both schedulers implement this claim: `claimPost()` in `backend/lib/db.ts` for the Worker, and `claimPost()` in `scripts/publish-scheduled.ts` (a `PATCH` filtered on `status=eq.pending` with `Prefer: return=representation`). A scheduler that gets no row back skips the post. PostgreSQL serializes the two updates, so exactly one scheduler publishes each post even when both run at the same moment.
 
 ## Post Status Lifecycle
 
@@ -58,7 +58,7 @@ publishing           Claimed by a scheduler - in-flight
 
 Both schedulers implement the same logic:
 
-| Step | Worker (`scheduler.js`) | GitHub Actions (`publish-scheduled.js`) |
+| Step | Worker (`scheduler.ts`) | GitHub Actions (`publish-scheduled.ts`) |
 |---|---|---|
 | Fetch due posts | `db.getDuePosts(supabase)` | `GET /scheduled_posts?status=eq.pending&scheduled_at=lte.now` |
 | Fetch account | `db.getAccountById(supabase, accountId)` | `GET /accounts?id=eq.{accountId}` |

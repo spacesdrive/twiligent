@@ -6,7 +6,7 @@
 User navigates to /channel/:id
     │
     ▼
-ChannelAnalytics.jsx mounts -> api.getAnalytics(id)
+ChannelAnalytics.tsx mounts -> api.getAnalytics(id)
     -> GET /api/accounts/:id/analytics
         │
         ▼
@@ -31,7 +31,9 @@ ChannelAnalytics.jsx mounts -> api.getAnalytics(id)
 
 ### computeVideoAnalytics() Output (partial)
 
-```js
+Typed as `VideoAnalytics` in `shared/types/youtube.ts`.
+
+```ts
 {
     channel: { /* channel metadata */ },
     totals: {
@@ -67,7 +69,7 @@ ChannelAnalytics.jsx mounts -> api.getAnalytics(id)
 User navigates to /instagram/:id
     │
     ▼
-InstagramAnalytics.jsx mounts -> api.getIGAnalytics(id)
+InstagramAnalytics.tsx mounts -> api.getIGAnalytics(id)
     -> GET /api/accounts/:id/ig-analytics
         │
         ▼
@@ -92,7 +94,9 @@ cache entry is current, otherwise fetches with the same pipeline and caches it.
 
 ### Instagram media item (cached shape)
 
-```js
+Typed as `InstagramMedia` in `shared/types/instagram.ts`; the cache entry is `IGCacheData`.
+
+```ts
 {
     id, caption, permalink, timestamp, mediaUrl, thumbnailUrl,
     contentType: 'reel',     // 'reel' | 'post' | 'video' - see SERVICES.md for the rules
@@ -105,7 +109,9 @@ cache entry is current, otherwise fetches with the same pipeline and caches it.
 
 ### computeInstagramAnalytics() Output (partial)
 
-```js
+Typed as `InstagramAnalytics` in `shared/types/instagram.ts`.
+
+```ts
 {
     totalPosts: 200,          // profile media_count
     fetchedPosts: 200,        // items analyzed (max 500)
@@ -131,7 +137,7 @@ cache entry is current, otherwise fetches with the same pipeline and caches it.
 User navigates to /reddit/:id
     │
     ▼
-RedditAnalytics.jsx mounts -> api.getRedditAnalytics(id)
+RedditAnalytics.tsx mounts -> api.getRedditAnalytics(id)
     -> GET /api/accounts/:id/reddit-analytics
         │
         ▼
@@ -148,12 +154,14 @@ RedditAnalytics.jsx mounts -> api.getRedditAnalytics(id)
         4. computeRedditAnalytics(profile, posts)
            -> score stats, subreddit breakdown, timing analysis
         5. Cache result in Redis
-        6. Return { profile, analytics }
+        6. Return { profile, analytics, posts } (RedditCacheData)
 ```
 
 ### computeRedditAnalytics() Output (partial)
 
-```js
+Typed as `RedditAnalytics` in `shared/types/reddit.ts`.
+
+```ts
 {
     fetchedPosts: 100,
     totalScore: 45000,
@@ -190,7 +198,9 @@ RedditAnalytics.jsx mounts -> api.getRedditAnalytics(id)
 
 ### Per-post fields (in posts array and topPosts)
 
-```js
+Typed as `RedditPost` in `shared/types/reddit.ts`.
+
+```ts
 {
     id, title, subreddit, subredditPrefixed,
     score, upvoteRatio, numComments,
@@ -211,7 +221,7 @@ Note: Reddit disabled `view_count` from their API in December 2018. The field al
 User navigates to /
     │
     ▼
-Overview.jsx uses accounts from AppContext (data loaded by useOverviewData.js)
+Overview.tsx uses accounts from AppContext (data loaded by useOverviewData.ts)
     -> Combined totals computed from account.subscriberCount, viewCount, etc.
     -> api.getOverview() -> GET /api/overview
         -> returns { tracked: [...], analyticsCache: { [accountId]: {...} } }
@@ -246,7 +256,7 @@ Audience as that account's reputation.
 
 Reddit removed `view_count` from its API in December 2018, so a tracked Reddit post's views are
 whatever the user typed into the edit dialog, stored as `data.manualViews`. `trackedViews()` in
-`frontend/src/utils/trackedContent.js` is the single place that decides which field to read:
+`frontend/src/utils/trackedContent.ts` is the single place that decides which field to read:
 `viewCount` for YouTube items, `manualViews` for Reddit items. Every view total in the UI goes
 through it, so a post with no manual figure contributes 0 rather than breaking the sum.
 

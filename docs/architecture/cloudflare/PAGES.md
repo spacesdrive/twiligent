@@ -12,9 +12,11 @@ The React frontend is deployed to Cloudflare Pages. It is a static SPA - all rou
 | Build command | `npm ci && npm run build` |
 | Build output directory | `frontend/dist` |
 | Root directory | `/` (repo root) |
-| Node.js version | 22 or later (the deploy workflow uses 24; Vite 7 needs 20.19 or later) |
+| Node.js version | 22.18 or later (the root `package.json` `engines` field; the deploy workflow uses 24) |
 
 These are configured in the Cloudflare Pages project settings, not in a file. The repository is an npm workspaces monorepo: the install runs once at the root against the root `package-lock.json` (there is no lockfile in `frontend/`), and the root `build` script runs `npm run build --workspace frontend`.
+
+The build is `vite build` with `frontend/vite.config.ts`, starting from `frontend/index.html`, which loads `/src/main.tsx`. Vite strips the TypeScript types and does not check them, so a Pages build connected directly to the repository does not type-check. The GitHub Actions deploy runs `npm run typecheck --workspace frontend` and the frontend tests before it builds.
 
 ## SPA Fallback
 
@@ -48,12 +50,13 @@ Vite exposes them at runtime as `import.meta.env.VITE_*`.
 
 ## Deployment
 
-Cloudflare Pages deploys automatically on every push to `main` that changes files in `frontend/`, the root `package.json` or the root `package-lock.json`. This is configured in `.github/workflows/deploy-frontend.yml`, which runs `npm ci` at the root, builds with `npm run build --workspace frontend` and uploads `frontend/dist` with the Wrangler version from the lockfile.
+Cloudflare Pages deploys automatically on every push to `main` that changes files in `frontend/` or `shared/`, `tsconfig.base.json`, the root `package.json` or the root `package-lock.json`. This is configured in `.github/workflows/deploy-frontend.yml`, which runs `npm ci` at the root, type-checks and tests the frontend, builds with `npm run build --workspace frontend` and uploads `frontend/dist` with the Wrangler version from the lockfile.
 
 Manual deployment (emergency or first setup), from the repository root:
 
 ```bash
 npm ci
+npm run typecheck
 npm run build
 cd frontend
 npx wrangler pages deploy dist --project-name=twiligent
@@ -73,7 +76,7 @@ From the repository root, start the Vite dev server (port 5173) and the backend 
 npm run dev
 ```
 
-The frontend calls the Worker at `VITE_API_URL`, which defaults to `http://localhost:8787/api` when unset (see `frontend/src/services/api.js`); Vite does not proxy requests. To run the frontend alone, use `npm run dev:frontend`.
+The frontend calls the Worker at `VITE_API_URL`, which defaults to `http://localhost:8787/api` when unset (see `frontend/src/services/api.ts`); Vite does not proxy requests. To run the frontend alone, use `npm run dev:frontend`.
 
 ## First-Time Setup
 

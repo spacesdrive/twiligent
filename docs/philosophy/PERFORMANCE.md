@@ -21,7 +21,7 @@ Request
 | YouTube analytics | `videos:{userId}:{accountId}` | 6 hours | Versioned; old versions read as a miss |
 | Instagram analytics | `ig:{userId}:{accountId}` | 6 hours | Versioned; old versions read as a miss |
 | Reddit analytics | `reddit:{userId}:{accountId}` | 6 hours | |
-| OAuth state | none (HMAC-signed token, see `lib/oauthState.js`) | 10 minutes | Security-critical - do not extend |
+| OAuth state | none (HMAC-signed token, see `lib/oauthState.ts`) | 10 minutes | Security-critical - do not extend |
 
 Cache invalidation happens on:
 - Account deletion (explicit `redis.del()`)
@@ -34,7 +34,7 @@ There is no time-based expiration for analytics caches yet (known issue). Until 
 
 When fixing the known TTL issue, use the Upstash Redis `EX` option:
 
-```js
+```ts
 await redis.set(key, data, { ex: 3600 }); // expire after 1 hour
 ```
 

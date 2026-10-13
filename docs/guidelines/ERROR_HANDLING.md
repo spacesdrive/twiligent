@@ -6,47 +6,49 @@
 
 Throw descriptive errors immediately when the external API returns an error object. Let the caller decide what to do:
 
-```js
-const data = await res.json();
+```ts
+const data = await res.json() as YouTubeApiErrorBody;
 if (data.error) throw new Error(data.error.message);
 ```
 
+Cast the parsed JSON once to an interface that covers the fields the service reads (see `docs/guidelines/TYPESCRIPT.md`).
+
 For HTTP-level errors (non-200 but no error body):
-```js
+```ts
 if (!res.ok) throw new Error(`YouTube API ${res.status}: ${await res.text()}`);
 ```
 
-### Database Calls (lib/db.js)
+### Database Calls (lib/db.ts)
 
 Check the Supabase `error` field and throw:
 
-```js
+```ts
 const { data, error } = await supabase.from('accounts').select('*').eq('user_id', userId);
 if (error) throw error;
 ```
 
 Supabase errors are objects with `message`, `code`, and `details`. Throwing the error object directly passes the message through cleanly.
 
-### Cache Operations (lib/cache.js)
+### Cache Operations (lib/cache.ts)
 
 Always catch and fall back silently - cache failures must never surface to users. Every `catch` returns an explicit fallback with a one-line reason, so no catch block is empty:
 
-```js
+```ts
 try {
-    return await redis.get(key);
+    return await redis.get<T>(key);
 } catch {
     // a cache miss falls back to the live api
     return null;
 }
 ```
 
-`cache.js` keeps this in three private helpers (`readKey`, `writeKey`, `deleteKey`) that every exported function uses. Do not log cache errors - they create noise for transient Redis connection issues.
+`cache.ts` keeps this in three private helpers (`readKey`, `writeKey`, `deleteKey`) that every exported function uses. Do not log cache errors - they create noise for transient Redis connection issues.
 
 ### Route Handlers (routes/)
 
 Wrap the main logic in try/catch, log the error, and return a JSON error response:
 
-```js
+```ts
 router.get('/accounts/:id/analytics', async (c) => {
     const id = c.req.param('id');
     const userId = c.get('userId');
@@ -57,11 +59,13 @@ router.get('/accounts/:id/analytics', async (c) => {
         const analytics = await getAnalytics(account, c.env);
         return c.json(analytics);
     } catch (err) {
-        console.error(`GET /accounts/${id}/analytics:`, err.message);
-        return c.json({ error: err.message }, 500);
+        console.error(`GET /accounts/${id}/analytics:`, (err as Error).message);
+        return c.json({ error: (err as Error).message }, 500);
     }
 });
 ```
+
+Caught errors are `unknown` in strict TypeScript, so read the message with `(err as Error).message`.
 
 **Status codes:**
 - `400` - bad request (missing required fields, invalid input)
@@ -74,7 +78,7 @@ router.get('/accounts/:id/analytics', async (c) => {
 
 Catch in the component or handler, show a toast, and handle loading state:
 
-```jsx
+```tsx
 const [loading, setLoading] = useState(false);
 const { showToast } = useAppContext();
 
@@ -82,22 +86,22 @@ async function handleSubmit() {
     setLoading(true);
     try {
         await api.doSomething(data);
-        showToast('Saved successfully!');
+        showToast('Settings saved');
     } catch (err) {
-        showToast(err.message, 'error');
+        showToast((err as Error).message, 'error');
     } finally {
         setLoading(false);
     }
 }
 ```
 
-The `api.js` `request()` function already extracts the error message from `{ error: '...' }` backend responses, so `err.message` will be the backend's error string.
+The `api.ts` `request()` function throws an `Error` built from the response's `message` or `error` field when the status is not 2xx, so `(err as Error).message` is the backend's error string. A body with `success: false` sent with a 2xx status is returned, not thrown; methods typed `ApiResult<T>` make the caller check `success`. See `docs/architecture/frontend/API_LAYER.md`.
 
-### Global Error Handler (server.js)
+### Global Error Handler (server.ts)
 
 The Hono global error handler catches any uncaught errors that bubble up past route handlers:
 
-```js
+```ts
 app.onError((err, c) => {
     console.error('Worker error:', err.message);
     return c.json({ error: 'Internal server error' }, 500);
@@ -110,7 +114,7 @@ This is the last resort. Route handlers should not rely on it.
 
 Use `console.error()` for errors in route handlers - Cloudflare Workers captures these in the dashboard logs.
 
-Format: `console.error('METHOD /path:', err.message)` - includes the route for easy filtering.
+Format: `console.error('METHOD /path:', (err as Error).message)` - includes the route for easy filtering.
 
 Do not log sensitive values: access tokens, API keys, user emails, Supabase URLs.
 

@@ -32,6 +32,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+**TypeScript**
+- The backend Worker, the React app, the scheduled publisher script and every test are now TypeScript in strict mode, with no change in behaviour: each file, with its types removed, matches the JavaScript it replaced
+- API request and response shapes live once in `shared/types/` and are used by both the Worker routes and `services/api.ts`
+- `npm run typecheck` checks the whole repository; the deploy workflows type-check and test before deploying, and a new CI workflow checks every pull request and branch
+- Running the tests or the publisher locally needs Node 22.18 or newer; the GitHub Actions publisher runs on Node 24
+- The publisher log no longer prints emoji
+
+
 **Interface redesign in the Twiligent brand**
 - New app shell: 256px sidebar with the Twiligent lockup, search, grouped navigation, account and category lists, and a user menu with theme and sign-out; a 50px top bar with breadcrumb, refresh and theme toggle
 - Every page rebuilt on shared components and design tokens: Sora headings, Manrope text, JetBrains Mono numbers, brand red for primary actions and active states, warm dusk and paper surfaces, hairline borders

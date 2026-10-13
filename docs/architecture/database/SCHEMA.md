@@ -162,7 +162,7 @@ Stores Reddit posts and YouTube videos the user wants to monitor. Previously Red
 
 ### `data` jsonb shape for Reddit items
 
-Populated by `fetchTrackedPostData()` in `backend/services/reddit.js`:
+Populated by `fetchTrackedPostData()` in `backend/services/reddit.ts`:
 
 ```json
 {
@@ -200,7 +200,7 @@ Both keys are rejected for YouTube items, which already carry a real `viewCount`
 
 ### `data` jsonb shape for YouTube items
 
-Populated by `fetchTrackedYouTubeData()` in `backend/services/youtube.js`:
+Populated by `fetchTrackedYouTubeData()` in `backend/services/youtube.ts`:
 
 ```json
 {
@@ -249,39 +249,43 @@ ALTER TABLE tracked_posts ADD COLUMN IF NOT EXISTS content_type text NOT NULL DE
 
 ---
 
-## `lib/db.js` - Query Layer
+## `lib/db.ts` - Query Layer
 
-All SQL operations are centralized in `backend/lib/db.js`. Route handlers and cron handlers import named functions from this file - they never call `supabase.from()` directly.
+All SQL operations are centralized in `backend/lib/db.ts`. Route handlers and cron handlers import named functions from this file - they never call `supabase.from()` directly.
 
 ### Available functions
 
-```js
+Each function takes the `SupabaseClient` first and returns a type from `shared/types/domain.ts`. A `userId` of `null` means service-level access (cron handlers that scan every user).
+
+```ts
 // Accounts
-getAccounts(supabase, userId?)       // null userId = all users (for cron)
-getAccountById(supabase, id, userId?)
-createAccount(supabase, account, userId)
-updateAccount(supabase, id, updates, userId?)
-deleteAccount(supabase, id, userId?)
+getAccounts(supabase, userId: string | null = null): Promise<Account[]>
+getAccountById(supabase, id, userId: string | null = null): Promise<Account | null>
+createAccount(supabase, account: NewAccount, userId): Promise<void>
+updateAccount(supabase, id, updates: Partial<Account>, userId: string | null = null): Promise<void>
+deleteAccount(supabase, id, userId: string | null = null): Promise<void>
 
 // Settings
-getSettings(supabase, userId)
-saveSettings(supabase, keys, userId)
+getSettings(supabase, userId): Promise<Settings>
+saveSettings(supabase, keys: Settings, userId): Promise<void>
 
 // Scheduled Posts
-getPosts(supabase, userId?)
-getPostById(supabase, id, userId?)
-getDuePosts(supabase)                // for cron - no userId filter, selects pending+overdue
-createPost(supabase, post, userId)
-updatePost(supabase, id, updates, userId?)
-deletePost(supabase, id, userId?)
-deleteAllPosts(supabase, userId)     // skips 'publishing' status posts
+getPosts(supabase, userId: string | null): Promise<ScheduledPost[]>
+getPostById(supabase, id, userId: string | null = null): Promise<ScheduledPost | null>
+getDuePosts(supabase): Promise<ScheduledPost[]>                 // for cron - no userId filter, selects pending+overdue
+claimPost(supabase, id): Promise<boolean>                        // pending to publishing; false when another scheduler won
+createPost(supabase, post: ScheduledPost, userId): Promise<void>
+updatePost(supabase, id, updates: Partial<ScheduledPost>, userId: string | null = null): Promise<void>
+deletePost(supabase, id, userId: string | null = null): Promise<void>
+deleteAllPosts(supabase, userId: string | null): Promise<{ deleted: number; kept: number }>   // skips 'publishing' status posts
 
-// Tracked Reddit Posts
-getTrackedPosts(supabase, userId)
-getTrackedPostById(supabase, id, userId)
-createTrackedPost(supabase, post, userId)
-updateTrackedPost(supabase, id, updates, userId)
-deleteTrackedPost(supabase, id, userId)
+// Tracked Content
+getTrackedPosts(supabase, userId): Promise<TrackedPost[]>
+getTrackedPostById(supabase, id, userId): Promise<TrackedPost | null>
+createTrackedPost(supabase, post: NewTrackedPost, userId): Promise<void>
+updateTrackedPost(supabase, id, updates: TrackedPostUpdates, userId): Promise<void>
+patchTrackedPostData(supabase, id, patch: Record<string, unknown>, userId): Promise<void>
+deleteTrackedPost(supabase, id, userId): Promise<void>
 ```
 
 ## Adding a New Table

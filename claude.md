@@ -33,18 +33,20 @@ The repo is an npm workspaces monorepo. Run every install and script from the ro
 ```
 package.json          workspaces ["backend", "frontend"], shared dev tooling, root scripts
 package-lock.json     the only lockfile; one node_modules at the root
-eslint.config.mjs     shared ESLint config (frontend rules, backend Workers rules, Node rules for tests)
+tsconfig.base.json    shared TypeScript settings (strict, erasable syntax only); each project extends it
+eslint.config.mjs     shared ESLint config (typescript-eslint, frontend rules, backend Workers rules, Node rules for tests)
 .prettierrc.json      shared Prettier config matching the existing style (not applied in bulk)
 .editorconfig         editor defaults (4 spaces in backend, 2 elsewhere)
+shared/types/         API contract types shared by backend and frontend (types only, no runtime code)
 backend/              Hono Worker; tests in backend/tests/ mirroring the source folders
 frontend/             React SPA; tests in frontend/tests/ mirroring frontend/src/
-scripts/              publish-scheduled.js, run by GitHub Actions with no dependencies
+scripts/              publish-scheduled.ts, run by GitHub Actions with no dependencies
 ```
 
 - `npm install` at the root installs both apps. Never run `npm install` inside `backend/` or `frontend/`, and never commit a lockfile there.
-- `npm run dev` starts the Worker (port 8787) and Vite (port 5173) together; `npm test`, `npm run lint` and `npm run build` cover the whole repo.
+- `npm run dev` starts the Worker (port 8787) and Vite (port 5173) together; `npm run typecheck`, `npm test`, `npm run lint` and `npm run build` cover the whole repo.
 - Add a dependency to the app that uses it: `npm install <pkg> --workspace backend` or `--workspace frontend`. Only shared dev tooling belongs in the root `package.json`.
-- Tests never live next to source files. A test for `backend/services/youtube.js` is `backend/tests/services/youtube.test.js`; a test for `frontend/src/lib/accounts.js` is `frontend/tests/lib/accounts.test.js`.
+- Tests never live next to source files. A test for `backend/services/youtube.ts` is `backend/tests/services/youtube.test.ts`; a test for `frontend/src/lib/accounts.ts` is `frontend/tests/lib/accounts.test.ts`.
 
 ---
 
@@ -56,7 +58,7 @@ Before implementing any feature or fix, read these documents in this exact order
 2. `docs/workflows/ISSUES.md` - open or find the GitHub issue for the task before anything else
 3. `docs/WRITING_STANDARDS.md` - typography, icons, writing style, UI copy rules
 4. `docs/architecture/OVERVIEW.md` - system topology and request flow
-5. `docs/guidelines/JAVASCRIPT.md` - code standards (always apply)
+5. `docs/guidelines/TYPESCRIPT.md` - code standards and typing rules (always apply)
 6. Relevant architecture doc - backend, frontend, database, or cloudflare
 7. Relevant feature guide - if one exists in `docs/features/`
 8. Relevant engineering guideline - if the task touches a specific layer
@@ -77,16 +79,17 @@ docs/
     backend/
       HONO.md              App structure, middleware, routing pattern
       ROUTES.md            All routes, method, auth requirement, purpose
-      SERVICES.md          instagram.js, youtube.js service layer
+      SERVICES.md          instagram.ts, youtube.ts service layer
       MIDDLEWARE.md        requireAuth, CORS, context injection
       CACHING.md           Redis strategy, cache keys, invalidation
+      RATE_LIMITING.md     Rate limit rules, algorithms, Redis Lua scripts, fallbacks
       CRON.md              Scheduled handlers, cron triggers
     frontend/
-      REACT_ARCHITECTURE.md    Provider tree, lazy loading, App.jsx
+      REACT_ARCHITECTURE.md    Provider tree, lazy loading, App.tsx
       DESIGN_SYSTEM.md         Tokens, shared components, page patterns
       ROUTING.md               All pages, paths, layout nesting
       CONTEXTS.md              AuthContext, AppContext, usage rules
-      API_LAYER.md             api.js, request(), auth header injection
+      API_LAYER.md             api.ts, request(), auth header injection
       FEATURES.md              Feature module conventions, directory map
     database/
       SCHEMA.md            All tables, columns, types, constraints
@@ -101,7 +104,7 @@ docs/
       ANALYTICS.md         YouTube and Instagram analytics fetch and compute
       SCHEDULING.md        Scheduled post lifecycle, dual-scheduler design
   guidelines/
-    JAVASCRIPT.md          Code style, modules, naming, comments policy
+    TYPESCRIPT.md          Compiler settings, typing rules, where types live, code style, comments policy
     REACT.md               Component rules, hooks, JSX conventions
     HONO.md                Route handlers, middleware, context usage
     CLOUDFLARE_WORKERS.md  Worker-safe patterns, env access, no Node APIs
@@ -137,7 +140,7 @@ docs/
     SECURITY.md            Security model, key handling, isolation
     PERFORMANCE.md         Caching strategy, edge optimization
 
-frontend/src/docs/  Public user and self-hosting docs served at /docs (in-app, JSX)
+frontend/src/docs/  Public user and self-hosting docs served at /docs (in-app, TSX)
 DECISIONS.md       Architectural decision log
 CHANGELOG.md       Version history and feature changes
 ROADMAP.md         Planned features and priorities
@@ -256,11 +259,11 @@ This is not optional for features that touch new UI patterns, new APIs, or new i
 
 **Always read before writing.** Read every file you will modify. Read all files in the same directory that might be affected. Read sibling files to understand conventions before adding new ones.
 
-**Match the existing pattern.** This project has established conventions for routes, context hooks, db.js queries, cache.js patterns, and api.js methods. Find the nearest existing example and follow it exactly before introducing anything new.
+**Match the existing pattern.** This project has established conventions for routes, context hooks, db.ts queries, cache.ts patterns, and api.ts methods. Find the nearest existing example and follow it exactly before introducing anything new.
 
-**No TypeScript.** The entire project - backend and frontend - is JavaScript/JSX. Do not suggest or introduce TypeScript unless explicitly asked.
+**TypeScript only, in strict mode.** The whole project - Worker, React app, shared types, scripts and tests - is TypeScript (`.ts`, and `.tsx` for files with JSX). Never add a `.js` or `.jsx` source file, never use `any`, `@ts-ignore` or `@ts-expect-error`, and only use syntax Node can strip (no enums, namespaces or parameter properties; `import type` for types; relative imports keep their `.ts` extension). Types the API sends or receives live in `shared/types/`; change them there first. `npm run typecheck` must pass before every commit. See `docs/guidelines/TYPESCRIPT.md`.
 
-**No dependencies without explicit approval.** The backend uses zero npm dependencies at runtime beyond `hono`, `@supabase/supabase-js`, and `@upstash/redis`. Adding packages to the Cloudflare Worker increases bundle size and startup time. The `scripts/publish-scheduled.js` file uses zero npm dependencies by design.
+**No dependencies without explicit approval.** The backend uses zero npm dependencies at runtime beyond `hono`, `@supabase/supabase-js`, and `@upstash/redis`. Adding packages to the Cloudflare Worker increases bundle size and startup time. The `scripts/publish-scheduled.ts` file uses zero npm dependencies by design.
 
 **Security invariants - never violate these:**
 - `SUPABASE_SERVICE_KEY` is only ever used server-side (backend Worker)
@@ -269,9 +272,9 @@ This is not optional for features that touch new UI patterns, new APIs, or new i
 - All user-scoped queries always append `.eq('user_id', userId)` where `userId` comes from a verified JWT, never from user input
 - `backend/.dev.vars` must never be committed
 
-**Use the established db.js pattern.** All database operations go through `lib/db.js`. Never write inline Supabase queries in route handlers. Add new operations to `db.js` and import them.
+**Use the established db.ts pattern.** All database operations go through `lib/db.ts`. Never write inline Supabase queries in route handlers. Add new operations to `db.ts` and import them.
 
-**Use the established api.js pattern.** All frontend-to-backend calls go through `frontend/src/services/api.js`. Never call `fetch()` directly in components. Add new endpoints to the `api` object in `api.js`.
+**Use the established api.ts pattern.** All frontend-to-backend calls go through `frontend/src/services/api.ts`. Never call `fetch()` directly in components. Add new endpoints to the `api` object in `api.ts`.
 
 **Redis failures are always silent.** Wrap all Redis operations in try/catch. Cache misses must fall back to live API calls. The app must work with Redis completely absent.
 
@@ -328,7 +331,8 @@ When anything changes, update every relevant docs file from the table below. The
 | New npm package (frontend) | `docs/architecture/frontend/REACT_ARCHITECTURE.md`, `DECISIONS.md` |
 | New npm package (root dev tooling) | `docs/workflows/TESTING.md` or the guideline it serves, `DECISIONS.md`, `README.md` |
 | Workspaces, root `package.json` scripts or the root lockfile changed | `README.md`, `docs/workflows/DEPLOYMENT.md`, `docs/workflows/FEATURE_DEVELOPMENT.md`, `docs/architecture/cloudflare/CI_CD.md`, this file (Repository Layout section) |
-| Shared tooling config changed (`eslint.config.mjs`, `.prettierrc.json`, `.editorconfig`) | `docs/guidelines/JAVASCRIPT.md`, `docs/workflows/TESTING.md`, this file (Repository Layout section) |
+| Shared tooling config changed (`eslint.config.mjs`, `tsconfig*.json`, `.prettierrc.json`, `.editorconfig`) | `docs/guidelines/TYPESCRIPT.md`, `docs/workflows/TESTING.md`, this file (Repository Layout section) |
+| API request or response shape changed | `shared/types/*.ts` first (the type checker then lists every caller), `docs/architecture/backend/ROUTES.md`, `docs/architecture/frontend/API_LAYER.md` |
 | New frontend feature module | `docs/architecture/frontend/FEATURES.md`, `docs/architecture/frontend/ROUTING.md`, `docs/architecture/OVERVIEW.md` |
 | New data flow | `docs/architecture/data-flows/` (add or update relevant file), `docs/architecture/OVERVIEW.md` |
 | New cron trigger | `docs/architecture/cloudflare/WORKERS.md`, `docs/architecture/backend/CRON.md`, `docs/architecture/cloudflare/CI_CD.md` |
@@ -337,14 +341,16 @@ When anything changes, update every relevant docs file from the table below. The
 | Test added, moved or test command changed | `docs/workflows/TESTING.md` (layout, commands, coverage list) |
 | New backend service file | `docs/architecture/backend/SERVICES.md` |
 | New cache key | `docs/architecture/backend/CACHING.md` |
+| Rate limit rule, limit or covered route changed | `docs/architecture/backend/RATE_LIMITING.md` (rules table), `backend/tests/middleware/rateLimit.test.ts` (route matchers) |
+| Rate limit algorithm or Lua script changed | Both `backend/lib/rateLimit/algorithms.ts` and `scripts.ts` together, `docs/architecture/backend/RATE_LIMITING.md`, `DECISIONS.md` |
 | New middleware | `docs/architecture/backend/MIDDLEWARE.md`, `docs/architecture/backend/HONO.md` |
 | Auth flow changed | `docs/architecture/data-flows/AUTHENTICATION.md` |
 | Publishing flow changed | `docs/architecture/data-flows/PUBLISHING.md` |
 | Scheduling flow changed | `docs/architecture/data-flows/SCHEDULING.md` |
 | Analytics computation changed | `docs/architecture/data-flows/ANALYTICS.md` |
 | New React context or hook | `docs/architecture/frontend/CONTEXTS.md` |
-| api.js changed | `docs/architecture/frontend/API_LAYER.md` |
-| App.jsx routing changed | `docs/architecture/frontend/ROUTING.md` |
+| api.ts changed | `docs/architecture/frontend/API_LAYER.md` |
+| App.tsx routing changed | `docs/architecture/frontend/ROUTING.md` |
 | Frontend deployment config changed | `docs/architecture/cloudflare/PAGES.md` |
 | Architecture decision made | `DECISIONS.md` (append only, never delete) |
 | Any feature shipped | `CHANGELOG.md` (append to Unreleased section) |

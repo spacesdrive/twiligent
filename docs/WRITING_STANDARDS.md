@@ -19,7 +19,7 @@ These rules apply to all generated code, documentation, UI copy, commit messages
 
 - Never use emoji as icons in UI.
 - Use SVG icons only.
-- Prefer Lucide React icons (`lucide-react`) at a 1.75 stroke. Platform logos (YouTube, Instagram, Reddit) come from `components/brand/platform-icons.jsx`.
+- Prefer Lucide React icons (`lucide-react`) at a 1.75 stroke. Platform logos (YouTube, Instagram, Reddit) come from `components/brand/platform-icons.tsx`.
 - If Lucide does not have an appropriate icon, use another open-source SVG icon library (e.g. Heroicons, Radix Icons).
 - All icons in the same UI context must have consistent size, stroke width, spacing, and visual weight.
 

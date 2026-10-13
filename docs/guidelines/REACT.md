@@ -4,7 +4,7 @@
 
 **Function components only.** No class components.
 
-```jsx
+```tsx
 export default function ChannelAnalytics() {
     // ...
     return <div>...</div>;
@@ -13,34 +13,47 @@ export default function ChannelAnalytics() {
 
 **One component per file.** Small helper sub-components can live in the same file if they are only used in that one file and are not exported.
 
-**No prop-types.** This project does not use PropTypes or TypeScript types. Descriptive prop names are the documentation.
+**Typed props.** Every component that receives props declares a `<Component>Props` interface in the same file; export it only when another file needs it. Children are `React.ReactNode`, icons are `LucideIcon`. No PropTypes. See `docs/guidelines/TYPESCRIPT.md`.
+
+```tsx
+interface AccountCardProps {
+    account: AppAccount;
+    onRemove: (id: string) => void;
+}
+
+export default function AccountCard({ account, onRemove }: AccountCardProps) {
+    // ...
+}
+```
 
 ## Hooks
 
 Use hooks at the top level of the component, never inside conditions or loops:
 
-```jsx
+```tsx
 // Good
-function MyComponent({ id }) {
-    const [data, setData] = useState(null);
+function MyComponent({ id }: MyComponentProps) {
+    const [data, setData] = useState<YouTubeAnalyticsPayload | null>(null);
     const { showToast } = useAppContext();
     // ...
 }
 
-// Bad
-function MyComponent({ id }) {
+// Bad: conditional hook
+function MyComponent({ id }: MyComponentProps) {
     if (id) {
-        const [data, setData] = useState(null); // ❌ conditional hook
+        const [data, setData] = useState<YouTubeAnalyticsPayload | null>(null);
     }
 }
 ```
 
+Give `useState` a type argument when the initial value does not show the full type (`null`, `[]`), and `useRef` the element type: `useRef<HTMLDivElement>(null)`.
+
 **Custom hooks** live where they are used:
 
-- A hook used by one feature lives in that feature folder as `useCamelCase.js`, for example `features/analytics/videos/useChannelVideos.js` or `features/publishing/useBulkQueue.js`.
-- A hook shared across features lives in `frontend/src/hooks/` as `use-kebab-case.js`, for example `hooks/use-cloudinary-config.js`.
+- A hook used by one feature lives in that feature folder as `useCamelCase.ts`, for example `features/analytics/videos/useChannelVideos.ts` or `features/publishing/useBulkQueue.ts`.
+- A hook shared across features lives in `frontend/src/hooks/` as `use-kebab-case.ts`, for example `hooks/use-cloudinary-config.ts`.
 
-Either way, export a single function named `useSomething`. Move a feature hook into `hooks/` (and rename it) once a second feature needs it.
+Either way, export a single function named `useSomething`. A hook that returns several values also exports its result type, for example `export type BulkQueue = ReturnType<typeof useBulkQueue>`. Move a feature hook into `hooks/` (and rename it) once a second feature needs it.
 
 ## State Management
 
@@ -56,8 +69,8 @@ See `docs/guidelines/STATE_MANAGEMENT.md` for detailed guidance.
 
 Fetch data in `useEffect` on component mount:
 
-```jsx
-const [data, setData] = useState(null);
+```tsx
+const [data, setData] = useState<YouTubeAnalyticsPayload | null>(null);
 const [loading, setLoading] = useState(true);
 const { showToast } = useAppContext();
 
@@ -68,7 +81,7 @@ useEffect(() => {
             const result = await api.getAnalytics(id);
             if (!cancelled) setData(result);
         } catch (err) {
-            if (!cancelled) showToast(err.message, 'error');
+            if (!cancelled) showToast((err as Error).message, 'error');
         } finally {
             if (!cancelled) setLoading(false);
         }
@@ -78,12 +91,12 @@ useEffect(() => {
 }, [id, showToast]);
 ```
 
-The `cancelled` flag prevents state updates on unmounted components (important for pages that navigate away during loading).
+`api` methods return the shared response types from `shared/types`, so `result` is already typed; do not restate the shape in the page. The `cancelled` flag prevents state updates on unmounted components (important for pages that navigate away during loading).
 
 ## JSX Rules
 
 **Conditional rendering:**
-```jsx
+```tsx
 // For if/else with significant content:
 {loading ? <Skeleton /> : <DataTable data={data} />}
 
@@ -92,24 +105,24 @@ The `cancelled` flag prevents state updates on unmounted components (important f
 ```
 
 **Lists always need `key`:**
-```jsx
+```tsx
 {accounts.map(account => (
     <AccountCard key={account.id} account={account} />
 ))}
 ```
 
 **Event handlers** are named `handle{Event}` by convention:
-```jsx
-function handleSubmit(e) { ... }
+```tsx
+function handleSubmit(e: React.FormEvent<HTMLFormElement>) { ... }
 function handleDeleteClick() { ... }
-function handleInputChange(e) { ... }
+function handleInputChange(e: React.ChangeEvent<HTMLInputElement>) { ... }
 ```
 
 ## Lazy Loading
 
-All pages are lazy-loaded via `React.lazy()` in `App.jsx`. Do not import pages directly - always use lazy imports for new pages.
+All pages are lazy-loaded via `React.lazy()` in `App.tsx`. Do not import pages directly - always use lazy imports for new pages.
 
-```jsx
+```tsx
 const MyNewPage = lazy(() => import('./features/myFeature/MyNewPage'));
 ```
 

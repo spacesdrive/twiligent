@@ -44,7 +44,7 @@ The Worker uses the service role key and is therefore responsible for its own ac
 **What this prevents:** User A querying user B's accounts, posts, or settings by guessing an account ID.
 
 **What to verify when adding new queries:**
-```js
+```ts
 // Correct: userId from JWT, not from request body or params
 const userId = c.get('userId');
 const { data } = await supabase

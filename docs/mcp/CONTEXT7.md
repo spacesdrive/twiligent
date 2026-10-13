@@ -11,18 +11,20 @@ Context7 fetches current, version-accurate documentation for libraries and APIs.
 
 ## When to Use
 
-✅ **Use Context7 for:**
+**Use Context7 for:**
 - Instagram Graph API - container creation params, field names, error codes
 - YouTube Data API v3 - endpoint params, quota costs, response shapes
 - Hono v4 - middleware API, context methods, routing
-- Supabase JS - client methods, query builder, auth API
+- Supabase JS (`@supabase/supabase-js`) - client methods, query builder, auth API, exported types
 - Cloudflare Workers - runtime APIs, `ctx.waitUntil()`, env bindings
 - Recharts v3 - component props, data shapes, chart configuration
 - shadcn/ui components - available props, slot composition
 - React 19 - hooks API, new features
 - React Router v7 - `createBrowserRouter`, `Outlet`, nested routes
+- TypeScript 6.0 - compiler options in `tsconfig.base.json`, type stripping rules
+- `@cloudflare/workers-types` and `@types/react` - runtime and component types
 
-❌ **Do not use Context7 for:**
+**Do not use Context7 for:**
 - Debugging business logic (read the code instead)
 - Code review
 - Architecture decisions (use Sequential Thinking)
@@ -56,8 +58,8 @@ query-docs: "How do I use upsert with onConflict to specify composite primary ke
 
 ```
 resolve-library-id: "hono cloudflare workers"
-query-docs: "How do I set and get values on the Hono context using c.set() and c.get()? 
-             What is the TypeScript interface for custom context variables?"
+query-docs: "How do I type c.set() and c.get() with the Variables generic on new Hono<{ Bindings; Variables }>()?
+             How do I type a middleware declared outside the router?"
 ```
 
 ### Recharts area chart

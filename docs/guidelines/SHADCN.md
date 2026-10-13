@@ -3,23 +3,23 @@
 ## Configuration
 
 ```json
-// frontend/components.json
+// frontend/components.json (excerpt)
 {
     "style": "base-nova",
     "rsc": false,
-    "tsx": false,
-    "tailwind": { "cssVariables": true },
-    "aliases": { "components": "@/components", "utils": "@/lib/utils" }
+    "tsx": true,
+    "tailwind": { "config": "", "css": "src/index.css", "cssVariables": true },
+    "aliases": { "components": "@/components", "utils": "@/lib/utils", "ui": "@/components/ui" }
 }
 ```
 
-Style: `base-nova`. CSS variables: enabled. No TypeScript (tsx: false).
+Style: `base-nova`. CSS variables: enabled. TypeScript: `tsx: true`, so the CLI writes `.tsx` files. `tailwind.config` is empty because Tailwind v4 is configured in `src/index.css`.
 
 ## Import Pattern
 
 Always import from the local `@/components/ui/` path:
 
-```jsx
+```tsx
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -36,13 +36,13 @@ npx shadcn add <component-name>
 
 Run the CLI from `frontend/`, where `components.json` lives. The `shadcn` CLI is a dependency of the frontend workspace, so `npx shadcn` uses the version pinned in the root `package-lock.json`. If the CLI installs npm packages for a component, check afterwards that no `frontend/package-lock.json` was created; the root lockfile is the only one, and a stray workspace lockfile should be deleted and `npm install` run again at the root.
 
-This copies the component source into `frontend/src/components/ui/`. After adding, verify the generated file uses `.jsx` (not `.tsx`). The `components.json` configuration should handle this automatically.
+This copies the component source into `frontend/src/components/ui/` as a `.tsx` file, following the official base-nova TypeScript sources. Run `npm run typecheck` from the root afterwards.
 
 ## Composition Rules
 
 shadcn components are composed using their named export variants. Read the component file in `frontend/src/components/ui/` to understand the available props before using them.
 
-```jsx
+```tsx
 // Card composition
 <Card>
     <CardHeader>
@@ -80,7 +80,7 @@ shadcn components are composed using their named export variants. Read the compo
 
 Always use `cn()` from `@/lib/utils` to combine class names - it handles conditional classes and tailwind-merge conflicts:
 
-```jsx
+```tsx
 import { cn } from '@/lib/utils';
 
 <div className={cn('base-class', isActive && 'active-class', className)}>
@@ -90,7 +90,7 @@ import { cn } from '@/lib/utils';
 
 Project components in `frontend/src/components/` sit on top of the shadcn primitives. Use them before composing primitives by hand. `MetricBox` is the KPI tile used across analytics pages:
 
-```jsx
+```tsx
 import MetricBox from '@/components/MetricBox';
 
 <MetricBox

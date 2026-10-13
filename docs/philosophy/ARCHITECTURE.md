@@ -38,9 +38,9 @@ User-specific tokens (Instagram access tokens, GitHub PATs) live in `accounts.da
 
 New platform-specific fields go into the `data jsonb` column on `accounts` or `scheduled_posts`. Adding a new table requires a clear reason: the data has a lifecycle of its own, or it needs to be queried/filtered by a column that can't be in jsonb. See `ADR-005`.
 
-### 7. No TypeScript anywhere
+### 7. Strict TypeScript, stripped rather than compiled
 
-This is a deliberate constraint, not an oversight. See `ADR-010` and `docs/guidelines/JAVASCRIPT.md`.
+Every layer is TypeScript in `strict` mode, and the API contract lives once in `shared/types/`, used by both the Worker and the frontend. Nothing is compiled ahead of time: Wrangler, Vite and Node strip the types, and `npm run typecheck` gates every deploy and pull request. Only erasable syntax is allowed, so any file can run directly under Node. See `ADR-030` (which replaces `ADR-010`) and `docs/guidelines/TYPESCRIPT.md`.
 
 ## What This Architecture Is Not
 
@@ -55,7 +55,7 @@ This is a deliberate constraint, not an oversight. See `ADR-010` and `docs/guide
 These principles guide the initial implementation. Breaking them requires an explicit ADR:
 - Adding a second Worker: write `ADR-013` explaining why one Worker is insufficient
 - Enabling RLS: write an ADR explaining why application-layer isolation failed
-- Adding TypeScript: write an ADR with clear measurable benefit
+- Adding a compile step or non-erasable TypeScript syntax (`enum`, parameter properties): write an ADR with clear measurable benefit
 - Adding a state management library: write an ADR showing that context + local state is insufficient
 
 The cost of documenting the decision is intentionally low. The point is to make the tradeoff visible, not to prevent evolution.
