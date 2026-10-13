@@ -69,7 +69,7 @@ export default {
             ctx.waitUntil(processScheduledPosts(supabase));
         } else if (event.cron === '0 0 * * *') {
             ctx.waitUntil(autoRefreshInstagramTokens(supabase));
-            ctx.waitUntil(autoRefreshRedditSessions(supabase, env.REDDIT_ENCRYPTION_KEY));
+            ctx.waitUntil(autoRefreshRedditSessions());
         }
     },
 } satisfies ExportedHandler<Env>;
