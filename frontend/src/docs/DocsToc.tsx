@@ -1,14 +1,20 @@
 import React from 'react';
 import { ArrowUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import type { TocItem } from './useTableOfContents';
 
-function jumpTo(e, id) {
+function jumpTo(e: React.MouseEvent<HTMLAnchorElement>, id: string) {
   e.preventDefault();
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   history.replaceState(null, '', `#${id}`);
 }
 
-export default function DocsToc({ items, active }) {
+interface DocsTocProps {
+  items: TocItem[];
+  active: string | null;
+}
+
+export default function DocsToc({ items, active }: DocsTocProps) {
   if (items.length === 0) return null;
   return (
     <nav aria-label="On this page" className="flex flex-col gap-3">

@@ -6,12 +6,25 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { filterCommands, groupCommands } from '@/lib/commandSearch';
 import { ALL_DOC_PAGES } from './nav';
 
-export default function DocsSearch({ open, onOpenChange }) {
+interface DocSearchCommand {
+  id: string;
+  label: string;
+  group: string;
+  keywords: string[];
+  path: string;
+}
+
+interface DocsSearchProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export default function DocsSearch({ open, onOpenChange }: DocsSearchProps) {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
-  const commands = useMemo(() => ALL_DOC_PAGES.map(page => ({ id: page.path, label: page.title, group: page.tabLabel, keywords: page.keywords, path: page.path })), []);
+  const commands = useMemo<DocSearchCommand[]>(() => ALL_DOC_PAGES.map(page => ({ id: page.path, label: page.title, group: page.tabLabel, keywords: page.keywords, path: page.path })), []);
   const grouped = useMemo(() => groupCommands(filterCommands(commands, query)), [commands, query]);
-  const close = next => { if (!next) setQuery(''); onOpenChange(next); };
+  const close = (next: boolean) => { if (!next) setQuery(''); onOpenChange(next); };
   return (
     <Dialog open={open} onOpenChange={close}>
       <DialogContent showCloseButton={false} className="top-[18%] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-xl">
@@ -23,7 +36,7 @@ export default function DocsSearch({ open, onOpenChange }) {
             <CommandEmpty>No pages match "{query}"</CommandEmpty>
             {grouped.map(({ group, items }) => (
               <CommandGroup key={group} heading={group}>
-                {items.map(item => (
+                {items.map((item: DocSearchCommand) => (
                   <CommandItem key={item.id} value={item.id} onSelect={() => { close(false); navigate(item.path); }}>
                     <FileText />
                     {item.label}

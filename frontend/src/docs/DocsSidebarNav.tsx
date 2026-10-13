@@ -1,8 +1,14 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import type { DocTab } from './nav';
 
-export default function DocsSidebarNav({ tab, onNavigate }) {
+interface DocsSidebarNavProps {
+  tab: DocTab;
+  onNavigate?: () => void;
+}
+
+export default function DocsSidebarNav({ tab, onNavigate }: DocsSidebarNavProps) {
   return (
     <nav aria-label={`${tab.label} pages`} className="flex flex-col gap-6">
       {tab.groups.map((group, i) => (

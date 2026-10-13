@@ -5,8 +5,18 @@ import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/brand/Logo';
 import { cn } from '@/lib/utils';
 import { DOC_TABS, firstPagePath } from './nav';
+import type { DocTab } from './nav';
 
-export default function DocsHeader({ tab, signedIn, isDark, onToggleTheme, onOpenMenu, onOpenSearch }) {
+interface DocsHeaderProps {
+  tab: DocTab;
+  signedIn: boolean;
+  isDark: boolean;
+  onToggleTheme: () => void;
+  onOpenMenu: () => void;
+  onOpenSearch: () => void;
+}
+
+export default function DocsHeader({ tab, signedIn, isDark, onToggleTheme, onOpenMenu, onOpenSearch }: DocsHeaderProps) {
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-surface/90 backdrop-blur-md">
       <div className="flex h-14 items-center gap-3 px-4 lg:px-6">

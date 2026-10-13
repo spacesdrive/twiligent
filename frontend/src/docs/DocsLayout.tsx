@@ -14,10 +14,10 @@ import DocsToc from './DocsToc';
 import DocsMobileNav from './DocsMobileNav';
 import DocsSearch from './DocsSearch';
 
-function useSearchShortcut(setSearchOpen) {
+function useSearchShortcut(setSearchOpen: (open: boolean) => void) {
   useEffect(() => {
-    const onKey = e => {
-      const typing = /input|textarea|select/i.test(e.target.tagName) || e.target.isContentEditable;
+    const onKey = (e: KeyboardEvent) => {
+      const typing = /input|textarea|select/i.test((e.target as HTMLElement).tagName) || (e.target as HTMLElement).isContentEditable;
       if ((e.key === '/' && !typing) || ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k')) {
         e.preventDefault();
         setSearchOpen(true);
@@ -35,7 +35,7 @@ export default function DocsLayout() {
   const [searchOpen, setSearchOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [copied, setCopied] = useState(false);
-  const articleRef = useRef(null);
+  const articleRef = useRef<HTMLElement | null>(null);
   const tab = tabForPath(location.pathname);
   const { prev, next } = neighbours(location.pathname);
   const { items: toc, active } = useTableOfContents(articleRef, location.pathname);

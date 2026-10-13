@@ -1,8 +1,14 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
+import type { DocPageEntry } from './nav';
 
-export default function DocsPager({ prev, next }) {
+interface DocsPagerProps {
+  prev: DocPageEntry | null;
+  next: DocPageEntry | null;
+}
+
+export default function DocsPager({ prev, next }: DocsPagerProps) {
   return (
     <nav aria-label="Previous and next page" className="mt-16 grid grid-cols-1 gap-3 border-t border-line pt-8 sm:grid-cols-2">
       {prev ? (

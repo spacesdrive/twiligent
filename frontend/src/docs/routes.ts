@@ -1,5 +1,7 @@
 import { createElement, lazy } from 'react';
+import type { ComponentType, LazyExoticComponent } from 'react';
 import { Navigate } from 'react-router-dom';
+import type { RouteObject } from 'react-router-dom';
 
 // Each section is one chunk; the pages inside it are named exports.
 const sections = {
@@ -9,11 +11,16 @@ const sections = {
   reference: () => import('./pages/Reference'),
 };
 
-function page(section, name) {
-  return lazy(() => sections[section]().then(m => ({ default: m[name] })));
+type Sections = typeof sections;
+type SectionName = keyof Sections;
+type PageName<S extends SectionName> = keyof Awaited<ReturnType<Sections[S]>>;
+export type DocPageComponent = LazyExoticComponent<ComponentType>;
+
+function page<S extends SectionName>(section: S, name: PageName<S>): DocPageComponent {
+  return lazy(() => sections[section]().then(m => ({ default: (m as unknown as Record<PageName<S>, ComponentType>)[name] })));
 }
 
-const PAGES = {
+const PAGES: Record<string, DocPageComponent> = {
   '': page('overview', 'Introduction'),
   concepts: page('overview', 'Concepts'),
   'use/getting-started': page('use', 'GettingStarted'),
@@ -39,9 +46,9 @@ const PAGES = {
   'reference/faq': page('reference', 'FAQ'),
 };
 
-export const DOC_ROUTE_SLUGS = Object.keys(PAGES);
+export const DOC_ROUTE_SLUGS: string[] = Object.keys(PAGES);
 
-export const docsChildRoutes = [
+export const docsChildRoutes: RouteObject[] = [
   ...Object.entries(PAGES).map(([slug, Component]) => (slug ? { path: slug, Component } : { index: true, Component })),
   { path: '*', element: createElement(Navigate, { to: '/docs', replace: true }) },
 ];

@@ -1,7 +1,9 @@
 import React from 'react';
 import { DocTitle, H2, P, UL, A, Code, Callout, Table, Badge } from '../../components';
 
-const BACKEND_VARS = [
+type Need = keyof typeof NEED;
+
+const BACKEND_VARS: [string, Need, boolean, string, string][] = [
   ['SUPABASE_URL', 'required', false, 'Supabase, Project Settings, Data API', 'Which database the Worker talks to.'],
   ['SUPABASE_SERVICE_KEY', 'required', true, 'Supabase, Project Settings, API Keys, secret key (legacy: service_role)', 'Reads and writes all tables on behalf of members.'],
   ['SUPABASE_ANON_KEY', 'required', false, 'Supabase, Project Settings, API Keys, publishable key (legacy: anon)', 'Checks that a sign-in token is genuine.'],
@@ -16,7 +18,7 @@ const BACKEND_VARS = [
   ['UPSTASH_REDIS_REST_TOKEN', 'optional', true, 'Upstash database, REST API', 'Cache password.'],
 ];
 
-const FRONTEND_VARS = [
+const FRONTEND_VARS: [string, Need, string][] = [
   ['VITE_SUPABASE_URL', 'required', 'Same as SUPABASE_URL.'],
   ['VITE_SUPABASE_ANON_KEY', 'required', 'The publishable key. Never the secret key.'],
   ['VITE_API_URL', 'required', 'Backend URL plus /api, for example https://twiligent.you.workers.dev/api. Defaults to http://localhost:8787/api in development.'],

@@ -1,14 +1,26 @@
 import { useEffect, useState } from 'react';
+import type { RefObject } from 'react';
 
-export function useTableOfContents(articleRef, pathname) {
-  const [items, setItems] = useState([]);
-  const [active, setActive] = useState(null);
+export interface TocItem {
+  id: string;
+  text: string | null;
+  level: number;
+}
+
+export interface TableOfContents {
+  items: TocItem[];
+  active: string | null;
+}
+
+export function useTableOfContents(articleRef: RefObject<HTMLElement | null>, pathname: string): TableOfContents {
+  const [items, setItems] = useState<TocItem[]>([]);
+  const [active, setActive] = useState<string | null>(null);
 
   useEffect(() => {
     const article = articleRef.current;
     if (!article) return undefined;
     const collect = () => {
-      const headings = [...article.querySelectorAll('[data-toc]')];
+      const headings = [...article.querySelectorAll<HTMLElement>('[data-toc]')];
       setItems(headings.map(heading => ({ id: heading.id, text: heading.textContent, level: Number(heading.dataset.toc) })));
       return headings;
     };

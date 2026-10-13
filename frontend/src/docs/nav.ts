@@ -1,6 +1,34 @@
 // tabs, sidebar groups and pages; routes.js maps each page to its component
 
-export const DOC_TABS = [
+export interface DocPage {
+  slug: string;
+  title: string;
+  keywords: string[];
+}
+
+export interface DocGroup {
+  label: string | null;
+  pages: DocPage[];
+}
+
+export interface DocTab {
+  id: string;
+  label: string;
+  groups: DocGroup[];
+}
+
+export interface DocPageEntry extends DocPage {
+  tabId: string;
+  tabLabel: string;
+  path: string;
+}
+
+export interface DocNeighbours {
+  prev: DocPageEntry | null;
+  next: DocPageEntry | null;
+}
+
+export const DOC_TABS: DocTab[] = [
   {
     id: 'overview',
     label: 'Overview',
@@ -90,24 +118,24 @@ export const DOC_TABS = [
   },
 ];
 
-export const ALL_DOC_PAGES = DOC_TABS.flatMap(tab => tab.groups.flatMap(group => group.pages.map(page => ({
+export const ALL_DOC_PAGES: DocPageEntry[] = DOC_TABS.flatMap(tab => tab.groups.flatMap(group => group.pages.map(page => ({
   ...page,
   tabId: tab.id,
   tabLabel: tab.label,
   path: page.slug ? `/docs/${page.slug}` : '/docs',
 }))));
 
-export function tabForPath(pathname) {
+export function tabForPath(pathname: string): DocTab {
   const page = ALL_DOC_PAGES.find(p => p.path === pathname);
   return DOC_TABS.find(t => t.id === page?.tabId) || DOC_TABS[0];
 }
 
-export function neighbours(pathname) {
+export function neighbours(pathname: string): DocNeighbours {
   const i = ALL_DOC_PAGES.findIndex(p => p.path === pathname);
   return { prev: i > 0 ? ALL_DOC_PAGES[i - 1] : null, next: i >= 0 && i < ALL_DOC_PAGES.length - 1 ? ALL_DOC_PAGES[i + 1] : null };
 }
 
-export function firstPagePath(tab) {
+export function firstPagePath(tab: DocTab): string {
   const page = tab.groups[0].pages[0];
   return page.slug ? `/docs/${page.slug}` : '/docs';
 }

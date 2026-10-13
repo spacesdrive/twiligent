@@ -3,9 +3,16 @@ import { Link } from 'react-router-dom';
 import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 import { DOC_TABS, firstPagePath } from './nav';
+import type { DocTab } from './nav';
 import DocsSidebarNav from './DocsSidebarNav';
 
-export default function DocsMobileNav({ tab, open, onOpenChange }) {
+interface DocsMobileNavProps {
+  tab: DocTab;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+export default function DocsMobileNav({ tab, open, onOpenChange }: DocsMobileNavProps) {
   const close = () => onOpenChange(false);
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
