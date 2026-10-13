@@ -128,3 +128,18 @@ const accounts = data ?? [];
 ## No Unused Code
 
 Do not leave unused variables, unused imports, or commented-out code blocks. Remove them.
+
+## Lint and Format
+
+The tooling config lives once at the repository root and covers both apps:
+
+| File | What it sets |
+|---|---|
+| `eslint.config.mjs` | ESLint flat config. Frontend: recommended, React hooks and React Refresh rules with browser globals. Backend: recommended rules with service worker globals (the Worker has no Node APIs). `backend/tests/`, `scripts/` and root config files: recommended rules with Node globals. |
+| `.prettierrc.json` | Single quotes, semicolons, trailing commas, `arrowParens: "avoid"`, 120 columns, 2-space indentation, 4 spaces in `backend/` |
+| `.prettierignore` | Skips `node_modules`, build output, `package-lock.json`, the shadcn files in `frontend/src/components/ui`, the backend golden snapshots and Markdown |
+| `.editorconfig` | Editor defaults: UTF-8, 2-space indentation, 4 in `backend/`, final newline, trimmed trailing whitespace except in Markdown |
+
+- Run `npm run lint` from the root before every commit. Unused variables are errors; in the backend, prefix an intentionally unused variable or argument with `_`.
+- Match the indentation and quote style of the file you edit. The existing code was not reformatted in bulk; `npm run format` applies Prettier to the whole repository and belongs in its own commit when it is run.
+- Do not add per-app ESLint or Prettier config files. Change the root config instead, and update this section and `docs/workflows/TESTING.md`.

@@ -55,7 +55,7 @@ export default function Environment() {
       <P>Platform keys are shared by every member of the instance. Missing ones only switch off that platform: Settings shows which are set, and members see a clear message instead of an error.</P>
 
       <H2>Frontend (Cloudflare Pages)</H2>
-      <P>Set these in <Code>frontend/.env</Code> before <Code>npm run build</Code>, or as GitHub secrets when the deploy workflow builds for you. They are built into the site and are public.</P>
+      <P>Set these in <Code>frontend/.env</Code> before running <Code>npm run build</Code> in the top folder of the project, or as GitHub secrets when the deploy workflow builds for you. They are built into the site and are public.</P>
       <Table
         head={['Name', 'Needed', 'Value']}
         rows={FRONTEND_VARS.map(([name, need, value]) => [<Code>{name}</Code>, NEED[need], value])}

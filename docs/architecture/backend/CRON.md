@@ -24,7 +24,7 @@ Both cron triggers invoke the `scheduled` export from `backend/server.js`.
    - On success: sets status to `'published'`, stores `publishedMediaId` and `publishedAt` in `data`
    - On failure: sets status to `'failed'`, stores `error` message in `data`
 
-`utils/scheduler.test.js` pins this sequence, the log lines and the stored results against a fake Supabase client and Graph API.
+`backend/tests/utils/scheduler.test.js` pins this sequence, the log lines and the stored results against a fake Supabase client and Graph API (fixtures and golden snapshots in `backend/tests/fixtures/`).
 
 **No userId filter** - the scheduler operates across all users. It uses the service-role Supabase client.
 

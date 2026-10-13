@@ -126,8 +126,8 @@ React Native app using the same Cloudflare Worker backend.
 ## Known Issues / Tech Debt
 
 - ~~Redis cache TTL is never set~~ Done: analytics caches expire after 6 hours.
-- `public/` directory at repo root contains a legacy Express prototype - should be removed once it is confirmed unused.
-- Root `package.json` and `node_modules/` belong to the legacy prototype - can be removed.
+- ~~`public/` directory at repo root contains a legacy Express prototype~~ Done: the legacy root dashboard was removed.
+- ~~Root `package.json` and `node_modules/` belong to the legacy prototype~~ Done: the root `package.json` is now the npm workspaces root for `backend/` and `frontend/` with shared dev tooling, and the Express prototype dependencies are gone.
 - `wrangler.toml` has no `vars` section for non-secret configuration - any non-sensitive config currently requires a redeploy to change.
 - No error monitoring (Sentry, Cloudflare Analytics, etc.) - failures are only visible in Cloudflare Worker logs.
 - The `scripts/publish-scheduled.js` scheduler has no rate limiting - if 100 posts are due at the same time, it will attempt to publish all 100 concurrently within a single GitHub Actions run.

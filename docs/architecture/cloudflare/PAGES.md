@@ -9,12 +9,12 @@ The React frontend is deployed to Cloudflare Pages. It is a static SPA - all rou
 | Setting | Value |
 |---|---|
 | Framework preset | None (Vite) |
-| Build command | `cd frontend && npm install && npm run build` |
+| Build command | `npm ci && npm run build` |
 | Build output directory | `frontend/dist` |
 | Root directory | `/` (repo root) |
-| Node.js version | 20 |
+| Node.js version | 22 or later (the deploy workflow uses 24; Vite 7 needs 20.19 or later) |
 
-These are configured in the Cloudflare Pages project settings, not in a file.
+These are configured in the Cloudflare Pages project settings, not in a file. The repository is an npm workspaces monorepo: the install runs once at the root against the root `package-lock.json` (there is no lockfile in `frontend/`), and the root `build` script runs `npm run build --workspace frontend`.
 
 ## SPA Fallback
 
@@ -48,14 +48,14 @@ Vite exposes them at runtime as `import.meta.env.VITE_*`.
 
 ## Deployment
 
-Cloudflare Pages deploys automatically on every push to `main` that changes files in `frontend/`. This is configured in `.github/workflows/deploy-frontend.yml`.
+Cloudflare Pages deploys automatically on every push to `main` that changes files in `frontend/`, the root `package.json` or the root `package-lock.json`. This is configured in `.github/workflows/deploy-frontend.yml`, which runs `npm ci` at the root, builds with `npm run build --workspace frontend` and uploads `frontend/dist` with the Wrangler version from the lockfile.
 
-Manual deployment (emergency or first setup):
+Manual deployment (emergency or first setup), from the repository root:
 
 ```bash
-cd frontend
-npm install
+npm ci
 npm run build
+cd frontend
 npx wrangler pages deploy dist --project-name=twiligent
 ```
 
@@ -67,15 +67,13 @@ The app is accessible at both:
 
 ## Local Development
 
-```bash
-cd frontend && npm run dev
-```
-
-The frontend dev server proxies `/api` requests to the Worker (see `frontend/vite.config.js`). Start the backend Worker at the same time:
+From the repository root, start the Vite dev server (port 5173) and the backend Worker (port 8787) together:
 
 ```bash
-cd backend && wrangler dev
+npm run dev
 ```
+
+The frontend calls the Worker at `VITE_API_URL`, which defaults to `http://localhost:8787/api` when unset (see `frontend/src/services/api.js`); Vite does not proxy requests. To run the frontend alone, use `npm run dev:frontend`.
 
 ## First-Time Setup
 

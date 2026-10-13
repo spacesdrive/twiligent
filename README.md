@@ -41,6 +41,7 @@ You deploy one Cloudflare Worker and one Cloudflare Pages site using your own AP
 - [Quick Start](#quick-start)
 - [Prerequisites](#prerequisites)
 - [Installation](#installation)
+- [Development](#development)
 - [Configuration](#configuration)
 - [Scheduled Publishing with GitHub Actions](#scheduled-publishing-with-github-actions)
 - [How It Works](#how-it-works)
@@ -126,23 +127,21 @@ You deploy one Cloudflare Worker and one Cloudflare Pages site using your own AP
 
 ## Quick Start
 
-Clone and install dependencies:
+Clone and install dependencies (one install at the root covers the backend and the frontend):
 
 ```bash
 git clone https://github.com/spacesdrive/twiligent.git
-cd twiligent/backend && npm install
-cd ../frontend && npm install
+cd twiligent
+npm install
 ```
 
-Create `backend/.dev.vars` with your credentials (see [Configuration](#configuration)), then start both servers:
+Create `backend/.dev.vars` with your credentials (see [Configuration](#configuration)), then start both servers from the root:
 
 ```bash
-# Terminal 1 - backend (port 8787)
-cd backend && wrangler dev
-
-# Terminal 2 - frontend (port 5173)
-cd frontend && npm run dev
+npm run dev
 ```
+
+This runs the backend Worker on port 8787 and the frontend on port 5173 in one terminal.
 
 Open [http://localhost:5173](http://localhost:5173) and sign up for an account, then go to **Accounts** to add your first YouTube channel or Instagram account.
 
@@ -156,8 +155,8 @@ The full documentation, including a step-by-step self-hosting guide that explain
 
 | Requirement | Notes |
 |---|---|
-| Node.js 20 | Required for Wrangler CLI |
-| Wrangler CLI | `npm install -g wrangler`, then `wrangler login` |
+| Node.js 22 or later | Required by the dev tooling (Vite 7, concurrently); the deploy workflows use Node 24 |
+| Wrangler CLI | Installed by `npm install` at the root; run `npx wrangler login` once |
 | Cloudflare account | Free tier sufficient for Workers and Pages |
 | Supabase project | Free tier sufficient; create at [supabase.com](https://supabase.com) |
 | YouTube Data API v3 key | Required for YouTube analytics |
@@ -178,9 +177,10 @@ cd twiligent
 **2. Install dependencies**
 
 ```bash
-cd backend && npm install
-cd ../frontend && npm install
+npm install
 ```
+
+The repository is an npm workspaces monorepo: `backend/` and `frontend/` are workspaces, and one install at the root fills a single `node_modules` from the single root `package-lock.json`. Do not run `npm install` inside `backend/` or `frontend/`.
 
 **3. Create the Supabase database tables**
 
@@ -244,14 +244,32 @@ See [Configuration](#configuration) below.
 **5. Start the development servers**
 
 ```bash
-# Terminal 1
-cd backend && wrangler dev
-
-# Terminal 2
-cd frontend && npm run dev
+npm run dev
 ```
 
-The backend runs on port 8787. The frontend runs on port 5173. Open [http://localhost:5173](http://localhost:5173).
+The backend runs on port 8787. The frontend runs on port 5173. Open [http://localhost:5173](http://localhost:5173). To run one side alone, use `npm run dev:backend` or `npm run dev:frontend`.
+
+---
+
+## Development
+
+Run every command from the repository root.
+
+| Command | What it does |
+|---|---|
+| `npm install` | Installs both workspaces and the shared tooling |
+| `npm run dev` | Starts the Worker (`wrangler dev`, port 8787) and Vite (port 5173) together |
+| `npm run dev:backend` / `npm run dev:frontend` | Starts one of them |
+| `npm run build` | Builds the frontend into `frontend/dist/` |
+| `npm test` | Runs the backend tests, then the frontend tests (Node's built-in test runner) |
+| `npm run lint` | Runs ESLint over the whole repository with the shared `eslint.config.mjs` |
+| `npm run format` | Applies Prettier (`.prettierrc.json`) to the whole repository |
+
+Add a dependency to the app that uses it: `npm install <package> --workspace backend` or `npm install <package> --workspace frontend`. Only shared development tooling goes in the root `package.json`.
+
+Tests live outside the source folders, in `backend/tests/` and `frontend/tests/`, and mirror the source tree: the test for `backend/services/youtube.js` is `backend/tests/services/youtube.test.js`, and the test for `frontend/src/lib/accounts.js` is `frontend/tests/lib/accounts.test.js`. Backend fixtures and golden snapshots are in `backend/tests/fixtures/`.
+
+ESLint, Prettier and EditorConfig are configured once at the root. The existing code has not been reformatted in bulk, so run `npm run format` only when you mean to reformat.
 
 ---
 
@@ -292,21 +310,21 @@ VITE_GOOGLE_CLIENT_ID=1234567890-abc.apps.googleusercontent.com
 
 ### Production (Cloudflare Workers secrets)
 
-Set each secret via Wrangler:
+Set each secret via Wrangler, from the `backend/` folder:
 
 ```bash
-wrangler secret put SUPABASE_URL
-wrangler secret put SUPABASE_SERVICE_KEY
-wrangler secret put SUPABASE_ANON_KEY
-wrangler secret put YOUTUBE_API_KEY
-wrangler secret put INSTAGRAM_APP_ID
-wrangler secret put INSTAGRAM_APP_SECRET
-wrangler secret put CLOUDINARY_CLOUD_NAME
-wrangler secret put CLOUDINARY_UPLOAD_PRESET
-wrangler secret put BACKEND_URL
-wrangler secret put FRONTEND_URL
-wrangler secret put UPSTASH_REDIS_REST_URL
-wrangler secret put UPSTASH_REDIS_REST_TOKEN
+npx wrangler secret put SUPABASE_URL
+npx wrangler secret put SUPABASE_SERVICE_KEY
+npx wrangler secret put SUPABASE_ANON_KEY
+npx wrangler secret put YOUTUBE_API_KEY
+npx wrangler secret put INSTAGRAM_APP_ID
+npx wrangler secret put INSTAGRAM_APP_SECRET
+npx wrangler secret put CLOUDINARY_CLOUD_NAME
+npx wrangler secret put CLOUDINARY_UPLOAD_PRESET
+npx wrangler secret put BACKEND_URL
+npx wrangler secret put FRONTEND_URL
+npx wrangler secret put UPSTASH_REDIS_REST_URL
+npx wrangler secret put UPSTASH_REDIS_REST_TOKEN
 ```
 
 ### Getting API credentials
@@ -409,8 +427,8 @@ flowchart TD
 twiligent/
 ├── .github/
 │   └── workflows/
-│       ├── deploy-backend.yml       # Wrangler deploy on backend changes
-│       ├── deploy-frontend.yml      # Cloudflare Pages deploy on frontend changes
+│       ├── deploy-backend.yml       # Wrangler deploy on backend or root lockfile changes
+│       ├── deploy-frontend.yml      # Cloudflare Pages deploy on frontend or root lockfile changes
 │       └── publish-scheduled.yml    # Scheduled post fallback (every 15 minutes)
 │
 ├── backend/
@@ -432,10 +450,14 @@ twiligent/
 │   ├── services/
 │   │   ├── youtube.js               # YouTube Data API v3 client
 │   │   └── instagram.js             # Instagram Graph API client
+│   ├── tests/                       # Node tests mirroring lib/, routes/, services/, utils/; fixtures/ holds fakes and golden snapshots
 │   ├── server.js                    # Hono app + Worker export (fetch + scheduled)
-│   └── wrangler.toml                # Cloudflare Worker config and cron triggers
+│   ├── wrangler.toml                # Cloudflare Worker config and cron triggers
+│   └── package.json                 # Backend workspace: hono, supabase-js, upstash redis, wrangler
 │
 ├── frontend/
+│   ├── tests/                       # Node tests mirroring src/ (lib, utils, features, docs)
+│   ├── package.json                 # Frontend workspace: React, Vite, Tailwind, shadcn
 │   └── src/
 │       ├── features/
 │       │   ├── analytics/
@@ -457,8 +479,14 @@ twiligent/
 │       └── services/
 │           └── api.js               # Frontend API client (all fetch calls)
 │
-└── scripts/
-    └── publish-scheduled.js         # Node.js script run by GitHub Actions fallback
+├── scripts/
+│   └── publish-scheduled.js         # Node.js script run by GitHub Actions fallback (no dependencies)
+│
+├── package.json                     # npm workspaces root: scripts and shared dev tooling
+├── package-lock.json                # The only lockfile, for both workspaces
+├── eslint.config.mjs                # Shared ESLint config
+├── .prettierrc.json                 # Shared Prettier config
+└── .editorconfig                    # Shared editor defaults
 ```
 
 ---
@@ -532,7 +560,7 @@ Contributions are welcome. For significant changes, open an issue first to discu
 git checkout -b feature/your-feature-name
 ```
 
-3. Make your changes and commit
+3. Make your changes, check them from the repository root with `npm run build`, `npm test` and `npm run lint`, and commit
 
 ```bash
 git commit -m "feat: add your feature description"

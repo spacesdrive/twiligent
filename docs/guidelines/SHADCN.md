@@ -31,8 +31,10 @@ Never import from `shadcn/ui` directly - the components are copied into the proj
 
 ```bash
 cd frontend
-npx shadcn@latest add <component-name>
+npx shadcn add <component-name>
 ```
+
+Run the CLI from `frontend/`, where `components.json` lives. The `shadcn` CLI is a dependency of the frontend workspace, so `npx shadcn` uses the version pinned in the root `package-lock.json`. If the CLI installs npm packages for a component, check afterwards that no `frontend/package-lock.json` was created; the root lockfile is the only one, and a stray workspace lockfile should be deleted and `npm install` run again at the root.
 
 This copies the component source into `frontend/src/components/ui/`. After adding, verify the generated file uses `.jsx` (not `.tsx`). The `components.json` configuration should handle this automatically.
 

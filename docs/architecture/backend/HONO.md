@@ -134,3 +134,21 @@ async scheduled(event, env, ctx) {
 ```
 
 **Never hardcode secrets.** All secrets must come from `c.env` (Worker secrets set via `wrangler secret put`).
+
+## Packages and Tooling
+
+`backend/` is the `twiligent-backend` workspace of the root npm workspaces monorepo. Its `package.json` lists only what the Worker needs:
+
+| Package | Kind | Purpose |
+|---|---|---|
+| `hono` | runtime | Routing and middleware |
+| `@supabase/supabase-js` | runtime | Database and JWT verification |
+| `@upstash/redis` | runtime | Optional cache over REST |
+| `wrangler` | dev | Local dev server, deploys and secrets (version pinned by the root lockfile) |
+
+- Install from the repository root with `npm install`; it fills the single root `node_modules`. Add a backend package with `npm install <pkg> --workspace backend` (new runtime packages need explicit approval, see CLAUDE.md). There is no `backend/package-lock.json`.
+- Workspace scripts: `dev` and `start` run `wrangler dev`, `deploy` runs `wrangler deploy`, `test` runs `node --test "tests/**/*.test.js"`. From the root, `npm run dev:backend` starts the Worker alone, `npm run dev` starts it with Vite, and `npm test` runs the backend tests before the frontend ones.
+- `wrangler dev` reloads on save, so there is no nodemon or other watcher.
+- Lint is the root `eslint.config.mjs`: backend source gets the ESLint recommended rules with service worker globals (the Worker runs on the web platform, not Node), and `backend/tests/` gets Node globals. Run `npm run lint` from the root.
+- Formatting follows the root `.prettierrc.json` and `.editorconfig`: 4-space indentation in `backend/`, single quotes, semicolons, 120 columns.
+- Tests and fixtures live in `backend/tests/`, outside the source folders, so Wrangler never bundles them. See `docs/workflows/TESTING.md`.

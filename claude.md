@@ -11,6 +11,28 @@ Twiligent is a self-hosted social media analytics and publishing dashboard for c
 
 ---
 
+## Repository Layout
+
+The repo is an npm workspaces monorepo. Run every install and script from the root.
+
+```
+package.json          workspaces ["backend", "frontend"], shared dev tooling, root scripts
+package-lock.json     the only lockfile; one node_modules at the root
+eslint.config.mjs     shared ESLint config (frontend rules, backend Workers rules, Node rules for tests)
+.prettierrc.json      shared Prettier config matching the existing style (not applied in bulk)
+.editorconfig         editor defaults (4 spaces in backend, 2 elsewhere)
+backend/              Hono Worker; tests in backend/tests/ mirroring the source folders
+frontend/             React SPA; tests in frontend/tests/ mirroring frontend/src/
+scripts/              publish-scheduled.js, run by GitHub Actions with no dependencies
+```
+
+- `npm install` at the root installs both apps. Never run `npm install` inside `backend/` or `frontend/`, and never commit a lockfile there.
+- `npm run dev` starts the Worker (port 8787) and Vite (port 5173) together; `npm test`, `npm run lint` and `npm run build` cover the whole repo.
+- Add a dependency to the app that uses it: `npm install <pkg> --workspace backend` or `--workspace frontend`. Only shared dev tooling belongs in the root `package.json`.
+- Tests never live next to source files. A test for `backend/services/youtube.js` is `backend/tests/services/youtube.test.js`; a test for `frontend/src/lib/accounts.js` is `frontend/tests/lib/accounts.test.js`.
+
+---
+
 ## Reading Order Before Any Change
 
 Before implementing any feature or fix, read these documents in this exact order:
@@ -275,10 +297,15 @@ When anything changes, update every relevant docs file from the table below. The
 | Env var removed | `docs/architecture/cloudflare/WORKERS.md`, `docs/architecture/cloudflare/CI_CD.md`, `docs/workflows/DEPLOYMENT.md` |
 | New npm package (backend) | `docs/architecture/backend/HONO.md`, `DECISIONS.md` |
 | New npm package (frontend) | `docs/architecture/frontend/REACT_ARCHITECTURE.md`, `DECISIONS.md` |
+| New npm package (root dev tooling) | `docs/workflows/TESTING.md` or the guideline it serves, `DECISIONS.md`, `README.md` |
+| Workspaces, root `package.json` scripts or the root lockfile changed | `README.md`, `docs/workflows/DEPLOYMENT.md`, `docs/workflows/FEATURE_DEVELOPMENT.md`, `docs/architecture/cloudflare/CI_CD.md`, this file (Repository Layout section) |
+| Shared tooling config changed (`eslint.config.mjs`, `.prettierrc.json`, `.editorconfig`) | `docs/guidelines/JAVASCRIPT.md`, `docs/workflows/TESTING.md`, this file (Repository Layout section) |
 | New frontend feature module | `docs/architecture/frontend/FEATURES.md`, `docs/architecture/frontend/ROUTING.md`, `docs/architecture/OVERVIEW.md` |
 | New data flow | `docs/architecture/data-flows/` (add or update relevant file), `docs/architecture/OVERVIEW.md` |
 | New cron trigger | `docs/architecture/cloudflare/WORKERS.md`, `docs/architecture/backend/CRON.md`, `docs/architecture/cloudflare/CI_CD.md` |
 | New GitHub Actions workflow | `docs/architecture/cloudflare/CI_CD.md`, `docs/workflows/DEPLOYMENT.md` |
+| Existing GitHub Actions workflow changed (steps, triggers, Node version) | `docs/architecture/cloudflare/CI_CD.md`, `docs/workflows/DEPLOYMENT.md`, `docs/architecture/cloudflare/PAGES.md` or `WORKERS.md` for the deploy it runs |
+| Test added, moved or test command changed | `docs/workflows/TESTING.md` (layout, commands, coverage list) |
 | New backend service file | `docs/architecture/backend/SERVICES.md` |
 | New cache key | `docs/architecture/backend/CACHING.md` |
 | New middleware | `docs/architecture/backend/MIDDLEWARE.md`, `docs/architecture/backend/HONO.md` |
@@ -304,4 +331,4 @@ When anything changes, update every relevant docs file from the table below. The
 | Workflow changed | `docs/workflows/` (relevant file) |
 | Guideline changed | `docs/guidelines/` (relevant file) |
 | Philosophy changed | `docs/philosophy/` (relevant file) |
-| Project setup, features, or deployment instructions change | `README.md` |
+| Project setup, features, or deployment instructions change | `README.md`, and the self-hosting pages in `frontend/src/docs/pages/selfHost/` |

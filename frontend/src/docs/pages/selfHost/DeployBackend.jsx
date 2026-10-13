@@ -7,12 +7,13 @@ export default function DeployBackend() {
       <DocTitle title="Deploy the backend" lead="Put the Worker on Cloudflare and give it every secret." />
       <Steps>
         <Step title="Install and sign in">
+          <P>Run these in the top folder of your copy of the project. One <Code>npm install</Code> there installs the backend and the website together; do not run it inside <Code>backend</Code> or <Code>frontend</Code>.</P>
           <CodeBlock>{`
-cd backend
 npm install
+cd backend
 npx wrangler login
 `}</CodeBlock>
-          <P>A browser window opens to sign in to Cloudflare. Create a free account if you do not have one.</P>
+          <P>A browser window opens to sign in to Cloudflare. Create a free account if you do not have one. Run the rest of the commands on this page from the <Code>backend</Code> folder.</P>
         </Step>
         <Step title="Deploy once to get your URL">
           <CodeBlock>{'npx wrangler deploy'}</CodeBlock>
@@ -50,7 +51,7 @@ npx wrangler secret put FRONTEND_URL
       />
 
       <H2>Run it locally</H2>
-      <P>Create <Code>backend/.dev.vars</Code> with the same names and values, one per line as <Code>NAME=value</Code>, with <Code>{'BACKEND_URL=http://localhost:8787'}</Code> and <Code>{'FRONTEND_URL=http://localhost:5173'}</Code>. Then run <Code>npx wrangler dev</Code>. The file is ignored by Git; never commit it.</P>
+      <P>Create <Code>backend/.dev.vars</Code> with the same names and values, one per line as <Code>NAME=value</Code>, with <Code>{'BACKEND_URL=http://localhost:8787'}</Code> and <Code>{'FRONTEND_URL=http://localhost:5173'}</Code>. Then run <Code>npm run dev</Code> in the top folder of the project to start the backend on port 8787 and the website on port 5173 together, or <Code>npm run dev:backend</Code> for the backend alone. The file is ignored by Git; never commit it.</P>
     </>
   );
 }

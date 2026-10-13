@@ -69,7 +69,6 @@ frontend/src/
     library.js           Filter tiers, paging, duration and engagement helpers
     commandSearch.js     Command palette ranking
     holdProgress.js      Hold-to-confirm timing
-    *.test.js            Unit tests (npm test, Node test runner)
   services/
     api.js               All backend HTTP calls
   context/
@@ -115,6 +114,12 @@ frontend/src/
     settings/
       Settings.jsx        API keys status + GitHub config (page; sections, setup guide, hooks and helpers beside it)
 ```
+
+Unit tests are outside `src/`, in `frontend/tests/`, which mirrors this tree: `src/lib/accounts.js` is covered by `frontend/tests/lib/accounts.test.js`. They run on the Node test runner with `npm test` (see `docs/workflows/TESTING.md`), and Vite never bundles them.
+
+## Packages and Tooling
+
+`frontend/` is a workspace of the root npm workspaces monorepo. Install from the repository root with `npm install`, and add a frontend package with `npm install <pkg> --workspace frontend`; there is no `frontend/package-lock.json`. Shared dev tooling (ESLint and its plugins, `globals`, Prettier, concurrently) is in the root `package.json`, and the lint rules are in the root `eslint.config.mjs`. From the root, `npm run dev:frontend` starts Vite on port 5173, `npm run dev` starts it with the Worker, and `npm run build` builds `frontend/dist/`.
 
 ## Naming Conventions
 

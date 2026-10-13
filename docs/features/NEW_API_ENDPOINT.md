@@ -116,9 +116,11 @@ Add the new routes to `docs/architecture/backend/ROUTES.md`.
 
 ## Testing
 
+Pure logic behind the route (validation, response shaping) gets a unit test in `backend/tests/`, at the path that mirrors the source file: a handler in `backend/routes/myFeature.js` is tested in `backend/tests/routes/myFeature.test.js`. Route tests run the real handler against the fakes in `backend/tests/fixtures/` (`routeHarness.js`, `fakeSupabase.js`, `fakeFetch.js`) and compare the result with a `*.golden.json` snapshot there; see `backend/tests/routes/accounts.test.js` and `docs/workflows/TESTING.md`. Run `npm test` from the repository root.
+
 ```bash
-# Local test
-cd backend && wrangler dev
+# Local test, from the repository root
+npm run dev:backend
 
 # Test with curl (replace TOKEN)
 curl http://localhost:8787/api/my-resources \

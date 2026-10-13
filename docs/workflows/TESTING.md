@@ -4,16 +4,34 @@
 
 Most testing is manual. Both the backend and the frontend have unit tests for pure logic using Node's built-in test runner (no dependencies). Broader coverage is a known gap - see ROADMAP.md.
 
+Run every test from the repository root:
+
 ```bash
-cd backend && npm test
-cd frontend && npm test
+npm test                            # backend, then frontend
+npm test --workspace backend        # backend only
+npm test --workspace frontend       # frontend only
 ```
 
-Frontend tests (`npm test` runs every `src/**/*.test.js`) cover shared helpers in `src/lib/` and `src/utils/` (hold-to-confirm timing, command palette ranking, library filtering and paging, platform helpers, and a check that every Lucide icon imported in `src` exists) and page helpers that sit beside their feature in `src/features/**` and `src/docs/**`, such as `features/analytics/overview/overviewStats.js`. A testable helper is a plain `.js` file with no JSX and no `@/` imports, and its imports of project files are relative paths that end in `.js`, so Node can load it directly. This rule lives here, so helper files do not repeat it in a header comment.
+Each workspace's `test` script is `node --test "tests/**/*.test.js"`.
 
-Test files sit next to the module they cover as `*.test.js` (for example `services/instagram.test.js`). Wrangler only bundles files reachable from `server.js`, so test files never ship in the Worker.
+### Test layout
 
-Backend route and scheduler tests (`routes/*.test.js`, `utils/scheduler.test.js`) run the real handlers against `services/fixtures/fakeSupabase.js` and a scripted `fetch`, then compare responses, queries and outgoing requests with the `services/fixtures/*.golden.json` snapshots. Rows tagged with `tableRow(name, row)` are only visible to that table; untagged rows are visible to every table. A refactor must leave the snapshots unchanged.
+Tests never sit next to source files. Each workspace has a `tests/` folder that mirrors its source tree:
+
+| Source file | Test file |
+|---|---|
+| `backend/services/youtube.js` | `backend/tests/services/youtube.test.js` |
+| `backend/routes/accounts.js` | `backend/tests/routes/accounts.test.js` |
+| `backend/utils/scheduler.js` | `backend/tests/utils/scheduler.test.js` |
+| `frontend/src/lib/accounts.js` | `frontend/tests/lib/accounts.test.js` |
+| `frontend/src/features/analytics/overview/overviewStats.js` | `frontend/tests/features/analytics/overview/overviewStats.test.js` |
+| `frontend/src/docs/nav.js` | `frontend/tests/docs/nav.test.js` |
+
+Backend tests are in `backend/tests/lib`, `backend/tests/routes`, `backend/tests/services` and `backend/tests/utils`. Shared test helpers (`fakeSupabase.js`, `fakeFetch.js`, `golden.js`, `routeHarness.js`, the per-platform `*Fixtures.js` data) and the `*.golden.json` snapshots are in `backend/tests/fixtures/`. Wrangler only bundles files reachable from `server.js`, so nothing in `backend/tests/` ships in the Worker.
+
+Frontend tests cover shared helpers in `src/lib/` and `src/utils/` (hold-to-confirm timing, command palette ranking, library filtering and paging, platform helpers, and a check that every Lucide icon imported in `src` exists) and page helpers in `src/features/**` and `src/docs/**`, such as `features/analytics/overview/overviewStats.js`. A testable helper is a plain `.js` file with no JSX and no `@/` imports, and its imports of project files are relative paths that end in `.js`, so Node can load it directly. This rule lives here, so helper files do not repeat it in a header comment.
+
+Backend route and scheduler tests (`tests/routes/*.test.js`, `tests/utils/scheduler.test.js`) run the real handlers against `tests/fixtures/fakeSupabase.js` and a scripted `fetch`, then compare responses, queries and outgoing requests with the `tests/fixtures/*.golden.json` snapshots. Rows tagged with `tableRow(name, row)` are only visible to that table; untagged rows are visible to every table. A refactor must leave the snapshots unchanged. Prettier ignores the snapshots (`.prettierignore`), because the tests compare them byte for byte.
 
 The testing workflow documented here describes what should run before shipping any change.
 
@@ -22,11 +40,14 @@ The testing workflow documented here describes what should run before shipping a
 ### 1. Build Verification
 
 ```bash
-# Frontend must build without errors
-cd frontend && npm run build
+# From the repository root: frontend must build without errors
+npm run build
 
-# Backend must be valid ESM (wrangler validates on deploy)
-cd backend && wrangler deploy --dry-run  # if available
+# Unit tests must pass
+npm test
+
+# Backend must bundle (Wrangler validates without deploying)
+cd backend && npx wrangler deploy --dry-run
 ```
 
 A broken build is a hard blocker. Do not deploy if build fails.
@@ -34,13 +55,19 @@ A broken build is a hard blocker. Do not deploy if build fails.
 ### 2. Lint
 
 ```bash
-cd frontend && npm run lint
+npm run lint
 ```
 
-Fix all lint errors. ESLint is configured via `frontend/eslint.config.js`. The rules enforce:
-- React hooks rules (no conditional hooks)
-- Unused variable detection
-- Import/export correctness
+One ESLint run from the root covers the whole repository. The shared config is `eslint.config.mjs` at the root:
+- `frontend/**`: the ESLint recommended rules, React hooks rules (no conditional hooks) and React Refresh rules, with browser globals; unused variables are errors unless they start with a capital letter or underscore
+- `backend/**`: the ESLint recommended rules with service worker globals, because the Worker runs on the web platform, not Node; unused variables and arguments starting with `_` are allowed, and unused caught errors are not reported
+- `backend/tests/**`, `scripts/**` and root config files: the ESLint recommended rules with Node globals
+
+Do not add lint errors. The frontend has 8 known errors that predate the shared config: `react-refresh/only-export-components` in `components/ui/badge.jsx`, `button.jsx`, `sidebar.jsx`, `tabs.jsx` and `toggle.jsx` and in `context/AppContext.jsx` and `AuthContext.jsx`, and `no-undef` for `__dirname` in `vite.config.js`. Any other error is new.
+
+### Formatting
+
+Prettier and EditorConfig are configured at the root (`.prettierrc.json`, `.prettierignore`, `.editorconfig`): single quotes, semicolons, trailing commas, no parentheses around a single arrow function parameter, 120 columns, 2-space indentation, and 4 spaces in `backend/`. The existing code has not been reformatted in bulk, and no check enforces formatting. Run `npm run format` (Prettier `--write` over the whole repository) only when you intend to reformat; it skips Markdown, the shadcn files in `frontend/src/components/ui`, the golden snapshots and build output.
 
 ### 3. Manual API Verification (Backend)
 
@@ -56,7 +83,7 @@ curl -H "Authorization: Bearer TOKEN" https://twiligent.ujjwalkrai.workers.dev/a
 
 For local testing:
 ```bash
-cd backend && wrangler dev
+npm run dev:backend   # from the repository root; wrangler dev on port 8787
 # then curl http://localhost:8787/api/...
 ```
 

@@ -590,3 +590,20 @@ Records every significant architectural decision, the alternatives considered, a
 - The button is rendered by Google in an iframe, so its styling is limited to Google's options (theme follows the app theme).
 - Self-hosters on `pages.dev` can still use it, but cannot get brand verification until they add a custom domain.
 
+---
+
+## ADR-028: npm workspaces monorepo with shared root tooling and dedicated test folders
+
+**Date:** 2026-10-14
+**Status:** Accepted
+
+**Decision:** The repository root is an npm workspaces root (`"workspaces": ["backend", "frontend"]`, private). One `npm install` at the root installs both apps into a single `node_modules`, from a single root `package-lock.json`; the lockfiles inside `backend/` and `frontend/` are deleted. Root scripts cover the whole repository: `npm run dev` starts `wrangler dev` (port 8787) and Vite (port 5173) together with `concurrently`, and `npm run build`, `npm test`, `npm run lint` and `npm run format` run from the root. Each app keeps its own dependencies in its own `package.json`, added with `npm install <pkg> --workspace backend|frontend`; the root `package.json` holds only shared dev tooling (ESLint, `@eslint/js`, the React hooks and React Refresh plugins, `globals`, Prettier, `concurrently`). One ESLint flat config (`eslint.config.mjs`), one Prettier config (`.prettierrc.json`, matching the existing style) and one `.editorconfig` live at the root, and the backend is now linted with the recommended rules and service worker globals. Tests move out of the source folders into `backend/tests/` and `frontend/tests/`, which mirror the source tree, with backend fixtures and golden snapshots in `backend/tests/fixtures/`. The deploy workflows run `npm ci` once at the root on Node 24 and deploy with the Wrangler version pinned in the lockfile.
+
+**Context:** The root held an unused Express package from the original prototype, so each app had to be installed and started separately in two terminals, with two lockfiles that could drift. ESLint only covered the frontend, so the Worker code was never linted, and there was no shared formatting config. Test files and golden fixtures sat beside the Worker and React source, mixing code that ships with code that does not. `backend/nodemon.json` was left over from the Express setup; `wrangler dev` already reloads on save.
+
+**Trade-offs:**
+- A dependency change always touches the root lockfile, and both deploy workflows run when it changes, even if only one app's dependencies moved.
+- Running `npm install` inside `backend/` or `frontend/` by mistake can create a stray lockfile there; the docs and the pre-commit checklist call this out.
+- Shared packages are hoisted to the root `node_modules`, so a script can resolve a package its own workspace does not declare. Declaring dependencies in the workspace that uses them stays a review rule, not something npm enforces.
+- Prettier is configured but the existing code was not reformatted in bulk, to keep history readable; nothing enforces formatting until someone runs `npm run format` in its own commit.
+- Tests import source through longer relative paths (`../../services/...`) in exchange for a source tree that holds only code that ships.

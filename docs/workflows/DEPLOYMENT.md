@@ -9,48 +9,58 @@ Push to `main` -> GitHub Actions deploys automatically.
 | `backend/**` | `deploy-backend.yml` | Cloudflare Worker |
 | `frontend/**` | `deploy-frontend.yml` | Cloudflare Pages |
 | Both | Both workflows | Both (in parallel) |
+| Root `package.json` or `package-lock.json` | Both workflows | Both (in parallel) |
 | `docs/`, `scripts/`, `*.md` | Neither | Nothing deployed |
 
 Monitor deployment status at:  
 `https://github.com/spacesdrive/twiligent/actions`
 
+Both deploy workflows set up Node 24, run `npm ci` once at the repository root (the root `package-lock.json` is the only lockfile), and deploy with the Wrangler version pinned in that lockfile. See `docs/architecture/cloudflare/CI_CD.md`.
+
 ## Manual Deployment (Local)
+
+The repository is an npm workspaces monorepo. Install once at the root; never run `npm install` inside `backend/` or `frontend/`:
+
+```bash
+npm ci
+```
+
+Wrangler is a backend dev dependency, so `npx wrangler` runs the lockfile version from any folder in the repo. Authenticate once with `npx wrangler login`.
 
 ### Backend (Cloudflare Worker)
 
 ```bash
 cd backend
-wrangler deploy
+npx wrangler deploy
 ```
-
-Requires Cloudflare CLI (`wrangler`) and authenticated with `wrangler login`.
 
 ### Frontend (Cloudflare Pages)
 
 ```bash
-cd frontend
-npm ci
 npm run build
-wrangler pages deploy dist --project-name=twiligent
+cd frontend
+npx wrangler pages deploy dist --project-name=twiligent
 ```
+
+`npm run build` at the root builds the frontend workspace into `frontend/dist/`.
 
 ## Setting Worker Secrets
 
-Secrets must be set before the first deploy or when adding new ones:
+Secrets must be set before the first deploy or when adding new ones. Run these from `backend/` so Wrangler picks up `wrangler.toml`:
 
 ```bash
-wrangler secret put SUPABASE_URL
-wrangler secret put SUPABASE_SERVICE_KEY
-wrangler secret put SUPABASE_ANON_KEY
-wrangler secret put YOUTUBE_API_KEY
-wrangler secret put INSTAGRAM_APP_ID
-wrangler secret put INSTAGRAM_APP_SECRET
-wrangler secret put CLOUDINARY_CLOUD_NAME
-wrangler secret put CLOUDINARY_UPLOAD_PRESET
-wrangler secret put BACKEND_URL
-wrangler secret put FRONTEND_URL
-wrangler secret put UPSTASH_REDIS_REST_URL      # optional
-wrangler secret put UPSTASH_REDIS_REST_TOKEN    # optional
+npx wrangler secret put SUPABASE_URL
+npx wrangler secret put SUPABASE_SERVICE_KEY
+npx wrangler secret put SUPABASE_ANON_KEY
+npx wrangler secret put YOUTUBE_API_KEY
+npx wrangler secret put INSTAGRAM_APP_ID
+npx wrangler secret put INSTAGRAM_APP_SECRET
+npx wrangler secret put CLOUDINARY_CLOUD_NAME
+npx wrangler secret put CLOUDINARY_UPLOAD_PRESET
+npx wrangler secret put BACKEND_URL
+npx wrangler secret put FRONTEND_URL
+npx wrangler secret put UPSTASH_REDIS_REST_URL      # optional
+npx wrangler secret put UPSTASH_REDIS_REST_TOKEN    # optional
 ```
 
 Each command prompts for the value (no echo - the value is not shown).
@@ -99,11 +109,11 @@ GitHub Actions -> "Instagram Scheduled Publisher" -> "Run workflow" -> check run
 
 **Backend:** Deploy a specific previous version:
 ```bash
-# List recent deployments
-wrangler deployments list
+# From backend/: list recent deployments
+npx wrangler deployments list
 
 # Roll back to a specific deployment
-wrangler rollback <deployment-id>
+npx wrangler rollback <deployment-id>
 ```
 
 **Frontend:** Cloudflare Pages -> deployments list -> "Rollback to this deployment" on a previous build.
@@ -117,11 +127,11 @@ For a fresh deployment from this repo:
 3. Create Upstash Redis database (optional)
 4. Create Cloudinary account + upload preset
 5. Create Meta/Facebook Developer app with Instagram Graph API product
-6. `wrangler login`
+6. `npm ci` at the repository root, then `npx wrangler login`
 7. Set all Worker secrets (see above)
 8. Set all GitHub Actions secrets (see above)
-9. `wrangler deploy` (first manual deploy)
+9. `cd backend && npx wrangler deploy` (first manual deploy)
 10. Verify health endpoint
-11. `cd frontend && npm run build && wrangler pages deploy dist --project-name=twiligent`
+11. `npm run build` at the root, then `cd frontend && npx wrangler pages deploy dist --project-name=twiligent`
 12. Verify frontend loads
 13. Add a YouTube channel via AccountManager to verify the full flow

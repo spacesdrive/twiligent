@@ -93,11 +93,13 @@ release: v1.1.0 - Reddit integration
 - A new page + its route in App.jsx + its Sidebar entry
 - A bug fix + updated docs if the fix changes documented behavior
 - A new feature + CHANGELOG.md update + relevant architecture doc updates
+- A dependency change + the workspace `package.json` it touches + the root `package-lock.json`
 
 ### Never commit:
 - `backend/.dev.vars`
 - `backend/data/`
 - `node_modules/`
+- `backend/package-lock.json` or `frontend/package-lock.json` (only the root lockfile is committed; a lockfile inside a workspace means `npm install` ran in the wrong folder)
 - `.env` files with real credential values
 - Cloudflare API tokens or Supabase service keys
 - Editor or OS metadata files (`.DS_Store`, `Thumbs.db`)
@@ -180,12 +182,16 @@ git branch -d feat/reddit-integration
 
 Run before every commit:
 
-1. `cd frontend && npm run build` - frontend must build without errors
-2. `cd frontend && npm run lint` - no lint errors
-3. `git status` - verify only intended files are staged
-4. `git diff --staged` - review the full diff before committing
-5. Check no secrets or credentials appear in the diff
-6. Verify CHANGELOG.md is updated if the commit adds a feature or fix
+Run the commands from the repository root:
+
+1. `npm run build` - frontend must build without errors
+2. `npm test` - backend and frontend unit tests must pass
+3. `npm run lint` - no new lint errors (one run covers backend, frontend, tests and scripts)
+4. `git status` - verify only intended files are staged
+5. `git diff --staged` - review the full diff before committing
+6. Check no secrets or credentials appear in the diff
+7. Check no lockfile appears inside `backend/` or `frontend/`; the root `package-lock.json` is the only lockfile
+8. Verify CHANGELOG.md is updated if the commit adds a feature or fix
 
 ---
 
@@ -195,6 +201,7 @@ After pushing to `main`, monitor GitHub Actions:
 
 - `backend/` changes trigger `deploy-backend.yml`
 - `frontend/` changes trigger `deploy-frontend.yml`
+- Root `package.json` or `package-lock.json` changes trigger both
 - `scripts/` changes do not trigger automatic deployment
 
 If a deployment workflow fails:

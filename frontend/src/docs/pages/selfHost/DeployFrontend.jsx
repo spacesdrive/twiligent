@@ -19,10 +19,10 @@ VITE_ADMIN_EMAIL=you@example.com
           <P><Code>VITE_API_URL</Code> is your backend URL followed by <Code>/api</Code>. Leaving off <Code>/api</Code> is the most common setup mistake.</P>
         </Step>
         <Step title="Build and deploy">
+          <P>Run these in the top folder of the project. If you have not installed yet, run <Code>npm install</Code> there first; it covers the website too.</P>
           <CodeBlock>{`
-cd frontend
-npm install
 npm run build
+cd frontend
 npx wrangler pages deploy dist --project-name=twiligent
 `}</CodeBlock>
           <P>The first time, Wrangler creates the Pages project and prints the address, for example <Code>https://twiligent.pages.dev</Code>.</P>

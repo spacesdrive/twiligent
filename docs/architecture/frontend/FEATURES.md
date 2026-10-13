@@ -116,6 +116,8 @@ frontend/src/
 │       └── reelsLibrary.js                 <- Pure merge, filter, sort and totals (reelsLibrary.test.js)
 ```
 
+Test files are not in this tree. A `(name.test.js)` or `with *.test.js` note above means the helper has a test in `frontend/tests/` at the mirrored path: `src/features/analytics/channel/channelChartData.js` is covered by `frontend/tests/features/analytics/channel/channelChartData.test.js`, and `src/docs/nav.js` by `frontend/tests/docs/nav.test.js`. See `docs/workflows/TESTING.md`.
+
 ## Metric Naming
 
 Reddit exposes a post's net upvotes as `score` in its JSON API. In the UI this is always

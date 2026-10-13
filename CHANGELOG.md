@@ -34,8 +34,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Charts use the brand data-visualisation series in both themes
 - Settings, Scheduled publishing now says who needs to set anything up: members nothing, administrators only the backend deploy. The GitHub backup guide is marked optional and for administrators, and starts folded
 
+**Development setup**
+- One `npm install` at the repository root installs the backend and the frontend as npm workspaces, with a single root `package-lock.json`; never install inside `backend/` or `frontend/`
+- `npm run dev` starts the Worker (port 8787) and the Vite dev server (port 5173) together; `npm run build`, `npm test`, `npm run lint` and `npm run format` also run from the root
+- One ESLint config, Prettier config and EditorConfig at the root; the backend is now linted too, and the invisible BOM characters in its regexes are written as `\uFEFF` escapes
+- Tests moved out of the source folders into `backend/tests/` and `frontend/tests/`, mirroring the source tree; backend fixtures and golden snapshots are in `backend/tests/fixtures/`
+- The deploy workflows install once at the root on Node 24, deploy with the Wrangler version from the lockfile, and also run when the root `package.json` or `package-lock.json` changes
+- Removed the unused Express packages from the root `package.json` and the leftover `backend/nodemon.json`
+
 ### Fixed
 
+- The frontend test for the Google sign-in nonce failed about one run in 23, because it required at least 40 characters while the nonce length varies around 36 to 43
 - The Worker cron and the GitHub Actions workflow could both publish the same scheduled post; posts are now claimed atomically
 - Channels with no public videos failed to load with "playlist cannot be found"; they now open with a "No public videos yet" message
 - Overview could show "Syncing analytics" forever: Reddit accounts and empty channels never finished syncing, and the page only re-checked once

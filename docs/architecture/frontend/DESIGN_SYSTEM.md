@@ -64,4 +64,4 @@ Shared components live in `frontend/src/components/`. Reach for these before wri
 - Every async action disables its trigger, shows a spinner or progress, and ends in a toast that names what happened.
 - Sentence case in all UI copy. No exclamation marks. Errors say what happened and what to do.
 - Lucide icons at 1.75 stroke. 18px in navigation, 16px in controls.
-- New logic that can be pure goes in `src/lib/` with a `*.test.js` beside it (`npm test`).
+- New logic that can be pure goes in `src/lib/`, with its test at the mirrored path in `frontend/tests/` (`src/lib/library.js` -> `frontend/tests/lib/library.test.js`; run `npm test`).

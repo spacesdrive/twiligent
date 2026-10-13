@@ -103,19 +103,23 @@ This pattern is used in `backend/lib/oauthState.js` for OAuth state tokens.
 
 ## Local Development
 
+From the repository root, after a single `npm install` there:
+
 ```bash
-cd backend
-wrangler dev   # reads .dev.vars for secrets
+npm run dev:backend   # wrangler dev in backend/; reads backend/.dev.vars for secrets
+npm run dev           # the Worker and the Vite dev server together
 ```
 
-The Worker runs at `http://localhost:8787` during local development.
+The Worker runs at `http://localhost:8787` during local development and reloads on save; no separate file watcher is needed.
 
 ## Deployment
 
 ```bash
 cd backend
-wrangler deploy
+npx wrangler deploy
 ```
+
+`npx wrangler` runs the Wrangler version pinned in the root `package-lock.json`.
 
 Or push to `main` with changes in `backend/` - GitHub Actions deploys automatically via `deploy-backend.yml`.
 

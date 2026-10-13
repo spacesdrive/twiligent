@@ -8,7 +8,7 @@ export default function GitHub() {
       <P>Both parts are optional. Fork <A href="https://github.com/spacesdrive/twiligent">spacesdrive/twiligent</A> to your own GitHub account first. Add secrets in your fork under <strong>Settings</strong>, <strong>Secrets and variables</strong>, <strong>Actions</strong>, <strong>New repository secret</strong>.</P>
 
       <H2>Deploy on push</H2>
-      <P>The workflows <Code>deploy-backend.yml</Code> and <Code>deploy-frontend.yml</Code> deploy whenever <Code>backend/</Code> or <Code>frontend/</Code> changes on <Code>main</Code>.</P>
+      <P>The workflows <Code>deploy-backend.yml</Code> and <Code>deploy-frontend.yml</Code> deploy whenever <Code>backend/</Code> or <Code>frontend/</Code> changes on <Code>main</Code>. A change to <Code>package.json</Code> or <Code>package-lock.json</Code> in the top folder deploys both, because those files list the packages for the whole project. Each workflow installs the packages itself, so there is nothing to install on GitHub.</P>
       <Table
         head={['Secret', 'Where to get it']}
         rows={[

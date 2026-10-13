@@ -84,6 +84,9 @@ Before creating new patterns, check:
 7. Frontend: new page/feature component
 8. Frontend: `App.jsx` routing (if new page)
 9. Frontend: `Sidebar.jsx` navigation (if new page needs nav entry)
+10. Tests for new pure logic, in the workspace's `tests/` folder at the path that mirrors the source file (`backend/services/youtube.js` -> `backend/tests/services/youtube.test.js`, `frontend/src/lib/accounts.js` -> `frontend/tests/lib/accounts.test.js`); see `docs/workflows/TESTING.md`
+
+If the feature needs a new npm package (approval required, see CLAUDE.md), add it to the app that uses it from the repository root: `npm install <pkg> --workspace backend` or `--workspace frontend`. Never run `npm install` inside `backend/` or `frontend/`; the root `package-lock.json` is the only lockfile.
 
 **Step 12 - Eliminate duplication**  
 After implementing, look for logic that duplicates something that already existed. Extract it into the appropriate shared location (`lib/db.js`, `services/`, `utils/formatters.js`, shared components).
@@ -93,19 +96,18 @@ After implementing, look for logic that duplicates something that already existe
 ## Phase 5: Verify
 
 **Step 13 - Build verification**  
+Run from the repository root:
 ```bash
-# Backend
-cd backend && wrangler dev  # should start without errors
-
-# Frontend
-cd frontend && npm run build  # should build without errors
-cd frontend && npm run dev    # should start without errors
+npm run build  # frontend must build without errors
+npm test       # backend and frontend unit tests must pass
+npm run dev    # Worker (8787) and Vite (5173) must both start without errors
 ```
 
 **Step 14 - Lint**  
 ```bash
-cd frontend && npm run lint
+npm run lint   # one ESLint run over backend, frontend, tests and scripts
 ```
+A change must not add lint errors. See `docs/workflows/TESTING.md` for the known pre-existing ones.
 
 **Step 15 - Manual testing - golden path**  
 Test the main success case end-to-end:

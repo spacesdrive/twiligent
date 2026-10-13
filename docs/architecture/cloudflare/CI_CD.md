@@ -4,11 +4,13 @@
 
 ### `deploy-backend.yml`
 
-**Trigger:** Push to `main` branch, when files under `backend/**` or `.github/workflows/deploy-backend.yml` change
+**Trigger:** Push to `main` branch, when files under `backend/**`, the root `package.json`, the root `package-lock.json` or `.github/workflows/deploy-backend.yml` change; also `workflow_dispatch` for a manual run
 
 **What it does:**
 1. Checkout repo
-2. Run `wrangler deploy` via `cloudflare/wrangler-action@v4`
+2. `actions/setup-node@v4` with Node 24 and the npm cache keyed on the root `package-lock.json`
+3. `npm ci` at the repository root, which installs every workspace, including Wrangler
+4. Run `wrangler deploy` via `cloudflare/wrangler-action@v4` with `workingDirectory: backend`. The action finds the Wrangler installed from the lockfile (3.114.17) and uses it instead of installing its own default version.
 
 **Required GitHub secrets:**
 - `CLOUDFLARE_API_TOKEN` - API token with Worker deploy permission
@@ -20,13 +22,14 @@
 
 ### `deploy-frontend.yml`
 
-**Trigger:** Push to `main` branch, when files under `frontend/**` or `.github/workflows/deploy-frontend.yml` change
+**Trigger:** Push to `main` branch, when files under `frontend/**`, the root `package.json`, the root `package-lock.json` or `.github/workflows/deploy-frontend.yml` change; also `workflow_dispatch` for a manual run
 
 **What it does:**
 1. Checkout repo
-2. `npm ci` (in `frontend/`)
-3. `npm run build` - Vite builds to `frontend/dist/`
-4. Deploy `dist/` to Cloudflare Pages via `wrangler pages deploy`
+2. `actions/setup-node@v4` with Node 24 and the npm cache keyed on the root `package-lock.json`
+3. `npm ci` at the repository root, which installs every workspace
+4. `npm run build --workspace frontend` - Vite builds to `frontend/dist/`
+5. Deploy `dist/` to Cloudflare Pages via `wrangler pages deploy` (`cloudflare/wrangler-action@v4` with `workingDirectory: frontend`, using the Wrangler from the lockfile)
 
 **Required GitHub secrets:**
 - `CLOUDFLARE_API_TOKEN`
@@ -65,6 +68,8 @@
 GitHub Actions path filters mean:
 - Editing `frontend/` only -> triggers `deploy-frontend.yml`, not `deploy-backend.yml`
 - Editing `backend/` only -> triggers `deploy-backend.yml`, not `deploy-frontend.yml`
+- Editing the root `package.json` or `package-lock.json` -> triggers both, because the single lockfile pins the dependencies of both apps
+- Editing root tooling config (`eslint.config.mjs`, `.prettierrc.json`, `.editorconfig`) -> triggers nothing; no workflow runs lint or tests
 - Editing `scripts/` -> triggers neither deploy workflow (only `publish-scheduled.yml` on its cron)
 - Editing `docs/` -> triggers nothing
 - Editing `CLAUDE.md`, `DECISIONS.md`, etc. -> triggers nothing
@@ -89,5 +94,6 @@ Trigger `publish-scheduled.yml` manually via GitHub Actions UI -> Actions -> "In
 
 1. Create `.github/workflows/my-workflow.yml`
 2. Add appropriate path filters to avoid unnecessary runs
-3. Document it in `docs/architecture/cloudflare/CI_CD.md` (this file)
-4. Add any required secrets via GitHub repo -> Settings -> Secrets -> Actions
+3. If the workflow needs project dependencies, run `actions/setup-node` with `cache-dependency-path: package-lock.json` and `npm ci` at the repository root; there are no lockfiles inside `backend/` or `frontend/`
+4. Document it in `docs/architecture/cloudflare/CI_CD.md` (this file)
+5. Add any required secrets via GitHub repo -> Settings -> Secrets -> Actions

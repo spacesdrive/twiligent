@@ -75,7 +75,7 @@ Or match by the cron expression string - the `event.cron` property contains the 
 ### Step 4: Test Locally
 
 ```bash
-cd backend && wrangler dev --test-scheduled
+cd backend && npx wrangler dev --test-scheduled
 # Trigger manually:
 curl "http://localhost:8787/__scheduled?cron=30+3+*+*+*"
 ```
@@ -83,7 +83,7 @@ curl "http://localhost:8787/__scheduled?cron=30+3+*+*+*"
 ### Step 5: Deploy
 
 ```bash
-cd backend && wrangler deploy
+cd backend && npx wrangler deploy
 ```
 
 Cron triggers deploy with the Worker. Verify in the Cloudflare dashboard -> Workers -> Triggers -> Cron.
@@ -139,14 +139,19 @@ jobs:
             - uses: actions/checkout@v4
             - uses: actions/setup-node@v4
               with:
-                  node-version: '20'
-            - run: npm install @supabase/supabase-js
+                  node-version: 24
+                  cache: 'npm'
+                  cache-dependency-path: package-lock.json
+            # one install at the root; @supabase/supabase-js is already in the root lockfile
+            - run: npm ci
             - name: Run task
               env:
                   SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
                   SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
               run: node scripts/my-task.js
 ```
+
+Install from the root lockfile with `npm ci`, as the deploy workflows do. Do not run `npm install <pkg>` in the workflow: at the root it would add the package to the root `package.json`, and there is no lockfile inside `backend/` or `frontend/` to install from. If the script needs a package that is not in the lockfile yet, add it to the workspace that owns it (with approval) and commit the root lockfile. `scripts/publish-scheduled.js` is the exception by design: it has no dependencies, so its workflow skips the install.
 
 ### Step 3: Add Required Secrets
 
