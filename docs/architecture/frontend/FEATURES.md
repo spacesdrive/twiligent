@@ -22,7 +22,13 @@ frontend/src/
 │   │   ├── instagram/
 │   │   │   └── InstagramAnalytics.jsx      <- Instagram account analytics
 │   │   ├── overview/
-│   │   │   └── Overview.jsx                <- Cross-platform aggregate dashboard
+│   │   │   ├── Overview.jsx                <- Page: cross-platform aggregate dashboard with six metric tabs
+│   │   │   ├── OverviewHeader.jsx, QuickActions.jsx, GettingStarted.jsx, MetricTabsList.jsx
+│   │   │   ├── AudienceTab.jsx, AudienceChart.jsx, ViewsTab.jsx, ContentTab.jsx, AccountsTab.jsx, CommentsTab.jsx, LikesTab.jsx
+│   │   │   ├── InstagramViewsTable.jsx, YouTubeViewsTable.jsx, AccountCell.jsx, AccountRankRow.jsx, CategoryRow.jsx, OpenAnalytics.jsx
+│   │   │   ├── useOverviewData.js          <- Loads api.getOverview() and re-polls while accounts are syncing
+│   │   │   ├── useOverviewStats.js         <- Memoized totals, rankings and chart rows
+│   │   │   └── overviewStats.js, overviewCharts.js, overviewLabels.js, greeting.js   <- Pure helpers with *.test.js
 │   │   ├── reddit/
 │   │   │   ├── RedditAnalytics.jsx         <- Reddit account analytics (karma, subreddits)
 │   │   │   ├── RedditPosts.jsx             <- Per-account post explorer

@@ -211,7 +211,7 @@ Note: Reddit disabled `view_count` from their API in December 2018. The field al
 User navigates to /
     │
     ▼
-Overview.jsx uses accounts from AppContext
+Overview.jsx uses accounts from AppContext (data loaded by useOverviewData.js)
     -> Combined totals computed from account.subscriberCount, viewCount, etc.
     -> api.getOverview() -> GET /api/overview
         -> returns { tracked: [...], analyticsCache: { [accountId]: {...} } }
@@ -219,8 +219,9 @@ Overview.jsx uses accounts from AppContext
 
 The Overview does not fetch fresh per-account analytics. It combines account metadata already
 in `AppContext.accounts` with whatever each account's Redis analytics cache holds. When any
-account's cache is cold the backend fires a background warm-up and returns `cacheWarmed: false`,
-and the page re-fetches once after 6 seconds.
+account's cache is cold the backend fires a background warm-up and returns `cacheWarmed: false`
+with `syncing: true`. While any account is syncing, the page fetches the overview again after 4,
+8 and 16 seconds, then stops so the syncing label never hangs.
 
 ### Metric definitions
 

@@ -96,7 +96,7 @@ frontend/src/
     Login.jsx             Auth page (not lazy-loaded, always small)
   features/
     analytics/
-      overview/           Overview.jsx - all-accounts dashboard
+      overview/           Overview.jsx - all-accounts dashboard (page; tabs, hooks and helpers beside it)
       channel/            ChannelAnalytics.jsx - per-channel YouTube
       instagram/          InstagramAnalytics.jsx - per-account Instagram
       videos/             VideoExplorer.jsx - all videos table
