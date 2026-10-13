@@ -20,7 +20,11 @@ frontend/src/
 │   │   ├── channel/
 │   │   │   └── ChannelAnalytics.jsx        <- YouTube channel analytics
 │   │   ├── instagram/
-│   │   │   └── InstagramAnalytics.jsx      <- Instagram account analytics
+│   │   │   ├── InstagramAnalytics.jsx      <- Page: Instagram account analytics (loads through useAccountAnalytics)
+│   │   │   ├── InstagramHeader.jsx, InstagramMetrics.jsx, InstagramInsightChips.jsx, TypeBadge.jsx
+│   │   │   ├── InstagramEngagementCharts.jsx, InstagramPostCharts.jsx, InstagramHashtags.jsx, InstagramRecentGrid.jsx
+│   │   │   ├── InstagramTopPostsTable.jsx, InstagramTypeSummaryTable.jsx
+│   │   │   └── instagramAnalyticsData.js   <- Pure chart rows and labels (instagramAnalyticsData.test.js)
 │   │   ├── overview/
 │   │   │   ├── Overview.jsx                <- Page: cross-platform aggregate dashboard with six metric tabs
 │   │   │   ├── OverviewHeader.jsx, QuickActions.jsx, GettingStarted.jsx, MetricTabsList.jsx
@@ -30,7 +34,10 @@ frontend/src/
 │   │   │   ├── useOverviewStats.js         <- Memoized totals, rankings and chart rows
 │   │   │   └── overviewStats.js, overviewCharts.js, overviewLabels.js, greeting.js   <- Pure helpers with *.test.js
 │   │   ├── reddit/
-│   │   │   ├── RedditAnalytics.jsx         <- Reddit account analytics (karma, subreddits)
+│   │   │   ├── RedditAnalytics.jsx         <- Page: Reddit account analytics (loads through useAccountAnalytics)
+│   │   │   ├── RedditHeader.jsx, RedditKarmaSummary.jsx, RedditKarmaCharts.jsx, RedditStatPanels.jsx
+│   │   │   ├── RedditTimingCharts.jsx, RedditSubredditTable.jsx, RedditTopPostsTable.jsx
+│   │   │   ├── redditAnalyticsData.js      <- Pure chart rows and stat lists (redditAnalyticsData.test.js)
 │   │   │   ├── RedditPosts.jsx             <- Per-account post explorer
 │   │   │   ├── RedditPostsAll.jsx          <- Global post explorer (all Reddit accounts)
 │   │   │   ├── redditPostTable.jsx         <- Filters and table shared by both post explorers

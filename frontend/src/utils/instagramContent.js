@@ -17,3 +17,9 @@ export function igContentTypeMeta(type) {
 export function fmtIGViews(views) {
     return typeof views === 'number' ? fmtNum(views) : '-';
 }
+
+// image posts can lack a thumbnail url, so they fall back to the image itself
+export function igThumbnail(item) {
+    if (item.contentType === 'post') return item.thumbnailUrl || item.mediaUrl;
+    return item.thumbnailUrl;
+}

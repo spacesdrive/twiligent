@@ -111,8 +111,11 @@ Hooks used by more than one feature. Hooks used by a single feature live in that
 | `useCommandPaletteShortcut(setOpen)` | `use-command-palette-shortcut.js` | Ctrl+K / Cmd+K toggle for the command palette |
 | `useSmoothTheme()` | `use-smooth-theme.js` | Theme switch as one cross-fade |
 | `useCloudinaryConfig(reloadKey)` | `use-cloudinary-config.js` | Loads `api.getCloudinaryConfig()`; returns the config or `null` |
+| `useAccountAnalytics(account, fetchAnalytics, label)` | `use-account-analytics.js` | Loads one account's analytics and refreshes it; used by Instagram and Reddit analytics |
 
 `useCloudinaryConfig` sets the config only when the response has `success: true`. A failed request keeps the previous value (initially `null`), and pages show a missing config as an alert or a disabled upload field. The request runs again whenever `reloadKey` changes: the Publish page passes `accounts`, Tracked Content passes nothing and loads once.
+
+`useAccountAnalytics` returns `{ loading, profile, analytics, refreshing, handleRefresh }`. Pass a stable `api` method (`api.getIGAnalytics`, `api.getRedditAnalytics`), never an inline arrow: the load is keyed on the account id and that method, so a background account refresh does not refetch analytics. `label` names the platform in the toasts (`Couldn't load Instagram analytics.`, `Instagram account refreshed`). `handleRefresh` calls `api.refreshAccount()` and then loads the analytics again.
 
 ---
 

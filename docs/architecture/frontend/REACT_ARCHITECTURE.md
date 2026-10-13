@@ -98,11 +98,11 @@ frontend/src/
     analytics/
       overview/           Overview.jsx - all-accounts dashboard (page; tabs, hooks and helpers beside it)
       channel/            ChannelAnalytics.jsx - per-channel YouTube
-      instagram/          InstagramAnalytics.jsx - per-account Instagram
+      instagram/          InstagramAnalytics.jsx - per-account Instagram (page; sections and helpers beside it)
       videos/             VideoExplorer.jsx - all videos table
       shorts/             ShortsExplorer.jsx - shorts-filtered table
       reels/              ReelsExplorer.jsx - Instagram media grid
-      reddit/             RedditAnalytics, RedditPosts, RedditPostsAll, shared post table
+      reddit/             RedditAnalytics (page; sections and helpers beside it), RedditPosts, RedditPostsAll, shared post table
       tracked/            TrackedContent.jsx, TrackedCategory.jsx (pages; components, hooks and helpers beside them)
     publishing/
       UploadContent.jsx   Instagram publishing + schedule queue (page; components, hooks and helpers beside it)
