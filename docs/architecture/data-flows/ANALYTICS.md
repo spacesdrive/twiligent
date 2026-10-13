@@ -220,8 +220,9 @@ Overview.jsx uses accounts from AppContext (data loaded by useOverviewData.js)
 The Overview does not fetch fresh per-account analytics. It combines account metadata already
 in `AppContext.accounts` with whatever each account's Redis analytics cache holds. When any
 account's cache is cold the backend fires a background warm-up and returns `cacheWarmed: false`
-with `syncing: true`. While any account is syncing, the page fetches the overview again after 4,
-8 and 16 seconds, then stops so the syncing label never hangs.
+with `syncing: true`. While any account is syncing, the page fetches the overview again up to three times. The polls
+are chained: each waits 4, 8 and then 16 seconds after the previous response, so they land about
+4, 12 and 28 seconds after the first load. Then polling stops so the syncing label never hangs.
 
 ### Metric definitions
 

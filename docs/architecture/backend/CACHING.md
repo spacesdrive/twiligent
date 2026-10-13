@@ -40,7 +40,7 @@ export async function getVideosCache(redis, userId, accountId) {
 
 ## Overview warming
 
-`GET /api/overview` returns `{ cacheWarmed, syncing }` per account. When an account has no cache entry it starts a background fetch with `waitUntil` (YouTube, Instagram and Reddit) and returns `syncing: true` only if that fetch actually started. Without Redis, an API key, a token or a cookie it returns `syncing: false`, so the client never waits on something that cannot load. The client re-polls at 4, 8 and 16 seconds while any account is syncing, then stops.
+`GET /api/overview` returns `{ cacheWarmed, syncing }` per account. When an account has no cache entry it starts a background fetch with `waitUntil` (YouTube, Instagram and Reddit) and returns `syncing: true` only if that fetch actually started. Without Redis, an API key, a token or a cookie it returns `syncing: false`, so the client never waits on something that cannot load. While any account is syncing the client polls again up to three times. Each poll waits 4, 8 and then 16 seconds after the previous response (about 4, 12 and 28 seconds after the first load), then polling stops.
 
 ## Cache Usage in Routes
 

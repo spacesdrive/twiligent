@@ -16,9 +16,11 @@ export function useCloudinaryConfig(reloadKey) {
   const [config, setConfig] = useState(null);
 
   useEffect(() => {
-    fetchCloudinaryConfig().then(nextConfig => {
+    const loadConfig = async () => {
+      const nextConfig = await fetchCloudinaryConfig();
       if (nextConfig) setConfig(nextConfig);
-    });
+    };
+    loadConfig();
   }, [reloadKey]);
 
   return config;
