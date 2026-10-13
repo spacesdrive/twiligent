@@ -1,9 +1,9 @@
 process.env.TZ = 'UTC';
 
 import { test, describe, before, after, mock } from 'node:test';
-import { computeVideoAnalytics } from './youtubeAnalytics.js';
-import { assertGolden } from './fixtures/golden.js';
-import { FIXED_NOW, richVideos, zeroViewVideos, generatedVideos } from './fixtures/youtubeFixtures.js';
+import { computeVideoAnalytics } from '../../services/youtubeAnalytics.js';
+import { assertGolden } from '../fixtures/golden.js';
+import { FIXED_NOW, richVideos, zeroViewVideos, generatedVideos } from '../fixtures/youtubeFixtures.js';
 
 describe('computeVideoAnalytics golden output', () => {
     before(() => mock.timers.enable({ apis: ['Date'], now: FIXED_NOW }));

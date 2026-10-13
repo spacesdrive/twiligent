@@ -1,8 +1,8 @@
 import { test, describe, before, after, afterEach, mock } from 'node:test';
-import { fetchTrackedYouTubeData } from './youtubeTracked.js';
-import { assertGolden } from './fixtures/golden.js';
-import { installFetch, reply } from './fixtures/fakeFetch.js';
-import { FIXED_NOW } from './fixtures/youtubeFixtures.js';
+import { fetchTrackedYouTubeData } from '../../services/youtubeTracked.js';
+import { assertGolden } from '../fixtures/golden.js';
+import { installFetch, reply } from '../fixtures/fakeFetch.js';
+import { FIXED_NOW } from '../fixtures/youtubeFixtures.js';
 
 let fetchMock = null;
 afterEach(() => fetchMock?.restore());

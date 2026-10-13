@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
     getVideosCache, setVideosCache, deleteVideosCache,
     getIGCache, setIGCache, getRedditCache, setRedditCache,
-} from './cache.js';
+} from '../../lib/cache.js';
 
 function memoryRedis() {
     const store = new Map();

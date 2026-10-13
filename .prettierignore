@@ -6,6 +6,5 @@ package-lock.json
 frontend/src/components/ui
 # saved outputs that the golden tests compare byte for byte
 backend/tests/fixtures/*.golden.json
-backend/services/fixtures/*.golden.json
 # prose is wrapped by hand
 *.md

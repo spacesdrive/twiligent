@@ -6,7 +6,7 @@
         "dev": "wrangler dev",
         "deploy": "wrangler deploy",
         "start": "wrangler dev",
-        "test": "node --test"
+        "test": "node --test \"tests/**/*.test.js\""
     },
     "dependencies": {
         "@supabase/supabase-js": "^2.49.4",

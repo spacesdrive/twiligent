@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import {
     DAY_NAMES, DAY_MS, sumOf, roundedAverage, medianOf, countWithinDays, postFrequency,
     consistencyScore, bestToAverageRatio, pickHighest, monthKey,
-} from './analyticsMath.js';
+} from '../../services/analyticsMath.js';
 
 const NOW = Date.parse('2026-09-01T12:00:00Z');
 const daysAgo = (days) => new Date(NOW - days * DAY_MS);

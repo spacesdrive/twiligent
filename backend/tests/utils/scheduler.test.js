@@ -1,8 +1,8 @@
 import { test, describe, before, after, afterEach, mock } from 'node:test';
-import { processScheduledPosts } from './scheduler.js';
-import { assertGolden } from '../services/fixtures/golden.js';
-import { installFetch, reply } from '../services/fixtures/fakeFetch.js';
-import { fakeSupabase, accountRow, tableRow } from '../services/fixtures/fakeSupabase.js';
+import { processScheduledPosts } from '../../utils/scheduler.js';
+import { assertGolden } from '../fixtures/golden.js';
+import { installFetch, reply } from '../fixtures/fakeFetch.js';
+import { fakeSupabase, accountRow, tableRow } from '../fixtures/fakeSupabase.js';
 
 const FIXED_NOW = Date.parse('2026-09-01T12:00:00Z');
 

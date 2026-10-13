@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
-import { buildMediaParams } from './instagramPublishing.js';
-import { assertGolden } from './fixtures/golden.js';
+import { buildMediaParams } from '../../services/instagramPublishing.js';
+import { assertGolden } from '../fixtures/golden.js';
 
 const fullPost = {
     mediaUrl: 'https://cdn.example/file.jpg',

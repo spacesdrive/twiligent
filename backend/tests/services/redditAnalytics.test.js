@@ -1,9 +1,9 @@
 process.env.TZ = 'UTC';
 
 import { test, describe, before, after, mock } from 'node:test';
-import { computeRedditAnalytics } from './redditAnalytics.js';
-import { assertGolden } from './fixtures/golden.js';
-import { FIXED_NOW, richPosts, zeroScorePosts, generatedPosts } from './fixtures/redditFixtures.js';
+import { computeRedditAnalytics } from '../../services/redditAnalytics.js';
+import { assertGolden } from '../fixtures/golden.js';
+import { FIXED_NOW, richPosts, zeroScorePosts, generatedPosts } from '../fixtures/redditFixtures.js';
 
 const profile = { username: 'ribbon', totalKarma: 900 };
 

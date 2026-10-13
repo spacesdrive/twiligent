@@ -1,6 +1,6 @@
 import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
-import { createOAuthState, verifyOAuthState } from './oauthState.js';
+import { createOAuthState, verifyOAuthState } from '../../lib/oauthState.js';
 
 test('a state verifies back to its user id', async () => {
     const state = await createOAuthState('user-123', 'secret');

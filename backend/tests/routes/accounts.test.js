@@ -2,11 +2,11 @@
 process.removeAllListeners('warning');
 
 import { test, describe, before, after, beforeEach, afterEach, mock } from 'node:test';
-import accountsRouter from './accounts.js';
-import { assertGolden } from '../services/fixtures/golden.js';
-import { installFetch, reply } from '../services/fixtures/fakeFetch.js';
-import { fakeSupabase, accountRow } from '../services/fixtures/fakeSupabase.js';
-import { mountWithContext, callRoute, fakeRedis } from '../services/fixtures/routeHarness.js';
+import accountsRouter from '../../routes/accounts.js';
+import { assertGolden } from '../fixtures/golden.js';
+import { installFetch, reply } from '../fixtures/fakeFetch.js';
+import { fakeSupabase, accountRow } from '../fixtures/fakeSupabase.js';
+import { mountWithContext, callRoute, fakeRedis } from '../fixtures/routeHarness.js';
 
 // a byte order mark that pasted secrets sometimes start with
 const BOM = String.fromCharCode(0xfeff);

@@ -1,9 +1,9 @@
 import { test, describe, before, after, afterEach, mock } from 'node:test';
-import { exchangeForLongLivedToken, refreshLongLivedToken, autoRefreshInstagramTokens } from './instagramTokens.js';
-import { assertGolden } from './fixtures/golden.js';
-import { installFetch, reply } from './fixtures/fakeFetch.js';
-import { fakeSupabase, accountRow } from './fixtures/fakeSupabase.js';
-import { FIXED_NOW } from './fixtures/instagramFixtures.js';
+import { exchangeForLongLivedToken, refreshLongLivedToken, autoRefreshInstagramTokens } from '../../services/instagramTokens.js';
+import { assertGolden } from '../fixtures/golden.js';
+import { installFetch, reply } from '../fixtures/fakeFetch.js';
+import { fakeSupabase, accountRow } from '../fixtures/fakeSupabase.js';
+import { FIXED_NOW } from '../fixtures/instagramFixtures.js';
 
 const DAY_MS = 86400000;
 let fetchMock = null;

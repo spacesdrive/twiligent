@@ -1,9 +1,9 @@
 process.env.TZ = 'UTC';
 
 import { test, describe, before, after, mock } from 'node:test';
-import { computeInstagramAnalytics } from './instagramAnalytics.js';
-import { assertGolden } from './fixtures/golden.js';
-import { FIXED_NOW, richMedia, zeroEngagementMedia, generatedMedia } from './fixtures/instagramFixtures.js';
+import { computeInstagramAnalytics } from '../../services/instagramAnalytics.js';
+import { assertGolden } from '../fixtures/golden.js';
+import { FIXED_NOW, richMedia, zeroEngagementMedia, generatedMedia } from '../fixtures/instagramFixtures.js';
 
 describe('computeInstagramAnalytics golden output', () => {
     before(() => mock.timers.enable({ apis: ['Date'], now: FIXED_NOW }));

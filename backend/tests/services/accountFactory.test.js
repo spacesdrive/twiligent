@@ -2,7 +2,7 @@ import { test, describe, before, after, beforeEach, afterEach, mock } from 'node
 import assert from 'node:assert/strict';
 import {
     newAccountId, tokenExpiryIso, buildYouTubeAccount, buildRedditAccount, buildInstagramAccount,
-} from './accountFactory.js';
+} from '../../services/accountFactory.js';
 
 const FIXED_NOW = Date.parse('2026-09-01T12:00:00Z');
 const NOW_ISO = '2026-09-01T12:00:00.000Z';

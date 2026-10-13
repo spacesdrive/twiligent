@@ -7,7 +7,7 @@ import {
     fetchInstagramMedia,
     summarizeContentTypes,
     computeInstagramAnalytics,
-} from './instagram.js';
+} from '../../services/instagram.js';
 
 const viewsInsight = (value) => ({ data: [{ name: 'views', period: 'lifetime', values: [{ value }] }] });
 

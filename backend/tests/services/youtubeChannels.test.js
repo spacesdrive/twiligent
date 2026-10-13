@@ -1,7 +1,7 @@
 import { test, describe, afterEach } from 'node:test';
-import { resolveChannelId, fetchChannelData } from './youtubeChannels.js';
-import { assertGolden } from './fixtures/golden.js';
-import { installFetch, reply } from './fixtures/fakeFetch.js';
+import { resolveChannelId, fetchChannelData } from '../../services/youtubeChannels.js';
+import { assertGolden } from '../fixtures/golden.js';
+import { installFetch, reply } from '../fixtures/fakeFetch.js';
 
 let fetchMock = null;
 afterEach(() => fetchMock?.restore());

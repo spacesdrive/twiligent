@@ -1,6 +1,6 @@
 import { test, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
-import { resolveChannelId, fetchTrackedYouTubeData } from './youtube.js';
+import { resolveChannelId, fetchTrackedYouTubeData } from '../../services/youtube.js';
 
 const realFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = realFetch; });

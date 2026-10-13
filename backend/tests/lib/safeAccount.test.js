@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { safeAccount } from './safeAccount.js';
-import { buildMediaParams } from '../services/instagram.js';
+import { safeAccount } from '../../lib/safeAccount.js';
+import { buildMediaParams } from '../../services/instagram.js';
 
 test('safeAccount strips every credential and reports cookie presence', () => {
     const out = safeAccount({

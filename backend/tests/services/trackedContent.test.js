@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { detectContentType, manualViewsPatch, imageUrlPatch } from './trackedContent.js';
+import { detectContentType, manualViewsPatch, imageUrlPatch } from '../../services/trackedContent.js';
 
 describe('detectContentType', () => {
     test('recognises reddit and youtube links in any case', () => {

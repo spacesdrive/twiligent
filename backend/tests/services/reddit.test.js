@@ -1,8 +1,8 @@
 import { test, describe, before, after, afterEach, mock } from 'node:test';
-import { fetchRedditProfile, fetchRedditPosts, fetchTrackedPostData, autoRefreshRedditSessions } from './reddit.js';
-import { assertGolden } from './fixtures/golden.js';
-import { installFetch, reply } from './fixtures/fakeFetch.js';
-import { FIXED_NOW, rawRedditPosts } from './fixtures/redditFixtures.js';
+import { fetchRedditProfile, fetchRedditPosts, fetchTrackedPostData, autoRefreshRedditSessions } from '../../services/reddit.js';
+import { assertGolden } from '../fixtures/golden.js';
+import { installFetch, reply } from '../fixtures/fakeFetch.js';
+import { FIXED_NOW, rawRedditPosts } from '../fixtures/redditFixtures.js';
 
 let fetchMock = null;
 afterEach(() => fetchMock?.restore());
