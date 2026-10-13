@@ -58,7 +58,15 @@ frontend/src/
 │   │       ├── CategoryYouTubeSection.jsx, CategoryRedditSection.jsx, NumberCell.jsx, OpenLink.jsx
 │   │       └── trackedCategoryStats.js     <- Pure per-category totals and labels (trackedCategoryStats.test.js)
 │   ├── accounts/
-│   │   └── AccountManager.jsx              <- Add/remove connected accounts
+│   │   ├── AccountManager.jsx              <- Page: connected accounts by platform, refresh and remove
+│   │   ├── AccountSection.jsx, AccountCard.jsx, AccountsEmptyState.jsx
+│   │   ├── AddAccountDialog.jsx            <- Platform picker, per-platform fields and footer actions
+│   │   ├── YouTubeAccountFields.jsx, RedditAccountFields.jsx, AddAccountFooter.jsx
+│   │   ├── useAddAccount.js                <- Add dialog state; Back keeps typed fields, Cancel clears them
+│   │   ├── useAccountRefresh.js, useAccountDelete.js
+│   │   ├── useInstagramOAuthReturn.js      <- Reads ?ig_connected, ?ig_error and ?add once, then clears them
+│   │   ├── platformChoices.js              <- Platform choice titles, descriptions and icons
+│   │   └── accountManagerData.js           <- Pure OAuth return, error text, card metrics (accountManagerData.test.js)
 │   ├── publishing/
 │   │   ├── UploadContent.jsx               <- Page: tabs, Cloudinary alert, scheduled posts (default export)
 │   │   ├── SinglePostTab.jsx               <- Single post form or its progress view

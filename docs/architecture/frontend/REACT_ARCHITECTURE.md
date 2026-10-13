@@ -107,7 +107,7 @@ frontend/src/
     publishing/
       UploadContent.jsx   Instagram publishing + schedule queue (page; components, hooks and helpers beside it)
     accounts/
-      AccountManager.jsx  Add/remove/refresh accounts
+      AccountManager.jsx  Add/remove/refresh accounts (page; dialog, cards, hooks and helpers beside it)
     settings/
       Settings.jsx        API keys status + GitHub config
 ```
