@@ -2,8 +2,10 @@ import { Hono } from 'hono';
 import { getAccountById } from '../lib/db.ts';
 import { getRedditCache, setRedditCache } from '../lib/cache.ts';
 import { fetchRedditProfile, fetchRedditPosts, computeRedditAnalytics } from '../services/reddit.ts';
+import type { AppEnv } from '../types/app.ts';
+import type { RedditCacheData } from '../../shared/types/reddit.ts';
 
-const router = new Hono();
+const router = new Hono<AppEnv>();
 
 // Full analytics: profile + computed stats + recent posts
 router.get('/accounts/:id/reddit-analytics', async (c) => {
@@ -20,17 +22,17 @@ router.get('/accounts/:id/reddit-analytics', async (c) => {
         if (cached) return c.json(cached);
 
         const [profile, posts] = await Promise.all([
-            fetchRedditProfile(account.username, account.cookie),
-            fetchRedditPosts(account.username, account.cookie, 100),
+            fetchRedditProfile(account.username!, account.cookie),
+            fetchRedditPosts(account.username!, account.cookie, 100),
         ]);
         const analytics = computeRedditAnalytics(profile, posts);
-        const result = { profile, analytics, posts };
+        const result: RedditCacheData = { profile, analytics, posts };
 
         await setRedditCache(redis, userId, id, result);
         return c.json(result);
     } catch (err) {
-        console.error(`GET /accounts/${id}/reddit-analytics:`, err.message);
-        return c.json({ error: err.message }, 500);
+        console.error(`GET /accounts/${id}/reddit-analytics:`, (err as Error).message);
+        return c.json({ error: (err as Error).message }, 500);
     }
 });
 
@@ -48,11 +50,11 @@ router.get('/accounts/:id/reddit-posts', async (c) => {
         const cached = await getRedditCache(redis, userId, id);
         if (cached?.posts) return c.json(cached.posts);
 
-        const posts = await fetchRedditPosts(account.username, account.cookie, 100);
+        const posts = await fetchRedditPosts(account.username!, account.cookie, 100);
         return c.json(posts);
     } catch (err) {
-        console.error(`GET /accounts/${id}/reddit-posts:`, err.message);
-        return c.json({ error: err.message }, 500);
+        console.error(`GET /accounts/${id}/reddit-posts:`, (err as Error).message);
+        return c.json({ error: (err as Error).message }, 500);
     }
 });
 

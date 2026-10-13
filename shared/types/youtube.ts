@@ -226,3 +226,35 @@ export interface YouTubeLibraryVideo extends YouTubeVideo {
     channelId: string;
     channelThumbnail: string;
 }
+
+// POST /api/resolve-channel
+export interface ResolveChannelResponse {
+    success: true;
+    data: YouTubeChannelData;
+}
+
+// GET /api/accounts/:id/videos
+export interface YouTubeVideosResponse {
+    success: true;
+    videos: YouTubeVideo[];
+    fetchedAt: string;
+}
+
+// GET /api/comparison; comparison is null when the user has no accounts
+export interface YouTubeComparisonResponse {
+    success: true;
+    comparison: YouTubeAccountComparison | null;
+}
+
+export interface YouTubeLibraryChannel {
+    id: string;
+    title?: string;
+}
+
+// GET /api/videos/all
+export interface YouTubeLibraryResponse {
+    success: true;
+    videos: YouTubeLibraryVideo[];
+    total: number;
+    channels: YouTubeLibraryChannel[];
+}

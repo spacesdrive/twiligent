@@ -1,11 +1,13 @@
 import { Hono } from 'hono';
 import { getAccounts, getTrackedPosts } from '../lib/db.ts';
 import { summarizeAccountCaches } from '../services/overviewSummary.ts';
+import type { AppContext, AppEnv } from '../types/app.ts';
+import type { OverviewResponse } from '../../shared/types/domain.ts';
 
-const router = new Hono();
+const router = new Hono<AppEnv>();
 
 // the client re-polls while syncing, so warming never blocks the response
-function runInBackground(c, tasks) {
+function runInBackground(c: AppContext, tasks: Promise<void>[]): void {
     if (tasks.length === 0) return;
     const ctx = c.executionCtx;
     if (ctx?.waitUntil) {
@@ -28,10 +30,10 @@ router.get('/overview', async (c) => {
         ]);
         const { analyticsCache, warmTasks } = await summarizeAccountCaches(accounts, { redis, userId, apiKey });
         runInBackground(c, warmTasks);
-        return c.json({ tracked, analyticsCache });
+        return c.json({ tracked, analyticsCache } satisfies OverviewResponse);
     } catch (err) {
-        console.error('GET /overview:', err.message);
-        return c.json({ error: err.message }, 500);
+        console.error('GET /overview:', (err as Error).message);
+        return c.json({ error: (err as Error).message }, 500);
     }
 });
 

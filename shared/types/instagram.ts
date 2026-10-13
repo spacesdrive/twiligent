@@ -1,4 +1,4 @@
-import type { MediaType, UserTag } from './domain.ts';
+import type { Account, MediaType, UserTag } from './domain.ts';
 import type { PostFrequency } from './reddit.ts';
 
 export type InstagramContentType = 'reel' | 'post' | 'video';
@@ -211,4 +211,32 @@ export interface CloudinaryConfigResponse {
     success: true;
     cloudName: string;
     uploadPreset: string;
+}
+
+// GET /api/accounts/:id/ig-analytics; the account is sent without its access token
+export interface InstagramAnalyticsResponse {
+    success: true;
+    profile: InstagramProfile;
+    account: Omit<Account, 'accessToken'>;
+    analytics: InstagramAnalytics;
+    mediaCount: number;
+}
+
+// GET /api/accounts/:id/ig-media
+export interface InstagramMediaResponse {
+    success: true;
+    media: InstagramMedia[];
+    fetchedAt: string;
+}
+
+// POST /api/accounts/:id/refresh-ig-token
+export interface InstagramTokenRefreshResponse {
+    success: true;
+    message: string;
+    expiresAt: string;
+}
+
+// GET /api/auth/instagram/url
+export interface InstagramAuthUrlResponse {
+    url: string;
 }

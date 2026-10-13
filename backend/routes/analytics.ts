@@ -5,15 +5,35 @@ import { fetchAllVideos, computeVideoAnalytics } from '../services/youtube.ts';
 import { fetchInstagramProfile, fetchInstagramMedia, computeInstagramAnalytics } from '../services/instagram.ts';
 import { channelMetrics, accountComparison, filterAndSortVideos } from '../services/youtubeLibrary.ts';
 import { backfillChannelData } from '../services/accountRefresh.ts';
+import type { AppEnv, Redis, SupabaseClient } from '../types/app.ts';
+import type { Account } from '../../shared/types/domain.ts';
+import type {
+    YouTubeAnalyticsPayload, YouTubeComparisonResponse, YouTubeLibraryResponse, YouTubeLibraryVideo, YouTubeVideosResponse,
+} from '../../shared/types/youtube.ts';
+import type {
+    InstagramAnalyticsResponse, InstagramMedia, InstagramMediaResponse, InstagramProfile,
+} from '../../shared/types/instagram.ts';
 
-const app = new Hono();
+interface SnapshotScope {
+    supabase: SupabaseClient;
+    redis: Redis | null;
+    userId: string;
+    id: string;
+}
+
+// no stored account has a channelTitle field, so that fallback is always undefined
+type LegacyChannelAccount = Account & { channelTitle?: string };
+
+const app = new Hono<AppEnv>();
 
 // api errors can echo request urls that carry the api key or access token
-function redactUrls(message) {
+function redactUrls(message: string): string {
     return message.replace(/https?:\/\/[^\s)]+/g, '[url]');
 }
 
-async function storeInstagramSnapshot({ supabase, redis, userId, id }, account, profile, media) {
+async function storeInstagramSnapshot(
+    { supabase, redis, userId, id }: SnapshotScope, account: Account, profile: InstagramProfile, media: InstagramMedia[],
+): Promise<void> {
     await Promise.all([
         setIGCache(redis, userId, id, { media, fetchedAt: new Date().toISOString() }),
         updateAccount(supabase, account.id, {
@@ -36,7 +56,7 @@ app.get('/accounts/:id/analytics', async (c) => {
         const account = await getAccountById(supabase, c.req.param('id'), userId);
         if (!account) return c.json({ success: false, message: 'Account not found' }, 404);
 
-        const videos = await fetchAllVideos(account.uploadsPlaylistId, apiKey, 10);
+        const videos = await fetchAllVideos(account.uploadsPlaylistId!, apiKey, 10);
         await setVideosCache(c.get('redis'), userId, c.req.param('id'), { videos, fetchedAt: new Date().toISOString() });
         const analytics = computeVideoAnalytics(videos);
 
@@ -47,9 +67,9 @@ app.get('/accounts/:id/analytics', async (c) => {
             channel: { ...account, ...channelMetrics(account) },
             analytics,
             videoCount: videos.length,
-        });
+        } satisfies YouTubeAnalyticsPayload);
     } catch (err) {
-        return c.json({ success: false, message: redactUrls(err.message) }, 400);
+        return c.json({ success: false, message: redactUrls((err as Error).message) }, 400);
     }
 });
 
@@ -62,7 +82,7 @@ app.get('/accounts/:id/videos', async (c) => {
 
         const cached = await getVideosCache(redis, userId, id);
         if (cached && cached.videos) {
-            return c.json({ success: true, videos: cached.videos, fetchedAt: cached.fetchedAt });
+            return c.json({ success: true, videos: cached.videos, fetchedAt: cached.fetchedAt } satisfies YouTubeVideosResponse);
         }
 
         const apiKey = c.env.YOUTUBE_API_KEY?.replace(/^\uFEFF/, '').trim();
@@ -71,23 +91,23 @@ app.get('/accounts/:id/videos', async (c) => {
         const account = await getAccountById(supabase, id, userId);
         if (!account) return c.json({ success: false, message: 'Account not found' }, 404);
 
-        const videos = await fetchAllVideos(account.uploadsPlaylistId, apiKey, 10);
+        const videos = await fetchAllVideos(account.uploadsPlaylistId!, apiKey, 10);
         const fetchedAt = new Date().toISOString();
         await setVideosCache(redis, userId, id, { videos, fetchedAt });
 
-        return c.json({ success: true, videos, fetchedAt });
+        return c.json({ success: true, videos, fetchedAt } satisfies YouTubeVideosResponse);
     } catch (err) {
-        return c.json({ success: false, message: err.message }, 400);
+        return c.json({ success: false, message: (err as Error).message }, 400);
     }
 });
 
 app.get('/comparison', async (c) => {
     try {
         const accounts = await getAccounts(c.get('supabase'), c.get('userId'));
-        if (accounts.length === 0) return c.json({ success: true, comparison: null });
-        return c.json({ success: true, comparison: accountComparison(accounts) });
+        if (accounts.length === 0) return c.json({ success: true, comparison: null } satisfies YouTubeComparisonResponse);
+        return c.json({ success: true, comparison: accountComparison(accounts) } satisfies YouTubeComparisonResponse);
     } catch (err) {
-        return c.json({ success: false, message: err.message }, 500);
+        return c.json({ success: false, message: (err as Error).message }, 500);
     }
 });
 
@@ -107,7 +127,7 @@ app.get('/accounts/:id/ig-analytics', async (c) => {
 
         const [profile, media] = await Promise.all([
             fetchInstagramProfile(account.igUserId, account.accessToken),
-            fetchInstagramMedia(account.igUserId, account.accessToken, 500),
+            fetchInstagramMedia(account.igUserId!, account.accessToken, 500),
         ]);
         await storeInstagramSnapshot({ supabase, redis: c.get('redis'), userId, id }, account, profile, media);
 
@@ -120,9 +140,9 @@ app.get('/accounts/:id/ig-analytics', async (c) => {
             account: publicAccount,
             analytics,
             mediaCount: media.length,
-        });
+        } satisfies InstagramAnalyticsResponse);
     } catch (err) {
-        return c.json({ success: false, message: redactUrls(err.message) }, 400);
+        return c.json({ success: false, message: redactUrls((err as Error).message) }, 400);
     }
 });
 
@@ -135,7 +155,7 @@ app.get('/accounts/:id/ig-media', async (c) => {
 
         const cached = await getIGCache(redis, userId, id);
         if (cached && cached.media) {
-            return c.json({ success: true, media: cached.media, fetchedAt: cached.fetchedAt });
+            return c.json({ success: true, media: cached.media, fetchedAt: cached.fetchedAt } satisfies InstagramMediaResponse);
         }
 
         const account = await getAccountById(supabase, id, userId);
@@ -146,13 +166,13 @@ app.get('/accounts/:id/ig-media', async (c) => {
             return c.json({ success: false, message: 'No access token' }, 400);
         }
 
-        const media = await fetchInstagramMedia(account.igUserId, account.accessToken, 500);
+        const media = await fetchInstagramMedia(account.igUserId!, account.accessToken, 500);
         const fetchedAt = new Date().toISOString();
         await setIGCache(redis, userId, id, { media, fetchedAt });
 
-        return c.json({ success: true, media, fetchedAt });
+        return c.json({ success: true, media, fetchedAt } satisfies InstagramMediaResponse);
     } catch (err) {
-        return c.json({ success: false, message: redactUrls(err.message) }, 400);
+        return c.json({ success: false, message: redactUrls((err as Error).message) }, 400);
     }
 });
 
@@ -164,14 +184,14 @@ app.get('/videos/all', async (c) => {
         const { channelId, sort, order, search, minViews, maxViews } = c.req.query();
         const accounts = await getAccounts(supabase, userId);
 
-        const allVideos = [];
-        for (const account of accounts) {
+        const allVideos: YouTubeLibraryVideo[] = [];
+        for (const account of accounts as LegacyChannelAccount[]) {
             if (channelId && account.id !== channelId) continue;
             const cached = await getVideosCache(redis, userId, account.id);
             if (cached && cached.videos) {
                 allVideos.push(...cached.videos.map(video => ({
                     ...video,
-                    channelTitle: account.title || account.channelTitle,
+                    channelTitle: (account.title || account.channelTitle) as string,
                     channelId: account.id,
                     channelThumbnail: account.thumbnails?.default || '',
                 })));
@@ -185,9 +205,9 @@ app.get('/videos/all', async (c) => {
             videos,
             total: videos.length,
             channels: accounts.map(account => ({ id: account.id, title: account.title })),
-        });
+        } satisfies YouTubeLibraryResponse);
     } catch (err) {
-        return c.json({ success: false, message: err.message }, 500);
+        return c.json({ success: false, message: (err as Error).message }, 500);
     }
 });
 

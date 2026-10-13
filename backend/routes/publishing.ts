@@ -1,8 +1,20 @@
 import { Hono } from 'hono';
 import { getAccountById } from '../lib/db.ts';
 import { buildMediaParams } from '../services/instagram.ts';
+import type { AppEnv } from '../types/app.ts';
+import type {
+    InstagramApiContainerStatus, InstagramApiErrorBody, InstagramApiIdResponse,
+} from '../services/instagram.ts';
+import type {
+    CloudinaryConfigResponse, InstagramContainerStatusResponse, InstagramMediaPublishRequest, InstagramMediaPublishResponse,
+    InstagramPublishingLimit, InstagramPublishingLimitResponse, InstagramPublishRequest, InstagramPublishResponse,
+} from '../../shared/types/instagram.ts';
 
-const app = new Hono();
+interface InstagramApiPublishingLimitBody extends InstagramApiErrorBody {
+    data: InstagramPublishingLimit[];
+}
+
+const app = new Hono<AppEnv>();
 
 app.get('/cloudinary-config', (c) => {
     const cloudName = c.env.CLOUDINARY_CLOUD_NAME;
@@ -10,7 +22,7 @@ app.get('/cloudinary-config', (c) => {
     if (!cloudName || !uploadPreset) {
         return c.json({ success: false, message: 'Cloudinary not configured on server' });
     }
-    return c.json({ success: true, cloudName, uploadPreset });
+    return c.json({ success: true, cloudName, uploadPreset } satisfies CloudinaryConfigResponse);
 });
 
 app.get('/accounts/:id/ig-publishing-limit', async (c) => {
@@ -22,11 +34,11 @@ app.get('/accounts/:id/ig-publishing-limit', async (c) => {
         const response = await fetch(
             `https://graph.instagram.com/v25.0/${acct.igUserId}/content_publishing_limit?fields=quota_usage,config&access_token=${acct.accessToken}`
         );
-        const data = await response.json();
+        const data = await response.json() as InstagramApiPublishingLimitBody;
         if (data.error) throw new Error(data.error.message);
-        return c.json({ success: true, ...data });
+        return c.json({ success: true, ...data } satisfies InstagramPublishingLimitResponse);
     } catch (err) {
-        return c.json({ success: false, message: err.message }, 500);
+        return c.json({ success: false, message: (err as Error).message }, 500);
     }
 });
 
@@ -38,16 +50,17 @@ app.post('/accounts/:id/ig-publish', async (c) => {
         }
 
         const igId = acct.igUserId;
-        const params = buildMediaParams(await c.req.json(), acct.accessToken);
+        const params = buildMediaParams(await c.req.json() as InstagramPublishRequest, acct.accessToken!);
 
-        const query = new URLSearchParams(params).toString();
+        // URLSearchParams stringifies the boolean and number values
+        const query = new URLSearchParams(params as unknown as Record<string, string>).toString();
         const response = await fetch(`https://graph.instagram.com/v25.0/${igId}/media?${query}`, { method: 'POST' });
-        const data = await response.json();
+        const data = await response.json() as InstagramApiIdResponse;
         if (data.error) throw new Error(data.error.message);
 
-        return c.json({ success: true, containerId: data.id });
+        return c.json({ success: true, containerId: data.id } satisfies InstagramPublishResponse);
     } catch (err) {
-        return c.json({ success: false, message: err.message }, 500);
+        return c.json({ success: false, message: (err as Error).message }, 500);
     }
 });
 
@@ -55,18 +68,18 @@ app.get('/ig-container/:containerId/status', async (c) => {
     try {
         const containerId = c.req.param('containerId');
         const accountId = c.req.query('accountId');
-        const acct = await getAccountById(c.get('supabase'), accountId, c.get('userId'));
+        const acct = await getAccountById(c.get('supabase'), accountId!, c.get('userId'));
         if (!acct) return c.json({ success: false, message: 'Account not found' }, 404);
 
         const response = await fetch(
             `https://graph.instagram.com/v25.0/${containerId}?fields=status_code,status&access_token=${acct.accessToken}`
         );
-        const data = await response.json();
+        const data = await response.json() as InstagramApiContainerStatus;
         if (data.error) throw new Error(data.error.message);
 
-        return c.json({ success: true, statusCode: data.status_code, status: data.status });
+        return c.json({ success: true, statusCode: data.status_code!, status: data.status! } satisfies InstagramContainerStatusResponse);
     } catch (err) {
-        return c.json({ success: false, message: err.message }, 500);
+        return c.json({ success: false, message: (err as Error).message }, 500);
     }
 });
 
@@ -77,17 +90,17 @@ app.post('/accounts/:id/ig-media-publish', async (c) => {
             return c.json({ success: false, message: 'Instagram account not found' }, 404);
         }
 
-        const { containerId } = await c.req.json();
+        const { containerId } = await c.req.json() as InstagramMediaPublishRequest;
         const response = await fetch(
             `https://graph.instagram.com/v25.0/${acct.igUserId}/media_publish?creation_id=${containerId}&access_token=${acct.accessToken}`,
             { method: 'POST' }
         );
-        const data = await response.json();
+        const data = await response.json() as InstagramApiIdResponse;
         if (data.error) throw new Error(data.error.message);
 
-        return c.json({ success: true, mediaId: data.id });
+        return c.json({ success: true, mediaId: data.id } satisfies InstagramMediaPublishResponse);
     } catch (err) {
-        return c.json({ success: false, message: err.message }, 500);
+        return c.json({ success: false, message: (err as Error).message }, 500);
     }
 });
 
