@@ -6,7 +6,8 @@
         "dev": "wrangler dev",
         "deploy": "wrangler deploy",
         "start": "wrangler dev",
-        "test": "node --test \"tests/**/*.test.js\""
+        "test": "node --test \"tests/**/*.test.ts\"",
+        "typecheck": "tsc -p tsconfig.json && tsc -p tests/tsconfig.json"
     },
     "dependencies": {
         "@supabase/supabase-js": "^2.49.4",
@@ -14,6 +15,7 @@
         "hono": "^4.6.0"
     },
     "devDependencies": {
+        "@cloudflare/workers-types": "^5.20261013.1",
         "wrangler": "^3.0.0"
     }
 }

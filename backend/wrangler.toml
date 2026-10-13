@@ -1,5 +1,5 @@
 name = "twiligent"
-main = "server.js"
+main = "server.ts"
 compatibility_date = "2025-01-01"
 
 [triggers]
