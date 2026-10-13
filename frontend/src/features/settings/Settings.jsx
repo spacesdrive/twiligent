@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { useSmoothTheme } from '@/hooks/use-smooth-theme';
-import { useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
-  RefreshCw, CheckCircle2, AlertTriangle, ExternalLink, Sun, Moon, Monitor, Activity, Clock,
+  RefreshCw, CheckCircle2, AlertTriangle, ExternalLink, Sun, Moon, Monitor, Activity, Clock, Users, Server, BookOpen, ArrowRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,6 +20,12 @@ import { ADMIN_EMAIL, adminMailto } from '@/lib/contact';
 import { useAppContext } from '../../context/AppContext';
 import { api } from '../../services/api';
 import { cn } from '@/lib/utils';
+
+const DOC_LINKS = [
+  { label: 'Using Twiligent', to: '/docs/use/getting-started' },
+  { label: 'Run your own Twiligent', to: '/docs/self-host' },
+  { label: 'Environment variables', to: '/docs/reference/environment' },
+];
 
 const LINKS = [
   { label: 'Supabase API keys', href: 'https://supabase.com/dashboard/project/_/settings/api-keys' },
@@ -203,8 +209,24 @@ export default function Settings() {
         <SettingsSection
           id="scheduling"
           title="Scheduled publishing"
-          description="How scheduled Instagram posts go out, and how to set up your own GitHub publisher in five steps."
+          description="How scheduled Instagram posts go out, and who needs to set anything up."
         >
+          <SurfaceBox title="Who needs to set this up">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="flex flex-col gap-2 rounded-field border border-line p-4">
+                <p className="flex items-center gap-2 text-sm font-semibold text-ink"><Users className="size-4 stroke-[1.75] text-ink-faint" />You sign in to this Twiligent</p>
+                <p className="text-sm text-ink-muted">Nothing to set up. The server publishes your scheduled posts. You do not need GitHub, Supabase or any keys.</p>
+              </div>
+              <div className="flex flex-col gap-2 rounded-field border border-line p-4">
+                <p className="flex items-center gap-2 text-sm font-semibold text-ink"><Server className="size-4 stroke-[1.75] text-ink-faint" />You run your own Twiligent</p>
+                <p className="text-sm text-ink-muted">Deploying the backend is enough; scheduling starts with it. The GitHub backup below is optional.</p>
+                <Link to="/docs/self-host" className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-brand-text underline-offset-4 hover:underline">
+                  Self-hosting guide<ArrowRight className="size-3.5" />
+                </Link>
+              </div>
+            </div>
+          </SurfaceBox>
+
           <SurfaceBox title="How it works for you">
             <Steps steps={[
               { title: 'Schedule a post', body: 'In Publish, choose an account, the content type and the file, write the caption, pick Schedule, then a date and time, and choose Schedule post. The file uploads straight away.' },
@@ -256,6 +278,16 @@ export default function Settings() {
 
         <SettingsSection id="links" title="Useful links">
           <SurfaceBox content={false} className="divide-y divide-divider">
+            {DOC_LINKS.map(({ label, to }) => (
+              <Link
+                key={label}
+                to={to}
+                className="flex items-center justify-between gap-2 px-5 py-3 text-sm text-ink transition-colors duration-(--duration-fast) hover:bg-surface-hover"
+              >
+                <span className="flex items-center gap-2"><BookOpen className="size-4 shrink-0 stroke-[1.75] text-ink-faint" />{label}</span>
+                <ArrowRight className="size-4 shrink-0 text-ink-faint" />
+              </Link>
+            ))}
             {LINKS.map(({ label, href }) => (
               <a
                 key={label}

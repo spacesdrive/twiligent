@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { GitFork, KeyRound, Lock, Power, PlayCircle, Check, Copy, ExternalLink, Save } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { GitFork, KeyRound, Lock, Power, PlayCircle, Check, Copy, ExternalLink, Save, ChevronDown, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
@@ -88,17 +89,34 @@ export default function SchedulingSetupGuide({ owner, repo, onOwnerChange, onRep
   const name = (repo || 'twiligent').trim();
   const base = user ? `https://github.com/${user}/${name}` : null;
   const completed = ['fork', 'supabase', 'secrets', 'enable', 'test'].filter(k => done[k]).length;
+  // Members never need these steps, so the guide stays folded unless someone has already started it.
+  const [open, setOpen] = useState(() => completed > 0 || Boolean(user));
 
   return (
     <SurfaceBox
-      title="Set up your own scheduling with GitHub"
-      subheader="About 5 minutes. You need a free GitHub account and access to the Supabase project this Twiligent uses."
-      secondary={<span className="text-small text-ink-faint tabular-nums">{completed} of 5 done</span>}
+      title="Backup scheduler on GitHub"
+      subheader="Optional, for administrators running their own Twiligent. About 5 minutes."
+      secondary={(
+        <Button variant="ghost" size="sm" onClick={() => setOpen(o => !o)} aria-expanded={open} aria-controls="gh-guide-steps">
+          {open ? 'Hide steps' : 'Show steps'}
+          <ChevronDown data-icon="inline-end" className={cn('transition-transform duration-(--duration-base)', open && 'rotate-180')} />
+        </Button>
+      )}
     >
       <div className="flex flex-col gap-5">
         <p className="text-sm text-ink-muted">
-          GitHub will check your scheduled posts every 15 minutes and publish the ones that are due, for free. This is a backup for the server, so posts still go out if the server is ever paused. You do this once.
+          A second copy of the publisher that runs on GitHub every 15 minutes, for free, so posts still go out if the server is ever paused. Step 2 needs the secret key of the Supabase project behind this Twiligent, which only its administrator has. If you only sign in here, skip this: the server already publishes your posts.
         </p>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button variant="outline" size="sm" render={<Link to="/docs/self-host/github" />}>
+            <BookOpen data-icon="inline-start" />
+            Read the full guide
+          </Button>
+          {completed > 0 && <span className="text-small text-ink-faint tabular-nums">{completed} of 5 done</span>}
+        </div>
+
+        {open && (
+        <div id="gh-guide-steps" className="flex flex-col gap-5">
 
         <form onSubmit={onSave} className="flex flex-col gap-2 rounded-field bg-surface-sunken/60 p-4">
           <label htmlFor="gh-user" className="text-sm font-medium text-ink">Your GitHub username</label>
@@ -196,9 +214,11 @@ export default function SchedulingSetupGuide({ owner, repo, onOwnerChange, onRep
           <p className="text-sm text-ink-muted">GitHub now checks every 15 minutes. You do not need to keep anything open. Two things to know:</p>
           <ul className="flex list-disc flex-col gap-1 pl-5 text-sm text-ink-muted marker:text-ink-faint">
             <li>If nothing changes in your copy for 60 days, GitHub pauses the schedule and emails you. Repeat step 4 to switch it back on.</li>
-            <li>If you made your copy private, GitHub's free minutes run out. Keep it public, or ask your administrator to lower the frequency to every 30 minutes.</li>
+            <li>If you made your copy private, GitHub's free minutes run out. Keep it public, or change the schedule in <code className="font-mono text-small text-ink">.github/workflows/publish-scheduled.yml</code> to every 30 minutes.</li>
           </ul>
         </div>
+        </div>
+        )}
       </div>
     </SurfaceBox>
   );
