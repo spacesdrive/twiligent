@@ -5,20 +5,20 @@
             "body": "{\"success\":true,\"account\":{\"id\":\"17882640000004fzz\",\"channelId\":\"UCnnnnnnnnnnnnnnnnnnnnnn\",\"title\":\"Channel UCnn\",\"description\":\"Desc\",\"customUrl\":\"@chan\",\"publishedAt\":\"2020-01-01T00:00:00Z\",\"country\":\"GB\",\"thumbnails\":{\"default\":\"d\",\"medium\":\"m\",\"high\":\"h\"},\"subscriberCount\":500,\"viewCount\":9000,\"videoCount\":12,\"hiddenSubscriberCount\":false,\"uploadsPlaylistId\":\"UUnnnnnnnnnnnnnnnnnnnnnn\",\"keywords\":\"k\",\"topicCategories\":[\"t\"],\"madeForKids\":false,\"addedAt\":\"2026-09-01T12:00:00.000Z\",\"lastUpdated\":\"2026-09-01T12:00:00.000Z\"}}"
         },
         {
-            "status": 400,
-            "body": "{\"success\":false,\"message\":\"This channel is already added\"}"
+            "status": 409,
+            "body": "{\"success\":false,\"code\":\"CONFLICT\",\"message\":\"This channel is already added\",\"requestId\":\"req-test\"}"
+        },
+        {
+            "status": 409,
+            "body": "{\"success\":false,\"code\":\"CONFLICT\",\"message\":\"This channel is already added\",\"requestId\":\"req-test\"}"
         },
         {
             "status": 400,
-            "body": "{\"success\":false,\"message\":\"This channel is already added\"}"
+            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"Enter a channel URL, @handle or channel ID\",\"requestId\":\"req-test\"}"
         },
         {
-            "status": 400,
-            "body": "{\"success\":false,\"message\":\"Invalid input\"}"
-        },
-        {
-            "status": 400,
-            "body": "{\"success\":false,\"message\":\"YouTube API key not configured on server\"}"
+            "status": 503,
+            "body": "{\"success\":false,\"code\":\"NOT_CONFIGURED\",\"message\":\"YouTube API key not configured on server\",\"requestId\":\"req-test\"}"
         }
     ],
     "requests": [
@@ -118,5 +118,10 @@
         }
     ],
     "redis": [],
-    "logs": []
+    "logs": [
+        [
+            "error",
+            "{\"level\":\"error\",\"message\":\"request failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"code\":\"NOT_CONFIGURED\",\"status\":503,\"error\":\"YouTube API key not configured on server\",\"errorName\":\"NotConfiguredError\"}"
+        ]
+    ]
 }

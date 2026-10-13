@@ -2,11 +2,11 @@
     "responses": [
         {
             "status": 404,
-            "body": "{\"success\":false,\"message\":\"Not found\"}"
+            "body": "{\"success\":false,\"code\":\"NOT_FOUND\",\"message\":\"Account not found\",\"requestId\":\"req-test\"}"
         },
         {
             "status": 404,
-            "body": "{\"success\":false,\"message\":\"Not found\"}"
+            "body": "{\"success\":false,\"code\":\"NOT_FOUND\",\"message\":\"Account not found\",\"requestId\":\"req-test\"}"
         },
         {
             "status": 200,

@@ -1,12 +1,15 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
+import { requestId } from 'hono/request-id';
 import { getSupabase } from './database/supabase.ts';
 import { getRedis, getRateLimitRedis } from './database/redis.ts';
 import { requireAuth } from './middleware/auth.ts';
+import { requestContext } from './middleware/requestContext.ts';
+import { errorHandler, notFoundHandler } from './middleware/errorHandler.ts';
 import { rateLimit, clientIp, userKey, RATE_LIMIT_HEADERS } from './middleware/rateLimit.ts';
 import { RATE_LIMIT_RULES, QUOTA_ROUTES, PUBLISH_ROUTES, matchesRoute } from './lib/rateLimit/rules.ts';
 import keysRouter from './routes/keys.ts';
-import accountsRouter from './routes/accounts.ts';
+import accountRoutes from './routes/accountRoutes.ts';
 import analyticsRouter from './routes/analytics.ts';
 import publishingRouter from './routes/publishing.ts';
 import scheduledPostsRouter from './routes/scheduledPosts.ts';
@@ -22,13 +25,13 @@ import type { Env } from './types/env.ts';
 
 const app = new Hono<AppEnv>();
 
-app.onError((err, c) => {
-    console.error('Worker error:', err.message);
-    return c.json({ error: 'Internal server error' }, 500);
-});
+app.onError(errorHandler);
+app.notFound(notFoundHandler);
 
 // the browser may only read the rate limit headers when CORS exposes them
 app.use('*', cors({ exposeHeaders: RATE_LIMIT_HEADERS }));
+app.use('*', requestId());
+app.use('*', requestContext);
 
 // both clients are stateless http clients, so creating them per request is safe
 app.use('*', async (c, next) => {
@@ -53,7 +56,7 @@ api.use('*', rateLimit(RATE_LIMIT_RULES.quota, userKey, c => matchesRoute(QUOTA_
 api.use('*', rateLimit(RATE_LIMIT_RULES.publish, userKey, c => matchesRoute(PUBLISH_ROUTES, c.req.method, c.req.path)));
 
 api.route('/', keysRouter);
-api.route('/', accountsRouter);
+api.route('/', accountRoutes);
 api.route('/', analyticsRouter);
 api.route('/', publishingRouter);
 api.route('/', scheduledPostsRouter);

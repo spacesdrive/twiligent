@@ -2,35 +2,35 @@
     "responses": [
         {
             "status": 500,
-            "body": "{\"success\":false,\"message\":\"database unavailable\"}"
-        },
-        {
-            "status": 400,
-            "body": "{\"success\":false,\"message\":\"database unavailable\"}"
-        },
-        {
-            "status": 400,
-            "body": "{\"success\":false,\"message\":\"database unavailable\"}"
-        },
-        {
-            "status": 400,
-            "body": "{\"success\":false,\"message\":\"database unavailable\"}"
+            "body": "{\"success\":false,\"code\":\"DATABASE_ERROR\",\"message\":\"The database request failed. Try again in a moment.\",\"requestId\":\"req-test\"}"
         },
         {
             "status": 500,
-            "body": "{\"success\":false,\"message\":\"database unavailable\"}"
-        },
-        {
-            "status": 400,
-            "body": "{\"success\":false,\"message\":\"database unavailable\"}"
-        },
-        {
-            "status": 400,
-            "body": "{\"success\":false,\"message\":\"database unavailable\"}"
+            "body": "{\"success\":false,\"code\":\"DATABASE_ERROR\",\"message\":\"The database request failed. Try again in a moment.\",\"requestId\":\"req-test\"}"
         },
         {
             "status": 500,
-            "body": "{\"success\":false,\"message\":\"database unavailable\"}"
+            "body": "{\"success\":false,\"code\":\"DATABASE_ERROR\",\"message\":\"The database request failed. Try again in a moment.\",\"requestId\":\"req-test\"}"
+        },
+        {
+            "status": 500,
+            "body": "{\"success\":false,\"code\":\"DATABASE_ERROR\",\"message\":\"The database request failed. Try again in a moment.\",\"requestId\":\"req-test\"}"
+        },
+        {
+            "status": 500,
+            "body": "{\"success\":false,\"code\":\"DATABASE_ERROR\",\"message\":\"The database request failed. Try again in a moment.\",\"requestId\":\"req-test\"}"
+        },
+        {
+            "status": 500,
+            "body": "{\"success\":false,\"code\":\"DATABASE_ERROR\",\"message\":\"The database request failed. Try again in a moment.\",\"requestId\":\"req-test\"}"
+        },
+        {
+            "status": 500,
+            "body": "{\"success\":false,\"code\":\"DATABASE_ERROR\",\"message\":\"The database request failed. Try again in a moment.\",\"requestId\":\"req-test\"}"
+        },
+        {
+            "status": 500,
+            "body": "{\"success\":false,\"code\":\"DATABASE_ERROR\",\"message\":\"The database request failed. Try again in a moment.\",\"requestId\":\"req-test\"}"
         }
     ],
     "requests": [
@@ -58,5 +58,38 @@
     ],
     "calls": [],
     "redis": [],
-    "logs": []
+    "logs": [
+        [
+            "error",
+            "{\"level\":\"error\",\"message\":\"request failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"code\":\"DATABASE_ERROR\",\"status\":500,\"error\":\"The database request failed. Try again in a moment.\",\"errorName\":\"DatabaseError\",\"cause\":\"database unavailable\"}"
+        ],
+        [
+            "error",
+            "{\"level\":\"error\",\"message\":\"request failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"code\":\"DATABASE_ERROR\",\"status\":500,\"error\":\"The database request failed. Try again in a moment.\",\"errorName\":\"DatabaseError\",\"cause\":\"database unavailable\"}"
+        ],
+        [
+            "error",
+            "{\"level\":\"error\",\"message\":\"request failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"code\":\"DATABASE_ERROR\",\"status\":500,\"error\":\"The database request failed. Try again in a moment.\",\"errorName\":\"DatabaseError\",\"cause\":\"database unavailable\"}"
+        ],
+        [
+            "error",
+            "{\"level\":\"error\",\"message\":\"request failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"code\":\"DATABASE_ERROR\",\"status\":500,\"error\":\"The database request failed. Try again in a moment.\",\"errorName\":\"DatabaseError\",\"cause\":\"database unavailable\"}"
+        ],
+        [
+            "error",
+            "{\"level\":\"error\",\"message\":\"request failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"code\":\"DATABASE_ERROR\",\"status\":500,\"error\":\"The database request failed. Try again in a moment.\",\"errorName\":\"DatabaseError\",\"cause\":\"database unavailable\"}"
+        ],
+        [
+            "error",
+            "{\"level\":\"error\",\"message\":\"request failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"code\":\"DATABASE_ERROR\",\"status\":500,\"error\":\"The database request failed. Try again in a moment.\",\"errorName\":\"DatabaseError\",\"cause\":\"database unavailable\"}"
+        ],
+        [
+            "error",
+            "{\"level\":\"error\",\"message\":\"request failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"code\":\"DATABASE_ERROR\",\"status\":500,\"error\":\"The database request failed. Try again in a moment.\",\"errorName\":\"DatabaseError\",\"cause\":\"database unavailable\"}"
+        ],
+        [
+            "error",
+            "{\"level\":\"error\",\"message\":\"request failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"code\":\"DATABASE_ERROR\",\"status\":500,\"error\":\"The database request failed. Try again in a moment.\",\"errorName\":\"DatabaseError\",\"cause\":\"database unavailable\"}"
+        ]
+    ]
 }

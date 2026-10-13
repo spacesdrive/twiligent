@@ -9,16 +9,16 @@
             "body": "{\"success\":true,\"data\":{\"channelId\":\"UCnnnnnnnnnnnnnnnnnnnnnn\",\"title\":\"Channel UCnn\",\"description\":\"Desc\",\"customUrl\":\"@chan\",\"publishedAt\":\"2020-01-01T00:00:00Z\",\"country\":\"GB\",\"thumbnails\":{\"default\":\"d\",\"medium\":\"m\",\"high\":\"h\"},\"subscriberCount\":500,\"viewCount\":9000,\"videoCount\":12,\"hiddenSubscriberCount\":false,\"uploadsPlaylistId\":\"UUnnnnnnnnnnnnnnnnnnnnnn\",\"keywords\":\"k\",\"bannerUrl\":\"\",\"madeForKids\":false,\"topicCategories\":[\"t\"],\"isLinked\":false}}"
         },
         {
-            "status": 400,
-            "body": "{\"success\":false,\"message\":\"Channel not found\"}"
+            "status": 404,
+            "body": "{\"success\":false,\"code\":\"NOT_FOUND\",\"message\":\"Channel not found\",\"requestId\":\"req-test\"}"
+        },
+        {
+            "status": 503,
+            "body": "{\"success\":false,\"code\":\"NOT_CONFIGURED\",\"message\":\"YouTube API key not configured on server\",\"requestId\":\"req-test\"}"
         },
         {
             "status": 400,
-            "body": "{\"success\":false,\"message\":\"YouTube API key not configured on server\"}"
-        },
-        {
-            "status": 400,
-            "body": "{\"success\":false,\"message\":\"Expected property name or '}' in JSON at position 1 (line 1 column 2)\"}"
+            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"Malformed JSON in request body\",\"requestId\":\"req-test\"}"
         }
     ],
     "requests": [
@@ -49,5 +49,10 @@
         }
     ],
     "redis": [],
-    "logs": []
+    "logs": [
+        [
+            "error",
+            "{\"level\":\"error\",\"message\":\"request failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"code\":\"NOT_CONFIGURED\",\"status\":503,\"error\":\"YouTube API key not configured on server\",\"errorName\":\"NotConfiguredError\"}"
+        ]
+    ]
 }

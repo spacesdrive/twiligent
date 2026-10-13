@@ -2,23 +2,23 @@
     "responses": [
         {
             "status": 400,
-            "body": "{\"success\":false,\"message\":\"Username is required\"}"
+            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"Username is required\",\"requestId\":\"req-test\"}"
         },
         {
             "status": 400,
-            "body": "{\"success\":false,\"message\":\"Session cookie is required - open reddit.com in your browser, copy the reddit_session value from DevTools (Application > Cookies > reddit.com), and paste it here\"}"
+            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"Session cookie is required - open reddit.com in your browser, copy the reddit_session value from DevTools (Application > Cookies > reddit.com), and paste it here\",\"requestId\":\"req-test\"}"
         },
         {
             "status": 200,
             "body": "{\"success\":true,\"account\":{\"id\":\"17882640000004fzz\",\"platform\":\"reddit\",\"username\":\"NewUser\",\"title\":\"u/NewUser\",\"totalKarma\":70,\"postKarma\":50,\"commentKarma\":20,\"iconUrl\":\"https://i?a=1&b=2\",\"createdAt\":\"2020-09-13T12:26:40.000Z\",\"addedAt\":\"2026-09-01T12:00:00.000Z\",\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"hasCookie\":true}}"
         },
         {
-            "status": 400,
-            "body": "{\"success\":false,\"message\":\"This Reddit account is already added\"}"
+            "status": 409,
+            "body": "{\"success\":false,\"code\":\"CONFLICT\",\"message\":\"This Reddit account is already added\",\"requestId\":\"req-test\"}"
         },
         {
-            "status": 400,
-            "body": "{\"success\":false,\"message\":\"Reddit user not found - check the username\"}"
+            "status": 404,
+            "body": "{\"success\":false,\"code\":\"NOT_FOUND\",\"message\":\"Reddit user not found - check the username\",\"requestId\":\"req-test\"}"
         }
     ],
     "requests": [
