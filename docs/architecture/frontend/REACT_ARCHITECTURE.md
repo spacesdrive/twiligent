@@ -97,7 +97,7 @@ frontend/src/
   features/
     analytics/
       overview/           Overview.jsx - all-accounts dashboard (page; tabs, hooks and helpers beside it)
-      channel/            ChannelAnalytics.jsx - per-channel YouTube
+      channel/            ChannelAnalytics.jsx - per-channel YouTube (page; tabs, hook and helpers beside it)
       instagram/          InstagramAnalytics.jsx - per-account Instagram (page; sections and helpers beside it)
       videos/             VideoExplorer.jsx - all videos table
       shorts/             ShortsExplorer.jsx - shorts-filtered table

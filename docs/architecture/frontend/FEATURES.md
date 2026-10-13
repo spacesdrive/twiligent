@@ -18,7 +18,12 @@ frontend/src/
 ├── features/
 │   ├── analytics/
 │   │   ├── channel/
-│   │   │   └── ChannelAnalytics.jsx        <- YouTube channel analytics
+│   │   │   ├── ChannelAnalytics.jsx        <- Page: YouTube channel analytics with eight tabs
+│   │   │   ├── ChannelOverviewTab.jsx, ChannelVideosTab.jsx, ChannelEngagementTab.jsx, ChannelContentTab.jsx
+│   │   │   ├── ChannelPublishingTab.jsx, ChannelGrowthTab.jsx, ChannelShortsTab.jsx, ChannelTagsTab.jsx, TagCloud.jsx
+│   │   │   ├── ChannelHeader.jsx, ChannelNoVideos.jsx, ChannelVideoTable.jsx, TrendArea.jsx, MetricGrid.jsx
+│   │   │   ├── useChannelAnalytics.js      <- Loads api.getAnalytics(id); returns data, loading and the reload
+│   │   │   └── channelChartData.js         <- Pure chart rows and labels (channelChartData.test.js)
 │   │   ├── instagram/
 │   │   │   ├── InstagramAnalytics.jsx      <- Page: Instagram account analytics (loads through useAccountAnalytics)
 │   │   │   ├── InstagramHeader.jsx, InstagramMetrics.jsx, InstagramInsightChips.jsx, TypeBadge.jsx
