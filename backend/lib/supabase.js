@@ -4,7 +4,7 @@ function clean(s) {
     return s?.replace(/^﻿/, '').trim();
 }
 
-// workers reject the `cache` field on RequestInit, so it is dropped from supabase requests
+// workers reject the `cache` RequestInit field, so supabase requests drop it
 function workerFetch(url, options = {}) {
     const { cache, ...rest } = options;
     return fetch(url, rest);

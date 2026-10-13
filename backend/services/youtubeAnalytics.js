@@ -5,7 +5,7 @@ import {
     buildUploadFrequency, weeklyConsistencyScore, buildViewsDistribution, buildMonthlyTrends,
 } from './youtubeTrends.js';
 
-// shorts are judged by duration alone, so any video up to 60 seconds counts as one
+// shorts are judged by duration alone: any video up to 60 seconds counts
 const SHORT_MAX_SECONDS = 60;
 
 function emptyVideoAnalytics() {
@@ -84,7 +84,7 @@ function summarizeDurations(totalDuration, totalViews, videoCount) {
         avgDurationFormatted: formatDuration(Math.round(totalDuration / videoCount)),
         totalDurationSeconds: totalDuration,
         totalDurationFormatted: formatDuration(totalDuration),
-        // multiplies the summed durations by the summed views; kept to match stored analytics
+        // multiplies summed durations by summed views, matching stored analytics
         estimatedTotalWatchTimeHours: Math.round((totalDuration * totalViews) / 3600),
     };
 }

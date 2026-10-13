@@ -6,7 +6,7 @@ function resolve(theme) {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-// one page cross-fade; the class is set inside the transition so the new snapshot is complete
+// the class changes inside the view transition so its new snapshot is complete
 export function useSmoothTheme() {
   const { theme, resolvedTheme, setTheme } = useTheme();
 

@@ -20,7 +20,7 @@ export function AuthProvider({ children }) {
     const signUp = (email, password) =>
         supabase.auth.signUp({ email, password });
 
-    // the raw nonce lets supabase confirm the google token was issued for this sign-in
+    // the raw nonce lets supabase confirm the google token came from this sign-in
     const signInWithGoogle = (idToken, nonce) =>
         supabase.auth.signInWithIdToken({ provider: 'google', token: idToken, nonce });
 

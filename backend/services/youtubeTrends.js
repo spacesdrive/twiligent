@@ -52,7 +52,7 @@ export function buildTagFrequency(videos) {
         .map(([tag, count]) => ({ tag, count }));
 }
 
-// strict < unlike the inclusive instagram and reddit counts; kept to match stored analytics
+// strict < unlike instagram and reddit (inclusive), to match stored analytics
 export function countRecentUploads(videos, now) {
     const uploadedWithin = (days) => videos.filter(video => (now - new Date(video.publishedAt)) < days * DAY_MS).length;
     return {
@@ -88,7 +88,7 @@ export function weeklyConsistencyScore(videos, now) {
     return Math.max(0, Math.min(100, Math.round(100 - (stdDev / Math.max(0.01, avgWeekly)) * 25)));
 }
 
-// < high drops the top video when its views split evenly into ten buckets; kept as is
+// known issue: < high drops the top video when ten buckets divide views evenly
 export function buildViewsDistribution(videos, maxViews) {
     const step = Math.max(1, Math.ceil(maxViews / HISTOGRAM_BUCKETS));
     const ranges = [];

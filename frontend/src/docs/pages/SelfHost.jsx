@@ -1,4 +1,4 @@
-// each page lives in selfHost/; this barrel keeps them in one lazy chunk for routes.js
+// pages live in selfHost/; this barrel keeps them in one lazy chunk
 export { SCHEMA_SQL } from './selfHost/selfHostSql';
 export { default as Overview } from './selfHost/Overview';
 export { default as Supabase } from './selfHost/Supabase';

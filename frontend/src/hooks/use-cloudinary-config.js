@@ -11,7 +11,7 @@ async function fetchCloudinaryConfig() {
   }
 }
 
-// reloadKey lets a page fetch the config again when something it depends on changes
+// reloadKey lets a page refetch the config when something it depends on changes
 export function useCloudinaryConfig(reloadKey) {
   const [config, setConfig] = useState(null);
 

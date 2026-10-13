@@ -20,7 +20,7 @@ async function createContainer(igId, params) {
     return createData.id;
 }
 
-// reels and stories process for a while; other media only need a short pause before publishing
+// reels and stories need processing; other media only need a short pause
 async function waitForContainer(mediaType, containerId, token) {
     if (mediaType !== 'REELS' && mediaType !== 'STORIES') {
         await wait(2000);
@@ -59,7 +59,7 @@ async function publishPost(supabase, post) {
     return publishContainer(igId, containerId, token);
 }
 
-// cron entry point; it gets supabase directly because cron handlers have no request context
+// cron entry: there is no request context, so supabase is passed in directly
 export async function processScheduledPosts(supabase) {
     let processed = 0;
     const errors = [];

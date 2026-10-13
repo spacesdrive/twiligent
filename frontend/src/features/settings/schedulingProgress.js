@@ -3,7 +3,7 @@ export const SETUP_STEP_KEYS = ['fork', 'supabase', 'secrets', 'enable', 'test']
 
 export const browserStorage = () => localStorage;
 
-// getStorage runs inside the try: reading localStorage itself throws when site data is blocked
+// getStorage is called in the try: localStorage throws when site data is blocked
 export function readProgress(getStorage) {
   try {
     return JSON.parse(getStorage().getItem(PROGRESS_KEY)) || {};

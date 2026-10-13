@@ -10,7 +10,7 @@ import { POST_STATUS, contentTypeOf } from './publishConstants';
 import { formatScheduleDate, isPastDue } from './scheduleHelpers.js';
 
 function PostActions({ post, isEditing, editor, onDelete }) {
-  // the publish flow never sets a 'scheduled' status, the check is kept as it was
+  // mirrors the backend edit check, which also accepts a 'scheduled' status
   const canEdit = post.status === 'pending' || post.status === 'scheduled';
   const deleteLabel = post.status === 'published' ? 'Remove record' : 'Delete scheduled post';
   return (

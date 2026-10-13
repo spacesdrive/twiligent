@@ -1,4 +1,4 @@
-// supabase comes first so crons can call these too; a null userId skips the user filter
+// crons share these, so supabase is an argument; a null userId skips the filter
 export async function getAccounts(supabase, userId = null) {
     let query = supabase.from('accounts').select('id, platform, data');
     if (userId) query = query.eq('user_id', userId);
@@ -44,7 +44,7 @@ export async function deleteAccount(supabase, id, userId = null) {
     if (error) throw error;
 }
 
-// settings rows are keyed by (user_id, key); every saved value lives under 'api_keys'
+// rows are keyed by (user_id, key); every saved value lives under 'api_keys'
 const DEFAULT_KEYS = {};
 
 export async function getSettings(supabase, userId) {
@@ -107,7 +107,7 @@ export async function getDuePosts(supabase) {
     return (data || []).map(rowToPost);
 }
 
-// atomic pending to publishing; false means the worker cron or the github workflow got it first
+// atomic pending to publishing; false means the cron or github workflow won
 export async function claimPost(supabase, id) {
     const { data, error } = await supabase
         .from('scheduled_posts')
@@ -241,7 +241,7 @@ export async function updateTrackedPost(supabase, id, updates, userId) {
     if (error) throw error;
 }
 
-// merges into data instead of replacing it, so manual fields survive a live refresh and vice versa
+// merges into data so manual fields and live refresh fields survive each other
 export async function patchTrackedPostData(supabase, id, patch, userId) {
     const { data: row, error: readError } = await supabase
         .from('tracked_posts')

@@ -1,5 +1,3 @@
-// overview chart rows and legend; no JSX or path aliases so node --test can import it
-
 import { PLATFORM_META } from '../../../lib/accounts.js';
 import { SERIES } from '../../../lib/chart.js';
 

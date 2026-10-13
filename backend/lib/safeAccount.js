@@ -1,4 +1,4 @@
-// hasCookie lets the frontend show reddit session status without ever receiving the cookie
+// hasCookie shows reddit session status without sending the cookie
 const SECRET_FIELDS = ['accessToken', 'cookie', 'encryptedPassword', 'encryptedTotpSecret', 'authToken', 'ct0'];
 
 export function safeAccount(account) {

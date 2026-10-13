@@ -7,7 +7,7 @@ const PLATFORMS = [
   { icon: RedditIcon, label: 'Reddit' },
 ];
 
-// decorative preview of the product, hidden from assistive technology and on small screens
+// decorative preview, hidden from assistive technology and on small screens
 export default function LoginBrandPanel() {
   return (
     <aside aria-hidden="true" className="hidden p-3 lg:block">

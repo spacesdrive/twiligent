@@ -1,5 +1,3 @@
-// platform helpers for every page; no jsx or path aliases so node --test can import it
-
 export const PLATFORMS = ['youtube', 'instagram', 'reddit'];
 
 export const PLATFORM_META = {

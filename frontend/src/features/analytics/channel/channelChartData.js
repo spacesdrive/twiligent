@@ -1,5 +1,3 @@
-// chart rows and labels for channel analytics; no JSX or path aliases so node --test can import it
-
 import { SERIES } from '../../../lib/chart.js';
 import { CATEGORY_MAP, fmtDate, fmtNum, fmtPercent } from '../../../utils/formatters.js';
 

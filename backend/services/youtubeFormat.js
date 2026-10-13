@@ -1,4 +1,4 @@
-// ignores the day part of durations such as P1DT2H, which then parse as zero seconds
+// ignores the day part, so durations such as P1DT2H parse as zero seconds
 export function parseDuration(iso) {
     const match = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
     if (!match) return 0;

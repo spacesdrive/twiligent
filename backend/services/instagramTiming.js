@@ -4,7 +4,7 @@ function emptyBuckets(size) {
     return Array(size).fill(null).map(() => ({ count: 0, likes: 0, comments: 0 }));
 }
 
-// dates skips invalid timestamps but is indexed against media; kept to match the stored analytics
+// dates drops bad timestamps yet is indexed by media, matching stored analytics
 function fillBuckets(buckets, dates, media, bucketIndexOf) {
     dates.forEach((date, i) => {
         const bucket = buckets[bucketIndexOf(date)];

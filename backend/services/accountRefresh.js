@@ -5,7 +5,7 @@ import { fetchInstagramProfile } from './instagramApi.js';
 
 const NO_COOKIE_MESSAGE = 'No session cookie stored - re-add this account with a session cookie from reddit.com DevTools';
 
-// the single refresh and refresh-all have always worded a missing YouTube key differently
+// known issue: the two refresh paths word a missing YouTube key differently
 const SINGLE_REFRESH_MESSAGES = { accessToken: 'No access token', cookie: NO_COOKIE_MESSAGE, apiKey: 'No API key' };
 const REFRESH_ALL_MESSAGES = { accessToken: 'No access token', cookie: NO_COOKIE_MESSAGE, apiKey: 'No YouTube API key' };
 
@@ -52,7 +52,7 @@ function youtubeUpdates(channelData, full) {
     };
 }
 
-// accounts added before creation dates were stored get them once; a failure only skips the extras
+// fills creation dates on older accounts once; a failure only skips the extras
 export async function backfillChannelData(supabase, account, apiKey, userId) {
     try {
         const channelData = await fetchChannelData(account.channelId, apiKey);
@@ -109,7 +109,7 @@ async function refreshListedAccount(supabase, userId, account, apiKey) {
     return account.id;
 }
 
-// one failing account must not stop the others, so results line up with the accounts by index
+// one failure must not stop the rest; results align with the accounts by index
 export async function refreshAllAccounts(supabase, userId, apiKey) {
     const accounts = await getAccounts(supabase, userId);
     const settled = await Promise.allSettled(accounts.map(account => refreshListedAccount(supabase, userId, account, apiKey)));

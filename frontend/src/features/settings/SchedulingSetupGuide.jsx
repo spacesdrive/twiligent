@@ -32,7 +32,7 @@ export default function SchedulingSetupGuide({ owner, repo, onOwnerChange, onRep
   const user = owner.trim();
   const base = repoBaseUrl(owner, repo);
   const completed = completedSteps(done);
-  // members never need these steps, so the guide stays folded unless someone has already started it
+  // members never need these steps; the guide opens only once someone has started
   const [open, setOpen] = useState(() => completed > 0 || Boolean(user));
 
   return (

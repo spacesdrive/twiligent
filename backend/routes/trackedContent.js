@@ -14,7 +14,7 @@ import { detectContentType, manualViewsPatch, imageUrlPatch } from '../services/
 
 const router = new Hono();
 
-// no account means no cookie; a missing or non-reddit account is reported as not found
+// no account means no cookie; a missing or non-reddit account is not found
 async function redditCookieFor(supabase, accountId, userId) {
     if (!accountId) return { cookie: null };
     const account = await getAccountById(supabase, accountId, userId);

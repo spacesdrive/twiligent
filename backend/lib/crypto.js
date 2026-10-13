@@ -1,4 +1,4 @@
-// web crypto only, no npm dependency; the key is 64 hex chars and output is "<iv_hex>:<cipher_hex>"
+// web crypto, no npm dependency; 64 hex char key, output "<iv_hex>:<cipher_hex>"
 
 function hexToBuffer(hex) {
     const bytes = new Uint8Array(hex.length / 2);

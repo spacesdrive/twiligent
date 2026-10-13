@@ -19,7 +19,7 @@ function useTrackedImage({ cloudConfig, showToast }) {
     if (error) { showToast(error, 'error'); return; }
     setUploading(true);
     try {
-      // the Worker never handles binary uploads, so only the returned url is saved on the item
+      // the Worker never takes binary uploads, so only the returned url is saved
       setImageUrl(await api.uploadImage(file, cloudConfig));
       showToast('Image uploaded');
     } catch (err) {

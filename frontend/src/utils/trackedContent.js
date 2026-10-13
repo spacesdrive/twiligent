@@ -1,11 +1,11 @@
-// youtube reports real views; reddit dropped view_count in 2018, so its views are typed by hand
+// youtube reports views; reddit dropped view_count in 2018 so they are typed in
 export function trackedViews(item) {
     if (!item) return 0;
     if (item.contentType === 'youtube') return item.viewCount ?? 0;
     return item.manualViews ?? 0;
 }
 
-// false for reddit posts with no views entered, so the ui can tell that apart from a real zero
+// false for reddit posts with no views entered, so the ui can tell it from zero
 export function hasTrackedViews(item) {
     if (!item) return false;
     if (item.contentType === 'youtube') return item.viewCount !== undefined && item.viewCount !== null;

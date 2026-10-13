@@ -1,5 +1,3 @@
-// Instagram library merging and filters; no JSX or path aliases so node --test can import it
-
 import { LIKE_TIERS, filterByTier, matchesText } from '../../../lib/library.js';
 import { fmtNum } from '../../../utils/formatters.js';
 import { IG_CONTENT_TYPES } from '../../../utils/instagramContent.js';
@@ -9,7 +7,7 @@ function engagementRateOf(item) {
   return null;
 }
 
-// results come from Promise.allSettled, one per account; failed accounts are skipped
+// one Promise.allSettled result per account; failed accounts are skipped
 export function mergeAccountMedia(igAccounts, results) {
   const all = [];
   results.forEach((result, i) => {

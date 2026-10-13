@@ -4,7 +4,7 @@ import { summarizeAccountCaches } from '../services/overviewSummary.js';
 
 const router = new Hono();
 
-// the client re-polls while any account reports syncing, so warming never blocks the response
+// the client re-polls while syncing, so warming never blocks the response
 function runInBackground(c, tasks) {
     if (tasks.length === 0) return;
     const ctx = c.executionCtx;

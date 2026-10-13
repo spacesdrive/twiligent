@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 
 const app = new Hono();
 
-// keys are server env vars; this only reports which are set, so the frontend can show status
+// keys are server env vars; this only reports which are set, for the status ui
 app.get('/keys', (c) => {
     return c.json({
         youtube: { configured: !!c.env.YOUTUBE_API_KEY },

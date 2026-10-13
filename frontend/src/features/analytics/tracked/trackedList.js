@@ -1,5 +1,3 @@
-// tracked content list helpers; no JSX or path aliases so node --test can import it
-
 import { matchesText } from '../../../lib/library.js';
 import { isRedditItem, trackedComments, trackedEngagement, trackedViews } from '../../../utils/trackedContent.js';
 
@@ -63,7 +61,7 @@ export function bulkCategoryMessage(succeeded, failed) {
   return { message: done, severity: 'success' };
 }
 
-// an empty field clears the views; anything else must be a whole number of 0 or more
+// an empty field clears the views; otherwise a whole number of 0 or more
 export function parseManualViews(raw) {
   const trimmed = raw.trim();
   if (trimmed === '') return { value: null };

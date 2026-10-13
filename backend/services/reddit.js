@@ -1,6 +1,6 @@
 export { computeRedditAnalytics } from './redditAnalytics.js';
 
-// fetch is a worker global; requests send the user's reddit_session cookie as stored
+// fetch is a worker global; requests send the stored reddit_session cookie
 const REDDIT_BASE = 'https://www.reddit.com';
 // reddit requires <platform>:<appid>:<version> (by /u/<username>)
 const USER_AGENT = 'script:twiligent:v1.0 (by /u/spacesdrive)';

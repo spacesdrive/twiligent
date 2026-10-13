@@ -1,11 +1,9 @@
-// chart rows and stat lists for Reddit analytics; no JSX or path aliases so node --test can import it
-
 import { seriesAt } from '../../../lib/chart.js';
 import { fmtNum, fmtNumFull } from '../../../utils/formatters.js';
 
 const MEDIA_TYPE_ORDER = ['text', 'image', 'video', 'link'];
 
-// labels come in as an argument because redditPostUtils.js imports through a path alias
+// labels are passed in because redditPostUtils.js imports through a path alias
 export function mediaTypeDataOf(distribution, labels) {
   if (!distribution) return [];
   return Object.entries(distribution).map(([key, value]) => ({

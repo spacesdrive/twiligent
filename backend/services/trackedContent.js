@@ -5,7 +5,7 @@ export function detectContentType(url) {
     return null;
 }
 
-// reddit dropped view_count in 2018 so views are typed in; a youtube count is never overridden
+// reddit dropped view_count in 2018 so views are typed in; youtube keeps its own
 export function manualViewsPatch(manualViews, isYouTube) {
     if (isYouTube) return { error: 'YouTube view counts are fetched automatically and cannot be set by hand' };
     if (manualViews === null || manualViews === '') return { patch: { manualViews: null } };
@@ -24,13 +24,13 @@ function parseUrl(value) {
     }
 }
 
-// reddit json has no thumbnail, so the browser uploads one; youtube thumbnails stay untouched
+// reddit has no thumbnail, so the browser uploads one; youtube keeps its own
 export function imageUrlPatch(imageUrl, isYouTube) {
     if (isYouTube) return { error: 'Images can only be attached to Reddit posts' };
     if (imageUrl === null || imageUrl === '') return { patch: { imageUrl: null } };
 
     const parsed = parseUrl(imageUrl);
-    // https only: the value goes straight into an img src, so javascript: and data: urls are refused
+    // https only: it lands in an img src, so javascript: and data: urls are refused
     if (!parsed || parsed.protocol !== 'https:') return { error: 'Image must be an https URL returned by the uploader' };
     return { patch: { imageUrl: parsed.toString() } };
 }

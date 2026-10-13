@@ -20,7 +20,7 @@ function extractChannelId(input) {
     return trimmed;
 }
 
-// returns null when the lookup finds nothing or fails, so the next strategy can run
+// null when the lookup finds nothing or fails, so the next strategy runs
 async function lookupChannelId(endpoint, params, pickId, apiKey) {
     try {
         const data = await ytFetch(endpoint, params, apiKey);

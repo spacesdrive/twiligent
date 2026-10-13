@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 
 const LOGO_DIR = '/Logos';
 
-// both lockups render and css picks one, so the right file shows before the theme hook runs
+// css shows one of both lockups, so it is right before the theme hook runs
 export function Logo({ variant = 'lockup', className }) {
   if (variant === 'wordmark') {
     return (

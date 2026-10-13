@@ -26,7 +26,7 @@ export function instagramErrorMessage(code) {
   return IG_ERRORS[code] || `Instagram connection failed: ${code}. ${TESTER_HINT}`;
 }
 
-// instagram oauth returns with ?ig_connected=true or ?ig_error=...; ?add=1 opens the add flow
+// oauth returns ?ig_connected=true or ?ig_error=...; ?add=1 opens the add flow
 export function readOAuthReturn(searchParams) {
   const connected = searchParams.get('ig_connected');
   const igError = searchParams.get('ig_error');

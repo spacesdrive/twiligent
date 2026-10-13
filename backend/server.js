@@ -35,7 +35,7 @@ app.use('*', async (c, next) => {
 
 app.get('/api/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
-// public: the oauth redirect carries no jwt, so the user comes from the signed hmac state token
+// public: the oauth redirect has no jwt; the signed hmac state names the user
 app.get('/api/auth/instagram/callback', callbackHandler);
 
 const api = new Hono();
@@ -59,7 +59,7 @@ app.route('/api', api);
 export default {
     fetch: app.fetch,
 
-    // schedules come from wrangler.toml: due posts every 15 minutes, token refresh daily
+    // wrangler.toml schedules: due posts every 15 minutes, token refresh daily
     async scheduled(event, env, ctx) {
         const supabase = getSupabase(env);
 

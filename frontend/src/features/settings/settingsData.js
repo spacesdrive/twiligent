@@ -22,7 +22,7 @@ async function retryKeys(apiClient, isCancelled, applyKeys) {
   }
 }
 
-// a failure after applyKeys keeps those keys: the retry only replaces them when it succeeds
+// a later failure keeps applied keys: the retry only replaces them on success
 export async function loadServerSettings(apiClient, { isCancelled, applyKeys, applyGithub, finish }) {
   try {
     const [keys, github] = await Promise.all([apiClient.getKeys(), apiClient.getGithubSettings()]);
@@ -36,7 +36,7 @@ export async function loadServerSettings(apiClient, { isCancelled, applyKeys, ap
   }
 }
 
-// only the repository is kept: it fills in the direct links in the setup guide, no token needed
+// only the repository is kept; it fills the guide links and needs no token
 export function githubSettingsPayload(owner, repo) {
   return { repoOwner: owner.trim(), repoName: (repo || 'twiligent').trim(), branch: 'main' };
 }

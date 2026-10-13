@@ -24,7 +24,7 @@ export function normalizeYouTubeVideo(video) {
         licensedContent: contentDetails.licensedContent || false,
         projection: contentDetails.projection || 'rectangular',
         viewCount: parseInt(statistics.viewCount) || 0,
-        // null when the owner hid likes or switched comments off, so it stays apart from zero
+        // null when likes are hidden or comments are off, so it stays apart from zero
         likeCount: optionalCount(statistics.likeCount),
         commentCount: optionalCount(statistics.commentCount),
         privacyStatus: status?.privacyStatus || 'public',
@@ -39,7 +39,7 @@ async function fetchPlaylistPage(playlistId, pageToken, apiKey) {
     try {
         return await ytFetch('playlistItems', params, apiKey);
     } catch (err) {
-        // youtube reports a channel's uploads playlist as missing until its first public video
+        // youtube reports the uploads playlist missing until the first public video
         if (err.reason === 'playlistNotFound') return null;
         throw err;
     }

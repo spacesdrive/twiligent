@@ -1,5 +1,3 @@
-// chart rows and labels for Instagram analytics; no JSX or path aliases so node --test can import it
-
 import { fmtNum } from '../../../utils/formatters.js';
 import { IG_CONTENT_TYPES, IG_CONTENT_TYPE_META } from '../../../utils/instagramContent.js';
 

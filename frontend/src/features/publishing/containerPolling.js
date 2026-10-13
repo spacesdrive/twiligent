@@ -31,7 +31,7 @@ async function pollStrict(containerId, accountId) {
   return containerFinished(status, 'Processing failed');
 }
 
-// single posts ride out failed checks and fail on timeout; bulk stops quietly after the last try
+// single posts survive failed checks and throw on timeout; bulk stops quietly
 export async function waitForContainer(containerId, accountId, { tolerant = false, onStatus } = {}) {
   for (let i = 0; i < POLL_ATTEMPTS; i++) {
     await wait(POLL_INTERVAL_MS);
@@ -44,7 +44,7 @@ export async function waitForContainer(containerId, accountId, { tolerant = fals
   return false;
 }
 
-// photos need no processing, Instagram only needs a moment before they can be published
+// photos need no processing, only a moment before Instagram can publish them
 export async function waitUntilReady(contentType, containerId, accountId, { onProcessing, ...pollOptions }) {
   if (contentType !== 'REELS' && contentType !== 'STORIES') {
     await wait(IMAGE_SETTLE_MS);

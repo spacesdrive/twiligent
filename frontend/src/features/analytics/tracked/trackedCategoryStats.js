@@ -1,5 +1,3 @@
-// per-category totals and labels; no JSX or path aliases so node --test can import it
-
 import { fmtNum } from '../../../utils/formatters.js';
 import { hasTrackedViews, trackedViews } from '../../../utils/trackedContent.js';
 import { countLabel } from './trackedList.js';

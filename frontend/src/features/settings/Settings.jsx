@@ -16,13 +16,13 @@ export default function Settings() {
   const { serverStatus, loading, github } = useServerSettings(showToast);
   const location = useLocation();
 
-  // links such as /settings#scheduling jump to their section once the page has loaded
+  // links such as /settings#scheduling jump to their section after loading
   useEffect(() => {
     if (loading || !location.hash) return;
     document.getElementById(location.hash.slice(1))?.scrollIntoView({ block: 'start' });
   }, [loading, location.hash]);
 
-  // the setup guide decides once, at mount, whether to start open, so it mounts after loading
+  // the setup guide picks its open state at mount, so it mounts after loading
   if (loading) {
     return (
       <div className="flex flex-col gap-8">

@@ -9,7 +9,7 @@ cd backend && npm test
 cd frontend && npm test
 ```
 
-Frontend tests (`npm test` runs every `src/**/*.test.js`) cover shared helpers in `src/lib/` and `src/utils/` (hold-to-confirm timing, command palette ranking, library filtering and paging, platform helpers, and a check that every Lucide icon imported in `src` exists) and page helpers that sit beside their feature in `src/features/**` and `src/docs/**`, such as `features/analytics/overview/overviewStats.js`. A testable helper is a plain `.js` file with no JSX and no `@/` imports, and its imports of project files are relative paths that end in `.js`, so Node can load it directly.
+Frontend tests (`npm test` runs every `src/**/*.test.js`) cover shared helpers in `src/lib/` and `src/utils/` (hold-to-confirm timing, command palette ranking, library filtering and paging, platform helpers, and a check that every Lucide icon imported in `src` exists) and page helpers that sit beside their feature in `src/features/**` and `src/docs/**`, such as `features/analytics/overview/overviewStats.js`. A testable helper is a plain `.js` file with no JSX and no `@/` imports, and its imports of project files are relative paths that end in `.js`, so Node can load it directly. This rule lives here, so helper files do not repeat it in a header comment.
 
 Test files sit next to the module they cover as `*.test.js` (for example `services/instagram.test.js`). Wrangler only bundles files reachable from `server.js`, so test files never ship in the Worker.
 

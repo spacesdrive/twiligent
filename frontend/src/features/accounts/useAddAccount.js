@@ -122,7 +122,7 @@ export function useAddAccount({ showToast, loadAccounts }) {
     loadAccounts();
   };
 
-  // back keeps the typed channel and reddit fields; only the platform and lookup result reset
+  // back keeps typed channel and reddit fields; only platform and lookup reset
   const goBack = () => {
     setPlatform(null);
     channel.clearResolved();

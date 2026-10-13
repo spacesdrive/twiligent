@@ -3,7 +3,7 @@ import { useAppContext } from '../../../context/AppContext';
 import { api } from '../../../services/api';
 import { mergeAccountMedia } from './reelsLibrary.js';
 
-// loads media from every Instagram account; one failed account does not hide the rest
+// one failed Instagram account does not hide media from the rest
 export function useInstagramMedia() {
   const { accounts, showToast } = useAppContext();
   const igAccounts = useMemo(() => accounts.filter(account => account.platform === 'instagram'), [accounts]);

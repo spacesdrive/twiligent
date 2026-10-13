@@ -1,4 +1,4 @@
-// series follow the brand chart order; values are css variables so charts follow the theme
+// brand chart order; css variable values let charts follow the theme
 
 export const SERIES = {
   primary: 'var(--chart-1)',

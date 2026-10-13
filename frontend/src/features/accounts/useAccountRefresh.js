@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { api } from '../../services/api';
 
-// one id for both buttons: 'all' while refreshing every account, else the account id
+// one id for both buttons: 'all' for refresh-all, else the account id
 export function useAccountRefresh({ showToast, loadAccounts }) {
   const [refreshingId, setRefreshingId] = useState(null);
 

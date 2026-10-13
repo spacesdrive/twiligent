@@ -62,7 +62,7 @@ function buildMediaTypeDistribution(posts) {
     return distribution;
 }
 
-// dates skips posts without a date but is indexed against posts; kept to match stored analytics
+// dates skips undated posts yet is indexed by posts, matching stored analytics
 function fillTimeBuckets(dates, posts) {
     const dayBuckets = Array(7).fill(null).map(() => ({ count: 0, score: 0, comments: 0 }));
     const hourBuckets = Array(24).fill(null).map(() => ({ count: 0, score: 0 }));

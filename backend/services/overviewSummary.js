@@ -7,10 +7,10 @@ function sumBy(items, pick) {
     return items.reduce((total, item) => total + pick(item), 0);
 }
 
-// syncing is true only when a fetch started, so the client never waits on an unfetchable account
+// syncing only when a fetch started, so the client never waits for nothing
 function startWarm(context, accountId, task) {
     if (!context.redis || !task) return { id: accountId, cacheWarmed: false, syncing: false };
-    // a failed warm leaves the cache empty, so the next overview load starts it again
+    // a failed warm leaves the cache empty, so the next load starts it again
     context.warmTasks.push(task().catch(() => undefined));
     return { id: accountId, cacheWarmed: false, syncing: true };
 }
@@ -86,7 +86,7 @@ async function summarizeAccount(context, account) {
     return summarizeYouTube(context, account);
 }
 
-// an account whose cache read failed is left out instead of failing the whole overview
+// a failed cache read leaves the account out instead of failing the overview
 function collectSummaries(results) {
     const analyticsCache = {};
     results.forEach(result => {
@@ -97,7 +97,7 @@ function collectSummaries(results) {
     return analyticsCache;
 }
 
-// warmTasks are already running; the caller decides how long the runtime keeps them alive
+// the warm tasks already run; the caller decides how long they are kept alive
 export async function summarizeAccountCaches(accounts, { redis, userId, apiKey }) {
     const context = { redis, userId, apiKey, warmTasks: [] };
     const results = await Promise.allSettled(accounts.map(account => summarizeAccount(context, account)));

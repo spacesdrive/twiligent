@@ -38,7 +38,7 @@ function readUploadError(responseText) {
     }
 }
 
-// the browser posts the file straight to Cloudinary so the Worker never handles binary uploads
+// the browser posts straight to Cloudinary so the Worker never handles binaries
 function uploadToCloudinary(file, cloudConfig, { onProgress } = {}) {
     const formData = new FormData();
     formData.append('file', file);
@@ -64,7 +64,7 @@ function uploadToCloudinary(file, cloudConfig, { onProgress } = {}) {
     });
 }
 
-// tracked item screenshots use fetch so failures surface exactly as before
+// screenshots need no progress events and show cloudinary's own error message
 async function uploadImage(file, cloudConfig) {
     const formData = new FormData();
     formData.append('file', file);

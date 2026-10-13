@@ -3,7 +3,7 @@ import {
     readInstagramOAuthConfig, buildAuthorizationUrl, connectInstagramFromOAuth,
 } from '../services/instagramOAuth.js';
 
-// GET /api/auth/instagram/url - protected; returns the url the frontend redirects to
+// GET /api/auth/instagram/url - protected; returns the frontend redirect url
 export async function urlHandler(c) {
     try {
         const config = readInstagramOAuthConfig(c.env);
@@ -17,7 +17,7 @@ export async function urlHandler(c) {
     }
 }
 
-// GET /api/auth/instagram/callback - public browser redirect; the signed state supplies the userId
+// GET /api/auth/instagram/callback - public; the signed state gives the userId
 export async function callbackHandler(c) {
     const { code, state, error, error_reason: errorReason } = c.req.query();
     const config = readInstagramOAuthConfig(c.env);

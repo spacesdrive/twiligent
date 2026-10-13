@@ -1,9 +1,7 @@
-// video library filters and totals; no JSX or path aliases so node --test can import it
-
 import { VIEW_TIERS, filterByTier, matchesText, engagementPercent, parseIsoDuration } from '../../../lib/library.js';
 import { fmtNum } from '../../../utils/formatters.js';
 
-// failed channels are left out; each video gains its channel, thumbnail, engagement and duration
+// failed channels are left out; each video gains its channel and derived fields
 export function mergeChannelVideos(channelAccounts, results) {
   const videos = [];
   const channels = [];

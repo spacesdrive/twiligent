@@ -7,7 +7,7 @@ import { buildYouTubeAccount, buildRedditAccount, buildInstagramAccount } from '
 
 const DEFAULT_TOKEN_LIFETIME_S = 5184000;
 
-// duplicates throw like any other failure because the route answers both with the same 400
+// duplicates throw like other failures; the route answers all with a 400
 export async function addYouTubeAccount(supabase, userId, input, apiKey) {
     const channelId = await resolveChannelId(input, apiKey);
     const [channelData, accounts] = await Promise.all([

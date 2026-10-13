@@ -1,5 +1,3 @@
-// overview totals; no JSX or path aliases so node --test can import it
-
 import { audienceOf } from '../../../lib/accounts.js';
 import { IG_CONTENT_TYPES } from '../../../utils/instagramContent.js';
 
@@ -39,7 +37,7 @@ function addInstagramCache(result, cache) {
   });
 }
 
-// only accounts saved with platform 'youtube' count here, unlike the platform splits
+// only accounts saved as 'youtube' count here, unlike the platform splits
 export function cacheTotalsOf(accounts, analyticsCache) {
   const result = {
     ytLikes: 0, ytComments: 0, igLikes: 0, igComments: 0, igViews: 0, rdPosts: 0, rdKarma: 0, rdComments: 0,
@@ -66,7 +64,7 @@ function shareOf(part, total) {
   return total > 0 ? (part / total) * 100 : 0;
 }
 
-// tracked items are never the user's own content, so cache and tracked totals never overlap
+// tracked items are never the user's own, so they never overlap cache totals
 export function summaryOf(totals, cacheTotals, trackedStats) {
   const totalContent = totals.videos + totals.posts + cacheTotals.rdPosts + trackedStats.total;
   const trackedViewTotal = trackedStats.ytViews + trackedStats.rdViews;

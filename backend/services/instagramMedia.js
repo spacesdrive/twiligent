@@ -49,7 +49,7 @@ async function fetchMediaPage(igUserId, accessToken, after) {
     try {
         return await igFetch(`/${igUserId}/media`, { ...params, fields: `${MEDIA_FIELDS},${VIEWS_FIELD}` });
     } catch {
-        // one item without insights (e.g. posted before going professional) fails the whole page
+        // one item without insights (e.g. pre-professional posts) fails the whole page
         return igFetch(`/${igUserId}/media`, { ...params, fields: MEDIA_FIELDS });
     }
 }

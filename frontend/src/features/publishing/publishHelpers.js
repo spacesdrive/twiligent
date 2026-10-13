@@ -1,5 +1,3 @@
-// post payloads and checks; no JSX or path aliases so node --test can import it
-
 const MINUTE_MS = 60000;
 
 export function parseUserTags(text) {

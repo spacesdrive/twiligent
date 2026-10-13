@@ -1,5 +1,3 @@
-// bulk queue and progress helpers; no JSX or path aliases so node --test can import it
-
 const DAY_MINUTES = 1440;
 
 export function intervalLabel(minutes) {

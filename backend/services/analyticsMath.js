@@ -35,7 +35,7 @@ function coefficientOfVariation(mean, stdDev) {
     return stdDev > 0 ? 10 : 0;
 }
 
-// 100 when every value is equal, lower as values spread out relative to their mean
+// 100 when all values are equal, lower as they spread out from their mean
 export function consistencyScore(values) {
     if (values.length < 3) return 0;
     const mean = values.reduce((total, value) => total + value, 0) / values.length;

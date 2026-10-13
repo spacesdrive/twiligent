@@ -20,7 +20,7 @@ function useOverviewCharts(groups, trackedContent, categoryStats) {
 }
 
 export function useOverviewStats(accounts, overviewData) {
-  // memoized so the ?? fallbacks keep a stable identity and the memos below actually cache
+  // memoized so the ?? fallbacks keep their identity and the memos below cache
   const trackedContent = useMemo(() => overviewData.tracked ?? [], [overviewData.tracked]);
   const analyticsCache = useMemo(() => overviewData.analyticsCache ?? {}, [overviewData.analyticsCache]);
 

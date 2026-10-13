@@ -1,5 +1,3 @@
-// scheduled post list and date helpers; no JSX or path aliases so node --test can import it
-
 export const OVERDUE_MS = 30 * 60 * 1000;
 
 function pad(value) {
@@ -54,7 +52,7 @@ export function toLocalTimeInput(date) {
   return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-// the page has always used the UTC calendar day for date inputs
+// known issue: date inputs use the UTC calendar day, not the local one
 export function utcDateInput(date = new Date()) {
   return date.toISOString().split('T')[0];
 }

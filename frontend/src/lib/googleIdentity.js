@@ -27,7 +27,7 @@ export async function sha256Hex(text) {
   return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// supabase checks the raw nonce against the hash in the token, so a captured token cannot replay
+// supabase matches the raw nonce to the token's hash, so a token cannot replay
 export async function createNonce() {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
   const raw = btoa(String.fromCharCode(...bytes)).replace(/[+/=]/g, '');

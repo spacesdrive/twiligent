@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { api } from '../services/api';
 
-// pass a stable api method such as api.getIGAnalytics so the load runs once per account
+// pass a stable method such as api.getIGAnalytics so it loads once per account
 export function useAccountAnalytics(account, fetchAnalytics, label) {
   const { showToast } = useAppContext();
   const [loading, setLoading] = useState(true);
@@ -10,7 +10,7 @@ export function useAccountAnalytics(account, fetchAnalytics, label) {
   const [analytics, setAnalytics] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  // keyed on the account id so a background account refresh does not refetch analytics
+  // keyed on the account id so a background refresh does not refetch analytics
   const accountId = account?.id;
   const loadAnalytics = useCallback(async () => {
     if (!accountId) return;

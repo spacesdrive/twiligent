@@ -11,7 +11,7 @@ const TOKEN_URL = 'https://api.instagram.com/oauth/access_token';
 const LONG_LIVED_TOKEN_URL = 'https://graph.instagram.com/access_token';
 const OAUTH_SCOPES = 'instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments,instagram_business_content_publish,instagram_business_manage_insights';
 
-// secrets pasted into the dashboard can carry a byte order mark or stray whitespace
+// pasted secrets can carry a byte order mark or stray whitespace
 function cleanSecret(value) {
     return value?.replace(/^﻿/, '').trim();
 }
@@ -65,7 +65,7 @@ async function exchangeCodeForToken(config, code) {
     return tokenData.access_token;
 }
 
-// keeps the short-lived token, with no expiry, when instagram declines the 60 day upgrade
+// keeps the short-lived token (no expiry) when instagram declines the upgrade
 async function upgradeToLongLivedToken(config, shortToken) {
     const longParams = new URLSearchParams({
         grant_type: 'ig_exchange_token',
