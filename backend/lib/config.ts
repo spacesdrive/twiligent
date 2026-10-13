@@ -5,6 +5,8 @@ const DEFAULT_FRONTEND_URL = 'http://localhost:5173';
 const DEV_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173'];
 const LOCAL_HOSTNAMES = ['localhost', '127.0.0.1'];
 const CALLBACK_PATH = '/api/auth/instagram/callback';
+// Resend's free plan sends 100 emails a day
+const DEFAULT_EMAIL_DAILY_LIMIT = 100;
 
 export interface CloudinaryConfig {
     cloudName: string;
@@ -19,11 +21,22 @@ export interface InstagramOAuthConfig {
     appSecret: string | undefined;
 }
 
+// the Send Email hook; each value is undefined when its Worker secret is not set
+export interface AuthEmailConfig {
+    hookSecret: string | undefined;
+    resendApiKey: string | undefined;
+    from: string | undefined;
+    dailyLimit: number;
+    // email links point at Supabase Auth's verify endpoint
+    supabaseUrl: string;
+}
+
 export interface AppConfig {
     youtubeApiKey: string | undefined;
     instagram: InstagramOAuthConfig;
     cloudinary: CloudinaryConfig | null;
     allowedOrigins: string[];
+    authEmail: AuthEmailConfig;
 }
 
 // pasted secrets can carry a byte order mark or stray whitespace
@@ -71,6 +84,22 @@ export function readInstagramOAuthConfig(env: Env): InstagramOAuthConfig {
     };
 }
 
+// a missing, malformed or non-positive limit falls back to the default rather than stopping every email
+function dailyLimitOf(value: string | undefined): number {
+    const limit = Number(cleanSecret(value));
+    return Number.isInteger(limit) && limit > 0 ? limit : DEFAULT_EMAIL_DAILY_LIMIT;
+}
+
+export function readAuthEmailConfig(env: Env): AuthEmailConfig {
+    return {
+        hookSecret: cleanSecret(env.SEND_EMAIL_HOOK_SECRET),
+        resendApiKey: cleanSecret(env.RESEND_API_KEY),
+        from: cleanSecret(env.EMAIL_FROM),
+        dailyLimit: dailyLimitOf(env.EMAIL_DAILY_LIMIT),
+        supabaseUrl: cleanUrl(env.SUPABASE_URL, '').replace(/\/$/, ''),
+    };
+}
+
 export function readConfig(env: Env): AppConfig {
     const cloudName = cleanSecret(env.CLOUDINARY_CLOUD_NAME);
     const uploadPreset = cleanSecret(env.CLOUDINARY_UPLOAD_PRESET);
@@ -79,5 +108,6 @@ export function readConfig(env: Env): AppConfig {
         instagram: readInstagramOAuthConfig(env),
         cloudinary: cloudName && uploadPreset ? { cloudName, uploadPreset } : null,
         allowedOrigins: allowedOrigins(env),
+        authEmail: readAuthEmailConfig(env),
     };
 }
