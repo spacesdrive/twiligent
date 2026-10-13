@@ -10,6 +10,8 @@ export interface Env {
     CLOUDINARY_UPLOAD_PRESET?: string;
     BACKEND_URL?: string;
     FRONTEND_URL?: string;
+    // comma-separated extra browser origins allowed by CORS, besides FRONTEND_URL
+    ALLOWED_ORIGINS?: string;
     UPSTASH_REDIS_REST_URL?: string;
     UPSTASH_REDIS_REST_TOKEN?: string;
 }

@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { getSupabase } from './lib/supabase.ts';
-import { getRedis, getRateLimitRedis } from './lib/redis.ts';
+import { getSupabase } from './database/supabase.ts';
+import { getRedis, getRateLimitRedis } from './database/redis.ts';
 import { requireAuth } from './middleware/auth.ts';
 import { rateLimit, clientIp, userKey, RATE_LIMIT_HEADERS } from './middleware/rateLimit.ts';
 import { RATE_LIMIT_RULES, QUOTA_ROUTES, PUBLISH_ROUTES, matchesRoute } from './lib/rateLimit/rules.ts';

@@ -276,10 +276,18 @@ export interface KeysStatusResponse {
     cloudinary: KeyStatus;
 }
 
-// the failure body most routes send; request() only passes it on when the status is 2xx
+export type ApiErrorCode =
+    | 'VALIDATION_ERROR' | 'UNAUTHORIZED' | 'FORBIDDEN' | 'NOT_FOUND' | 'CONFLICT' | 'RATE_LIMITED'
+    | 'UPSTREAM_ERROR' | 'UPSTREAM_TIMEOUT' | 'NOT_CONFIGURED' | 'DATABASE_ERROR' | 'INTERNAL_ERROR';
+
+// the one body every failed request gets, from the error handler or the rate limiter, always with a 4xx or 5xx status
 export interface ApiFailure {
     success: false;
+    code: ApiErrorCode;
     message: string;
+    requestId?: string;
+    // seconds, on 429 only
+    retryAfter?: number;
 }
 
 // DELETE /api/accounts/:id, DELETE /api/tracked-content/:id and PUT /api/settings/github
