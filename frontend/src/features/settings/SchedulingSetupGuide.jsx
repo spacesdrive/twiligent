@@ -81,7 +81,12 @@ export default function SchedulingSetupGuide({ owner, repo, onOwnerChange, onRep
   const [done, setDone] = useState(readProgress);
 
   useEffect(() => {
-    try { localStorage.setItem(PROGRESS_KEY, JSON.stringify(done)); } catch { /* progress is a convenience only */ }
+    try {
+      localStorage.setItem(PROGRESS_KEY, JSON.stringify(done));
+    } catch {
+      // saved progress is a convenience, the guide works without it
+      return;
+    }
   }, [done]);
 
   const toggle = key => () => setDone(prev => ({ ...prev, [key]: !prev[key] }));

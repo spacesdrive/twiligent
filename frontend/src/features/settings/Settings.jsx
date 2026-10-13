@@ -107,7 +107,10 @@ export default function Settings() {
         try {
           const keys = await api.getKeys();
           if (!cancelled) setServerStatus(keys);
-        } catch { /* status is informational; the page still renders */ }
+        } catch {
+          // status is informational, the page still renders
+          return;
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }

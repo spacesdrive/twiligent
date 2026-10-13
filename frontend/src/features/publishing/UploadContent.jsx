@@ -248,7 +248,8 @@ export default function UploadContent() {
       const res = await api.getScheduledPosts();
       if (res.success) setScheduledPosts(res.posts || []);
     } catch {
-      // The schedule list is secondary; publishing still works without it
+      // the schedule list is optional, publishing still works
+      return;
     }
   };
 
@@ -257,7 +258,8 @@ export default function UploadContent() {
       const res = await api.getCloudinaryConfig();
       if (res.success) setCloudConfig(res);
     } catch {
-      // A missing config is shown as an alert on the page
+      // a missing config already shows as an alert on the page
+      return;
     }
   };
 
