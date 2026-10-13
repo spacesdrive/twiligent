@@ -78,7 +78,8 @@ Both schedulers implement the same logic:
 - No personal access token is needed. The workflow only reads and updates Supabase.
 - Private repositories: a 15-minute schedule exceeds the 2,000 free Actions minutes a month; use `*/30 * * * *`.
 
-The same steps are shown in the app under Settings, Scheduled publishing, with direct links once the repository owner and name are saved.
+Step-by-step instructions for a person setting this up: `docs/workflows/SCHEDULING_SETUP.md`, also shown in the app under Settings, Scheduled publishing with direct links once a GitHub username is saved.
+- `SUPABASE_SERVICE_KEY` can be a new secret key (`sb_secret_...`, sent on the `apikey` header only) or the legacy `service_role` JWT (sent on `apikey` and `Authorization`).
 
 ## What users see
 

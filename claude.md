@@ -84,6 +84,7 @@ docs/
     TESTING.md             Test types, commands, pass criteria
     GIT.md                 Commit format, branch rules, changelog
     DEPLOYMENT.md          Backend deploy, frontend deploy, verification
+    SCHEDULING_SETUP.md    Five-step GitHub Actions scheduling setup for self-hosters
   features/
     NEW_ANALYTICS_PAGE.md  Add analytics view for a new platform
     NEW_API_ENDPOINT.md    Add a route to the Hono backend

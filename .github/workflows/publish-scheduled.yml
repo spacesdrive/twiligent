@@ -9,7 +9,10 @@
 #
 # REQUIRED SECRETS (set in GitHub repo → Settings → Secrets → Actions):
 #   SUPABASE_URL         - your Supabase project URL
-#   SUPABASE_SERVICE_KEY - your Supabase service role key
+#   SUPABASE_SERVICE_KEY - a Supabase secret key (sb_secret_...) or the legacy service_role key
+#
+# Step-by-step setup with direct links: Settings, Scheduled publishing in the app,
+# or docs/workflows/SCHEDULING_SETUP.md
 
 on:
   schedule:

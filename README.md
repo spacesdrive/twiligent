@@ -328,22 +328,15 @@ Both schedulers write to the same `scheduled_posts` table in Supabase. A `publis
 
 ### Setup (GitHub Actions fallback only)
 
-The Cloudflare Worker cron requires no additional setup. To enable the GitHub Actions fallback:
+The Cloudflare Worker cron requires no additional setup. The GitHub Actions fallback takes about 5 minutes:
 
-**Step 1 - Add repository secrets**
+1. **Fork** this repository to your GitHub account.
+2. **Copy two values from Supabase:** the project URL (Integrations, Data API) and a secret key (Settings, API Keys; `sb_secret_...`, or the legacy `service_role` key).
+3. **Add them as repository secrets** named `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` (Settings, Secrets and variables, Actions).
+4. **Switch on the workflow** in the Actions tab, including **Instagram Scheduled Publisher**.
+5. **Run it once** with Run workflow and check for a green tick.
 
-Go to your GitHub repo, then **Settings**, then **Secrets and variables**, then **Actions**, then **New repository secret**:
-
-| Name | Value |
-|---|---|
-| `SUPABASE_URL` | Your Supabase project URL |
-| `SUPABASE_SERVICE_KEY` | Your Supabase service role key |
-
-**Step 2 - Enable Actions**
-
-Go to your repo then **Actions** and enable workflows if prompted. The `Instagram Scheduled Publisher` workflow starts automatically on the cron schedule.
-
-**Free tier note:** Public repos get unlimited GitHub Actions minutes. For private repos (2,000 min per month limit), change the cron in `.github/workflows/publish-scheduled.yml` from `*/15` to `*/30` to stay within limits.
+Full walkthrough with what to expect at each step and fixes for common errors: [docs/workflows/SCHEDULING_SETUP.md](docs/workflows/SCHEDULING_SETUP.md). The same guide is in the app under Settings, Scheduled publishing, with direct links once you enter your GitHub username.
 
 ---
 

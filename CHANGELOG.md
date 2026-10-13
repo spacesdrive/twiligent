@@ -41,6 +41,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 **Redesign additions**
+- Scheduling setup rewritten as five plain steps with one button each, a check for each step, progress you can tick off, and fixes for common errors (`docs/workflows/SCHEDULING_SETUP.md`)
+- The GitHub publisher accepts Supabase's new `sb_secret_` keys as well as the legacy `service_role` key
 - Scheduled publishing guide in Settings: how it works for users, and administrator setup for the server cron and the optional GitHub Actions backup, with direct links to the repository's secrets and workflow pages
 - Publish explains when scheduled posts go out and warns when posts are overdue, with the administrator contact
 - Instagram tester guide wherever Instagram is connected: email the administrator, accept the invite, then connect

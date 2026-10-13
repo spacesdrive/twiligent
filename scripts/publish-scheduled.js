@@ -7,7 +7,7 @@
  *
  * Required GitHub Secrets:
  *   SUPABASE_URL         - your Supabase project URL
- *   SUPABASE_SERVICE_KEY - your Supabase service role key (bypasses RLS)
+ *   SUPABASE_SERVICE_KEY - a Supabase secret key (sb_secret_...) or the legacy service_role key
  */
 
 const SUPABASE_URL = (process.env.SUPABASE_URL || '').replace(/[^\x20-\x7E]/g, '').trim();
@@ -21,9 +21,11 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
 
 // ─── Supabase REST helpers (no SDK, native fetch only) ────────────────────────
 
+// Legacy service_role keys are JWTs and go in both headers. New sb_secret_ keys are not JWTs
+// and Supabase expects them on apikey only.
 const sbHeaders = {
     'apikey': SUPABASE_SERVICE_KEY,
-    'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}`,
+    ...(SUPABASE_SERVICE_KEY.startsWith('eyJ') ? { 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` } : {}),
     'Content-Type': 'application/json',
 };
 

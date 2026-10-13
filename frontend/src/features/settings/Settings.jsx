@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSmoothTheme } from '@/hooks/use-smooth-theme';
 import { useLocation } from 'react-router-dom';
 import {
-  RefreshCw, CheckCircle2, AlertTriangle, ExternalLink, Copy, Check, Save, Sun, Moon, Monitor, Activity, Clock,
+  RefreshCw, CheckCircle2, AlertTriangle, ExternalLink, Sun, Moon, Monitor, Activity, Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,53 +15,19 @@ import PageHeader from '@/components/PageHeader';
 import SurfaceBox from '@/components/SurfaceBox';
 import { FieldRow } from '@/components/DetailPanel';
 import InstagramTesterNotice from '@/components/InstagramTesterNotice';
+import SchedulingSetupGuide from './SchedulingSetupGuide';
 import { ADMIN_EMAIL, adminMailto } from '@/lib/contact';
 import { useAppContext } from '../../context/AppContext';
 import { api } from '../../services/api';
 import { cn } from '@/lib/utils';
 
-const WORKFLOW_FILE = '.github/workflows/publish-scheduled.yml';
-const SECRET_NAMES = [
-  { name: 'SUPABASE_URL', hint: 'Your Supabase project URL. Supabase dashboard, Project Settings, API.' },
-  { name: 'SUPABASE_SERVICE_KEY', hint: 'The service_role key from the same page. It can read and write every table, so it goes only into GitHub secrets, never into code or chat.' },
-];
-
-function repoLinks(owner, repo) {
-  if (!owner || !repo) return null;
-  const base = `https://github.com/${owner.trim()}/${repo.trim()}`;
-  return {
-    newSecret: `${base}/settings/secrets/actions/new`,
-    actions: `${base}/actions`,
-    workflow: `${base}/actions/workflows/publish-scheduled.yml`,
-  };
-}
-
 const LINKS = [
-  { label: 'Supabase API settings', href: 'https://supabase.com/dashboard/project/_/settings/api' },
+  { label: 'Supabase API keys', href: 'https://supabase.com/dashboard/project/_/settings/api-keys' },
   { label: 'Cloudinary console', href: 'https://cloudinary.com/console' },
   { label: 'Google Cloud credentials', href: 'https://console.cloud.google.com/apis/credentials' },
   { label: 'Meta app dashboard', href: 'https://developers.facebook.com/apps' },
   { label: 'Cloudflare dashboard', href: 'https://dash.cloudflare.com' },
 ];
-
-function CopyButton({ text }) {
-  const [copied, setCopied] = useState(false);
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      setCopied(false);
-    }
-  };
-  return (
-    <Button variant="ghost" size="xs" onClick={handleCopy} aria-label={copied ? 'Copied' : `Copy ${text}`}>
-      {copied ? <Check className="text-success" /> : <Copy />}
-      {copied ? 'Copied' : 'Copy'}
-    </Button>
-  );
-}
 
 function Steps({ steps }) {
   return (
@@ -154,55 +120,14 @@ export default function Settings() {
     e.preventDefault();
     setGhSaving(true);
     try {
-      await api.saveGithubSettings({ repoOwner: ghRepoOwner.trim(), repoName: ghRepoName.trim(), branch: 'main' });
-      showToast('Repository saved. The links in the guide now point to it.');
+      await api.saveGithubSettings({ repoOwner: ghRepoOwner.trim(), repoName: (ghRepoName || 'twiligent').trim(), branch: 'main' });
+      showToast('GitHub username saved. The buttons in the guide now open your copy.');
     } catch (err) {
       showToast(`Couldn't save the repository. ${err.message}`, 'error');
     } finally {
       setGhSaving(false);
     }
   };
-
-  const links = repoLinks(ghRepoOwner, ghRepoName);
-  const adminSteps = [
-    {
-      title: 'Check the server scheduler',
-      body: <>The Cloudflare Worker publishes due posts every 15 minutes. It is set up by deploying the backend (the cron is in <code className="font-mono text-small">backend/wrangler.toml</code>). In the Cloudflare dashboard, open Workers and Pages, then the twiligent Worker, then Settings, and confirm the trigger <code className="font-mono text-small">*/15 * * * *</code> is listed. Nothing else is required for scheduling to work.</>,
-    },
-    {
-      title: 'Optional: add the GitHub Actions backup',
-      body: <>The repository includes <code className="font-mono text-small">{WORKFLOW_FILE}</code>, which publishes due posts if the Worker cron is paused or failing. It needs your own copy of the repository on GitHub (a fork or a clone you pushed). Enter it below to get direct links.</>,
-    },
-    {
-      title: 'Add two repository secrets',
-      body: <>In the repository on GitHub, open Settings, then Secrets and variables, then Actions, then New repository secret. {links && <a href={links.newSecret} target="_blank" rel="noopener noreferrer">Open the new secret page</a>}</>,
-      extra: (
-        <div className="mt-1.5 flex flex-col gap-2">
-          {SECRET_NAMES.map(secret => (
-            <div key={secret.name} className="flex flex-col gap-1 rounded-control border border-line bg-surface-sunken px-3 py-2">
-              <div className="flex items-center gap-2">
-                <code className="flex-1 font-mono text-small text-ink">{secret.name}</code>
-                <CopyButton text={secret.name} />
-              </div>
-              <p className="text-caption text-ink-faint">{secret.hint}</p>
-            </div>
-          ))}
-        </div>
-      ),
-    },
-    {
-      title: 'Turn on the workflow',
-      body: <>Open the Actions tab. Forks start with workflows switched off: choose the button to enable them. Then open <strong>Instagram Scheduled Publisher</strong> and choose Enable workflow if GitHub shows it as disabled. {links && <a href={links.workflow} target="_blank" rel="noopener noreferrer">Open the workflow</a>}</>,
-    },
-    {
-      title: 'Run it once to test',
-      body: 'On the workflow page choose Run workflow. Open the run: the log ends with "No posts due for publishing" or lists the posts it published. A red run with "Missing SUPABASE_URL or SUPABASE_SERVICE_KEY" means a secret name is misspelled.',
-    },
-    {
-      title: 'Mind the free minutes on private repositories',
-      body: <>Public repositories run Actions for free. Private ones get 2,000 minutes a month, and a run every 15 minutes uses more than that. For a private repository, change the cron in <code className="font-mono text-small">{WORKFLOW_FILE}</code> to <code className="font-mono text-small">*/30 * * * *</code>. GitHub also pauses scheduled workflows in public repositories after 60 days without commits; re-enable it from the Actions tab if that happens.</>,
-    },
-  ];
 
   const handleTest = async () => {
     setTesting(true);
@@ -278,7 +203,7 @@ export default function Settings() {
         <SettingsSection
           id="scheduling"
           title="Scheduled publishing"
-          description="How scheduled Instagram posts go out, and what the person who runs this instance sets up once."
+          description="How scheduled Instagram posts go out, and how to set up your own GitHub publisher in five steps."
         >
           <SurfaceBox title="How it works for you">
             <Steps steps={[
@@ -296,32 +221,14 @@ export default function Settings() {
             </div>
           </SurfaceBox>
 
-          <SurfaceBox title="Set up for administrators" subheader="Only the person who deploys this Twiligent instance does this, once.">
-            <form className="mb-6 flex flex-col gap-4" onSubmit={handleSaveGithub}>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                <FieldRow label="GitHub repository owner" hint="Your GitHub username or organisation" htmlFor="gh-owner">
-                  <Input id="gh-owner" placeholder="your-username" value={ghRepoOwner} onChange={e => setGhRepoOwner(e.target.value)} autoComplete="off" />
-                </FieldRow>
-                <FieldRow label="Repository name" hint="Your copy of the Twiligent repository" htmlFor="gh-repo">
-                  <Input id="gh-repo" placeholder="twiligent" value={ghRepoName} onChange={e => setGhRepoName(e.target.value)} autoComplete="off" />
-                </FieldRow>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Button type="submit" variant="outline" disabled={ghSaving || !ghRepoOwner.trim() || !ghRepoName.trim()}>
-                  {ghSaving ? <Spinner className="size-4" /> : <Save data-icon="inline-start" />}
-                  {ghSaving ? 'Saving' : 'Save repository'}
-                </Button>
-                {links && (
-                  <Button variant="ghost" render={<a href={links.actions} target="_blank" rel="noopener noreferrer" />}>
-                    <ExternalLink data-icon="inline-start" />Open Actions
-                  </Button>
-                )}
-              </div>
-              <p className="text-caption text-ink-faint">No personal access token is needed. Scheduling never writes to GitHub; the workflow only reads due posts from Supabase.</p>
-            </form>
-            <Steps steps={adminSteps} />
-            <p className="mt-5 text-caption text-ink-faint">The Worker and the workflow can run side by side. Each post is claimed by whichever runs first, so it is never published twice.</p>
-          </SurfaceBox>
+          <SchedulingSetupGuide
+            owner={ghRepoOwner}
+            repo={ghRepoName}
+            onOwnerChange={setGhRepoOwner}
+            onRepoChange={setGhRepoName}
+            onSave={handleSaveGithub}
+            saving={ghSaving}
+          />
         </SettingsSection>
 
         <SettingsSection id="platforms" title="Platform requirements" description="What each platform needs before it can be added.">
