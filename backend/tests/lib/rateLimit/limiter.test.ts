@@ -38,7 +38,7 @@ function scriptedRedis(answer: (call: ScriptCall) => [number, number, number, nu
 beforeEach(() => resetRateLimitState());
 
 test('keys are namespaced by rule and identifier', () => {
-    assert.equal(rateLimitKey(rule, 'user-1'), 'ratelimit:test:user-1');
+    assert.equal(rateLimitKey(rule, 'user-1'), 'twiligent:ratelimit:test:user-1');
 });
 
 test('without Redis the limit is counted in memory', async () => {
@@ -61,7 +61,7 @@ test('with Redis the decision comes from the algorithm script for that rule', as
     assert.deepEqual(decision, { allowed: true, limit: 2, remaining: 1, resetMs: 900, retryAfterMs: 0 });
     assert.equal(calls.length, 1);
     assert.equal(calls[0].script, LUA_SCRIPTS.fixedWindow);
-    assert.deepEqual(calls[0].keys, ['ratelimit:test:user-1']);
+    assert.deepEqual(calls[0].keys, ['twiligent:ratelimit:test:user-1']);
     assert.deepEqual(calls[0].args, ['100', '2', '1000']);
 });
 

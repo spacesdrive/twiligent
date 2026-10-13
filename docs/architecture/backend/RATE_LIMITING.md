@@ -93,7 +93,7 @@ CORS exposes the four headers. The frontend needs no special handling: `request(
 
 ## Redis Keys
 
-`ratelimit:{rule}:{identifier}`, for example `ratelimit:user:<uuid>` or `ratelimit:ip:203.0.113.7`. Bucket, fixed window and sliding counter keys are hashes; sliding log keys are sorted sets. All keys expire on their own.
+`twiligent:ratelimit:{rule}:{identifier}`, for example `twiligent:ratelimit:user:<uuid>` or `twiligent:ratelimit:ip:203.0.113.7`. The `twiligent:` prefix keeps the keys apart from other apps that share the same Upstash database (a common setup on the free tier, where `ratelimit:` is a popular prefix). Bucket, fixed window and sliding counter keys are hashes; sliding log keys are sorted sets. All keys expire on their own.
 
 ## Cost
 

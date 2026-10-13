@@ -21,8 +21,9 @@ const deniedUntil = new Map<string, number>();
 const REDIS_RETRY_AFTER_MS = 30_000;
 let redisDownUntil = 0;
 
+// prefixed with the app name: one Upstash database is often shared by several apps
 export function rateLimitKey(rule: RateLimitRule, identifier: string): string {
-    return `ratelimit:${rule.name}:${identifier}`;
+    return `twiligent:ratelimit:${rule.name}:${identifier}`;
 }
 
 // A client that is already over the limit is answered from the isolate until its retry time, so a
