@@ -42,25 +42,22 @@ async function scheduleItem(run: BulkRun, item: QueueItem, mediaUrl: string, off
   const { settings } = run;
   run.patchFile(item.id, { status: 'scheduling', progress: 100 });
   const scheduledAt = bulkScheduledTime(run.baseTime as Date, offset, settings.interval);
-  const res = await api.createScheduledPost(buildScheduledPostPayload({ ...bulkPostDetails(settings, item, mediaUrl), scheduledAt }));
-  if (!res.success) throw new Error(res.message || 'Failed to schedule');
+  await api.createScheduledPost(buildScheduledPostPayload({ ...bulkPostDetails(settings, item, mediaUrl), scheduledAt }));
   run.patchFile(item.id, { status: 'scheduled', progress: 100 });
 }
 
 async function publishItem(run: BulkRun, item: QueueItem, mediaUrl: string): Promise<ItemOutcome> {
   const { settings } = run;
   run.patchFile(item.id, { status: 'creating', progress: 100 });
-  const containerRes = await api.createIGContainer(settings.account, buildContainerPayload(bulkPostDetails(settings, item, mediaUrl)));
-  if (!containerRes.success || !containerRes.containerId) throw new Error(containerRes.message || 'Container creation failed');
+  const { containerId } = await api.createIGContainer(settings.account, buildContainerPayload(bulkPostDetails(settings, item, mediaUrl)));
   if (run.isCancelled()) return CANCELLED;
-  await waitUntilReady(settings.contentType, containerRes.containerId, settings.account, {
+  await waitUntilReady(settings.contentType, containerId, settings.account, {
     onProcessing: () => run.patchFile(item.id, { status: 'processing' }),
   });
   if (run.isCancelled()) return CANCELLED;
   run.patchFile(item.id, { status: 'publishing' });
-  const publishRes = await api.publishIGContainer(settings.account, containerRes.containerId);
-  if (!publishRes.success || !publishRes.mediaId) throw new Error(publishRes.message || 'Publish failed');
-  run.patchFile(item.id, { status: 'done', mediaId: publishRes.mediaId });
+  const { mediaId } = await api.publishIGContainer(settings.account, containerId);
+  run.patchFile(item.id, { status: 'done', mediaId });
   return DONE;
 }
 

@@ -24,7 +24,7 @@
             {
                 "call": "POST /tracked-content/nope/refresh",
                 "status": 404,
-                "body": "{\"error\":\"Tracked content not found\"}"
+                "body": "{\"success\":false,\"code\":\"NOT_FOUND\",\"message\":\"Tracked content not found\",\"requestId\":\"req-test\"}"
             },
             {
                 "call": "DELETE /tracked-content/t-youtube",
@@ -34,7 +34,7 @@
             {
                 "call": "DELETE /tracked-content/t-youtube",
                 "status": 404,
-                "body": "{\"error\":\"Tracked content not found\"}"
+                "body": "{\"success\":false,\"code\":\"NOT_FOUND\",\"message\":\"Tracked content not found\",\"requestId\":\"req-test\"}"
             }
         ],
         "queries": [
@@ -397,8 +397,8 @@
         "responses": [
             {
                 "call": "POST /tracked-content/t-youtube/refresh",
-                "status": 400,
-                "body": "{\"error\":\"YouTube API key not configured on this server\"}"
+                "status": 503,
+                "body": "{\"success\":false,\"code\":\"NOT_CONFIGURED\",\"message\":\"YouTube API key not configured on this server\",\"requestId\":\"req-test\"}"
             }
         ],
         "queries": [
@@ -419,6 +419,11 @@
             }
         ],
         "requests": [],
-        "logLines": []
+        "logLines": [
+            [
+                "error",
+                "{\"level\":\"error\",\"message\":\"request failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"code\":\"NOT_CONFIGURED\",\"status\":503,\"error\":\"YouTube API key not configured on this server\",\"errorName\":\"NotConfiguredError\"}"
+            ]
+        ]
     }
 }

@@ -10,7 +10,7 @@ export function useScheduledPosts() {
   const loadScheduledPosts = useCallback(async () => {
     try {
       const res = await api.getScheduledPosts();
-      if (res.success) setScheduledPosts(res.posts || []);
+      setScheduledPosts(res.posts);
     } catch {
       // the schedule list is optional, publishing still works
       return;

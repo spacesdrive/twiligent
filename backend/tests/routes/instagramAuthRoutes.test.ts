@@ -2,8 +2,8 @@
 process.removeAllListeners('warning');
 
 import { test, describe, before, after, beforeEach, afterEach, mock } from 'node:test';
-import { urlHandler, callbackHandler } from '../../routes/instagramAuth.ts';
-import { createOAuthState } from '../../lib/cache.ts';
+import { getInstagramAuthUrl, handleInstagramCallback } from '../../controllers/instagramAuthController.ts';
+import { createOAuthState } from '../../lib/oauthState.ts';
 import { assertGolden } from '../fixtures/golden.ts';
 import { installFetch, reply } from '../fixtures/fakeFetch.ts';
 import type { FetchMock, RecordedRequest } from '../fixtures/fakeFetch.ts';
@@ -66,8 +66,8 @@ afterEach(() => {
 
 function buildApp(supabase: FakeSupabase) {
     return mountWithContext(app => {
-        app.get('/url', urlHandler);
-        app.get('/callback', callbackHandler);
+        app.get('/url', ...getInstagramAuthUrl);
+        app.get('/callback', ...handleInstagramCallback);
     }, { supabase, userId: 'user-1' });
 }
 
