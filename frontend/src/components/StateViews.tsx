@@ -5,7 +5,16 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 
-export function EmptyState({ icon, title, description, action, className, compact = false }) {
+export interface EmptyStateProps {
+  icon?: React.ReactNode;
+  title: React.ReactNode;
+  description?: React.ReactNode;
+  action?: React.ReactNode;
+  className?: string;
+  compact?: boolean;
+}
+
+export function EmptyState({ icon, title, description, action, className, compact = false }: EmptyStateProps) {
   return (
     <div
       className={cn(
@@ -28,7 +37,14 @@ export function EmptyState({ icon, title, description, action, className, compac
   );
 }
 
-export function ErrorState({ title = 'This page could not load', description, onRetry, className }) {
+export interface ErrorStateProps {
+  title?: React.ReactNode;
+  description?: React.ReactNode;
+  onRetry?: () => void;
+  className?: string;
+}
+
+export function ErrorState({ title = 'This page could not load', description, onRetry, className }: ErrorStateProps) {
   return (
     <div role="alert" className={cn('flex flex-col items-center justify-center gap-4 px-6 py-14 text-center', className)}>
       <span className="flex size-11 items-center justify-center rounded-card bg-danger-soft text-danger">
@@ -45,7 +61,12 @@ export function ErrorState({ title = 'This page could not load', description, on
   );
 }
 
-export function LoadingState({ label = 'Loading', className }) {
+export interface LoadingStateProps {
+  label?: React.ReactNode;
+  className?: string;
+}
+
+export function LoadingState({ label = 'Loading', className }: LoadingStateProps) {
   return (
     <div role="status" className={cn('flex min-h-[40vh] flex-col items-center justify-center gap-3', className)}>
       <Spinner className="size-6 text-brand" />
@@ -55,7 +76,11 @@ export function LoadingState({ label = 'Loading', className }) {
 }
 
 // Placeholder that mirrors the real page layout: header, metric row, and a large panel.
-export function PageSkeleton({ metrics = 4 }) {
+export interface PageSkeletonProps {
+  metrics?: number;
+}
+
+export function PageSkeleton({ metrics = 4 }: PageSkeletonProps) {
   return (
     <div className="flex flex-col gap-8" aria-busy="true" aria-label="Loading page">
       <div className="flex flex-col gap-2">

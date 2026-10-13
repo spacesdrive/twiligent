@@ -3,6 +3,19 @@ import { TrendingUp, TrendingDown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
+export interface MetricBoxProps {
+  icon?: React.ReactNode;
+  label: React.ReactNode;
+  value?: React.ReactNode;
+  subtitle?: React.ReactNode;
+  loading?: boolean;
+  small?: boolean;
+  trend?: number;
+  trendLabel?: React.ReactNode;
+  highlight?: boolean;
+  className?: string;
+}
+
 // Quiet metric tile: neutral icon, large tabular value, label and one line of context.
 export default function MetricBox({
   icon,
@@ -15,7 +28,7 @@ export default function MetricBox({
   trendLabel,
   highlight = false,
   className,
-}) {
+}: MetricBoxProps) {
   return (
     <div
       className={cn(

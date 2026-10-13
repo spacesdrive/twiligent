@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '../services/api';
+import type { CloudinaryConfigResponse } from '@shared/types/instagram.ts';
 
-async function fetchCloudinaryConfig() {
+async function fetchCloudinaryConfig(): Promise<CloudinaryConfigResponse | null> {
   try {
     const res = await api.getCloudinaryConfig();
     return res?.success ? res : null;
@@ -12,8 +13,8 @@ async function fetchCloudinaryConfig() {
 }
 
 // reloadKey lets a page refetch the config when something it depends on changes
-export function useCloudinaryConfig(reloadKey) {
-  const [config, setConfig] = useState(null);
+export function useCloudinaryConfig(reloadKey?: unknown): CloudinaryConfigResponse | null {
+  const [config, setConfig] = useState<CloudinaryConfigResponse | null>(null);
 
   useEffect(() => {
     const loadConfig = async () => {

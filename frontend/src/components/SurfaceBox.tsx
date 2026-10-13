@@ -1,6 +1,17 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
+export interface SurfaceBoxProps extends Omit<React.ComponentProps<'section'>, 'title' | 'content'> {
+  children?: React.ReactNode;
+  title?: React.ReactNode;
+  subheader?: React.ReactNode;
+  secondary?: React.ReactNode;
+  content?: boolean;
+  contentClassName?: string;
+  className?: string;
+  noPadding?: boolean;
+}
+
 // the one container for grouped content; without a title it is a plain panel
 export default function SurfaceBox({
   children,
@@ -12,7 +23,7 @@ export default function SurfaceBox({
   className = '',
   noPadding = false,
   ...props
-}) {
+}: SurfaceBoxProps) {
   return (
     <section
       className={cn('flex flex-col rounded-card border border-line bg-surface-raised text-ink', className)}

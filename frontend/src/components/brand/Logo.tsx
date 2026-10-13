@@ -4,7 +4,12 @@ import { cn } from '@/lib/utils';
 const LOGO_DIR = '/Logos';
 
 // css shows one of both lockups, so it is right before the theme hook runs
-export function Logo({ variant = 'lockup', className }) {
+export interface LogoProps {
+  variant?: 'lockup' | 'wordmark' | 'mark';
+  className?: string;
+}
+
+export function Logo({ variant = 'lockup', className }: LogoProps) {
   if (variant === 'wordmark') {
     return (
       <span className={cn('inline-flex shrink-0 select-none', className)}>

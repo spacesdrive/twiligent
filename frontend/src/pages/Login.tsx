@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { BookOpen } from 'lucide-react';
@@ -6,12 +7,19 @@ import { useAuth } from '../context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Logo } from '@/components/brand/Logo';
 import GoogleSignInButton from '@/components/GoogleSignInButton';
+import type { GoogleButtonText } from '@/lib/googleIdentity';
 import { GOOGLE_CLIENT_ID } from '@/lib/googleIdentity';
 import LoginBrandPanel from './LoginBrandPanel';
 import LoginForm from './LoginForm';
 import { LOGIN_COPY, PRIVACY_URL } from './loginCopy';
+import type { LoginMode } from './loginCopy';
 
-function GoogleOption({ text, onCredential }) {
+interface GoogleOptionProps {
+  text: GoogleButtonText;
+  onCredential: (idToken: string, nonce: string) => void;
+}
+
+function GoogleOption({ text, onCredential }: GoogleOptionProps) {
   return (
     <div className="flex flex-col gap-6">
       <GoogleSignInButton
@@ -31,7 +39,7 @@ function GoogleOption({ text, onCredential }) {
 export default function Login() {
   const { signIn, signUp, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
-  const [mode, setMode] = useState('login');
+  const [mode, setMode] = useState<LoginMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   // kept here, above the keyed panel, so only the mode switch link resets it
@@ -40,7 +48,7 @@ export default function Login() {
   const isLogin = mode === 'login';
   const copy = LOGIN_COPY[mode];
 
-  async function handleSubmit(e) {
+  async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     try {
@@ -55,20 +63,20 @@ export default function Login() {
         setMode('login');
       }
     } catch (err) {
-      toast.error(isLogin ? `Couldn't sign in. ${err.message}` : `Couldn't create the account. ${err.message}`);
+      toast.error(isLogin ? `Couldn't sign in. ${(err as Error).message}` : `Couldn't create the account. ${(err as Error).message}`);
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleGoogleCredential(idToken, nonce) {
+  async function handleGoogleCredential(idToken: string, nonce: string) {
     setLoading(true);
     try {
       const { error } = await signInWithGoogle(idToken, nonce);
       if (error) throw error;
       navigate('/');
     } catch (err) {
-      toast.error(`Couldn't sign in with Google. ${err.message}`);
+      toast.error(`Couldn't sign in with Google. ${(err as Error).message}`);
     } finally {
       setLoading(false);
     }

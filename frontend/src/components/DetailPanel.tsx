@@ -2,7 +2,15 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 
 // sticky on wide screens, stacked below the main area on narrow ones
-export default function DetailPanel({ title, description, children, footer, className }) {
+export interface DetailPanelProps {
+  title?: React.ReactNode;
+  description?: React.ReactNode;
+  children?: React.ReactNode;
+  footer?: React.ReactNode;
+  className?: string;
+}
+
+export default function DetailPanel({ title, description, children, footer, className }: DetailPanelProps) {
   return (
     <aside
       className={cn(
@@ -23,7 +31,15 @@ export default function DetailPanel({ title, description, children, footer, clas
 }
 
 // Label, hint and control in one settings-style row.
-export function FieldRow({ label, hint, htmlFor, children, className }) {
+export interface FieldRowProps {
+  label: React.ReactNode;
+  hint?: React.ReactNode;
+  htmlFor?: string;
+  children?: React.ReactNode;
+  className?: string;
+}
+
+export function FieldRow({ label, hint, htmlFor, children, className }: FieldRowProps) {
   return (
     <div className={cn('flex flex-col gap-2', className)}>
       <div className="flex flex-col gap-0.5">

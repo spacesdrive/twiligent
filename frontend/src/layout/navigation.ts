@@ -1,9 +1,33 @@
 import {
   LayoutDashboard, PlaySquare, Scissors, Clapperboard, MessagesSquare, Bookmark, Send, Users, Settings,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+
+export interface NavItem {
+  path: string;
+  label: string;
+  icon: LucideIcon;
+}
+
+export interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
+
+// parent is null for the overview, which sits at the top of the breadcrumb
+export interface RouteTitle {
+  label: string;
+  parent: string | null;
+}
+
+interface DetailRoute {
+  prefix: string;
+  label: string;
+  parent: string;
+}
 
 // Single source for navigation: the sidebar, top bar title and command palette all read from here.
-export const NAV_GROUPS = [
+export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Analytics',
     items: [
@@ -30,7 +54,7 @@ export const NAV_GROUPS = [
   },
 ];
 
-const DETAIL_ROUTES = [
+const DETAIL_ROUTES: DetailRoute[] = [
   { prefix: '/channel/',                   label: 'YouTube channel',   parent: 'Analytics' },
   { prefix: '/instagram/',                 label: 'Instagram account', parent: 'Analytics' },
   { prefix: '/reddit/',                    label: 'Reddit account',    parent: 'Analytics' },
@@ -38,12 +62,12 @@ const DETAIL_ROUTES = [
   { prefix: '/tracked-content/category/',  label: 'Category',          parent: 'Tracked content' },
 ];
 
-export function isNavActive(path, pathname) {
+export function isNavActive(path: string, pathname: string): boolean {
   if (path === '/') return pathname === '/';
   return pathname === path || pathname.startsWith(`${path}/`);
 }
 
-export function routeTitle(pathname) {
+export function routeTitle(pathname: string): RouteTitle | null {
   for (const group of NAV_GROUPS) {
     const item = group.items.find(i => i.path === pathname);
     if (item) return { label: item.label, parent: item.path === '/' ? null : group.label };

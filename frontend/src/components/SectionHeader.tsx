@@ -1,7 +1,14 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-export default function SectionHeader({ title, description, actions, className }) {
+export interface SectionHeaderProps {
+  title: React.ReactNode;
+  description?: React.ReactNode;
+  actions?: React.ReactNode;
+  className?: string;
+}
+
+export default function SectionHeader({ title, description, actions, className }: SectionHeaderProps) {
   return (
     <div className={cn('flex flex-wrap items-end justify-between gap-3', className)}>
       <div className="min-w-0">

@@ -9,7 +9,11 @@ import { routeTitle } from './navigation';
 import { useAppContext } from '../context/AppContext';
 import { cn } from '@/lib/utils';
 
-export default function TopBar({ onOpenPalette }) {
+export interface TopBarProps {
+  onOpenPalette: () => void;
+}
+
+export default function TopBar({ onOpenPalette }: TopBarProps) {
   const location = useLocation();
   const { loading, refreshAll, accounts } = useAppContext();
   const { resolvedTheme, setTheme } = useSmoothTheme();

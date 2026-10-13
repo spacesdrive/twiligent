@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useTheme } from 'next-themes';
 
-function resolve(theme) {
+function resolve(theme: string): string {
   if (theme !== 'system') return theme;
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
@@ -10,7 +10,7 @@ function resolve(theme) {
 export function useSmoothTheme() {
   const { theme, resolvedTheme, setTheme } = useTheme();
 
-  const setThemeSmooth = useCallback(next => {
+  const setThemeSmooth = useCallback((next: string) => {
     const apply = () => {
       const resolved = resolve(next);
       const root = document.documentElement;

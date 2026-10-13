@@ -2,7 +2,16 @@ import React from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-export default function Pager({ page, pageCount, onPageChange, total, shown, noun = 'items' }) {
+export interface PagerProps {
+  page: number;
+  pageCount: number;
+  onPageChange: (page: number) => void;
+  total: number;
+  shown: number;
+  noun?: string;
+}
+
+export default function Pager({ page, pageCount, onPageChange, total, shown, noun = 'items' }: PagerProps) {
   if (pageCount <= 1) {
     return total > 0 ? <p className="text-center text-caption text-ink-faint">{total} {noun}</p> : null;
   }

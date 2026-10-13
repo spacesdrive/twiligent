@@ -16,8 +16,18 @@ const REQUEST_BODY = [
 ].join('\n');
 
 // While the Meta app is in development mode, Instagram only lets accepted testers sign in.
-export default function InstagramTesterNotice({ compact = false, className }) {
-  const steps = [
+export interface InstagramTesterNoticeProps {
+  compact?: boolean;
+  className?: string;
+}
+
+interface TesterStep {
+  title: string;
+  body: React.ReactNode;
+}
+
+export default function InstagramTesterNotice({ compact = false, className }: InstagramTesterNoticeProps) {
+  const steps: TesterStep[] = [
     {
       title: 'Ask to be added as a tester',
       body: (

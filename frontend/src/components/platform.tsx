@@ -1,18 +1,31 @@
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { YouTubeIcon, InstagramIcon, RedditIcon } from '@/components/brand/platform-icons';
+import type { PlatformIconProps as SvgIconProps } from '@/components/brand/platform-icons';
 import { PLATFORM_META, platformOf, accountImage, accountInitials, accountName } from '@/lib/accounts';
 import { cn } from '@/lib/utils';
+import type { AccountFields } from '@/lib/accounts';
+import type { Platform } from '@shared/types/domain.ts';
 
-const ICONS = { youtube: YouTubeIcon, instagram: InstagramIcon, reddit: RedditIcon };
+const ICONS: Record<Platform, React.ComponentType<SvgIconProps>> = { youtube: YouTubeIcon, instagram: InstagramIcon, reddit: RedditIcon };
 
-export function PlatformIcon({ platform, className }) {
-  const Icon = ICONS[platform] || YouTubeIcon;
+export type AccountAvatarSize = 'xs' | 'sm' | 'default' | 'lg' | 'xl';
+
+// platform stays a string: tracked posts pass their free-form content type
+export interface PlatformIconProps {
+  platform: string;
+  className?: string;
+}
+
+export function PlatformIcon({ platform, className }: PlatformIconProps) {
+  const Icon = ICONS[platform as Platform] || YouTubeIcon;
   return <Icon className={cn('size-4 shrink-0', className)} />;
 }
 
-export function PlatformBadge({ platform, className }) {
-  const key = PLATFORM_META[platform] ? platform : 'youtube';
+export type PlatformBadgeProps = PlatformIconProps;
+
+export function PlatformBadge({ platform, className }: PlatformBadgeProps) {
+  const key = PLATFORM_META[platform as Platform] ? platform : 'youtube';
   return (
     <span
       className={cn(
@@ -21,15 +34,22 @@ export function PlatformBadge({ platform, className }) {
       )}
     >
       <PlatformIcon platform={key} className="size-3" />
-      {PLATFORM_META[key].label}
+      {PLATFORM_META[key as Platform].label}
     </span>
   );
 }
 
 // Avatar with a small platform glyph in the corner, so platform reads without colour alone
-export function AccountAvatar({ account, size = 'default', showPlatform = false, className }) {
+export interface AccountAvatarProps {
+  account: AccountFields;
+  size?: AccountAvatarSize;
+  showPlatform?: boolean;
+  className?: string;
+}
+
+export function AccountAvatar({ account, size = 'default', showPlatform = false, className }: AccountAvatarProps) {
   const platform = platformOf(account);
-  const sizes = { xs: 'size-5', sm: 'size-6', default: 'size-8', lg: 'size-11', xl: 'size-16' };
+  const sizes: Record<AccountAvatarSize, string> = { xs: 'size-5', sm: 'size-6', default: 'size-8', lg: 'size-11', xl: 'size-16' };
   return (
     <span className={cn('relative inline-flex shrink-0', className)}>
       <Avatar className={cn(sizes[size] || sizes.default)}>

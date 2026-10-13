@@ -2,15 +2,34 @@ import React from 'react';
 import { ImageOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const ASPECTS = { video: 'aspect-video', vertical: 'aspect-[9/16]', square: 'aspect-square' };
+export type MediaAspect = 'video' | 'vertical' | 'square';
+
+const ASPECTS: Record<MediaAspect, string> = { video: 'aspect-video', vertical: 'aspect-[9/16]', square: 'aspect-square' };
 
 // Thumbnail card for library grids. Overlay chips sit on a dark scrim so they read on any image.
-export function MediaChip({ children, className }) {
+export interface MediaChipProps {
+  children?: React.ReactNode;
+  className?: string;
+}
+
+export function MediaChip({ children, className }: MediaChipProps) {
   return (
     <span className={cn('inline-flex items-center gap-1 rounded-pill bg-[#0C0809]/75 px-2 py-0.5 text-[0.6875rem] font-semibold text-white backdrop-blur-sm [&_svg]:size-3', className)}>
       {children}
     </span>
   );
+}
+
+export interface MediaCardProps {
+  image?: string | null;
+  aspect?: MediaAspect;
+  title?: React.ReactNode;
+  meta?: React.ReactNode;
+  topLeft?: React.ReactNode;
+  topRight?: React.ReactNode;
+  bottomRight?: React.ReactNode;
+  href?: string;
+  className?: string;
 }
 
 export default function MediaCard({
@@ -23,7 +42,7 @@ export default function MediaCard({
   bottomRight,
   href,
   className,
-}) {
+}: MediaCardProps) {
   const Element = href ? 'a' : 'div';
   return (
     <Element

@@ -2,12 +2,19 @@ import { useEffect, useRef, useState } from 'react';
 import { useTheme } from 'next-themes';
 import { Skeleton } from '@/components/ui/skeleton';
 import { GOOGLE_CLIENT_ID, createNonce, loadGoogleIdentity } from '@/lib/googleIdentity';
+import type { GoogleButtonConfiguration } from '@/lib/googleIdentity';
 
 // Google renders its own button inside an iframe; its width is capped at 400px by Google.
 const MAX_WIDTH = 400;
 
-export default function GoogleSignInButton({ onCredential, onError, text = 'continue_with' }) {
-  const containerRef = useRef(null);
+export interface GoogleSignInButtonProps {
+  onCredential: (credential: string, rawNonce: string) => void;
+  onError?: (err: Error) => void;
+  text?: GoogleButtonConfiguration['text'];
+}
+
+export default function GoogleSignInButton({ onCredential, onError, text = 'continue_with' }: GoogleSignInButtonProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
   const handlers = useRef({ onCredential, onError });
   const { resolvedTheme } = useTheme();
   const [ready, setReady] = useState(false);
@@ -42,7 +49,7 @@ export default function GoogleSignInButton({ onCredential, onError, text = 'cont
         });
         setReady(true);
       } catch (err) {
-        if (!cancelled) handlers.current.onError?.(err);
+        if (!cancelled) handlers.current.onError?.(err as Error);
       }
     })();
 

@@ -1,8 +1,14 @@
+import type React from 'react';
 import { Info } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 // A table header label with an info button that explains what the column measures.
-export default function ColumnHint({ label, hint }) {
+export interface ColumnHintProps {
+  label: string;
+  hint: React.ReactNode;
+}
+
+export default function ColumnHint({ label, hint }: ColumnHintProps) {
   return (
     <span className="inline-flex items-center justify-end gap-1">
       {label}

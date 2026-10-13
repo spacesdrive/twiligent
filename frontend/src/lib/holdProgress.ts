@@ -2,6 +2,15 @@
 
 export const DEFAULT_HOLD_MS = 1200;
 
+export interface HoldControllerOptions {
+  duration?: number;
+  onProgress?: (progress: number) => void;
+  onComplete?: () => void;
+  now?: () => number;
+  requestFrame?: (callback: () => void) => number;
+  cancelFrame?: (id: number) => void;
+}
+
 export function createHoldController({
   duration = DEFAULT_HOLD_MS,
   onProgress = () => {},
@@ -9,9 +18,9 @@ export function createHoldController({
   now = () => performance.now(),
   requestFrame = cb => requestAnimationFrame(cb),
   cancelFrame = id => cancelAnimationFrame(id),
-} = {}) {
-  let startedAt = null;
-  let frame = null;
+}: HoldControllerOptions = {}) {
+  let startedAt: number | null = null;
+  let frame: number | null = null;
   let done = false;
 
   function tick() {

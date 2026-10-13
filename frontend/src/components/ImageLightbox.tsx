@@ -2,12 +2,19 @@ import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
 
+export interface ImageLightboxProps {
+  src?: string | null;
+  alt?: string;
+  className?: string;
+  thumbClassName?: string;
+}
+
 export default function ImageLightbox({
   src,
   alt = '',
   className = '',
   thumbClassName = 'h-10 w-16',
-}) {
+}: ImageLightboxProps) {
   const [open, setOpen] = useState(false);
 
   if (!src) return null;

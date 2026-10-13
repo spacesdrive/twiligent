@@ -4,7 +4,17 @@ import {
   Tooltip as ReTooltip, ResponsiveContainer,
 } from 'recharts';
 import { fmtNum, fmtNumFull } from '../utils/formatters';
+import type { NumberLike } from '../utils/formatters';
 import { axisProps, gridProps, tooltipStyle } from '@/lib/chart';
+
+export interface MetricAreaChartProps {
+  data?: readonly object[] | null;
+  dataKey: string;
+  label: string;
+  color?: string;
+  height?: number;
+  emptyMessage?: React.ReactNode;
+}
 
 export default function MetricAreaChart({
   data,
@@ -13,7 +23,7 @@ export default function MetricAreaChart({
   color = 'var(--chart-1)',
   height = 240,
   emptyMessage = 'No data to display',
-}) {
+}: MetricAreaChartProps) {
   // useId keeps each instance's gradient unique; colons are invalid inside a url() reference
   const gradientId = `metric-area-${useId().replace(/:/g, '')}`;
 
@@ -36,7 +46,7 @@ export default function MetricAreaChart({
         <ReTooltip
           contentStyle={tooltipStyle}
           cursor={{ stroke: 'var(--line-strong)' }}
-          formatter={(v) => [fmtNumFull(v), label]}
+          formatter={(v) => [fmtNumFull(v as NumberLike), label]}
         />
         <Area
           type="monotone"

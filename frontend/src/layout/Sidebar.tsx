@@ -1,4 +1,5 @@
 import React from 'react';
+import type { ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSmoothTheme } from '@/hooks/use-smooth-theme';
 import { Search, Tag, Settings, LogOut, Sun, Moon, Monitor, ChevronsUpDown, BookOpen } from 'lucide-react';
@@ -20,12 +21,18 @@ import { useAuth } from '../context/AuthContext';
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
-export default function AppSidebar({ categories, onOpenPalette, onSignOut }) {
+export interface AppSidebarProps {
+  categories: string[];
+  onOpenPalette: () => void;
+  onSignOut: () => void;
+}
+
+export default function AppSidebar({ categories, onOpenPalette, onSignOut }: AppSidebarProps) {
   const location = useLocation();
   const { accounts } = useAppContext();
   const { setOpenMobile } = useSidebar();
 
-  const nav = (path, label, children, tooltip = label) => (
+  const nav = (path: string, label: string, children: ReactNode, tooltip = label) => (
     <SidebarMenuButton
       isActive={isNavActive(path, location.pathname)}
       tooltip={tooltip}
@@ -123,7 +130,7 @@ export default function AppSidebar({ categories, onOpenPalette, onSignOut }) {
   );
 }
 
-function UserMenu({ onSignOut }) {
+function UserMenu({ onSignOut }: { onSignOut: () => void }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { theme, setTheme } = useSmoothTheme();

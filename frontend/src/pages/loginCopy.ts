@@ -1,6 +1,20 @@
+import type { GoogleButtonText } from '@/lib/googleIdentity';
+
 export const PRIVACY_URL = 'https://blog.ujjwal.fyi/privacy/';
 
-export const LOGIN_COPY = {
+export type LoginMode = 'login' | 'signup';
+
+export interface LoginCopy {
+  title: string;
+  lead: string;
+  submit: string;
+  busy: string;
+  switchPrompt: string;
+  switchAction: string;
+  google: GoogleButtonText;
+}
+
+export const LOGIN_COPY: Record<LoginMode, LoginCopy> = {
   login: {
     title: 'Welcome back',
     lead: 'Sign in to see every channel in one place.',

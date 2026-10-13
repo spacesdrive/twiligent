@@ -3,7 +3,17 @@ import { ResponsiveContainer } from 'recharts';
 import SurfaceBox from './SurfaceBox';
 
 // Titled chart container. Pass `empty` to show a quiet message instead of an empty plot.
-export default function ChartPanel({ title, subheader, height = 280, empty = false, emptyMessage = 'Not enough data yet', className, children }) {
+export interface ChartPanelProps {
+  title?: React.ReactNode;
+  subheader?: React.ReactNode;
+  height?: number;
+  empty?: boolean;
+  emptyMessage?: React.ReactNode;
+  className?: string;
+  children: React.ReactNode;
+}
+
+export default function ChartPanel({ title, subheader, height = 280, empty = false, emptyMessage = 'Not enough data yet', className, children }: ChartPanelProps) {
   return (
     <SurfaceBox title={title} subheader={subheader} className={className} contentClassName="px-3 pt-4 pb-3">
       {empty ? (

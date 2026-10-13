@@ -3,6 +3,22 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+export interface PageHeaderBack {
+  to: string;
+  label: React.ReactNode;
+}
+
+export interface PageHeaderProps {
+  title: React.ReactNode;
+  description?: React.ReactNode;
+  eyebrow?: React.ReactNode;
+  actions?: React.ReactNode;
+  back?: PageHeaderBack;
+  media?: React.ReactNode;
+  size?: 'default' | 'display';
+  className?: string;
+}
+
 // Page title block. One per page; actions sit on the right and wrap under the title on narrow screens.
 export default function PageHeader({
   title,
@@ -13,7 +29,7 @@ export default function PageHeader({
   media,
   size = 'default',
   className,
-}) {
+}: PageHeaderProps) {
   return (
     <header className={cn('flex flex-col gap-4', className)}>
       {back && (

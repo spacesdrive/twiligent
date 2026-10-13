@@ -4,6 +4,17 @@ import { cn } from '@/lib/utils';
 
 const HOLD_KEYS = new Set([' ', 'Enter']);
 
+type HoldController = ReturnType<typeof createHoldController>;
+
+export interface HoldToConfirmButtonProps {
+  onConfirm: () => void;
+  children?: React.ReactNode;
+  holdingLabel?: React.ReactNode;
+  duration?: number;
+  disabled?: boolean;
+  className?: string;
+}
+
 // Destructive confirm that must be held, by pointer or by Space/Enter. A plain click never fires it.
 export default function HoldToConfirmButton({
   onConfirm,
@@ -12,9 +23,9 @@ export default function HoldToConfirmButton({
   duration = DEFAULT_HOLD_MS,
   disabled = false,
   className,
-}) {
+}: HoldToConfirmButtonProps) {
   const [progress, setProgress] = useState(0);
-  const controllerRef = useRef(null);
+  const controllerRef = useRef<HoldController | null>(null);
   const confirmRef = useRef(onConfirm);
 
   useEffect(() => { confirmRef.current = onConfirm; }, [onConfirm]);

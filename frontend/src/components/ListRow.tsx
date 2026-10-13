@@ -2,7 +2,12 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 
 // Rank shown in mono so digits align; the leader carries the brand accent.
-export function RankNumber({ rank, className }) {
+export interface RankNumberProps {
+  rank: number;
+  className?: string;
+}
+
+export function RankNumber({ rank, className }: RankNumberProps) {
   return (
     <span
       className={cn(
@@ -16,6 +21,16 @@ export function RankNumber({ rank, className }) {
   );
 }
 
+export interface ListRowProps {
+  leading?: React.ReactNode;
+  title: React.ReactNode;
+  meta?: React.ReactNode;
+  trailing?: React.ReactNode;
+  onClick?: React.MouseEventHandler<HTMLElement>;
+  selected?: boolean;
+  className?: string;
+}
+
 // Dense, clickable row: leading media, a title with one line of metadata, and trailing content.
 export default function ListRow({
   leading,
@@ -25,7 +40,7 @@ export default function ListRow({
   onClick,
   selected = false,
   className,
-}) {
+}: ListRowProps) {
   const Element = onClick ? 'button' : 'div';
   return (
     <Element

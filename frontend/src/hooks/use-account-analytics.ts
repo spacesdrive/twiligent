@@ -2,12 +2,21 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { api } from '../services/api';
 
+export interface AccountAnalyticsPayload<P, A> {
+  profile: P;
+  analytics: A;
+}
+
 // pass a stable method such as api.getIGAnalytics so it loads once per account
-export function useAccountAnalytics(account, fetchAnalytics, label) {
+export function useAccountAnalytics<P, A>(
+  account: { id?: string } | null | undefined,
+  fetchAnalytics: (id: string) => Promise<AccountAnalyticsPayload<P, A>>,
+  label: string,
+) {
   const { showToast } = useAppContext();
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState(null);
-  const [analytics, setAnalytics] = useState(null);
+  const [profile, setProfile] = useState<P | null>(null);
+  const [analytics, setAnalytics] = useState<A | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   // keyed on the account id so a background refresh does not refetch analytics
@@ -20,7 +29,7 @@ export function useAccountAnalytics(account, fetchAnalytics, label) {
       setProfile(data.profile);
       setAnalytics(data.analytics);
     } catch (err) {
-      showToast(`Couldn't load ${label} analytics. ${err.message}`, 'error');
+      showToast(`Couldn't load ${label} analytics. ${(err as Error).message}`, 'error');
     } finally {
       setLoading(false);
     }
@@ -31,11 +40,11 @@ export function useAccountAnalytics(account, fetchAnalytics, label) {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await api.refreshAccount(accountId);
+      await api.refreshAccount(accountId!);
       await loadAnalytics();
       showToast(`${label} account refreshed`);
     } catch (err) {
-      showToast(`Refresh failed. ${err.message}`, 'error');
+      showToast(`Refresh failed. ${(err as Error).message}`, 'error');
     } finally {
       setRefreshing(false);
     }

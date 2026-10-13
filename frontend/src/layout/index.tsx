@@ -15,7 +15,7 @@ export default function AppShell() {
   const { accounts, refreshAll } = useAppContext();
   const { signOut } = useAuth();
   const [paletteOpen, setPaletteOpen] = useState(false);
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState<string[]>([]);
 
   useCommandPaletteShortcut(setPaletteOpen);
 

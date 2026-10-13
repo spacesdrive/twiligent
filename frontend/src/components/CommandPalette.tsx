@@ -4,6 +4,7 @@ import { useSmoothTheme } from '@/hooks/use-smooth-theme';
 import {
   LayoutDashboard, PlaySquare, Scissors, Clapperboard, MessagesSquare, Bookmark, Send,
   Users, Settings, RefreshCw, Sun, Moon, Monitor, LogOut, Tag, Plus, BookOpen } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandShortcut,
 } from '@/components/ui/command';
@@ -11,32 +12,52 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/compone
 import { AccountAvatar } from '@/components/platform';
 import { filterCommands, groupCommands } from '@/lib/commandSearch';
 import { accountName, accountPath, PLATFORM_META, platformOf } from '@/lib/accounts';
+import type { AccountFields } from '@/lib/accounts';
+import type { SearchCommand } from '@/lib/commandSearch';
 import { NAV_GROUPS } from '@/layout/navigation';
 
-const PAGE_ICONS = {
+const PAGE_ICONS: Record<string, LucideIcon> = {
   '/': LayoutDashboard, '/videos': PlaySquare, '/shorts': Scissors, '/reels': Clapperboard,
   '/reddit-posts': MessagesSquare, '/tracked-content': Bookmark, '/upload': Send,
   '/accounts': Users, '/settings': Settings,
 };
 
-export default function CommandPalette({ open, onOpenChange, accounts, categories, onRefreshAll, onSignOut }) {
+export interface PaletteCommand extends SearchCommand {
+  id: string;
+  group: string;
+  keywords: string[];
+  icon?: LucideIcon;
+  avatar?: AccountFields;
+  run?: () => unknown;
+}
+
+export interface CommandPaletteProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  accounts: AccountFields[];
+  categories: string[];
+  onRefreshAll: () => unknown;
+  onSignOut: () => unknown;
+}
+
+export default function CommandPalette({ open, onOpenChange, accounts, categories, onRefreshAll, onSignOut }: CommandPaletteProps) {
   const navigate = useNavigate();
   const { setTheme } = useSmoothTheme();
   const [query, setQuery] = useState('');
 
-  const handleOpenChange = next => {
+  const handleOpenChange = (next: boolean) => {
     if (!next) setQuery('');
     onOpenChange(next);
   };
 
-  const commands = useMemo(() => [
+  const commands = useMemo((): PaletteCommand[] => [
     ...NAV_GROUPS.flatMap(group => group.items.map(item => ({
       id: `page:${item.path}`, group: 'Pages', label: item.label, keywords: [group.label],
       icon: PAGE_ICONS[item.path], run: () => navigate(item.path),
     }))),
     ...accounts.map(account => ({
       id: `account:${account.id}`, group: 'Accounts', label: accountName(account),
-      keywords: [PLATFORM_META[platformOf(account)].label, account.username, account.customUrl].filter(Boolean),
+      keywords: [PLATFORM_META[platformOf(account)].label, account.username, account.customUrl].filter(Boolean) as string[],
       avatar: account, run: () => navigate(accountPath(account)),
     })),
     ...categories.map(category => ({
@@ -54,7 +75,7 @@ export default function CommandPalette({ open, onOpenChange, accounts, categorie
 
   const grouped = useMemo(() => groupCommands(filterCommands(commands, query)), [commands, query]);
 
-  const runCommand = command => {
+  const runCommand = (command: PaletteCommand) => {
     handleOpenChange(false);
     command.run?.();
   };

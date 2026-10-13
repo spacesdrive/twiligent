@@ -3,7 +3,17 @@ import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // a radio when `selected` is defined, otherwise a plain button
-export default function ChoiceCard({ icon, title, description, selected, onSelect, disabled, className }) {
+export interface ChoiceCardProps {
+  icon?: React.ReactNode;
+  title: React.ReactNode;
+  description?: React.ReactNode;
+  selected?: boolean;
+  onSelect?: React.MouseEventHandler<HTMLButtonElement>;
+  disabled?: boolean;
+  className?: string;
+}
+
+export default function ChoiceCard({ icon, title, description, selected, onSelect, disabled, className }: ChoiceCardProps) {
   const isRadio = selected !== undefined;
   return (
     <button

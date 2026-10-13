@@ -7,6 +7,19 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import HoldToConfirmButton from './HoldToConfirmButton';
 
+export interface ConfirmDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  title: React.ReactNode;
+  description?: React.ReactNode;
+  confirmLabel?: string;
+  cancelLabel?: React.ReactNode;
+  onConfirm: () => void;
+  busy?: boolean;
+  hold?: boolean;
+  icon?: React.ReactNode;
+}
+
 // destructive actions use `hold` so a stray click cannot confirm them
 export default function ConfirmDialog({
   open,
@@ -19,7 +32,7 @@ export default function ConfirmDialog({
   busy = false,
   hold = false,
   icon = <Trash2 />,
-}) {
+}: ConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={next => { if (!busy) onOpenChange(next); }}>
       <AlertDialogContent>

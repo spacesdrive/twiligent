@@ -2,7 +2,13 @@ import React from 'react';
 import { Search, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export default function SearchField({ value, onChange, placeholder = 'Search', className, inputClassName, ...props }) {
+export interface SearchFieldProps extends Omit<React.ComponentProps<'input'>, 'value' | 'onChange'> {
+  value: string;
+  onChange: (value: string) => void;
+  inputClassName?: string;
+}
+
+export default function SearchField({ value, onChange, placeholder = 'Search', className, inputClassName, ...props }: SearchFieldProps) {
   return (
     <div className={cn('relative flex min-w-0 items-center', className)}>
       <Search className="pointer-events-none absolute left-3.5 size-4 stroke-[1.75] text-ink-faint" aria-hidden="true" />

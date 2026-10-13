@@ -1,4 +1,9 @@
-export function fmtNum(n) {
+import type { SafeAccount } from '../../../shared/types/domain.ts';
+
+export type NumberLike = number | string | null | undefined;
+export type DateLike = string | number | Date | null | undefined;
+
+export function fmtNum(n: NumberLike): string {
     if (n == null) return '0';
     n = Number(n);
     if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
@@ -8,26 +13,26 @@ export function fmtNum(n) {
 }
 
 // For counts a platform can hide (YouTube likes, disabled comments): null means hidden, not zero.
-export function fmtCount(n) {
+export function fmtCount(n: NumberLike): string {
     return n == null ? 'Hidden' : fmtNum(n);
 }
 
-export function fmtNumFull(n) {
+export function fmtNumFull(n: NumberLike): string {
     if (n == null) return '0';
     return Number(n).toLocaleString();
 }
 
-export function fmtDate(d) {
+export function fmtDate(d: DateLike): string {
     if (!d) return '';
     return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-export function fmtDateShort(d) {
+export function fmtDateShort(d: DateLike): string {
     if (!d) return '';
     return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-export function fmtDuration(seconds) {
+export function fmtDuration(seconds: number | null | undefined): string {
     if (!seconds) return '0:00';
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
@@ -36,12 +41,12 @@ export function fmtDuration(seconds) {
     return `${minutes}:${String(secs).padStart(2, '0')}`;
 }
 
-export function fmtPercent(n) {
+export function fmtPercent(n: NumberLike): string {
     if (n == null) return '0%';
     return Number(n).toFixed(1) + '%';
 }
 
-export function timeAgo(date) {
+export function timeAgo(date: DateLike): string {
     if (!date) return 'Never';
     const diff = Date.now() - new Date(date).getTime();
     const mins = Math.floor(diff / 60000);
@@ -55,7 +60,7 @@ export function timeAgo(date) {
     return `${months}mo ago`;
 }
 
-export const CATEGORY_MAP = {
+export const CATEGORY_MAP: Record<string, string> = {
     '1': 'Film & Animation', '2': 'Autos & Vehicles', '10': 'Music',
     '15': 'Pets & Animals', '17': 'Sports', '18': 'Short Movies',
     '19': 'Travel & Events', '20': 'Gaming', '21': 'Videoblogging',
@@ -69,8 +74,25 @@ export const CATEGORY_MAP = {
     '42': 'Shorts', '43': 'Shows', '44': 'Trailers',
 };
 
+// fields that accounts saved by older versions can still carry
+export interface LegacyAccountFields {
+    name?: string;
+    channelTitle?: string;
+    thumbnailUrl?: string;
+    thumbnail?: string;
+    currentStats?: { subscribers?: number; views?: number; videos?: number };
+}
+
+export type AccountInput = SafeAccount & LegacyAccountFields;
+
+// an account as AppContext keeps it; instagram titles fall back to igUserId, which can be null
+export type AppAccount = Omit<AccountInput, 'title' | 'thumbnail'> & {
+    title?: string | null;
+    thumbnail: string;
+};
+
 // Normalize account data (handles YouTube, Instagram, and Reddit)
-export function normalizeAccount(acct) {
+export function normalizeAccount(acct: AccountInput): AppAccount {
     if (!acct) return acct;
     if (acct.platform === 'instagram') {
         return {

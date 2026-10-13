@@ -10,7 +10,7 @@ export const SERIES = {
 
 export const SERIES_ORDER = [SERIES.primary, SERIES.neutral, SERIES.warm, SERIES.cool, SERIES.deep];
 
-export const seriesAt = index => SERIES_ORDER[index % SERIES_ORDER.length];
+export const seriesAt = (index: number): string => SERIES_ORDER[index % SERIES_ORDER.length];
 
 export const axisTick = { fill: 'var(--ink-faint)', fontSize: 11, fontFamily: 'var(--font-sans)' };
 

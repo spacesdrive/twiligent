@@ -1,8 +1,24 @@
 import React from 'react';
+import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Single-select chip group. Options are { value, label, icon?, count? }.
-export default function FilterChips({ options, value, onChange, className, label = 'Filter' }) {
+export interface FilterChipOption<V extends string = string> {
+  value: V;
+  label: React.ReactNode;
+  icon?: LucideIcon;
+  count?: number;
+}
+
+export interface FilterChipsProps<V extends string = string> {
+  options: readonly FilterChipOption<V>[];
+  value: V;
+  onChange: (value: V) => void;
+  className?: string;
+  label?: string;
+}
+
+export default function FilterChips<V extends string = string>({ options, value, onChange, className, label = 'Filter' }: FilterChipsProps<V>) {
   return (
     <div role="radiogroup" aria-label={label} className={cn('flex flex-wrap items-center gap-1.5', className)}>
       {options.map(option => {

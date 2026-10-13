@@ -1,12 +1,27 @@
+import type { FormEvent } from 'react';
 import { ArrowRight, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { FieldRow } from '@/components/DetailPanel';
+import type { LoginCopy } from './loginCopy';
+
+export interface LoginFormProps {
+  isLogin: boolean;
+  copy: LoginCopy;
+  email: string;
+  password: string;
+  onEmailChange: (value: string) => void;
+  onPasswordChange: (value: string) => void;
+  showPassword: boolean;
+  onTogglePassword: () => void;
+  loading: boolean;
+  onSubmit: (e: FormEvent<HTMLFormElement>) => void;
+}
 
 export default function LoginForm({
   isLogin, copy, email, password, onEmailChange, onPasswordChange, showPassword, onTogglePassword, loading, onSubmit,
-}) {
+}: LoginFormProps) {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <FieldRow label="Email" htmlFor="email">

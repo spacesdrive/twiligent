@@ -1,11 +1,23 @@
 // Ranking for the command palette. Pure so it can be unit tested without a DOM.
 
-function normalize(text) {
+// the command fields ranking and grouping read; callers add their own
+export interface SearchCommand {
+  label: string;
+  group?: string;
+  keywords?: string[];
+}
+
+export interface CommandGroup<T extends SearchCommand> {
+  group: string;
+  items: T[];
+}
+
+function normalize(text: string | null | undefined): string {
   return String(text || '').toLowerCase().normalize('NFKD').replace(/[̀-ͯ]/g, '').trim();
 }
 
 // Higher is better; 0 means no match. Every query word must appear in the label or keywords.
-export function scoreCommand(command, query) {
+export function scoreCommand(command: SearchCommand, query: string): number {
   const needle = normalize(query);
   if (!needle) return 1;
   const label = normalize(command.label);
@@ -19,7 +31,7 @@ export function scoreCommand(command, query) {
   return 20;
 }
 
-export function filterCommands(commands, query, limit = 50) {
+export function filterCommands<T extends SearchCommand>(commands: T[], query: string, limit = 50): T[] {
   return commands
     .map((command, index) => ({ command, index, score: scoreCommand(command, query) }))
     .filter(entry => entry.score > 0)
@@ -29,12 +41,12 @@ export function filterCommands(commands, query, limit = 50) {
 }
 
 // Groups in first-seen order so the palette keeps a stable layout while typing
-export function groupCommands(commands) {
-  const groups = new Map();
+export function groupCommands<T extends SearchCommand>(commands: T[]): CommandGroup<T>[] {
+  const groups = new Map<string, T[]>();
   for (const command of commands) {
     const key = command.group || 'Other';
     if (!groups.has(key)) groups.set(key, []);
-    groups.get(key).push(command);
+    groups.get(key)!.push(command);
   }
   return [...groups.entries()].map(([group, items]) => ({ group, items }));
 }
