@@ -5,21 +5,10 @@ import {
 import { deleteVideosCache, deleteIGCache, deleteRedditCache } from '../lib/cache.js';
 import { fetchInstagramProfile, exchangeForLongLivedToken, refreshLongLivedToken } from '../services/instagram.js';
 import { resolveChannelId, fetchChannelData } from '../services/youtube.js';
-import { fetchRedditProfile, safeRedditAccount } from '../services/reddit.js';
+import { fetchRedditProfile } from '../services/reddit.js';
+import { safeAccount } from '../lib/safeAccount.js';
 
 const app = new Hono();
-
-function safeAccount(account) {
-    const copy = { ...account };
-    copy.hasCookie = !!copy.cookie;
-    delete copy.accessToken;
-    delete copy.cookie;
-    delete copy.encryptedPassword;
-    delete copy.encryptedTotpSecret;
-    delete copy.authToken;
-    delete copy.ct0;
-    return copy;
-}
 
 app.get('/accounts', async (c) => {
     try {
@@ -122,7 +111,7 @@ app.post('/accounts/reddit', async (c) => {
         };
 
         await createAccount(supabase, newAccount, userId);
-        return c.json({ success: true, account: safeRedditAccount(newAccount) });
+        return c.json({ success: true, account: safeAccount(newAccount) });
     } catch (err) {
         return c.json({ success: false, message: err.message }, 400);
     }

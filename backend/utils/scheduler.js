@@ -1,5 +1,6 @@
 // fetch is a global in Cloudflare Workers.
 import { getDuePosts, updatePost, getAccountById } from '../lib/db.js';
+import { buildMediaParams } from '../services/instagram.js';
 
 export function generateId() {
     return Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
@@ -23,34 +24,7 @@ export async function processScheduledPosts(supabase) {
 
                 const igId = acct.igUserId;
                 const token = acct.accessToken;
-                const params = { access_token: token };
-
-                if (post.mediaType === 'REELS') {
-                    params.media_type = 'REELS';
-                    params.video_url = post.mediaUrl;
-                    if (post.caption) params.caption = post.caption;
-                    if (post.shareToFeed !== undefined) params.share_to_feed = post.shareToFeed;
-                    if (post.coverUrl) params.cover_url = post.coverUrl;
-                    if (post.collaborators?.length) params.collaborators = JSON.stringify(post.collaborators);
-                    if (post.audioName) params.audio_name = post.audioName;
-                    if (post.thumbOffset != null) params.thumb_offset = post.thumbOffset;
-                    if (post.locationId) params.location_id = post.locationId;
-                    if (post.userTags?.length) params.user_tags = JSON.stringify(post.userTags);
-                } else if (post.mediaType === 'STORIES') {
-                    params.media_type = 'STORIES';
-                    if (post.mediaUrl.match(/\.(mp4|mov|avi|webm)/i)) {
-                        params.video_url = post.mediaUrl;
-                    } else {
-                        params.image_url = post.mediaUrl;
-                    }
-                    if (post.userTags?.length) params.user_tags = JSON.stringify(post.userTags);
-                } else {
-                    params.image_url = post.mediaUrl;
-                    if (post.caption) params.caption = post.caption;
-                    if (post.locationId) params.location_id = post.locationId;
-                    if (post.userTags?.length) params.user_tags = JSON.stringify(post.userTags);
-                    if (post.altText) params.alt_text = post.altText;
-                }
+                const params = buildMediaParams(post, token);
 
                 const qs = new URLSearchParams(params).toString();
                 const createRes = await fetch(`https://graph.instagram.com/v25.0/${igId}/media?${qs}`, { method: 'POST' });

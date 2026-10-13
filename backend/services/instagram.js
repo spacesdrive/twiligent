@@ -418,3 +418,52 @@ export function computeInstagramAnalytics(profile, media) {
         viralityScore, consistencyScore,
     };
 }
+
+// Graph API container parameters for one media item. Shared by the publish route and the cron
+// scheduler; scripts/publish-scheduled.js keeps its own copy because it must stay dependency-free.
+export function buildMediaParams(post, accessToken) {
+    const { mediaType, mediaUrl, caption, coverUrl, shareToFeed, collaborators, audioName,
+        thumbOffset, locationId, userTags, altText, children } = post;
+    const params = { access_token: accessToken };
+
+    if (mediaType === 'CAROUSEL') {
+        params.media_type = 'CAROUSEL';
+        if (caption) params.caption = caption;
+        if (children?.length) params.children = children.join(',');
+        if (collaborators?.length) params.collaborators = JSON.stringify(collaborators);
+        if (locationId) params.location_id = locationId;
+    } else if (mediaType === 'CAROUSEL_ITEM_IMAGE') {
+        params.image_url = mediaUrl;
+        params.is_carousel_item = true;
+    } else if (mediaType === 'CAROUSEL_ITEM_VIDEO') {
+        params.media_type = 'VIDEO';
+        params.video_url = mediaUrl;
+        params.is_carousel_item = true;
+    } else if (mediaType === 'REELS') {
+        params.media_type = 'REELS';
+        params.video_url = mediaUrl;
+        if (caption) params.caption = caption;
+        if (shareToFeed !== undefined) params.share_to_feed = shareToFeed;
+        if (coverUrl) params.cover_url = coverUrl;
+        if (collaborators?.length) params.collaborators = JSON.stringify(collaborators);
+        if (audioName) params.audio_name = audioName;
+        if (thumbOffset != null) params.thumb_offset = thumbOffset;
+        if (locationId) params.location_id = locationId;
+        if (userTags?.length) params.user_tags = JSON.stringify(userTags);
+    } else if (mediaType === 'STORIES') {
+        params.media_type = 'STORIES';
+        if (mediaUrl?.match(/\.(mp4|mov|avi|webm)/i)) {
+            params.video_url = mediaUrl;
+        } else {
+            params.image_url = mediaUrl;
+        }
+        if (userTags?.length) params.user_tags = JSON.stringify(userTags);
+    } else {
+        params.image_url = mediaUrl;
+        if (caption) params.caption = caption;
+        if (locationId) params.location_id = locationId;
+        if (userTags?.length) params.user_tags = JSON.stringify(userTags);
+        if (altText) params.alt_text = altText;
+    }
+    return params;
+}

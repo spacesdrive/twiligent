@@ -93,16 +93,3 @@ export async function verifyOAuthState(state, secret) {
     if (Date.now() - Number(ts) > 10 * 60 * 1000) return null;
     return userId;
 }
-
-// Legacy Redis-backed OAuth state (used only when Redis is available)
-export async function setOAuthState(redis, state, userId) {
-    if (!redis) return;
-    await redis.set(`oauth_ig:${state}`, userId, { ex: 600 });
-}
-
-export async function getAndDeleteOAuthState(redis, state) {
-    if (!redis) return null;
-    const userId = await redis.get(`oauth_ig:${state}`);
-    if (userId) await redis.del(`oauth_ig:${state}`);
-    return userId || null;
-}

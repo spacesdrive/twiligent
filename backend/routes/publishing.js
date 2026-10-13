@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import { getAccountById } from '../lib/db.js';
+import { buildMediaParams } from '../services/instagram.js';
 
 const app = new Hono();
 
@@ -36,54 +37,8 @@ app.post('/accounts/:id/ig-publish', async (c) => {
             return c.json({ success: false, message: 'Instagram account not found' }, 404);
         }
 
-        const {
-            mediaType, mediaUrl, caption, coverUrl, shareToFeed, collaborators,
-            audioName, thumbOffset, locationId, userTags, altText, children,
-        } = await c.req.json();
-
         const igId = acct.igUserId;
-        const token = acct.accessToken;
-        const params = { access_token: token };
-
-        if (mediaType === 'CAROUSEL') {
-            params.media_type = 'CAROUSEL';
-            if (caption) params.caption = caption;
-            if (children?.length) params.children = children.join(',');
-            if (collaborators?.length) params.collaborators = JSON.stringify(collaborators);
-            if (locationId) params.location_id = locationId;
-        } else if (mediaType === 'CAROUSEL_ITEM_IMAGE') {
-            params.image_url = mediaUrl;
-            params.is_carousel_item = true;
-        } else if (mediaType === 'CAROUSEL_ITEM_VIDEO') {
-            params.media_type = 'VIDEO';
-            params.video_url = mediaUrl;
-            params.is_carousel_item = true;
-        } else if (mediaType === 'REELS') {
-            params.media_type = 'REELS';
-            params.video_url = mediaUrl;
-            if (caption) params.caption = caption;
-            if (shareToFeed !== undefined) params.share_to_feed = shareToFeed;
-            if (coverUrl) params.cover_url = coverUrl;
-            if (collaborators?.length) params.collaborators = JSON.stringify(collaborators);
-            if (audioName) params.audio_name = audioName;
-            if (thumbOffset != null) params.thumb_offset = thumbOffset;
-            if (locationId) params.location_id = locationId;
-            if (userTags?.length) params.user_tags = JSON.stringify(userTags);
-        } else if (mediaType === 'STORIES') {
-            params.media_type = 'STORIES';
-            if (mediaUrl?.match(/\.(mp4|mov|avi|webm)/i)) {
-                params.video_url = mediaUrl;
-            } else {
-                params.image_url = mediaUrl;
-            }
-            if (userTags?.length) params.user_tags = JSON.stringify(userTags);
-        } else {
-            params.image_url = mediaUrl;
-            if (caption) params.caption = caption;
-            if (locationId) params.location_id = locationId;
-            if (userTags?.length) params.user_tags = JSON.stringify(userTags);
-            if (altText) params.alt_text = altText;
-        }
+        const params = buildMediaParams(await c.req.json(), acct.accessToken);
 
         const qs = new URLSearchParams(params).toString();
         const r = await fetch(`https://graph.instagram.com/v25.0/${igId}/media?${qs}`, { method: 'POST' });

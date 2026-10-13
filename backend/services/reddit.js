@@ -245,17 +245,6 @@ export function computeRedditAnalytics(profile, posts) {
     };
 }
 
-// Strips the session cookie before any API response.
-// Exposes hasCookie as a boolean so the frontend can show session status without the value.
-export function safeRedditAccount(account) {
-    const copy = { ...account };
-    copy.hasCookie = !!copy.cookie;
-    delete copy.cookie;
-    delete copy.encryptedPassword;
-    delete copy.encryptedTotpSecret;
-    return copy;
-}
-
 // No-op: kept for compatibility with server.js cron handler.
 export async function autoRefreshRedditSessions() {}
 
