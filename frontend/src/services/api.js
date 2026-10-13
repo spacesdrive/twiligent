@@ -64,6 +64,20 @@ function uploadToCloudinary(file, cloudConfig, { onProgress, resourceType } = {}
     });
 }
 
+// tracked item screenshots use fetch so failures surface exactly as before
+async function uploadImage(file, cloudConfig) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', cloudConfig.uploadPreset);
+
+    const res = await fetch(`${CLOUDINARY_API}/${cloudConfig.cloudName}/image/upload`, { method: 'POST', body: formData });
+    const json = await res.json();
+    if (!res.ok || !json.secure_url) {
+        throw new Error(json.error?.message || 'Cloudinary did not return an image URL');
+    }
+    return json.secure_url;
+}
+
 export const api = {
     health: () => request('/health'),
 
@@ -95,6 +109,7 @@ export const api = {
 
     getCloudinaryConfig: () => request('/cloudinary-config'),
     uploadToCloudinary,
+    uploadImage,
 
     // Instagram Publishing
     getIGPublishingLimit: (id) => request(`/accounts/${id}/ig-publishing-limit`),

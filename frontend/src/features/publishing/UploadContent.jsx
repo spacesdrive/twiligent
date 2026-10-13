@@ -40,7 +40,7 @@ export default function UploadContent() {
 
   useEffect(() => {
     const instagramAccounts = (accounts || []).filter(account => account.platform === 'instagram');
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- keeps the original first render
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIgAccounts(instagramAccounts);
     if (instagramAccounts.length === 1) setSelectedAccount(instagramAccounts[0].id);
     loadScheduledPosts();

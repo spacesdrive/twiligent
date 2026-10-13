@@ -1,22 +1,10 @@
 import { useRef, useState } from 'react';
 import { api } from '../../../services/api';
 import { isRedditItem } from '../../../utils/trackedContent';
-import { imageFileError, imageUploadMessage, parseManualViews } from './trackedList.js';
+import { imageFileError, parseManualViews } from './trackedList.js';
 
 function clearInput(inputRef) {
   if (inputRef.current) inputRef.current.value = '';
-}
-
-// the Worker never handles binary uploads, so only the returned URL is saved on the item
-async function uploadTrackedImage(file, cloudConfig) {
-  let url;
-  try {
-    url = await api.uploadToCloudinary(file, cloudConfig, { resourceType: 'image' });
-  } catch (err) {
-    throw new Error(imageUploadMessage(err));
-  }
-  if (!url) throw new Error('Cloudinary did not return an image URL');
-  return url;
 }
 
 function useTrackedImage({ cloudConfig, showToast }) {
@@ -31,7 +19,8 @@ function useTrackedImage({ cloudConfig, showToast }) {
     if (error) { showToast(error, 'error'); return; }
     setUploading(true);
     try {
-      setImageUrl(await uploadTrackedImage(file, cloudConfig));
+      // the Worker never handles binary uploads, so only the returned url is saved on the item
+      setImageUrl(await api.uploadImage(file, cloudConfig));
       showToast('Image uploaded');
     } catch (err) {
       showToast(`Image upload failed. ${err.message}`, 'error');

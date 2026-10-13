@@ -117,16 +117,24 @@ keys are `label`, `category`, `accountId`, `manualViews`, and `imageUrl`. `manua
 clear a previously set value.
 
 `imageUrl` must already be a hosted `https:` URL. The Worker never accepts binary uploads, so
-the browser posts the file straight to Cloudinary with `api.uploadToCloudinary()` (below) and
+the browser posts the file straight to Cloudinary with `api.uploadImage()` (below) and
 sends only the returned `secure_url`.
 
 ## Cloudinary Uploads
+
+These are the only calls in `api.js` that do not go to the Worker.
+
+```js
+uploadImage(file, cloudConfig)
+```
+
+Used for tracked item screenshots. It posts the image with `fetch` to `https://api.cloudinary.com/v1_1/<cloudName>/image/upload` and resolves with `secure_url`. It throws an `Error` with Cloudinary's own message, or `'Cloudinary did not return an image URL'`, and network or JSON failures reject with the browser's own error. This is the exact behaviour the tracked content page had before the refactor.
 
 ```js
 uploadToCloudinary(file, cloudConfig, { onProgress, resourceType })
 ```
 
-The one call in `api.js` that does not go to the Worker. It posts `file` and the unsigned
+Used by publishing. It posts `file` and the unsigned
 `upload_preset` from `getCloudinaryConfig()` to
 `https://api.cloudinary.com/v1_1/<cloudName>/<resourceType>/upload` with `XMLHttpRequest`, so
 upload progress is available, and resolves with the response's `secure_url`.

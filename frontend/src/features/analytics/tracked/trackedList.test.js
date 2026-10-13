@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   SORT_OPTIONS, filterAndSortTracked, categoriesOf, trackedStatsOf, typeChipsOf, pluralize, countLabel,
-  bulkCategoryMessage, parseManualViews, imageFileError, imageUploadMessage, MAX_IMAGE_BYTES,
+  bulkCategoryMessage, parseManualViews, imageFileError, MAX_IMAGE_BYTES,
 } from './trackedList.js';
 
 const items = [
@@ -75,10 +75,3 @@ test('image checks run in the original order', () => {
   assert.equal(imageFileError(image, true), '');
 });
 
-test('image upload errors keep the page wording', () => {
-  assert.equal(imageUploadMessage({ reason: 'network' }), 'Failed to fetch');
-  assert.equal(imageUploadMessage({ reason: 'rejected', cloudinaryMessage: 'Bad preset' }), 'Bad preset');
-  assert.equal(imageUploadMessage({ reason: 'rejected' }), 'Cloudinary did not return an image URL');
-  assert.equal(imageUploadMessage({ reason: 'rejected', parseMessage: 'Unexpected end of JSON input' }), 'Unexpected end of JSON input');
-  assert.equal(imageUploadMessage(new Error('Other')), 'Other');
-});

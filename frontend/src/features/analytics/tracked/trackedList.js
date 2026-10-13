@@ -78,11 +78,3 @@ export function imageFileError(file, hasCloudConfig) {
   if (file.size > MAX_IMAGE_BYTES) return `That image is too large. Choose one under ${MAX_IMAGE_BYTES / 1024 / 1024}MB.`;
   return '';
 }
-
-// matches the wording the page showed when it uploaded with fetch
-export function imageUploadMessage(err) {
-  if (err.reason === 'network') return 'Failed to fetch';
-  if (err.reason !== 'rejected') return err.message;
-  if (err.parseMessage) return err.parseMessage;
-  return err.cloudinaryMessage || 'Cloudinary did not return an image URL';
-}
