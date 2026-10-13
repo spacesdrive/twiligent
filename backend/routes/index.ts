@@ -1,5 +1,6 @@
 import { Hono } from 'hono';
 import accountRoutes from './accountRoutes.ts';
+import authHookRoutes from './authHookRoutes.ts';
 import analyticsRoutes from './analyticsRoutes.ts';
 import instagramAuthRoutes from './instagramAuthRoutes.ts';
 import overviewRoutes from './overviewRoutes.ts';
@@ -14,10 +15,12 @@ import { rateLimit, clientIp } from '../middleware/rateLimit.ts';
 import { RATE_LIMIT_RULES } from '../lib/rateLimit/rules.ts';
 import type { AppEnv } from '../types/app.ts';
 
-// reachable without a token: the health check, and the OAuth redirect, whose signed state names the user
+// reachable without a token: the health check, the OAuth redirect, whose signed state names the user,
+// and Supabase Auth's email hook, whose signature proves where it came from
 export const publicRoutes = new Hono<AppEnv>();
 publicRoutes.get('/health', ...getHealth);
 publicRoutes.get('/auth/instagram/callback', rateLimit(RATE_LIMIT_RULES.oauth, clientIp), ...handleInstagramCallback);
+publicRoutes.route('/', authHookRoutes);
 
 // mounted behind requireAuth and the per-user rate limits in app.ts
 export const protectedRoutes = new Hono<AppEnv>();

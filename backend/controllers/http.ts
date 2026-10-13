@@ -18,5 +18,6 @@ export function pathParam(c: AppContext, name: string): string {
 
 // the request's services, built from the clients the middleware created and the request context
 export function servicesFor(c: AppContext): Services {
-    return createServices({ supabase: c.get('supabase'), redis: c.get('redis') }, readConfig(c.env), requestContextOf(c));
+    const clients = { supabase: c.get('supabase'), redis: c.get('redis'), rateLimitRedis: c.get('rateLimitRedis') };
+    return createServices(clients, readConfig(c.env), requestContextOf(c));
 }

@@ -1,6 +1,6 @@
 import { createServices } from '../container.ts';
 import { getSupabase } from '../database/supabase.ts';
-import { getRedis } from '../database/redis.ts';
+import { getRedis, getRateLimitRedis } from '../database/redis.ts';
 import { readConfig } from '../lib/config.ts';
 import { createLogger } from '../lib/logger.ts';
 import type { Env } from '../types/env.ts';
@@ -21,7 +21,8 @@ function cronContext(cron: string): RequestContext {
 // the cron entry point: the same services the API uses, built from the Worker env instead of a request
 export async function runScheduledJob(cron: string, env: Env): Promise<void> {
     const context = cronContext(cron);
-    const services = createServices({ supabase: getSupabase(env), redis: getRedis(env) }, readConfig(env), context);
+    const clients = { supabase: getSupabase(env), redis: getRedis(env), rateLimitRedis: getRateLimitRedis(env) };
+    const services = createServices(clients, readConfig(env), context);
 
     if (cron === PUBLISH_DUE_POSTS_CRON) {
         const run = await services.scheduledPublisher.publishDue();

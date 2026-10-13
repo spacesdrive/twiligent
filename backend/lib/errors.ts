@@ -42,6 +42,13 @@ export class ConflictError extends AppError {
     }
 }
 
+// a daily allowance is used up; the per-request rate limiter answers its own 429s with retryAfter
+export class RateLimitedError extends AppError {
+    constructor(message: string) {
+        super('RATE_LIMITED', message);
+    }
+}
+
 export class NotConfiguredError extends AppError {
     constructor(message: string) {
         super('NOT_CONFIGURED', message);

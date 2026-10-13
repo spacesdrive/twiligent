@@ -5,6 +5,7 @@ import type { Env } from '../../types/env.ts';
 
 export interface CallOptions {
     json?: unknown;
+    headers?: Record<string, string>;
     env?: Partial<Env>;
 }
 
@@ -41,6 +42,7 @@ export async function callRoute(app: Hono<AppEnv>, method: string, path: string,
         init.body = typeof options.json === 'string' ? options.json : JSON.stringify(options.json);
         init.headers = { 'Content-Type': 'application/json' };
     }
+    if (options.headers) init.headers = { ...init.headers, ...options.headers };
     const response = await app.request(path, init, options.env ?? {});
     const result: RouteResult = { status: response.status, body: await response.text() };
     const location = response.headers.get('location');

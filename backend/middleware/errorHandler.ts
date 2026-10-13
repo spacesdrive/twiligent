@@ -5,6 +5,7 @@ import { errorFields } from '../lib/logger.ts';
 import { requestLogger } from './requestContext.ts';
 import type { AppContext } from '../types/app.ts';
 import type { ApiErrorCode, ApiFailure } from '../../shared/types/domain.ts';
+import type { AuthHookFailure } from '../types/authHook.ts';
 
 const STATUS_BY_CODE: Record<ApiErrorCode, ContentfulStatusCode> = {
     VALIDATION_ERROR: 400,
@@ -34,8 +35,14 @@ export function errorBody(c: AppContext, code: ApiErrorCode, message: string): A
     return { success: false, code, message, requestId: c.get('requestId') };
 }
 
-// last in the pipeline: every error thrown by a controller, service, repository or middleware ends here
-export function errorHandler(err: Error, c: AppContext): Response {
+interface Failure {
+    code: ApiErrorCode;
+    status: ContentfulStatusCode;
+    message: string;
+}
+
+// logs the error with the request id and decides the code, status and the message the client may see
+function describeFailure(err: Error, c: AppContext): Failure {
     const log = requestLogger(c);
 
     if (err instanceof AppError) {
@@ -43,18 +50,30 @@ export function errorHandler(err: Error, c: AppContext): Response {
         const fields = { code: err.code, status, ...errorFields(err) };
         if (status >= 500) log.error('request failed', fields);
         else log.warn('request rejected', fields);
-        return c.json(errorBody(c, err.code, err.message), status);
+        return { code: err.code, status, message: err.message };
     }
 
     // hono's own errors, such as a malformed JSON body in a validator
     if (err instanceof HTTPException) {
         const code = CODE_BY_STATUS[err.status] ?? 'INTERNAL_ERROR';
         log.warn('request rejected', { code, status: err.status, ...errorFields(err) });
-        return c.json(errorBody(c, code, err.message || 'The request could not be processed'), err.status);
+        return { code, status: err.status, message: err.message || 'The request could not be processed' };
     }
 
     log.error('unhandled error', { code: 'INTERNAL_ERROR', status: 500, ...errorFields(err) });
-    return c.json(errorBody(c, 'INTERNAL_ERROR', INTERNAL_MESSAGE), 500);
+    return { code: 'INTERNAL_ERROR', status: 500, message: INTERNAL_MESSAGE };
+}
+
+// last in the pipeline: every error thrown by a controller, service, repository or middleware ends here
+export function errorHandler(err: Error, c: AppContext): Response {
+    const { code, status, message } = describeFailure(err, c);
+    return c.json(errorBody(c, code, message), status);
+}
+
+// Supabase Auth hooks expect { error: { http_code, message } } and show the message to the person signing up
+export function authHookErrorHandler(err: Error, c: AppContext): Response {
+    const { status, message } = describeFailure(err, c);
+    return c.json({ error: { http_code: status, message } } satisfies AuthHookFailure, status);
 }
 
 export function notFoundHandler(c: AppContext): Response {
