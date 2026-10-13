@@ -66,8 +66,9 @@
             "location": "https://app.example.com//accounts?ig_error=getaddrinfo%20ENOTFOUND%20api.instagram.com"
         },
         {
-            "status": 500,
-            "body": "Internal Server Error"
+            "status": 302,
+            "body": "",
+            "location": "http://localhost:5173/accounts?ig_error=not_configured"
         }
     ],
     "requests": [
@@ -265,10 +266,6 @@
             "error",
             "Instagram OAuth callback error:",
             "getaddrinfo ENOTFOUND api.instagram.com"
-        ],
-        [
-            "error",
-            {}
         ]
     ]
 }

@@ -24,6 +24,12 @@ export interface InstagramOAuthConfig {
     appSecret: string | undefined;
 }
 
+// what the token exchange needs; urlHandler and callbackHandler check for it first
+export interface ConfiguredInstagramOAuth extends InstagramOAuthConfig {
+    appId: string;
+    appSecret: string;
+}
+
 export type InstagramOAuthOutcome = 'already_added' | 'connected';
 
 // answer of the short-lived code exchange at api.instagram.com
@@ -56,12 +62,16 @@ export function readInstagramOAuthConfig(env: InstagramOAuthEnv): InstagramOAuth
     };
 }
 
+export function isOAuthConfigured(config: InstagramOAuthConfig): config is ConfiguredInstagramOAuth {
+    return !!config.appId && !!config.appSecret;
+}
+
 // the hmac-signed state carries the userId and a timestamp, so no redis is needed
-export async function buildAuthorizationUrl(config: InstagramOAuthConfig, userId: string): Promise<string> {
-    const state = await createOAuthState(userId, config.appSecret as string);
+export async function buildAuthorizationUrl(config: ConfiguredInstagramOAuth, userId: string): Promise<string> {
+    const state = await createOAuthState(userId, config.appSecret);
     const params = new URLSearchParams({
         force_reauth: 'true',
-        client_id: config.appId as string,
+        client_id: config.appId,
         redirect_uri: config.redirectUri,
         response_type: 'code',
         scope: OAUTH_SCOPES,
@@ -70,13 +80,13 @@ export async function buildAuthorizationUrl(config: InstagramOAuthConfig, userId
     return `${AUTHORIZE_URL}?${params}`;
 }
 
-async function exchangeCodeForToken(config: InstagramOAuthConfig, code: string): Promise<string> {
+async function exchangeCodeForToken(config: ConfiguredInstagramOAuth, code: string): Promise<string> {
     const tokenRes = await fetch(TOKEN_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
-            client_id: config.appId as string,
-            client_secret: config.appSecret as string,
+            client_id: config.appId,
+            client_secret: config.appSecret,
             grant_type: 'authorization_code',
             redirect_uri: config.redirectUri,
             // instagram sometimes appends #_ to the code
@@ -91,11 +101,11 @@ async function exchangeCodeForToken(config: InstagramOAuthConfig, code: string):
 }
 
 // keeps the short-lived token (no expiry) when instagram declines the upgrade
-async function upgradeToLongLivedToken(config: InstagramOAuthConfig, shortToken: string): Promise<{ token: string; expiresIn: number }> {
+async function upgradeToLongLivedToken(config: ConfiguredInstagramOAuth, shortToken: string): Promise<{ token: string; expiresIn: number }> {
     const longParams = new URLSearchParams({
         grant_type: 'ig_exchange_token',
-        client_id: config.appId as string,
-        client_secret: config.appSecret as string,
+        client_id: config.appId,
+        client_secret: config.appSecret,
         access_token: shortToken,
     });
     const longRes = await fetch(`${LONG_LIVED_TOKEN_URL}?${longParams}`);
@@ -104,7 +114,7 @@ async function upgradeToLongLivedToken(config: InstagramOAuthConfig, shortToken:
 }
 
 export async function connectInstagramFromOAuth(
-    supabase: SupabaseClient, userId: string, config: InstagramOAuthConfig, code: string,
+    supabase: SupabaseClient, userId: string, config: ConfiguredInstagramOAuth, code: string,
 ): Promise<InstagramOAuthOutcome> {
     const shortToken = await exchangeCodeForToken(config, code);
     const { token, expiresIn } = await upgradeToLongLivedToken(config, shortToken);

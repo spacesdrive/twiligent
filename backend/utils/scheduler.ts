@@ -40,6 +40,7 @@ async function waitForContainer(mediaType: InstagramPublishMediaType | undefined
         if (statusData.status_code === 'ERROR') throw new Error('Processing failed: ' + (statusData.status || ''));
         if (statusData.status_code === 'EXPIRED') throw new Error('Container expired');
     }
+    throw new Error('Instagram did not finish processing the media within 3 minutes');
 }
 
 async function publishContainer(igId: string, containerId: string, token: string): Promise<string> {
@@ -55,9 +56,11 @@ async function publishContainer(igId: string, containerId: string, token: string
 async function publishPost(supabase: SupabaseClient, post: ScheduledPost): Promise<string> {
     const acct = await getAccountById(supabase, post.accountId);
     if (!acct) throw new Error('Account not found: ' + post.accountId);
+    if (acct.platform !== 'instagram' || !acct.igUserId) throw new Error('Scheduled posts can only publish to Instagram accounts');
+    if (!acct.accessToken) throw new Error('No Instagram access token stored - reconnect this account');
 
-    const igId = acct.igUserId!;
-    const token = acct.accessToken!;
+    const igId = acct.igUserId;
+    const token = acct.accessToken;
     const params = buildMediaParams(post, token);
 
     const containerId = await createContainer(igId, params);

@@ -41,7 +41,7 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
 
 ### `ApiResult<T>`
 
-A few routes answer `{ success: false, message }` (the `ApiFailure` type in `shared/types/domain.ts`) with a 2xx status, which `request()` returns instead of throwing. Their methods return `request<ApiResult<T>>()`: `getCloudinaryConfig`, `createIGContainer`, `publishIGContainer`, `getScheduledPosts`, `createScheduledPost` and `updateScheduledPost`. The caller narrows on `success` before reading the data:
+A few routes answer `{ success: false, message }` (the `ApiFailure` type in `shared/types/domain.ts`) with a 2xx status, which `request()` returns instead of throwing. Their methods return `request<ApiResult<T>>()`: `createIGContainer`, `publishIGContainer`, `getScheduledPosts`, `createScheduledPost` and `updateScheduledPost`. The caller narrows on `success` before reading the data:
 
 ```ts
 const res = await api.createScheduledPost(post);

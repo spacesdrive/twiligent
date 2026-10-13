@@ -114,6 +114,8 @@ async function claimPost(id: string): Promise<boolean> {
 function sleep(ms: number): Promise<void> { return new Promise(r => setTimeout(r, ms)); }
 
 async function publishToInstagram(post: ScheduledPost, account: Account): Promise<string | undefined> {
+    if (account.platform !== 'instagram' || !account.igUserId) throw new Error('Scheduled posts can only publish to Instagram accounts');
+    if (!account.accessToken) throw new Error('No Instagram access token stored - reconnect this account');
     const igId = account.igUserId;
     const token = account.accessToken;
     // URLSearchParams stringifies the boolean and number values
@@ -154,16 +156,18 @@ async function publishToInstagram(post: ScheduledPost, account: Account): Promis
     const containerId = createData.id;
 
     if (post.mediaType === 'REELS' || post.mediaType === 'STORIES') {
-        for (let i = 0; i < 60; i++) {
+        let finished = false;
+        for (let i = 0; i < 60 && !finished; i++) {
             await sleep(3000);
             const statusRes = await fetch(
                 `https://graph.instagram.com/v25.0/${containerId}?fields=status_code,status&access_token=${token}`
             );
             const statusData = await statusRes.json() as GraphResponse;
-            if (statusData.status_code === 'FINISHED' || statusData.status_code === 'PUBLISHED') break;
+            finished = statusData.status_code === 'FINISHED' || statusData.status_code === 'PUBLISHED';
             if (statusData.status_code === 'ERROR') throw new Error('Processing failed: ' + (statusData.status || ''));
             if (statusData.status_code === 'EXPIRED') throw new Error('Container expired');
         }
+        if (!finished) throw new Error('Instagram did not finish processing the media within 3 minutes');
     } else {
         await sleep(2000);
     }

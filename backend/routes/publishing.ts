@@ -14,13 +14,15 @@ interface InstagramApiPublishingLimitBody extends InstagramApiErrorBody {
     data: InstagramPublishingLimit[];
 }
 
+const NO_TOKEN_MESSAGE = 'No Instagram access token stored - reconnect this account';
+
 const app = new Hono<AppEnv>();
 
 app.get('/cloudinary-config', (c) => {
     const cloudName = c.env.CLOUDINARY_CLOUD_NAME;
     const uploadPreset = c.env.CLOUDINARY_UPLOAD_PRESET;
     if (!cloudName || !uploadPreset) {
-        return c.json({ success: false, message: 'Cloudinary not configured on server' });
+        return c.json({ success: false, message: 'Cloudinary not configured on server' }, 503);
     }
     return c.json({ success: true, cloudName, uploadPreset } satisfies CloudinaryConfigResponse);
 });
@@ -31,6 +33,7 @@ app.get('/accounts/:id/ig-publishing-limit', async (c) => {
         if (!acct || acct.platform !== 'instagram') {
             return c.json({ success: false, message: 'Instagram account not found' }, 404);
         }
+        if (!acct.accessToken || !acct.igUserId) return c.json({ success: false, message: NO_TOKEN_MESSAGE }, 400);
         const response = await fetch(
             `https://graph.instagram.com/v25.0/${acct.igUserId}/content_publishing_limit?fields=quota_usage,config&access_token=${acct.accessToken}`
         );
@@ -48,9 +51,10 @@ app.post('/accounts/:id/ig-publish', async (c) => {
         if (!acct || acct.platform !== 'instagram') {
             return c.json({ success: false, message: 'Instagram account not found' }, 404);
         }
+        if (!acct.accessToken || !acct.igUserId) return c.json({ success: false, message: NO_TOKEN_MESSAGE }, 400);
 
         const igId = acct.igUserId;
-        const params = buildMediaParams(await c.req.json() as InstagramPublishRequest, acct.accessToken!);
+        const params = buildMediaParams(await c.req.json() as InstagramPublishRequest, acct.accessToken);
 
         // URLSearchParams stringifies the boolean and number values
         const query = new URLSearchParams(params as unknown as Record<string, string>).toString();
@@ -68,8 +72,12 @@ app.get('/ig-container/:containerId/status', async (c) => {
     try {
         const containerId = c.req.param('containerId');
         const accountId = c.req.query('accountId');
-        const acct = await getAccountById(c.get('supabase'), accountId!, c.get('userId'));
-        if (!acct) return c.json({ success: false, message: 'Account not found' }, 404);
+        if (!accountId) return c.json({ success: false, message: 'accountId is required' }, 400);
+        const acct = await getAccountById(c.get('supabase'), accountId, c.get('userId'));
+        if (!acct || acct.platform !== 'instagram') {
+            return c.json({ success: false, message: 'Instagram account not found' }, 404);
+        }
+        if (!acct.accessToken) return c.json({ success: false, message: NO_TOKEN_MESSAGE }, 400);
 
         const response = await fetch(
             `https://graph.instagram.com/v25.0/${containerId}?fields=status_code,status&access_token=${acct.accessToken}`
@@ -77,7 +85,7 @@ app.get('/ig-container/:containerId/status', async (c) => {
         const data = await response.json() as InstagramApiContainerStatus;
         if (data.error) throw new Error(data.error.message);
 
-        return c.json({ success: true, statusCode: data.status_code!, status: data.status! } satisfies InstagramContainerStatusResponse);
+        return c.json({ success: true, statusCode: data.status_code ?? 'IN_PROGRESS', status: data.status ?? '' } satisfies InstagramContainerStatusResponse);
     } catch (err) {
         return c.json({ success: false, message: (err as Error).message }, 500);
     }
@@ -89,6 +97,7 @@ app.post('/accounts/:id/ig-media-publish', async (c) => {
         if (!acct || acct.platform !== 'instagram') {
             return c.json({ success: false, message: 'Instagram account not found' }, 404);
         }
+        if (!acct.accessToken || !acct.igUserId) return c.json({ success: false, message: NO_TOKEN_MESSAGE }, 400);
 
         const { containerId } = await c.req.json() as InstagramMediaPublishRequest;
         const response = await fetch(

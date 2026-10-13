@@ -52,10 +52,10 @@ Channel metrics, the comparison and the all videos filter live in `services/yout
 ### Publishing
 | Method | Path | File | Purpose |
 |---|---|---|---|
-| GET | `/api/cloudinary-config` | `routes/publishing.ts` | Returns `{ cloudName, uploadPreset }` for frontend Cloudinary upload |
+| GET | `/api/cloudinary-config` | `routes/publishing.ts` | Returns `{ cloudName, uploadPreset }` for frontend Cloudinary upload; 503 when the Worker has no Cloudinary settings |
 | GET | `/api/accounts/:id/ig-publishing-limit` | `routes/publishing.ts` | Checks daily Instagram publishing quota remaining |
 | POST | `/api/accounts/:id/ig-publish` | `routes/publishing.ts` | Creates Instagram media container via Graph API; returns `{ containerId }` |
-| GET | `/api/ig-container/:id/status` | `routes/publishing.ts` | Polls container status (`FINISHED`, `IN_PROGRESS`, `ERROR`, `EXPIRED`) |
+| GET | `/api/ig-container/:id/status` | `routes/publishing.ts` | Polls container status (`FINISHED`, `IN_PROGRESS`, `ERROR`, `EXPIRED`); needs `?accountId=` of an Instagram account with a token (400 or 404 otherwise) |
 | POST | `/api/accounts/:id/ig-media-publish` | `routes/publishing.ts` | Publishes the container to Instagram; returns `{ mediaId }` |
 
 ### Scheduled Posts

@@ -36,6 +36,7 @@ const IG_ERRORS: Record<string, string> = {
   cancelled: 'Instagram sign-in was cancelled. Try again when you are ready.',
   access_denied: `Instagram did not grant access. Approve every requested permission and try again. ${TESTER_HINT}`,
   invalid_state: 'The Instagram sign-in link expired. Start the connection again.',
+  not_configured: 'Instagram connections are not set up on this server. Ask your administrator to add the Instagram app ID and secret.',
 };
 
 const METRICS: Record<Platform, (acct: AccountMetricFields) => AccountMetric[]> = {

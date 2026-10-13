@@ -8,7 +8,7 @@ User selects account + uploads media + fills caption
         ▼
 1. Frontend: Upload media to Cloudinary
    api.getCloudinaryConfig() -> GET /api/cloudinary-config
-   -> returns { cloudName, uploadPreset }
+   -> returns { cloudName, uploadPreset }, or 503 when the Worker has no Cloudinary settings
    
    Browser uploads directly to Cloudinary using unsigned preset (api.uploadToCloudinary)
    -> Cloudinary returns public URL (e.g., https://res.cloudinary.com/cloud/image/upload/...)
@@ -20,6 +20,7 @@ User selects account + uploads media + fills caption
    -> Backend: calls Instagram Graph API
        POST https://graph.instagram.com/v25.0/{igUserId}/media
        params: { image_url|video_url, caption, media_type, access_token }
+   -> 404 when the account is not an Instagram account of this user, 400 when it has no stored token
    -> Returns { containerId }
         │
         ▼
@@ -27,8 +28,10 @@ User selects account + uploads media + fills caption
    api.getIGContainerStatus(containerId, accountId)
    -> GET /api/ig-container/:containerId/status?accountId=:id
    -> Backend: GET https://graph.instagram.com/v25.0/{containerId}?fields=status_code,status
-   -> Poll every 3 seconds, up to 30 times (about 90 seconds); a single post then fails,
-      the bulk upload goes on to publish
+   -> accountId is required (400 without it); the account must be an Instagram account with a token
+   -> Poll every 3 seconds, up to 30 times (about 90 seconds); after that the post fails
+      with a "took too long" message, in single and bulk publishing alike, because
+      publishing an unfinished container fails anyway
    -> Wait for status_code = 'FINISHED'
    -> ERROR -> throw error, mark as failed
    -> EXPIRED -> throw error
@@ -71,9 +74,12 @@ User creates a scheduled post
       (This is the mutex - prevents double-publish if both schedulers fire simultaneously)
    
    b. SELECT account WHERE id=:accountId
-      (Gets the accessToken from accounts.data)
+      (Gets the accessToken from accounts.data; a missing account, an account on another
+      platform or a missing token fails the post with a message that says which)
    
-   c. Execute the publish pipeline (same as immediate publishing, steps 2-4 above)
+   c. Execute the publish pipeline (same as immediate publishing, steps 2-4 above); the
+      schedulers poll a Reel or Story up to 60 times (3 minutes) and fail the post if it
+      is still processing
    
    d. On success: UPDATE SET status='published', data.publishedMediaId=:id, data.publishedAt=:ts
    
@@ -95,4 +101,5 @@ User creates a scheduled post
 | Container `ERROR` | Instagram processing failed (bad codec, too long, etc.) | User must re-upload |
 | Container `EXPIRED` | >24 hours since container was created | User must re-create container |
 | `media_publish` 400 | Usually quota exceeded or invalid containerId | Check publishing limit |
+| Processing timeout | The container was still processing after the last poll | Try again later, or use a shorter or smaller video |
 | `status=failed` in scheduled post | Any of the above, plus `accessToken` expired | Re-connect the account |

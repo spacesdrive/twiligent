@@ -23,6 +23,7 @@ Tests never sit next to source files. Each workspace has a `tests/` folder that 
 |---|---|
 | `backend/services/youtube.ts` | `backend/tests/services/youtube.test.ts` |
 | `backend/routes/accounts.ts` | `backend/tests/routes/accounts.test.ts` |
+| `backend/routes/publishing.ts` | `backend/tests/routes/publishing.test.ts` |
 | `backend/utils/scheduler.ts` | `backend/tests/utils/scheduler.test.ts` |
 | `frontend/src/lib/accounts.ts` | `frontend/tests/lib/accounts.test.ts` |
 | `frontend/src/features/analytics/overview/overviewStats.ts` | `frontend/tests/features/analytics/overview/overviewStats.test.ts` |

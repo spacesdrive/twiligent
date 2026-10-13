@@ -2,14 +2,12 @@ import { api } from '../../services/api';
 import type { InstagramContainerStatusResponse } from '../../../../shared/types/instagram.ts';
 import type { MediaType } from '../../../../shared/types/domain.ts';
 
-export interface ContainerWaitOptions {
-  tolerant?: boolean;
-  onStatus?: (message: string) => void;
-}
+// tolerant polling survives failed status checks, so it must report each status it sees
+export type ContainerWaitOptions =
+  | { tolerant: true; onStatus: (message: string) => void }
+  | { tolerant?: false; onStatus?: undefined };
 
-export interface ReadyOptions extends ContainerWaitOptions {
-  onProcessing: () => void;
-}
+export type ReadyOptions = ContainerWaitOptions & { onProcessing: () => void };
 
 const POLL_ATTEMPTS = 30;
 const POLL_INTERVAL_MS = 3000;
@@ -42,19 +40,18 @@ async function pollStrict(containerId: string, accountId: string): Promise<boole
   return containerFinished(status, 'Processing failed');
 }
 
-// single posts survive failed checks and throw on timeout; bulk stops quietly
+// publishing an unfinished container fails, so running out of attempts is an error in both modes
 export async function waitForContainer(
-  containerId: string, accountId: string, { tolerant = false, onStatus }: ContainerWaitOptions = {},
-): Promise<boolean> {
+  containerId: string, accountId: string, options: ContainerWaitOptions = {},
+): Promise<void> {
   for (let i = 0; i < POLL_ATTEMPTS; i++) {
     await wait(POLL_INTERVAL_MS);
-    const finished = tolerant
-      ? await pollTolerant(containerId, accountId, onStatus!)
+    const finished = options.tolerant
+      ? await pollTolerant(containerId, accountId, options.onStatus)
       : await pollStrict(containerId, accountId);
-    if (finished) return true;
+    if (finished) return;
   }
-  if (tolerant) throw new Error('Instagram took too long to process the media. Try again in a few minutes.');
-  return false;
+  throw new Error('Instagram took too long to process the media. Try again in a few minutes.');
 }
 
 // photos need no processing, only a moment before Instagram can publish them

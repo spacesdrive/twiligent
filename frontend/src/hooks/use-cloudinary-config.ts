@@ -4,8 +4,7 @@ import type { CloudinaryConfigResponse } from '@shared/types/instagram.ts';
 
 async function fetchCloudinaryConfig(): Promise<CloudinaryConfigResponse | null> {
   try {
-    const res = await api.getCloudinaryConfig();
-    return res?.success ? res : null;
+    return await api.getCloudinaryConfig();
   } catch {
     // pages already show a missing config as an alert or a disabled upload field
     return null;

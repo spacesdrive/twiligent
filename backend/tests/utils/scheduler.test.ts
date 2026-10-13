@@ -1,4 +1,5 @@
 import { test, describe, before, after, afterEach, mock } from 'node:test';
+import assert from 'node:assert/strict';
 import { processScheduledPosts } from '../../utils/scheduler.ts';
 import { assertGolden } from '../fixtures/golden.ts';
 import { installFetch, reply } from '../fixtures/fakeFetch.ts';
@@ -94,5 +95,30 @@ describe('processScheduledPosts golden output', () => {
         mock.restoreAll();
 
         assertGolden({ result, logLines }, 'scheduler.dbFailure');
+    });
+});
+
+describe('processScheduledPosts account checks', () => {
+    test('fails posts whose account is not an Instagram account or has no token, without calling Instagram', async () => {
+        const supabase = fakeSupabase([
+            tableRow('accounts', accountRow({ id: 'yt1', platform: 'youtube', channelId: 'UC1' })),
+            tableRow('accounts', accountRow({ id: 'igNoToken', platform: 'instagram', igUserId: 'IG9' })),
+            postRow('p-youtube', 'yt1', { mediaType: 'IMAGE', mediaUrl: 'https://cdn/y.jpg' }),
+            postRow('p-notoken', 'igNoToken', { mediaType: 'IMAGE', mediaUrl: 'https://cdn/n.jpg' }),
+        ]);
+        fetchMock = installFetch(graphReply);
+        mock.method(console, 'error', () => undefined);
+
+        const result = await processScheduledPosts(supabase);
+        mock.restoreAll();
+
+        assert.deepEqual(result, {
+            processed: 0,
+            errors: [
+                { id: 'p-youtube', error: 'Scheduled posts can only publish to Instagram accounts' },
+                { id: 'p-notoken', error: 'No Instagram access token stored - reconnect this account' },
+            ],
+        });
+        assert.deepEqual(fetchMock.requests, []);
     });
 });

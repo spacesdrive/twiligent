@@ -1,6 +1,6 @@
 {
     "result": {
-        "processed": 4,
+        "processed": 3,
         "errors": [
             {
                 "id": "p-story",
@@ -21,6 +21,10 @@
             {
                 "id": "p-publish",
                 "error": "Publish refused"
+            },
+            {
+                "id": "p-slow",
+                "error": "Instagram did not finish processing the media within 3 minutes"
             }
         ]
     },
@@ -124,8 +128,8 @@
             "Failed to publish scheduled post p-publish: Publish refused"
         ],
         [
-            "log",
-            "Published scheduled post p-slow → media m-c-SLOW"
+            "error",
+            "Failed to publish scheduled post p-slow: Instagram did not finish processing the media within 3 minutes"
         ],
         [
             "log",
@@ -432,10 +436,6 @@
         {
             "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
             "method": "GET"
-        },
-        {
-            "url": "https://graph.instagram.com/v25.0/SLOW/media_publish?creation_id=c-SLOW&access_token=T6",
-            "method": "POST"
         },
         {
             "url": "https://graph.instagram.com/v25.0/IG1/media?access_token=T1&image_url=https%3A%2F%2Fcdn%2Fd.jpg",
@@ -909,12 +909,11 @@
             "type": "update",
             "table": "scheduled_posts",
             "values": {
-                "status": "published",
+                "status": "failed",
                 "data": {
                     "mediaType": "REELS",
                     "mediaUrl": "https://cdn/slow.mp4",
-                    "publishedMediaId": "m-c-SLOW",
-                    "publishedAt": "2026-09-01T12:00:00.000Z"
+                    "error": "Instagram did not finish processing the media within 3 minutes"
                 }
             },
             "filters": [
@@ -1161,13 +1160,12 @@
             "id": "p-slow",
             "user_id": "user-1",
             "account_id": "igSlow",
-            "status": "published",
+            "status": "failed",
             "scheduled_at": "2026-09-01T11:00:00.000Z",
             "data": {
                 "mediaType": "REELS",
                 "mediaUrl": "https://cdn/slow.mp4",
-                "publishedMediaId": "m-c-SLOW",
-                "publishedAt": "2026-09-01T12:00:00.000Z"
+                "error": "Instagram did not finish processing the media within 3 minutes"
             }
         },
         {

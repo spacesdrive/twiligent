@@ -5,21 +5,29 @@ function toBase64Url(text: string): string {
     return btoa(text).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+function hmacKey(secret: string, usage: 'sign' | 'verify'): Promise<CryptoKey> {
+    return crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, [usage]);
+}
+
 async function hmacSign(secret: string, message: string): Promise<string> {
-    const key = await crypto.subtle.importKey(
-        'raw',
-        new TextEncoder().encode(secret),
-        { name: 'HMAC', hash: 'SHA-256' },
-        false,
-        ['sign'],
-    );
-    const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(message));
+    const signature = await crypto.subtle.sign('HMAC', await hmacKey(secret, 'sign'), new TextEncoder().encode(message));
     return toBase64Url(String.fromCharCode(...new Uint8Array(signature)));
 }
 
+function fromBase64Url(text: string): Uint8Array<ArrayBuffer> | null {
+    try {
+        return Uint8Array.from(atob(text.replace(/-/g, '+').replace(/_/g, '/')), char => char.charCodeAt(0));
+    } catch {
+        // a tampered state is not valid base64
+        return null;
+    }
+}
+
+// subtle.verify compares in constant time, unlike comparing the two signatures as strings
 async function hmacVerify(secret: string, message: string, signature: string): Promise<boolean> {
-    const expected = await hmacSign(secret, message);
-    return expected === signature;
+    const signatureBytes = fromBase64Url(signature);
+    if (!signatureBytes) return false;
+    return crypto.subtle.verify('HMAC', await hmacKey(secret, 'verify'), signatureBytes, new TextEncoder().encode(message));
 }
 
 export async function createOAuthState(userId: string, secret: string): Promise<string> {
@@ -37,8 +45,9 @@ export async function verifyOAuthState(state: string, secret: string): Promise<s
     const isValid = await hmacVerify(secret, payload, signature);
     if (!isValid) return null;
 
-    const decoded = atob(payload.replace(/-/g, '+').replace(/_/g, '/'));
-    const [userId, createdAt] = decoded.split(':');
+    const decoded = fromBase64Url(payload);
+    if (!decoded) return null;
+    const [userId, createdAt] = new TextDecoder().decode(decoded).split(':');
     if (Date.now() - Number(createdAt) > STATE_TTL_MS) return null;
 
     return userId;

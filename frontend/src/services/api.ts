@@ -155,7 +155,7 @@ export const api = {
 
     getComparison: () => request<YouTubeComparisonResponse>('/comparison'),
 
-    getCloudinaryConfig: () => request<ApiResult<CloudinaryConfigResponse>>('/cloudinary-config'),
+    getCloudinaryConfig: () => request<CloudinaryConfigResponse>('/cloudinary-config'),
     uploadToCloudinary,
     uploadImage,
 
