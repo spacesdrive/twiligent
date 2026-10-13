@@ -4,7 +4,7 @@ process.removeAllListeners('warning');
 import { test, describe, before, after, afterEach, mock } from 'node:test';
 import type { Mock } from 'node:test';
 import type { Hono } from 'hono';
-import analyticsRouter from '../../routes/analytics.ts';
+import analyticsRouter from '../../routes/analyticsRoutes.ts';
 import overviewRouter from '../../routes/overview.ts';
 import { assertGolden } from '../fixtures/golden.ts';
 import { installFetch, reply } from '../fixtures/fakeFetch.ts';
@@ -96,11 +96,13 @@ async function runCalls(router: Hono<AppEnv>, calls: RouteStep[], { redis = null
     fetchMock = installFetch(youtubeReply);
     const logLines: unknown[][] = [];
     mock.method(console, 'error', (...args: unknown[]) => logLines.push(['error', ...args]));
+    mock.method(console, 'warn', (...args: unknown[]) => logLines.push(['warn', ...args]));
     const responses = [];
     for (const [method, path] of calls) {
         responses.push({ call: `${method} ${path}`, ...(await callRoute(app, method, path, { env })) });
     }
     (console.error as Mock<typeof console.error>).mock.restore();
+    (console.warn as Mock<typeof console.warn>).mock.restore();
     return { responses, queries: supabase.calls, requests: fetchMock.requests, logLines, redisWrites: redis?.writes ?? null };
 }
 
@@ -131,8 +133,9 @@ describe('analytics and overview routes golden output', () => {
         ]);
         const app = mountWithContext(server => server.route('/', analyticsRouter), { supabase, redis: null, userId: 'user-1' });
         fetchMock = installFetch(youtubeReply);
-        const notChannel = { status: 404, body: JSON.stringify({ success: false, message: 'YouTube channel not found' }) };
-        const noPlaylist = { status: 400, body: JSON.stringify({ success: false, message: 'No uploads playlist stored - delete this channel and add it again' }) };
+        const failure = (status: number, code: string, message: string) => ({ status, body: JSON.stringify({ success: false, code, message, requestId: 'req-test' }) });
+        const notChannel = failure(404, 'NOT_FOUND', 'YouTube channel not found');
+        const noPlaylist = failure(400, 'VALIDATION_ERROR', 'No uploads playlist stored - delete this channel and add it again');
         assert.deepEqual(await callRoute(app, 'GET', '/accounts/ig1/analytics', { env: ENV }), notChannel);
         assert.deepEqual(await callRoute(app, 'GET', '/accounts/ig1/videos', { env: ENV }), notChannel);
         assert.deepEqual(await callRoute(app, 'GET', '/accounts/ytOld/analytics', { env: ENV }), noPlaylist);

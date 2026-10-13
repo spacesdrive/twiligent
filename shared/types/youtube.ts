@@ -200,7 +200,7 @@ export interface YouTubeChannelMetrics {
 // GET /api/accounts/:id/analytics
 export interface YouTubeAnalyticsPayload {
     success: true;
-    channel: Account & YouTubeChannelMetrics;
+    channel: SafeAccount & YouTubeChannelMetrics;
     analytics: VideoAnalytics;
     videoCount: number;
 }

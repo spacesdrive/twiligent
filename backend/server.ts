@@ -10,11 +10,11 @@ import { rateLimit, clientIp, userKey, RATE_LIMIT_HEADERS } from './middleware/r
 import { RATE_LIMIT_RULES, QUOTA_ROUTES, PUBLISH_ROUTES, matchesRoute } from './lib/rateLimit/rules.ts';
 import keysRouter from './routes/keys.ts';
 import accountRoutes from './routes/accountRoutes.ts';
-import analyticsRouter from './routes/analytics.ts';
+import analyticsRoutes from './routes/analyticsRoutes.ts';
 import publishingRouter from './routes/publishing.ts';
 import scheduledPostsRouter from './routes/scheduledPosts.ts';
 import settingsRouter from './routes/settings.ts';
-import redditRouter from './routes/reddit.ts';
+import redditRoutes from './routes/redditRoutes.ts';
 import trackedContentRouter from './routes/trackedContent.ts';
 import overviewRouter from './routes/overview.ts';
 import { urlHandler, callbackHandler } from './routes/instagramAuth.ts';
@@ -57,11 +57,11 @@ api.use('*', rateLimit(RATE_LIMIT_RULES.publish, userKey, c => matchesRoute(PUBL
 
 api.route('/', keysRouter);
 api.route('/', accountRoutes);
-api.route('/', analyticsRouter);
+api.route('/', analyticsRoutes);
 api.route('/', publishingRouter);
 api.route('/', scheduledPostsRouter);
 api.route('/', settingsRouter);
-api.route('/', redditRouter);
+api.route('/', redditRoutes);
 api.route('/', trackedContentRouter);
 api.route('/', overviewRouter);
 

@@ -1,4 +1,4 @@
-import type { Account, MediaType, UserTag } from './domain.ts';
+import type { MediaType, SafeAccount, UserTag } from './domain.ts';
 import type { PostFrequency } from './reddit.ts';
 
 export type InstagramContentType = 'reel' | 'post' | 'video';
@@ -217,7 +217,7 @@ export interface CloudinaryConfigResponse {
 export interface InstagramAnalyticsResponse {
     success: true;
     profile: InstagramProfile;
-    account: Omit<Account, 'accessToken'>;
+    account: SafeAccount;
     analytics: InstagramAnalytics;
     mediaCount: number;
 }
