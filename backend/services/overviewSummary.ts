@@ -1,7 +1,8 @@
 import { getVideosCache, setVideosCache, getIGCache, setIGCache, getRedditCache, setRedditCache } from '../lib/cache.ts';
-import { fetchAllVideos } from './youtube.ts';
-import { fetchInstagramMedia, summarizeContentTypes } from './instagram.ts';
-import { fetchRedditProfile, fetchRedditPosts, computeRedditAnalytics } from './reddit.ts';
+import { fetchAllVideos } from './youtube/youtubeVideos.ts';
+import { fetchInstagramMedia } from './instagram/instagramMedia.ts';
+import { summarizeContentTypes } from './instagram/instagramContentTypes.ts';
+import { fetchRedditProfile, fetchRedditPosts, computeRedditAnalytics } from './reddit/redditApi.ts';
 import type { Redis } from '../types/app.ts';
 import type {
     Account, AccountSummary, PendingAccountSummary, RedditAccountSummary, InstagramAccountSummary,

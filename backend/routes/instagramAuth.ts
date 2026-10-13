@@ -1,7 +1,7 @@
 import { verifyOAuthState } from '../lib/oauthState.ts';
 import {
     readInstagramOAuthConfig, buildAuthorizationUrl, connectInstagramFromOAuth, isOAuthConfigured,
-} from '../services/instagramOAuth.ts';
+} from '../services/instagram/instagramOAuth.ts';
 import type { AppContext } from '../types/app.ts';
 import type { InstagramAuthUrlResponse } from '../../shared/types/instagram.ts';
 

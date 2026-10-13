@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { safeAccount } from '../../lib/safeAccount.ts';
-import { buildMediaParams } from '../../services/instagram.ts';
+import { buildMediaParams } from '../../services/instagram/instagramPublishing.ts';
 import type { Account } from '../../../shared/types/domain.ts';
 
 test('safeAccount strips every credential and reports cookie presence', () => {

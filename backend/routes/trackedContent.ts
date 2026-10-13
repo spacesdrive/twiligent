@@ -8,8 +8,8 @@ import {
     deleteTrackedPost,
     getAccountById,
 } from '../lib/db.ts';
-import { fetchTrackedPostData } from '../services/reddit.ts';
-import { fetchTrackedYouTubeData } from '../services/youtube.ts';
+import { fetchTrackedPostData } from '../services/reddit/redditApi.ts';
+import { fetchTrackedYouTubeData } from '../services/youtube/youtubeTracked.ts';
 import { detectContentType, manualViewsPatch, imageUrlPatch } from '../services/trackedContent.ts';
 import type { AppContext, AppEnv, SupabaseClient } from '../types/app.ts';
 import type { TrackedPostUpdates } from '../lib/db.ts';

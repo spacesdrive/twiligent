@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { getAccounts, getAccountById, deleteAccount } from '../lib/db.ts';
 import { deleteVideosCache, deleteIGCache, deleteRedditCache } from '../lib/cache.ts';
-import { resolveChannelId, fetchChannelData } from '../services/youtube.ts';
+import { resolveChannelId, fetchChannelData } from '../services/youtube/youtubeChannels.ts';
 import {
     addYouTubeAccount, addRedditAccount, addInstagramAccount, refreshInstagramToken,
 } from '../services/accountConnect.ts';

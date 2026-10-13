@@ -16,7 +16,7 @@ import trackedContentRouter from './routes/trackedContent.ts';
 import overviewRouter from './routes/overview.ts';
 import { urlHandler, callbackHandler } from './routes/instagramAuth.ts';
 import { processScheduledPosts } from './utils/scheduler.ts';
-import { autoRefreshInstagramTokens } from './services/instagram.ts';
+import { autoRefreshInstagramTokens } from './services/instagram/instagramTokens.ts';
 import type { AppEnv } from './types/app.ts';
 import type { Env } from './types/env.ts';
 
