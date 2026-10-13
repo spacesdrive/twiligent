@@ -30,17 +30,7 @@ What Twiligent is for, and what every change should move forward.
 
 ## In Progress
 
-Nothing is in progress. The TypeScript migration (#2) and API rate limiting (#8) are finished and recorded in `CHANGELOG.md`.
-
-The migration found defects that are now tracked as issues, in priority order:
-
-1. **Redis outages slow cached requests** ([#10](https://github.com/spacesdrive/twiligent/issues/10)) - the local Upstash database no longer resolves, and the cache client retries for about 4 seconds per call. Check the production database first.
-2. **Instagram credential and account checks before publishing** ([#11](https://github.com/spacesdrive/twiligent/issues/11))
-3. **Required account fields before platform API calls** ([#12](https://github.com/spacesdrive/twiligent/issues/12))
-4. **Analytics edge cases** ([#15](https://github.com/spacesdrive/twiligent/issues/15)) - empty-state shape, hidden like counts, Reddit karma
-5. **Saving GitHub settings erases the stored token** ([#13](https://github.com/spacesdrive/twiligent/issues/13))
-6. **Declared variants and design tokens in three components** ([#16](https://github.com/spacesdrive/twiligent/issues/16))
-7. **Dead code from the migration** ([#14](https://github.com/spacesdrive/twiligent/issues/14))
+1. **Backend request pipeline in layers** ([#20](https://github.com/spacesdrive/twiligent/issues/20)) - split the Worker into middleware, route tables, controllers, services and repositories, with a request context (request id, user id, cancellation), security headers, input validation and one error handler.
 
 ---
 
@@ -143,3 +133,10 @@ React Native app using the same Cloudflare Worker backend.
 - The codebase was JavaScript with API shapes restated on both sides - it is now strict TypeScript with shared API types (#2).
 - `GET /api/comparison` returned stored account secrets - fixed (#9).
 - The publisher log printed emoji - removed (#6).
+- A Redis outage added about 4 seconds to every cached call - the cache now fails fast and pauses Redis for 30 seconds (#10).
+- Publishing and scheduling called Instagram with missing credentials and published unfinished containers - each case now fails with a clear message (#11).
+- Account refresh and analytics called platform APIs with a missing channel id, playlist or username (#12).
+- Saving GitHub settings erased the stored token - only the repository is stored now (#13).
+- Dead code from the migration was removed (#14).
+- Hidden YouTube like and comment counts pulled averages down, and empty analytics had a different shape (#15).
+- Media overlays used hex colours and an undeclared tabs variant (#16).
