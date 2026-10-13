@@ -4,7 +4,7 @@ Services in `backend/services/` contain all logic for communicating with externa
 
 ## Shared analytics math (`backend/services/analyticsMath.js`)
 
-Pure helpers whose formulas are identical in the Instagram and Reddit analytics: `DAY_NAMES`, `DAY_MS`, `sumOf`, `roundedAverage`, `medianOf`, `countWithinDays` (inclusive `<=`), `postFrequency` (posts per week and month over the dated span), `consistencyScore` (coefficient of variation, needs 3 values), `bestToAverageRatio` (virality), `pickHighest` and `monthKey` (local time). YouTube keeps its own recency (strict `<`) and weekly consistency formulas and only shares `monthKey`.
+Pure helpers whose formulas are identical in the Instagram and Reddit analytics: `DAY_NAMES`, `DAY_MS`, `sumOf`, `roundedAverage`, `medianOf`, `countWithinDays` (inclusive `<=`), `postFrequency` (posts per week and month over the dated span), `consistencyScore` (coefficient of variation, needs 3 values), `bestToAverageRatio` (virality), `pickHighest` and `monthKey` (local time). YouTube keeps its own recency (strict `<`) and weekly consistency formulas: `youtubeAnalytics.js` imports `DAY_MS`, `sumOf`, `roundedAverage` and `medianOf`, and `youtubeTrends.js` imports `DAY_NAMES`, `DAY_MS` and `monthKey`.
 
 ---
 
@@ -160,6 +160,12 @@ Duplicate accounts throw an `Error` whose message the route returns with status 
 ## Tracked content (`trackedContent.js`)
 
 Pure rules for `routes/trackedContent.js`: `detectContentType(url)` (`reddit`, `youtube` or `null`), `manualViewsPatch(value, isYouTube)` and `imageUrlPatch(value, isYouTube)`. The two patch helpers return `{ patch }` for the route to merge into the item's `data`, or `{ error }` for a 400 response. Empty values clear the field, YouTube items refuse both, views must be whole numbers of 0 or more, and images must be `https` URLs.
+
+---
+
+## Overview summary (`overviewSummary.js`)
+
+Used by `routes/overview.js`. `summarizeAccountCaches(accounts, { redis, userId, apiKey })` reads each account's Redis cache in parallel (`Promise.allSettled`) and returns `{ analyticsCache, warmTasks }`. A warm account gets its totals (`cacheWarmed: true`); an account with no cache gets `cacheWarmed: false`, and when Redis and the account's credentials are present its background fetch starts at once and `syncing` is `true`. An account whose cache read fails is left out of `analyticsCache`. The route passes `warmTasks` to `waitUntil` so the response never waits for them.
 
 ---
 
