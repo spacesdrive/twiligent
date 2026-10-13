@@ -12,7 +12,8 @@ Request arrives
   3. securityHeaders      app.use('*', securityHeaders)                             middleware/securityHeaders.ts
   4. injectClients        app.use('*', injectClients)                               middleware/clients.ts
   5. rateLimit(ip)        app.use('/api/*', rateLimit(RATE_LIMIT_RULES.ip, clientIp)) middleware/rateLimit.ts
-     public routes        app.route('/api', publicRoutes)                           health check, OAuth callback (+ rateLimit(oauth))
+     public routes        app.route('/api', publicRoutes)                           health check, OAuth callback (+ rateLimit(oauth)),
+                                                                                    email hook (+ verifyAuthHook)   middleware/authHook.ts
   6. requireAuth          api.use('*', requireAuth)                                 middleware/auth.ts      <- protected routes only
   7. rateLimit(user, quota, publish)                                                middleware/rateLimit.ts <- protected routes only
   8. route table          api.route('/', protectedRoutes)
@@ -157,6 +158,24 @@ Every error thrown by a middleware, controller, service or repository ends here.
 ```
 
 Failures with status 500 and above are logged at `error` level, 4xx failures at `warn`. `notFoundHandler` answers an unknown route with `NOT_FOUND`. The code to status table is in `REQUEST_PIPELINE.md`.
+
+`authHookErrorHandler` does the same logging and status mapping but answers in the shape Supabase Auth reads from a hook, `{ "error": { "http_code": 429, "message": "..." } }`. Only `routes/authHookRoutes.ts` sets it, with `router.onError`; Hono applies a route table's own error handler to that table's routes.
+
+---
+
+## Auth Hook Signature
+
+**Source:** `backend/middleware/authHook.ts` (`verifyAuthHook`), with `lib/webhookSignature.ts`  
+**Applied to:** `POST /api/auth/email-hook` only, before its validator
+
+The hook route is public, so the signature is the only proof that a request came from this project's Supabase Auth. `verifyAuthHook`:
+
+1. Throws `NotConfiguredError` (503) when `SEND_EMAIL_HOOK_SECRET` is not set.
+2. Reads the raw body with `c.req.text()`. Hono caches it, so the JSON validator after it parses the same text.
+3. Checks the Standard Webhooks headers: HMAC-SHA256 over `webhook-id.webhook-timestamp.body` with the base64 key from the `v1,whsec_<base64>` secret, compared with `crypto.subtle.verify` (constant time). Any one `v1,` entry in `webhook-signature` may match.
+4. Rejects a timestamp more than five minutes from now, so a captured request cannot be replayed later.
+
+A failure throws `UnauthorizedError` (401).
 
 ---
 

@@ -22,10 +22,10 @@ These statuses apply to every route below and are not repeated in the tables:
 | 401 | `UNAUTHORIZED` | Protected route without a valid token |
 | 404 | `NOT_FOUND` | The account, post or item does not exist for this user, is on the wrong platform, or the route does not exist |
 | 409 | `CONFLICT` | The account is already added |
-| 429 | `RATE_LIMITED` | A rate limit rule is exceeded; the body adds `retryAfter` (seconds) |
+| 429 | `RATE_LIMITED` | A rate limit rule is exceeded; the body adds `retryAfter` (seconds). The email hook also answers 429 when the day's emails are used up |
 | 500 | `DATABASE_ERROR`, `INTERNAL_ERROR` | A Supabase query failed, or a bug |
 | 502 | `UPSTREAM_ERROR` | YouTube, Instagram or Reddit answered with an error; the platform's message is kept with URLs removed |
-| 503 | `NOT_CONFIGURED` | A Worker secret the route needs (YouTube key, Instagram app, Cloudinary) is not set |
+| 503 | `NOT_CONFIGURED` | A Worker secret the route needs (YouTube key, Instagram app, Cloudinary, the email hook secrets) is not set |
 | 504 | `UPSTREAM_TIMEOUT` | A platform call was cancelled or timed out |
 
 ## Public Routes
@@ -36,6 +36,18 @@ Registered on `publicRoutes` in `routes/index.ts`.
 |---|---|---|---|
 | GET | `/api/health` | `healthController.getHealth` | Returns `{ status: 'ok', timestamp }` |
 | GET | `/api/auth/instagram/callback` | `instagramAuthController.handleInstagramCallback` | OAuth code exchange; always redirects the browser back to the accounts page with `ig_connected=true` or `ig_error=<reason>`, never a JSON error |
+| POST | `/api/auth/email-hook` | `authHookController.sendAuthEmail` (`routes/authHookRoutes.ts`) | Supabase Auth's Send Email hook: sends sign-up, password reset and other auth emails through Resend. Answers `{}` |
+
+### Send Email hook
+
+Supabase Auth calls this route, not a browser, so it has its own rules:
+
+- **Authentication.** `middleware/authHook.ts` (`verifyAuthHook`) checks the Standard Webhooks signature (`webhook-id`, `webhook-timestamp`, `webhook-signature`) against `SEND_EMAIL_HOOK_SECRET` and rejects a timestamp more than five minutes from now. There is no JWT.
+- **Error body.** Supabase reads hook failures as `{ "error": { "http_code": 429, "message": "..." } }` and passes the message to the client, so the route table sets `authHookErrorHandler` instead of the usual body. The statuses are the same.
+- **Statuses.** `200 {}` when the emails were sent, or when a notice was skipped at a cap. `400` for a payload without a user email or email action. `401` for a missing, wrong or expired signature. `429` when the day's emails (`EMAIL_DAILY_LIMIT`, 100 by default) or this address's 5 emails a day are used up, or Resend reports its own quota is used up; the message points to Google sign-in. `502` when Resend refuses the email, `503` when the hook secret, `RESEND_API_KEY` or `EMAIL_FROM` is not set, `504` when Resend does not answer within 4 seconds (Supabase gives the whole call 5).
+- **Retries.** The `webhook-id` is sent to Resend as the idempotency key, so a repeated call does not send the email twice.
+
+See `docs/architecture/data-flows/AUTHENTICATION.md` for the whole flow.
 
 ## Protected Routes (require `Authorization: Bearer <jwt>`)
 

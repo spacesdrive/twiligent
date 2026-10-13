@@ -23,6 +23,7 @@ export default function Overview() {
           ['Meta for Developers', 'Connecting Instagram and publishing', <Badge tone="optional">For Instagram</Badge>, 'Free'],
           ['Cloudinary', 'Hosting media before Instagram fetches it', <Badge tone="optional">For publishing</Badge>, 'Free plan is enough'],
           ['Upstash', 'Caching to save API quota and speed pages up', <Badge tone="optional">Optional</Badge>, 'Free plan is enough'],
+          ['Resend', 'Emailing verification codes to new members', <Badge tone="optional">Optional</Badge>, 'Free, 100 emails a day'],
           ['GitHub', 'Deploy on every push, and a backup scheduler', <Badge tone="optional">Optional</Badge>, 'Free'],
         ]}
       />

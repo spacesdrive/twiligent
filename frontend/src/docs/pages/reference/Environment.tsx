@@ -17,6 +17,10 @@ const BACKEND_VARS: [string, Need, boolean, string, string][] = [
   ['ALLOWED_ORIGINS', 'optional', false, 'Other addresses the site is served from, comma-separated, for example https://twiligent.pages.dev', 'Lets the site call the backend from more than one address.'],
   ['UPSTASH_REDIS_REST_URL', 'optional', false, 'Upstash database, REST API', 'Cache address.'],
   ['UPSTASH_REDIS_REST_TOKEN', 'optional', true, 'Upstash database, REST API', 'Cache password.'],
+  ['SEND_EMAIL_HOOK_SECRET', 'optional', true, 'Supabase, Authentication, Auth Hooks, Send Email hook', 'Proves an email request came from your Supabase project.'],
+  ['RESEND_API_KEY', 'optional', true, 'Resend, API Keys (sending access)', 'Sends verification codes and other sign-in emails.'],
+  ['EMAIL_FROM', 'optional', false, 'A sender on a domain verified in Resend, for example Twiligent <no-reply@example.com>', 'The sender of those emails.'],
+  ['EMAIL_DAILY_LIMIT', 'optional', false, 'A whole number; 100 when not set', 'Emails a day before sign-up points people to Google.'],
 ];
 
 const FRONTEND_VARS: [string, Need, string][] = [

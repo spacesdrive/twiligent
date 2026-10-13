@@ -111,8 +111,9 @@ frontend/src/
     brand/                Logo and platform icons
     ui/                   shadcn generated components, restyled onto the tokens
   pages/
-    Login.tsx             Auth page (not lazy-loaded, always small); owns mode, fields and the password toggle
+    Login.tsx             Auth page (not lazy-loaded, always small); owns mode (sign in, sign up, code), fields, the password toggle and the resend wait
     LoginForm.tsx         Email and password form
+    LoginCodeForm.tsx     The 6-digit email code step after sign-up, with Send a new code
     LoginBrandPanel.tsx   Decorative product preview beside the form
     loginCopy.ts          Sign-in and sign-up text, privacy link
   features/

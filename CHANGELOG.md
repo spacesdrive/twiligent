@@ -19,6 +19,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Issue templates, a pull request template and `docs/workflows/ISSUES.md` describe the lifecycle, labels and `gh` commands
 - `ROADMAP.md` now starts with the project goals and links in-progress items to their issues
 
+**Email verification codes**
+- New email accounts are confirmed with a 6-digit code: after sign-up the page asks for the code, with a button to send a new one (once a minute), and signing in with an unconfirmed address opens the same step
+- Supabase Auth hands its emails to the backend through the Send Email hook (`POST /api/auth/email-hook`), which checks Supabase's signature and sends them for free through Resend
+- At most 100 emails a day (`EMAIL_DAILY_LIMIT`) and 5 a day to one address; past the daily limit, the sign-up page says so and points to Continue with Google
+- New optional Worker secrets `SEND_EMAIL_HOOK_SECRET`, `RESEND_API_KEY`, `EMAIL_FROM` and `EMAIL_DAILY_LIMIT`, and a setup guide at `/docs/self-host/email-codes` (ADR-033)
+
 **Sign in with Google**
 - Continue with Google on the sign-in page, using Google's own button and a nonce-checked ID token sent to Supabase; shown only when `VITE_GOOGLE_CLIENT_ID` is set
 - Docs page for administrators: branding, audience, scopes, client, Supabase provider and brand verification

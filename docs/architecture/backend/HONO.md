@@ -25,16 +25,16 @@ The backend is split into layers, each with one job. `REQUEST_PIPELINE.md` is th
 | `app.ts` | `createApp()`: the ordered middleware pipeline and the two route groups |
 | `server.ts` | The Worker export: `fetch` and `scheduled` |
 | `container.ts` | The composition root: `createServices(clients, config, context)` wires repositories into services |
-| `middleware/` | `cors.ts`, `requestContext.ts`, `securityHeaders.ts`, `clients.ts`, `rateLimit.ts`, `auth.ts`, `validate.ts`, `errorHandler.ts` (see `MIDDLEWARE.md`) |
+| `middleware/` | `cors.ts`, `requestContext.ts`, `securityHeaders.ts`, `clients.ts`, `rateLimit.ts`, `auth.ts`, `authHook.ts`, `validate.ts`, `errorHandler.ts` (see `MIDDLEWARE.md`) |
 | `routes/` | One route table per feature (`<feature>Routes.ts`) and `index.ts`, which groups them into `publicRoutes` and `protectedRoutes` |
 | `controllers/` | One controller file per feature (`<feature>Controller.ts`) and `http.ts` with `controller`, `servicesFor(c)` and `pathParam(c, name)` |
 | `validators/` | Request body and query parsers (`<feature>Validators.ts`) and the field helpers in `fields.ts` |
-| `services/` | Feature services (`<feature>Service.ts`, `scheduledPublisher.ts`) and the platform modules in `youtube/`, `instagram/` and `reddit/` (see `SERVICES.md`) |
+| `services/` | Feature services (`<feature>Service.ts`, `scheduledPublisher.ts`) the platform modules in `youtube/`, `instagram/` and `reddit/`, and the auth email modules in `email/` (see `SERVICES.md`) |
 | `repositories/` | Data access, one repository per table or cache (`<table>Repository.ts`), and the query helpers in `query.ts` |
 | `database/` | `supabase.ts` (`getSupabase`, `getSupabaseAuth`) and `redis.ts` (`getRedis`, `getRateLimitRedis`) |
 | `jobs/` | `scheduled.ts`: the cron entry point, `runScheduledJob(cron, env)` |
-| `lib/` | Helpers with no HTTP or database code: `errors.ts`, `logger.ts`, `config.ts`, `redact.ts`, `safeAccount.ts`, `oauthState.ts`, `analyticsMath.ts`, `rateLimit/` |
-| `types/` | `env.ts` (`Env`), `app.ts` (`AppEnv`, `AppVariables`, `AppContext`), `context.ts` (`RequestContext`) |
+| `lib/` | Helpers with no HTTP or database code: `errors.ts`, `logger.ts`, `config.ts`, `redact.ts`, `safeAccount.ts`, `oauthState.ts`, `webhookSignature.ts`, `analyticsMath.ts`, `rateLimit/` |
+| `types/` | `env.ts` (`Env`), `app.ts` (`AppEnv`, `AppVariables`, `AppContext`), `context.ts` (`RequestContext`), `authHook.ts` (the Send Email hook payload and error body) |
 
 ## Application Structure
 
@@ -53,7 +53,7 @@ export function createApp(): Hono<AppEnv> {
     app.use('*', injectClients);                                  // 4. Supabase and Redis clients
     app.use('/api/*', rateLimit(RATE_LIMIT_RULES.ip, clientIp));  // 5. limit by IP
 
-    app.route('/api', publicRoutes);                              // health check and the OAuth callback
+    app.route('/api', publicRoutes);                              // health check, OAuth callback, email hook
 
     const api = new Hono<AppEnv>();
     api.use('*', requireAuth);                                    // 6. authentication
@@ -66,7 +66,7 @@ export function createApp(): Hono<AppEnv> {
 }
 ```
 
-`routes/index.ts` registers the public routes on `publicRoutes` (`GET /health`, and `GET /auth/instagram/callback` with the `oauth` rate limit) and mounts every feature route table on `protectedRoutes`. The public group is registered before the protected one, so those two paths answer without a token.
+`routes/index.ts` registers the public routes on `publicRoutes` (`GET /health`, `GET /auth/instagram/callback` with the `oauth` rate limit, and the `routes/authHookRoutes.ts` table with `POST /auth/email-hook` behind `verifyAuthHook`) and mounts every feature route table on `protectedRoutes`. The public group is registered before the protected one, so those paths answer without a token.
 
 See `REQUEST_PIPELINE.md` for what each step does and `RATE_LIMITING.md` for the rate limit rules.
 
@@ -159,7 +159,7 @@ Controllers do not catch errors. Services, repositories, validators and middlewa
 
 An unknown route gets the same body with `NOT_FOUND` from `notFoundHandler`. An error that is not an `AppError` is a bug: it is logged at `error` level and the client gets `INTERNAL_ERROR` with a message asking it to quote the request id. The status for each code is in `REQUEST_PIPELINE.md`.
 
-The one exception is the Instagram OAuth callback, which catches its own errors so the browser is always redirected back to the app.
+The one exception is the Instagram OAuth callback, which catches its own errors so the browser is always redirected back to the app. The Send Email hook does not catch errors either, but its route table sets `router.onError(authHookErrorHandler)`, which answers in the `{ error: { http_code, message } }` shape Supabase Auth reads.
 
 ## Logging
 
