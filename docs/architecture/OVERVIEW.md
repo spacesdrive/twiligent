@@ -17,7 +17,8 @@
 │  Hono v4 app (backend/app.ts)                                   │
 │  ├── Middleware: CORS, request id, security headers, clients,   │
 │  │   per-IP rate limit                                          │
-│  ├── Public: GET /api/health, GET /api/auth/instagram/callback  │
+│  ├── Public: GET /api/health, GET /api/auth/instagram/callback, │
+│  │   POST /api/auth/email-hook (signed by Supabase Auth)        │
 │  ├── Protected (/api/*): requireAuth -> rate limits             │
 │  │   -> route table -> controller -> service -> repository      │
 │  └── Errors: errorHandler -> { success, code, message, ... }    │
@@ -33,7 +34,9 @@
 │ Postgres │ │  Redis  │  │  ├── YouTube Data API v3             │
 │          │ │ (cache, │  │  ├── Instagram Graph API v25         │
 │ tables:  │ │  rate   │  │  ├── Reddit Public JSON API          │
-│ accounts │ │  limits)│  │  └── Cloudinary Upload API           │
+│ accounts │ │  limits,│  │  ├── Cloudinary Upload API           │
+│          │ │  email  │  │  └── Resend Email API (auth emails)  │
+│          │ │  counts)│  │                                      │
 │ settings │ │         │  └──────────────────────────────────────┘
 │ sched_   │ │ keys:   │
 │ posts    │ │ videos: │
@@ -54,6 +57,7 @@
 | Database + Auth | Supabase | `nheuatbcevaxgxyvahtr.supabase.co` |
 | Media cache | Upstash Redis | Configured via `UPSTASH_REDIS_REST_URL` |
 | Media hosting | Cloudinary | `CLOUDINARY_CLOUD_NAME` |
+| Auth emails | Resend, through Supabase's Send Email hook | `RESEND_API_KEY`, `EMAIL_FROM` |
 | CI/CD | GitHub Actions | `spacesdrive/twiligent` |
 
 ## Request Lifecycle (Protected Route)
@@ -113,6 +117,7 @@ Cloudflare scheduler fires cron trigger
 | User settings (GitHub repository) | `settings` table, `value` jsonb | Generic key-value per user |
 | Scheduled posts | `scheduled_posts` table | Queryable by status + scheduled_at |
 | Video/media analytics | Upstash Redis (`videos:` / `ig:` keys) | Avoids repeated heavy API calls |
+| Auth email counts | Upstash Redis (`email:day:` / `email:to:` keys, addresses hashed) | Caps verification emails at the provider's free daily quota |
 | Media files (for publishing) | Cloudinary CDN | Instagram requires public URL |
 | Tracked Reddit post images | Cloudinary CDN | Reddit's public JSON API carries no usable thumbnail |
 | API secrets | Cloudflare Worker secrets | Encrypted at rest, never in responses |
@@ -129,9 +134,9 @@ The SPA also serves public documentation at `/docs` (no sign-in, no API calls). 
 
 1. **The Worker never receives binary file uploads.** Cloudinary handles file ingestion directly from the browser. The Worker only receives Cloudinary URLs.
 
-2. **Redis is always optional.** Every cache call goes through `analyticsCacheRepository`, which catches Redis failures, so a miss falls back to live APIs, and rate limits fall back to per-isolate memory. Removing Upstash credentials degrades performance and loosens rate limits but never breaks functionality.
+2. **Redis is always optional.** Every cache call goes through `analyticsCacheRepository`, which catches Redis failures, so a miss falls back to live APIs, and rate limits fall back to per-isolate memory. The email counters in `emailQuotaRepository` fall back to Resend's own daily quota. Removing Upstash credentials degrades performance and loosens rate limits but never breaks functionality.
 
-3. **The service-role key is never used on the frontend.** The frontend uses only the anon key (for Supabase Auth client-side). The service-role key is a Worker secret.
+3. **The service-role key is never used on the frontend.** The frontend uses only the anon key (for Supabase Auth client-side). The service-role key is a Worker secret. Sign-up and sign-in go from the browser to Supabase Auth directly; the Worker only sends the emails Supabase hands it through the signed Send Email hook (see `docs/architecture/data-flows/AUTHENTICATION.md`).
 
 4. **`safeAccount()` is the only place access tokens are stripped.** Repositories return full accounts; every account in a response passes through this function first.
 

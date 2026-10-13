@@ -41,6 +41,7 @@ A service receives only what it uses: repositories, the cleaned `AppConfig` from
 | `overview` | `overviewService.ts` | accounts, tracked posts, cache | `summary` |
 | `settings` | `settingsService.ts` | settings | `githubSettings`, `saveGithubSettings`, `serverKeyStatus` |
 | `instagramConnect` | `instagramConnectService.ts` | accounts | `authorizationUrl`, `userIdFromState`, `connect`, plus `configured` and `accountsPageUrl` |
+| `authEmail` | `authEmailService.ts` | email quota (Redis, the fail-fast client) | `send(hook, webhookId)` (Supabase Auth's Send Email hook; no user) |
 
 Every user-scoped method takes the verified `userId` as its first argument. Methods that need one of the user's records load it with a `...ForUser` repository method and throw `NotFoundError` when it is missing or on the wrong platform, so another user's record is never found. `scheduledPublisher` and `tokenRefresh` are the only services that use the cross-user repository methods (`listAll`, `findById`, `updateById`, `listDue`, `claim`).
 
@@ -67,6 +68,26 @@ Every user-scoped method takes the verified `userId` as its first argument. Meth
 ### Instagram OAuth (`instagramConnectService.ts`, `instagram/instagramOAuth.ts`)
 
 `readInstagramOAuthConfig(env)` in `lib/config.ts` strips a leading byte order mark and whitespace from the app id, secret and URLs, drops a trailing slash from `BACKEND_URL`, and falls back to `http://localhost:8787` and `http://localhost:5173`. `authorizationUrl` throws `NotConfiguredError` (503) without the app credentials, and `buildAuthorizationUrl` signs the state with the app secret (`lib/oauthState.ts`). `connect` exchanges the code (stripping a trailing `#_`), upgrades to a long-lived token when Instagram allows it (otherwise keeps the short-lived token with no expiry), fetches the profile and returns `'already_added'` or `'connected'`. The callback controller turns those into the `ig_error` and `ig_connected` redirects.
+
+### Auth emails (`authEmailService.ts`, `email/authEmails.ts`, `email/resendApi.ts`)
+
+`composeAuthEmails(hook, supabaseUrl)` in `email/authEmails.ts` turns one hook call into the emails to send, each with a plain text and an HTML body:
+
+- `signup`, `recovery`, `magiclink`, `email`, `invite`: the 6-digit code and a link to Supabase Auth's `/auth/v1/verify` endpoint, which does the same.
+- `reauthentication`: the code only.
+- `email_change`: with Secure Email Change, one code to each address. Supabase names the hashes the other way round: the current address gets `token` with `token_hash_new`, the new one `token_new` with `token_hash`. Without it, one email to the new address.
+- `*_notification`: a notice of a change already made, with no code (`notice: true`).
+- Any other action: nothing, and the service logs it.
+
+Values from the payload are HTML-escaped.
+
+`AuthEmailService.send` throws `NotConfiguredError` (503) without `RESEND_API_KEY` and `EMAIL_FROM`. For each email it:
+
+1. Claims a send from `emailQuotaRepository` for the UTC day: at most `EMAIL_DAILY_LIMIT` (100 by default) in total, and `RECIPIENT_DAILY_LIMIT` (5) to one address. Past either cap it throws `RateLimitedError` (429). The daily cap's message tells the person to sign in with Google.
+2. Sends it with `email/resendApi.ts` `sendEmail()`. The idempotency key is `<webhook-id>-<index>`. The call is abandoned after 4 seconds, inside Supabase's 5 second budget for the whole hook call.
+3. Treats Resend's `daily_quota_exceeded` and `monthly_quota_exceeded` answers like the daily cap. Other Resend errors are `UpstreamError` (502), and a timeout is `UpstreamTimeoutError` (504).
+
+A notice that hits a cap is skipped with a warning instead of failing, because the change it reports has already happened. Without Redis the claim is `unknown`, the email is sent anyway and a warning is logged; Resend's own quota is then the only cap.
 
 ### Publishing (`publishingService.ts`, `scheduledPublisher.ts`)
 

@@ -7,7 +7,7 @@ Wraps Supabase Auth state and exposes it to the entire app.
 ### What it provides
 
 ```ts
-const { session, user, signIn, signUp, signInWithGoogle, signOut } = useAuth();
+const { session, user, signIn, signUp, verifySignUpCode, resendSignUpCode, signInWithGoogle, signOut } = useAuth();
 ```
 
 The value is typed as `AuthContextValue`, exported from `AuthContext.tsx`.
@@ -17,7 +17,9 @@ The value is typed as `AuthContextValue`, exported from `AuthContext.tsx`.
 | `session` | `Session \| null \| undefined` | Current Supabase session; `undefined` until the first `getSession()` resolves, `null` if not logged in |
 | `user` | `User \| null` | `session.user` shorthand |
 | `signIn(email, password)` | async function | Calls `supabase.auth.signInWithPassword()` |
-| `signUp(email, password)` | async function | Calls `supabase.auth.signUp()` |
+| `signUp(email, password)` | async function | Calls `supabase.auth.signUp()`. With **Confirm email** on it resolves with a user and no session, and the login page asks for the emailed code |
+| `verifySignUpCode(email, code)` | async function | Calls `supabase.auth.verifyOtp({ email, token: code, type: 'signup' })`; a correct code confirms the address and signs the user in |
+| `resendSignUpCode(email)` | async function | Calls `supabase.auth.resend({ type: 'signup', email })` to email a new code |
 | `signInWithGoogle(idToken, nonce)` | async function | Calls `supabase.auth.signInWithIdToken({ provider: 'google', token, nonce })` with the ID token from Google's button and the raw nonce |
 | `signOut()` | async function | Calls `supabase.auth.signOut()` |
 
@@ -40,7 +42,7 @@ useEffect(() => {
 ### Where to use it
 
 - `ProtectedRoute` - reads `session` to decide whether to redirect to `/login`
-- `Login.tsx` - calls `signIn()`, `signUp()` and `signInWithGoogle()`
+- `Login.tsx` - calls `signIn()`, `signUp()`, `verifySignUpCode()`, `resendSignUpCode()` and `signInWithGoogle()`
 - `Header.tsx` - calls `signOut()`, shows `user.email`
 - Do **not** use in page/feature components - they should never need auth state directly
 

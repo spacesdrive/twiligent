@@ -33,6 +33,8 @@ Every failure has a 4xx or 5xx status and one body, the `ApiFailure` type in `sh
 
 `code` is one of the `ApiErrorCode` values and decides the status. `message` is written for the user. `requestId` matches the `X-Request-Id` header and the Worker's log lines. Only a 429 adds `retryAfter`. There is no other error shape: never return `{ error }`, and never send `success: false` with a 2xx status.
 
+The one route that answers differently is `POST /api/auth/email-hook`, which Supabase Auth calls: its failures are `{ "error": { "http_code": 429, "message": "..." } }` with the same statuses, written by `authHookErrorHandler`, because that is the shape Supabase reads.
+
 Controllers never build these bodies; services, repositories, validators and middleware throw the typed errors in `backend/lib/errors.ts`. The `request()` function in `frontend/src/services/api.ts` throws an `Error` with the body's `message` (plus the request id on a 5xx) when the status is not 2xx, so a 2xx response is always a success.
 
 ## Status Codes
@@ -46,9 +48,9 @@ Controllers never build these bodies; services, repositories, validators and mid
 | `403` | `FORBIDDEN` - reserved; a record that belongs to another user is a 404 |
 | `404` | `NOT_FOUND` - resource not found for this user, or no such route |
 | `409` | `CONFLICT` - the resource already exists (an account that is already added) |
-| `429` | `RATE_LIMITED` - returned by the `rateLimit` middleware only, with `Retry-After` and `retryAfter` in the body (see `docs/architecture/backend/RATE_LIMITING.md`) |
+| `429` | `RATE_LIMITED` - returned by the `rateLimit` middleware, with `Retry-After` and `retryAfter` in the body (see `docs/architecture/backend/RATE_LIMITING.md`), and by the Send Email hook when the day's emails are used up (`RateLimitedError`, no `retryAfter`) |
 | `500` | `DATABASE_ERROR` or `INTERNAL_ERROR` - a failed query or an unexpected error |
-| `502` | `UPSTREAM_ERROR` - YouTube, Instagram or Reddit answered with an error |
+| `502` | `UPSTREAM_ERROR` - YouTube, Instagram, Reddit or Resend answered with an error |
 | `503` | `NOT_CONFIGURED` - a Worker secret the request needs is not set |
 | `504` | `UPSTREAM_TIMEOUT` - a platform call was cancelled or timed out |
 

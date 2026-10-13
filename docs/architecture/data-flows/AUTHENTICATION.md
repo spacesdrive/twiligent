@@ -31,6 +31,45 @@ AppProvider mounts -> loadAccounts() fires
 User sees Overview dashboard
 ```
 
+## Sign-up with an Email Code
+
+Used when **Confirm email** is on in Supabase and the Send Email hook points at the Worker. With **Confirm email** off, `signUp` returns a session and the page signs the user straight in.
+
+```
+Login.tsx (sign-up mode) -> AuthContext.signUp(email, password)
+    -> supabase.auth.signUp({ email, password })
+    -> Supabase Auth creates the unconfirmed user and a 6-digit code, then calls the Send Email hook:
+         POST https://<worker>/api/auth/email-hook   (webhook-id, webhook-timestamp, webhook-signature headers)
+         -> verifyAuthHook: Standard Webhooks HMAC with SEND_EMAIL_HOOK_SECRET, timestamp within 5 minutes; 401 otherwise
+         -> parseAuthEmailHook: user.email, email_data.email_action_type, token, token_hash, ...
+         -> authEmail.send(hook, webhookId)
+              -> composeAuthEmails: subject, code and a /auth/v1/verify link
+              -> emailQuotaRepository.claim: today's count < EMAIL_DAILY_LIMIT (100) and this address < 5 today
+                   past a cap -> 429 { error: { http_code: 429, message } }
+              -> Resend POST /emails (Idempotency-Key: webhook-id); Resend's daily_quota_exceeded -> the same 429
+         -> 200 {}
+    -> signUp resolves with a user and no session
+    │
+    ▼
+Login.tsx opens the code step (LoginCodeForm)
+    -> the user types or pastes the code (non-digits are dropped)
+    -> AuthContext.verifySignUpCode(email, code) -> supabase.auth.verifyOtp({ email, token, type: 'signup' })
+    -> session issued; same lifecycle as password sign-in below
+```
+
+Other cases on the login page:
+
+| Case | What happens |
+|---|---|
+| The hook answers 429 for the daily cap, or Supabase's own email limit (`over_email_send_rate_limit`) is hit | `signUp` or `resend` fails with status 429. `lib/authErrors.ts` (`emailErrorNotice`) recognises it, and the page shows a warning above the Google button instead of a toast. On the code step the Google button appears too. |
+| The per-address cap (5 a day) or Supabase's one-code-a-minute wait | Status 429, but the message already says what to do, so it is shown as a toast and Google is not suggested |
+| Wrong or expired code (`otp_expired`) | "The code is wrong or has expired. Check it, or send a new one." |
+| Send a new code | `AuthContext.resendSignUpCode(email)` -> `supabase.auth.resend({ type: 'signup', email })`; the button then waits 60 seconds |
+| Signing in before confirming (`email_not_confirmed`) | The page opens the code step with the resend button ready |
+| Sign-up for an address that already has an account | Supabase returns a user with no identities and sends nothing; the page says to sign in instead |
+
+If the sign-up email cannot be sent, Supabase does not create the user, so the person can try again later or use Google. Password reset, magic link, invite, email change and security notice emails go through the same hook. Notices that hit a cap are skipped instead of failing the change they report. See `docs/architecture/backend/ROUTES.md` (Send Email hook) and `SERVICES.md` (Auth emails).
+
 ## Sign in with Google
 
 Optional; enabled when `VITE_GOOGLE_CLIENT_ID` is set and the Google provider is on in Supabase.

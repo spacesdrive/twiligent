@@ -30,7 +30,8 @@ What Twiligent is for, and what every change should move forward.
 
 ## In Progress
 
-1. **Backend request pipeline in layers** ([#20](https://github.com/spacesdrive/twiligent/issues/20)) - split the Worker into middleware, route tables, controllers, services and repositories, with a request context (request id, user id, cancellation), security headers, input validation and one error handler.
+1. **Email verification codes** ([#29](https://github.com/spacesdrive/twiligent/issues/29)) - confirm new email accounts with a 6-digit code sent through Resend from a Supabase Send Email hook on the Worker, capped at 100 emails a day, with Google sign-in offered once the day's emails run out.
+2. **Backend request pipeline in layers** ([#20](https://github.com/spacesdrive/twiligent/issues/20)) - split the Worker into middleware, route tables, controllers, services and repositories, with a request context (request id, user id, cancellation), security headers, input validation and one error handler.
 
 ---
 

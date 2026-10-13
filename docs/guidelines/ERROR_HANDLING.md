@@ -7,11 +7,12 @@ Every backend failure is a typed error thrown where the problem is found and for
 | Error | Code | Status | Throw when |
 |---|---|---|---|
 | `ValidationError` | `VALIDATION_ERROR` | 400 | Input is missing or malformed, or a stored field the request needs is missing |
-| `UnauthorizedError` | `UNAUTHORIZED` | 401 | No token, or an invalid or expired one (thrown by `requireAuth` only) |
+| `UnauthorizedError` | `UNAUTHORIZED` | 401 | No token, or an invalid or expired one (thrown by `requireAuth`), or a Send Email hook call without a valid signature (thrown by `verifyAuthHook`) |
 | `ForbiddenError` | `FORBIDDEN` | 403 | Reserved; another user's record is a `NotFoundError` |
 | `NotFoundError` | `NOT_FOUND` | 404 | The record does not exist for this user, or is on the wrong platform |
 | `ConflictError` | `CONFLICT` | 409 | The account is already added |
-| `UpstreamError` | `UPSTREAM_ERROR` | 502 | YouTube, Instagram or Reddit answered with an error |
+| `RateLimitedError` | `RATE_LIMITED` | 429 | A daily allowance is used up: the auth email caps in `authEmailService.ts`. Per-request limits are the rate limiter's job, not this error |
+| `UpstreamError` | `UPSTREAM_ERROR` | 502 | YouTube, Instagram, Reddit or Resend answered with an error |
 | `NotConfiguredError` | `NOT_CONFIGURED` | 503 | A Worker secret the request needs is not set |
 | `UpstreamTimeoutError` | `UPSTREAM_TIMEOUT` | 504 | A platform call was cancelled or timed out |
 | `DatabaseError` | `DATABASE_ERROR` | 500 | A Supabase query failed (thrown by `repositories/query.ts`) |
@@ -103,6 +104,8 @@ Registered with `app.onError(errorHandler)` and `app.notFound(notFoundHandler)`.
 ```
 
 It also maps Hono's own `HTTPException` (such as a malformed JSON body) by status, and answers anything else with `INTERNAL_ERROR` and a message asking the user to quote the request id. The rate limiter builds its 429 body with the same `errorBody()` helper, plus `retryAfter`.
+
+`authHookErrorHandler`, in the same file, is used only by `routes/authHookRoutes.ts` (`router.onError`). It logs and maps statuses exactly like `errorHandler`, but writes the body Supabase Auth reads from a hook, `{ "error": { "http_code": 429, "message": "..." } }`; Supabase passes the message to the sign-up form, so it is written for the person signing up.
 
 ### Frontend API Calls
 

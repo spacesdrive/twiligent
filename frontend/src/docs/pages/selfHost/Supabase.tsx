@@ -18,7 +18,7 @@ export default function Supabase() {
         <Step title="Configure sign-in">
           <P>Open <strong>Authentication</strong>, then <strong>Sign In / Providers</strong>, then <strong>Email</strong>.</P>
           <UL>
-            <li>Turn off <strong>Confirm email</strong> unless you have set up an email provider. Otherwise new members never receive the confirmation and cannot sign in.</li>
+            <li>Turn off <strong>Confirm email</strong> unless you set up <A to="/docs/self-host/email-codes">email verification codes</A>. Otherwise new members never receive a code and cannot sign in.</li>
             <li>To keep the instance private, turn off <strong>Allow new users to sign up</strong> after you and your team have created accounts. You can also add members yourself under <strong>Authentication</strong>, <strong>Users</strong>, <strong>Add user</strong>.</li>
           </UL>
         </Step>

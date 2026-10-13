@@ -674,3 +674,28 @@ Records every significant architectural decision, the alternatives considered, a
 - Building every service per request costs a few object allocations; nothing is cached across requests.
 - A browser on an origin that is not `FRONTEND_URL` or listed in `ALLOWED_ORIGINS` can no longer call the API. A local Worker also allows the Vite dev server.
 - The request deadline (30 seconds) and the warm-up deadline (25 seconds) abandon slow platform calls instead of waiting indefinitely.
+
+---
+
+## ADR-033: Auth emails through a Supabase Send Email hook on the Worker, sent with Resend and capped per day
+
+**Date:** 2026-10-14
+**Status:** Accepted
+
+**Decision:** Email accounts are confirmed with a 6-digit code. Supabase Auth hands every auth email to the Worker through its Send Email hook (`POST /api/auth/email-hook`, public, authenticated by the Standard Webhooks signature with `SEND_EMAIL_HOOK_SECRET`). The Worker sends it through Resend's REST API (`RESEND_API_KEY`, `EMAIL_FROM`), with no npm package. Before each send, one atomic Redis script checks and increments two counters for the UTC day: all emails (`EMAIL_DAILY_LIMIT`, 100 by default) and emails to one address (5), keyed by a hash of the address. Past a cap, or when Resend reports its own quota is used up, the hook answers 429 in Supabase's hook error shape. Supabase passes the message to the sign-up form, which points the person to Google sign-in.
+
+**Alternatives considered:**
+- Resend as Supabase's custom SMTP server, with Supabase's email rate limit as the cap. No code, but the limit is per hour, not per day, and the error is a generic "email rate limit exceeded".
+- Supabase's built-in email service. It sends only a few emails an hour and is meant for testing.
+- Brevo (300 a day, but every email carries its branding), SMTP2GO (200 a day but 1,000 a month) and Amazon SES (free only for a limited time). Resend's free plan (100 a day, 3,000 a month) matches the target exactly and needs only a verified domain.
+- A Supabase Edge Function for the hook. It would put a second runtime and deploy step next to the Worker.
+
+**Context:** Email sign-ups were never confirmed, because the built-in email service cannot send enough emails. The goal was a free provider, at least 100 codes a day, and a clear way in when that runs out.
+
+**Trade-offs:**
+- Every auth email goes through the Worker: if it is down or misconfigured while the hook is on, sign-up and password reset fail. The 503 and 502 messages say which secret or provider setting is wrong.
+- Supabase gives the hook 5 seconds in total, so Resend calls time out after 4 seconds and the counters use the fail-fast Redis client.
+- A claimed send that Resend then refuses still counts towards the day, so the count can run slightly ahead of Resend's.
+- Without Redis there is no count, and Resend's own daily quota (on the free plan) is the cap. A paid Resend plan has no daily quota, so `EMAIL_DAILY_LIMIT` is then the only one.
+- Supabase calls the hook from its own servers, so the per-IP rate limit cannot tell people apart. The per-address cap, Supabase's email rate limit and optional CAPTCHA protect the daily allowance from one person.
+- Security notices that hit a cap are skipped instead of failing the change they report.
