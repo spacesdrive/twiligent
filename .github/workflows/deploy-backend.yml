@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'backend/**'
+      - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/deploy-backend.yml'
   workflow_dispatch:
 
@@ -14,6 +16,16 @@ jobs:
     name: Deploy Cloudflare Worker
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      # one install at the root covers every workspace, including wrangler
+      - name: Install dependencies
+        run: npm ci
 
       - name: Deploy Worker
         uses: cloudflare/wrangler-action@v4
