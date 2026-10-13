@@ -7,7 +7,7 @@ import * as lucide from 'lucide-react';
 
 const SRC = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'src');
 
-function sourceFiles(dir) {
+function sourceFiles(dir: string): string[] {
   return readdirSync(dir).flatMap(name => {
     const path = join(dir, name);
     if (statSync(path).isDirectory()) return sourceFiles(path);
@@ -17,7 +17,7 @@ function sourceFiles(dir) {
 
 // A renamed or removed icon renders as an empty box at runtime, so every imported name must exist
 test('every Lucide icon imported in src exists in lucide-react', () => {
-  const missing = [];
+  const missing: string[] = [];
   for (const file of sourceFiles(SRC)) {
     const text = readFileSync(file, 'utf8');
     for (const match of text.matchAll(/import\s*\{([^}]+)\}\s*from\s*['"]lucide-react['"]/g)) {

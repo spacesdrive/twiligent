@@ -4,6 +4,7 @@ import {
   typeRowsOf, contentMixOf, topPostsChartOf, dayOfWeekDataOf, timelineDataOf, instagramChartsOf, followerRatio,
   typeViewsSubtitle, reportedViews,
 } from '../../../../src/features/analytics/instagram/instagramAnalyticsData.ts';
+import type { InstagramContentTypeStatsMap, InstagramDayStats, InstagramMonthStats } from '../../../../../shared/types/instagram.ts';
 
 const typeStats = {
   reel: { count: 3, avgLikes: 10, viewsReported: 3, totalViews: 4500, avgViews: 1500 },
@@ -12,7 +13,7 @@ const typeStats = {
 };
 
 test('type rows keep content types with posts, in display order', () => {
-  const rows = typeRowsOf(typeStats);
+  const rows = typeRowsOf(typeStats as Partial<InstagramContentTypeStatsMap>);
   assert.deepEqual(rows.map(row => row.type), ['reel', 'video']);
   assert.equal(rows[0].name, 'Reels');
   assert.equal(rows[0].color, 'var(--chart-1)');
@@ -29,10 +30,10 @@ test('chart rows map the analytics fields', () => {
   assert.equal(top.length, 8);
   assert.deepEqual(top[1], { name: '#2', likes: 1, comments: 2 });
   assert.deepEqual(topPostsChartOf(undefined), []);
-  assert.deepEqual(dayOfWeekDataOf([{ shortDay: 'Mon', posts: 2, avgEngagement: 5, avgLikes: 4, extra: 1 }]), [
+  assert.deepEqual(dayOfWeekDataOf([{ shortDay: 'Mon', posts: 2, avgEngagement: 5, avgLikes: 4, extra: 1 }] as Array<InstagramDayStats & { extra: number }>), [
     { name: 'Mon', posts: 2, avgEngagement: 5, avgLikes: 4 },
   ]);
-  assert.deepEqual(timelineDataOf([{ month: 'Jan', posts: 1, likes: 2, comments: 3, avgLikes: 2 }]), [
+  assert.deepEqual(timelineDataOf([{ month: 'Jan', posts: 1, likes: 2, comments: 3, avgLikes: 2 }] as InstagramMonthStats[]), [
     { name: 'Jan', posts: 1, likes: 2, comments: 3, avgLikes: 2 },
   ]);
 });

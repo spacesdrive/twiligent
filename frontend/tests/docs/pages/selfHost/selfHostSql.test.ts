@@ -2,8 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { SCHEMA_SQL, RLS_SQL, UPGRADE_SQL } from '../../../../src/docs/pages/selfHost/selfHostSql.ts';
 
-const tablesIn = sql => [...sql.matchAll(/create table (\w+)/g)].map(match => match[1]);
-const secured = sql => [...sql.matchAll(/alter table (\w+) enable row level security;/g)].map(match => match[1]);
+const tablesIn = (sql: string) => [...sql.matchAll(/create table (\w+)/g)].map(match => match[1]);
+const secured = (sql: string) => [...sql.matchAll(/alter table (\w+) enable row level security;/g)].map(match => match[1]);
 
 test('every table in the schema turns on row level security', () => {
   const tables = tablesIn(SCHEMA_SQL);

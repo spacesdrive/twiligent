@@ -4,8 +4,9 @@ import {
   OVERDUE_MS, scheduledStatusChips, filterScheduledPosts, overduePostsOf, isPastDue, overdueLead, deleteAllMessage,
   formatScheduleDate, toLocalDateInput, toLocalTimeInput, utcDateInput, defaultBulkStartDate, goesLiveLabel,
 } from '../../../src/features/publishing/scheduleHelpers.ts';
+import type { ScheduleTiming } from '../../../src/features/publishing/scheduleHelpers.ts';
 
-const posts = [
+const posts: Array<ScheduleTiming & { id: number }> = [
   { id: 1, status: 'pending', scheduledAt: '2030-05-01T08:00:00Z' },
   { id: 2, status: 'published', scheduledAt: '2030-05-03T08:00:00Z' },
   { id: 3, status: 'pending', scheduledAt: '2030-05-02T08:00:00Z' },

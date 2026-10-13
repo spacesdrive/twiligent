@@ -4,6 +4,9 @@ import {
   intervalLabel, bulkStatsOf, bulkFilesTitle, bulkActionLabel, progressHeading, fileSizeMb, isVideoFile,
   patchQueueItem, applyCaptionToPending, removeQueueItem,
 } from '../../../src/features/publishing/queueHelpers.ts';
+import type { QueueItem } from '../../../src/features/publishing/queueHelpers.ts';
+
+type TestQueueItem = Pick<QueueItem, 'id' | 'status' | 'caption'> & { progress?: number };
 
 test('intervals read in days from a day upward and in hours below', () => {
   assert.equal(intervalLabel(720), '12 hours');
@@ -13,7 +16,7 @@ test('intervals read in days from a day upward and in hours below', () => {
 });
 
 test('bulk stats count each status', () => {
-  const files = ['pending', 'pending', 'done', 'scheduled', 'error', 'uploading'].map(status => ({ status }));
+  const files = ['pending', 'pending', 'done', 'scheduled', 'error', 'uploading'].map(status => ({ status })) as Pick<QueueItem, 'status'>[];
   assert.deepEqual(bulkStatsOf(files), { total: 6, pending: 2, done: 1, scheduled: 1, errors: 1 });
 });
 
@@ -44,7 +47,7 @@ test('file helpers read size and type', () => {
 });
 
 test('queue updates return new arrays and leave other items alone', () => {
-  const items = [{ id: 1, status: 'pending', caption: '' }, { id: 2, status: 'done', caption: 'kept' }];
+  const items: TestQueueItem[] = [{ id: 1, status: 'pending', caption: '' }, { id: 2, status: 'done', caption: 'kept' }];
   const patched = patchQueueItem(items, 1, { status: 'uploading', progress: 0 });
   assert.deepEqual(patched[0], { id: 1, status: 'uploading', caption: '', progress: 0 });
   assert.equal(patched[1], items[1]);

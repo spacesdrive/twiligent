@@ -3,9 +3,16 @@ import assert from 'node:assert/strict';
 import {
   loadServerSettings, githubSettingsPayload, healthCheckResult, healthCheckFailure,
 } from '../../../src/features/settings/settingsData.ts';
+import type { ServerSettingsClient } from '../../../src/features/settings/settingsData.ts';
+import type { GitHubSettingsResponse, KeysStatusResponse } from '../../../../shared/types/domain.ts';
 
-function fakeApi({ keys = [], github }) {
-  const calls = [];
+interface FakeApiOptions {
+  keys?: unknown[];
+  github: unknown;
+}
+
+function fakeApi({ keys = [], github }: FakeApiOptions) {
+  const calls: string[] = [];
   const queue = [...keys];
   return {
     calls,
@@ -13,18 +20,24 @@ function fakeApi({ keys = [], github }) {
       calls.push('getKeys');
       const next = queue.shift();
       if (next instanceof Error) throw next;
-      return next;
+      return next as KeysStatusResponse;
     },
     getGithubSettings: async () => {
       calls.push('getGithubSettings');
       if (github instanceof Error) throw github;
-      return github;
+      return github as GitHubSettingsResponse;
     },
   };
 }
 
-async function run(apiClient, { cancelled = false } = {}) {
-  const state = { keys: [], github: null, finished: false };
+interface LoadState {
+  keys: KeysStatusResponse[];
+  github: { owner: string; name: string } | null;
+  finished: boolean;
+}
+
+async function run(apiClient: ServerSettingsClient, { cancelled = false } = {}) {
+  const state: LoadState = { keys: [], github: null, finished: false };
   await loadServerSettings(apiClient, {
     isCancelled: () => cancelled,
     applyKeys: keys => state.keys.push(keys),

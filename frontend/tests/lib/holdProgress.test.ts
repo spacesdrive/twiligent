@@ -5,8 +5,8 @@ import { createHoldController } from '../../src/lib/holdProgress.ts';
 // A manual clock and frame queue so timing can be stepped deterministically
 function harness(duration = 1000) {
   let now = 0;
-  let queue = [];
-  const progress = [];
+  let queue: Array<() => void> = [];
+  const progress: number[] = [];
   let completed = 0;
   const controller = createHoldController({
     duration,
@@ -16,7 +16,7 @@ function harness(duration = 1000) {
     onProgress: p => progress.push(p),
     onComplete: () => { completed++; },
   });
-  const advance = ms => {
+  const advance = (ms: number) => {
     now += ms;
     const pending = queue;
     queue = [];

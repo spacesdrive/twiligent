@@ -1,6 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { shortsOf, filterAndSortShorts, shortsDescription } from '../../../../src/features/analytics/shorts/shortsLibrary.ts';
+import type { ShortsQuery } from '../../../../src/features/analytics/shorts/shortsLibrary.ts';
+import type { LibraryVideo } from '../../../../src/features/analytics/videos/videoLibrary.ts';
 
 const videos = [
   { videoId: 's1', channelId: 'c1', title: 'Quick pasta', durationSeconds: 45, viewCount: 900, likeCount: 5, publishedAt: '2026-02-01T00:00:00Z' },
@@ -8,9 +10,9 @@ const videos = [
   { videoId: 's3', channelId: 'c1', title: 'Pasta tips', durationSeconds: 12, publishedAt: 'not a date' },
   { videoId: 'l1', channelId: 'c1', title: 'Long pasta', durationSeconds: 61, viewCount: 1 },
   { videoId: 'z1', channelId: 'c1', title: 'Unknown length', durationSeconds: 0, viewCount: 1 },
-];
+] as unknown as LibraryVideo[];
 
-const all = { channelFilter: 'all', search: '', tier: 'all', sortField: 'viewCount' };
+const all: ShortsQuery = { channelFilter: 'all', search: '', tier: 'all', sortField: 'viewCount' };
 
 test('shorts are videos of 1 to 60 seconds', () => {
   assert.deepEqual(shortsOf(videos).map(video => video.videoId), ['s1', 's2', 's3']);

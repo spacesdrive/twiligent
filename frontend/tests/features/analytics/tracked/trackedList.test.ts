@@ -4,15 +4,17 @@ import {
   SORT_OPTIONS, filterAndSortTracked, categoriesOf, trackedStatsOf, typeChipsOf, pluralize, countLabel,
   bulkCategoryMessage, parseManualViews, imageFileError, MAX_IMAGE_BYTES,
 } from '../../../../src/features/analytics/tracked/trackedList.ts';
+import type { TrackedFilterOptions } from '../../../../src/features/analytics/tracked/trackedList.ts';
+import type { TrackedContentItem } from '../../../../../shared/types/domain.ts';
 
 const items = [
   { id: 'r1', title: 'Cat post', subreddit: 'cats', score: 50, numComments: 4, manualViews: 900, category: 'Pets', createdAt: '2030-01-02' },
   { id: 'y1', contentType: 'youtube', title: 'Dog video', channelTitle: 'Dogs', likeCount: 10, commentCount: 9, viewCount: 100, category: 'Pets', createdAt: '2030-01-03' },
   { id: 'r2', contentType: 'reddit', title: 'Launch', score: 5, numComments: 1, category: 'Launch', createdAt: '2030-01-01' },
   { id: 'y2', contentType: 'youtube', title: 'Teaser', label: 'Campaign', likeCount: 99, commentCount: 0, viewCount: 5 },
-];
-const allFilters = { typeFilter: 'all', categoryFilter: 'all', query: '', sort: 'date-desc' };
-const ids = list => list.map(item => item.id);
+] as unknown as TrackedContentItem[];
+const allFilters: TrackedFilterOptions = { typeFilter: 'all', categoryFilter: 'all', query: '', sort: 'date-desc' };
+const ids = (list: { id: string }[]) => list.map(item => item.id);
 
 test('sort options keep their order and labels', () => {
   assert.deepEqual(SORT_OPTIONS.map(option => option.value), ['date-desc', 'engagement-desc', 'comments-desc', 'views-desc']);

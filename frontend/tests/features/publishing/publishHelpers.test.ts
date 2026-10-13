@@ -4,14 +4,16 @@ import {
   parseUserTags, parseCollaborators, buildScheduledPostPayload, buildContainerPayload, bulkPostDetails,
   singleUploadMessage, singlePostError, bulkStartError, bulkBaseTime, editPostError, bulkScheduledTime,
 } from '../../../src/features/publishing/publishHelpers.ts';
+import type { AccountPostDetails, BulkSettings, UploadFailure } from '../../../src/features/publishing/publishHelpers.ts';
+import type { ScheduleFieldValues } from '../../../src/features/publishing/scheduleHelpers.ts';
 
 const scheduledAt = new Date('2030-05-01T08:00:00Z');
-const fullPost = {
+const fullPost: AccountPostDetails = {
   accountId: 'ig1', mediaType: 'REELS', mediaUrl: 'https://cdn/x.mp4', caption: 'Hello', coverUrl: 'https://cdn/c.jpg',
   shareToFeed: false, collaborators: 'one, two ,', audioName: 'Song', thumbOffset: '1500', locationId: '42',
   userTags: '@ann 0.2 0.3, bob', altText: 'Alt',
 };
-const bulkSettings = {
+const bulkSettings: BulkSettings = {
   account: 'ig2', contentType: 'REELS', shareToFeed: true, collaborators: 'pal', locationId: '', userTags: '',
   sharedCaption: '', scheduleMode: true, startDate: '2030-05-01', startTime: '08:00', interval: 1440,
 };
@@ -73,20 +75,20 @@ test('bulk payloads match the shapes the bulk upload has always sent', () => {
 test('single post upload errors keep their own wording', () => {
   assert.equal(singleUploadMessage({ reason: 'network', message: 'x' }), 'The upload lost its network connection. Check your connection and try again.');
   assert.equal(singleUploadMessage({ reason: 'rejected', cloudinaryMessage: 'Bad preset', message: 'Upload failed' }), 'Bad preset');
-  assert.equal(singleUploadMessage({ reason: 'rejected', parseMessage: 'Unexpected token', message: 'Upload failed' }), 'Upload failed');
+  assert.equal(singleUploadMessage({ reason: 'rejected', parseMessage: 'Unexpected token', message: 'Upload failed' } as UploadFailure), 'Upload failed');
   assert.equal(singleUploadMessage(new Error('Other')), 'Other');
 });
 
 test('single post checks run in order', () => {
   const now = new Date('2030-05-01T00:00:00');
-  const base = { selectedAccount: 'a', file: {}, contentType: 'IMAGE', hasCloudConfig: true, now };
+  const base = { selectedAccount: 'a', file: {} as File, contentType: 'IMAGE', hasCloudConfig: true, now };
   const fields = { scheduleMode: true, scheduleDate: '2030-05-02', scheduleTime: '09:00' };
   assert.equal(singlePostError({ ...base, file: null, fields }), 'Choose an account, a content type and a file before publishing.');
   assert.equal(singlePostError({ ...base, hasCloudConfig: false, fields }), 'Cloudinary is not set up on the server. Check Settings.');
   assert.equal(singlePostError({ ...base, fields: { ...fields, scheduleTime: '' } }), 'Set a date and time for the scheduled post.');
   assert.equal(singlePostError({ ...base, fields: { ...fields, scheduleDate: '2030-04-30' } }), 'Pick a time in the future.');
   assert.equal(singlePostError({ ...base, fields }), '');
-  assert.equal(singlePostError({ ...base, fields: { scheduleMode: false } }), '');
+  assert.equal(singlePostError({ ...base, fields: { scheduleMode: false } as ScheduleFieldValues }), '');
 });
 
 test('bulk start checks run in order', () => {
@@ -102,7 +104,7 @@ test('bulk start checks run in order', () => {
 
 test('bulk base time only exists in schedule mode', () => {
   assert.equal(bulkBaseTime({ ...bulkSettings, scheduleMode: false }), null);
-  assert.equal(bulkBaseTime(bulkSettings).getTime(), new Date('2030-05-01T08:00').getTime());
+  assert.equal(bulkBaseTime(bulkSettings)!.getTime(), new Date('2030-05-01T08:00').getTime());
 });
 
 test('editing a scheduled post needs a future date and time', () => {

@@ -7,8 +7,18 @@
       "DOM.Iterable"
     ],
     "types": [
-      "node"
-    ]
+      "node",
+      "vite/client"
+    ],
+    "jsx": "react-jsx",
+    "paths": {
+      "@/*": [
+        "./src/*"
+      ],
+      "@shared/*": [
+        "../shared/*"
+      ]
+    }
   },
   "include": [
     "vite.config.ts",

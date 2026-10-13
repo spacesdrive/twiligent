@@ -4,7 +4,7 @@ import {
   TESTER_HINT, instagramErrorMessage, readOAuthReturn, accountMetrics, accountCardHandle, visibleSections,
 } from '../../../src/features/accounts/accountManagerData.ts';
 
-const params = query => new URLSearchParams(query);
+const params = (query: string) => new URLSearchParams(query);
 
 test('known Instagram errors have their own message', () => {
   assert.equal(instagramErrorMessage('already_added'), 'This Instagram account is already connected.');
@@ -29,7 +29,7 @@ test('connected values other than true are dropped silently', () => {
 });
 
 test('errors and the add flag are read together', () => {
-  const result = readOAuthReturn(params('ig_error=cancelled&add=1'));
+  const result = readOAuthReturn(params('ig_error=cancelled&add=1'))!;
   assert.equal(result.connected, false);
   assert.equal(result.errorMessage, 'Instagram sign-in was cancelled. Try again when you are ready.');
   assert.equal(result.openAdd, true);

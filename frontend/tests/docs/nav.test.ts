@@ -16,8 +16,8 @@ test('page paths are unique', () => {
 
 test('neighbours link the first and last pages correctly', () => {
   assert.equal(neighbours('/docs').prev, null);
-  assert.equal(neighbours('/docs').next.path, '/docs/concepts');
-  assert.equal(neighbours(ALL_DOC_PAGES.at(-1).path).next, null);
+  assert.equal(neighbours('/docs').next!.path, '/docs/concepts');
+  assert.equal(neighbours(ALL_DOC_PAGES.at(-1)!.path).next, null);
 });
 
 test('tabForPath falls back to the first tab for unknown paths', () => {

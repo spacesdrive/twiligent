@@ -3,15 +3,16 @@ import assert from 'node:assert/strict';
 import {
   mergeAccountMedia, typeTotalsOf, viewTotalsOf, filterAndSortMedia, typeViewsSubtitle, reelsDescription,
 } from '../../../../src/features/analytics/reels/reelsLibrary.ts';
+import type { AccountMediaResult, LibraryMedia, MediaAccount, MediaQuery } from '../../../../src/features/analytics/reels/reelsLibrary.ts';
 
-const accounts = [{ id: 'i1', title: 'Paper Fold' }, { id: 'i2', username: 'second' }, { id: 'i3' }];
+const accounts: MediaAccount[] = [{ id: 'i1', title: 'Paper Fold' }, { id: 'i2', username: 'second' }, { id: 'i3' }];
 
 test('media from every fulfilled account is merged with its account', () => {
   const results = [
     { status: 'fulfilled', value: { media: [{ id: 'm1', viewCount: 200, likeCount: 10, commentsCount: 10 }] } },
     { status: 'rejected', reason: new Error('token expired') },
     { status: 'fulfilled', value: { media: [{ id: 'm2', viewCount: 0 }] } },
-  ];
+  ] as PromiseSettledResult<AccountMediaResult>[];
   const media = mergeAccountMedia(accounts, results);
   assert.deepEqual(media.map(item => [item.id, item.accountId, item.accountTitle]), [
     ['m1', 'i1', 'Paper Fold'],
@@ -26,7 +27,7 @@ const media = [
   { id: 'r1', contentType: 'reel', viewCount: 1000, likeCount: 50, caption: 'Folding a crane', timestamp: '2026-03-01T00:00:00Z' },
   { id: 'p1', contentType: 'post', likeCount: 5000, caption: 'Paper stack', timestamp: '2026-05-01T00:00:00Z' },
   { id: 'x1', contentType: 'carousel', viewCount: 10, likeCount: 2, timestamp: 'not a date' },
-];
+] as LibraryMedia[];
 
 test('type totals count unknown types as posts and only reported views', () => {
   const totals = typeTotalsOf(media);
@@ -37,14 +38,14 @@ test('type totals count unknown types as posts and only reported views', () => {
 });
 
 test('media filters by type, caption and like range', () => {
-  const base = { typeFilter: 'all', search: '', tier: 'all', sortField: 'viewCount' };
+  const base: MediaQuery = { typeFilter: 'all', search: '', tier: 'all', sortField: 'viewCount' };
   assert.deepEqual(filterAndSortMedia(media, { ...base, typeFilter: 'reel' }).map(item => item.id), ['r1']);
   assert.deepEqual(filterAndSortMedia(media, { ...base, search: 'paper' }).map(item => item.id), ['p1']);
   assert.deepEqual(filterAndSortMedia(media, { ...base, tier: 'medium' }).map(item => item.id), ['p1']);
 });
 
 test('media sorts with missing values last', () => {
-  const base = { typeFilter: 'all', search: '', tier: 'all' };
+  const base: Omit<MediaQuery, 'sortField'> = { typeFilter: 'all', search: '', tier: 'all' };
   assert.deepEqual(filterAndSortMedia(media, { ...base, sortField: 'viewCount' }).map(item => item.id), ['r1', 'x1', 'p1']);
   assert.deepEqual(filterAndSortMedia(media, { ...base, sortField: 'timestamp' }).map(item => item.id), ['p1', 'r1', 'x1']);
 });

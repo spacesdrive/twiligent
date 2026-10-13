@@ -2,12 +2,12 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { PROGRESS_KEY, readProgress, saveProgress, completedSteps, repoBaseUrl } from '../../../src/features/settings/schedulingProgress.ts';
 
-function fakeStorage(initial = {}) {
-  const items = { ...initial };
+function fakeStorage(initial: Record<string, string> = {}) {
+  const items: Record<string, string> = { ...initial };
   return {
     items,
-    getItem: key => (key in items ? items[key] : null),
-    setItem: (key, value) => { items[key] = String(value); },
+    getItem: (key: string) => (key in items ? items[key] : null),
+    setItem: (key: string, value: string) => { items[key] = String(value); },
   };
 }
 

@@ -4,15 +4,16 @@ import {
   youtubeStatsOf, redditStatsOf, sortedByViews, sortedByKarma, chartDataOf, platformSplit, categoryDescription,
   itemsSubtitle, viewsMetric, karmaMetric, commentsSubtitle, redditViewsMetric, upvoteRatioLabel,
 } from '../../../../src/features/analytics/tracked/trackedCategoryStats.ts';
+import type { TrackedContentItem } from '../../../../../shared/types/domain.ts';
 
 const videos = [
   { id: 'y1', contentType: 'youtube', title: 'A very long video title here', viewCount: 2000, likeCount: 100, commentCount: 7 },
   { id: 'y2', contentType: 'youtube', url: 'https://youtu.be/x', viewCount: 1000, likeCount: 1 },
-];
+] as TrackedContentItem[];
 const posts = [
   { id: 'r1', title: 'Post one', score: 40, numComments: 3, upvoteRatio: 0.9, manualViews: 500 },
   { id: 'r2', title: 'Post two', score: 60, numComments: 1, upvoteRatio: 0.7 },
-];
+] as TrackedContentItem[];
 
 test('YouTube totals, averages and like ratio', () => {
   assert.deepEqual(youtubeStatsOf(videos), {
@@ -39,7 +40,7 @@ test('chart data trims names and keeps the data key', () => {
     { name: 'A very long vide', views: 2000 },
     { name: 'https://youtu.be', views: 1000 },
   ]);
-  assert.equal(chartDataOf(Array.from({ length: 20 }, () => ({ score: 1 })), 'karma', item => item.score).length, 12);
+  assert.equal(chartDataOf(Array.from({ length: 20 }, () => ({ score: 1 })) as TrackedContentItem[], 'karma', item => item.score!).length, 12);
 });
 
 test('platform parts show only for platforms with items', () => {

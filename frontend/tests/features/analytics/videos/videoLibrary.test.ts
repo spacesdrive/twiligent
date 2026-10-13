@@ -1,14 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { watchUrl, filterAndSortVideos, videoStatsOf, nextSort, ariaSortOf, videosDescription, mergeChannelVideos } from '../../../../src/features/analytics/videos/videoLibrary.ts';
+import type { ChannelVideosResult, LibraryVideo, VideoChannelAccount, VideoQuery } from '../../../../src/features/analytics/videos/videoLibrary.ts';
 
 const videos = [
   { videoId: 'a', title: 'Banana bread', channelId: 'c1', viewCount: 500, likeCount: 10, commentCount: 1, tags: ['baking'] },
   { videoId: 'b', title: 'Apple pie', channelId: 'c2', viewCount: 50000, likeCount: 900, commentCount: 40 },
   { videoId: 'c', title: 'Cherry tart', channelId: 'c1', viewCount: 2000000 },
-];
-const allFilters = { channelFilter: 'all', search: '', tier: 'all', sort: { field: 'viewCount', order: 'desc' } };
-const ids = list => list.map(video => video.videoId);
+] as LibraryVideo[];
+const allFilters: VideoQuery = { channelFilter: 'all', search: '', tier: 'all', sort: { field: 'viewCount', order: 'desc' } };
+const ids = (list: { videoId: string }[]) => list.map(video => video.videoId);
 
 test('videos sort by number in either direction', () => {
   assert.deepEqual(ids(filterAndSortVideos(videos, allFilters)), ['c', 'b', 'a']);
@@ -52,12 +53,12 @@ test('description and watch links', () => {
 });
 
 test('channel videos merge with their channel and skip failed channels', () => {
-  const channelAccounts = [{ id: 'c1', title: 'Alpha' }, { id: 'c2', channelTitle: 'Beta' }, { id: 'c3' }];
+  const channelAccounts: VideoChannelAccount[] = [{ id: 'c1', title: 'Alpha' }, { id: 'c2', channelTitle: 'Beta' }, { id: 'c3' }];
   const results = [
     { status: 'fulfilled', value: { videos: [{ videoId: 'a', viewCount: 200, likeCount: 10, commentCount: 0, duration: 'PT1M5S', thumbnails: { high: 'h.jpg' } }] } },
     { status: 'rejected', reason: new Error('quota') },
     { status: 'fulfilled', value: { data: { videos: [{ videoId: 'b', thumbnail: 't.jpg', durationSeconds: 30 }] } } },
-  ];
+  ] as PromiseSettledResult<ChannelVideosResult>[];
   const merged = mergeChannelVideos(channelAccounts, results);
   assert.deepEqual(merged.channels.map(channel => [channel.id, channel.title]), [['c1', 'Alpha'], ['c3', 'Unknown channel']]);
   assert.equal(merged.channels[0].account, channelAccounts[0]);

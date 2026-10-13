@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { greeting, greetingName, greetingTitle } from '../../../../src/features/analytics/overview/greeting.ts';
 
-const atHour = hour => new Date(2026, 0, 1, hour, 30);
+const atHour = (hour: number) => new Date(2026, 0, 1, hour, 30);
 
 test('greeting follows the time of day', () => {
   assert.equal(greeting(atHour(6)), 'Good morning');
