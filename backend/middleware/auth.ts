@@ -1,5 +1,5 @@
 import type { Next } from 'hono';
-import { getSupabaseAuth } from '../lib/supabase.ts';
+import { getSupabaseAuth } from '../database/supabase.ts';
 import type { AppContext } from '../types/app.ts';
 
 export async function requireAuth(c: AppContext, next: Next) {

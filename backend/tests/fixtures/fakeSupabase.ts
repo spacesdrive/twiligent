@@ -1,9 +1,9 @@
-// in-memory stand-in for the supabase query builder calls made by lib/db.js; records every call
+// in-memory stand-in for the supabase query builder calls made by the repositories; records every call
 import type { SupabaseClient } from '../../types/app.ts';
 
 export type Row = Record<string, unknown>;
 
-type Filter = [column: string, value: unknown, operator?: 'lte'];
+type Filter = [column: string, value: unknown, operator?: 'lte' | 'neq'];
 
 interface Action {
     type: 'select' | 'update' | 'insert' | 'upsert' | 'delete';
@@ -24,8 +24,10 @@ interface FakeQuery {
     select(): FakeQuery;
     eq(column: string, value: unknown): FakeQuery;
     lte(column: string, value: unknown): FakeQuery;
+    neq(column: string, value: unknown): FakeQuery;
     order(): FakeQuery;
     single(): Promise<QueryResult>;
+    maybeSingle(): Promise<QueryResult>;
     then(resolve: (result: QueryResult) => unknown, reject?: (reason: unknown) => unknown): Promise<unknown>;
 }
 
@@ -40,6 +42,7 @@ function copy<T>(value: T): T {
 
 function matchesFilter(row: Row, [column, value, operator]: Filter) {
     if (operator === 'lte') return (row[column] as string) <= (value as string);
+    if (operator === 'neq') return row[column] !== value;
     return row[column] === value;
 }
 
@@ -64,7 +67,15 @@ function queryBuilder(action: Action, run: Run): FakeQuery {
             filters.push([column, value, 'lte']);
             return query;
         },
+        neq(column: string, value: unknown) {
+            filters.push([column, value, 'neq']);
+            return query;
+        },
         order() { return query; },
+        maybeSingle() {
+            const found = run(action, filters);
+            return Promise.resolve({ data: found[0] ?? null, error: null });
+        },
         single() {
             const found = run(action, filters);
             if (found.length === 0) return Promise.resolve({ data: null, error: { message: 'no rows' } });
