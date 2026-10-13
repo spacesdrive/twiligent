@@ -10,6 +10,29 @@
  *   SUPABASE_SERVICE_KEY - a Supabase secret key (sb_secret_...) or the legacy service_role key
  */
 
+import type { Account, Platform, PostStatus, ScheduledPost } from '../shared/types/domain.ts';
+
+interface AccountRow {
+    id: string;
+    platform: Platform;
+    data: Omit<Account, 'id' | 'platform'> | null;
+}
+
+interface ScheduledPostRow {
+    id: string;
+    account_id: string;
+    status: PostStatus;
+    scheduled_at: string;
+    data: Partial<ScheduledPost> | null;
+}
+
+interface GraphResponse {
+    id?: string;
+    error?: { message: string };
+    status_code?: string;
+    status?: string;
+}
+
 const SUPABASE_URL = (process.env.SUPABASE_URL || '').replace(/[^\x20-\x7E]/g, '').trim();
 const SUPABASE_SERVICE_KEY = (process.env.SUPABASE_SERVICE_KEY || '').replace(/[^\x20-\x7E]/g, '').trim();
 
@@ -23,19 +46,19 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
 
 // Legacy service_role keys are JWTs and go in both headers. New sb_secret_ keys are not JWTs
 // and Supabase expects them on apikey only.
-const sbHeaders = {
+const sbHeaders: Record<string, string> = {
     'apikey': SUPABASE_SERVICE_KEY,
     ...(SUPABASE_SERVICE_KEY.startsWith('eyJ') ? { 'Authorization': `Bearer ${SUPABASE_SERVICE_KEY}` } : {}),
     'Content-Type': 'application/json',
 };
 
-async function sbGet(path) {
+async function sbGet<T>(path: string): Promise<T> {
     const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, { headers: sbHeaders });
     if (!res.ok) throw new Error(`Supabase GET ${path}: ${await res.text()}`);
-    return res.json();
+    return res.json() as Promise<T>;
 }
 
-async function sbPatch(path, body) {
+async function sbPatch(path: string, body: unknown): Promise<void> {
     const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
         method: 'PATCH',
         headers: { ...sbHeaders, 'Prefer': 'return=minimal' },
@@ -46,9 +69,9 @@ async function sbPatch(path, body) {
 
 // ─── Data access ──────────────────────────────────────────────────────────────
 
-async function getDuePosts() {
+async function getDuePosts(): Promise<ScheduledPost[]> {
     const now = encodeURIComponent(new Date().toISOString());
-    const rows = await sbGet(
+    const rows = await sbGet<ScheduledPostRow[]>(
         `/scheduled_posts?status=eq.pending&scheduled_at=lte.${now}&select=id,account_id,status,scheduled_at,data`
     );
     return (rows || []).map(row => ({
@@ -60,19 +83,19 @@ async function getDuePosts() {
     }));
 }
 
-async function getAccount(accountId) {
-    const rows = await sbGet(`/accounts?id=eq.${accountId}&select=id,platform,data`);
+async function getAccount(accountId: string): Promise<Account | null> {
+    const rows = await sbGet<AccountRow[]>(`/accounts?id=eq.${accountId}&select=id,platform,data`);
     if (!rows || rows.length === 0) return null;
     return { id: rows[0].id, platform: rows[0].platform, ...(rows[0].data || {}) };
 }
 
-async function updatePostStatus(id, updates) {
+async function updatePostStatus(id: string, updates: Partial<ScheduledPost>): Promise<void> {
     const { status, ...dataUpdates } = updates;
-    const patch = {};
+    const patch: { status?: PostStatus; data?: Partial<ScheduledPost> } = {};
     if (status) patch.status = status;
 
     if (Object.keys(dataUpdates).length > 0) {
-        const rows = await sbGet(`/scheduled_posts?id=eq.${id}&select=data`);
+        const rows = await sbGet<Pick<ScheduledPostRow, 'data'>[]>(`/scheduled_posts?id=eq.${id}&select=data`);
         const currentData = rows?.[0]?.data || {};
         patch.data = { ...currentData, ...dataUpdates };
     }
@@ -82,7 +105,7 @@ async function updatePostStatus(id, updates) {
 
 // Moves a post from pending to publishing only if it is still pending, so this workflow and the
 // Worker cron never publish the same post twice. Returns false when the other one claimed it.
-async function claimPost(id) {
+async function claimPost(id: string): Promise<boolean> {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/scheduled_posts?id=eq.${id}&status=eq.pending`, {
         method: 'PATCH',
         headers: { ...sbHeaders, 'Prefer': 'return=representation' },
@@ -95,12 +118,13 @@ async function claimPost(id) {
 
 // ─── Instagram publishing ─────────────────────────────────────────────────────
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+function sleep(ms: number): Promise<void> { return new Promise(r => setTimeout(r, ms)); }
 
-async function publishToInstagram(post, account) {
+async function publishToInstagram(post: ScheduledPost, account: Account): Promise<string | undefined> {
     const igId = account.igUserId;
     const token = account.accessToken;
-    const params = { access_token: token };
+    // URLSearchParams stringifies the boolean and number values
+    const params: Record<string, string | number | boolean | undefined> = { access_token: token };
 
     if (post.mediaType === 'REELS') {
         params.media_type = 'REELS';
@@ -115,7 +139,7 @@ async function publishToInstagram(post, account) {
         if (post.userTags?.length) params.user_tags = JSON.stringify(post.userTags);
     } else if (post.mediaType === 'STORIES') {
         params.media_type = 'STORIES';
-        if (post.mediaUrl.match(/\.(mp4|mov|avi|webm)/i)) {
+        if (post.mediaUrl!.match(/\.(mp4|mov|avi|webm)/i)) {
             params.video_url = post.mediaUrl;
         } else {
             params.image_url = post.mediaUrl;
@@ -129,9 +153,9 @@ async function publishToInstagram(post, account) {
         if (post.altText) params.alt_text = post.altText;
     }
 
-    const qs = new URLSearchParams(params).toString();
+    const qs = new URLSearchParams(params as Record<string, string>).toString();
     const createRes = await fetch(`https://graph.instagram.com/v25.0/${igId}/media?${qs}`, { method: 'POST' });
-    const createData = await createRes.json();
+    const createData = await createRes.json() as GraphResponse;
     if (createData.error) throw new Error(createData.error.message);
 
     const containerId = createData.id;
@@ -142,7 +166,7 @@ async function publishToInstagram(post, account) {
             const statusRes = await fetch(
                 `https://graph.instagram.com/v25.0/${containerId}?fields=status_code,status&access_token=${token}`
             );
-            const statusData = await statusRes.json();
+            const statusData = await statusRes.json() as GraphResponse;
             if (statusData.status_code === 'FINISHED' || statusData.status_code === 'PUBLISHED') break;
             if (statusData.status_code === 'ERROR') throw new Error('Processing failed: ' + (statusData.status || ''));
             if (statusData.status_code === 'EXPIRED') throw new Error('Container expired');
@@ -155,7 +179,7 @@ async function publishToInstagram(post, account) {
         `https://graph.instagram.com/v25.0/${igId}/media_publish?creation_id=${containerId}&access_token=${token}`,
         { method: 'POST' }
     );
-    const pubData = await pubRes.json();
+    const pubData = await pubRes.json() as GraphResponse;
     if (pubData.error) throw new Error(pubData.error.message);
 
     return pubData.id;
@@ -163,7 +187,7 @@ async function publishToInstagram(post, account) {
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-async function main() {
+async function main(): Promise<void> {
     console.log('📅 Instagram Scheduled Post Publisher');
     console.log(`   Time: ${new Date().toISOString()}\n`);
 
@@ -197,8 +221,8 @@ async function main() {
             processed++;
             console.log(`  ✓ Published → media ${mediaId}`);
         } catch (err) {
-            await updatePostStatus(post.id, { status: 'failed', error: err.message });
-            console.error(`  ✗ Failed: ${err.message}`);
+            await updatePostStatus(post.id, { status: 'failed', error: (err as Error).message });
+            console.error(`  ✗ Failed: ${(err as Error).message}`);
         }
     }
 
