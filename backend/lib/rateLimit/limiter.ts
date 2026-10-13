@@ -2,6 +2,7 @@ import type { Redis } from '@upstash/redis';
 import { limitOf } from './algorithms.ts';
 import type { Decision, LimitConfig } from './algorithms.ts';
 import { MemoryStore, RedisStore } from './stores.ts';
+import { createLogger, errorFields } from '../logger.ts';
 
 export interface RateLimitRule {
     name: string;
@@ -66,7 +67,7 @@ export async function checkRateLimit(
             decision = await new RedisStore(redis).check(key, rule.config, now);
         } catch (err) {
             redisDownUntil = now + REDIS_RETRY_AFTER_MS;
-            console.error(`Rate limit ${rule.name}: Redis check failed, counting in memory for 30 seconds:`, (err as Error).message);
+            createLogger({ rule: rule.name }).error('rate limit Redis check failed; counting in memory for 30 seconds', errorFields(err));
             decision = await memoryStore.check(key, rule.config, now);
         }
     } else {

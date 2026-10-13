@@ -90,7 +90,9 @@ test('a Redis failure falls back to counting in memory instead of failing the re
         // one failure opens the circuit, so the next checks skip Redis instead of waiting on it again
         assert.equal(calls.length, 1);
         assert.equal(logged.length, 1);
-        assert.match(String(logged[0][0]), /Rate limit test: Redis check failed/);
+        assert.deepEqual(JSON.parse(String(logged[0][0])), {
+            level: 'error', message: 'rate limit Redis check failed; counting in memory for 30 seconds', rule: 'test', error: 'connection refused', errorName: 'Error',
+        });
 
         await checkRateLimit(redis, rule, 'user-2', 100 + 30_000);
         assert.equal(calls.length, 2);
