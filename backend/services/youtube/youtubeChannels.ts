@@ -1,4 +1,5 @@
 import { ytFetch } from './youtubeApi.ts';
+import { NotFoundError, UpstreamTimeoutError, ValidationError } from '../../lib/errors.ts';
 import type { YouTubeApiParams, YouTubeApiListResponse, YouTubeApiChannel, YouTubeApiSearchResult } from './youtubeApi.ts';
 import type { YouTubeChannelData } from '../../../shared/types/youtube.ts';
 
@@ -22,45 +23,46 @@ function extractChannelId(input: string | null | undefined): string | null {
     return trimmed;
 }
 
-// null when the lookup finds nothing or fails, so the next strategy runs
+// null when the lookup finds nothing or fails, so the next strategy runs; a timeout stops the search
 async function lookupChannelId<TItem>(
-    endpoint: string, params: YouTubeApiParams, pickId: (item: TItem) => string, apiKey: string,
+    endpoint: string, params: YouTubeApiParams, pickId: (item: TItem) => string, apiKey: string, signal?: AbortSignal,
 ): Promise<string | null> {
     try {
-        const data = await ytFetch<YouTubeApiListResponse<TItem>>(endpoint, params, apiKey);
+        const data = await ytFetch<YouTubeApiListResponse<TItem>>(endpoint, params, apiKey, signal);
         if (data.items && data.items.length > 0) return pickId(data.items[0]);
         return null;
-    } catch {
+    } catch (err) {
+        if (err instanceof UpstreamTimeoutError) throw err;
         return null;
     }
 }
 
-export async function resolveChannelId(input: string | null | undefined, apiKey: string): Promise<string> {
+export async function resolveChannelId(input: string | null | undefined, apiKey: string, signal?: AbortSignal): Promise<string> {
     const extracted = extractChannelId(input);
-    if (!extracted) throw new Error('Invalid input');
+    if (!extracted) throw new ValidationError('Invalid input');
     if (CHANNEL_ID_PATTERN.test(extracted)) return extracted;
 
     // sequential on purpose: a search costs 100 quota units
-    const byHandle = await lookupChannelId<YouTubeApiChannel>('channels', { part: 'id', forHandle: extracted }, (item) => item.id, apiKey);
+    const byHandle = await lookupChannelId<YouTubeApiChannel>('channels', { part: 'id', forHandle: extracted }, (item) => item.id, apiKey, signal);
     if (byHandle !== null) return byHandle;
 
-    const byUsername = await lookupChannelId<YouTubeApiChannel>('channels', { part: 'id', forUsername: extracted }, (item) => item.id, apiKey);
+    const byUsername = await lookupChannelId<YouTubeApiChannel>('channels', { part: 'id', forUsername: extracted }, (item) => item.id, apiKey, signal);
     if (byUsername !== null) return byUsername;
 
     const searchParams = { part: 'snippet', q: extracted, type: 'channel', maxResults: '1' };
-    const bySearch = await lookupChannelId<YouTubeApiSearchResult>('search', searchParams, (item) => item.snippet.channelId, apiKey);
+    const bySearch = await lookupChannelId<YouTubeApiSearchResult>('search', searchParams, (item) => item.snippet.channelId, apiKey, signal);
     if (bySearch !== null) return bySearch;
 
-    throw new Error('Could not resolve channel. Please provide a valid Channel ID (starts with UC).');
+    throw new NotFoundError('Could not resolve channel. Please provide a valid Channel ID (starts with UC).');
 }
 
-export async function fetchChannelData(channelId: string, apiKey: string): Promise<YouTubeChannelData> {
+export async function fetchChannelData(channelId: string, apiKey: string, signal?: AbortSignal): Promise<YouTubeChannelData> {
     const data = await ytFetch<YouTubeApiListResponse<YouTubeApiChannel>>('channels', {
         part: 'snippet,statistics,contentDetails,brandingSettings,status,topicDetails',
         id: channelId,
-    }, apiKey);
+    }, apiKey, signal);
 
-    if (!data.items || data.items.length === 0) throw new Error('Channel not found');
+    if (!data.items || data.items.length === 0) throw new NotFoundError('Channel not found');
     const channel = data.items[0];
 
     return {

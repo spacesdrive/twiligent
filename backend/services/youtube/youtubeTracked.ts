@@ -1,4 +1,5 @@
 import { ytFetch, optionalCount } from './youtubeApi.ts';
+import { NotFoundError, ValidationError } from '../../lib/errors.ts';
 import type { YouTubeApiListResponse, YouTubeApiVideo } from './youtubeApi.ts';
 import type { YouTubeTrackedVideoData } from '../../../shared/types/youtube.ts';
 
@@ -21,16 +22,16 @@ export function extractYouTubeVideoId(url: string): string | null {
     return searchParams.get('v');
 }
 
-export async function fetchTrackedYouTubeData(videoUrl: string, apiKey: string): Promise<YouTubeTrackedVideoData> {
+export async function fetchTrackedYouTubeData(videoUrl: string, apiKey: string, signal?: AbortSignal): Promise<YouTubeTrackedVideoData> {
     const videoId = extractYouTubeVideoId(videoUrl);
-    if (!videoId) throw new Error('Invalid YouTube URL - could not extract video ID');
+    if (!videoId) throw new ValidationError('Invalid YouTube URL - could not extract video ID');
 
     const data = await ytFetch<YouTubeApiListResponse<TrackedApiVideo>>('videos', {
         part: 'snippet,statistics',
         id: videoId,
-    }, apiKey);
+    }, apiKey, signal);
 
-    if (!data.items || data.items.length === 0) throw new Error('YouTube video not found - check the URL');
+    if (!data.items || data.items.length === 0) throw new NotFoundError('YouTube video not found - check the URL');
 
     const { snippet, statistics } = data.items[0];
     const isShort = videoUrl.includes('/shorts/');

@@ -4,7 +4,7 @@ import { assertGolden } from '../../fixtures/golden.ts';
 import { installFetch, reply } from '../../fixtures/fakeFetch.ts';
 import type { FetchMock, FakeReply } from '../../fixtures/fakeFetch.ts';
 import { rawPlaylistItem, rawVideos } from '../../fixtures/youtubeFixtures.ts';
-import type { YouTubeApiError } from '../../../services/youtube/youtubeApi.ts';
+import type { UpstreamError } from '../../../lib/errors.ts';
 
 let fetchMock: FetchMock | null = null;
 afterEach(() => fetchMock?.restore());
@@ -13,7 +13,7 @@ async function outcomeOf(promise: Promise<unknown>) {
     try {
         return { value: await promise };
     } catch (err) {
-        return { error: (err as YouTubeApiError).message, reason: (err as YouTubeApiError).reason, status: (err as YouTubeApiError).status };
+        return { error: (err as UpstreamError).message, reason: (err as UpstreamError).reason, status: (err as UpstreamError).upstreamStatus };
     }
 }
 

@@ -1,4 +1,5 @@
 import { igFetch } from './instagramApi.ts';
+import { UpstreamTimeoutError } from '../../lib/errors.ts';
 import type { GraphParams } from './instagramApi.ts';
 import type { InstagramContentType, InstagramMedia } from '../../../shared/types/instagram.ts';
 
@@ -75,14 +76,17 @@ export function normalizeInstagramMedia(raw: InstagramApiMedia): InstagramMedia 
     };
 }
 
-async function fetchMediaPage(igUserId: string, accessToken: string, after: string | null | undefined): Promise<InstagramApiMediaPage> {
+async function fetchMediaPage(
+    igUserId: string, accessToken: string, after: string | null | undefined, signal?: AbortSignal,
+): Promise<InstagramApiMediaPage> {
     const params: GraphParams = { access_token: accessToken, limit: String(MEDIA_PAGE_SIZE) };
     if (after) params.after = after;
     try {
-        return await igFetch<InstagramApiMediaPage>(`/${igUserId}/media`, { ...params, fields: `${MEDIA_FIELDS},${VIEWS_FIELD}` });
-    } catch {
+        return await igFetch<InstagramApiMediaPage>(`/${igUserId}/media`, { ...params, fields: `${MEDIA_FIELDS},${VIEWS_FIELD}` }, 1, signal);
+    } catch (err) {
+        if (err instanceof UpstreamTimeoutError) throw err;
         // one item without insights (e.g. pre-professional posts) fails the whole page
-        return igFetch<InstagramApiMediaPage>(`/${igUserId}/media`, { ...params, fields: MEDIA_FIELDS });
+        return igFetch<InstagramApiMediaPage>(`/${igUserId}/media`, { ...params, fields: MEDIA_FIELDS }, 1, signal);
     }
 }
 
@@ -94,12 +98,12 @@ function uniqueById(items: InstagramApiMedia[]): InstagramApiMedia[] {
     return [...unique.values()];
 }
 
-export async function fetchInstagramMedia(igUserId: string, accessToken: string, limit = 500): Promise<InstagramMedia[]> {
+export async function fetchInstagramMedia(igUserId: string, accessToken: string, limit = 500, signal?: AbortSignal): Promise<InstagramMedia[]> {
     const allMedia: InstagramApiMedia[] = [];
     let after: string | null | undefined = null;
 
     for (let page = 0; page < MAX_MEDIA_PAGES && allMedia.length < limit; page++) {
-        const data = await fetchMediaPage(igUserId, accessToken, after);
+        const data = await fetchMediaPage(igUserId, accessToken, after, signal);
         if (Array.isArray(data.data)) allMedia.push(...data.data);
         after = data.paging?.next ? data.paging?.cursors?.after : null;
         if (!after) break;

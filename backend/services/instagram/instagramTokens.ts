@@ -1,5 +1,6 @@
 import { getAccounts, updateAccount } from '../../lib/db.ts';
 import { igFetch } from './instagramApi.ts';
+import { UpstreamError } from '../../lib/errors.ts';
 import type { Account } from '../../../shared/types/domain.ts';
 import type { SupabaseClient } from '../../types/app.ts';
 
@@ -29,22 +30,22 @@ function toTokenResult(data: IssuedToken): InstagramTokenResult {
     };
 }
 
-export async function exchangeForLongLivedToken(shortToken: string, appSecret: string): Promise<InstagramTokenResult> {
+export async function exchangeForLongLivedToken(shortToken: string, appSecret: string, signal?: AbortSignal): Promise<InstagramTokenResult> {
     const data = await igFetch<InstagramApiToken>('/access_token', {
         grant_type: 'ig_exchange_token',
         client_secret: appSecret,
         access_token: shortToken,
-    });
-    if (!data.access_token) throw new Error('Failed to exchange token - check Instagram App Secret');
+    }, 1, signal);
+    if (!data.access_token) throw new UpstreamError('Failed to exchange token - check Instagram App Secret');
     return toTokenResult(data as IssuedToken);
 }
 
-export async function refreshLongLivedToken(longToken: string): Promise<InstagramTokenResult> {
+export async function refreshLongLivedToken(longToken: string, signal?: AbortSignal): Promise<InstagramTokenResult> {
     const data = await igFetch<InstagramApiToken>('/refresh_access_token', {
         grant_type: 'ig_refresh_token',
         access_token: longToken,
-    });
-    if (!data.access_token) throw new Error('Failed to refresh token');
+    }, 1, signal);
+    if (!data.access_token) throw new UpstreamError('Failed to refresh token');
     return toTokenResult(data as IssuedToken);
 }
 

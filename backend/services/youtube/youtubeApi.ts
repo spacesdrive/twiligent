@@ -1,3 +1,5 @@
+import { UpstreamError, UpstreamTimeoutError, isAbortError } from '../../lib/errors.ts';
+
 export type YouTubeApiParams = Record<string, string>;
 
 export interface YouTubeApiThumbnail {
@@ -20,11 +22,6 @@ export interface YouTubeApiErrorBody {
         message: string;
         errors?: { reason?: string; message?: string; domain?: string }[];
     };
-}
-
-export interface YouTubeApiError extends Error {
-    reason?: string;
-    status?: number;
 }
 
 export interface YouTubeApiChannel {
@@ -91,17 +88,20 @@ export interface YouTubeApiVideo {
 }
 
 // adds the key to the caller's params object, as callers always pass a fresh one
-export async function ytFetch<T>(endpoint: string, params: YouTubeApiParams, apiKey: string): Promise<T> {
+export async function ytFetch<T>(endpoint: string, params: YouTubeApiParams, apiKey: string, signal?: AbortSignal): Promise<T> {
     const url = new URL(`https://www.googleapis.com/youtube/v3/${endpoint}`);
     params.key = apiKey;
     Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
-    const response = await fetch(url.toString());
+    let response: Response;
+    try {
+        response = await fetch(url.toString(), { signal });
+    } catch (err) {
+        if (isAbortError(err)) throw new UpstreamTimeoutError('YouTube', err);
+        throw new UpstreamError(`YouTube could not be reached (${(err as Error).message})`, { cause: err });
+    }
     const data = await response.json() as T & YouTubeApiErrorBody;
     if (data.error) {
-        const err: YouTubeApiError = new Error(data.error.message);
-        err.reason = data.error.errors?.[0]?.reason || '';
-        err.status = data.error.code;
-        throw err;
+        throw new UpstreamError(data.error.message, { reason: data.error.errors?.[0]?.reason || '', status: data.error.code });
     }
     return data;
 }

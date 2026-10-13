@@ -1,5 +1,6 @@
 import { ytFetch, optionalCount } from './youtubeApi.ts';
-import type { YouTubeApiError, YouTubeApiListResponse, YouTubeApiParams, YouTubeApiPlaylistItem, YouTubeApiVideo } from './youtubeApi.ts';
+import { UpstreamError } from '../../lib/errors.ts';
+import type { YouTubeApiListResponse, YouTubeApiParams, YouTubeApiPlaylistItem, YouTubeApiVideo } from './youtubeApi.ts';
 import type { YouTubeVideo } from '../../../shared/types/youtube.ts';
 
 export function normalizeYouTubeVideo(video: YouTubeApiVideo): YouTubeVideo {
@@ -36,38 +37,38 @@ export function normalizeYouTubeVideo(video: YouTubeApiVideo): YouTubeVideo {
 }
 
 async function fetchPlaylistPage(
-    playlistId: string, pageToken: string, apiKey: string,
+    playlistId: string, pageToken: string, apiKey: string, signal?: AbortSignal,
 ): Promise<YouTubeApiListResponse<YouTubeApiPlaylistItem> | null> {
     const params: YouTubeApiParams = { part: 'snippet,contentDetails', playlistId, maxResults: '50' };
     if (pageToken) params.pageToken = pageToken;
     try {
-        return await ytFetch<YouTubeApiListResponse<YouTubeApiPlaylistItem>>('playlistItems', params, apiKey);
+        return await ytFetch<YouTubeApiListResponse<YouTubeApiPlaylistItem>>('playlistItems', params, apiKey, signal);
     } catch (err) {
         // youtube reports the uploads playlist missing until the first public video
-        if ((err as YouTubeApiError).reason === 'playlistNotFound') return null;
+        if (err instanceof UpstreamError && err.reason === 'playlistNotFound') return null;
         throw err;
     }
 }
 
-async function fetchVideoDetails(playlistItems: YouTubeApiPlaylistItem[], apiKey: string): Promise<YouTubeVideo[]> {
+async function fetchVideoDetails(playlistItems: YouTubeApiPlaylistItem[], apiKey: string, signal?: AbortSignal): Promise<YouTubeVideo[]> {
     const videoIds = playlistItems.map(item => item.snippet.resourceId.videoId).join(',');
     const statsData = await ytFetch<YouTubeApiListResponse<YouTubeApiVideo>>('videos', {
         part: 'statistics,contentDetails,snippet,status',
         id: videoIds,
-    }, apiKey);
+    }, apiKey, signal);
     return statsData.items ? statsData.items.map(normalizeYouTubeVideo) : [];
 }
 
-export async function fetchAllVideos(playlistId: string, apiKey: string, maxPages = 10): Promise<YouTubeVideo[]> {
+export async function fetchAllVideos(playlistId: string, apiKey: string, maxPages = 10, signal?: AbortSignal): Promise<YouTubeVideo[]> {
     const allVideos: YouTubeVideo[] = [];
     let pageToken = '';
     let page = 0;
 
     while (page < maxPages) {
-        const data = await fetchPlaylistPage(playlistId, pageToken, apiKey);
+        const data = await fetchPlaylistPage(playlistId, pageToken, apiKey, signal);
         if (!data || !data.items || data.items.length === 0) break;
 
-        allVideos.push(...await fetchVideoDetails(data.items, apiKey));
+        allVideos.push(...await fetchVideoDetails(data.items, apiKey, signal));
 
         pageToken = data.nextPageToken || '';
         if (!pageToken) break;
