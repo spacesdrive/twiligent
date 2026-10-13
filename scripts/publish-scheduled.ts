@@ -37,12 +37,12 @@ const SUPABASE_URL = (process.env.SUPABASE_URL || '').replace(/[^\x20-\x7E]/g, '
 const SUPABASE_SERVICE_KEY = (process.env.SUPABASE_SERVICE_KEY || '').replace(/[^\x20-\x7E]/g, '').trim();
 
 if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-    console.error('❌ Missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
+    console.error('Error: missing SUPABASE_URL or SUPABASE_SERVICE_KEY');
     console.error('   Add these as GitHub Actions secrets in your repo settings.');
     process.exit(1);
 }
 
-// ─── Supabase REST helpers (no SDK, native fetch only) ────────────────────────
+// Supabase REST helpers (no SDK, native fetch only)
 
 // Legacy service_role keys are JWTs and go in both headers. New sb_secret_ keys are not JWTs
 // and Supabase expects them on apikey only.
@@ -67,7 +67,7 @@ async function sbPatch(path: string, body: unknown): Promise<void> {
     if (!res.ok) throw new Error(`Supabase PATCH ${path}: ${await res.text()}`);
 }
 
-// ─── Data access ──────────────────────────────────────────────────────────────
+// Data access
 
 async function getDuePosts(): Promise<ScheduledPost[]> {
     const now = encodeURIComponent(new Date().toISOString());
@@ -116,7 +116,7 @@ async function claimPost(id: string): Promise<boolean> {
     return Array.isArray(rows) && rows.length > 0;
 }
 
-// ─── Instagram publishing ─────────────────────────────────────────────────────
+// Instagram publishing
 
 function sleep(ms: number): Promise<void> { return new Promise(r => setTimeout(r, ms)); }
 
@@ -185,20 +185,20 @@ async function publishToInstagram(post: ScheduledPost, account: Account): Promis
     return pubData.id;
 }
 
-// ─── Main ─────────────────────────────────────────────────────────────────────
+// Main
 
 async function main(): Promise<void> {
-    console.log('📅 Instagram Scheduled Post Publisher');
+    console.log('Instagram scheduled post publisher');
     console.log(`   Time: ${new Date().toISOString()}\n`);
 
     const duePosts = await getDuePosts();
 
     if (duePosts.length === 0) {
-        console.log('✓ No posts due for publishing');
+        console.log('No posts due for publishing');
         process.exit(0);
     }
 
-    console.log(`⏰ ${duePosts.length} post(s) due for publishing\n`);
+    console.log(`${duePosts.length} post(s) due for publishing\n`);
     let processed = 0;
 
     for (const post of duePosts) {
@@ -219,14 +219,14 @@ async function main(): Promise<void> {
                 publishedAt: new Date().toISOString(),
             });
             processed++;
-            console.log(`  ✓ Published → media ${mediaId}`);
+            console.log(`  Published: media ${mediaId}`);
         } catch (err) {
             await updatePostStatus(post.id, { status: 'failed', error: (err as Error).message });
-            console.error(`  ✗ Failed: ${(err as Error).message}`);
+            console.error(`  Failed: ${(err as Error).message}`);
         }
     }
 
-    console.log(`\n📊 Results: ${processed}/${duePosts.length} published`);
+    console.log(`\nResults: ${processed}/${duePosts.length} published`);
     process.exit(0);
 }
 
