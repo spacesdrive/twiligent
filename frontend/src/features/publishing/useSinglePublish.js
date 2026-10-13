@@ -55,7 +55,7 @@ export function useSinglePublish({ form, cloudConfig, showToast, onScheduled }) 
 
   // reads the form as it is at the moment of the click
   const handlePublish = async () => {
-    const error = singlePostError({ ...form, hasCloudConfig: !!cloudConfig, now: new Date() });
+    const error = singlePostError({ ...form, hasCloudConfig: Boolean(cloudConfig), now: new Date() });
     if (error) {
       showToast(error, 'error');
       return;

@@ -15,7 +15,7 @@ function useTrackedImage({ cloudConfig, showToast }) {
   const handleImageSelect = async e => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const error = imageFileError(file, !!cloudConfig);
+    const error = imageFileError(file, Boolean(cloudConfig));
     if (error) { showToast(error, 'error'); return; }
     setUploading(true);
     try {

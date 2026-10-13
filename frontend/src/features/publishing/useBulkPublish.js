@@ -69,7 +69,7 @@ export function useBulkPublish({ queue, settings, cloudConfig, showToast, onSche
 
   // the queue and settings are read once, as they are at the moment of the click
   const handleBulkProcess = async () => {
-    const error = bulkStartError({ settings, fileCount: queue.files.length, hasCloudConfig: !!cloudConfig, now: new Date() });
+    const error = bulkStartError({ settings, fileCount: queue.files.length, hasCloudConfig: Boolean(cloudConfig), now: new Date() });
     if (error) {
       showToast(error, 'error');
       return;

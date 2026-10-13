@@ -15,13 +15,13 @@ export default function ShortsFilters({
           <Select
             value={channelFilter}
             onValueChange={onChannelChange}
-            items={[{ value: 'all', label: 'All channels' }, ...channels.map(c => ({ value: c.id, label: c.title }))]}
+            items={[{ value: 'all', label: 'All channels' }, ...channels.map(channel => ({ value: channel.id, label: channel.title }))]}
           >
             <SelectTrigger className="w-48" aria-label="Channel"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectGroup>
                 <SelectItem value="all">All channels</SelectItem>
-                {channels.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
+                {channels.map(channel => <SelectItem key={channel.id} value={channel.id}>{channel.title}</SelectItem>)}
               </SelectGroup>
             </SelectContent>
           </Select>
@@ -30,7 +30,7 @@ export default function ShortsFilters({
           <SelectTrigger className="w-44" aria-label="Sort"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectGroup>
-              {sortOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+              {sortOptions.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
             </SelectGroup>
           </SelectContent>
         </Select>

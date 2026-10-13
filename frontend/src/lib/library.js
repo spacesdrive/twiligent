@@ -54,5 +54,5 @@ export function pageSlice(items, page, perPage) {
 export function matchesText(values, query) {
   const needle = query.trim().toLowerCase();
   if (!needle) return true;
-  return values.some(v => typeof v === 'string' && v.toLowerCase().includes(needle));
+  return values.some(value => typeof value === 'string' && value.toLowerCase().includes(needle));
 }

@@ -16,7 +16,7 @@ export default function SchedulingSetupSteps({ done, toggle, base }) {
         number={1}
         icon={GitFork}
         title="Make your own copy of Twiligent on GitHub"
-        done={!!done.fork}
+        done={Boolean(done.fork)}
         onToggle={toggle('fork')}
         check="you see the twiligent repository under your own GitHub username."
       >
@@ -28,7 +28,7 @@ export default function SchedulingSetupSteps({ done, toggle, base }) {
         number={2}
         icon={KeyRound}
         title="Copy two values from Supabase"
-        done={!!done.supabase}
+        done={Boolean(done.supabase)}
         onToggle={toggle('supabase')}
         check="you have the project URL and the secret key ready to paste."
       >
@@ -45,7 +45,7 @@ export default function SchedulingSetupSteps({ done, toggle, base }) {
         number={3}
         icon={Lock}
         title="Save the two values as secrets in your copy"
-        done={!!done.secrets}
+        done={Boolean(done.secrets)}
         onToggle={toggle('secrets')}
         check="both names appear in the Repository secrets list."
       >
@@ -61,7 +61,7 @@ export default function SchedulingSetupSteps({ done, toggle, base }) {
         number={4}
         icon={Power}
         title="Switch on the publisher"
-        done={!!done.enable}
+        done={Boolean(done.enable)}
         onToggle={toggle('enable')}
         check="Instagram Scheduled Publisher is listed on the left with no disabled warning."
       >
@@ -73,7 +73,7 @@ export default function SchedulingSetupSteps({ done, toggle, base }) {
         number={5}
         icon={PlayCircle}
         title="Run it once to test"
-        done={!!done.test}
+        done={Boolean(done.test)}
         onToggle={toggle('test')}
         check="the run shows a green tick after about a minute. The log saying “No posts due for publishing” is fine."
       >

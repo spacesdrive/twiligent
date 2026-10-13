@@ -25,14 +25,14 @@ export default function RedditPostFilters({ query, onQuery, sort, onSort, subred
           label="Account"
           value={accountId}
           onChange={onAccount}
-          items={[{ value: 'all', label: 'All accounts' }, ...accounts.map(a => ({ value: a.id, label: `u/${a.username}` }))]}
+          items={[{ value: 'all', label: 'All accounts' }, ...accounts.map(account => ({ value: account.id, label: `u/${account.username}` }))]}
         />
       )}
       <FilterSelect
         label="Subreddit"
         value={subreddit}
         onChange={onSubreddit}
-        items={[{ value: 'all', label: 'All subreddits' }, ...subreddits.map(s => ({ value: s, label: `r/${s}` }))]}
+        items={[{ value: 'all', label: 'All subreddits' }, ...subreddits.map(subredditName => ({ value: subredditName, label: `r/${subredditName}` }))]}
       />
       <FilterSelect label="Sort" value={sort} onChange={onSort} items={REDDIT_SORT_OPTIONS} className="w-full sm:w-44" />
     </div>

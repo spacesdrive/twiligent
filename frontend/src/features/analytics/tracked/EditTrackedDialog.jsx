@@ -11,7 +11,7 @@ export default function EditTrackedDialog({ editor, categories }) {
   const { editItem, fields, setField, saving } = editor;
   const showRedditFields = editItem && isRedditItem(editItem);
   return (
-    <Dialog open={!!editItem} onOpenChange={open => !open && editor.setEditItem(null)}>
+    <Dialog open={Boolean(editItem)} onOpenChange={open => !open && editor.setEditItem(null)}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Edit tracked item</DialogTitle>

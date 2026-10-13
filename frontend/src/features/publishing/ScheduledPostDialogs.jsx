@@ -17,7 +17,7 @@ export default function ScheduledPostDialogs({ removal }) {
       />
 
       <ConfirmDialog
-        open={!!pendingDelete}
+        open={Boolean(pendingDelete)}
         onOpenChange={open => { if (!open) removal.setPendingDelete(null); }}
         title={isPublished ? 'Remove this record?' : 'Delete this scheduled post?'}
         description={isPublished

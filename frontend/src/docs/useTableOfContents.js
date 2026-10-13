@@ -16,7 +16,7 @@ export function useTableOfContents(articleRef, pathname) {
     // pages are lazy-loaded, so headings can appear after the first render
     const mutations = new MutationObserver(() => { headings = collect(); observeAll(); });
     const spy = new IntersectionObserver(entries => {
-      const visible = entries.filter(e => e.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+      const visible = entries.filter(entry => entry.isIntersecting).sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
       if (visible[0]) setActive(visible[0].target.id);
     }, { rootMargin: '-120px 0px -65% 0px' });
     function observeAll() { spy.disconnect(); headings.forEach(heading => spy.observe(heading)); }

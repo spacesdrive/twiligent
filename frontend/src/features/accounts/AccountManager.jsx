@@ -65,7 +65,7 @@ export default function AccountManager() {
       <AddAccountDialog flow={addFlow} />
 
       <ConfirmDialog
-        open={!!pendingDelete}
+        open={Boolean(pendingDelete)}
         onOpenChange={open => { if (!open) setPendingDelete(null); }}
         title={pendingDelete ? `Remove ${accountName(pendingDelete)}?` : 'Remove account?'}
         description="Its cached analytics are deleted. Scheduled posts for this account are removed with it. You can add the account again later."

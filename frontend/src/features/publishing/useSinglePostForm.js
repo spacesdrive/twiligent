@@ -37,7 +37,7 @@ export function useSinglePostForm() {
   };
 
   const scheduleIncomplete = fields.scheduleMode && (!fields.scheduleDate || !fields.scheduleTime);
-  const canPublish = !!media.file && !!contentType && !!selectedAccount && !scheduleIncomplete;
+  const canPublish = Boolean(media.file) && Boolean(contentType) && Boolean(selectedAccount) && !scheduleIncomplete;
 
   return {
     ...media, selectedAccount, setSelectedAccount, contentType, changeContentType,

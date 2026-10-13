@@ -99,7 +99,7 @@ export default function TrackedContent() {
       <EditTrackedDialog editor={editor} categories={filters.categories} />
 
       <ConfirmDialog
-        open={!!removal.deleteItem}
+        open={Boolean(removal.deleteItem)}
         onOpenChange={open => { if (!open) removal.setDeleteItem(null); }}
         title="Stop tracking this content?"
         description={deleteDescription(removal.deleteItem)}
