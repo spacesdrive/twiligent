@@ -1,0 +1,70 @@
+{
+    "profiles": [
+        {
+            "username": "ribbon",
+            "totalKarma": 900,
+            "postKarma": 600,
+            "commentKarma": 300,
+            "awardeeKarma": 5,
+            "awarderKarma": 2,
+            "iconUrl": "https://i/a.png?x=1&y=2",
+            "createdAt": "2020-09-13T12:26:40.000Z",
+            "isGold": true,
+            "isMod": true,
+            "verified": true
+        },
+        {
+            "username": "plain",
+            "totalKarma": 10,
+            "postKarma": 4,
+            "commentKarma": 6,
+            "awardeeKarma": 0,
+            "awarderKarma": 0,
+            "iconUrl": "https://i/s.png",
+            "createdAt": "",
+            "isGold": false,
+            "isMod": false,
+            "verified": false
+        },
+        {
+            "username": "empty",
+            "totalKarma": "[NaN]",
+            "postKarma": 0,
+            "commentKarma": 0,
+            "awardeeKarma": 0,
+            "awarderKarma": 0,
+            "iconUrl": "",
+            "createdAt": "",
+            "isGold": false,
+            "isMod": false,
+            "verified": false
+        }
+    ],
+    "requests": [
+        {
+            "url": "https://www.reddit.com/user/ribbon/about.json",
+            "method": "GET",
+            "headers": {
+                "User-Agent": "script:twiligent:v1.0 (by /u/spacesdrive)",
+                "Accept": "application/json",
+                "Cookie": "reddit_session=COOKIE"
+            }
+        },
+        {
+            "url": "https://www.reddit.com/user/plain/about.json",
+            "method": "GET",
+            "headers": {
+                "User-Agent": "script:twiligent:v1.0 (by /u/spacesdrive)",
+                "Accept": "application/json"
+            }
+        },
+        {
+            "url": "https://www.reddit.com/user/empty/about.json",
+            "method": "GET",
+            "headers": {
+                "User-Agent": "script:twiligent:v1.0 (by /u/spacesdrive)",
+                "Accept": "application/json"
+            }
+        }
+    ]
+}

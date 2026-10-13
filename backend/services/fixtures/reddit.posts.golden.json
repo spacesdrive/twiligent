@@ -1,0 +1,177 @@
+{
+    "posts": [
+        {
+            "id": "a",
+            "title": "Self post",
+            "subreddit": "webdev",
+            "subredditPrefixed": "r/webdev",
+            "score": 10,
+            "upvoteRatio": 0.9,
+            "numComments": 3,
+            "url": "https://reddit.com/a",
+            "permalink": "https://reddit.com/r/webdev/comments/a/self/",
+            "thumbnail": "",
+            "mediaType": "text",
+            "isSelf": true,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "2026-07-25T17:20:00.000Z",
+            "flair": "Discussion",
+            "awardsCount": 1
+        },
+        {
+            "id": "b",
+            "title": "Video",
+            "subreddit": "videos",
+            "subredditPrefixed": "r/videos",
+            "score": 0,
+            "upvoteRatio": 0,
+            "numComments": 0,
+            "url": "",
+            "permalink": "https://reddit.com/r/videos/comments/b/v/",
+            "thumbnail": "https://thumb/b.jpg",
+            "mediaType": "video",
+            "isSelf": false,
+            "isVideo": true,
+            "isNsfw": true,
+            "createdAt": "2026-07-26T21:06:40.500Z",
+            "flair": "",
+            "awardsCount": 0
+        },
+        {
+            "id": "c",
+            "title": "Image",
+            "subreddit": "pics",
+            "subredditPrefixed": "r/pics",
+            "score": 0,
+            "upvoteRatio": 0,
+            "numComments": 0,
+            "url": "",
+            "permalink": "https://reddit.com/r/pics/comments/c/i/",
+            "thumbnail": "",
+            "mediaType": "image",
+            "isSelf": true,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "",
+            "flair": "",
+            "awardsCount": 0
+        },
+        {
+            "id": "d",
+            "title": "Link",
+            "subreddit": "news",
+            "subredditPrefixed": "r/news",
+            "score": 0,
+            "upvoteRatio": 0,
+            "numComments": 0,
+            "url": "",
+            "permalink": "https://reddit.com/r/news/comments/d/l/",
+            "thumbnail": "",
+            "mediaType": "link",
+            "isSelf": false,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "",
+            "flair": "",
+            "awardsCount": 0
+        },
+        {
+            "id": "e",
+            "title": "Bare",
+            "subreddit": "misc",
+            "subredditPrefixed": "r/misc",
+            "score": 0,
+            "upvoteRatio": 0,
+            "numComments": 0,
+            "url": "",
+            "permalink": "https://reddit.com/r/misc/comments/e/b/",
+            "thumbnail": "",
+            "mediaType": "link",
+            "isSelf": false,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "",
+            "flair": "",
+            "awardsCount": 0
+        }
+    ],
+    "limited": [
+        {
+            "id": "a",
+            "title": "Self post",
+            "subreddit": "webdev",
+            "subredditPrefixed": "r/webdev",
+            "score": 10,
+            "upvoteRatio": 0.9,
+            "numComments": 3,
+            "url": "https://reddit.com/a",
+            "permalink": "https://reddit.com/r/webdev/comments/a/self/",
+            "thumbnail": "",
+            "mediaType": "text",
+            "isSelf": true,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "2026-07-25T17:20:00.000Z",
+            "flair": "Discussion",
+            "awardsCount": 1
+        },
+        {
+            "id": "b",
+            "title": "Video",
+            "subreddit": "videos",
+            "subredditPrefixed": "r/videos",
+            "score": 0,
+            "upvoteRatio": 0,
+            "numComments": 0,
+            "url": "",
+            "permalink": "https://reddit.com/r/videos/comments/b/v/",
+            "thumbnail": "https://thumb/b.jpg",
+            "mediaType": "video",
+            "isSelf": false,
+            "isVideo": true,
+            "isNsfw": true,
+            "createdAt": "2026-07-26T21:06:40.500Z",
+            "flair": "",
+            "awardsCount": 0
+        }
+    ],
+    "requests": [
+        {
+            "url": "https://www.reddit.com/user/ribbon/submitted.json?limit=100&sort=new",
+            "method": "GET",
+            "headers": {
+                "User-Agent": "script:twiligent:v1.0 (by /u/spacesdrive)",
+                "Accept": "application/json",
+                "Cookie": "reddit_session=COOKIE"
+            }
+        },
+        {
+            "url": "https://www.reddit.com/user/ribbon/submitted.json?limit=97&sort=new&after=t3_c",
+            "method": "GET",
+            "headers": {
+                "User-Agent": "script:twiligent:v1.0 (by /u/spacesdrive)",
+                "Accept": "application/json",
+                "Cookie": "reddit_session=COOKIE"
+            }
+        },
+        {
+            "url": "https://www.reddit.com/user/ribbon/submitted.json?limit=95&sort=new&after=t3_e",
+            "method": "GET",
+            "headers": {
+                "User-Agent": "script:twiligent:v1.0 (by /u/spacesdrive)",
+                "Accept": "application/json",
+                "Cookie": "reddit_session=COOKIE"
+            }
+        },
+        {
+            "url": "https://www.reddit.com/user/ribbon/submitted.json?limit=2&sort=new",
+            "method": "GET",
+            "headers": {
+                "User-Agent": "script:twiligent:v1.0 (by /u/spacesdrive)",
+                "Accept": "application/json",
+                "Cookie": "reddit_session=COOKIE"
+            }
+        }
+    ]
+}

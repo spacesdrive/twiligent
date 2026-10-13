@@ -1,0 +1,722 @@
+{
+    "fetchedPosts": 30,
+    "totalScore": 5855,
+    "avgScore": 195,
+    "medianScore": 195,
+    "totalComments": 825,
+    "avgComments": 28,
+    "avgUpvoteRatio": 48.5,
+    "totalAwards": 30,
+    "avgAwards": 1,
+    "topPosts": [
+        {
+            "id": "g15",
+            "title": "Post g15",
+            "subreddit": "sub15",
+            "subredditPrefixed": "r/sub15",
+            "score": 395,
+            "upvoteRatio": 0.95,
+            "numComments": 45,
+            "url": "https://reddit.com/r/sub15/comments/g15/",
+            "permalink": "https://reddit.com/r/sub15/comments/g15/post/",
+            "thumbnail": "",
+            "mediaType": "link",
+            "isSelf": false,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "2026-07-24T08:00:00.000Z",
+            "flair": "",
+            "awardsCount": 0
+        },
+        {
+            "id": "g07",
+            "title": "Post g07",
+            "subreddit": "sub7",
+            "subredditPrefixed": "r/sub7",
+            "score": 371,
+            "upvoteRatio": 0.91,
+            "numComments": 49,
+            "url": "https://reddit.com/r/sub7/comments/g07/",
+            "permalink": "https://reddit.com/r/sub7/comments/g07/post/",
+            "thumbnail": "",
+            "mediaType": "link",
+            "isSelf": false,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "2026-08-13T08:00:00.000Z",
+            "flair": "",
+            "awardsCount": 1
+        },
+        {
+            "id": "g22",
+            "title": "Post g22",
+            "subreddit": "sub22",
+            "subredditPrefixed": "r/sub22",
+            "score": 366,
+            "upvoteRatio": 0.86,
+            "numComments": 34,
+            "url": "https://reddit.com/r/sub22/comments/g22/",
+            "permalink": "https://reddit.com/r/sub22/comments/g22/post/",
+            "thumbnail": "",
+            "mediaType": "video",
+            "isSelf": false,
+            "isVideo": true,
+            "isNsfw": false,
+            "createdAt": "2026-07-06T20:00:00.000Z",
+            "flair": "",
+            "awardsCount": 1
+        },
+        {
+            "id": "g14",
+            "title": "Post g14",
+            "subreddit": "sub14",
+            "subredditPrefixed": "r/sub14",
+            "score": 342,
+            "upvoteRatio": 0.82,
+            "numComments": 38,
+            "url": "https://reddit.com/r/sub14/comments/g14/",
+            "permalink": "https://reddit.com/r/sub14/comments/g14/post/",
+            "thumbnail": "",
+            "mediaType": "video",
+            "isSelf": false,
+            "isVideo": true,
+            "isNsfw": false,
+            "createdAt": "2026-07-26T20:00:00.000Z",
+            "flair": "",
+            "awardsCount": 2
+        },
+        {
+            "id": "g29",
+            "title": "Post g29",
+            "subreddit": "sub4",
+            "subredditPrefixed": "r/sub4",
+            "score": 337,
+            "upvoteRatio": 0.77,
+            "numComments": 23,
+            "url": "https://reddit.com/r/sub4/comments/g29/",
+            "permalink": "https://reddit.com/r/sub4/comments/g29/post/",
+            "thumbnail": "",
+            "mediaType": "image",
+            "isSelf": false,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "2026-06-19T08:00:00.000Z",
+            "flair": "",
+            "awardsCount": 2
+        },
+        {
+            "id": "g06",
+            "title": "Post g06",
+            "subreddit": "sub6",
+            "subredditPrefixed": "r/sub6",
+            "score": 318,
+            "upvoteRatio": 0.78,
+            "numComments": 42,
+            "url": "https://reddit.com/r/sub6/comments/g06/",
+            "permalink": "https://reddit.com/r/sub6/comments/g06/post/",
+            "thumbnail": "",
+            "mediaType": "video",
+            "isSelf": false,
+            "isVideo": true,
+            "isNsfw": false,
+            "createdAt": "2026-08-15T20:00:00.000Z",
+            "flair": "",
+            "awardsCount": 0
+        },
+        {
+            "id": "g21",
+            "title": "Post g21",
+            "subreddit": "sub21",
+            "subredditPrefixed": "r/sub21",
+            "score": 313,
+            "upvoteRatio": 0.73,
+            "numComments": 27,
+            "url": "https://reddit.com/r/sub21/comments/g21/",
+            "permalink": "https://reddit.com/r/sub21/comments/g21/post/",
+            "thumbnail": "",
+            "mediaType": "image",
+            "isSelf": false,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "2026-07-09T08:00:00.000Z",
+            "flair": "",
+            "awardsCount": 0
+        },
+        {
+            "id": "g13",
+            "title": "Post g13",
+            "subreddit": "sub13",
+            "subredditPrefixed": "r/sub13",
+            "score": 289,
+            "upvoteRatio": 0.69,
+            "numComments": 31,
+            "url": "https://reddit.com/r/sub13/comments/g13/",
+            "permalink": "https://reddit.com/r/sub13/comments/g13/post/",
+            "thumbnail": "",
+            "mediaType": "image",
+            "isSelf": false,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "2026-07-29T08:00:00.000Z",
+            "flair": "",
+            "awardsCount": 1
+        },
+        {
+            "id": "g28",
+            "title": "Post g28",
+            "subreddit": "sub3",
+            "subredditPrefixed": "r/sub3",
+            "score": 284,
+            "upvoteRatio": 0.64,
+            "numComments": 16,
+            "url": "https://reddit.com/r/sub3/comments/g28/",
+            "permalink": "https://reddit.com/r/sub3/comments/g28/post/",
+            "thumbnail": "",
+            "mediaType": "text",
+            "isSelf": true,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "2026-06-21T20:00:00.000Z",
+            "flair": "",
+            "awardsCount": 1
+        },
+        {
+            "id": "g05",
+            "title": "Post g05",
+            "subreddit": "sub5",
+            "subredditPrefixed": "r/sub5",
+            "score": 265,
+            "upvoteRatio": 0.65,
+            "numComments": 35,
+            "url": "https://reddit.com/r/sub5/comments/g05/",
+            "permalink": "https://reddit.com/r/sub5/comments/g05/post/",
+            "thumbnail": "",
+            "mediaType": "image",
+            "isSelf": false,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "2026-08-18T08:00:00.000Z",
+            "flair": "",
+            "awardsCount": 2
+        }
+    ],
+    "worstPosts": [
+        {
+            "id": "g00",
+            "title": "Post g00",
+            "subreddit": "sub0",
+            "subredditPrefixed": "r/sub0",
+            "score": 0,
+            "upvoteRatio": 0,
+            "numComments": 0,
+            "url": "https://reddit.com/r/sub0/comments/g00/",
+            "permalink": "https://reddit.com/r/sub0/comments/g00/post/",
+            "thumbnail": "",
+            "mediaType": "text",
+            "isSelf": true,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "2026-08-30T20:00:00.000Z",
+            "flair": "",
+            "awardsCount": 0
+        },
+        {
+            "id": "g23",
+            "title": "Post g23",
+            "subreddit": "sub23",
+            "subredditPrefixed": "r/sub23",
+            "score": 19,
+            "upvoteRatio": 0.99,
+            "numComments": 41,
+            "url": "https://reddit.com/r/sub23/comments/g23/",
+            "permalink": "https://reddit.com/r/sub23/comments/g23/post/",
+            "thumbnail": "",
+            "mediaType": "link",
+            "isSelf": false,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "2026-07-04T08:00:00.000Z",
+            "flair": "",
+            "awardsCount": 2
+        },
+        {
+            "id": "g08",
+            "title": "Post g08",
+            "subreddit": "sub8",
+            "subredditPrefixed": "r/sub8",
+            "score": 24,
+            "upvoteRatio": 0.04,
+            "numComments": 56,
+            "url": "https://reddit.com/r/sub8/comments/g08/",
+            "permalink": "https://reddit.com/r/sub8/comments/g08/post/",
+            "thumbnail": "",
+            "mediaType": "text",
+            "isSelf": true,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "2026-08-10T20:00:00.000Z",
+            "flair": "",
+            "awardsCount": 2
+        },
+        {
+            "id": "g16",
+            "title": "Post g16",
+            "subreddit": "sub16",
+            "subredditPrefixed": "r/sub16",
+            "score": 48,
+            "upvoteRatio": 0.08,
+            "numComments": 52,
+            "url": "https://reddit.com/r/sub16/comments/g16/",
+            "permalink": "https://reddit.com/r/sub16/comments/g16/post/",
+            "thumbnail": "",
+            "mediaType": "text",
+            "isSelf": true,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "2026-07-21T20:00:00.000Z",
+            "flair": "",
+            "awardsCount": 1
+        },
+        {
+            "id": "g01",
+            "title": "Post g01",
+            "subreddit": "sub1",
+            "subredditPrefixed": "r/sub1",
+            "score": 53,
+            "upvoteRatio": 0.13,
+            "numComments": 7,
+            "url": "https://reddit.com/r/sub1/comments/g01/",
+            "permalink": "https://reddit.com/r/sub1/comments/g01/post/",
+            "thumbnail": "",
+            "mediaType": "image",
+            "isSelf": false,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "2026-08-28T08:00:00.000Z",
+            "flair": "",
+            "awardsCount": 1
+        }
+    ],
+    "subredditBreakdown": [
+        {
+            "subreddit": "sub0",
+            "posts": 2,
+            "totalScore": 125,
+            "totalComments": 55,
+            "avgScore": 63,
+            "avgComments": 28
+        },
+        {
+            "subreddit": "sub1",
+            "posts": 2,
+            "totalScore": 231,
+            "totalComments": 9,
+            "avgScore": 116,
+            "avgComments": 5
+        },
+        {
+            "subreddit": "sub2",
+            "posts": 2,
+            "totalScore": 337,
+            "totalComments": 23,
+            "avgScore": 169,
+            "avgComments": 12
+        },
+        {
+            "subreddit": "sub3",
+            "posts": 2,
+            "totalScore": 443,
+            "totalComments": 37,
+            "avgScore": 222,
+            "avgComments": 19
+        },
+        {
+            "subreddit": "sub4",
+            "posts": 2,
+            "totalScore": 549,
+            "totalComments": 51,
+            "avgScore": 275,
+            "avgComments": 26
+        },
+        {
+            "subreddit": "sub5",
+            "posts": 1,
+            "totalScore": 265,
+            "totalComments": 35,
+            "avgScore": 265,
+            "avgComments": 35
+        },
+        {
+            "subreddit": "sub6",
+            "posts": 1,
+            "totalScore": 318,
+            "totalComments": 42,
+            "avgScore": 318,
+            "avgComments": 42
+        },
+        {
+            "subreddit": "sub7",
+            "posts": 1,
+            "totalScore": 371,
+            "totalComments": 49,
+            "avgScore": 371,
+            "avgComments": 49
+        },
+        {
+            "subreddit": "sub8",
+            "posts": 1,
+            "totalScore": 24,
+            "totalComments": 56,
+            "avgScore": 24,
+            "avgComments": 56
+        },
+        {
+            "subreddit": "sub9",
+            "posts": 1,
+            "totalScore": 77,
+            "totalComments": 3,
+            "avgScore": 77,
+            "avgComments": 3
+        },
+        {
+            "subreddit": "sub10",
+            "posts": 1,
+            "totalScore": 130,
+            "totalComments": 10,
+            "avgScore": 130,
+            "avgComments": 10
+        },
+        {
+            "subreddit": "sub11",
+            "posts": 1,
+            "totalScore": 183,
+            "totalComments": 17,
+            "avgScore": 183,
+            "avgComments": 17
+        },
+        {
+            "subreddit": "sub12",
+            "posts": 1,
+            "totalScore": 236,
+            "totalComments": 24,
+            "avgScore": 236,
+            "avgComments": 24
+        },
+        {
+            "subreddit": "sub13",
+            "posts": 1,
+            "totalScore": 289,
+            "totalComments": 31,
+            "avgScore": 289,
+            "avgComments": 31
+        },
+        {
+            "subreddit": "sub14",
+            "posts": 1,
+            "totalScore": 342,
+            "totalComments": 38,
+            "avgScore": 342,
+            "avgComments": 38
+        },
+        {
+            "subreddit": "sub15",
+            "posts": 1,
+            "totalScore": 395,
+            "totalComments": 45,
+            "avgScore": 395,
+            "avgComments": 45
+        },
+        {
+            "subreddit": "sub16",
+            "posts": 1,
+            "totalScore": 48,
+            "totalComments": 52,
+            "avgScore": 48,
+            "avgComments": 52
+        },
+        {
+            "subreddit": "sub17",
+            "posts": 1,
+            "totalScore": 101,
+            "totalComments": 59,
+            "avgScore": 101,
+            "avgComments": 59
+        },
+        {
+            "subreddit": "sub18",
+            "posts": 1,
+            "totalScore": 154,
+            "totalComments": 6,
+            "avgScore": 154,
+            "avgComments": 6
+        },
+        {
+            "subreddit": "sub19",
+            "posts": 1,
+            "totalScore": 207,
+            "totalComments": 13,
+            "avgScore": 207,
+            "avgComments": 13
+        }
+    ],
+    "mediaTypeDistribution": {
+        "text": 8,
+        "image": 8,
+        "video": 7,
+        "link": 7
+    },
+    "postsByDayOfWeek": [
+        {
+            "day": "Sunday",
+            "shortDay": "Sun",
+            "posts": 5,
+            "avgScore": 177,
+            "avgComments": 27
+        },
+        {
+            "day": "Monday",
+            "shortDay": "Mon",
+            "posts": 4,
+            "avgScore": 175,
+            "avgComments": 41
+        },
+        {
+            "day": "Tuesday",
+            "shortDay": "Tue",
+            "posts": 4,
+            "avgScore": 157,
+            "avgComments": 29
+        },
+        {
+            "day": "Wednesday",
+            "shortDay": "Wed",
+            "posts": 4,
+            "avgScore": 181,
+            "avgComments": 25
+        },
+        {
+            "day": "Thursday",
+            "shortDay": "Thu",
+            "posts": 4,
+            "avgScore": 263,
+            "avgComments": 28
+        },
+        {
+            "day": "Friday",
+            "shortDay": "Fri",
+            "posts": 5,
+            "avgScore": 240,
+            "avgComments": 20
+        },
+        {
+            "day": "Saturday",
+            "shortDay": "Sat",
+            "posts": 4,
+            "avgScore": 169,
+            "avgComments": 27
+        }
+    ],
+    "bestPostingDay": "Thursday",
+    "postsByHour": [
+        {
+            "hour": 0,
+            "label": "0:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 1,
+            "label": "1:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 2,
+            "label": "2:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 3,
+            "label": "3:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 4,
+            "label": "4:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 5,
+            "label": "5:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 6,
+            "label": "6:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 7,
+            "label": "7:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 8,
+            "label": "8:00",
+            "posts": 15,
+            "avgScore": 208
+        },
+        {
+            "hour": 9,
+            "label": "9:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 10,
+            "label": "10:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 11,
+            "label": "11:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 12,
+            "label": "12:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 13,
+            "label": "13:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 14,
+            "label": "14:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 15,
+            "label": "15:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 16,
+            "label": "16:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 17,
+            "label": "17:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 18,
+            "label": "18:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 19,
+            "label": "19:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 20,
+            "label": "20:00",
+            "posts": 15,
+            "avgScore": 182
+        },
+        {
+            "hour": 21,
+            "label": "21:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 22,
+            "label": "22:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 23,
+            "label": "23:00",
+            "posts": 0,
+            "avgScore": 0
+        }
+    ],
+    "bestPostingHour": "8:00",
+    "monthlyBreakdown": [
+        {
+            "month": "2026-06",
+            "posts": 5,
+            "score": 1155,
+            "comments": 105,
+            "avgScore": 231
+        },
+        {
+            "month": "2026-07",
+            "posts": 13,
+            "score": 2802,
+            "comments": 438,
+            "avgScore": 216
+        },
+        {
+            "month": "2026-08",
+            "posts": 12,
+            "score": 1898,
+            "comments": 282,
+            "avgScore": 158
+        }
+    ],
+    "engagementTimeline": [
+        {
+            "month": "2026-06",
+            "posts": 5,
+            "score": 1155,
+            "comments": 105,
+            "avgScore": 231
+        },
+        {
+            "month": "2026-07",
+            "posts": 13,
+            "score": 2802,
+            "comments": 438,
+            "avgScore": 216
+        },
+        {
+            "month": "2026-08",
+            "posts": 12,
+            "score": 1898,
+            "comments": 282,
+            "avgScore": 158
+        }
+    ],
+    "postsLast7Days": 3,
+    "postsLast30Days": 12,
+    "postsLast90Days": 30,
+    "postFrequency": {
+        "perWeek": 2.9,
+        "perMonth": 12.4
+    },
+    "viralityScore": 2,
+    "consistencyScore": 63
+}

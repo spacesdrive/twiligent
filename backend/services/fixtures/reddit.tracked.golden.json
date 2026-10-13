@@ -1,0 +1,89 @@
+{
+    "outcomes": [
+        {
+            "value": {
+                "postId": "p1",
+                "title": "Tracked",
+                "subreddit": "webdev",
+                "subredditPrefixed": "r/webdev",
+                "author": "[deleted]",
+                "score": 77,
+                "upvoteRatio": 0.93,
+                "numComments": 8,
+                "permalink": "https://reddit.com/r/webdev/comments/p1/tracked/",
+                "isNsfw": false,
+                "createdAt": "2026-07-25T17:20:00.000Z",
+                "lastFetchedAt": "2026-09-01T12:00:00.000Z"
+            }
+        },
+        {
+            "value": {
+                "postId": "p2",
+                "title": "Sparse",
+                "subreddit": "misc",
+                "subredditPrefixed": "r/misc",
+                "author": "[deleted]",
+                "score": 0,
+                "upvoteRatio": 0,
+                "numComments": 0,
+                "permalink": "https://reddit.com/r/misc/comments/p2/",
+                "isNsfw": false,
+                "createdAt": "",
+                "lastFetchedAt": "2026-09-01T12:00:00.000Z"
+            }
+        },
+        {
+            "error": "Unexpected Reddit response - post may be deleted or private"
+        },
+        {
+            "error": "Post not found or has been deleted"
+        },
+        {
+            "error": "Invalid URL - paste the full post link from reddit.com"
+        },
+        {
+            "error": "Not a Reddit URL - paste a link from reddit.com"
+        },
+        {
+            "error": "Not a Reddit post URL - paste the full post link including /r/.../comments/..."
+        }
+    ],
+    "requests": [
+        {
+            "url": "https://www.reddit.com/r/webdev/comments/p1/tracked.json",
+            "method": "GET",
+            "headers": {
+                "User-Agent": "script:twiligent:v1.0 (by /u/spacesdrive)",
+                "Accept": "application/json",
+                "Cookie": "reddit_session=COOKIE"
+            }
+        },
+        {
+            "url": "https://www.reddit.com/r/misc/comments/p2.json",
+            "method": "GET",
+            "headers": {
+                "User-Agent": "script:twiligent:v1.0 (by /u/spacesdrive)",
+                "Accept": "application/json",
+                "Cookie": "reddit_session=COOKIE"
+            }
+        },
+        {
+            "url": "https://www.reddit.com/r/misc/comments/p3/x.json",
+            "method": "GET",
+            "headers": {
+                "User-Agent": "script:twiligent:v1.0 (by /u/spacesdrive)",
+                "Accept": "application/json",
+                "Cookie": "reddit_session=COOKIE"
+            }
+        },
+        {
+            "url": "https://www.reddit.com/r/misc/comments/p4/x.json",
+            "method": "GET",
+            "headers": {
+                "User-Agent": "script:twiligent:v1.0 (by /u/spacesdrive)",
+                "Accept": "application/json",
+                "Cookie": "reddit_session=COOKIE"
+            }
+        }
+    ]
+}

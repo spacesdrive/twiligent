@@ -1,0 +1,619 @@
+{
+    "fetchedPosts": 11,
+    "totalScore": 1979,
+    "avgScore": 180,
+    "medianScore": 35,
+    "totalComments": 488,
+    "avgComments": 44,
+    "avgUpvoteRatio": 78.5,
+    "totalAwards": 18,
+    "avgAwards": 1.64,
+    "topPosts": [
+        {
+            "id": "r10",
+            "title": "Post r10",
+            "subreddit": "webdev",
+            "subredditPrefixed": "r/webdev",
+            "score": 1200,
+            "upvoteRatio": 0.98,
+            "numComments": 340,
+            "url": "https://reddit.com/r/webdev/comments/r10/",
+            "permalink": "https://reddit.com/r/webdev/comments/r10/post/",
+            "thumbnail": "",
+            "mediaType": "image",
+            "isSelf": false,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "2026-05-01T15:45:00.000Z",
+            "flair": "",
+            "awardsCount": 12
+        },
+        {
+            "id": "r01",
+            "title": "Post r01",
+            "subreddit": "webdev",
+            "subredditPrefixed": "r/webdev",
+            "score": 420,
+            "upvoteRatio": 0.97,
+            "numComments": 61,
+            "url": "https://reddit.com/r/webdev/comments/r01/",
+            "permalink": "https://reddit.com/r/webdev/comments/r01/post/",
+            "thumbnail": "",
+            "mediaType": "link",
+            "isSelf": false,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "2026-08-31T09:15:00.000Z",
+            "flair": "",
+            "awardsCount": 2
+        },
+        {
+            "id": "r08",
+            "title": "Post r08",
+            "subreddit": "node",
+            "subredditPrefixed": "r/node",
+            "score": 150,
+            "upvoteRatio": 0.95,
+            "numComments": 22,
+            "url": "https://reddit.com/r/node/comments/r08/",
+            "permalink": "https://reddit.com/r/node/comments/r08/post/",
+            "thumbnail": "",
+            "mediaType": "video",
+            "isSelf": false,
+            "isVideo": true,
+            "isNsfw": false,
+            "createdAt": "2026-06-20T23:59:00.000Z",
+            "flair": "",
+            "awardsCount": 0
+        },
+        {
+            "id": "r07",
+            "title": "Post r07",
+            "subreddit": "reactjs",
+            "subredditPrefixed": "r/reactjs",
+            "score": 88,
+            "upvoteRatio": 0.92,
+            "numComments": 30,
+            "url": "https://reddit.com/r/reactjs/comments/r07/",
+            "permalink": "https://reddit.com/r/reactjs/comments/r07/post/",
+            "thumbnail": "",
+            "mediaType": "link",
+            "isSelf": false,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "2026-07-02T12:00:00.000Z",
+            "flair": "",
+            "awardsCount": 3
+        },
+        {
+            "id": "r02",
+            "title": "Post r02",
+            "subreddit": "javascript",
+            "subredditPrefixed": "r/javascript",
+            "score": 35,
+            "upvoteRatio": 0.88,
+            "numComments": 12,
+            "url": "https://reddit.com/r/javascript/comments/r02/",
+            "permalink": "https://reddit.com/r/javascript/comments/r02/post/",
+            "thumbnail": "",
+            "mediaType": "text",
+            "isSelf": true,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "2026-08-29T18:40:00.000Z",
+            "flair": "",
+            "awardsCount": 0
+        },
+        {
+            "id": "r03",
+            "title": "Post r03",
+            "subreddit": "webdev",
+            "subredditPrefixed": "r/webdev",
+            "score": 35,
+            "upvoteRatio": 0.9,
+            "numComments": 4,
+            "url": "https://reddit.com/r/webdev/comments/r03/",
+            "permalink": "https://reddit.com/r/webdev/comments/r03/post/",
+            "thumbnail": "",
+            "mediaType": "image",
+            "isSelf": false,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "2026-08-25T09:05:00.000Z",
+            "flair": ""
+        },
+        {
+            "id": "r09",
+            "title": "Post r09",
+            "subreddit": "reactjs",
+            "subredditPrefixed": "r/reactjs",
+            "score": 35,
+            "upvoteRatio": 0.81,
+            "numComments": 7,
+            "url": "https://reddit.com/r/reactjs/comments/r09/",
+            "permalink": "https://reddit.com/r/reactjs/comments/r09/post/",
+            "thumbnail": "",
+            "mediaType": "text",
+            "isSelf": true,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "2026-06-03T00:00:00.000Z",
+            "flair": ""
+        },
+        {
+            "id": "r04",
+            "title": "Post r04",
+            "subreddit": "node",
+            "subredditPrefixed": "r/node",
+            "score": 12,
+            "upvoteRatio": 0.75,
+            "numComments": 1,
+            "url": "https://reddit.com/r/node/comments/r04/",
+            "permalink": "https://reddit.com/r/node/comments/r04/post/",
+            "thumbnail": "",
+            "mediaType": "video",
+            "isSelf": false,
+            "isVideo": true,
+            "isNsfw": false,
+            "createdAt": "",
+            "flair": "",
+            "awardsCount": 1
+        },
+        {
+            "id": "r11",
+            "title": "Post r11",
+            "subreddit": "javascript",
+            "subredditPrefixed": "r/javascript",
+            "score": 7,
+            "upvoteRatio": 0.66,
+            "numComments": 2,
+            "url": "https://reddit.com/r/javascript/comments/r11/",
+            "permalink": "https://reddit.com/r/javascript/comments/r11/post/",
+            "thumbnail": "",
+            "mediaType": "text",
+            "isSelf": true,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "2025-12-31T23:30:00.000Z",
+            "flair": "",
+            "awardsCount": 0
+        },
+        {
+            "id": "r06",
+            "title": "Post r06",
+            "subreddit": "webdev",
+            "subredditPrefixed": "r/webdev",
+            "score": 0,
+            "upvoteRatio": 0.5,
+            "numComments": 0,
+            "url": "https://reddit.com/r/webdev/comments/r06/",
+            "permalink": "https://reddit.com/r/webdev/comments/r06/post/",
+            "thumbnail": "",
+            "mediaType": "image",
+            "isSelf": false,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "2026-07-14T06:30:00.000Z",
+            "flair": "",
+            "awardsCount": 0
+        }
+    ],
+    "worstPosts": [
+        {
+            "id": "r05",
+            "title": "Post r05",
+            "subreddit": "javascript",
+            "subredditPrefixed": "r/javascript",
+            "score": -3,
+            "upvoteRatio": 0.31,
+            "numComments": 9,
+            "url": "https://reddit.com/r/javascript/comments/r05/",
+            "permalink": "https://reddit.com/r/javascript/comments/r05/post/",
+            "thumbnail": "",
+            "mediaType": "text",
+            "isSelf": true,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "2026-08-10T21:00:00.000Z",
+            "flair": "",
+            "awardsCount": 0
+        },
+        {
+            "id": "r06",
+            "title": "Post r06",
+            "subreddit": "webdev",
+            "subredditPrefixed": "r/webdev",
+            "score": 0,
+            "upvoteRatio": 0.5,
+            "numComments": 0,
+            "url": "https://reddit.com/r/webdev/comments/r06/",
+            "permalink": "https://reddit.com/r/webdev/comments/r06/post/",
+            "thumbnail": "",
+            "mediaType": "image",
+            "isSelf": false,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "2026-07-14T06:30:00.000Z",
+            "flair": "",
+            "awardsCount": 0
+        },
+        {
+            "id": "r11",
+            "title": "Post r11",
+            "subreddit": "javascript",
+            "subredditPrefixed": "r/javascript",
+            "score": 7,
+            "upvoteRatio": 0.66,
+            "numComments": 2,
+            "url": "https://reddit.com/r/javascript/comments/r11/",
+            "permalink": "https://reddit.com/r/javascript/comments/r11/post/",
+            "thumbnail": "",
+            "mediaType": "text",
+            "isSelf": true,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "2025-12-31T23:30:00.000Z",
+            "flair": "",
+            "awardsCount": 0
+        },
+        {
+            "id": "r04",
+            "title": "Post r04",
+            "subreddit": "node",
+            "subredditPrefixed": "r/node",
+            "score": 12,
+            "upvoteRatio": 0.75,
+            "numComments": 1,
+            "url": "https://reddit.com/r/node/comments/r04/",
+            "permalink": "https://reddit.com/r/node/comments/r04/post/",
+            "thumbnail": "",
+            "mediaType": "video",
+            "isSelf": false,
+            "isVideo": true,
+            "isNsfw": false,
+            "createdAt": "",
+            "flair": "",
+            "awardsCount": 1
+        },
+        {
+            "id": "r09",
+            "title": "Post r09",
+            "subreddit": "reactjs",
+            "subredditPrefixed": "r/reactjs",
+            "score": 35,
+            "upvoteRatio": 0.81,
+            "numComments": 7,
+            "url": "https://reddit.com/r/reactjs/comments/r09/",
+            "permalink": "https://reddit.com/r/reactjs/comments/r09/post/",
+            "thumbnail": "",
+            "mediaType": "text",
+            "isSelf": true,
+            "isVideo": false,
+            "isNsfw": false,
+            "createdAt": "2026-06-03T00:00:00.000Z",
+            "flair": ""
+        }
+    ],
+    "subredditBreakdown": [
+        {
+            "subreddit": "webdev",
+            "posts": 4,
+            "totalScore": 1655,
+            "totalComments": 405,
+            "avgScore": 414,
+            "avgComments": 101
+        },
+        {
+            "subreddit": "javascript",
+            "posts": 3,
+            "totalScore": 39,
+            "totalComments": 23,
+            "avgScore": 13,
+            "avgComments": 8
+        },
+        {
+            "subreddit": "node",
+            "posts": 2,
+            "totalScore": 162,
+            "totalComments": 23,
+            "avgScore": 81,
+            "avgComments": 12
+        },
+        {
+            "subreddit": "reactjs",
+            "posts": 2,
+            "totalScore": 123,
+            "totalComments": 37,
+            "avgScore": 62,
+            "avgComments": 19
+        }
+    ],
+    "mediaTypeDistribution": {
+        "link": 2,
+        "text": 4,
+        "image": 3,
+        "video": 2
+    },
+    "postsByDayOfWeek": [
+        {
+            "day": "Sunday",
+            "shortDay": "Sun",
+            "posts": 0,
+            "avgScore": 0,
+            "avgComments": 0
+        },
+        {
+            "day": "Monday",
+            "shortDay": "Mon",
+            "posts": 2,
+            "avgScore": 216,
+            "avgComments": 31
+        },
+        {
+            "day": "Tuesday",
+            "shortDay": "Tue",
+            "posts": 2,
+            "avgScore": 16,
+            "avgComments": 7
+        },
+        {
+            "day": "Wednesday",
+            "shortDay": "Wed",
+            "posts": 2,
+            "avgScore": 675,
+            "avgComments": 181
+        },
+        {
+            "day": "Thursday",
+            "shortDay": "Thu",
+            "posts": 1,
+            "avgScore": 0,
+            "avgComments": 0
+        },
+        {
+            "day": "Friday",
+            "shortDay": "Fri",
+            "posts": 1,
+            "avgScore": 35,
+            "avgComments": 7
+        },
+        {
+            "day": "Saturday",
+            "shortDay": "Sat",
+            "posts": 2,
+            "avgScore": 62,
+            "avgComments": 21
+        }
+    ],
+    "bestPostingDay": "Wednesday",
+    "postsByHour": [
+        {
+            "hour": 0,
+            "label": "0:00",
+            "posts": 1,
+            "avgScore": 150
+        },
+        {
+            "hour": 1,
+            "label": "1:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 2,
+            "label": "2:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 3,
+            "label": "3:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 4,
+            "label": "4:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 5,
+            "label": "5:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 6,
+            "label": "6:00",
+            "posts": 1,
+            "avgScore": -3
+        },
+        {
+            "hour": 7,
+            "label": "7:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 8,
+            "label": "8:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 9,
+            "label": "9:00",
+            "posts": 2,
+            "avgScore": 228
+        },
+        {
+            "hour": 10,
+            "label": "10:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 11,
+            "label": "11:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 12,
+            "label": "12:00",
+            "posts": 1,
+            "avgScore": 0
+        },
+        {
+            "hour": 13,
+            "label": "13:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 14,
+            "label": "14:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 15,
+            "label": "15:00",
+            "posts": 1,
+            "avgScore": 35
+        },
+        {
+            "hour": 16,
+            "label": "16:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 17,
+            "label": "17:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 18,
+            "label": "18:00",
+            "posts": 1,
+            "avgScore": 35
+        },
+        {
+            "hour": 19,
+            "label": "19:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 20,
+            "label": "20:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 21,
+            "label": "21:00",
+            "posts": 1,
+            "avgScore": 12
+        },
+        {
+            "hour": 22,
+            "label": "22:00",
+            "posts": 0,
+            "avgScore": 0
+        },
+        {
+            "hour": 23,
+            "label": "23:00",
+            "posts": 2,
+            "avgScore": 644
+        }
+    ],
+    "bestPostingHour": "23:00",
+    "monthlyBreakdown": [
+        {
+            "month": "2025-12",
+            "posts": 1,
+            "score": 7,
+            "comments": 2,
+            "avgScore": 7
+        },
+        {
+            "month": "2026-05",
+            "posts": 1,
+            "score": 1200,
+            "comments": 340,
+            "avgScore": 1200
+        },
+        {
+            "month": "2026-06",
+            "posts": 2,
+            "score": 185,
+            "comments": 29,
+            "avgScore": 93
+        },
+        {
+            "month": "2026-07",
+            "posts": 2,
+            "score": 88,
+            "comments": 30,
+            "avgScore": 44
+        },
+        {
+            "month": "2026-08",
+            "posts": 4,
+            "score": 487,
+            "comments": 86,
+            "avgScore": 122
+        }
+    ],
+    "engagementTimeline": [
+        {
+            "month": "2025-12",
+            "posts": 1,
+            "score": 7,
+            "comments": 2,
+            "avgScore": 7
+        },
+        {
+            "month": "2026-05",
+            "posts": 1,
+            "score": 1200,
+            "comments": 340,
+            "avgScore": 1200
+        },
+        {
+            "month": "2026-06",
+            "posts": 2,
+            "score": 185,
+            "comments": 29,
+            "avgScore": 93
+        },
+        {
+            "month": "2026-07",
+            "posts": 2,
+            "score": 88,
+            "comments": 30,
+            "avgScore": 44
+        },
+        {
+            "month": "2026-08",
+            "posts": 4,
+            "score": 487,
+            "comments": 86,
+            "avgScore": 122
+        }
+    ],
+    "postsLast7Days": 2,
+    "postsLast30Days": 4,
+    "postsLast90Days": 7,
+    "postFrequency": {
+        "perWeek": 0.3,
+        "perMonth": 1.4
+    },
+    "viralityScore": 6.7,
+    "consistencyScore": 34
+}

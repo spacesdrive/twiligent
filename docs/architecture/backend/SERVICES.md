@@ -123,7 +123,7 @@ async function ytFetch(path, params, env) {
 
 ### HTTP Client
 
-All Reddit public JSON API calls go through `redditFetch(path, cookie)`. Requests include a descriptive `User-Agent` header (required by Reddit). Cookie is optional - if provided, it is sent as `Cookie: reddit_session=<value>` for private account access and higher rate limits.
+`reddit.js` holds the API code. All Reddit public JSON API calls go through `redditFetch(path, cookie)`, and `normalizeRedditPost()` maps each submitted post to the cached post shape. Requests include a descriptive `User-Agent` header (required by Reddit). Cookie is optional - if provided, it is sent as `Cookie: reddit_session=<value>` for private account access and higher rate limits.
 
 ### Key Functions
 
@@ -131,7 +131,7 @@ All Reddit public JSON API calls go through `redditFetch(path, cookie)`. Request
 |---|---|
 | `fetchRedditProfile(username, cookie)` | Fetches profile data from `/user/{username}/about.json` |
 | `fetchRedditPosts(username, cookie, limit)` | Paginates submitted posts up to `limit` (default 100) via `/user/{username}/submitted.json` |
-| `computeRedditAnalytics(profile, posts)` | Computes score stats, subreddit breakdown, posting time patterns, monthly breakdown, virality/consistency scores |
+| `computeRedditAnalytics(profile, posts)` | Lives in `redditAnalytics.js` (re-exported by `reddit.js`); computes score stats, subreddit breakdown, media type distribution, posting time patterns, monthly breakdown, virality/consistency scores using the shared helpers in `analyticsMath.js` |
 | `fetchTrackedPostData(postUrl, cookie)` | Fetches score, comments, and metadata for any public Reddit post URL using the `.json` trick; optionally uses a session cookie |
 
 ### Credentials in responses

@@ -1,0 +1,62 @@
+{
+    "empty": {
+        "fetchedPosts": 0,
+        "totalScore": 0,
+        "avgScore": 0,
+        "medianScore": 0,
+        "totalComments": 0,
+        "avgComments": 0,
+        "avgUpvoteRatio": 0,
+        "totalAwards": 0,
+        "avgAwards": 0,
+        "topPosts": [],
+        "worstPosts": [],
+        "subredditBreakdown": [],
+        "mediaTypeDistribution": {},
+        "postsByDayOfWeek": [],
+        "postsByHour": [],
+        "monthlyBreakdown": [],
+        "engagementTimeline": [],
+        "postsLast7Days": 0,
+        "postsLast30Days": 0,
+        "postsLast90Days": 0,
+        "postFrequency": {
+            "perWeek": 0,
+            "perMonth": 0
+        },
+        "viralityScore": 0,
+        "consistencyScore": 0,
+        "bestPostingDay": "",
+        "bestPostingHour": ""
+    },
+    "missing": {
+        "fetchedPosts": 0,
+        "totalScore": 0,
+        "avgScore": 0,
+        "medianScore": 0,
+        "totalComments": 0,
+        "avgComments": 0,
+        "avgUpvoteRatio": 0,
+        "totalAwards": 0,
+        "avgAwards": 0,
+        "topPosts": [],
+        "worstPosts": [],
+        "subredditBreakdown": [],
+        "mediaTypeDistribution": {},
+        "postsByDayOfWeek": [],
+        "postsByHour": [],
+        "monthlyBreakdown": [],
+        "engagementTimeline": [],
+        "postsLast7Days": 0,
+        "postsLast30Days": 0,
+        "postsLast90Days": 0,
+        "postFrequency": {
+            "perWeek": 0,
+            "perMonth": 0
+        },
+        "viralityScore": 0,
+        "consistencyScore": 0,
+        "bestPostingDay": "",
+        "bestPostingHour": ""
+    }
+}

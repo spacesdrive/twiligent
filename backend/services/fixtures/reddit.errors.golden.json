@@ -1,0 +1,23 @@
+[
+    {
+        "error": "Reddit user not found - check the username"
+    },
+    {
+        "error": "Session cookie is invalid or expired - open reddit.com in your browser, copy a fresh reddit_session value from DevTools (Application > Cookies > reddit.com), delete this account, and re-add it"
+    },
+    {
+        "error": "Reddit rate limit hit - try again in a moment"
+    },
+    {
+        "error": "Reddit API 500: Server Error"
+    },
+    {
+        "error": "Bad request"
+    },
+    {
+        "error": "Reddit API error"
+    },
+    {
+        "value": "[undefined]"
+    }
+]
