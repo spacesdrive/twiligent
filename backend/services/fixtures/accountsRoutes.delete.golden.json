@@ -1,0 +1,99 @@
+{
+    "responses": [
+        {
+            "status": 404,
+            "body": "{\"success\":false,\"message\":\"Not found\"}"
+        },
+        {
+            "status": 404,
+            "body": "{\"success\":false,\"message\":\"Not found\"}"
+        },
+        {
+            "status": 200,
+            "body": "{\"success\":true}"
+        },
+        {
+            "status": 200,
+            "body": "[{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UCaaaaaaaaaaaaaaaaaaaaaa\",\"title\":\"Old title\",\"subscriberCount\":1,\"hasCookie\":false},{\"id\":\"ig1\",\"platform\":\"instagram\",\"igUserId\":\"1789\",\"username\":\"ribbon\",\"tokenExpiresAt\":\"2026-09-05T00:00:00.000Z\",\"followersCount\":1,\"hasCookie\":false},{\"id\":\"ig2\",\"platform\":\"instagram\",\"igUserId\":\"2000\",\"username\":\"notoken\",\"hasCookie\":false},{\"id\":\"rd1\",\"platform\":\"reddit\",\"username\":\"ribbon_r\",\"totalKarma\":1,\"hasCookie\":true},{\"id\":\"yt2\",\"platform\":\"youtube\",\"channelId\":\"UCmissingmissingmissing0\",\"hasCookie\":false}]"
+        }
+    ],
+    "requests": [],
+    "calls": [
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "id",
+                    "nope"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "id",
+                    "other"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "id",
+                    "rd2"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "delete",
+            "table": "accounts",
+            "filters": [
+                [
+                    "id",
+                    "rd2"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        }
+    ],
+    "redis": [
+        "videos:user-1:rd2",
+        "ig:user-1:rd2",
+        "reddit:user-1:rd2"
+    ],
+    "logs": []
+}

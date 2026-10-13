@@ -17,6 +17,9 @@ All routes live under `/api`. Routes under the `api` sub-app require a valid Sup
 | GET | `/api/keys` | `routes/keys.js` | Returns `{ youtube: bool, instagram: bool, cloudinary: bool }` - whether each API key is configured |
 
 ### Accounts
+
+Handlers delegate to `services/accountConnect.js` and `services/accountRefresh.js`; the Instagram OAuth handlers delegate to `services/instagramOAuth.js`. See `SERVICES.md`.
+
 | Method | Path | File | Purpose |
 |---|---|---|---|
 | GET | `/api/accounts` | `routes/accounts.js` | List all user accounts (tokens stripped via `safeAccount()`) |

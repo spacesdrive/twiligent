@@ -1,0 +1,274 @@
+{
+    "responses": [
+        {
+            "status": 302,
+            "body": "",
+            "location": "https://app.example.com//accounts?ig_error=user_denied"
+        },
+        {
+            "status": 302,
+            "body": "",
+            "location": "https://app.example.com//accounts?ig_error=access_denied"
+        },
+        {
+            "status": 302,
+            "body": "",
+            "location": "https://app.example.com//accounts?ig_error=cancelled"
+        },
+        {
+            "status": 302,
+            "body": "",
+            "location": "https://app.example.com//accounts?ig_error=invalid_state"
+        },
+        {
+            "status": 302,
+            "body": "",
+            "location": "https://app.example.com//accounts?ig_error=invalid_state"
+        },
+        {
+            "status": 302,
+            "body": "",
+            "location": "https://app.example.com//accounts?ig_error=invalid_state"
+        },
+        {
+            "status": 302,
+            "body": "",
+            "location": "https://app.example.com//accounts?ig_connected=true"
+        },
+        {
+            "status": 302,
+            "body": "",
+            "location": "https://app.example.com//accounts?ig_connected=true"
+        },
+        {
+            "status": 302,
+            "body": "",
+            "location": "https://app.example.com//accounts?ig_error=already_added"
+        },
+        {
+            "status": 302,
+            "body": "",
+            "location": "https://app.example.com//accounts?ig_error=Could%20not%20get%20Instagram%20User%20ID.%20Account%20must%20be%20a%20Business%20or%20Creator%20account."
+        },
+        {
+            "status": 302,
+            "body": "",
+            "location": "https://app.example.com//accounts?ig_error=Invalid%20authorization%20code"
+        },
+        {
+            "status": 302,
+            "body": "",
+            "location": "https://app.example.com//accounts?ig_error=%7B%22unexpected%22%3A%22xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        },
+        {
+            "status": 302,
+            "body": "",
+            "location": "https://app.example.com//accounts?ig_error=getaddrinfo%20ENOTFOUND%20api.instagram.com"
+        },
+        {
+            "status": 500,
+            "body": "Internal Server Error"
+        }
+    ],
+    "requests": [
+        {
+            "url": "https://api.instagram.com/oauth/access_token",
+            "method": "POST",
+            "headers": {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "body": "client_id=APPID&client_secret=APPSECRET&grant_type=authorization_code&redirect_uri=https%3A%2F%2Fapi.example.com%2Fapi%2Fauth%2Finstagram%2Fcallback&code=good"
+        },
+        {
+            "url": "https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_id=APPID&client_secret=APPSECRET&access_token=SHORT_GOOD",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/me?access_token=LONG&fields=user_id%2Cusername%2Cname%2Cprofile_picture_url%2Cfollowers_count%2Cfollows_count%2Cmedia_count%2Cbiography%2Cwebsite",
+            "method": "GET"
+        },
+        {
+            "url": "https://api.instagram.com/oauth/access_token",
+            "method": "POST",
+            "headers": {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "body": "client_id=APPID&client_secret=APPSECRET&grant_type=authorization_code&redirect_uri=https%3A%2F%2Fapi.example.com%2Fapi%2Fauth%2Finstagram%2Fcallback&code=fallback"
+        },
+        {
+            "url": "https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_id=APPID&client_secret=APPSECRET&access_token=SHORT_FALLBACK",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/me?access_token=SHORT_FALLBACK&fields=user_id%2Cusername%2Cname%2Cprofile_picture_url%2Cfollowers_count%2Cfollows_count%2Cmedia_count%2Cbiography%2Cwebsite",
+            "method": "GET"
+        },
+        {
+            "url": "https://api.instagram.com/oauth/access_token",
+            "method": "POST",
+            "headers": {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "body": "client_id=APPID&client_secret=APPSECRET&grant_type=authorization_code&redirect_uri=https%3A%2F%2Fapi.example.com%2Fapi%2Fauth%2Finstagram%2Fcallback&code=dup"
+        },
+        {
+            "url": "https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_id=APPID&client_secret=APPSECRET&access_token=SHORT_DUP",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/me?access_token=SHORT_DUP&fields=user_id%2Cusername%2Cname%2Cprofile_picture_url%2Cfollowers_count%2Cfollows_count%2Cmedia_count%2Cbiography%2Cwebsite",
+            "method": "GET"
+        },
+        {
+            "url": "https://api.instagram.com/oauth/access_token",
+            "method": "POST",
+            "headers": {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "body": "client_id=APPID&client_secret=APPSECRET&grant_type=authorization_code&redirect_uri=https%3A%2F%2Fapi.example.com%2Fapi%2Fauth%2Finstagram%2Fcallback&code=noid"
+        },
+        {
+            "url": "https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_id=APPID&client_secret=APPSECRET&access_token=SHORT_NOID",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/me?access_token=SHORT_NOID&fields=user_id%2Cusername%2Cname%2Cprofile_picture_url%2Cfollowers_count%2Cfollows_count%2Cmedia_count%2Cbiography%2Cwebsite",
+            "method": "GET"
+        },
+        {
+            "url": "https://api.instagram.com/oauth/access_token",
+            "method": "POST",
+            "headers": {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "body": "client_id=APPID&client_secret=APPSECRET&grant_type=authorization_code&redirect_uri=https%3A%2F%2Fapi.example.com%2Fapi%2Fauth%2Finstagram%2Fcallback&code=bad"
+        },
+        {
+            "url": "https://api.instagram.com/oauth/access_token",
+            "method": "POST",
+            "headers": {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "body": "client_id=APPID&client_secret=APPSECRET&grant_type=authorization_code&redirect_uri=https%3A%2F%2Fapi.example.com%2Fapi%2Fauth%2Finstagram%2Fcallback&code=weird"
+        },
+        {
+            "url": "https://api.instagram.com/oauth/access_token",
+            "method": "POST",
+            "headers": {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "body": "client_id=APPID&client_secret=APPSECRET&grant_type=authorization_code&redirect_uri=https%3A%2F%2Fapi.example.com%2Fapi%2Fauth%2Finstagram%2Fcallback&code=offline"
+        }
+    ],
+    "calls": [
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "insert",
+            "table": "accounts",
+            "values": {
+                "id": "1788264000000zk00",
+                "user_id": "user-1",
+                "platform": "instagram",
+                "data": {
+                    "igUserId": "5000",
+                    "username": "longlived",
+                    "title": "Long Lived",
+                    "biography": "B",
+                    "website": "W",
+                    "profilePictureUrl": "P",
+                    "followersCount": 10,
+                    "followsCount": 2,
+                    "mediaCount": 3,
+                    "accessToken": "LONG",
+                    "tokenExpiresAt": "2026-10-31T11:59:04.000Z",
+                    "addedAt": "2026-09-01T12:00:00.000Z",
+                    "lastUpdated": "2026-09-01T12:00:00.000Z"
+                }
+            },
+            "filters": []
+        },
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "insert",
+            "table": "accounts",
+            "values": {
+                "id": "1788264000000zk00",
+                "user_id": "user-1",
+                "platform": "instagram",
+                "data": {
+                    "igUserId": "5001",
+                    "username": "fallback",
+                    "title": "fallback",
+                    "biography": "",
+                    "website": "",
+                    "profilePictureUrl": "",
+                    "followersCount": 0,
+                    "followsCount": 0,
+                    "mediaCount": 0,
+                    "accessToken": "SHORT_FALLBACK",
+                    "tokenExpiresAt": null,
+                    "addedAt": "2026-09-01T12:00:00.000Z",
+                    "lastUpdated": "2026-09-01T12:00:00.000Z"
+                }
+            },
+            "filters": []
+        },
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        }
+    ],
+    "logs": [
+        [
+            "error",
+            "Instagram OAuth callback error:",
+            "Could not get Instagram User ID. Account must be a Business or Creator account."
+        ],
+        [
+            "error",
+            "Instagram OAuth callback error:",
+            "Invalid authorization code"
+        ],
+        [
+            "error",
+            "Instagram OAuth callback error:",
+            "{\"unexpected\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"}"
+        ],
+        [
+            "error",
+            "Instagram OAuth callback error:",
+            "getaddrinfo ENOTFOUND api.instagram.com"
+        ],
+        [
+            "error",
+            {}
+        ]
+    ]
+}

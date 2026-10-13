@@ -1,0 +1,21 @@
+{
+    "responses": [
+        {
+            "status": 200,
+            "body": "{\"url\":\"https://www.instagram.com/oauth/authorize?force_reauth=true&client_id=APPID&redirect_uri=https%3A%2F%2Fapi.example.com%2Fapi%2Fauth%2Finstagram%2Fcallback&response_type=code&scope=instagram_business_basic%2Cinstagram_business_manage_messages%2Cinstagram_business_manage_comments%2Cinstagram_business_content_publish%2Cinstagram_business_manage_insights&state=dXNlci0xOjE3ODgyNjQwMDAwMDA.kPwa14uVn6c44E1UPm5jQWV7kLuUxf75IOfMu8CrWTo\"}"
+        },
+        {
+            "status": 200,
+            "body": "{\"url\":\"https://www.instagram.com/oauth/authorize?force_reauth=true&client_id=ID&redirect_uri=http%3A%2F%2Flocalhost%3A8787%2Fapi%2Fauth%2Finstagram%2Fcallback&response_type=code&scope=instagram_business_basic%2Cinstagram_business_manage_messages%2Cinstagram_business_manage_comments%2Cinstagram_business_content_publish%2Cinstagram_business_manage_insights&state=dXNlci0xOjE3ODgyNjQwMDAwMDA.Audk7vbgWLAn3iSlHGANEpEKv4wAZr18Cedcn7-ZXmQ\"}"
+        },
+        {
+            "status": 500,
+            "body": "{\"success\":false,\"message\":\"Instagram App credentials not configured on server\"}"
+        },
+        {
+            "status": 500,
+            "body": "{\"success\":false,\"message\":\"Instagram App credentials not configured on server\"}"
+        }
+    ],
+    "logs": []
+}

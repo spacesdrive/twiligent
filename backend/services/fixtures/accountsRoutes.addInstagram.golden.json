@@ -1,0 +1,170 @@
+{
+    "responses": [
+        {
+            "status": 400,
+            "body": "{\"success\":false,\"message\":\"Access token is required\"}"
+        },
+        {
+            "status": 200,
+            "body": "{\"success\":true,\"account\":{\"id\":\"17882640000004fzz\",\"platform\":\"instagram\",\"igUserId\":\"3000\",\"username\":\"fresh\",\"title\":\"fresh\",\"biography\":\"\",\"website\":\"\",\"profilePictureUrl\":\"\",\"followersCount\":5,\"followsCount\":0,\"mediaCount\":1,\"tokenExpiresAt\":\"2026-09-01T13:23:20.000Z\",\"addedAt\":\"2026-09-01T12:00:00.000Z\",\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"hasCookie\":false}}"
+        },
+        {
+            "status": 200,
+            "body": "{\"success\":true,\"account\":{\"id\":\"17882640000004fzz\",\"platform\":\"instagram\",\"igUserId\":\"3001\",\"username\":\"shorty\",\"title\":\"Shorty\",\"biography\":\"\",\"website\":\"\",\"profilePictureUrl\":\"\",\"followersCount\":0,\"followsCount\":0,\"mediaCount\":0,\"tokenExpiresAt\":null,\"addedAt\":\"2026-09-01T12:00:00.000Z\",\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"hasCookie\":false}}"
+        },
+        {
+            "status": 400,
+            "body": "{\"success\":false,\"message\":\"This Instagram account is already added\"}"
+        },
+        {
+            "status": 400,
+            "body": "{\"success\":false,\"message\":\"This Instagram account is already added\"}"
+        },
+        {
+            "status": 400,
+            "body": "{\"success\":false,\"message\":\"Could not get Instagram User ID. Make sure the token has instagram_business_basic permission and is from a Business/Creator account.\"}"
+        },
+        {
+            "status": 400,
+            "body": "{\"success\":false,\"message\":\"Invalid OAuth access token\"}"
+        }
+    ],
+    "requests": [
+        {
+            "url": "https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=IGSECRET&access_token=SHORT",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/me?access_token=LONGTOKEN&fields=user_id%2Cusername%2Cname%2Cprofile_picture_url%2Cfollowers_count%2Cfollows_count%2Cmedia_count%2Cbiography%2Cwebsite",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=IGSECRET&access_token=SHORTONLY",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/me?access_token=SHORTONLY&fields=user_id%2Cusername%2Cname%2Cprofile_picture_url%2Cfollowers_count%2Cfollows_count%2Cmedia_count%2Cbiography%2Cwebsite",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/me?access_token=SHORTONLY&fields=user_id%2Cusername%2Cname%2Cprofile_picture_url%2Cfollowers_count%2Cfollows_count%2Cmedia_count%2Cbiography%2Cwebsite",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/me?access_token=IGTOKEN&fields=user_id%2Cusername%2Cname%2Cprofile_picture_url%2Cfollowers_count%2Cfollows_count%2Cmedia_count%2Cbiography%2Cwebsite",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/me?access_token=NOID&fields=user_id%2Cusername%2Cname%2Cprofile_picture_url%2Cfollowers_count%2Cfollows_count%2Cmedia_count%2Cbiography%2Cwebsite",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/me?access_token=BROKEN&fields=user_id%2Cusername%2Cname%2Cprofile_picture_url%2Cfollowers_count%2Cfollows_count%2Cmedia_count%2Cbiography%2Cwebsite",
+            "method": "GET"
+        }
+    ],
+    "calls": [
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "insert",
+            "table": "accounts",
+            "values": {
+                "id": "17882640000004fzz",
+                "user_id": "user-1",
+                "platform": "instagram",
+                "data": {
+                    "igUserId": "3000",
+                    "username": "fresh",
+                    "title": "fresh",
+                    "biography": "",
+                    "website": "",
+                    "profilePictureUrl": "",
+                    "followersCount": 5,
+                    "followsCount": 0,
+                    "mediaCount": 1,
+                    "accessToken": "LONGTOKEN",
+                    "tokenExpiresAt": "2026-09-01T13:23:20.000Z",
+                    "addedAt": "2026-09-01T12:00:00.000Z",
+                    "lastUpdated": "2026-09-01T12:00:00.000Z"
+                }
+            },
+            "filters": []
+        },
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "insert",
+            "table": "accounts",
+            "values": {
+                "id": "17882640000004fzz",
+                "user_id": "user-1",
+                "platform": "instagram",
+                "data": {
+                    "igUserId": "3001",
+                    "username": "shorty",
+                    "title": "Shorty",
+                    "biography": "",
+                    "website": "",
+                    "profilePictureUrl": "",
+                    "followersCount": 0,
+                    "followsCount": 0,
+                    "mediaCount": 0,
+                    "accessToken": "SHORTONLY",
+                    "tokenExpiresAt": null,
+                    "addedAt": "2026-09-01T12:00:00.000Z",
+                    "lastUpdated": "2026-09-01T12:00:00.000Z"
+                }
+            },
+            "filters": []
+        },
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        }
+    ],
+    "redis": [],
+    "logs": [
+        [
+            "log",
+            "Token exchange skipped (token may already be long-lived):",
+            "Invalid platform app"
+        ]
+    ]
+}

@@ -1,0 +1,122 @@
+{
+    "responses": [
+        {
+            "status": 200,
+            "body": "{\"success\":true,\"account\":{\"id\":\"17882640000004fzz\",\"channelId\":\"UCnnnnnnnnnnnnnnnnnnnnnn\",\"title\":\"Channel UCnn\",\"description\":\"Desc\",\"customUrl\":\"@chan\",\"publishedAt\":\"2020-01-01T00:00:00Z\",\"country\":\"GB\",\"thumbnails\":{\"default\":\"d\",\"medium\":\"m\",\"high\":\"h\"},\"subscriberCount\":500,\"viewCount\":9000,\"videoCount\":12,\"hiddenSubscriberCount\":false,\"uploadsPlaylistId\":\"UUnnnnnnnnnnnnnnnnnnnnnn\",\"keywords\":\"k\",\"topicCategories\":[\"t\"],\"madeForKids\":false,\"addedAt\":\"2026-09-01T12:00:00.000Z\",\"lastUpdated\":\"2026-09-01T12:00:00.000Z\"}}"
+        },
+        {
+            "status": 400,
+            "body": "{\"success\":false,\"message\":\"This channel is already added\"}"
+        },
+        {
+            "status": 400,
+            "body": "{\"success\":false,\"message\":\"This channel is already added\"}"
+        },
+        {
+            "status": 400,
+            "body": "{\"success\":false,\"message\":\"Invalid input\"}"
+        },
+        {
+            "status": 400,
+            "body": "{\"success\":false,\"message\":\"YouTube API key not configured on server\"}"
+        }
+    ],
+    "requests": [
+        {
+            "url": "https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=creator&key=YTKEY",
+            "method": "GET"
+        },
+        {
+            "url": "https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics%2CcontentDetails%2CbrandingSettings%2Cstatus%2CtopicDetails&id=UCnnnnnnnnnnnnnnnnnnnnnn&key=YTKEY",
+            "method": "GET"
+        },
+        {
+            "url": "https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=%40existing&key=YTKEY",
+            "method": "GET"
+        },
+        {
+            "url": "https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics%2CcontentDetails%2CbrandingSettings%2Cstatus%2CtopicDetails&id=UCnnnnnnnnnnnnnnnnnnnnnn&key=YTKEY",
+            "method": "GET"
+        },
+        {
+            "url": "https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=existing&key=YTKEY",
+            "method": "GET"
+        },
+        {
+            "url": "https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics%2CcontentDetails%2CbrandingSettings%2Cstatus%2CtopicDetails&id=UCaaaaaaaaaaaaaaaaaaaaaa&key=YTKEY",
+            "method": "GET"
+        }
+    ],
+    "calls": [
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "insert",
+            "table": "accounts",
+            "values": {
+                "id": "17882640000004fzz",
+                "user_id": "user-1",
+                "platform": "youtube",
+                "data": {
+                    "channelId": "UCnnnnnnnnnnnnnnnnnnnnnn",
+                    "title": "Channel UCnn",
+                    "description": "Desc",
+                    "customUrl": "@chan",
+                    "publishedAt": "2020-01-01T00:00:00Z",
+                    "country": "GB",
+                    "thumbnails": {
+                        "default": "d",
+                        "medium": "m",
+                        "high": "h"
+                    },
+                    "subscriberCount": 500,
+                    "viewCount": 9000,
+                    "videoCount": 12,
+                    "hiddenSubscriberCount": false,
+                    "uploadsPlaylistId": "UUnnnnnnnnnnnnnnnnnnnnnn",
+                    "keywords": "k",
+                    "topicCategories": [
+                        "t"
+                    ],
+                    "madeForKids": false,
+                    "addedAt": "2026-09-01T12:00:00.000Z",
+                    "lastUpdated": "2026-09-01T12:00:00.000Z"
+                }
+            },
+            "filters": []
+        },
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        }
+    ],
+    "redis": [],
+    "logs": []
+}

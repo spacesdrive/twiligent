@@ -1,0 +1,53 @@
+{
+    "responses": [
+        {
+            "status": 200,
+            "body": "[{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UCaaaaaaaaaaaaaaaaaaaaaa\",\"title\":\"Old title\",\"subscriberCount\":1,\"hasCookie\":false},{\"id\":\"ig1\",\"platform\":\"instagram\",\"igUserId\":\"1789\",\"username\":\"ribbon\",\"tokenExpiresAt\":\"2026-09-05T00:00:00.000Z\",\"followersCount\":1,\"hasCookie\":false},{\"id\":\"ig2\",\"platform\":\"instagram\",\"igUserId\":\"2000\",\"username\":\"notoken\",\"hasCookie\":false},{\"id\":\"rd1\",\"platform\":\"reddit\",\"username\":\"ribbon_r\",\"totalKarma\":1,\"hasCookie\":true},{\"id\":\"rd2\",\"platform\":\"reddit\",\"username\":\"nocookie\",\"hasCookie\":false},{\"id\":\"yt2\",\"platform\":\"youtube\",\"channelId\":\"UCmissingmissingmissing0\",\"hasCookie\":false}]"
+        },
+        {
+            "status": 200,
+            "body": "{\"success\":true,\"data\":{\"channelId\":\"UCnnnnnnnnnnnnnnnnnnnnnn\",\"title\":\"Channel UCnn\",\"description\":\"Desc\",\"customUrl\":\"@chan\",\"publishedAt\":\"2020-01-01T00:00:00Z\",\"country\":\"GB\",\"thumbnails\":{\"default\":\"d\",\"medium\":\"m\",\"high\":\"h\"},\"subscriberCount\":500,\"viewCount\":9000,\"videoCount\":12,\"hiddenSubscriberCount\":false,\"uploadsPlaylistId\":\"UUnnnnnnnnnnnnnnnnnnnnnn\",\"keywords\":\"k\",\"bannerUrl\":\"\",\"madeForKids\":false,\"topicCategories\":[\"t\"],\"isLinked\":false}}"
+        },
+        {
+            "status": 400,
+            "body": "{\"success\":false,\"message\":\"Channel not found\"}"
+        },
+        {
+            "status": 400,
+            "body": "{\"success\":false,\"message\":\"YouTube API key not configured on server\"}"
+        },
+        {
+            "status": 400,
+            "body": "{\"success\":false,\"message\":\"Expected property name or '}' in JSON at position 1 (line 1 column 2)\"}"
+        }
+    ],
+    "requests": [
+        {
+            "url": "https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=creator&key=YTKEY",
+            "method": "GET"
+        },
+        {
+            "url": "https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics%2CcontentDetails%2CbrandingSettings%2Cstatus%2CtopicDetails&id=UCnnnnnnnnnnnnnnnnnnnnnn&key=YTKEY",
+            "method": "GET"
+        },
+        {
+            "url": "https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics%2CcontentDetails%2CbrandingSettings%2Cstatus%2CtopicDetails&id=UCmissingmissingmissing0&key=YTKEY",
+            "method": "GET"
+        }
+    ],
+    "calls": [
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        }
+    ],
+    "redis": [],
+    "logs": []
+}

@@ -1,0 +1,62 @@
+{
+    "responses": [
+        {
+            "status": 500,
+            "body": "{\"success\":false,\"message\":\"database unavailable\"}"
+        },
+        {
+            "status": 400,
+            "body": "{\"success\":false,\"message\":\"database unavailable\"}"
+        },
+        {
+            "status": 400,
+            "body": "{\"success\":false,\"message\":\"database unavailable\"}"
+        },
+        {
+            "status": 400,
+            "body": "{\"success\":false,\"message\":\"database unavailable\"}"
+        },
+        {
+            "status": 500,
+            "body": "{\"success\":false,\"message\":\"database unavailable\"}"
+        },
+        {
+            "status": 400,
+            "body": "{\"success\":false,\"message\":\"database unavailable\"}"
+        },
+        {
+            "status": 400,
+            "body": "{\"success\":false,\"message\":\"database unavailable\"}"
+        },
+        {
+            "status": 500,
+            "body": "{\"success\":false,\"message\":\"database unavailable\"}"
+        }
+    ],
+    "requests": [
+        {
+            "url": "https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=%40creator&key=YTKEY",
+            "method": "GET"
+        },
+        {
+            "url": "https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics%2CcontentDetails%2CbrandingSettings%2Cstatus%2CtopicDetails&id=UCnnnnnnnnnnnnnnnnnnnnnn&key=YTKEY",
+            "method": "GET"
+        },
+        {
+            "url": "https://www.reddit.com/user/NewUser/about.json",
+            "method": "GET",
+            "headers": {
+                "User-Agent": "script:twiligent:v1.0 (by /u/spacesdrive)",
+                "Accept": "application/json",
+                "Cookie": "reddit_session=C"
+            }
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/me?access_token=IGTOKEN&fields=user_id%2Cusername%2Cname%2Cprofile_picture_url%2Cfollowers_count%2Cfollows_count%2Cmedia_count%2Cbiography%2Cwebsite",
+            "method": "GET"
+        }
+    ],
+    "calls": [],
+    "redis": [],
+    "logs": []
+}

@@ -142,6 +142,26 @@ Reddit integration requires no Worker secrets. The session cookie is a per-user 
 
 ---
 
+## Accounts (`accountFactory.js`, `accountConnect.js`, `accountRefresh.js`)
+
+The account routes in `routes/accounts.js` only parse the request, check required fields and shape the response; the work lives here.
+
+| Module | Contents |
+|---|---|
+| `accountFactory.js` | Pure builders: `newAccountId`, `tokenExpiryIso` (null without a lifetime), `buildYouTubeAccount`, `buildRedditAccount`, `buildInstagramAccount` |
+| `accountConnect.js` | `addYouTubeAccount`, `addRedditAccount`, `addInstagramAccount` (tries the long-lived exchange when `INSTAGRAM_APP_SECRET` is set and keeps the pasted token if it fails), `refreshInstagramToken` |
+| `accountRefresh.js` | `fetchAccountUpdates` (profile fields per platform; a single refresh updates more fields than refresh-all), `refreshAccount`, `refreshAllAccounts` (`Promise.allSettled`, results aligned with the account list by index) |
+
+Duplicate accounts throw an `Error` whose message the route returns with status 400, the same shape as any other failure. Failures that need another status (404 for a missing account, 400 for a missing credential) come back as `{ failure: { status, message } }`.
+
+---
+
+## Instagram OAuth (`instagramOAuth.js`)
+
+Used by `routes/instagramAuth.js`. `readInstagramOAuthConfig(env)` strips a leading byte order mark and whitespace from the app id, secret and URLs, drops a trailing slash from `BACKEND_URL`, and falls back to `http://localhost:8787` and `http://localhost:5173`. `buildAuthorizationUrl` signs the state with the app secret. `connectInstagramFromOAuth` exchanges the code (stripping a trailing `#_`), upgrades to a long-lived token when Instagram allows it (otherwise keeps the short-lived token with no expiry), fetches the profile and returns `'already_added'` or `'connected'`. The route turns those into the `ig_error` and `ig_connected` redirects.
+
+---
+
 ## Shared Instagram publishing parameters
 
 `buildMediaParams(post, accessToken)` in `services/instagramPublishing.js` (re-exported by `services/instagram.js`) builds the Graph API container parameters for photos, Reels, Stories and carousel items. The publish route (`routes/publishing.js`) and the cron scheduler (`utils/scheduler.js`) both call it. `scripts/publish-scheduled.js` keeps its own copy on purpose: it runs in GitHub Actions with zero npm dependencies and cannot import Worker code.
