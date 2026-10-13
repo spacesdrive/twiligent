@@ -101,16 +101,16 @@ export default function Login() {
                 </div>
             </main>
 
-            <aside aria-hidden="true" className="relative hidden overflow-hidden fold-band lg:block">
+            <aside aria-hidden="true" className="sticky top-0 hidden h-svh overflow-hidden fold-band lg:block">
                 <img
                     src="/Logos/twiligent-mark-white.svg"
                     alt=""
-                    className="absolute -right-24 -bottom-28 w-[70%] max-w-[44rem] opacity-[0.14] select-none"
+                    className="absolute -top-16 -right-20 w-[58%] max-w-[36rem] opacity-[0.14] select-none"
                     draggable={false}
                 />
-                <div className="relative flex h-full flex-col justify-end gap-3 p-12 text-white">
+                <div className="relative flex h-full min-h-0 flex-col justify-end gap-3 p-10 text-white xl:p-12">
                     <p className="eyebrow text-white/80">Twiligent</p>
-                    <p className="max-w-md font-heading text-[2.75rem] leading-[3.125rem] font-semibold tracking-[-0.025em]">
+                    <p className="max-w-md font-heading text-[clamp(1.75rem,min(3.2vw,6vh),2.75rem)] leading-[1.14] font-semibold tracking-[-0.025em]">
                         Clarity from many sources, folded into one picture.
                     </p>
                 </div>
