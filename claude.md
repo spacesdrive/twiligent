@@ -38,7 +38,9 @@ eslint.config.mjs     shared ESLint config (typescript-eslint, frontend rules, b
 .prettierrc.json      shared Prettier config matching the existing style (not applied in bulk)
 .editorconfig         editor defaults (4 spaces in backend, 2 elsewhere)
 shared/types/         API contract types shared by backend and frontend (types only, no runtime code)
-backend/              Hono Worker; tests in backend/tests/ mirroring the source folders
+backend/              Hono Worker in layers: middleware/, routes/, controllers/, services/, repositories/,
+                      validators/, database/, jobs/, lib/; app.ts builds the pipeline, container.ts wires services;
+                      tests in backend/tests/ mirroring the source folders
 frontend/             React SPA; tests in frontend/tests/ mirroring frontend/src/
 scripts/              publish-scheduled.ts, run by GitHub Actions with no dependencies
 ```
@@ -77,6 +79,7 @@ docs/
   architecture/
     OVERVIEW.md            System topology, connections, request lifecycle
     backend/
+      REQUEST_PIPELINE.md  Middleware, route table, controller, service, repository; request context; error contract
       HONO.md              App structure, middleware, routing pattern
       ROUTES.md            All routes, method, auth requirement, purpose
       SERVICES.md          instagram.ts, youtube.ts service layer
@@ -259,7 +262,7 @@ This is not optional for features that touch new UI patterns, new APIs, or new i
 
 **Always read before writing.** Read every file you will modify. Read all files in the same directory that might be affected. Read sibling files to understand conventions before adding new ones.
 
-**Match the existing pattern.** This project has established conventions for routes, context hooks, db.ts queries, cache.ts patterns, and api.ts methods. Find the nearest existing example and follow it exactly before introducing anything new.
+**Match the existing pattern.** This project has established conventions for route tables, controllers, services, repositories, validators, context hooks and api.ts methods. Find the nearest existing example and follow it exactly before introducing anything new.
 
 **TypeScript only, in strict mode.** The whole project - Worker, React app, shared types, scripts and tests - is TypeScript (`.ts`, and `.tsx` for files with JSX). Never add a `.js` or `.jsx` source file, never use `any`, `@ts-ignore` or `@ts-expect-error`, and only use syntax Node can strip (no enums, namespaces or parameter properties; `import type` for types; relative imports keep their `.ts` extension). Types the API sends or receives live in `shared/types/`; change them there first. `npm run typecheck` must pass before every commit. See `docs/guidelines/TYPESCRIPT.md`.
 
@@ -269,14 +272,14 @@ This is not optional for features that touch new UI patterns, new APIs, or new i
 - `SUPABASE_SERVICE_KEY` is only ever used server-side (backend Worker)
 - `SUPABASE_ANON_KEY` on the backend is only for JWT verification
 - Instagram `accessToken` is always stripped by `safeAccount()` before any response
-- All user-scoped queries always append `.eq('user_id', userId)` where `userId` comes from a verified JWT, never from user input
+- All user-scoped queries always append `.eq('user_id', userId)` where `userId` comes from a verified JWT, never from user input; only repository methods named `...ForUser` serve requests, and the unscoped ones are for cron jobs
 - `backend/.dev.vars` must never be committed
 
-**Use the established db.ts pattern.** All database operations go through `lib/db.ts`. Never write inline Supabase queries in route handlers. Add new operations to `db.ts` and import them.
+**Keep each layer to its job.** Read `docs/architecture/backend/REQUEST_PIPELINE.md`. Middleware handles cross-cutting work in the order set in `backend/app.ts`. A route table only maps a path to middleware and a controller. A controller reads validated input (`backend/validators/`) and the user id, calls one service method and builds the response; it never queries the database or catches errors to format them. A service holds the rules, receives repositories and a `RequestContext`, never imports `hono`, and throws the typed errors in `lib/errors.ts`. Every Supabase query and every cache read or write lives in a repository in `backend/repositories/`, one method per query.
 
 **Use the established api.ts pattern.** All frontend-to-backend calls go through `frontend/src/services/api.ts`. Never call `fetch()` directly in components. Add new endpoints to the `api` object in `api.ts`.
 
-**Redis failures are always silent.** Wrap all Redis operations in try/catch. Cache misses must fall back to live API calls. The app must work with Redis completely absent.
+**Redis failures are always silent.** `repositories/analyticsCacheRepository.ts` wraps every Redis operation in try/catch. Cache misses must fall back to live API calls. The app must work with Redis completely absent.
 
 **Documentation is part of implementation.** When any of the following change - routes, DB schema, environment variables, deployment config, cron jobs, data flows, component conventions - update the relevant docs immediately using the table below.
 
@@ -321,7 +324,9 @@ When anything changes, update every relevant docs file from the table below. The
 | Roadmap item started or finished | `ROADMAP.md` (link the issue when work starts; remove the entry and add it to `CHANGELOG.md` when the issue closes) |
 | Project goals or priorities changed | `ROADMAP.md` (Goals section), this file (Project Identity section) |
 | Issue workflow, labels or templates changed | `docs/workflows/ISSUES.md`, `.github/ISSUE_TEMPLATE/`, `.github/pull_request_template.md`, this file (Issue Tracking section) |
-| New route added | `docs/architecture/backend/ROUTES.md`, `docs/architecture/OVERVIEW.md`, `docs/workflows/TESTING.md` (add to manual verification checklist) |
+| New route added | `docs/architecture/backend/ROUTES.md`, `docs/architecture/OVERVIEW.md`, `docs/workflows/TESTING.md` (add to manual verification checklist); a route test in `backend/tests/routes/` |
+| Request pipeline, middleware order, request context or error contract changed | `docs/architecture/backend/REQUEST_PIPELINE.md`, `docs/architecture/backend/MIDDLEWARE.md`, `docs/guidelines/ERROR_HANDLING.md`, `docs/guidelines/API_CONVENTIONS.md`, `shared/types/domain.ts` (`ApiFailure`) |
+| New repository or repository method | `docs/architecture/backend/REQUEST_PIPELINE.md` (if a new repository), `docs/architecture/database/SECURITY.md` (if it is not user-scoped) |
 | Route deleted or changed | `docs/architecture/backend/ROUTES.md`, `docs/architecture/OVERVIEW.md` |
 | New DB table | `docs/architecture/database/SCHEMA.md`, `docs/architecture/database/SECURITY.md`, `DECISIONS.md`, `CHANGELOG.md` |
 | New DB column | `docs/architecture/database/SCHEMA.md` |
@@ -339,7 +344,7 @@ When anything changes, update every relevant docs file from the table below. The
 | New GitHub Actions workflow | `docs/architecture/cloudflare/CI_CD.md`, `docs/workflows/DEPLOYMENT.md` |
 | Existing GitHub Actions workflow changed (steps, triggers, Node version) | `docs/architecture/cloudflare/CI_CD.md`, `docs/workflows/DEPLOYMENT.md`, `docs/architecture/cloudflare/PAGES.md` or `WORKERS.md` for the deploy it runs |
 | Test added, moved or test command changed | `docs/workflows/TESTING.md` (layout, commands, coverage list) |
-| New backend service file | `docs/architecture/backend/SERVICES.md` |
+| New backend service file | `docs/architecture/backend/SERVICES.md`, `backend/container.ts` |
 | New cache key | `docs/architecture/backend/CACHING.md` |
 | Rate limit rule, limit or covered route changed | `docs/architecture/backend/RATE_LIMITING.md` (rules table), `backend/tests/middleware/rateLimit.test.ts` (route matchers) |
 | Rate limit algorithm or Lua script changed | Both `backend/lib/rateLimit/algorithms.ts` and `scripts.ts` together, `docs/architecture/backend/RATE_LIMITING.md`, `DECISIONS.md` |

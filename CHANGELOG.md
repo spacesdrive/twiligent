@@ -32,6 +32,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+**Backend request pipeline in layers**
+- The Worker is organised as middleware, route tables, controllers, services and repositories (`docs/architecture/backend/REQUEST_PIPELINE.md`); every database query is in a repository and every rule in a service
+- Every failed request answers with one body, `{ success, code, message, requestId }`, and a status that matches the failure: 400 invalid input, 401 sign-in, 404 not found, 409 already added, 429 rate limited, 502 platform error, 503 server not configured, 504 platform timeout, 500 server error. Database and unexpected errors no longer show internal messages; server errors in the app show a request id to quote
+- Every response carries `X-Request-Id`, and the Worker writes one JSON log line per request plus error lines tied to the same id
+- Request bodies and query strings are checked before any work starts; malformed JSON is a clear 400
+- Platform calls stop when the browser disconnects or after 30 seconds, and Overview background syncing stops after 25 seconds
+- The API only answers browsers on `FRONTEND_URL` and the new optional `ALLOWED_ORIGINS` list, and sends security headers (content security policy, no framing, no referrer, nosniff, HSTS)
+- Account fields in the analytics responses go through `safeAccount()` like every other account response
+
 **TypeScript**
 - The backend Worker, the React app, the scheduled publisher script and every test are now TypeScript in strict mode, with no change in behaviour: each file, with its types removed, matches the JavaScript it replaced
 - API request and response shapes live once in `shared/types/` and are used by both the Worker routes and `services/api.ts`
@@ -62,6 +71,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- The Instagram connection redirected to `//accounts` when `FRONTEND_URL` ended with a slash
+- Refreshing all accounts sent the YouTube API key to YouTube without removing a pasted byte order mark
 - Media chips and scrims over photos used a hex colour and `text-white`; they now use the `media-scrim` and `on-media` design tokens. The Overview metric tabs use a declared `none` variant of `TabsList`, and the mobile sidebar keeps the class and HTML attributes passed to `Sidebar` instead of dropping them
 - YouTube analytics counted hidden like and comment counts as zero, which pulled averages and engagement rates down; averages and rates now use only the videos that report each count, and hidden counts sort last (see `docs/architecture/data-flows/ANALYTICS.md`). A channel with no videos now returns the same fields and formats as a full result, a Reddit profile without karma totals reports 0 instead of NaN, and date checks use `getTime()`
 - Saving the scheduling repository in Settings erased the stored GitHub token and then reported `configured: false` and `patSet: false`. The unused token is no longer stored or reported: `GET /api/settings/github` returns only `repoOwner`, `repoName` and `branch`
