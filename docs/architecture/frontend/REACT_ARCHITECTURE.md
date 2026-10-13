@@ -93,7 +93,10 @@ frontend/src/
     brand/                Logo and platform icons
     ui/                   shadcn generated components, restyled onto the tokens
   pages/
-    Login.jsx             Auth page (not lazy-loaded, always small)
+    Login.jsx             Auth page (not lazy-loaded, always small); owns mode, fields and the password toggle
+    LoginForm.jsx         Email and password form
+    LoginBrandPanel.jsx   Decorative product preview beside the form
+    loginCopy.js          Sign-in and sign-up text, privacy link
   features/
     analytics/
       overview/           Overview.jsx - all-accounts dashboard (page; tabs, hooks and helpers beside it)
