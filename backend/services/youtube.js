@@ -6,7 +6,12 @@ async function ytFetch(endpoint, params, apiKey) {
     Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
     const res = await fetch(url.toString());
     const data = await res.json();
-    if (data.error) throw new Error(data.error.message);
+    if (data.error) {
+        const err = new Error(data.error.message);
+        err.reason = data.error.errors?.[0]?.reason || '';
+        err.status = data.error.code;
+        throw err;
+    }
     return data;
 }
 
@@ -94,7 +99,14 @@ export async function fetchAllVideos(playlistId, apiKey, maxPages = 10) {
         const params = { part: 'snippet,contentDetails', playlistId, maxResults: '50' };
         if (pageToken) params.pageToken = pageToken;
 
-        const data = await ytFetch('playlistItems', params, apiKey);
+        let data;
+        try {
+            data = await ytFetch('playlistItems', params, apiKey);
+        } catch (err) {
+            // YouTube reports a channel's uploads playlist as missing until its first public video.
+            if (err.reason === 'playlistNotFound') break;
+            throw err;
+        }
         if (!data.items || data.items.length === 0) break;
 
         const videoIds = data.items.map(i => i.snippet.resourceId.videoId).join(',');

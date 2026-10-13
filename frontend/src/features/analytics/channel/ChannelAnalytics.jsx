@@ -212,6 +212,22 @@ export default function ChannelAnalytics() {
         }
       />
 
+      {analytics.totalVideos === 0 ? (
+        <>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <MetricBox small icon={<Users />}     label="Subscribers"  value={fmtNum(channel.subscriberCount)} subtitle={fmtNumFull(channel.subscriberCount)} />
+            <MetricBox small icon={<Eye />}       label="Total views"  value={fmtNum(channel.viewCount)}       subtitle={fmtNumFull(channel.viewCount)} />
+            <MetricBox small icon={<VideoIcon />} label="Total videos" value={fmtNum(channel.videoCount)}      subtitle="Public uploads" />
+          </div>
+          <SurfaceBox>
+            <EmptyState
+              icon={<VideoIcon />}
+              title="No public videos yet"
+              description="Video analytics start with this channel's first public upload. After publishing, choose Refresh."
+            />
+          </SurfaceBox>
+        </>
+      ) : (
       <Tabs value={tab} onValueChange={setTab} className="gap-6">
         <div className="scrollbar-hide -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
           <TabsList className="w-max min-w-full">
@@ -476,6 +492,7 @@ export default function ChannelAnalytics() {
           )}
         </TabsContent>
       </Tabs>
+      )}
     </div>
   );
 }
