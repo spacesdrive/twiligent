@@ -2,8 +2,7 @@
     "lines": [
         [
             "error",
-            "autoRefreshInstagramTokens error:",
-            "database unavailable"
+            "{\"level\":\"error\",\"message\":\"token refresh could not load accounts\",\"requestId\":\"cron-test\",\"error\":\"The database request failed. Try again in a moment.\",\"errorName\":\"DatabaseError\",\"cause\":\"database unavailable\"}"
         ]
     ],
     "requests": [],

@@ -1,6 +1,9 @@
 import { test, describe, before, after, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
-import { processScheduledPosts } from '../../utils/scheduler.ts';
+import { createScheduledPublisher } from '../../services/scheduledPublisher.ts';
+import { createAccountRepository } from '../../repositories/accountRepository.ts';
+import { createScheduledPostRepository } from '../../repositories/scheduledPostRepository.ts';
+import { createLogger } from '../../lib/logger.ts';
 import { assertGolden } from '../fixtures/golden.ts';
 import { installFetch, reply } from '../fixtures/fakeFetch.ts';
 import type { FetchMock, RecordedRequest } from '../fixtures/fakeFetch.ts';
@@ -67,9 +70,18 @@ function describeArg(arg: unknown) {
 }
 
 let fetchMock: FetchMock | null = null;
+
+function processScheduledPosts(supabase: SupabaseClient) {
+    const context = { requestId: 'cron-test', signal: new AbortController().signal, log: createLogger({ requestId: 'cron-test' }) };
+    return createScheduledPublisher({
+        accounts: createAccountRepository(supabase),
+        posts: createScheduledPostRepository(supabase),
+        context,
+    }).publishDue();
+}
 afterEach(() => fetchMock?.restore());
 
-describe('processScheduledPosts golden output', () => {
+describe('scheduled publisher golden output', () => {
     before(() => mock.timers.enable({ apis: ['Date'], now: FIXED_NOW }));
     after(() => mock.timers.reset());
 
@@ -85,7 +97,7 @@ describe('processScheduledPosts golden output', () => {
         const result = await processScheduledPosts(supabase);
         mock.restoreAll();
 
-        assertGolden({ result, delays, logLines, requests: fetchMock.requests, queries: supabase.calls, table: supabase.table }, 'scheduler.process');
+        assertGolden({ result, delays, logLines, requests: fetchMock.requests, queries: supabase.calls, table: supabase.table }, 'scheduledPublisher.process');
     });
 
     test('a failing due post query is logged and nothing is processed', async () => {
@@ -94,11 +106,11 @@ describe('processScheduledPosts golden output', () => {
         const result = await processScheduledPosts({ from() { throw new Error('db down'); } } as unknown as SupabaseClient);
         mock.restoreAll();
 
-        assertGolden({ result, logLines }, 'scheduler.dbFailure');
+        assertGolden({ result, logLines }, 'scheduledPublisher.dbFailure');
     });
 });
 
-describe('processScheduledPosts account checks', () => {
+describe('scheduled publisher account checks', () => {
     test('fails posts whose account is not an Instagram account or has no token, without calling Instagram', async () => {
         const supabase = fakeSupabase([
             tableRow('accounts', accountRow({ id: 'yt1', platform: 'youtube', channelId: 'UC1' })),
