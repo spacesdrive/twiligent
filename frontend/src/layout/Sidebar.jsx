@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useTheme } from 'next-themes';
+import { useSmoothTheme } from '@/hooks/use-smooth-theme';
 import { Search, Tag, Settings, LogOut, Sun, Moon, Monitor, ChevronsUpDown } from 'lucide-react';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader,
@@ -126,7 +126,7 @@ export default function AppSidebar({ categories, onOpenPalette, onSignOut }) {
 function UserMenu({ onSignOut }) {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme } = useSmoothTheme();
   const email = user?.email ?? '';
   const initial = email[0]?.toUpperCase() ?? 'T';
 

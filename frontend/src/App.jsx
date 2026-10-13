@@ -61,7 +61,7 @@ const router = createBrowserRouter([
 
 export default function App() {
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
       <TooltipProvider>
         <AuthProvider>
           <Suspense fallback={null}>

@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useTheme } from 'next-themes';
+import { useSmoothTheme } from '@/hooks/use-smooth-theme';
 import {
   LayoutDashboard, PlaySquare, Scissors, Clapperboard, MessagesSquare, Bookmark, Send,
   Users, Settings, RefreshCw, Sun, Moon, Monitor, LogOut, Tag, Plus,
@@ -22,7 +22,7 @@ const PAGE_ICONS = {
 
 export default function CommandPalette({ open, onOpenChange, accounts, categories, onRefreshAll, onSignOut }) {
   const navigate = useNavigate();
-  const { setTheme } = useTheme();
+  const { setTheme } = useSmoothTheme();
   const [query, setQuery] = useState('');
 
   const handleOpenChange = next => {

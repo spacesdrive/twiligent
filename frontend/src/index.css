@@ -292,6 +292,13 @@
   to { opacity: 1; transform: none; }
 }
 
+/* Theme changes cross-fade the whole page as one image (see hooks/use-smooth-theme.js) */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 260ms;
+  animation-timing-function: var(--ease-standard);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
-import { useTheme } from 'next-themes';
+import { useSmoothTheme } from '@/hooks/use-smooth-theme';
 import { RefreshCw, Sun, Moon, Search } from 'lucide-react';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 export default function TopBar({ onOpenPalette }) {
   const location = useLocation();
   const { loading, refreshAll, accounts } = useAppContext();
-  const { resolvedTheme, setTheme } = useTheme();
+  const { resolvedTheme, setTheme } = useSmoothTheme();
   const isDark = resolvedTheme === 'dark';
   const title = routeTitle(location.pathname);
 
