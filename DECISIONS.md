@@ -656,3 +656,21 @@ Records every significant architectural decision, the alternatives considered, a
 **Trade-offs:**
 - The planned GitHub archive feature (ROADMAP.md) will need to add a token field again, with masked responses and a decision on where the secret lives.
 - An unused secret is no longer kept in plaintext in the database.
+
+---
+
+## ADR-032: A layered request pipeline with one error contract
+
+**Date:** 2026-10-14
+**Status:** Accepted
+
+**Decision:** The Worker is split into layers with one job each: middleware in a fixed order (`backend/app.ts`: CORS, request id and context, security headers, clients, rate limit by IP, authentication, per-user rate limits), route tables (`routes/`), controllers (`controllers/`, HTTP only), services (`services/`, business rules, no Hono types) and repositories (`repositories/`, one method per Supabase query or cache operation). A composition root (`container.ts`) builds each request's services. Services receive a framework-free `RequestContext` (request id, cancellation signal, logger) and the user id as an argument. Input is validated by Hono's `validator` before the controller runs. Every failure is a typed error (`lib/errors.ts`) that `middleware/errorHandler.ts` turns into one body, `{ success: false, code, message, requestId }`, with the status chosen by the code. CORS allows `FRONTEND_URL` and the optional `ALLOWED_ORIGINS` instead of every origin, and every response carries security headers.
+
+**Context:** Route files mixed HTTP parsing, business rules, platform calls and queries; `lib/db.ts` had functions whose meaning changed with an optional user id; errors came in three shapes, with statuses picked per route and raw database messages sent to the client; nothing tied a log line to a request; and no platform call could be cancelled.
+
+**Trade-offs:**
+- More files per feature (route table, controller, service, validator), in exchange for each one being small and testable on its own.
+- Error statuses changed for some failures (a duplicate account is 409 instead of 400, a missing server key 503, a platform failure 502). The frontend only reads the message, so it is unaffected, but anything else calling the API sees the new statuses.
+- Building every service per request costs a few object allocations; nothing is cached across requests.
+- A browser on an origin that is not `FRONTEND_URL` or listed in `ALLOWED_ORIGINS` can no longer call the API. A local Worker also allows the Vite dev server.
+- The request deadline (30 seconds) and the warm-up deadline (25 seconds) abandon slow platform calls instead of waiting indefinitely.
