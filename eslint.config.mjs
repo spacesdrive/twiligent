@@ -40,7 +40,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['backend/tests/**/*.js', 'backend/**/*.test.js', 'scripts/**/*.js', '*.js', '*.mjs'],
+    files: ['backend/tests/**/*.js', 'scripts/**/*.js', '*.js', '*.mjs'],
     extends: [js.configs.recommended],
     languageOptions: {
       ecmaVersion: 'latest',

@@ -8,11 +8,12 @@ test('sha256Hex matches the known digest', async () => {
 
 test('createNonce returns a raw nonce and its SHA-256 hash', async () => {
   const { raw, hashed } = await createNonce();
-  assert.match(raw, /^[A-Za-z0-9]{40,}$/);
+  // 32 random bytes in base64 minus + / =, so the length varies around 42
+  assert.match(raw, /^[A-Za-z0-9]{30,44}$/);
   assert.equal(hashed, await sha256Hex(raw));
 });
 
 test('each nonce is different', async () => {
-  const [a, b] = await Promise.all([createNonce(), createNonce()]);
-  assert.notEqual(a.raw, b.raw);
+  const [first, second] = await Promise.all([createNonce(), createNonce()]);
+  assert.notEqual(first.raw, second.raw);
 });
