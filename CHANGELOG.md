@@ -20,8 +20,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - UI copy in sentence case, without exclamation marks; error messages say what to do next
 - Charts use the brand data-visualisation series in both themes
 
+### Fixed
+
+- The Worker cron and the GitHub Actions workflow could both publish the same scheduled post; posts are now claimed atomically
+
 ### Removed
 
+- The unused GitHub personal access token field and its guide in Settings (nothing used the token)
 - Legacy root `public/` dashboard, unmounted `trackedPosts.js` route, unused Redis OAuth helpers, unused shadcn block templates and the unused Geist font package
 - Duplicated helpers merged: platform badges and avatars, account paths, chart styling, filter tiers, pagination, Reddit post table, `safeAccount()`, Instagram publishing parameters
 
@@ -36,6 +41,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 **Redesign additions**
+- Scheduled publishing guide in Settings: how it works for users, and administrator setup for the server cron and the optional GitHub Actions backup, with direct links to the repository's secrets and workflow pages
+- Publish explains when scheduled posts go out and warns when posts are overdue, with the administrator contact
+- Instagram tester guide wherever Instagram is connected: email the administrator, accept the invite, then connect
+- `VITE_ADMIN_EMAIL` sets the administrator contact shown in the app
+- Theme changes cross-fade the whole page in one step
 - Command palette (Ctrl+K or Cmd+K) for pages, accounts, categories, theme and actions
 - Hold-to-confirm for removing accounts, untracking content and deleting scheduled posts
 - `/accounts?add=1` opens the add-account flow directly

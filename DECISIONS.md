@@ -542,3 +542,18 @@ Records every significant architectural decision, the alternatives considered, a
 **Trade-offs:**
 - `scripts/publish-scheduled.js` still has its own copy of the publishing logic. It runs in GitHub Actions with zero npm dependencies and cannot import Worker modules.
 - The root `package.json` (an Express setup with no server file) is left in place because it also pins the shadcn CLI used from the repository root.
+
+---
+
+## ADR-025: Scheduling guidance in the app, atomic post claims, configurable administrator contact
+
+**Date:** 2026-10-13
+**Status:** Accepted
+
+**Decision:** Settings explains scheduled publishing for users and gives administrators exact setup steps for the Worker cron and the optional GitHub Actions backup. The GitHub personal access token field is removed because no code reads it; only the repository owner and name are kept, to build direct links. Both schedulers claim a post with an update filtered on `status = 'pending'` and skip it when no row changes. The administrator contact shown for Instagram tester requests and overdue posts comes from `VITE_ADMIN_EMAIL`, defaulting to ujjwal@aevrin.net.
+
+**Context:** The previous guide asked people to create a token with write access to repository secrets, which nothing used. The scheduling doc described an atomic claim that the code did not implement, so the two schedulers could double-publish. Instagram tester access in development mode had no path for people who are not the app owner.
+
+**Trade-offs:**
+- Saving the GitHub section now clears any previously stored token. That token was never used.
+- The default contact address is specific to the original deployment; other self-hosters should set `VITE_ADMIN_EMAIL`.
