@@ -2,7 +2,7 @@
     "responses": [
         {
             "status": 400,
-            "body": "{\"success\":false,\"message\":\"Access token is required\"}"
+            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"Access token is required\",\"requestId\":\"req-test\"}"
         },
         {
             "status": 200,
@@ -13,20 +13,20 @@
             "body": "{\"success\":true,\"account\":{\"id\":\"17882640000004fzz\",\"platform\":\"instagram\",\"igUserId\":\"3001\",\"username\":\"shorty\",\"title\":\"Shorty\",\"biography\":\"\",\"website\":\"\",\"profilePictureUrl\":\"\",\"followersCount\":0,\"followsCount\":0,\"mediaCount\":0,\"tokenExpiresAt\":null,\"addedAt\":\"2026-09-01T12:00:00.000Z\",\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"hasCookie\":false}}"
         },
         {
-            "status": 400,
-            "body": "{\"success\":false,\"message\":\"This Instagram account is already added\"}"
+            "status": 409,
+            "body": "{\"success\":false,\"code\":\"CONFLICT\",\"message\":\"This Instagram account is already added\",\"requestId\":\"req-test\"}"
+        },
+        {
+            "status": 409,
+            "body": "{\"success\":false,\"code\":\"CONFLICT\",\"message\":\"This Instagram account is already added\",\"requestId\":\"req-test\"}"
         },
         {
             "status": 400,
-            "body": "{\"success\":false,\"message\":\"This Instagram account is already added\"}"
+            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"Could not get Instagram User ID. Make sure the token has instagram_business_basic permission and is from a Business/Creator account.\",\"requestId\":\"req-test\"}"
         },
         {
-            "status": 400,
-            "body": "{\"success\":false,\"message\":\"Could not get Instagram User ID. Make sure the token has instagram_business_basic permission and is from a Business/Creator account.\"}"
-        },
-        {
-            "status": 400,
-            "body": "{\"success\":false,\"message\":\"Invalid OAuth access token\"}"
+            "status": 502,
+            "body": "{\"success\":false,\"code\":\"UPSTREAM_ERROR\",\"message\":\"Invalid OAuth access token\",\"requestId\":\"req-test\"}"
         }
     ],
     "requests": [
@@ -163,8 +163,11 @@
     "logs": [
         [
             "log",
-            "Token exchange skipped (token may already be long-lived):",
-            "Invalid platform app"
+            "{\"level\":\"info\",\"message\":\"token exchange skipped; the token may already be long-lived\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"reason\":\"Invalid platform app\"}"
+        ],
+        [
+            "error",
+            "{\"level\":\"error\",\"message\":\"request failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"code\":\"UPSTREAM_ERROR\",\"status\":502,\"error\":\"Invalid OAuth access token\",\"errorName\":\"UpstreamError\"}"
         ]
     ]
 }

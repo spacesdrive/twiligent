@@ -2,7 +2,7 @@
     "responses": [
         {
             "status": 404,
-            "body": "{\"success\":false,\"message\":\"Not found\"}"
+            "body": "{\"success\":false,\"code\":\"NOT_FOUND\",\"message\":\"Account not found\",\"requestId\":\"req-test\"}"
         },
         {
             "status": 200,
@@ -10,7 +10,7 @@
         },
         {
             "status": 400,
-            "body": "{\"success\":false,\"message\":\"No access token\"}"
+            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"No access token stored - reconnect this Instagram account\",\"requestId\":\"req-test\"}"
         },
         {
             "status": 200,
@@ -18,43 +18,43 @@
         },
         {
             "status": 400,
-            "body": "{\"success\":false,\"message\":\"No session cookie stored - re-add this account with a session cookie from reddit.com DevTools\"}"
+            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"No session cookie stored - re-add this account with a session cookie from reddit.com DevTools\",\"requestId\":\"req-test\"}"
         },
         {
             "status": 200,
             "body": "{\"success\":true,\"account\":{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UCaaaaaaaaaaaaaaaaaaaaaa\",\"title\":\"Channel UCaa\",\"subscriberCount\":500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"viewCount\":9000,\"videoCount\":12,\"description\":\"Desc\",\"thumbnails\":{\"default\":\"d\",\"medium\":\"m\",\"high\":\"h\"},\"customUrl\":\"@chan\",\"country\":\"GB\",\"keywords\":\"k\",\"topicCategories\":[\"t\"],\"hasCookie\":false}}"
         },
         {
-            "status": 400,
-            "body": "{\"success\":false,\"message\":\"No API key\"}"
-        },
-        {
-            "status": 400,
-            "body": "{\"success\":false,\"message\":\"Channel not found\"}"
+            "status": 503,
+            "body": "{\"success\":false,\"code\":\"NOT_CONFIGURED\",\"message\":\"YouTube API key not configured on server\",\"requestId\":\"req-test\"}"
         },
         {
             "status": 404,
-            "body": "{\"success\":false,\"message\":\"Not found\"}"
+            "body": "{\"success\":false,\"code\":\"NOT_FOUND\",\"message\":\"Channel not found\",\"requestId\":\"req-test\"}"
         },
         {
             "status": 404,
-            "body": "{\"success\":false,\"message\":\"Instagram account not found\"}"
+            "body": "{\"success\":false,\"code\":\"NOT_FOUND\",\"message\":\"Account not found\",\"requestId\":\"req-test\"}"
         },
         {
             "status": 404,
-            "body": "{\"success\":false,\"message\":\"Instagram account not found\"}"
+            "body": "{\"success\":false,\"code\":\"NOT_FOUND\",\"message\":\"Instagram account not found\",\"requestId\":\"req-test\"}"
+        },
+        {
+            "status": 404,
+            "body": "{\"success\":false,\"code\":\"NOT_FOUND\",\"message\":\"Instagram account not found\",\"requestId\":\"req-test\"}"
         },
         {
             "status": 400,
-            "body": "{\"success\":false,\"message\":\"No access token stored\"}"
+            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"No access token stored - reconnect this Instagram account\",\"requestId\":\"req-test\"}"
         },
         {
             "status": 200,
             "body": "{\"success\":true,\"message\":\"Token refreshed for another 60 days\",\"expiresAt\":\"2026-09-02T12:00:00.000Z\"}"
         },
         {
-            "status": 400,
-            "body": "{\"success\":false,\"message\":\"Token cannot be refreshed\"}"
+            "status": 502,
+            "body": "{\"success\":false,\"code\":\"UPSTREAM_ERROR\",\"message\":\"Token cannot be refreshed\",\"requestId\":\"req-test\"}"
         }
     ],
     "requests": [
@@ -72,11 +72,11 @@
             }
         },
         {
-            "url": "https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics%2CcontentDetails%2CbrandingSettings%2Cstatus%2CtopicDetails&id=UCaaaaaaaaaaaaaaaaaaaaaa&key=%EF%BB%BF+YTKEY+%0A",
+            "url": "https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics%2CcontentDetails%2CbrandingSettings%2Cstatus%2CtopicDetails&id=UCaaaaaaaaaaaaaaaaaaaaaa&key=YTKEY",
             "method": "GET"
         },
         {
-            "url": "https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics%2CcontentDetails%2CbrandingSettings%2Cstatus%2CtopicDetails&id=UCmissingmissingmissing0&key=%EF%BB%BF+YTKEY+%0A",
+            "url": "https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics%2CcontentDetails%2CbrandingSettings%2Cstatus%2CtopicDetails&id=UCmissingmissingmissing0&key=YTKEY",
             "method": "GET"
         },
         {
@@ -486,5 +486,14 @@
         }
     ],
     "redis": [],
-    "logs": []
+    "logs": [
+        [
+            "error",
+            "{\"level\":\"error\",\"message\":\"request failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"code\":\"NOT_CONFIGURED\",\"status\":503,\"error\":\"YouTube API key not configured on server\",\"errorName\":\"NotConfiguredError\"}"
+        ],
+        [
+            "error",
+            "{\"level\":\"error\",\"message\":\"request failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"code\":\"UPSTREAM_ERROR\",\"status\":502,\"error\":\"Token cannot be refreshed\",\"errorName\":\"UpstreamError\"}"
+        ]
+    ]
 }
