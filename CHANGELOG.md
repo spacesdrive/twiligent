@@ -37,6 +37,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 - The Worker cron and the GitHub Actions workflow could both publish the same scheduled post; posts are now claimed atomically
+- Channels with no public videos failed to load with "playlist cannot be found"; they now open with a "No public videos yet" message
+- Overview could show "Syncing analytics" forever: Reddit accounts and empty channels never finished syncing, and the page only re-checked once
+- YouTube likes and comments the owner hid showed as 0; they now show as Hidden
+- Cached YouTube, Instagram and Reddit analytics never expired; they now refresh after 6 hours
+- Collapsing the sidebar showed clipped labels; icons now stay in place while labels and group headings fade
+- The Reddit "Upvoted" column is now "Upvote rate", with an explanation of what it measures and why some rows show a dash
 - README: `VITE_API_URL` example now ends in `/api`; the setup SQL now creates `tracked_posts` and turns on row level security for all four tables
 - Buttons rendered as links no longer log a Base UI native-button warning
 

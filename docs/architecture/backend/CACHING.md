@@ -34,11 +34,13 @@ export async function getVideosCache(redis, userId, accountId) {
 
 ## Cache TTL
 
-Currently no TTL is set on `videos:` or `ig:` keys. Cached data persists until:
-1. The account is deleted (explicit `redis.del()`)
-2. The Redis instance is flushed manually
+`videos:`, `ig:` and `reddit:` keys expire after 6 hours (`ANALYTICS_TTL_SECONDS` in `lib/cache.js`), so counts refetch rather than going stale. They are also removed when the account is deleted.
 
-**Known issue:** This means analytics data can become stale. A future improvement is to set a TTL (e.g., 24 hours) on both key types. See `ROADMAP.md`.
+`videos:` entries carry a `version` field like `ig:` entries (`VIDEOS_CACHE_VERSION`). Version 2 stores `likeCount` and `commentCount` as `null` when YouTube hides them (the owner hid likes, or comments are off), instead of `0`; the UI shows those as "Hidden".
+
+## Overview warming
+
+`GET /api/overview` returns `{ cacheWarmed, syncing }` per account. When an account has no cache entry it starts a background fetch with `waitUntil` (YouTube, Instagram and Reddit) and returns `syncing: true` only if that fetch actually started. Without Redis, an API key, a token or a cookie it returns `syncing: false`, so the client never waits on something that cannot load. The client re-polls at 4, 8 and 16 seconds while any account is syncing, then stops.
 
 ## Cache Usage in Routes
 

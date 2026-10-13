@@ -125,7 +125,7 @@ React Native app using the same Cloudflare Worker backend.
 
 ## Known Issues / Tech Debt
 
-- Redis cache TTL is never set - cached analytics data persists indefinitely until account deletion. Should add a TTL (e.g., 24 hours for video lists).
+- ~~Redis cache TTL is never set~~ Done: analytics caches expire after 6 hours.
 - `public/` directory at repo root contains a legacy Express prototype - should be removed once it is confirmed unused.
 - Root `package.json` and `node_modules/` belong to the legacy prototype - can be removed.
 - `wrangler.toml` has no `vars` section for non-secret configuration - any non-sensitive config currently requires a redeploy to change.
