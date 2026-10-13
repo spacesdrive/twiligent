@@ -112,7 +112,7 @@ npm run dev    # Worker (8787) and Vite (5173) must both start without errors
 ```bash
 npm run lint   # one ESLint run over backend, frontend, tests and scripts
 ```
-A change must not add lint errors. See `docs/workflows/TESTING.md` for the known pre-existing ones.
+Lint must report 0 problems; CI fails otherwise.
 
 **Step 15 - Manual testing - golden path**  
 Test the main success case end-to-end:

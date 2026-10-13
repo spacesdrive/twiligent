@@ -73,7 +73,7 @@ One ESLint run from the root covers the whole repository. The shared config is `
 - `backend/tests/**`, `frontend/tests/**`, `frontend/vite.config.ts` and `scripts/**`: Node globals
 - Root `*.js` and `*.mjs` config files: the ESLint recommended rules with Node globals
 
-Do not add lint errors. The frontend has 7 known errors, all `react-refresh/only-export-components`: in `components/ui/badge.tsx`, `button.tsx`, `sidebar.tsx`, `tabs.tsx` and `toggle.tsx`, and in `context/AppContext.tsx` and `AuthContext.tsx`. These files export a hook or a variants helper next to their component. Any other error is new.
+Lint must report 0 problems; the CI workflow fails on any error. The shadcn files that export their cva variants next to the component (`badgeVariants`, `buttonVariants`, `tabsListVariants`, `toggleVariants`, `useSidebar`) and the contexts that export their hooks (`useAppContext`, `useAuth`) are listed in `allowExportNames` for `react-refresh/only-export-components` in `eslint.config.mjs`; editing one of those files reloads the page instead of hot-updating it. Add a name there only for the same pattern.
 
 ### Formatting
 
