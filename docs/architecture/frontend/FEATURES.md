@@ -42,7 +42,7 @@ frontend/src/
 │   │   │   ├── InstagramViewsTable.jsx, YouTubeViewsTable.jsx, AccountCell.jsx, AccountRankRow.jsx, CategoryRow.jsx, OpenAnalytics.jsx
 │   │   │   ├── useOverviewData.js          <- Loads api.getOverview() and re-polls while accounts are syncing
 │   │   │   ├── useOverviewStats.js         <- Memoized totals, rankings and chart rows
-│   │   │   └── overviewStats.js, overviewCharts.js, overviewLabels.js, greeting.js   <- Pure helpers with *.test.js
+│   │   │   └── overviewStats.js, overviewTrackedStats.js, overviewCharts.js, overviewLabels.js, greeting.js   <- Pure helpers with *.test.js
 │   │   ├── reddit/
 │   │   │   ├── RedditAnalytics.jsx         <- Page: Reddit account analytics (loads through useAccountAnalytics)
 │   │   │   ├── RedditHeader.jsx, RedditKarmaSummary.jsx, RedditKarmaCharts.jsx, RedditStatPanels.jsx

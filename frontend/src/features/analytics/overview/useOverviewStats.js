@@ -1,9 +1,9 @@
 import { useMemo } from 'react';
 import { groupByPlatform } from '@/lib/accounts';
 import {
-  accountTotalsOf, cacheTotalsOf, categoryStatsOf, igAccountRowsOf, sortedByAudience, sortedByChannelViews,
-  sortedByContent, summaryOf, trackedStatsOf,
+  accountTotalsOf, cacheTotalsOf, igAccountRowsOf, sortedByAudience, sortedByChannelViews, sortedByContent, summaryOf,
 } from './overviewStats.js';
+import { categoryStatsOf, trackedStatsOf } from './overviewTrackedStats.js';
 import {
   audienceChartDataOf, audienceLegendOf, categoryViewDataOf, commentByCategoryOf, commentByContentOf,
   engagementByContentOf, karmaByAccountOf,

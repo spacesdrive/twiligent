@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  accountTotalsOf, cacheTotalsOf, trackedStatsOf, categoryStatsOf, summaryOf, sortedByAudience, sortedByContent,
-  sortedByChannelViews, igAccountRowsOf,
+  accountTotalsOf, cacheTotalsOf, summaryOf, sortedByAudience, sortedByContent, sortedByChannelViews, igAccountRowsOf,
 } from './overviewStats.js';
+import { trackedStatsOf } from './overviewTrackedStats.js';
 
 const channel = { id: 'y1', platform: 'youtube', title: 'Studio', subscriberCount: 100, viewCount: 5000, videoCount: 10 };
 const legacyYt = { id: 'y2', title: 'Legacy', subscriberCount: 50, viewCount: 9000, videoCount: 4 };
@@ -40,27 +40,6 @@ test('cache totals only count YouTube accounts saved with a platform', () => {
   assert.equal(totals.rdPosts, 4);
   assert.equal(totals.rdKarma, 40);
   assert.equal(totals.rdComments, 6);
-});
-
-test('tracked stats treat a missing content type as Reddit', () => {
-  const stats = trackedStatsOf(tracked);
-  assert.equal(stats.total, 4);
-  assert.equal(stats.ytItems.length, 2);
-  assert.equal(stats.rdItems.length, 2);
-  assert.equal(stats.ytViews, 1050);
-  assert.equal(stats.rdViews, 200);
-  assert.equal(stats.rdKarma, 38);
-  assert.equal(stats.rdComments, 6);
-});
-
-test('category stats are ranked by views plus karma', () => {
-  const stats = categoryStatsOf(tracked);
-  assert.deepEqual(stats.map(stat => stat.category), ['Tech', 'Art']);
-  assert.equal(stats[0].views, 1200);
-  assert.equal(stats[0].ytCount, 1);
-  assert.equal(stats[0].rdCount, 1);
-  assert.equal(stats[1].rdKarma, 8);
-  assert.deepEqual(categoryStatsOf([{ contentType: 'youtube' }]), []);
 });
 
 test('summary combines account, cache and tracked totals', () => {
