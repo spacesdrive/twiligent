@@ -142,8 +142,10 @@ Failures reject with an `Error` that carries a `reason` so each page keeps its o
 | `network` | The request lost its connection | `The upload lost its network connection` | none |
 | `rejected` | Cloudinary answered with a non-2xx status | `Upload failed` | `cloudinaryMessage` (Cloudinary's `error.message`, if any) or `parseMessage` (the body was not JSON) |
 
-The bulk upload shows the default messages. The single post flow and the Tracked Content image
-upload map the error to their own wording.
+The bulk upload shows the default messages. The single post flow maps the error to its own
+wording (`singleUploadMessage` in `features/publishing/publishHelpers.js`), and so does the Tracked
+Content image upload (`imageUploadMessage` in `features/analytics/tracked/trackedList.js`), which
+passes `resourceType: 'image'` and no progress callback.
 
 ## Authentication
 

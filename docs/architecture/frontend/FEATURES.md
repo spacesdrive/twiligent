@@ -30,8 +30,15 @@ frontend/src/
 │   │   │   ├── redditPostTable.jsx         <- Filters and table shared by both post explorers
 │   │   │   └── redditPostUtils.js          <- Shared sort options, filtering and sorting
 │   │   └── tracked/
-│   │       ├── TrackedContent.jsx          <- Tracked Reddit posts and YouTube videos
-│   │       └── TrackedCategory.jsx         <- Per-category analytics for tracked content
+│   │       ├── TrackedContent.jsx          <- Page: tracked Reddit posts and YouTube videos
+│   │       ├── TrackedMetrics.jsx, TrackedFilters.jsx, BulkCategoryBar.jsx, TrackedTable.jsx, TrackedRow.jsx, TrackedThumbnail.jsx
+│   │       ├── AddTrackedDialog.jsx, EditTrackedDialog.jsx, TrackedImageField.jsx, CategoryPicker.jsx, RowAction.jsx
+│   │       ├── useTrackedItems.js, useTrackedFilters.js, useTrackedSelection.js, useBulkCategory.js
+│   │       ├── useTrackedDelete.js, useAddTracked.js, useTrackedEditor.js   <- Delete, add form, edit and image upload
+│   │       ├── trackedList.js              <- Pure sort, filter, stats and form helpers (trackedList.test.js)
+│   │       ├── TrackedCategory.jsx         <- Page: per-category analytics for tracked content
+│   │       ├── CategoryYouTubeSection.jsx, CategoryRedditSection.jsx, NumberCell.jsx, OpenLink.jsx
+│   │       └── trackedCategoryStats.js     <- Pure per-category totals and labels (trackedCategoryStats.test.js)
 │   ├── accounts/
 │   │   └── AccountManager.jsx              <- Add/remove connected accounts
 │   ├── publishing/

@@ -103,7 +103,7 @@ frontend/src/
       shorts/             ShortsExplorer.jsx - shorts-filtered table
       reels/              ReelsExplorer.jsx - Instagram media grid
       reddit/             RedditAnalytics, RedditPosts, RedditPostsAll, shared post table
-      tracked/            TrackedContent.jsx, TrackedCategory.jsx
+      tracked/            TrackedContent.jsx, TrackedCategory.jsx (pages; components, hooks and helpers beside them)
     publishing/
       UploadContent.jsx   Instagram publishing + schedule queue (page; components, hooks and helpers beside it)
     accounts/
