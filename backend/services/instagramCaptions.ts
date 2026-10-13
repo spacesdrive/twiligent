@@ -1,9 +1,18 @@
 import { sumOf, roundedAverage } from './analyticsMath.ts';
+import type {
+    InstagramCaptionLengthStats, InstagramHashtagStats, InstagramMedia,
+} from '../../shared/types/instagram.ts';
+
+interface CaptionBucket {
+    label: string;
+    min: number;
+    max: number;
+}
 
 const HASHTAG_PATTERN = /#[\wÀ-ɏ]+/g;
 const MAX_HASHTAGS = 20;
 
-const CAPTION_BUCKETS = [
+const CAPTION_BUCKETS: CaptionBucket[] = [
     { label: 'No caption', min: 0, max: 0 },
     { label: 'Short (1-50)', min: 1, max: 50 },
     { label: 'Medium (51-150)', min: 51, max: 150 },
@@ -11,8 +20,8 @@ const CAPTION_BUCKETS = [
     { label: 'Very Long (300+)', min: 301, max: Infinity },
 ];
 
-export function buildHashtagAnalysis(media) {
-    const hashtags = {};
+export function buildHashtagAnalysis(media: InstagramMedia[]): InstagramHashtagStats[] {
+    const hashtags: Record<string, Omit<InstagramHashtagStats, 'avgEngagement'>> = {};
     media.forEach(item => {
         const found = (item.caption || '').match(HASHTAG_PATTERN) || [];
         found.forEach(rawTag => {
@@ -29,7 +38,7 @@ export function buildHashtagAnalysis(media) {
         .slice(0, MAX_HASHTAGS);
 }
 
-function summarizeCaptionBucket(bucket, media) {
+function summarizeCaptionBucket(bucket: CaptionBucket, media: InstagramMedia[]): InstagramCaptionLengthStats {
     const posts = media.filter(item => {
         const length = (item.caption || '').length;
         return length >= bucket.min && length <= bucket.max;
@@ -43,7 +52,7 @@ function summarizeCaptionBucket(bucket, media) {
     };
 }
 
-export function buildCaptionLengthCorrelation(media) {
+export function buildCaptionLengthCorrelation(media: InstagramMedia[]): InstagramCaptionLengthStats[] {
     return CAPTION_BUCKETS
         .map(bucket => summarizeCaptionBucket(bucket, media))
         .filter(bucket => bucket.count > 0);

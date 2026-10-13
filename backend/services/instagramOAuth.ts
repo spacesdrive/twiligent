@@ -2,6 +2,9 @@ import { createOAuthState } from '../lib/oauthState.ts';
 import { createAccount, getAccounts } from '../lib/db.ts';
 import { fetchInstagramProfile } from './instagramApi.ts';
 import { buildInstagramAccount } from './accountFactory.ts';
+import type { InstagramApiToken } from './instagramTokens.ts';
+import type { Env } from '../types/env.ts';
+import type { SupabaseClient } from '../types/app.ts';
 
 const DEFAULT_BACKEND_URL = 'http://localhost:8787';
 const DEFAULT_FRONTEND_URL = 'http://localhost:5173';
@@ -11,16 +14,38 @@ const TOKEN_URL = 'https://api.instagram.com/oauth/access_token';
 const LONG_LIVED_TOKEN_URL = 'https://graph.instagram.com/access_token';
 const OAUTH_SCOPES = 'instagram_business_basic,instagram_business_manage_messages,instagram_business_manage_comments,instagram_business_content_publish,instagram_business_manage_insights';
 
+export type InstagramOAuthEnv = Pick<Env, 'FRONTEND_URL' | 'BACKEND_URL' | 'INSTAGRAM_APP_ID' | 'INSTAGRAM_APP_SECRET'>;
+
+// appId and appSecret are undefined when the Worker secrets are not set
+export interface InstagramOAuthConfig {
+    frontendUrl: string;
+    redirectUri: string;
+    appId: string | undefined;
+    appSecret: string | undefined;
+}
+
+export type InstagramOAuthOutcome = 'already_added' | 'connected';
+
+// answer of the short-lived code exchange at api.instagram.com
+interface InstagramApiCodeToken {
+    access_token?: string;
+    user_id?: string | number;
+    permissions?: string[];
+    error_type?: string;
+    error_message?: string;
+    code?: number;
+}
+
 // pasted secrets can carry a byte order mark or stray whitespace
-function cleanSecret(value) {
+function cleanSecret(value: string | undefined): string | undefined {
     return value?.replace(/^\uFEFF/, '').trim();
 }
 
-function cleanUrl(value, fallback) {
+function cleanUrl(value: string | undefined, fallback: string): string {
     return (value || fallback).replace(/^\uFEFF/, '').trim();
 }
 
-export function readInstagramOAuthConfig(env) {
+export function readInstagramOAuthConfig(env: InstagramOAuthEnv): InstagramOAuthConfig {
     const frontendUrl = cleanUrl(env.FRONTEND_URL, DEFAULT_FRONTEND_URL);
     const backendUrl = cleanUrl(env.BACKEND_URL, DEFAULT_BACKEND_URL).replace(/\/$/, '');
     return {
@@ -32,11 +57,11 @@ export function readInstagramOAuthConfig(env) {
 }
 
 // the hmac-signed state carries the userId and a timestamp, so no redis is needed
-export async function buildAuthorizationUrl(config, userId) {
-    const state = await createOAuthState(userId, config.appSecret);
+export async function buildAuthorizationUrl(config: InstagramOAuthConfig, userId: string): Promise<string> {
+    const state = await createOAuthState(userId, config.appSecret as string);
     const params = new URLSearchParams({
         force_reauth: 'true',
-        client_id: config.appId,
+        client_id: config.appId as string,
         redirect_uri: config.redirectUri,
         response_type: 'code',
         scope: OAUTH_SCOPES,
@@ -45,20 +70,20 @@ export async function buildAuthorizationUrl(config, userId) {
     return `${AUTHORIZE_URL}?${params}`;
 }
 
-async function exchangeCodeForToken(config, code) {
+async function exchangeCodeForToken(config: InstagramOAuthConfig, code: string): Promise<string> {
     const tokenRes = await fetch(TOKEN_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: new URLSearchParams({
-            client_id: config.appId,
-            client_secret: config.appSecret,
+            client_id: config.appId as string,
+            client_secret: config.appSecret as string,
             grant_type: 'authorization_code',
             redirect_uri: config.redirectUri,
             // instagram sometimes appends #_ to the code
             code: code.replace(/#.*$/, ''),
         }),
     });
-    const tokenData = await tokenRes.json();
+    const tokenData = await tokenRes.json() as InstagramApiCodeToken;
     if (!tokenData.access_token) {
         throw new Error(tokenData.error_message || JSON.stringify(tokenData));
     }
@@ -66,19 +91,21 @@ async function exchangeCodeForToken(config, code) {
 }
 
 // keeps the short-lived token (no expiry) when instagram declines the upgrade
-async function upgradeToLongLivedToken(config, shortToken) {
+async function upgradeToLongLivedToken(config: InstagramOAuthConfig, shortToken: string): Promise<{ token: string; expiresIn: number }> {
     const longParams = new URLSearchParams({
         grant_type: 'ig_exchange_token',
-        client_id: config.appId,
-        client_secret: config.appSecret,
+        client_id: config.appId as string,
+        client_secret: config.appSecret as string,
         access_token: shortToken,
     });
     const longRes = await fetch(`${LONG_LIVED_TOKEN_URL}?${longParams}`);
-    const longData = await longRes.json();
+    const longData = await longRes.json() as InstagramApiToken;
     return { token: longData.access_token || shortToken, expiresIn: longData.expires_in || 0 };
 }
 
-export async function connectInstagramFromOAuth(supabase, userId, config, code) {
+export async function connectInstagramFromOAuth(
+    supabase: SupabaseClient, userId: string, config: InstagramOAuthConfig, code: string,
+): Promise<InstagramOAuthOutcome> {
     const shortToken = await exchangeCodeForToken(config, code);
     const { token, expiresIn } = await upgradeToLongLivedToken(config, shortToken);
 

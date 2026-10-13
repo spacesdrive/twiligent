@@ -105,3 +105,19 @@ export interface RedditCacheData {
     analytics: RedditAnalytics;
     posts: RedditPost[];
 }
+
+// fetchTrackedPostData() output, patched into a reddit tracked post's data on add and refresh
+export interface RedditTrackedPostData {
+    postId: string;
+    title: string;
+    subreddit: string;
+    subredditPrefixed: string;
+    author: string;
+    score: number;
+    upvoteRatio: number;
+    numComments: number;
+    permalink: string;
+    isNsfw: boolean;
+    createdAt: string;
+    lastFetchedAt: string;
+}

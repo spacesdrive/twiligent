@@ -1,7 +1,12 @@
 import { ytFetch, optionalCount } from './youtubeApi.ts';
+import type { YouTubeApiListResponse, YouTubeApiVideo } from './youtubeApi.ts';
+import type { YouTubeTrackedVideoData } from '../../shared/types/youtube.ts';
 
-export function extractYouTubeVideoId(url) {
-    let parsedUrl;
+// requested with part=snippet,statistics only
+type TrackedApiVideo = Pick<YouTubeApiVideo, 'id' | 'snippet' | 'statistics'>;
+
+export function extractYouTubeVideoId(url: string): string | null {
+    let parsedUrl: URL;
     try {
         parsedUrl = new URL(url.trim());
     } catch {
@@ -16,11 +21,11 @@ export function extractYouTubeVideoId(url) {
     return searchParams.get('v');
 }
 
-export async function fetchTrackedYouTubeData(videoUrl, apiKey) {
+export async function fetchTrackedYouTubeData(videoUrl: string, apiKey: string): Promise<YouTubeTrackedVideoData> {
     const videoId = extractYouTubeVideoId(videoUrl);
     if (!videoId) throw new Error('Invalid YouTube URL - could not extract video ID');
 
-    const data = await ytFetch('videos', {
+    const data = await ytFetch<YouTubeApiListResponse<TrackedApiVideo>>('videos', {
         part: 'snippet,statistics',
         id: videoId,
     }, apiKey);

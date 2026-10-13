@@ -5,8 +5,23 @@ import {
 import { CONTENT_TYPES, buildContentTypeStats } from './instagramContentTypes.ts';
 import { summarizeTiming } from './instagramTiming.ts';
 import { buildHashtagAnalysis, buildCaptionLengthCorrelation } from './instagramCaptions.ts';
+import type {
+    InstagramAnalytics, InstagramContentTypeStatsMap, InstagramMedia, InstagramProfile, InstagramTopPost,
+} from '../../shared/types/instagram.ts';
 
-function emptyInstagramAnalytics(profile) {
+export type AnalyticsProfile = Pick<InstagramProfile, 'mediaCount' | 'followersCount'>;
+
+type EngagementSummary = Pick<InstagramAnalytics,
+    'totalLikes' | 'totalComments' | 'totalEngagement' | 'avgLikes' | 'avgComments' | 'avgEngagement' |
+    'medianLikes' | 'medianComments' | 'engagementRate' | 'likesPerFollower' | 'commentsPerFollower' | 'likesToCommentsRatio'>;
+
+type ViewsSummary = Pick<InstagramAnalytics, 'totalViews' | 'avgViews' | 'mediaWithViews'>;
+
+type LikesAndCommentsRanking = Pick<InstagramAnalytics, 'bestByLikes' | 'bestByComments' | 'worstByLikes'>;
+
+type RecentPostCounts = Pick<InstagramAnalytics, 'postsLast7Days' | 'postsLast30Days' | 'postsLast90Days'>;
+
+function emptyInstagramAnalytics(profile: AnalyticsProfile): InstagramAnalytics {
     return {
         totalPosts: profile.mediaCount || 0, fetchedPosts: 0,
         totalLikes: 0, totalComments: 0, totalEngagement: 0,
@@ -28,11 +43,11 @@ function emptyInstagramAnalytics(profile) {
     };
 }
 
-function perFollowerRate(total, postCount, followersCount) {
+function perFollowerRate(total: number, postCount: number, followersCount: number): number {
     return followersCount > 0 ? parseFloat((total / postCount / followersCount * 100).toFixed(2)) : 0;
 }
 
-function summarizeEngagement(profile, media) {
+function summarizeEngagement(profile: AnalyticsProfile, media: InstagramMedia[]): EngagementSummary {
     const totalLikes = sumOf(media, item => item.likeCount);
     const totalComments = sumOf(media, item => item.commentsCount);
     const totalEngagement = totalLikes + totalComments;
@@ -50,13 +65,13 @@ function summarizeEngagement(profile, media) {
     };
 }
 
-function summarizeViews(contentTypeStats) {
+function summarizeViews(contentTypeStats: InstagramContentTypeStatsMap): ViewsSummary {
     const mediaWithViews = CONTENT_TYPES.reduce((total, type) => total + contentTypeStats[type].viewsReported, 0);
     const totalViews = CONTENT_TYPES.reduce((total, type) => total + contentTypeStats[type].totalViews, 0);
     return { totalViews, avgViews: roundedAverage(totalViews, mediaWithViews), mediaWithViews };
 }
 
-function rankByLikesAndComments(media) {
+function rankByLikesAndComments(media: InstagramMedia[]): LikesAndCommentsRanking {
     const byLikes = [...media].sort((first, second) => second.likeCount - first.likeCount);
     const byComments = [...media].sort((first, second) => second.commentsCount - first.commentsCount);
     return {
@@ -66,14 +81,14 @@ function rankByLikesAndComments(media) {
     };
 }
 
-function rankTopPosts(media) {
+function rankTopPosts(media: InstagramMedia[]): InstagramTopPost[] {
     return [...media]
         .map(item => ({ ...item, engagement: item.likeCount + item.commentsCount }))
         .sort((first, second) => second.engagement - first.engagement)
         .slice(0, 10);
 }
 
-function countRecentPosts(dates) {
+function countRecentPosts(dates: Date[]): RecentPostCounts {
     const now = Date.now();
     return {
         postsLast7Days: countWithinDays(dates, now, 7),
@@ -82,12 +97,12 @@ function countRecentPosts(dates) {
     };
 }
 
-export function computeInstagramAnalytics(profile, media) {
+export function computeInstagramAnalytics(profile: AnalyticsProfile, media: InstagramMedia[] | null | undefined): InstagramAnalytics {
     if (!media || media.length === 0) return emptyInstagramAnalytics(profile);
 
     const engagement = summarizeEngagement(profile, media);
     const contentTypeStats = buildContentTypeStats(media);
-    const dates = media.map(item => new Date(item.timestamp)).filter(date => !isNaN(date));
+    const dates = media.map(item => new Date(item.timestamp)).filter(date => !isNaN(date as unknown as number));
     const topPosts = rankTopPosts(media);
     const bestEngagement = topPosts[0] ? topPosts[0].engagement : 0;
 

@@ -4,11 +4,25 @@ import { fetchRedditProfile } from './reddit.ts';
 import { fetchInstagramProfile } from './instagramApi.ts';
 import { exchangeForLongLivedToken, refreshLongLivedToken } from './instagramTokens.ts';
 import { buildYouTubeAccount, buildRedditAccount, buildInstagramAccount } from './accountFactory.ts';
+import type { SupabaseClient } from '../types/app.ts';
+import type { Account, NewAccount } from '../../shared/types/domain.ts';
+
+export interface ServiceFailure {
+    status: 400 | 404;
+    message: string;
+}
+
+export type TokenRefreshOutcome = { failure: ServiceFailure; expiresAt?: undefined } | { expiresAt: string; failure?: undefined };
+
+interface PastedToken {
+    token: string;
+    expiresIn: number;
+}
 
 const DEFAULT_TOKEN_LIFETIME_S = 5184000;
 
 // duplicates throw like other failures; the route answers all with a 400
-export async function addYouTubeAccount(supabase, userId, input, apiKey) {
+export async function addYouTubeAccount(supabase: SupabaseClient, userId: string, input: string, apiKey: string): Promise<NewAccount> {
     const channelId = await resolveChannelId(input, apiKey);
     const [channelData, accounts] = await Promise.all([
         fetchChannelData(channelId, apiKey),
@@ -24,7 +38,7 @@ export async function addYouTubeAccount(supabase, userId, input, apiKey) {
     return newAccount;
 }
 
-export async function addRedditAccount(supabase, userId, username, cookie) {
+export async function addRedditAccount(supabase: SupabaseClient, userId: string, username: string, cookie: string): Promise<Account> {
     const cleanUsername = username.replace(/^u\//i, '').trim();
     const profile = await fetchRedditProfile(cleanUsername, cookie);
 
@@ -39,18 +53,18 @@ export async function addRedditAccount(supabase, userId, username, cookie) {
 }
 
 // a pasted token may already be long-lived, so a failed exchange keeps it as is
-async function exchangePastedToken(accessToken, appSecret) {
+async function exchangePastedToken(accessToken: string, appSecret: string | undefined): Promise<PastedToken> {
     if (!appSecret) return { token: accessToken, expiresIn: 0 };
     try {
         const longToken = await exchangeForLongLivedToken(accessToken, appSecret);
         return { token: longToken.accessToken, expiresIn: longToken.expiresIn };
     } catch (err) {
-        console.log('Token exchange skipped (token may already be long-lived):', err.message);
+        console.log('Token exchange skipped (token may already be long-lived):', (err as Error).message);
         return { token: accessToken, expiresIn: 0 };
     }
 }
 
-export async function addInstagramAccount(supabase, userId, accessToken, appSecret) {
+export async function addInstagramAccount(supabase: SupabaseClient, userId: string, accessToken: string, appSecret: string | undefined): Promise<Account> {
     const { token, expiresIn } = await exchangePastedToken(accessToken, appSecret);
 
     const profile = await fetchInstagramProfile(null, token);
@@ -68,7 +82,7 @@ export async function addInstagramAccount(supabase, userId, accessToken, appSecr
     return newAccount;
 }
 
-export async function refreshInstagramToken(supabase, userId, accountId) {
+export async function refreshInstagramToken(supabase: SupabaseClient, userId: string, accountId: string): Promise<TokenRefreshOutcome> {
     const account = await getAccountById(supabase, accountId, userId);
     if (!account || account.platform !== 'instagram') {
         return { failure: { status: 404, message: 'Instagram account not found' } };

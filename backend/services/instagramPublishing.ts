@@ -1,4 +1,25 @@
-function addCarouselParams(params, post) {
+import type { InstagramPublishRequest } from '../../shared/types/instagram.ts';
+
+// query parameters of POST /{ig-user-id}/media; URLSearchParams turns the booleans and numbers into strings
+export interface InstagramMediaParams {
+    access_token: string;
+    media_type?: 'CAROUSEL' | 'VIDEO' | 'REELS' | 'STORIES';
+    image_url?: string;
+    video_url?: string;
+    is_carousel_item?: boolean;
+    caption?: string;
+    children?: string;
+    collaborators?: string;
+    location_id?: string;
+    share_to_feed?: boolean;
+    cover_url?: string;
+    audio_name?: string;
+    thumb_offset?: number;
+    user_tags?: string;
+    alt_text?: string;
+}
+
+function addCarouselParams(params: InstagramMediaParams, post: InstagramPublishRequest): InstagramMediaParams {
     const { caption, children, collaborators, locationId } = post;
     params.media_type = 'CAROUSEL';
     if (caption) params.caption = caption;
@@ -8,20 +29,20 @@ function addCarouselParams(params, post) {
     return params;
 }
 
-function addCarouselImageParams(params, post) {
+function addCarouselImageParams(params: InstagramMediaParams, post: InstagramPublishRequest): InstagramMediaParams {
     params.image_url = post.mediaUrl;
     params.is_carousel_item = true;
     return params;
 }
 
-function addCarouselVideoParams(params, post) {
+function addCarouselVideoParams(params: InstagramMediaParams, post: InstagramPublishRequest): InstagramMediaParams {
     params.media_type = 'VIDEO';
     params.video_url = post.mediaUrl;
     params.is_carousel_item = true;
     return params;
 }
 
-function addReelParams(params, post) {
+function addReelParams(params: InstagramMediaParams, post: InstagramPublishRequest): InstagramMediaParams {
     const { mediaUrl, caption, shareToFeed, coverUrl, collaborators, audioName, thumbOffset, locationId, userTags } = post;
     params.media_type = 'REELS';
     params.video_url = mediaUrl;
@@ -36,7 +57,7 @@ function addReelParams(params, post) {
     return params;
 }
 
-function addStoryParams(params, post) {
+function addStoryParams(params: InstagramMediaParams, post: InstagramPublishRequest): InstagramMediaParams {
     const { mediaUrl, userTags } = post;
     params.media_type = 'STORIES';
     if (mediaUrl?.match(/\.(mp4|mov|avi|webm)/i)) {
@@ -48,7 +69,7 @@ function addStoryParams(params, post) {
     return params;
 }
 
-function addPhotoParams(params, post) {
+function addPhotoParams(params: InstagramMediaParams, post: InstagramPublishRequest): InstagramMediaParams {
     const { mediaUrl, caption, locationId, userTags, altText } = post;
     params.image_url = mediaUrl;
     if (caption) params.caption = caption;
@@ -59,8 +80,8 @@ function addPhotoParams(params, post) {
 }
 
 // scripts/publish-scheduled.js keeps its own copy because it must stay dependency-free
-export function buildMediaParams(post, accessToken) {
-    const params = { access_token: accessToken };
+export function buildMediaParams(post: InstagramPublishRequest, accessToken: string): InstagramMediaParams {
+    const params: InstagramMediaParams = { access_token: accessToken };
     const { mediaType } = post;
     if (mediaType === 'CAROUSEL') return addCarouselParams(params, post);
     if (mediaType === 'CAROUSEL_ITEM_IMAGE') return addCarouselImageParams(params, post);

@@ -1,3 +1,5 @@
+import type { InstagramContentTypeSummary } from './instagram.ts';
+
 export type Platform = 'youtube' | 'instagram' | 'reddit';
 
 export interface YouTubeThumbnail {
@@ -7,6 +9,13 @@ export interface YouTubeThumbnail {
 }
 
 export type YouTubeThumbnails = Partial<Record<'default' | 'medium' | 'high' | 'standard' | 'maxres', YouTubeThumbnail>>;
+
+// fetchChannelData() flattens each size to its url, and accounts store that shape
+export interface ChannelThumbnails {
+    default: string;
+    medium: string;
+    high: string;
+}
 
 // one row of `accounts`: id and platform are columns, every other field lives in the data jsonb
 export interface Account {
@@ -22,7 +31,7 @@ export interface Account {
     customUrl?: string;
     publishedAt?: string;
     country?: string;
-    thumbnails?: YouTubeThumbnails;
+    thumbnails?: ChannelThumbnails;
     subscriberCount?: number;
     viewCount?: number;
     videoCount?: number;
@@ -36,7 +45,8 @@ export interface Account {
     username?: string;
 
     // instagram
-    igUserId?: string;
+    // null when neither the profile nor the request had an id
+    igUserId?: string | null;
     biography?: string;
     website?: string;
     profilePictureUrl?: string;
@@ -108,6 +118,17 @@ export interface ScheduledPost {
     error?: string | null;
 }
 
+export interface ScheduledPublishFailure {
+    id: string;
+    error: string;
+}
+
+// processScheduledPosts() output; the process-scheduled routes add success and timestamp
+export interface ScheduledPublishRun {
+    processed: number;
+    errors: ScheduledPublishFailure[];
+}
+
 // one row of `tracked_posts`; fields refreshed from the platform live in the data jsonb
 export interface TrackedPost {
     id: string;
@@ -121,3 +142,46 @@ export interface TrackedPost {
     updatedAt: string;
     [field: string]: unknown;
 }
+
+// one entry of the refresh-all response, in the same order as the accounts
+export interface AccountRefreshResult {
+    id: string;
+    success: boolean;
+    error?: string;
+}
+
+// an account whose analytics cache is empty; syncing is true once a background fetch started
+export interface PendingAccountSummary {
+    id: string;
+    cacheWarmed: false;
+    syncing: boolean;
+}
+
+export interface RedditAccountSummary {
+    id: string;
+    cacheWarmed: true;
+    fetchedPosts: number;
+    totalScore: number;
+    totalComments: number;
+}
+
+export interface InstagramAccountSummary {
+    id: string;
+    cacheWarmed: true;
+    totalLikes: number;
+    totalComments: number;
+    totalViews: number;
+    contentTypes: InstagramContentTypeSummary;
+}
+
+export interface YouTubeAccountSummary {
+    id: string;
+    cacheWarmed: true;
+    totalLikes: number;
+    totalComments: number;
+}
+
+export type AccountSummary = PendingAccountSummary | RedditAccountSummary | InstagramAccountSummary | YouTubeAccountSummary;
+
+// the overview's analyticsCache, keyed by account id; accounts whose cache read failed are left out
+export type OverviewAnalyticsCache = Record<string, AccountSummary>;

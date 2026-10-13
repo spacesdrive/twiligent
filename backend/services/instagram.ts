@@ -6,3 +6,9 @@ export {
 export { CONTENT_TYPES, summarizeContentTypes } from './instagramContentTypes.ts';
 export { computeInstagramAnalytics } from './instagramAnalytics.ts';
 export { buildMediaParams } from './instagramPublishing.ts';
+export type {
+    GraphParams, InstagramApiError, InstagramApiErrorBody, InstagramApiIdResponse, InstagramApiContainerStatus,
+} from './instagramApi.ts';
+export type { InstagramApiToken, InstagramTokenResult } from './instagramTokens.ts';
+export type { InstagramApiMedia, InstagramApiInsight } from './instagramMedia.ts';
+export type { InstagramMediaParams } from './instagramPublishing.ts';

@@ -1,15 +1,20 @@
-export function newAccountId() {
+import type { Account, NewAccount } from '../../shared/types/domain.ts';
+import type { YouTubeChannelData } from '../../shared/types/youtube.ts';
+import type { RedditProfile } from '../../shared/types/reddit.ts';
+import type { InstagramProfile } from '../../shared/types/instagram.ts';
+
+export function newAccountId(): string {
     return Date.now().toString() + Math.random().toString(36).substring(2, 6);
 }
 
 // a token without a known lifetime is stored with no expiry
-export function tokenExpiryIso(expiresIn) {
+export function tokenExpiryIso(expiresIn: number): string | null {
     return expiresIn > 0
         ? new Date(Date.now() + expiresIn * 1000).toISOString()
         : null;
 }
 
-export function buildYouTubeAccount(channelData) {
+export function buildYouTubeAccount(channelData: YouTubeChannelData): NewAccount {
     return {
         id: newAccountId(),
         channelId: channelData.channelId,
@@ -32,7 +37,7 @@ export function buildYouTubeAccount(channelData) {
     };
 }
 
-export function buildRedditAccount(profile, cookie) {
+export function buildRedditAccount(profile: RedditProfile, cookie: string): Account {
     return {
         id: newAccountId(),
         platform: 'reddit',
@@ -49,7 +54,7 @@ export function buildRedditAccount(profile, cookie) {
     };
 }
 
-export function buildInstagramAccount(profile, accessToken, expiresIn) {
+export function buildInstagramAccount(profile: InstagramProfile, accessToken: string, expiresIn: number): Account {
     return {
         id: newAccountId(),
         platform: 'instagram',

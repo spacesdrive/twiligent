@@ -1,11 +1,28 @@
 import { DAY_NAMES, roundedAverage, pickHighest, monthKey } from './analyticsMath.ts';
+import type {
+    InstagramDayStats, InstagramHourStats, InstagramMedia, InstagramMonthStats, InstagramTiming,
+} from '../../shared/types/instagram.ts';
 
-function emptyBuckets(size) {
+interface EngagementBucket {
+    count: number;
+    likes: number;
+    comments: number;
+}
+
+interface MonthTotals {
+    posts: number;
+    likes: number;
+    comments: number;
+}
+
+function emptyBuckets(size: number): EngagementBucket[] {
     return Array(size).fill(null).map(() => ({ count: 0, likes: 0, comments: 0 }));
 }
 
 // dates drops bad timestamps yet is indexed by media, matching stored analytics
-function fillBuckets(buckets, dates, media, bucketIndexOf) {
+function fillBuckets(
+    buckets: EngagementBucket[], dates: Date[], media: InstagramMedia[], bucketIndexOf: (date: Date) => number,
+): EngagementBucket[] {
     dates.forEach((date, i) => {
         const bucket = buckets[bucketIndexOf(date)];
         bucket.count++;
@@ -15,7 +32,7 @@ function fillBuckets(buckets, dates, media, bucketIndexOf) {
     return buckets;
 }
 
-function buildPostsByDayOfWeek(dates, media) {
+function buildPostsByDayOfWeek(dates: Date[], media: InstagramMedia[]): InstagramDayStats[] {
     const buckets = fillBuckets(emptyBuckets(7), dates, media, date => date.getDay());
     return buckets.map((bucket, i) => ({
         day: DAY_NAMES[i], shortDay: DAY_NAMES[i].slice(0, 3),
@@ -26,7 +43,7 @@ function buildPostsByDayOfWeek(dates, media) {
     }));
 }
 
-function buildPostsByHour(dates, media) {
+function buildPostsByHour(dates: Date[], media: InstagramMedia[]): InstagramHourStats[] {
     const buckets = fillBuckets(emptyBuckets(24), dates, media, date => date.getHours());
     return buckets.map((bucket, i) => ({
         hour: i, label: `${i}:00`,
@@ -35,11 +52,11 @@ function buildPostsByHour(dates, media) {
     }));
 }
 
-function buildMonthlyBreakdown(media) {
-    const months = {};
+function buildMonthlyBreakdown(media: InstagramMedia[]): InstagramMonthStats[] {
+    const months: Record<string, MonthTotals> = {};
     media.forEach(item => {
         const date = new Date(item.timestamp);
-        if (isNaN(date)) return;
+        if (isNaN(date as unknown as number)) return;
         const key = monthKey(date);
         if (!months[key]) months[key] = { posts: 0, likes: 0, comments: 0 };
         months[key].posts++;
@@ -57,7 +74,7 @@ function buildMonthlyBreakdown(media) {
         }));
 }
 
-export function summarizeTiming(dates, media) {
+export function summarizeTiming(dates: Date[], media: InstagramMedia[]): InstagramTiming {
     const postsByDayOfWeek = buildPostsByDayOfWeek(dates, media);
     const postsByHour = buildPostsByHour(dates, media);
     const monthlyBreakdown = buildMonthlyBreakdown(media);

@@ -1,9 +1,12 @@
 import { roundedAverage } from './analyticsMath.ts';
+import type {
+    InstagramContentType, InstagramContentTypeStatsMap, InstagramContentTypeSummary, InstagramMedia,
+} from '../../shared/types/instagram.ts';
 
-export const CONTENT_TYPES = ['reel', 'post', 'video'];
+export const CONTENT_TYPES: InstagramContentType[] = ['reel', 'post', 'video'];
 
-export function summarizeContentTypes(media) {
-    const summary = {};
+export function summarizeContentTypes(media: InstagramMedia[] | null | undefined): InstagramContentTypeSummary {
+    const summary = {} as InstagramContentTypeSummary;
     CONTENT_TYPES.forEach(type => {
         summary[type] = { count: 0, likes: 0, comments: 0, views: 0, viewsReported: 0 };
     });
@@ -20,9 +23,9 @@ export function summarizeContentTypes(media) {
     return summary;
 }
 
-export function buildContentTypeStats(media) {
+export function buildContentTypeStats(media: InstagramMedia[]): InstagramContentTypeStatsMap {
     const summary = summarizeContentTypes(media);
-    const stats = {};
+    const stats = {} as InstagramContentTypeStatsMap;
     CONTENT_TYPES.forEach(type => {
         const totals = summary[type];
         stats[type] = {

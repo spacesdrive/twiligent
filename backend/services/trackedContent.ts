@@ -1,4 +1,9 @@
-export function detectContentType(url) {
+export type TrackedContentType = 'reddit' | 'youtube';
+
+// either a validation error to send back or the fields to merge into the tracked post's data
+export type PatchResult<P> = { error: string; patch?: undefined } | { patch: P; error?: undefined };
+
+export function detectContentType(url: string | null | undefined): TrackedContentType | null {
     const lower = (url || '').toLowerCase();
     if (lower.includes('reddit.com') || lower.includes('redd.it')) return 'reddit';
     if (lower.includes('youtube.com') || lower.includes('youtu.be')) return 'youtube';
@@ -6,7 +11,7 @@ export function detectContentType(url) {
 }
 
 // reddit dropped view_count in 2018 so views are typed in; youtube keeps its own
-export function manualViewsPatch(manualViews, isYouTube) {
+export function manualViewsPatch(manualViews: unknown, isYouTube: boolean): PatchResult<{ manualViews: number | null }> {
     if (isYouTube) return { error: 'YouTube view counts are fetched automatically and cannot be set by hand' };
     if (manualViews === null || manualViews === '') return { patch: { manualViews: null } };
 
@@ -15,7 +20,7 @@ export function manualViewsPatch(manualViews, isYouTube) {
     return { patch: { manualViews: views } };
 }
 
-function parseUrl(value) {
+function parseUrl(value: unknown): URL | null {
     try {
         return new URL(String(value));
     } catch {
@@ -25,7 +30,7 @@ function parseUrl(value) {
 }
 
 // reddit has no thumbnail, so the browser uploads one; youtube keeps its own
-export function imageUrlPatch(imageUrl, isYouTube) {
+export function imageUrlPatch(imageUrl: unknown, isYouTube: boolean): PatchResult<{ imageUrl: string | null }> {
     if (isYouTube) return { error: 'Images can only be attached to Reddit posts' };
     if (imageUrl === null || imageUrl === '') return { patch: { imageUrl: null } };
 

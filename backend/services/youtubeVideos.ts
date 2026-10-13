@@ -1,6 +1,8 @@
 import { ytFetch, optionalCount } from './youtubeApi.ts';
+import type { YouTubeApiError, YouTubeApiListResponse, YouTubeApiParams, YouTubeApiPlaylistItem, YouTubeApiVideo } from './youtubeApi.ts';
+import type { YouTubeVideo } from '../../shared/types/youtube.ts';
 
-export function normalizeYouTubeVideo(video) {
+export function normalizeYouTubeVideo(video: YouTubeApiVideo): YouTubeVideo {
     const { snippet, contentDetails, statistics, status } = video;
     return {
         videoId: video.id,
@@ -33,29 +35,31 @@ export function normalizeYouTubeVideo(video) {
     };
 }
 
-async function fetchPlaylistPage(playlistId, pageToken, apiKey) {
-    const params = { part: 'snippet,contentDetails', playlistId, maxResults: '50' };
+async function fetchPlaylistPage(
+    playlistId: string, pageToken: string, apiKey: string,
+): Promise<YouTubeApiListResponse<YouTubeApiPlaylistItem> | null> {
+    const params: YouTubeApiParams = { part: 'snippet,contentDetails', playlistId, maxResults: '50' };
     if (pageToken) params.pageToken = pageToken;
     try {
-        return await ytFetch('playlistItems', params, apiKey);
+        return await ytFetch<YouTubeApiListResponse<YouTubeApiPlaylistItem>>('playlistItems', params, apiKey);
     } catch (err) {
         // youtube reports the uploads playlist missing until the first public video
-        if (err.reason === 'playlistNotFound') return null;
+        if ((err as YouTubeApiError).reason === 'playlistNotFound') return null;
         throw err;
     }
 }
 
-async function fetchVideoDetails(playlistItems, apiKey) {
+async function fetchVideoDetails(playlistItems: YouTubeApiPlaylistItem[], apiKey: string): Promise<YouTubeVideo[]> {
     const videoIds = playlistItems.map(item => item.snippet.resourceId.videoId).join(',');
-    const statsData = await ytFetch('videos', {
+    const statsData = await ytFetch<YouTubeApiListResponse<YouTubeApiVideo>>('videos', {
         part: 'statistics,contentDetails,snippet,status',
         id: videoIds,
     }, apiKey);
     return statsData.items ? statsData.items.map(normalizeYouTubeVideo) : [];
 }
 
-export async function fetchAllVideos(playlistId, apiKey, maxPages = 10) {
-    const allVideos = [];
+export async function fetchAllVideos(playlistId: string, apiKey: string, maxPages = 10): Promise<YouTubeVideo[]> {
+    const allVideos: YouTubeVideo[] = [];
     let pageToken = '';
     let page = 0;
 

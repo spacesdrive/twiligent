@@ -2,10 +2,13 @@ import {
     DAY_NAMES, sumOf, roundedAverage, medianOf, countWithinDays, postFrequency,
     consistencyScore, bestToAverageRatio, pickHighest, monthKey,
 } from './analyticsMath.ts';
+import type {
+    RedditAnalytics, RedditPost, RedditProfile, RedditSubredditStats, RedditMediaType, RedditMonthStats,
+} from '../../shared/types/reddit.ts';
 
 const MAX_SUBREDDITS = 20;
 
-function emptyRedditAnalytics() {
+function emptyRedditAnalytics(): RedditAnalytics {
     return {
         fetchedPosts: 0, totalScore: 0, avgScore: 0, medianScore: 0,
         totalComments: 0, avgComments: 0, avgUpvoteRatio: 0,
@@ -20,7 +23,10 @@ function emptyRedditAnalytics() {
     };
 }
 
-function summarizeScores(posts) {
+type ScoreSummary = Pick<RedditAnalytics,
+    'totalScore' | 'avgScore' | 'medianScore' | 'totalComments' | 'avgComments' | 'avgUpvoteRatio' | 'totalAwards' | 'avgAwards'>;
+
+function summarizeScores(posts: RedditPost[]): ScoreSummary {
     const totalScore = sumOf(posts, post => post.score);
     const totalComments = sumOf(posts, post => post.numComments);
     const totalAwards = sumOf(posts, post => post.awardsCount ?? 0);
@@ -37,8 +43,10 @@ function summarizeScores(posts) {
     };
 }
 
-function buildSubredditBreakdown(posts) {
-    const subreddits = {};
+type SubredditTotals = Omit<RedditSubredditStats, 'avgScore' | 'avgComments'>;
+
+function buildSubredditBreakdown(posts: RedditPost[]): RedditSubredditStats[] {
+    const subreddits: Record<string, SubredditTotals> = {};
     posts.forEach(post => {
         const name = post.subreddit;
         if (!subreddits[name]) subreddits[name] = { subreddit: name, posts: 0, totalScore: 0, totalComments: 0 };
@@ -56,14 +64,14 @@ function buildSubredditBreakdown(posts) {
         .slice(0, MAX_SUBREDDITS);
 }
 
-function buildMediaTypeDistribution(posts) {
-    const distribution = {};
+function buildMediaTypeDistribution(posts: RedditPost[]): Partial<Record<RedditMediaType, number>> {
+    const distribution: Partial<Record<RedditMediaType, number>> = {};
     posts.forEach(post => { distribution[post.mediaType] = (distribution[post.mediaType] ?? 0) + 1; });
     return distribution;
 }
 
 // dates skips undated posts yet is indexed by posts, matching stored analytics
-function fillTimeBuckets(dates, posts) {
+function fillTimeBuckets(dates: Date[], posts: RedditPost[]) {
     const dayBuckets = Array(7).fill(null).map(() => ({ count: 0, score: 0, comments: 0 }));
     const hourBuckets = Array(24).fill(null).map(() => ({ count: 0, score: 0 }));
     dates.forEach((date, i) => {
@@ -78,7 +86,9 @@ function fillTimeBuckets(dates, posts) {
     return { dayBuckets, hourBuckets };
 }
 
-function summarizeTiming(dates, posts) {
+type TimingSummary = Pick<RedditAnalytics, 'postsByDayOfWeek' | 'bestPostingDay' | 'postsByHour' | 'bestPostingHour'>;
+
+function summarizeTiming(dates: Date[], posts: RedditPost[]): TimingSummary {
     const { dayBuckets, hourBuckets } = fillTimeBuckets(dates, posts);
     const postsByDayOfWeek = dayBuckets.map((bucket, i) => ({
         day: DAY_NAMES[i], shortDay: DAY_NAMES[i].slice(0, 3),
@@ -99,12 +109,18 @@ function summarizeTiming(dates, posts) {
     };
 }
 
-function buildMonthlyBreakdown(posts) {
-    const months = {};
+interface MonthTotals {
+    posts: number;
+    score: number;
+    comments: number;
+}
+
+function buildMonthlyBreakdown(posts: RedditPost[]): RedditMonthStats[] {
+    const months: Record<string, MonthTotals> = {};
     posts.forEach(post => {
         if (!post.createdAt) return;
         const date = new Date(post.createdAt);
-        if (isNaN(date)) return;
+        if (isNaN(date as unknown as number)) return;
         const key = monthKey(date);
         if (!months[key]) months[key] = { posts: 0, score: 0, comments: 0 };
         months[key].posts++;
@@ -119,7 +135,7 @@ function buildMonthlyBreakdown(posts) {
         }));
 }
 
-function countRecentPosts(dates) {
+function countRecentPosts(dates: Date[]): Pick<RedditAnalytics, 'postsLast7Days' | 'postsLast30Days' | 'postsLast90Days'> {
     const now = Date.now();
     return {
         postsLast7Days: countWithinDays(dates, now, 7),
@@ -128,12 +144,12 @@ function countRecentPosts(dates) {
     };
 }
 
-export function computeRedditAnalytics(_profile, posts) {
+export function computeRedditAnalytics(_profile: RedditProfile, posts: RedditPost[] | null | undefined): RedditAnalytics {
     if (!posts || posts.length === 0) return emptyRedditAnalytics();
 
     const scores = summarizeScores(posts);
     const byScore = [...posts].sort((first, second) => second.score - first.score);
-    const dates = posts.map(post => (post.createdAt ? new Date(post.createdAt) : null)).filter(Boolean);
+    const dates = posts.map(post => (post.createdAt ? new Date(post.createdAt) : null)).filter(Boolean) as Date[];
     const monthlyBreakdown = buildMonthlyBreakdown(posts);
 
     return {
