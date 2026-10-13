@@ -3,8 +3,13 @@ import MetricBox from '@/components/MetricBox';
 import SurfaceBox from '@/components/SurfaceBox';
 import { EmptyState } from '@/components/StateViews';
 import { fmtNum, fmtNumFull } from '../../../utils/formatters';
+import type { ChannelDetails } from './channelChartData.ts';
 
-export default function ChannelNoVideos({ channel }) {
+export interface ChannelNoVideosProps {
+  channel: ChannelDetails;
+}
+
+export default function ChannelNoVideos({ channel }: ChannelNoVideosProps) {
   return (
     <>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">

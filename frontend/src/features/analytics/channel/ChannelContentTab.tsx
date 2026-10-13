@@ -5,8 +5,13 @@ import ChartPanel from '@/components/ChartPanel';
 import { SERIES, axisProps, axisTick, gridProps, legendStyle, tooltipCursor, tooltipStyle } from '@/lib/chart';
 import { fmtPercent } from '../../../utils/formatters';
 import { categoryDataOf, durationDataOf, viewRangeDataOf } from './channelChartData.ts';
+import type { VideoAnalytics } from '@shared/types/youtube.ts';
 
-export default function ChannelContentTab({ analytics }) {
+export interface ChannelContentTabProps {
+  analytics: VideoAnalytics;
+}
+
+export default function ChannelContentTab({ analytics }: ChannelContentTabProps) {
   const durationData = durationDataOf(analytics.durationDistribution);
   const categoryData = categoryDataOf(analytics.categoryDistribution);
   return (

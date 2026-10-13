@@ -6,8 +6,13 @@ import { SERIES, axisProps, gridProps, tooltipCursor, tooltipStyle } from '@/lib
 import { fmtPercent } from '../../../utils/formatters';
 import MetricGrid from './MetricGrid';
 import TagCloud from './TagCloud';
+import type { VideoAnalytics } from '@shared/types/youtube.ts';
 
-export default function ChannelTagsTab({ analytics }) {
+export interface ChannelTagsTabProps {
+  analytics: VideoAnalytics;
+}
+
+export default function ChannelTagsTab({ analytics }: ChannelTagsTabProps) {
   const tags = analytics.tagFrequency || [];
   return (
     <>

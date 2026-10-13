@@ -9,17 +9,30 @@ import SurfaceBox from '@/components/SurfaceBox';
 import Pager from '@/components/Pager';
 import { EmptyState } from '@/components/StateViews';
 import { pageSlice } from '@/lib/library';
+import type { PageSlice } from '@/lib/library';
 import { cn } from '@/lib/utils';
 import { fmtNum } from '../../../utils/formatters';
 import { useChannelVideos } from './useChannelVideos';
 import { filterAndSortVideos, nextSort, videoStatsOf, videosDescription } from './videoLibrary.ts';
+import type { LibraryVideo, VideoSort, VideoSortField } from './videoLibrary.ts';
 import VideoFilters from './VideoFilters';
 import VideoListTable from './VideoListTable';
 import VideoGrid from './VideoGrid';
+import type { LayoutMode } from './LayoutToggle';
 
 const ITEMS_PER_PAGE = 25;
 
-function VideoResults({ filtered, paged, viewMode, sort, onSort, showChannel, onClearFilters }) {
+interface VideoResultsProps {
+  filtered: LibraryVideo[];
+  paged: PageSlice<LibraryVideo>;
+  viewMode: LayoutMode;
+  sort: VideoSort;
+  onSort: (field: VideoSortField) => void;
+  showChannel: boolean;
+  onClearFilters: () => void;
+}
+
+function VideoResults({ filtered, paged, viewMode, sort, onSort, showChannel, onClearFilters }: VideoResultsProps) {
   if (filtered.length === 0) {
     return (
       <SurfaceBox>
@@ -42,8 +55,8 @@ export default function VideoExplorer() {
   const [search, setSearch] = useState('');
   const [channelFilter, setChannelFilter] = useState('all');
   const [tier, setTier] = useState('all');
-  const [sort, setSort] = useState({ field: 'viewCount', order: 'desc' });
-  const [viewMode, setViewMode] = useState('table');
+  const [sort, setSort] = useState<VideoSort>({ field: 'viewCount', order: 'desc' });
+  const [viewMode, setViewMode] = useState<LayoutMode>('table');
   const [page, setPage] = useState(1);
 
   const filtered = useMemo(
@@ -53,13 +66,13 @@ export default function VideoExplorer() {
   const paged = pageSlice(filtered, page, ITEMS_PER_PAGE);
   const stats = useMemo(() => videoStatsOf(filtered), [filtered]);
 
-  function resetPage(setter) {
-    return value => {
+  function resetPage<T>(setter: (value: T) => void) {
+    return (value: T) => {
       setter(value);
       setPage(1);
     };
   }
-  const handleSort = field => setSort(prev => nextSort(prev, field));
+  const handleSort = (field: VideoSortField) => setSort(prev => nextSort(prev, field));
   const clearFilters = () => { setSearch(''); setTier('all'); setChannelFilter('all'); setPage(1); };
 
   const header = (

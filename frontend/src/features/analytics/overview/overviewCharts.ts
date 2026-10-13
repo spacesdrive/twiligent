@@ -1,37 +1,65 @@
 import { PLATFORM_META } from '../../../lib/accounts.ts';
 import { SERIES } from '../../../lib/chart.ts';
+import type { TrackedMetrics } from '../../../utils/trackedContent.ts';
+import type { Platform } from '../../../../../shared/types/domain.ts';
+import type { OverviewAccountFields } from './overviewStats.ts';
+import type { CategoryStat } from './overviewTrackedStats.ts';
+
+export type AccountGroups = Record<Platform, OverviewAccountFields[]>;
+
+export type AudiencePointType = Platform | 'category';
+
+export interface AudiencePoint {
+  name: string;
+  value: number;
+  type: AudiencePointType;
+}
+
+export interface AudienceLegendItem {
+  color: string;
+  label: string;
+}
+
+// the tracked post fields the charts read
+export interface ChartTrackedItem extends TrackedMetrics {
+  title?: string;
+  label?: string;
+  url?: string;
+}
+
+export type CategoryChartStat = Pick<CategoryStat, 'category' | 'rdKarma' | 'views' | 'ytComments' | 'rdComments'>;
 
 export const CATEGORY_SERIES = SERIES.neutral;
 
 const CHART_ITEMS = 12;
 
-function shortName(text, max) {
+function shortName(text: string, max: number): string {
   return text.slice(0, max) + (text.length > max ? '…' : '');
 }
 
-function itemName(item) {
+function itemName(item: ChartTrackedItem): string {
   return (item.title || item.label || item.url || '').slice(0, 16);
 }
 
 // karma only for categories: adding views would mix reach into an audience chart
-export function audienceChartDataOf(groups, categoryStats) {
+export function audienceChartDataOf(groups: AccountGroups, categoryStats: CategoryChartStat[]): AudiencePoint[] {
   return [
-    ...groups.youtube.map(account => ({
+    ...groups.youtube.map((account): AudiencePoint => ({
       name:  shortName(account.title || '', 12),
       value: account.subscriberCount || 0,
       type:  'youtube',
     })),
-    ...groups.instagram.map(account => ({
+    ...groups.instagram.map((account): AudiencePoint => ({
       name:  shortName(account.title || account.username || '', 12),
       value: account.followersCount || 0,
       type:  'instagram',
     })),
-    ...groups.reddit.map(account => ({
+    ...groups.reddit.map((account): AudiencePoint => ({
       name:  `u/${(account.username || '')}`.slice(0, 12),
       value: account.totalKarma || 0,
       type:  'reddit',
     })),
-    ...categoryStats.map(stat => ({
+    ...categoryStats.map((stat): AudiencePoint => ({
       name:  shortName(stat.category, 12),
       value: stat.rdKarma,
       type:  'category',
@@ -39,21 +67,21 @@ export function audienceChartDataOf(groups, categoryStats) {
   ];
 }
 
-export function audienceLegendOf(groups, categoryStats) {
+export function audienceLegendOf(groups: AccountGroups, categoryStats: CategoryChartStat[]): AudienceLegendItem[] {
   return [
     groups.youtube.length   ? { color: PLATFORM_META.youtube.series,   label: 'YouTube subscribers' } : null,
     groups.instagram.length ? { color: PLATFORM_META.instagram.series, label: 'Instagram followers' } : null,
     groups.reddit.length    ? { color: PLATFORM_META.reddit.series,    label: 'Reddit karma' }        : null,
     categoryStats.length    ? { color: CATEGORY_SERIES,                label: 'Category karma' }      : null,
-  ].filter(Boolean);
+  ].filter(Boolean) as AudienceLegendItem[];
 }
 
-export function audienceDotColor(type) {
+export function audienceDotColor(type: AudiencePointType): string {
   if (type === 'category') return CATEGORY_SERIES;
   return PLATFORM_META[type]?.series;
 }
 
-export function commentByContentOf(trackedContent) {
+export function commentByContentOf(trackedContent: ChartTrackedItem[]) {
   return trackedContent
     .map(item => ({
       name: itemName(item),
@@ -63,7 +91,7 @@ export function commentByContentOf(trackedContent) {
     .slice(0, CHART_ITEMS);
 }
 
-export function engagementByContentOf(trackedContent) {
+export function engagementByContentOf(trackedContent: ChartTrackedItem[]) {
   return trackedContent
     .map(item => ({
       name: itemName(item),
@@ -73,19 +101,19 @@ export function engagementByContentOf(trackedContent) {
     .slice(0, CHART_ITEMS);
 }
 
-export function categoryViewDataOf(categoryStats) {
+export function categoryViewDataOf(categoryStats: CategoryChartStat[]) {
   return categoryStats
     .map(stat => ({ name: stat.category.slice(0, 16), views: stat.views }))
     .sort((a, b) => b.views - a.views);
 }
 
-export function commentByCategoryOf(categoryStats) {
+export function commentByCategoryOf(categoryStats: CategoryChartStat[]) {
   return categoryStats
     .map(stat => ({ name: stat.category.slice(0, 16), comments: stat.ytComments + stat.rdComments }))
     .sort((a, b) => b.comments - a.comments);
 }
 
-export function karmaByAccountOf(redditAccounts) {
+export function karmaByAccountOf(redditAccounts: OverviewAccountFields[]) {
   return [...redditAccounts]
     .sort((a, b) => (b.postKarma || 0) - (a.postKarma || 0))
     .map(account => ({ name: `u/${account.username || ''}`.slice(0, 16), karma: account.postKarma || 0 }));

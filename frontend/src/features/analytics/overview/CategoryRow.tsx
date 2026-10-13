@@ -1,9 +1,16 @@
 import { useNavigate } from 'react-router-dom';
 import { Tag } from 'lucide-react';
 import ListRow from '@/components/ListRow';
+import type { ReactNode } from 'react';
 import { categoryMeta } from './overviewLabels.ts';
+import type { CategoryStat } from './overviewTrackedStats.ts';
 
-export default function CategoryRow({ stat, trailing }) {
+export interface CategoryRowProps {
+  stat: CategoryStat;
+  trailing: ReactNode;
+}
+
+export default function CategoryRow({ stat, trailing }: CategoryRowProps) {
   const navigate = useNavigate();
   return (
     <ListRow

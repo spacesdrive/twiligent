@@ -2,12 +2,13 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAppContext } from '../../../context/AppContext';
 import { api } from '../../../services/api';
 import { mergeAccountMedia } from './reelsLibrary.ts';
+import type { LibraryMedia } from './reelsLibrary.ts';
 
 // one failed Instagram account does not hide media from the rest
 export function useInstagramMedia() {
   const { accounts, showToast } = useAppContext();
   const igAccounts = useMemo(() => accounts.filter(account => account.platform === 'instagram'), [accounts]);
-  const [media, setMedia] = useState([]);
+  const [media, setMedia] = useState<LibraryMedia[]>([]);
   const [loading, setLoading] = useState(true);
 
   const loadAllMedia = useCallback(async () => {
@@ -16,7 +17,7 @@ export function useInstagramMedia() {
       const results = await Promise.allSettled(igAccounts.map(account => api.getIGMedia(account.id)));
       setMedia(mergeAccountMedia(igAccounts, results));
     } catch (err) {
-      showToast(`Couldn't load Instagram content. ${err.message}`, 'error');
+      showToast(`Couldn't load Instagram content. ${(err as Error).message}`, 'error');
     } finally {
       setLoading(false);
     }

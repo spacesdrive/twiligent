@@ -7,8 +7,15 @@ import { fmtNum } from '../../../utils/formatters';
 import { uploadsByMonthOf } from './channelChartData.ts';
 import MetricGrid from './MetricGrid';
 import TrendArea from './TrendArea';
+import type { VideoAnalytics } from '@shared/types/youtube.ts';
+import type { ChannelDetails } from './channelChartData.ts';
 
-export default function ChannelGrowthTab({ channel, analytics }) {
+export interface ChannelGrowthTabProps {
+  channel: ChannelDetails;
+  analytics: VideoAnalytics;
+}
+
+export default function ChannelGrowthTab({ channel, analytics }: ChannelGrowthTabProps) {
   return (
     <>
       <MetricGrid>

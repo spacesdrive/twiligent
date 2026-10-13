@@ -2,8 +2,13 @@ import React from 'react';
 import { Eye, MessageSquare, ThumbsUp } from 'lucide-react';
 import MediaCard, { MediaChip } from '@/components/MediaCard';
 import { fmtNum, fmtDuration, fmtCount } from '../../../utils/formatters';
+import type { LibraryVideo } from '../videos/videoLibrary.ts';
 
-export default function ShortsGrid({ shorts }) {
+export interface ShortsGridProps {
+  shorts: LibraryVideo[];
+}
+
+export default function ShortsGrid({ shorts }: ShortsGridProps) {
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
       {shorts.map((video, i) => (

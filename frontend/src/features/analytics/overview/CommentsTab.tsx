@@ -8,8 +8,13 @@ import { EmptyState } from '@/components/StateViews';
 import { SERIES } from '@/lib/chart';
 import { fmtNum, fmtPercent } from '../../../utils/formatters';
 import { pluralWord } from './overviewLabels.ts';
+import type { OverviewStats } from './useOverviewStats';
 
-export default function CommentsTab({ stats }) {
+export interface CommentsTabProps {
+  stats: OverviewStats;
+}
+
+export default function CommentsTab({ stats }: CommentsTabProps) {
   const { summary, charts } = stats;
   const { totalComments, totalContent } = summary;
   return (

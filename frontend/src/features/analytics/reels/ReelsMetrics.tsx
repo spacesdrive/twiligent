@@ -1,12 +1,25 @@
 import { Clapperboard, Eye, Film, Image } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import MetricBox from '@/components/MetricBox';
 import { fmtNum } from '../../../utils/formatters';
 import { IG_CONTENT_TYPES, IG_CONTENT_TYPE_META } from '../../../utils/instagramContent';
+import type { InstagramContentType } from '@shared/types/instagram.ts';
 import { typeViewsSubtitle, viewTotalsOf } from './reelsLibrary.ts';
+import type { MediaTypeTotal, MediaTypeTotals } from './reelsLibrary.ts';
 
-const CONTENT_TYPE_ICONS = { reel: Clapperboard, post: Image, video: Film };
+interface TypeMetricProps {
+  type: InstagramContentType;
+  typeTotal: MediaTypeTotal;
+}
 
-function TypeMetric({ type, typeTotal }) {
+export interface ReelsMetricsProps {
+  typeTotals: MediaTypeTotals;
+  itemCount: number;
+}
+
+const CONTENT_TYPE_ICONS: Record<InstagramContentType, LucideIcon> = { reel: Clapperboard, post: Image, video: Film };
+
+function TypeMetric({ type, typeTotal }: TypeMetricProps) {
   const Icon = CONTENT_TYPE_ICONS[type];
   return (
     <MetricBox
@@ -19,7 +32,7 @@ function TypeMetric({ type, typeTotal }) {
   );
 }
 
-export default function ReelsMetrics({ typeTotals, itemCount }) {
+export default function ReelsMetrics({ typeTotals, itemCount }: ReelsMetricsProps) {
   const { totalViews, viewsReported } = viewTotalsOf(typeTotals);
   return (
     <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">

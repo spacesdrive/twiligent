@@ -7,8 +7,13 @@ import { fmtNum, fmtPercent } from '../../../utils/formatters';
 import { likesPerComment, rateOf } from './channelChartData.ts';
 import ChannelVideoTable from './ChannelVideoTable';
 import TrendArea from './TrendArea';
+import type { VideoAnalytics } from '@shared/types/youtube.ts';
 
-export default function ChannelEngagementTab({ analytics }) {
+export interface ChannelEngagementTabProps {
+  analytics: VideoAnalytics;
+}
+
+export default function ChannelEngagementTab({ analytics }: ChannelEngagementTabProps) {
   return (
     <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">

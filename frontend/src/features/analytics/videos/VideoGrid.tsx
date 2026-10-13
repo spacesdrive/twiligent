@@ -2,8 +2,14 @@ import { Eye, MessageSquare, ThumbsUp } from 'lucide-react';
 import MediaCard, { MediaChip } from '@/components/MediaCard';
 import { fmtCount, fmtDuration, fmtNum, timeAgo } from '../../../utils/formatters';
 import { watchUrl } from './videoLibrary.ts';
+import type { LibraryVideo } from './videoLibrary.ts';
 
-export default function VideoGrid({ items, showChannel }) {
+export interface VideoGridProps {
+  items: LibraryVideo[];
+  showChannel: boolean;
+}
+
+export default function VideoGrid({ items, showChannel }: VideoGridProps) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
       {items.map((video, i) => (

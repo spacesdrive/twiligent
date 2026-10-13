@@ -5,10 +5,25 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import SurfaceBox from '@/components/SurfaceBox';
 import { fmtCount, fmtDate, fmtDuration, fmtNum, fmtPercent } from '../../../utils/formatters';
+import type { PageSlice } from '@/lib/library';
 import { watchUrl } from './videoLibrary.ts';
+import type { LibraryVideo, VideoSort, VideoSortField } from './videoLibrary.ts';
 import VideoSortHeader from './VideoSortHeader';
 
-function VideoRow({ video, rank, showChannel }) {
+interface VideoRowProps {
+  video: LibraryVideo;
+  rank: number;
+  showChannel: boolean;
+}
+
+export interface VideoListTableProps {
+  paged: PageSlice<LibraryVideo>;
+  sort: VideoSort;
+  onSort: (field: VideoSortField) => void;
+  showChannel: boolean;
+}
+
+function VideoRow({ video, rank, showChannel }: VideoRowProps) {
   return (
     <TableRow>
       <TableCell className="text-right font-mono text-caption text-ink-faint">{rank}</TableCell>
@@ -43,7 +58,7 @@ function VideoRow({ video, rank, showChannel }) {
   );
 }
 
-export default function VideoListTable({ paged, sort, onSort, showChannel }) {
+export default function VideoListTable({ paged, sort, onSort, showChannel }: VideoListTableProps) {
   return (
     <SurfaceBox content={false} className="overflow-hidden">
       <Table>

@@ -4,8 +4,13 @@ import { RankNumber } from '@/components/ListRow';
 import { fmtNum, fmtNumFull, timeAgo } from '../../../utils/formatters';
 import AccountCell from './AccountCell';
 import OpenAnalytics from './OpenAnalytics';
+import type { AppAccount } from '../../../utils/formatters';
 
-export default function YouTubeViewsTable({ accounts }) {
+export interface YouTubeViewsTableProps {
+  accounts: AppAccount[];
+}
+
+export default function YouTubeViewsTable({ accounts }: YouTubeViewsTableProps) {
   return (
     <SurfaceBox title="YouTube views by channel" content={false} className="overflow-hidden">
       <Table>

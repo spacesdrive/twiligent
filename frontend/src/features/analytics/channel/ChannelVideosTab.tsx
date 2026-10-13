@@ -1,15 +1,21 @@
+import type { TooltipValueType } from 'recharts';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, Legend } from 'recharts';
 import ChartPanel from '@/components/ChartPanel';
 import { SERIES, axisProps, axisTick, gridProps, legendStyle, tooltipCursor, tooltipStyle } from '@/lib/chart';
 import { fmtNum, fmtNumFull } from '../../../utils/formatters';
 import { topVideoRowsOf, topVideosChartOf } from './channelChartData.ts';
 import ChannelVideoTable from './ChannelVideoTable';
+import type { VideoAnalytics } from '@shared/types/youtube.ts';
 
-function fullNumber(value) {
-  return fmtNumFull(value);
+function fullNumber(value: TooltipValueType | undefined): string {
+  return fmtNumFull(value as number);
 }
 
-export default function ChannelVideosTab({ analytics }) {
+export interface ChannelVideosTabProps {
+  analytics: VideoAnalytics;
+}
+
+export default function ChannelVideosTab({ analytics }: ChannelVideosTabProps) {
   return (
     <>
       <ChartPanel title="Top 10 videos by views" height={320}>

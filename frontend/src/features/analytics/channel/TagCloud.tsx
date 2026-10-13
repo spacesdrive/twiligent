@@ -1,7 +1,12 @@
 import { Badge } from '@/components/ui/badge';
 import SurfaceBox from '@/components/SurfaceBox';
+import type { YouTubeTagCount } from '@shared/types/youtube.ts';
 
-export default function TagCloud({ tags }) {
+export interface TagCloudProps {
+  tags: YouTubeTagCount[];
+}
+
+export default function TagCloud({ tags }: TagCloudProps) {
   return (
     <SurfaceBox title="Most used tags">
       {tags.length === 0 ? (

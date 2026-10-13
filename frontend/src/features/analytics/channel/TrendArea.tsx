@@ -1,16 +1,27 @@
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip } from 'recharts';
+import type { TooltipValueType } from 'recharts';
 import { axisProps, gridProps, tooltipStyle } from '@/lib/chart';
 import { fmtNum, fmtNumFull } from '../../../utils/formatters';
+import type { YouTubeMonthlyRate, YouTubeMonthlyViews } from '@shared/types/youtube.ts';
 
-function percentTick(value) {
+export interface TrendAreaProps {
+  data: (YouTubeMonthlyViews | YouTubeMonthlyRate)[];
+  dataKey?: string;
+  color: string;
+  name: string;
+  percent?: boolean;
+  gradientId: string;
+}
+
+function percentTick(value: number | string): string {
   return `${value}%`;
 }
 
-function fullNumber(value) {
-  return fmtNumFull(value);
+function fullNumber(value: TooltipValueType | undefined): string {
+  return fmtNumFull(value as number);
 }
 
-export default function TrendArea({ data, dataKey = 'value', color, name, percent = false, gradientId }) {
+export default function TrendArea({ data, dataKey = 'value', color, name, percent = false, gradientId }: TrendAreaProps) {
   return (
     <AreaChart data={data}>
       <defs>

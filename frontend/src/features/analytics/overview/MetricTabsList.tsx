@@ -1,9 +1,16 @@
+import type { ComponentProps } from 'react';
 import { TabsList, TabsTrigger } from '@/components/ui/tabs';
+import type { MetricTab } from './overviewLabels.ts';
 
-export default function MetricTabsList({ tabs }) {
+export interface MetricTabsListProps {
+  tabs: MetricTab[];
+}
+
+export default function MetricTabsList({ tabs }: MetricTabsListProps) {
   return (
     <TabsList
-      variant="none"
+      // "none" is not a declared variant; cva ignores it, so the list gets no variant classes
+      variant={'none' as ComponentProps<typeof TabsList>['variant']}
       aria-label="Overview metrics"
       className="grid w-full grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6"
     >

@@ -1,3 +1,4 @@
+import type { TooltipValueType } from 'recharts';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, PieChart, Pie, Cell, Legend } from 'recharts';
 import { Eye, Flame, VideoIcon } from 'lucide-react';
 import MetricBox from '@/components/MetricBox';
@@ -6,12 +7,17 @@ import { SERIES, axisProps, gridProps, legendStyle, tooltipCursor, tooltipStyle 
 import { fmtNum, fmtNumFull } from '../../../utils/formatters';
 import { shortsComparisonOf, splitDataOf } from './channelChartData.ts';
 import MetricGrid from './MetricGrid';
+import type { VideoAnalytics } from '@shared/types/youtube.ts';
 
-function fullNumber(value) {
-  return fmtNumFull(value);
+function fullNumber(value: TooltipValueType | undefined): string {
+  return fmtNumFull(value as number);
 }
 
-export default function ChannelShortsTab({ analytics }) {
+export interface ChannelShortsTabProps {
+  analytics: VideoAnalytics;
+}
+
+export default function ChannelShortsTab({ analytics }: ChannelShortsTabProps) {
   const splitData = splitDataOf(analytics);
   return (
     <>

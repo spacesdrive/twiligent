@@ -4,11 +4,16 @@ import { RankNumber } from '@/components/ListRow';
 import { PlatformBadge } from '@/components/platform';
 import { accountName, platformOf } from '@/lib/accounts';
 import { timeAgo } from '../../../utils/formatters';
+import type { AppAccount } from '../../../utils/formatters';
 import { accountAudienceLabel, accountContentLabel } from './overviewLabels.ts';
 import AccountCell from './AccountCell';
 import OpenAnalytics from './OpenAnalytics';
 
-export default function AccountsTab({ accounts }) {
+export interface AccountsTabProps {
+  accounts: AppAccount[];
+}
+
+export default function AccountsTab({ accounts }: AccountsTabProps) {
   return (
     <SurfaceBox content={false} className="overflow-hidden">
       <Table>

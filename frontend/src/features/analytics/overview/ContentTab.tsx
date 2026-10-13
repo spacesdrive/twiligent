@@ -9,14 +9,16 @@ import { IG_CONTENT_TYPES } from '../../../utils/instagramContent';
 import { countLabel, igTypeSummary, topContentLabel } from './overviewLabels.ts';
 import AccountRankRow from './AccountRankRow';
 import CategoryRow from './CategoryRow';
+import type { OverviewStats } from './useOverviewStats';
+import type { CategoryStat } from './overviewTrackedStats.ts';
 
-function instagramContentSubtitle(stats) {
+function instagramContentSubtitle(stats: OverviewStats): string {
   const { igTypes } = stats.cacheTotals;
   if (IG_CONTENT_TYPES.some(type => igTypes[type].count > 0)) return igTypeSummary(igTypes, 'count');
   return countLabel(stats.groups.instagram.length, 'account');
 }
 
-function CategoryTrailing({ stat }) {
+function CategoryTrailing({ stat }: { stat: CategoryStat }) {
   return (
     <span className="flex flex-col items-end gap-0.5 text-caption">
       {stat.views > 0 && <span className="font-medium text-ink">{fmtNum(stat.views)} views</span>}
@@ -25,7 +27,11 @@ function CategoryTrailing({ stat }) {
   );
 }
 
-export default function ContentTab({ stats }) {
+export interface ContentTabProps {
+  stats: OverviewStats;
+}
+
+export default function ContentTab({ stats }: ContentTabProps) {
   const { groups, totals, cacheTotals, trackedStats, categoryStats } = stats;
   return (
     <>

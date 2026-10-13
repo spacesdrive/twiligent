@@ -1,20 +1,23 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../../services/api';
+import type { OverviewResponse } from '@shared/types/domain.ts';
+import type { AccountCacheFields, OverviewAccount } from './overviewStats.ts';
 
 const SYNC_POLL_DELAYS = [4000, 8000, 16000];
 
-async function fetchOverview() {
+async function fetchOverview(): Promise<OverviewResponse | null> {
   try {
     const data = await api.getOverview();
-    return data && !data.error ? data : null;
+    // OverviewResponse has no error field; request() already throws on the route's error body
+    return data && !(data as OverviewResponse & { error?: string }).error ? data : null;
   } catch {
     // a failed load keeps the previous overview; the next poll or visit tries again
     return null;
   }
 }
 
-export function useOverviewData(accounts) {
-  const [overviewData, setOverviewData] = useState({ tracked: [], analyticsCache: {} });
+export function useOverviewData(accounts: OverviewAccount[]) {
+  const [overviewData, setOverviewData] = useState<OverviewResponse>({ tracked: [], analyticsCache: {} });
   const [overviewLoading, setOverviewLoading] = useState(true);
   const [syncPolls, setSyncPolls] = useState(0);
 
@@ -29,7 +32,7 @@ export function useOverviewData(accounts) {
 
   // poll with backoff while syncing, then stop so the label never hangs
   const isSyncing = !overviewLoading && syncPolls < SYNC_POLL_DELAYS.length && accounts.some(account => {
-    return overviewData.analyticsCache[account.id]?.syncing === true;
+    return (overviewData.analyticsCache[account.id] as AccountCacheFields | undefined)?.syncing === true;
   });
 
   useEffect(() => {

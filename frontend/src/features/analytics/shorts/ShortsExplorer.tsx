@@ -13,10 +13,11 @@ import { cn } from '@/lib/utils';
 import ShortsFilters from './ShortsFilters';
 import ShortsGrid from './ShortsGrid';
 import { shortsOf, filterAndSortShorts, shortsDescription } from './shortsLibrary.ts';
+import type { ShortsSortField, ShortsSortOption } from './shortsLibrary.ts';
 
 const ITEMS_PER_PAGE = 24;
 
-const SORT_OPTIONS = [
+const SORT_OPTIONS: ShortsSortOption[] = [
   { value: 'viewCount',      label: 'Most viewed' },
   { value: 'likeCount',      label: 'Most liked' },
   { value: 'commentCount',   label: 'Most comments' },
@@ -29,7 +30,7 @@ export default function ShortsExplorer() {
   const [search, setSearch] = useState('');
   const [channelFilter, setChannelFilter] = useState('all');
   const [tier, setTier] = useState('all');
-  const [sortField, setSortField] = useState('viewCount');
+  const [sortField, setSortField] = useState<ShortsSortField>('viewCount');
   const [page, setPage] = useState(1);
 
   const shorts = useMemo(() => shortsOf(videos), [videos]);
@@ -41,8 +42,8 @@ export default function ShortsExplorer() {
 
   const paged = pageSlice(filtered, page, ITEMS_PER_PAGE);
 
-  function resetPage(setter) {
-    return value => {
+  function resetPage<T>(setter: (value: T) => void) {
+    return (value: T) => {
       setter(value);
       setPage(1);
     };

@@ -5,8 +5,13 @@ import ChartPanel from '@/components/ChartPanel';
 import { SERIES, axisProps, gridProps, tooltipCursor, tooltipStyle } from '@/lib/chart';
 import { dayDataOf, hourDataOf, peakHourLabel } from './channelChartData.ts';
 import MetricGrid from './MetricGrid';
+import type { VideoAnalytics } from '@shared/types/youtube.ts';
 
-export default function ChannelPublishingTab({ analytics }) {
+export interface ChannelPublishingTabProps {
+  analytics: VideoAnalytics;
+}
+
+export default function ChannelPublishingTab({ analytics }: ChannelPublishingTabProps) {
   return (
     <>
       <MetricGrid>

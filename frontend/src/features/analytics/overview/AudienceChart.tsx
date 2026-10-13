@@ -1,15 +1,22 @@
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, ResponsiveContainer,
 } from 'recharts';
+import type { DotItemDotProps, TooltipPayloadEntry, TooltipValueType } from 'recharts';
 import { axisProps, gridProps, tooltipStyle } from '@/lib/chart';
 import { fmtNum, fmtNumFull } from '../../../utils/formatters';
 import { audienceDotColor } from './overviewCharts.ts';
+import type { AudienceLegendItem, AudiencePoint } from './overviewCharts.ts';
 
-function formatAudienceTooltip(value, name, props) {
-  return [fmtNumFull(value), props.payload.type === 'category' ? 'Karma' : 'Audience'];
+export interface AudienceChartProps {
+  data: AudiencePoint[];
+  legend: AudienceLegendItem[];
 }
 
-function renderAudienceDot({ cx, cy, payload, index }) {
+function formatAudienceTooltip(value: TooltipValueType | undefined, name: string | number | undefined, props: TooltipPayloadEntry): [string, string] {
+  return [fmtNumFull(value as number), props.payload.type === 'category' ? 'Karma' : 'Audience'];
+}
+
+function renderAudienceDot({ cx, cy, payload, index }: DotItemDotProps) {
   return (
     <circle
       key={`dot-${index}`}
@@ -23,7 +30,7 @@ function renderAudienceDot({ cx, cy, payload, index }) {
   );
 }
 
-export default function AudienceChart({ data, legend }) {
+export default function AudienceChart({ data, legend }: AudienceChartProps) {
   return (
     <>
       <ResponsiveContainer width="100%" height={260} debounce={200}>

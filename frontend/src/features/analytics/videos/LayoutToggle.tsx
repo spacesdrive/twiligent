@@ -1,9 +1,23 @@
 import { LayoutGrid, List } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const LAYOUTS = [{ value: 'table', label: 'List', Icon: List }, { value: 'grid', label: 'Grid', Icon: LayoutGrid }];
+export type LayoutMode = 'table' | 'grid';
 
-export default function LayoutToggle({ value, onChange }) {
+interface LayoutOption {
+  value: LayoutMode;
+  label: string;
+  Icon: LucideIcon;
+}
+
+export interface LayoutToggleProps {
+  value: LayoutMode;
+  onChange: (value: LayoutMode) => void;
+}
+
+const LAYOUTS: LayoutOption[] = [{ value: 'table', label: 'List', Icon: List }, { value: 'grid', label: 'Grid', Icon: LayoutGrid }];
+
+export default function LayoutToggle({ value, onChange }: LayoutToggleProps) {
   return (
     <div role="radiogroup" aria-label="Layout" className="flex h-(--control-h-lg) items-center gap-0.5 rounded-field border border-line-control p-1">
       {LAYOUTS.map(layout => {

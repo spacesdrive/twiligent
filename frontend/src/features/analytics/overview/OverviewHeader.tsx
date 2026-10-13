@@ -4,8 +4,17 @@ import PageHeader from '@/components/PageHeader';
 import { cn } from '@/lib/utils';
 import { greetingTitle } from './greeting.ts';
 import { overviewDescription } from './overviewLabels.ts';
+import type { OverviewAccountFields } from './overviewStats.ts';
 
-export default function OverviewHeader({ accounts, email, isSyncing, loading, onRefresh }) {
+export interface OverviewHeaderProps {
+  accounts: OverviewAccountFields[];
+  email: string | null | undefined;
+  isSyncing: boolean;
+  loading: boolean;
+  onRefresh: () => void;
+}
+
+export default function OverviewHeader({ accounts, email, isSyncing, loading, onRefresh }: OverviewHeaderProps) {
   return (
     <PageHeader
       size="display"

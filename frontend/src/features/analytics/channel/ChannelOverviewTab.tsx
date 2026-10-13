@@ -7,8 +7,10 @@ import MediaCard, { MediaChip } from '@/components/MediaCard';
 import { fmtNum, fmtNumFull, fmtPercent } from '../../../utils/formatters';
 import { bestVideosOf, likesLabel, watchUrl } from './channelChartData.ts';
 import MetricGrid from './MetricGrid';
+import type { VideoAnalytics } from '@shared/types/youtube.ts';
+import type { ChannelDetails } from './channelChartData.ts';
 
-function BestVideos({ analytics }) {
+function BestVideos({ analytics }: { analytics: VideoAnalytics }) {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {bestVideosOf(analytics).map(({ label, video }) => (
@@ -25,7 +27,12 @@ function BestVideos({ analytics }) {
   );
 }
 
-export default function ChannelOverviewTab({ channel, analytics }) {
+export interface ChannelOverviewTabProps {
+  channel: ChannelDetails;
+  analytics: VideoAnalytics;
+}
+
+export default function ChannelOverviewTab({ channel, analytics }: ChannelOverviewTabProps) {
   return (
     <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">

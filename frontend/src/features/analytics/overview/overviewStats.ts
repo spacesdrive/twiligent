@@ -1,7 +1,70 @@
 import { audienceOf } from '../../../lib/accounts.ts';
 import { IG_CONTENT_TYPES } from '../../../utils/instagramContent.ts';
+import type { AccountFields } from '../../../lib/accounts.ts';
+import type { InstagramContentType, InstagramContentTypeTotals } from '../../../../../shared/types/instagram.ts';
+import type { TrackedStats } from './overviewTrackedStats.ts';
 
-function addAccountTotals(totals, account) {
+// the account fields the overview reads; app accounts and plain api accounts both fit
+export interface OverviewAccountFields extends AccountFields {
+  mediaCount?: number;
+  viewCount?: number;
+  videoCount?: number;
+  postKarma?: number;
+  commentKarma?: number;
+}
+
+export interface OverviewAccount extends OverviewAccountFields {
+  id: string;
+}
+
+// the analytics cache fields the overview reads; each platform's summary sets only its own
+export interface AccountCacheFields {
+  cacheWarmed?: boolean;
+  syncing?: boolean;
+  totalLikes?: number;
+  totalComments?: number;
+  totalViews?: number;
+  contentTypes?: Partial<Record<InstagramContentType, Partial<InstagramContentTypeTotals>>>;
+  fetchedPosts?: number;
+  totalScore?: number;
+}
+
+export type AccountCache = Record<string, AccountCacheFields>;
+
+export interface AccountTotals {
+  subscribers: number;
+  views: number;
+  videos: number;
+  followers: number;
+  posts: number;
+  karma: number;
+  postKarma: number;
+  commentKarma: number;
+}
+
+export interface IGTypeTotals {
+  count: number;
+  views: number;
+}
+
+export interface CacheTotals {
+  ytLikes: number;
+  ytComments: number;
+  igLikes: number;
+  igComments: number;
+  igViews: number;
+  rdPosts: number;
+  rdKarma: number;
+  rdComments: number;
+  igTypes: Record<string, IGTypeTotals>;
+}
+
+export interface IGAccountRow<T> {
+  account: T;
+  cache: AccountCacheFields | undefined;
+}
+
+function addAccountTotals(totals: AccountTotals, account: OverviewAccountFields): AccountTotals {
   if (account.platform === 'instagram') {
     return { ...totals, followers: totals.followers + (account.followersCount || 0), posts: totals.posts + (account.mediaCount || 0) };
   }
@@ -21,13 +84,13 @@ function addAccountTotals(totals, account) {
   };
 }
 
-export function accountTotalsOf(accounts) {
-  return accounts.reduce(addAccountTotals, {
+export function accountTotalsOf(accounts: OverviewAccountFields[]): AccountTotals {
+  return accounts.reduce<AccountTotals>(addAccountTotals, {
     subscribers: 0, views: 0, videos: 0, followers: 0, posts: 0, karma: 0, postKarma: 0, commentKarma: 0,
   });
 }
 
-function addInstagramCache(result, cache) {
+function addInstagramCache(result: CacheTotals, cache: AccountCacheFields): void {
   result.igLikes    += cache.totalLikes    ?? 0;
   result.igComments += cache.totalComments ?? 0;
   result.igViews    += cache.totalViews    ?? 0;
@@ -38,8 +101,8 @@ function addInstagramCache(result, cache) {
 }
 
 // only accounts saved as 'youtube' count here, unlike the platform splits
-export function cacheTotalsOf(accounts, analyticsCache) {
-  const result = {
+export function cacheTotalsOf(accounts: OverviewAccount[], analyticsCache: AccountCache): CacheTotals {
+  const result: CacheTotals = {
     ytLikes: 0, ytComments: 0, igLikes: 0, igComments: 0, igViews: 0, rdPosts: 0, rdKarma: 0, rdComments: 0,
     igTypes: Object.fromEntries(IG_CONTENT_TYPES.map(type => [type, { count: 0, views: 0 }])),
   };
@@ -60,12 +123,12 @@ export function cacheTotalsOf(accounts, analyticsCache) {
   return result;
 }
 
-function shareOf(part, total) {
+function shareOf(part: number, total: number): number {
   return total > 0 ? (part / total) * 100 : 0;
 }
 
 // tracked items are never the user's own, so they never overlap cache totals
-export function summaryOf(totals, cacheTotals, trackedStats) {
+export function summaryOf(totals: AccountTotals, cacheTotals: CacheTotals, trackedStats: TrackedStats) {
   const totalContent = totals.videos + totals.posts + cacheTotals.rdPosts + trackedStats.total;
   const trackedViewTotal = trackedStats.ytViews + trackedStats.rdViews;
   const ytComments = cacheTotals.ytComments + trackedStats.ytComments;
@@ -87,26 +150,26 @@ export function summaryOf(totals, cacheTotals, trackedStats) {
   };
 }
 
-function contentOf(account) {
+function contentOf(account: OverviewAccountFields): number {
   if (account.platform === 'instagram') return account.mediaCount || 0;
   if (account.platform === 'reddit') return account.totalKarma || 0;
   return account.viewCount || 0;
 }
 
-export function sortedByAudience(accounts) {
+export function sortedByAudience<T extends OverviewAccountFields>(accounts: T[]): T[] {
   return [...accounts].sort((a, b) => audienceOf(b) - audienceOf(a));
 }
 
-export function sortedByContent(accounts) {
+export function sortedByContent<T extends OverviewAccountFields>(accounts: T[]): T[] {
   return [...accounts].sort((a, b) => contentOf(b) - contentOf(a));
 }
 
-export function sortedByChannelViews(ytAccounts) {
+export function sortedByChannelViews<T extends OverviewAccountFields>(ytAccounts: T[]): T[] {
   return [...ytAccounts].sort((a, b) => (b.viewCount || 0) - (a.viewCount || 0));
 }
 
-export function igAccountRowsOf(igAccounts, analyticsCache) {
+export function igAccountRowsOf<T extends OverviewAccount>(igAccounts: T[], analyticsCache: AccountCache): IGAccountRow<T>[] {
   return igAccounts
-    .map(account => ({ account, cache: analyticsCache[account.id] }))
+    .map((account): IGAccountRow<T> => ({ account, cache: analyticsCache[account.id] }))
     .sort((x, y) => (y.cache?.totalViews ?? 0) - (x.cache?.totalViews ?? 0));
 }

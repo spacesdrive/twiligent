@@ -1,11 +1,46 @@
 import { trackedViews } from '../../../utils/trackedContent.ts';
+import type { TrackedMetrics } from '../../../utils/trackedContent.ts';
 
-function sumOf(items, valueOf) {
+// the tracked post fields the overview reads
+export interface TrackedStatsItem extends TrackedMetrics {
+  category?: string;
+}
+
+export interface TrackedStats<T extends TrackedStatsItem = TrackedStatsItem> {
+  total: number;
+  ytItems: T[];
+  rdItems: T[];
+  ytViews: number;
+  ytLikes: number;
+  ytComments: number;
+  rdViews: number;
+  rdKarma: number;
+  rdComments: number;
+}
+
+export interface CategoryTotals {
+  category: string;
+  count: number;
+  ytCount: number;
+  rdCount: number;
+  ytViews: number;
+  ytLikes: number;
+  ytComments: number;
+  rdViews: number;
+  rdKarma: number;
+  rdComments: number;
+}
+
+export interface CategoryStat extends CategoryTotals {
+  views: number;
+}
+
+function sumOf<T>(items: T[], valueOf: (item: T) => number): number {
   return items.reduce((sum, item) => sum + valueOf(item), 0);
 }
 
 // reddit post score is karma, so it rolls into karma totals
-export function trackedStatsOf(trackedContent) {
+export function trackedStatsOf<T extends TrackedStatsItem>(trackedContent: T[]): TrackedStats<T> {
   const ytItems = trackedContent.filter(item => item.contentType === 'youtube');
   const rdItems = trackedContent.filter(item => (item.contentType || 'reddit') === 'reddit');
   return {
@@ -21,7 +56,7 @@ export function trackedStatsOf(trackedContent) {
   };
 }
 
-function emptyCategory(category) {
+function emptyCategory(category: string): CategoryTotals {
   return {
     category,
     count: 0, ytCount: 0, rdCount: 0,
@@ -30,7 +65,7 @@ function emptyCategory(category) {
   };
 }
 
-function addToCategory(stat, item) {
+function addToCategory(stat: CategoryTotals, item: TrackedStatsItem): void {
   stat.count++;
   if (item.contentType === 'youtube') {
     stat.ytCount++;
@@ -45,13 +80,13 @@ function addToCategory(stat, item) {
   stat.rdComments += item.numComments ?? 0;
 }
 
-export function categoryStatsOf(trackedContent) {
+export function categoryStatsOf(trackedContent: TrackedStatsItem[]): CategoryStat[] {
   const withCategory = trackedContent.filter(item => item.category);
   if (!withCategory.length) return [];
-  const byCategory = {};
+  const byCategory: Record<string, CategoryTotals> = {};
   withCategory.forEach(item => {
-    if (!byCategory[item.category]) byCategory[item.category] = emptyCategory(item.category);
-    addToCategory(byCategory[item.category], item);
+    if (!byCategory[item.category!]) byCategory[item.category!] = emptyCategory(item.category!);
+    addToCategory(byCategory[item.category!], item);
   });
   return Object.values(byCategory)
     .map(stat => ({ ...stat, views: stat.ytViews + stat.rdViews }))

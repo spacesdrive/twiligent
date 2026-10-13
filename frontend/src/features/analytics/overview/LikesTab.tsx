@@ -8,13 +8,18 @@ import { EmptyState } from '@/components/StateViews';
 import { PLATFORM_META } from '@/lib/accounts';
 import { SERIES } from '@/lib/chart';
 import { fmtNum, fmtPercent } from '../../../utils/formatters';
+import type { OverviewStats } from './useOverviewStats';
 
-function instagramLikesSubtitle(stats) {
+function instagramLikesSubtitle(stats: OverviewStats): string {
   if (stats.groups.instagram.length > 0) return `${fmtPercent(stats.summary.likeShare.instagram)} of all likes`;
   return 'No Instagram accounts';
 }
 
-export default function LikesTab({ stats }) {
+export interface LikesTabProps {
+  stats: OverviewStats;
+}
+
+export default function LikesTab({ stats }: LikesTabProps) {
   const { totals, cacheTotals, trackedStats, summary, charts } = stats;
   const { totalLikes } = summary;
   return (

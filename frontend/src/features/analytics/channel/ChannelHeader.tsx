@@ -3,9 +3,19 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import PageHeader from '@/components/PageHeader';
 import { AccountAvatar } from '@/components/platform';
+import type { PageHeaderBack } from '@/components/PageHeader';
+import type { AppAccount } from '../../../utils/formatters';
 import { channelMeta } from './channelChartData.ts';
+import type { ChannelDetails } from './channelChartData.ts';
 
-export default function ChannelHeader({ account, channel, back, onRefresh }) {
+export interface ChannelHeaderProps {
+  account: AppAccount | undefined;
+  channel: ChannelDetails;
+  back: PageHeaderBack;
+  onRefresh: () => void;
+}
+
+export default function ChannelHeader({ account, channel, back, onRefresh }: ChannelHeaderProps) {
   return (
     <PageHeader
       back={back}

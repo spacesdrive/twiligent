@@ -7,8 +7,13 @@ import { platformOf } from '@/lib/accounts';
 import AudienceChart from './AudienceChart';
 import AccountRankRow from './AccountRankRow';
 import CategoryRow from './CategoryRow';
+import type { OverviewStats } from './useOverviewStats';
 
-export default function AudienceTab({ stats }) {
+export interface AudienceTabProps {
+  stats: OverviewStats;
+}
+
+export default function AudienceTab({ stats }: AudienceTabProps) {
   const audienceData = stats.charts.audience;
   return (
     <>

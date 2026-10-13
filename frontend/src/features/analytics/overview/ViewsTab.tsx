@@ -7,13 +7,19 @@ import { fmtNum } from '../../../utils/formatters';
 import { countLabel, igTypeSummary } from './overviewLabels.ts';
 import InstagramViewsTable from './InstagramViewsTable';
 import YouTubeViewsTable from './YouTubeViewsTable';
+import type { OverviewStats } from './useOverviewStats';
 
-function instagramViewsSubtitle(stats) {
+export interface ViewsTabProps {
+  stats: OverviewStats;
+  isSyncing: boolean;
+}
+
+function instagramViewsSubtitle(stats: OverviewStats): string {
   if (stats.groups.instagram.length > 0) return igTypeSummary(stats.cacheTotals.igTypes, 'views');
   return 'No Instagram accounts';
 }
 
-export default function ViewsTab({ stats, isSyncing }) {
+export default function ViewsTab({ stats, isSyncing }: ViewsTabProps) {
   const { groups, totals, cacheTotals, trackedStats, summary } = stats;
   return (
     <>

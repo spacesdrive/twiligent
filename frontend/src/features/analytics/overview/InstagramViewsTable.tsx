@@ -5,8 +5,21 @@ import { fmtNum } from '../../../utils/formatters';
 import { IG_CONTENT_TYPES, IG_CONTENT_TYPE_META } from '../../../utils/instagramContent';
 import AccountCell from './AccountCell';
 import OpenAnalytics from './OpenAnalytics';
+import type { AppAccount } from '../../../utils/formatters';
+import type { AccountCacheFields, IGAccountRow } from './overviewStats.ts';
 
-function InstagramViewsRow({ account, cache, isSyncing }) {
+interface InstagramViewsRowProps {
+  account: AppAccount;
+  cache: AccountCacheFields | undefined;
+  isSyncing: boolean;
+}
+
+export interface InstagramViewsTableProps {
+  rows: IGAccountRow<AppAccount>[];
+  isSyncing: boolean;
+}
+
+function InstagramViewsRow({ account, cache, isSyncing }: InstagramViewsRowProps) {
   const warmed = cache?.cacheWarmed;
   const pendingLabel = isSyncing ? 'Syncing' : '-';
   return (
@@ -32,7 +45,7 @@ function InstagramViewsRow({ account, cache, isSyncing }) {
   );
 }
 
-export default function InstagramViewsTable({ rows, isSyncing }) {
+export default function InstagramViewsTable({ rows, isSyncing }: InstagramViewsTableProps) {
   return (
     <SurfaceBox title="Instagram views by content type" content={false} className="overflow-hidden">
       <Table>

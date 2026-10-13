@@ -3,10 +3,25 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import SearchField from '@/components/SearchField';
 import FilterChips from '@/components/FilterChips';
 import { VIEW_TIERS } from '@/lib/library';
+import type { LibraryChannel } from '../videos/videoLibrary.ts';
+import type { ShortsSortField, ShortsSortOption } from './shortsLibrary.ts';
+
+export interface ShortsFiltersProps {
+  channels: LibraryChannel[];
+  sortOptions: ShortsSortOption[];
+  search: string;
+  onSearchChange: (value: string) => void;
+  channelFilter: string;
+  onChannelChange: (value: string) => void;
+  sortField: ShortsSortField;
+  onSortChange: (value: ShortsSortField) => void;
+  tier: string;
+  onTierChange: (value: string) => void;
+}
 
 export default function ShortsFilters({
   channels, sortOptions, search, onSearchChange, channelFilter, onChannelChange, sortField, onSortChange, tier, onTierChange,
-}) {
+}: ShortsFiltersProps) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -14,7 +29,7 @@ export default function ShortsFilters({
         {channels.length > 1 && (
           <Select
             value={channelFilter}
-            onValueChange={onChannelChange}
+            onValueChange={onChannelChange as (value: string | null) => void}
             items={[{ value: 'all', label: 'All channels' }, ...channels.map(channel => ({ value: channel.id, label: channel.title }))]}
           >
             <SelectTrigger className="w-48" aria-label="Channel"><SelectValue /></SelectTrigger>
@@ -26,7 +41,7 @@ export default function ShortsFilters({
             </SelectContent>
           </Select>
         )}
-        <Select value={sortField} onValueChange={onSortChange} items={sortOptions}>
+        <Select value={sortField} onValueChange={onSortChange as (value: ShortsSortField | null) => void} items={sortOptions}>
           <SelectTrigger className="w-44" aria-label="Sort"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectGroup>

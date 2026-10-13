@@ -12,6 +12,7 @@ import { pageSlice } from '@/lib/library';
 import { cn } from '@/lib/utils';
 import { useInstagramMedia } from './useInstagramMedia';
 import { filterAndSortMedia, reelsDescription, typeTotalsOf } from './reelsLibrary.ts';
+import type { MediaSortField } from './reelsLibrary.ts';
 import ReelsMetrics from './ReelsMetrics';
 import ReelsFilters from './ReelsFilters';
 import ReelsGrid from './ReelsGrid';
@@ -24,7 +25,7 @@ export default function ReelsExplorer() {
   const [accountFilter, setAccountFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [tier, setTier] = useState('all');
-  const [sortField, setSortField] = useState('viewCount');
+  const [sortField, setSortField] = useState<MediaSortField>('viewCount');
   const [page, setPage] = useState(1);
 
   const accountMedia = useMemo(
@@ -38,8 +39,8 @@ export default function ReelsExplorer() {
   );
   const paged = pageSlice(filtered, page, ITEMS_PER_PAGE);
 
-  function resetPage(setter) {
-    return value => {
+  function resetPage<T>(setter: (value: T) => void) {
+    return (value: T) => {
       setter(value);
       setPage(1);
     };

@@ -4,9 +4,19 @@ import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import SurfaceBox from '@/components/SurfaceBox';
 import { fmtCount, fmtDate, fmtDuration, fmtNum, fmtPercent } from '../../../utils/formatters';
+import type { YouTubeVideoSummary } from '@shared/types/youtube.ts';
 import { watchUrl } from './channelChartData.ts';
 
-function VideoRow({ video, rank }) {
+interface VideoRowProps {
+  video: YouTubeVideoSummary;
+  rank: number;
+}
+
+export interface ChannelVideoTableProps {
+  videos: YouTubeVideoSummary[] | null | undefined;
+}
+
+function VideoRow({ video, rank }: VideoRowProps) {
   return (
     <TableRow>
       <TableCell className="text-right font-mono text-caption text-ink-faint">{rank}</TableCell>
@@ -17,7 +27,7 @@ function VideoRow({ video, rank }) {
       <TableCell className="text-right text-ink-muted">{fmtCount(video.likeCount)}</TableCell>
       <TableCell className="text-right text-ink-muted">{fmtCount(video.commentCount)}</TableCell>
       <TableCell className="text-right">
-        <Badge variant={parseFloat(video.engagementRate) > 5 ? 'success' : 'secondary'}>{fmtPercent(video.engagementRate)}</Badge>
+        <Badge variant={parseFloat(video.engagementRate as string) > 5 ? 'success' : 'secondary'}>{fmtPercent(video.engagementRate)}</Badge>
       </TableCell>
       <TableCell className="text-right text-ink-muted">{fmtDuration(video.durationSeconds)}</TableCell>
       <TableCell className="text-right text-small text-ink-faint">{fmtDate(video.publishedAt)}</TableCell>
@@ -30,7 +40,7 @@ function VideoRow({ video, rank }) {
   );
 }
 
-export default function ChannelVideoTable({ videos }) {
+export default function ChannelVideoTable({ videos }: ChannelVideoTableProps) {
   const rows = (videos || []).filter(Boolean);
   return (
     <SurfaceBox content={false} className="overflow-hidden">
