@@ -55,6 +55,7 @@ export const DOC_TABS = [
         label: 'Set up services',
         pages: [
           { slug: 'self-host/supabase', title: 'Supabase', keywords: ['database', 'auth', 'sql', 'rls', 'keys'] },
+          { slug: 'self-host/google-sign-in', title: 'Sign in with Google (optional)', keywords: ['google', 'oauth', 'login', 'branding', 'logo', 'verification'] },
           { slug: 'self-host/youtube', title: 'YouTube API key', keywords: ['google cloud', 'data api'] },
           { slug: 'self-host/instagram', title: 'Instagram app', keywords: ['meta', 'facebook', 'oauth', 'redirect', 'tester', 'app review'] },
           { slug: 'self-host/cloudinary', title: 'Cloudinary', keywords: ['media', 'upload preset', 'cdn'] },

@@ -286,6 +286,8 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 VITE_API_URL=http://localhost:8787/api
 # Optional: who users contact for Instagram tester access and scheduling problems
 VITE_ADMIN_EMAIL=you@example.com
+# Optional: Google web client ID; shows Continue with Google (see /docs/self-host/google-sign-in)
+VITE_GOOGLE_CLIENT_ID=1234567890-abc.apps.googleusercontent.com
 ```
 
 ### Production (Cloudflare Workers secrets)

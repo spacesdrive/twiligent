@@ -574,3 +574,19 @@ Records every significant architectural decision, the alternatives considered, a
 - Docs ship with each frontend deploy, so they always match the deployed version, but cannot be updated without a frontend deploy.
 - Each section is one code-split chunk, so the docs add nothing to the dashboard's initial load.
 
+---
+
+## ADR-027: Sign in with Google through Google's button and an ID token, not the OAuth redirect
+
+**Date:** 2026-10-13
+**Status:** Accepted
+
+**Decision:** The login page renders Google Identity Services' own button. The returned ID token goes to `supabase.auth.signInWithIdToken` with a nonce: Google gets the SHA-256 of a random value, Supabase gets the raw value and checks they match. The button only appears when `VITE_GOOGLE_CLIENT_ID` is set. The frontend moves to a custom domain on the administrator's verified domain.
+
+**Context:** Supabase's standard Google flow (`signInWithOAuth`) redirects through `<project-ref>.supabase.co/auth/v1/callback`. Google brand verification, needed to show the app name and logo on the sign-in screen, requires every domain in the client's configuration to be verified in Search Console, which a `supabase.co` subdomain cannot be. The alternative, a Supabase custom domain for the auth endpoint, needs a paid plan and add-on.
+
+**Trade-offs:**
+- Loads one third-party script (`accounts.google.com/gsi/client`) on the login page only, on demand. No npm dependency.
+- The button is rendered by Google in an iframe, so its styling is limited to Google's options (theme follows the app theme).
+- Self-hosters on `pages.dev` can still use it, but cannot get brand verification until they add a custom domain.
+

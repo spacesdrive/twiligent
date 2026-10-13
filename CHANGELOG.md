@@ -9,6 +9,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+**Sign in with Google**
+- Continue with Google on the sign-in page, using Google's own button and a nonce-checked ID token sent to Supabase; shown only when `VITE_GOOGLE_CLIENT_ID` is set
+- Docs page for administrators: branding, audience, scopes, client, Supabase provider and brand verification
+
 **Documentation site at `/docs`**
 - Public documentation built into the app, laid out like a modern developer docs site: section tabs, grouped sidebar, "On this page" outline with scroll tracking, search with `/` or Ctrl K, previous and next links, copy-page and copy-code buttons, light and dark themes and a phone layout
 - Separate paths for members (sign in, connect accounts, analytics, publishing, tracked content, troubleshooting) and administrators (Supabase, YouTube, Instagram, Cloudinary, Redis, backend and frontend deploys, GitHub automation, launch checklist)

@@ -7,7 +7,7 @@ Wraps Supabase Auth state and exposes it to the entire app.
 ### What it provides
 
 ```js
-const { session, user, signIn, signUp, signOut } = useAuth();
+const { session, user, signIn, signUp, signInWithGoogle, signOut } = useAuth();
 ```
 
 | Value | Type | Description |
@@ -16,6 +16,7 @@ const { session, user, signIn, signUp, signOut } = useAuth();
 | `user` | `User \| null` | `session.user` shorthand |
 | `signIn(email, password)` | async function | Calls `supabase.auth.signInWithPassword()` |
 | `signUp(email, password)` | async function | Calls `supabase.auth.signUp()` |
+| `signInWithGoogle(idToken, nonce)` | async function | Calls `supabase.auth.signInWithIdToken({ provider: 'google', token, nonce })` with the ID token from Google's button and the raw nonce |
 | `signOut()` | async function | Calls `supabase.auth.signOut()` |
 
 ### How it works
@@ -37,7 +38,7 @@ useEffect(() => {
 ### Where to use it
 
 - `ProtectedRoute` - reads `session` to decide whether to redirect to `/login`
-- `Login.jsx` - calls `signIn()` and `signUp()`
+- `Login.jsx` - calls `signIn()`, `signUp()` and `signInWithGoogle()`
 - `Header.jsx` - calls `signOut()`, shows `user.email`
 - Do **not** use in page/feature components - they should never need auth state directly
 

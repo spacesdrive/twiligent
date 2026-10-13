@@ -69,6 +69,7 @@ Required for `deploy-frontend.yml` and `publish-scheduled.yml`:
 - `VITE_SUPABASE_ANON_KEY`
 - `VITE_API_URL`
 - `VITE_ADMIN_EMAIL` (optional; the administrator contact shown in the app)
+- `VITE_GOOGLE_CLIENT_ID` (optional; Google web client ID for the Sign in with Google button)
 
 **For backend deploy:**
 - `CLOUDFLARE_API_TOKEN`

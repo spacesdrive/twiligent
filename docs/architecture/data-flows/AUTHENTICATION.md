@@ -31,6 +31,25 @@ AppProvider mounts -> loadAccounts() fires
 User sees Overview dashboard
 ```
 
+## Sign in with Google
+
+Optional; enabled when `VITE_GOOGLE_CLIENT_ID` is set and the Google provider is on in Supabase.
+
+```
+Login.jsx renders GoogleSignInButton
+    -> lib/googleIdentity.js loads https://accounts.google.com/gsi/client once
+    -> createNonce(): raw random nonce + its SHA-256 hex
+    -> google.accounts.id.initialize({ client_id, nonce: hashed, callback })
+    -> google.accounts.id.renderButton(...)          (Google's own button, popup or FedCM)
+User picks a Google account
+    -> callback receives an ID token (JWT signed by Google, contains the hashed nonce)
+    -> supabase.auth.signInWithIdToken({ provider: 'google', token, nonce: raw })
+    -> Supabase checks the signature, audience (client ID) and sha256(raw) == token nonce
+    -> session issued; same lifecycle as password sign-in below
+```
+
+No OAuth redirect is involved, so the Google client has JavaScript origins only and no redirect URI on `supabase.co`. Every domain Google sees is the frontend's own domain, which is what allows brand verification (name and logo on the consent screen). A Google sign-in with the same verified email as an existing password account opens that account.
+
 ## Session Lifecycle
 
 ```

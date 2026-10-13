@@ -21,6 +21,7 @@ const FRONTEND_VARS = [
   ['VITE_SUPABASE_ANON_KEY', 'required', 'The publishable key. Never the secret key.'],
   ['VITE_API_URL', 'required', 'Backend URL plus /api, for example https://twiligent.you.workers.dev/api. Defaults to http://localhost:8787/api in development.'],
   ['VITE_ADMIN_EMAIL', 'optional', 'Where members are told to write for Instagram tester access or help.'],
+  ['VITE_GOOGLE_CLIENT_ID', 'optional', 'Web client ID from Google Auth Platform. Shows the Sign in with Google button; leave unset to hide it.'],
 ];
 
 const NEED = {
@@ -66,7 +67,7 @@ export function Environment() {
         rows={[
           [<Code>CLOUDFLARE_API_TOKEN</Code>, 'Both deploy workflows'],
           [<Code>CLOUDFLARE_ACCOUNT_ID</Code>, 'Both deploy workflows'],
-          [<><Code>VITE_SUPABASE_URL</Code>, <Code>VITE_SUPABASE_ANON_KEY</Code>, <Code>VITE_API_URL</Code>, <Code>VITE_ADMIN_EMAIL</Code></>, 'Frontend deploy workflow'],
+          [<><Code>VITE_SUPABASE_URL</Code>, <Code>VITE_SUPABASE_ANON_KEY</Code>, <Code>VITE_API_URL</Code>, <Code>VITE_ADMIN_EMAIL</Code>, <Code>VITE_GOOGLE_CLIENT_ID</Code></>, 'Frontend deploy workflow'],
           [<><Code>SUPABASE_URL</Code>, <Code>SUPABASE_SERVICE_KEY</Code></>, 'Backup scheduler (publish-scheduled.yml)'],
         ]}
       />

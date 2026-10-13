@@ -39,6 +39,7 @@ The frontend accesses environment variables at **build time** via Vite's `VITE_`
 | `VITE_SUPABASE_URL` | Supabase project URL (public) | Cloudflare Pages -> Settings -> Environment Variables |
 | `VITE_SUPABASE_ANON_KEY` | Supabase anon key (public) | Cloudflare Pages -> Settings -> Environment Variables |
 | `VITE_API_URL` | Backend Worker URL | Cloudflare Pages -> Settings -> Environment Variables |
+| `VITE_GOOGLE_CLIENT_ID` | Optional. Google Auth Platform web client ID; shows the Sign in with Google button when set | Cloudflare Pages -> Settings -> Environment Variables, or the GitHub secret of the same name |
 | `VITE_ADMIN_EMAIL` | Optional. Administrator address shown for Instagram tester requests and scheduling problems; defaults to ujjwal@aevrin.net | Cloudflare Pages -> Settings -> Environment Variables, or the GitHub secret of the same name |
 
 **These are public values** - they are baked into the JavaScript bundle. Do not add the service role key here. Do not add any private API credentials here.

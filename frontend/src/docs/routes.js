@@ -24,6 +24,7 @@ const PAGES = {
   'use/troubleshooting': page('use', 'Troubleshooting'),
   'self-host': page('selfHost', 'Overview'),
   'self-host/supabase': page('selfHost', 'Supabase'),
+  'self-host/google-sign-in': page('selfHost', 'GoogleSignIn'),
   'self-host/youtube': page('selfHost', 'YouTube'),
   'self-host/instagram': page('selfHost', 'Instagram'),
   'self-host/cloudinary': page('selfHost', 'Cloudinary'),
