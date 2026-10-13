@@ -53,11 +53,11 @@ test('description and watch links', () => {
 });
 
 test('channel videos merge with their channel and skip failed channels', () => {
-  const channelAccounts: VideoChannelAccount[] = [{ id: 'c1', title: 'Alpha' }, { id: 'c2', channelTitle: 'Beta' }, { id: 'c3' }];
+  const channelAccounts: VideoChannelAccount[] = [{ id: 'c1', title: 'Alpha' }, { id: 'c2', title: 'Beta' }, { id: 'c3' }];
   const results = [
     { status: 'fulfilled', value: { videos: [{ videoId: 'a', viewCount: 200, likeCount: 10, commentCount: 0, duration: 'PT1M5S', thumbnails: { high: 'h.jpg' } }] } },
     { status: 'rejected', reason: new Error('quota') },
-    { status: 'fulfilled', value: { data: { videos: [{ videoId: 'b', thumbnail: 't.jpg', durationSeconds: 30 }] } } },
+    { status: 'fulfilled', value: { videos: [{ videoId: 'b', duration: 'PT30S', thumbnails: { default: 't.jpg' } }] } },
   ] as PromiseSettledResult<ChannelVideosResult>[];
   const merged = mergeChannelVideos(channelAccounts, results);
   assert.deepEqual(merged.channels.map(channel => [channel.id, channel.title]), [['c1', 'Alpha'], ['c3', 'Unknown channel']]);

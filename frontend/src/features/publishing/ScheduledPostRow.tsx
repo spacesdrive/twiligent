@@ -28,8 +28,7 @@ interface ScheduledPostRowProps {
 }
 
 function PostActions({ post, isEditing, editor, onDelete }: PostActionsProps) {
-  // mirrors the backend edit check, which also accepts a 'scheduled' status
-  const canEdit = post.status === 'pending' || (post.status as string) === 'scheduled';
+  const canEdit = post.status === 'pending';
   const deleteLabel = post.status === 'published' ? 'Remove record' : 'Delete scheduled post';
   return (
     <TableCell className="text-right whitespace-nowrap">

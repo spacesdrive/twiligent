@@ -7,9 +7,7 @@ const SYNC_POLL_DELAYS = [4000, 8000, 16000];
 
 async function fetchOverview(): Promise<OverviewResponse | null> {
   try {
-    const data = await api.getOverview();
-    // OverviewResponse has no error field; request() already throws on the route's error body
-    return data && !(data as OverviewResponse & { error?: string }).error ? data : null;
+    return await api.getOverview();
   } catch {
     // a failed load keeps the previous overview; the next poll or visit tries again
     return null;

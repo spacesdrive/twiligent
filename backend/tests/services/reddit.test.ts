@@ -1,5 +1,5 @@
 import { test, describe, before, after, afterEach, mock } from 'node:test';
-import { fetchRedditProfile, fetchRedditPosts, fetchTrackedPostData, autoRefreshRedditSessions } from '../../services/reddit.ts';
+import { fetchRedditProfile, fetchRedditPosts, fetchTrackedPostData } from '../../services/reddit.ts';
 import { assertGolden } from '../fixtures/golden.ts';
 import { installFetch, reply } from '../fixtures/fakeFetch.ts';
 import type { FetchMock } from '../fixtures/fakeFetch.ts';
@@ -81,7 +81,6 @@ describe('reddit api golden output', () => {
         fetchMock = installFetch((_request, count) => script[count - 1]);
         const outcomes = [];
         for (let i = 0; i < script.length; i++) outcomes.push(await outcomeOf(fetchRedditProfile('ribbon', 'COOKIE')));
-        outcomes.push(await outcomeOf(autoRefreshRedditSessions()));
         assertGolden(outcomes, 'reddit.errors');
     });
 });

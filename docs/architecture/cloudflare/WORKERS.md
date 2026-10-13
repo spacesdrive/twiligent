@@ -51,7 +51,6 @@ All secrets are set via `npx wrangler secret put <NAME>`, run from `backend/`. T
 | `FRONTEND_URL` | Yes | Frontend URL (for post-OAuth redirect back to the SPA) |
 | `UPSTASH_REDIS_REST_URL` | Optional | Upstash Redis endpoint; caching disabled if absent |
 | `UPSTASH_REDIS_REST_TOKEN` | Optional | Upstash auth token |
-| `REDDIT_ENCRYPTION_KEY` | Unused | Declared in `Env` but read nowhere; Reddit accounts store a browser session cookie and no password is encrypted. Do not set it |
 
 ### Setting secrets
 

@@ -47,7 +47,7 @@ A cron job must never throw for one bad account: catch per account and log, as a
 [triggers]
 crons = [
     "*/15 * * * *",   # existing: processScheduledPosts
-    "0 0 * * *",      # existing: autoRefreshInstagramTokens, autoRefreshRedditSessions
+    "0 0 * * *",      # existing: autoRefreshInstagramTokens
     "30 3 * * *"      # new: autoRefreshMyPlatformTokens (runs at 3:30 AM UTC daily)
 ]
 ```
@@ -68,7 +68,6 @@ export default {
             ctx.waitUntil(processScheduledPosts(supabase));
         } else if (event.cron === '0 0 * * *') {
             ctx.waitUntil(autoRefreshInstagramTokens(supabase));
-            ctx.waitUntil(autoRefreshRedditSessions());
         } else if (event.cron === '30 3 * * *') {
             ctx.waitUntil(autoRefreshMyPlatformTokens(supabase));
         }

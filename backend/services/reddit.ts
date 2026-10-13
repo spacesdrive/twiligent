@@ -149,9 +149,6 @@ export async function fetchRedditPosts(username: string, cookie: RedditCookie, l
     return allPosts.slice(0, limit).map(normalizeRedditPost);
 }
 
-// no-op kept because the server.ts cron handler still calls it
-export async function autoRefreshRedditSessions(): Promise<void> {}
-
 function parseRedditPostUrl(rawUrl: string): string {
     let parsedUrl: URL;
     try {

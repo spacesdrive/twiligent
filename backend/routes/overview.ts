@@ -9,12 +9,7 @@ const router = new Hono<AppEnv>();
 // the client re-polls while syncing, so warming never blocks the response
 function runInBackground(c: AppContext, tasks: Promise<void>[]): void {
     if (tasks.length === 0) return;
-    const ctx = c.executionCtx;
-    if (ctx?.waitUntil) {
-        ctx.waitUntil(Promise.allSettled(tasks));
-        return;
-    }
-    Promise.allSettled(tasks).catch(() => {});
+    c.executionCtx.waitUntil(Promise.allSettled(tasks));
 }
 
 router.get('/overview', async (c) => {

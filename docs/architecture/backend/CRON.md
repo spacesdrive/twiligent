@@ -30,11 +30,9 @@ Both cron triggers invoke the `scheduled` export from `backend/server.ts`.
 
 **Concurrency safety:** The `'publishing'` status acts as a mutex. If the Worker cron and GitHub Actions cron overlap, the second one to claim a post will find it already in `'publishing'` state and skip it (it won't appear in the `status=pending` query).
 
-### `0 0 * * *` - Instagram Token Auto-Refresh and Reddit Session Hook
+### `0 0 * * *` - Instagram Token Auto-Refresh
 
-Two functions run in parallel via `ctx.waitUntil()`:
-
-**1. `autoRefreshInstagramTokens(supabase)` in `backend/services/instagram.ts`**
+**`autoRefreshInstagramTokens(supabase)` in `backend/services/instagram.ts`**
 
 **What it does:**
 1. Queries all accounts with `platform = 'instagram'`
@@ -48,9 +46,7 @@ Two functions run in parallel via `ctx.waitUntil()`:
 - The daily cron refreshes any token expiring within 15 days
 - This gives a 15-day window for recovery if the cron fails for a few days
 
-**2. `autoRefreshRedditSessions()` in `backend/services/reddit.ts`**
-
-This function is currently a no-op: it takes no arguments and returns immediately. Reddit accounts are added with a `reddit_session` cookie copied from the browser (`POST /api/accounts/reddit` with `{ username, cookie }`), and nothing logs in to Reddit or refreshes that cookie on a schedule. When the cookie expires, the user re-adds the account. `REDDIT_ENCRYPTION_KEY` is declared in `Env` but read nowhere.
+Reddit sessions are not refreshed on a schedule. Reddit accounts are added with a `reddit_session` cookie copied from the browser (`POST /api/accounts/reddit` with `{ username, cookie }`); when the cookie expires, the user re-adds the account.
 
 ## The `ctx.waitUntil()` Pattern
 

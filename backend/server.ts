@@ -17,7 +17,6 @@ import overviewRouter from './routes/overview.ts';
 import { urlHandler, callbackHandler } from './routes/instagramAuth.ts';
 import { processScheduledPosts } from './utils/scheduler.ts';
 import { autoRefreshInstagramTokens } from './services/instagram.ts';
-import { autoRefreshRedditSessions } from './services/reddit.ts';
 import type { AppEnv } from './types/app.ts';
 import type { Env } from './types/env.ts';
 
@@ -79,7 +78,6 @@ export default {
             ctx.waitUntil(processScheduledPosts(supabase));
         } else if (event.cron === '0 0 * * *') {
             ctx.waitUntil(autoRefreshInstagramTokens(supabase));
-            ctx.waitUntil(autoRefreshRedditSessions());
         }
     },
 } satisfies ExportedHandler<Env>;

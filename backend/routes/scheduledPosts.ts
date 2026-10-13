@@ -75,8 +75,7 @@ app.put('/scheduled-posts/:id', async (c) => {
         const id = c.req.param('id');
         const post = await getPostById(supabase, id, userId);
         if (!post) return c.json({ success: false, message: 'Scheduled post not found' }, 404);
-        // 'scheduled' is not a PostStatus; nothing writes it, so only pending posts pass
-        if (post.status !== 'pending' && (post.status as string) !== 'scheduled') {
+        if (post.status !== 'pending') {
             return c.json({ success: false, message: 'Can only edit pending posts' }, 400);
         }
 

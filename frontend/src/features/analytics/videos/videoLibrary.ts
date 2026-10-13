@@ -2,22 +2,14 @@ import { VIEW_TIERS, filterByTier, matchesText, engagementPercent, parseIsoDurat
 import { fmtNum } from '../../../utils/formatters.ts';
 import type { YouTubeVideo } from '../../../../../shared/types/youtube.ts';
 
-// a video as GET /api/accounts/:id/videos sends it; thumbnail and durationSeconds are fallbacks the route never sets
-export interface ChannelVideo extends YouTubeVideo {
-  thumbnail?: string;
-  durationSeconds?: number;
-}
-
-// the fields mergeChannelVideos reads from each fulfilled videos request
+// the fields mergeChannelVideos reads from each fulfilled GET /api/accounts/:id/videos
 export interface ChannelVideosResult {
-  videos?: ChannelVideo[];
-  data?: { videos?: ChannelVideo[] };
+  videos: YouTubeVideo[];
 }
 
 export interface VideoChannelAccount {
   id: string;
   title?: string | null;
-  channelTitle?: string;
 }
 
 export interface LibraryChannel<A extends VideoChannelAccount = VideoChannelAccount> {
@@ -58,16 +50,16 @@ export function mergeChannelVideos<A extends VideoChannelAccount>(channelAccount
     if (result.status !== 'fulfilled') return;
     const acct = channelAccounts[i];
     const res = result.value;
-    const channelTitle = acct.title || acct.channelTitle || 'Unknown channel';
+    const channelTitle = acct.title || 'Unknown channel';
     channels.push({ id: acct.id, title: channelTitle, account: acct });
-    for (const video of res.videos || res.data?.videos || []) {
+    for (const video of res.videos) {
       videos.push({
         ...video,
-        thumbnail: video.thumbnail || video.thumbnails?.medium || video.thumbnails?.high || video.thumbnails?.default || '',
+        thumbnail: video.thumbnails?.medium || video.thumbnails?.high || video.thumbnails?.default || '',
         channelTitle,
         channelId: acct.id,
         engagementRate: engagementPercent(video.viewCount, video.likeCount, video.commentCount),
-        durationSeconds: video.durationSeconds || parseIsoDuration(video.duration),
+        durationSeconds: parseIsoDuration(video.duration),
       });
     }
   });

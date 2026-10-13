@@ -23,10 +23,7 @@ export function formatDuration(totalSeconds: number): string {
     return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m ${seconds}s`;
 }
 
-export function formatVideoSummary(video: VideoSummarySource): YouTubeVideoSummary;
-export function formatVideoSummary(video: VideoSummarySource | undefined): YouTubeVideoSummary | null;
-export function formatVideoSummary(video: VideoSummarySource | undefined): YouTubeVideoSummary | null {
-    if (!video) return null;
+export function formatVideoSummary(video: VideoSummarySource): YouTubeVideoSummary {
     return {
         videoId: video.videoId, title: video.title, viewCount: video.viewCount,
         likeCount: video.likeCount, commentCount: video.commentCount,

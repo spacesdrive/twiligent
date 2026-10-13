@@ -82,6 +82,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 
+- Dead code found during the TypeScript migration: the unused `backend/lib/crypto.ts`, the empty Reddit session refresh in the daily cron and the unread `REDDIT_ENCRYPTION_KEY` secret (delete it from the Worker if it is set), the `scheduled` post status checks (no post ever has it), and fallbacks for fields the API never sends
 - The unused GitHub personal access token field and its guide in Settings (nothing used the token)
 - Legacy root `public/` dashboard, unmounted `trackedPosts.js` route, unused Redis OAuth helpers, unused shadcn block templates and the unused Geist font package
 - Duplicated helpers merged: platform badges and avatars, account paths, chart styling, filter tiers, pagination, Reddit post table, `safeAccount()`, Instagram publishing parameters

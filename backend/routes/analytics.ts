@@ -22,9 +22,6 @@ interface SnapshotScope {
     id: string;
 }
 
-// no stored account has a channelTitle field, so that fallback is always undefined
-type LegacyChannelAccount = Account & { channelTitle?: string };
-
 const NO_PLAYLIST_MESSAGE = 'No uploads playlist stored - delete this channel and add it again';
 
 const app = new Hono<AppEnv>();
@@ -192,13 +189,13 @@ app.get('/videos/all', async (c) => {
         const accounts = await getAccounts(supabase, userId);
 
         const allVideos: YouTubeLibraryVideo[] = [];
-        for (const account of accounts as LegacyChannelAccount[]) {
+        for (const account of accounts) {
             if (channelId && account.id !== channelId) continue;
             const cached = await getVideosCache(redis, userId, account.id);
             if (cached && cached.videos) {
                 allVideos.push(...cached.videos.map(video => ({
                     ...video,
-                    channelTitle: (account.title || account.channelTitle) as string,
+                    channelTitle: account.title || video.channelTitle,
                     channelId: account.id,
                     channelThumbnail: account.thumbnails?.default || '',
                 })));

@@ -316,7 +316,7 @@ Records every significant architectural decision, the alternatives considered, a
 ## ADR-014: Reddit password stored AES-256-GCM encrypted for automatic session refresh
 
 **Date:** 2026-07-10
-**Status:** Accepted
+**Status:** Withdrawn (2026-10-14): Reddit accounts store a browser session cookie instead; the unused `lib/crypto.ts`, the no-op `autoRefreshRedditSessions()` cron call and `REDDIT_ENCRYPTION_KEY` were removed
 
 **Decision:** When a user adds a Reddit account with a password, the password is encrypted using AES-256-GCM via the Web Crypto API (`crypto.subtle`) and stored in `accounts.data.encryptedPassword`. The key is `REDDIT_ENCRYPTION_KEY`, a 32-byte random value stored as a Worker secret (hex string). The daily cron (`0 0 * * *`) decrypts the password and re-logs in when the session cookie is older than 23 hours.
 
