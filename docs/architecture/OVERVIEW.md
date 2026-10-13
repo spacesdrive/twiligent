@@ -6,7 +6,7 @@
 ┌─────────────────────────────────────────────────────────────────┐
 │  Browser (User)                                                  │
 │  React SPA - Cloudflare Pages                                   │
-│  https://twiligent.pages.dev                                     │
+│  https://twiligent.ujjwal.fyi                                    │
 └────────────────────────┬────────────────────────────────────────┘
                          │ HTTPS + Bearer JWT
                          ▼
@@ -46,7 +46,7 @@
 | Component | Platform | URL |
 |---|---|---|
 | Backend API | Cloudflare Workers | `twiligent.ujjwalkrai.workers.dev` |
-| Frontend SPA | Cloudflare Pages | `twiligent.pages.dev` |
+| Frontend SPA | Cloudflare Pages | `twiligent.ujjwal.fyi` (also `twiligent.pages.dev`; `twiligent.spacesdrive.cc` redirects with a 301 rule on the spacesdrive.cc zone) |
 | Database + Auth | Supabase | `nheuatbcevaxgxyvahtr.supabase.co` |
 | Media cache | Upstash Redis | Configured via `UPSTASH_REDIS_REST_URL` |
 | Media hosting | Cloudinary | `CLOUDINARY_CLOUD_NAME` |

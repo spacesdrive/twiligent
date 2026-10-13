@@ -80,7 +80,7 @@ curl https://twiligent.ujjwalkrai.workers.dev/api/health
 ```
 
 **Frontend:**
-Open `https://twiligent.pages.dev` - verify login page loads, accounts load after auth.
+Open `https://twiligent.ujjwal.fyi` - verify login page loads, accounts load after auth.
 
 **Publisher:**
 Trigger `publish-scheduled.yml` manually via GitHub Actions UI -> Actions -> "Instagram Scheduled Publisher" -> "Run workflow" -> check the run log for expected output.

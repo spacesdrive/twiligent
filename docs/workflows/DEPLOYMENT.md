@@ -90,7 +90,7 @@ curl https://twiligent.ujjwalkrai.workers.dev/api/health
 ```
 
 **Frontend:**  
-Open `https://twiligent.pages.dev` -> verify login page loads -> sign in -> verify accounts load.
+Open `https://twiligent.ujjwal.fyi` (custom domain on the `twiligent` Pages project; `twiligent.spacesdrive.cc` 301-redirects here) -> verify login page loads -> sign in -> verify accounts load.
 
 **Scheduled publisher:**  
 GitHub Actions -> "Instagram Scheduled Publisher" -> "Run workflow" -> check run output.
