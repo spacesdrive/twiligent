@@ -20,10 +20,14 @@ export function AuthProvider({ children }) {
     const signUp = (email, password) =>
         supabase.auth.signUp({ email, password });
 
+    // Google's button returns an ID token; the raw nonce lets Supabase confirm the token was issued for this sign-in.
+    const signInWithGoogle = (idToken, nonce) =>
+        supabase.auth.signInWithIdToken({ provider: 'google', token: idToken, nonce });
+
     const signOut = () => supabase.auth.signOut();
 
     return (
-        <AuthContext.Provider value={{ session, user: session?.user ?? null, signIn, signUp, signOut }}>
+        <AuthContext.Provider value={{ session, user: session?.user ?? null, signIn, signUp, signInWithGoogle, signOut }}>
             {children}
         </AuthContext.Provider>
     );

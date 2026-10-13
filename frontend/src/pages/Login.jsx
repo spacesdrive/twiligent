@@ -7,9 +7,11 @@ import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { FieldRow } from '@/components/DetailPanel';
 import { Logo } from '@/components/brand/Logo';
+import GoogleSignInButton from '@/components/GoogleSignInButton';
+import { GOOGLE_CLIENT_ID } from '@/lib/googleIdentity';
 
 export default function Login() {
-    const { signIn, signUp } = useAuth();
+    const { signIn, signUp, signInWithGoogle } = useAuth();
     const navigate = useNavigate();
     const [mode, setMode] = useState('login');
     const [email, setEmail] = useState('');
@@ -38,6 +40,19 @@ export default function Login() {
         }
     }
 
+    async function handleGoogleCredential(idToken, nonce) {
+        setLoading(true);
+        try {
+            const { error } = await signInWithGoogle(idToken, nonce);
+            if (error) throw error;
+            navigate('/');
+        } catch (err) {
+            toast.error(`Couldn't sign in with Google. ${err.message}`);
+        } finally {
+            setLoading(false);
+        }
+    }
+
     return (
         <div className="grid min-h-svh bg-surface lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
             <main className="flex flex-col px-6 py-8 sm:px-10">
@@ -54,6 +69,21 @@ export default function Login() {
                                     : 'Use an email and a password of at least 6 characters.'}
                             </p>
                         </div>
+
+                        {GOOGLE_CLIENT_ID && (
+                            <div className="flex flex-col gap-5">
+                                <GoogleSignInButton
+                                    text={isLogin ? 'continue_with' : 'signup_with'}
+                                    onCredential={handleGoogleCredential}
+                                    onError={err => toast.error(err.message)}
+                                />
+                                <div className="flex items-center gap-3 text-caption text-ink-faint" role="separator" aria-label="or use email">
+                                    <span className="h-px flex-1 bg-divider" />
+                                    or use email
+                                    <span className="h-px flex-1 bg-divider" />
+                                </div>
+                            </div>
+                        )}
 
                         <form onSubmit={handleSubmit} className="flex flex-col gap-5">
                             <FieldRow label="Email" htmlFor="email">
