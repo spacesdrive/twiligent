@@ -28,9 +28,9 @@ export function channelMetrics(account) {
 
 export function accountComparison(accounts) {
     const sorted = {
-        bySubscribers: [...accounts].sort((a, b) => b.subscriberCount - a.subscriberCount),
-        byViews: [...accounts].sort((a, b) => b.viewCount - a.viewCount),
-        byVideos: [...accounts].sort((a, b) => b.videoCount - a.videoCount),
+        bySubscribers: [...accounts].sort((first, second) => second.subscriberCount - first.subscriberCount),
+        byViews: [...accounts].sort((first, second) => second.viewCount - first.viewCount),
+        byVideos: [...accounts].sort((first, second) => second.videoCount - first.videoCount),
     };
 
     const totals = accounts.reduce((acc, account) => ({
@@ -64,11 +64,11 @@ export function filterAndSortVideos(videos, { search, minViews, maxViews, sort, 
 
     const sortField = sort || 'viewCount';
     const sortOrder = order === 'asc' ? 1 : -1;
-    result.sort((a, b) => {
-        const aVal = a[sortField] ?? 0;
-        const bVal = b[sortField] ?? 0;
-        if (typeof aVal === 'string') return sortOrder * aVal.localeCompare(bVal);
-        return sortOrder * (bVal - aVal);
+    result.sort((first, second) => {
+        const firstValue = first[sortField] ?? 0;
+        const secondValue = second[sortField] ?? 0;
+        if (typeof firstValue === 'string') return sortOrder * firstValue.localeCompare(secondValue);
+        return sortOrder * (secondValue - firstValue);
     });
     return result;
 }

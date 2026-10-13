@@ -8,6 +8,24 @@ import { backfillChannelData } from '../services/accountRefresh.js';
 
 const app = new Hono();
 
+// api errors can echo request urls that carry the api key or access token
+function redactUrls(message) {
+    return message.replace(/https?:\/\/[^\s)]+/g, '[url]');
+}
+
+async function storeInstagramSnapshot({ supabase, redis, userId, id }, account, profile, media) {
+    await Promise.all([
+        setIGCache(redis, userId, id, { media, fetchedAt: new Date().toISOString() }),
+        updateAccount(supabase, account.id, {
+            followersCount: profile.followersCount,
+            followsCount: profile.followsCount,
+            mediaCount: profile.mediaCount,
+            profilePictureUrl: profile.profilePictureUrl,
+            lastUpdated: new Date().toISOString(),
+        }, userId),
+    ]);
+}
+
 app.get('/accounts/:id/analytics', async (c) => {
     try {
         const supabase = c.get('supabase');
@@ -31,8 +49,7 @@ app.get('/accounts/:id/analytics', async (c) => {
             videoCount: videos.length,
         });
     } catch (err) {
-        const safe = err.message.replace(/https?:\/\/[^\s)]+/g, '[url]');
-        return c.json({ success: false, message: safe }, 400);
+        return c.json({ success: false, message: redactUrls(err.message) }, 400);
     }
 });
 
@@ -77,7 +94,6 @@ app.get('/comparison', async (c) => {
 app.get('/accounts/:id/ig-analytics', async (c) => {
     try {
         const supabase = c.get('supabase');
-        const redis = c.get('redis');
         const userId = c.get('userId');
         const id = c.req.param('id');
 
@@ -93,31 +109,20 @@ app.get('/accounts/:id/ig-analytics', async (c) => {
             fetchInstagramProfile(account.igUserId, account.accessToken),
             fetchInstagramMedia(account.igUserId, account.accessToken, 500),
         ]);
-
-        await Promise.all([
-            setIGCache(redis, userId, id, { media, fetchedAt: new Date().toISOString() }),
-            updateAccount(supabase, account.id, {
-                followersCount: profile.followersCount,
-                followsCount: profile.followsCount,
-                mediaCount: profile.mediaCount,
-                profilePictureUrl: profile.profilePictureUrl,
-                lastUpdated: new Date().toISOString(),
-            }, userId),
-        ]);
+        await storeInstagramSnapshot({ supabase, redis: c.get('redis'), userId, id }, account, profile, media);
 
         const analytics = computeInstagramAnalytics(profile, media);
-        const { accessToken: _, ...safeAcc } = account;
+        const { accessToken: _, ...publicAccount } = account;
 
         return c.json({
             success: true,
             profile: { ...profile },
-            account: safeAcc,
+            account: publicAccount,
             analytics,
             mediaCount: media.length,
         });
     } catch (err) {
-        const safe = err.message.replace(/https?:\/\/[^\s)]+/g, '[url]');
-        return c.json({ success: false, message: safe }, 400);
+        return c.json({ success: false, message: redactUrls(err.message) }, 400);
     }
 });
 
@@ -147,8 +152,7 @@ app.get('/accounts/:id/ig-media', async (c) => {
 
         return c.json({ success: true, media, fetchedAt });
     } catch (err) {
-        const safe = err.message.replace(/https?:\/\/[^\s)]+/g, '[url]');
-        return c.json({ success: false, message: safe }, 400);
+        return c.json({ success: false, message: redactUrls(err.message) }, 400);
     }
 });
 
@@ -161,15 +165,15 @@ app.get('/videos/all', async (c) => {
         const accounts = await getAccounts(supabase, userId);
 
         const allVideos = [];
-        for (const acct of accounts) {
-            if (channelId && acct.id !== channelId) continue;
-            const cached = await getVideosCache(redis, userId, acct.id);
+        for (const account of accounts) {
+            if (channelId && account.id !== channelId) continue;
+            const cached = await getVideosCache(redis, userId, account.id);
             if (cached && cached.videos) {
-                allVideos.push(...cached.videos.map(v => ({
-                    ...v,
-                    channelTitle: acct.title || acct.channelTitle,
-                    channelId: acct.id,
-                    channelThumbnail: acct.thumbnails?.default || '',
+                allVideos.push(...cached.videos.map(video => ({
+                    ...video,
+                    channelTitle: account.title || account.channelTitle,
+                    channelId: account.id,
+                    channelThumbnail: account.thumbnails?.default || '',
                 })));
             }
         }
@@ -180,7 +184,7 @@ app.get('/videos/all', async (c) => {
             success: true,
             videos,
             total: videos.length,
-            channels: accounts.map(a => ({ id: a.id, title: a.title })),
+            channels: accounts.map(account => ({ id: account.id, title: account.title })),
         });
     } catch (err) {
         return c.json({ success: false, message: err.message }, 500);

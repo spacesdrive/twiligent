@@ -57,7 +57,10 @@ The Instagram `accessToken` stored in `accounts.data.accessToken` is a long-live
 **Protection mechanisms:**
 1. Stored only in the Supabase `accounts` table (server-side)
 2. Never returned in API responses - `safeAccount()` strips it
-3. Only used by: `services/instagram.js` (for API calls) and `utils/scheduler.js` (for cron publishing)
+3. Only used server-side, by these modules:
+   - Graph API calls: `services/instagramApi.js`, `services/instagramMedia.js` and `services/instagramPublishing.js` (the token is passed in as `access_token`)
+   - Obtaining and storing tokens: `services/instagramTokens.js` (long-lived exchange and refresh), `services/instagramOAuth.js` (OAuth code exchange), `services/accountConnect.js` and `services/accountFactory.js` (pasted tokens and new account rows)
+   - Reading the stored token: `routes/publishing.js` and `utils/scheduler.js` (publishing), `routes/analytics.js` (Instagram analytics and media), `services/accountRefresh.js` (profile refresh) and `services/overviewSummary.js` (overview cache warm-up)
 4. The `GET /api/accounts` endpoint passes all accounts through `safeAccount()` before returning
 
 **If you add a new route that returns account data, you must call `safeAccount()`.** There is no automatic stripping - it is an explicit step in route handlers.

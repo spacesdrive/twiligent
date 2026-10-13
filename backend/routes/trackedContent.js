@@ -18,11 +18,22 @@ const router = new Hono();
 async function redditCookieFor(supabase, accountId, userId) {
     if (!accountId) return { cookie: null };
     const account = await getAccountById(supabase, accountId, userId);
-    if (!account || account.platform !== 'reddit') return { notFound: true };
+    if (!account || account.platform !== 'reddit') return { isNotFound: true };
     return { cookie: account.cookie || null };
 }
 
-// List all tracked content for the current user
+// returns the fetched data, or an error response the handler sends unchanged
+async function fetchNewTrackedData(c, contentType, url, accountId) {
+    if (contentType === 'youtube') {
+        const apiKey = c.env.YOUTUBE_API_KEY?.replace(/^﻿/, '').trim();
+        if (!apiKey) return { response: c.json({ error: 'YouTube API key not configured on this server' }, 400) };
+        return { data: await fetchTrackedYouTubeData(url, apiKey) };
+    }
+    const reddit = await redditCookieFor(c.get('supabase'), accountId, c.get('userId'));
+    if (reddit.isNotFound) return { response: c.json({ error: 'Reddit account not found' }, 404) };
+    return { data: await fetchTrackedPostData(url, reddit.cookie) };
+}
+
 router.get('/tracked-content', async (c) => {
     const userId = c.get('userId');
     const supabase = c.get('supabase');
@@ -35,7 +46,6 @@ router.get('/tracked-content', async (c) => {
     }
 });
 
-// Add a new tracked content item (Reddit post or YouTube video)
 router.post('/tracked-content', async (c) => {
     const userId = c.get('userId');
     const supabase = c.get('supabase');
@@ -48,17 +58,8 @@ router.post('/tracked-content', async (c) => {
     if (!contentType) return c.json({ error: 'Only Reddit and YouTube URLs are supported' }, 400);
 
     try {
-        let fetchedData;
-
-        if (contentType === 'youtube') {
-            const apiKey = c.env.YOUTUBE_API_KEY?.replace(/^﻿/, '').trim();
-            if (!apiKey) return c.json({ error: 'YouTube API key not configured on this server' }, 400);
-            fetchedData = await fetchTrackedYouTubeData(url.trim(), apiKey);
-        } else {
-            const reddit = await redditCookieFor(supabase, accountId, userId);
-            if (reddit.notFound) return c.json({ error: 'Reddit account not found' }, 404);
-            fetchedData = await fetchTrackedPostData(url.trim(), reddit.cookie);
-        }
+        const fetched = await fetchNewTrackedData(c, contentType, url.trim(), accountId);
+        if (fetched.response) return fetched.response;
 
         const id = Date.now().toString(36) + Math.random().toString(36).slice(2);
         await createTrackedPost(supabase, {
@@ -69,7 +70,7 @@ router.post('/tracked-content', async (c) => {
             category,
             contentType,
         }, userId);
-        await updateTrackedPost(supabase, id, { data: fetchedData }, userId);
+        await updateTrackedPost(supabase, id, { data: fetched.data }, userId);
 
         const created = await getTrackedPostById(supabase, id, userId);
         return c.json(created, 201);
@@ -94,15 +95,15 @@ router.put('/tracked-content/:id', async (c) => {
         const isYouTube = (existing.contentType || 'reddit') === 'youtube';
 
         if (manualViews !== undefined) {
-            const views = manualViewsPatch(manualViews, isYouTube);
-            if (views.error) return c.json({ error: views.error }, 400);
-            await patchTrackedPostData(supabase, id, views.patch, userId);
+            const viewsResult = manualViewsPatch(manualViews, isYouTube);
+            if (viewsResult.error) return c.json({ error: viewsResult.error }, 400);
+            await patchTrackedPostData(supabase, id, viewsResult.patch, userId);
         }
 
         if (imageUrl !== undefined) {
-            const image = imageUrlPatch(imageUrl, isYouTube);
-            if (image.error) return c.json({ error: image.error }, 400);
-            await patchTrackedPostData(supabase, id, image.patch, userId);
+            const imageResult = imageUrlPatch(imageUrl, isYouTube);
+            if (imageResult.error) return c.json({ error: imageResult.error }, 400);
+            await patchTrackedPostData(supabase, id, imageResult.patch, userId);
         }
 
         const updates = {};
@@ -121,7 +122,6 @@ router.put('/tracked-content/:id', async (c) => {
     }
 });
 
-// Delete a tracked content item
 router.delete('/tracked-content/:id', async (c) => {
     const id = c.req.param('id');
     const userId = c.get('userId');
@@ -137,7 +137,6 @@ router.delete('/tracked-content/:id', async (c) => {
     }
 });
 
-// Refresh live data for a single tracked content item
 router.post('/tracked-content/:id/refresh', async (c) => {
     const id = c.req.param('id');
     const userId = c.get('userId');

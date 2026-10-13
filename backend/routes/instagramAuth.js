@@ -1,4 +1,4 @@
-import { verifyOAuthState } from '../lib/cache.js';
+import { verifyOAuthState } from '../lib/oauthState.js';
 import {
     readInstagramOAuthConfig, buildAuthorizationUrl, connectInstagramFromOAuth,
 } from '../services/instagramOAuth.js';

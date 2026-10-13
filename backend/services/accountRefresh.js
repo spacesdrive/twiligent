@@ -68,8 +68,8 @@ export async function backfillChannelData(supabase, account, apiKey, userId) {
             lastUpdated: new Date().toISOString(),
         }, userId);
         Object.assign(account, channelData);
-    } catch (e) {
-        console.error('Failed to backfill channel data:', e.message);
+    } catch (err) {
+        console.error('Failed to backfill channel data:', err.message);
     }
 }
 

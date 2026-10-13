@@ -1,5 +1,3 @@
-// fetch is a global in Cloudflare Workers - no import needed.
-
 // adds the key to the caller's params object, as callers always pass a fresh one
 export async function ytFetch(endpoint, params, apiKey) {
     const url = new URL(`https://www.googleapis.com/youtube/v3/${endpoint}`);

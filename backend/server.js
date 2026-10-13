@@ -35,7 +35,7 @@ app.use('*', async (c, next) => {
 
 app.get('/api/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
-// public: the oauth redirect carries no jwt, so the user comes from the redis state token
+// public: the oauth redirect carries no jwt, so the user comes from the signed hmac state token
 app.get('/api/auth/instagram/callback', callbackHandler);
 
 const api = new Hono();

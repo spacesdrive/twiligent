@@ -1,5 +1,3 @@
-// fetch is a global in Cloudflare Workers - no import needed.
-
 const IG_GRAPH_URL = 'https://graph.instagram.com';
 const IG_API_VERSION = 'v25.0';
 const REQUEST_TIMEOUT_MS = 15000;

@@ -1,4 +1,4 @@
-import { createOAuthState } from '../lib/cache.js';
+import { createOAuthState } from '../lib/oauthState.js';
 import { createAccount, getAccounts } from '../lib/db.js';
 import { fetchInstagramProfile } from './instagramApi.js';
 import { buildInstagramAccount } from './accountFactory.js';
