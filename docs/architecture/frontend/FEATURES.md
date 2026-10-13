@@ -85,8 +85,15 @@ frontend/src/
 │   │   ├── publishConstants.js             <- Content types, statuses, intervals, caption limit
 │   │   └── publishHelpers.js, scheduleHelpers.js, queueHelpers.js   <- Pure helpers with *.test.js
 │   ├── settings/
-│   │   ├── Settings.jsx                    <- Theme, server keys, scheduling, platform requirements, links
-│   │   └── SchedulingSetupGuide.jsx        <- Optional GitHub backup scheduler steps for administrators
+│   │   ├── Settings.jsx                    <- Page: loads server settings, then renders each section; keeps the #hash scroll
+│   │   ├── SettingsSection.jsx, AppearanceSection.jsx, ServerKeysSection.jsx, SchedulingSection.jsx
+│   │   ├── PlatformRequirementsSection.jsx, UsefulLinksSection.jsx
+│   │   ├── SchedulingSetupGuide.jsx        <- Optional GitHub backup scheduler steps for administrators
+│   │   ├── SchedulingSetupSteps.jsx, SetupStep.jsx, GithubRepoForm.jsx, CopyChip.jsx, GuideLinkButton.jsx, RepoLinkButton.jsx
+│   │   ├── useServerSettings.js            <- Loads keys and the saved repository; saves the repository
+│   │   ├── useApiHealthCheck.js            <- Runs api.health() for the server keys section
+│   │   ├── settingsData.js                 <- Pure load sequence (api injected), links, health text (settingsData.test.js)
+│   │   └── schedulingProgress.js           <- Pure guide progress in localStorage (schedulingProgress.test.js)
 │   ├── analytics/videos/
 │   │   ├── VideoExplorer.jsx               <- Page: YouTube video library with filtering
 │   │   ├── VideoFilters.jsx, LayoutToggle.jsx, VideoListTable.jsx, VideoSortHeader.jsx, VideoGrid.jsx

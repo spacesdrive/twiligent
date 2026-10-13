@@ -109,7 +109,7 @@ frontend/src/
     accounts/
       AccountManager.jsx  Add/remove/refresh accounts (page; dialog, cards, hooks and helpers beside it)
     settings/
-      Settings.jsx        API keys status + GitHub config
+      Settings.jsx        API keys status + GitHub config (page; sections, setup guide, hooks and helpers beside it)
 ```
 
 ## Naming Conventions
