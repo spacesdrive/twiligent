@@ -1,4 +1,4 @@
-import type { Account, ChannelThumbnails } from './domain.ts';
+import type { Account, ChannelThumbnails, SafeAccount } from './domain.ts';
 
 // a video as normalizeYouTubeVideo() stores it in the videos: cache
 export interface YouTubeVideo {
@@ -241,9 +241,10 @@ export interface YouTubeVideosResponse {
 }
 
 // GET /api/comparison; comparison is null when the user has no accounts
+// GET /api/comparison ranks YouTube channels only, with secrets removed by safeAccount()
 export interface YouTubeComparisonResponse {
     success: true;
-    comparison: YouTubeAccountComparison | null;
+    comparison: YouTubeAccountComparison<SafeAccount> | null;
 }
 
 export interface YouTubeLibraryChannel {

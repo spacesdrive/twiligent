@@ -14,6 +14,8 @@ import { mountWithContext, callRoute } from '../fixtures/routeHarness.ts';
 import type { RouteStep } from '../fixtures/routeHarness.ts';
 import type { AppEnv } from '../../types/app.ts';
 import type { Env } from '../../types/env.ts';
+import type { YouTubeComparisonResponse } from '../../../shared/types/youtube.ts';
+import assert from 'node:assert/strict';
 
 interface StoreWrite {
     key: string;
@@ -120,6 +122,18 @@ describe('analytics and overview routes golden output', () => {
         ], { redis: cachedRedis() });
         const withoutKey = await runCalls(analyticsRouter, [['GET', '/accounts/yt1/analytics']], { env: {} });
         assertGolden({ result, withoutKey }, 'analyticsRoutes.youtube');
+    });
+
+    test('the comparison ranks YouTube channels only and never returns stored secrets', async () => {
+        const supabase = fakeSupabase(ACCOUNT_ROWS);
+        const app = mountWithContext(server => server.route('/', analyticsRouter), { supabase, redis: null, userId: 'user-1' });
+        const response = await callRoute(app, 'GET', '/comparison');
+        const body = JSON.parse(response.body) as YouTubeComparisonResponse;
+        const ranked = body.comparison!.rankings.bySubscribers;
+        assert.deepEqual(ranked.map(account => account.id), ['yt2', 'yt1', 'yt3']);
+        for (const secret of ['accessToken', 'cookie', 'encryptedPassword', 'encryptedTotpSecret', 'authToken', 'ct0']) {
+            assert.equal(response.body.includes(`"${secret}"`), false, `${secret} leaked`);
+        }
     });
 
     test('an empty account list has no comparison', async () => {

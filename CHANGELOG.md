@@ -54,6 +54,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- `GET /api/comparison` returned stored account secrets (Instagram tokens, Reddit cookies) and ranked Instagram and Reddit accounts with YouTube channels; it now ranks YouTube channels only, passed through `safeAccount()`
+
 - The frontend test for the Google sign-in nonce failed about one run in 23, because it required at least 40 characters while the nonce length varies around 36 to 43
 - The Worker cron and the GitHub Actions workflow could both publish the same scheduled post; posts are now claimed atomically
 - Channels with no public videos failed to load with "playlist cannot be found"; they now open with a "No public videos yet" message

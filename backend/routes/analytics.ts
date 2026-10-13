@@ -1,4 +1,5 @@
 import { Hono } from 'hono';
+import { safeAccount } from '../lib/safeAccount.ts';
 import { getAccounts, getAccountById, updateAccount } from '../lib/db.ts';
 import { getVideosCache, setVideosCache, getIGCache, setIGCache } from '../lib/cache.ts';
 import { fetchAllVideos, computeVideoAnalytics } from '../services/youtube.ts';
@@ -104,8 +105,10 @@ app.get('/accounts/:id/videos', async (c) => {
 app.get('/comparison', async (c) => {
     try {
         const accounts = await getAccounts(c.get('supabase'), c.get('userId'));
-        if (accounts.length === 0) return c.json({ success: true, comparison: null } satisfies YouTubeComparisonResponse);
-        return c.json({ success: true, comparison: accountComparison(accounts) } satisfies YouTubeComparisonResponse);
+        // only channels have the counts being ranked, and stored secrets never leave the Worker
+        const channels = accounts.filter(account => account.platform === 'youtube').map(safeAccount);
+        if (channels.length === 0) return c.json({ success: true, comparison: null } satisfies YouTubeComparisonResponse);
+        return c.json({ success: true, comparison: accountComparison(channels) } satisfies YouTubeComparisonResponse);
     } catch (err) {
         return c.json({ success: false, message: (err as Error).message }, 500);
     }
