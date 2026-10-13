@@ -14,4 +14,11 @@ export interface Env {
     ALLOWED_ORIGINS?: string;
     UPSTASH_REDIS_REST_URL?: string;
     UPSTASH_REDIS_REST_TOKEN?: string;
+    // Supabase Auth's Send Email hook: the hook secret (v1,whsec_...) and the Resend account that delivers the emails
+    SEND_EMAIL_HOOK_SECRET?: string;
+    RESEND_API_KEY?: string;
+    // the sender, such as "Twiligent <no-reply@example.com>", on a domain verified in Resend
+    EMAIL_FROM?: string;
+    // emails a day across all users; defaults to 100, Resend's free daily quota
+    EMAIL_DAILY_LIMIT?: string;
 }
