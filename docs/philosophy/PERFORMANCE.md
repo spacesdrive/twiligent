@@ -18,9 +18,10 @@ Request
 
 | Resource | Cache key | TTL | Note |
 |---|---|---|---|
-| YouTube analytics | `videos:{userId}:{accountId}` | None set (bug - see ROADMAP) | Should be 1 hour |
-| Instagram analytics | `ig:{userId}:{accountId}` | None set (bug - see ROADMAP) | Should be 1 hour |
-| OAuth state | `oauth_ig:{state}` | 10 minutes | Security-critical - do not extend |
+| YouTube analytics | `videos:{userId}:{accountId}` | 6 hours | Versioned; old versions read as a miss |
+| Instagram analytics | `ig:{userId}:{accountId}` | 6 hours | Versioned; old versions read as a miss |
+| Reddit analytics | `reddit:{userId}:{accountId}` | 6 hours | |
+| OAuth state | none (HMAC-signed token, see `lib/oauthState.js`) | 10 minutes | Security-critical - do not extend |
 
 Cache invalidation happens on:
 - Account deletion (explicit `redis.del()`)

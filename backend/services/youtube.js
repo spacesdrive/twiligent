@@ -39,25 +39,32 @@ function extractChannelId(input) {
     return input;
 }
 
+// returns null when the lookup finds nothing or fails, so the next strategy can run
+async function lookupChannelId(endpoint, params, pickId, apiKey) {
+    try {
+        const data = await ytFetch(endpoint, params, apiKey);
+        if (data.items && data.items.length > 0) return pickId(data.items[0]);
+        return null;
+    } catch {
+        return null;
+    }
+}
+
 export async function resolveChannelId(input, apiKey) {
     const extracted = extractChannelId(input);
     if (!extracted) throw new Error('Invalid input');
     if (/^UC[\w-]{22}$/.test(extracted)) return extracted;
 
-    try {
-        const data = await ytFetch('channels', { part: 'id', forHandle: extracted }, apiKey);
-        if (data.items && data.items.length > 0) return data.items[0].id;
-    } catch { }
+    // sequential on purpose: a search costs 100 quota units
+    const byHandle = await lookupChannelId('channels', { part: 'id', forHandle: extracted }, (item) => item.id, apiKey);
+    if (byHandle !== null) return byHandle;
 
-    try {
-        const data = await ytFetch('channels', { part: 'id', forUsername: extracted }, apiKey);
-        if (data.items && data.items.length > 0) return data.items[0].id;
-    } catch { }
+    const byUsername = await lookupChannelId('channels', { part: 'id', forUsername: extracted }, (item) => item.id, apiKey);
+    if (byUsername !== null) return byUsername;
 
-    try {
-        const data = await ytFetch('search', { part: 'snippet', q: extracted, type: 'channel', maxResults: '1' }, apiKey);
-        if (data.items && data.items.length > 0) return data.items[0].snippet.channelId;
-    } catch { }
+    const searchParams = { part: 'snippet', q: extracted, type: 'channel', maxResults: '1' };
+    const bySearch = await lookupChannelId('search', searchParams, (item) => item.snippet.channelId, apiKey);
+    if (bySearch !== null) return bySearch;
 
     throw new Error('Could not resolve channel. Please provide a valid Channel ID (starts with UC).');
 }
@@ -174,16 +181,19 @@ function formatCompact(n) {
 }
 
 function extractYouTubeVideoId(url) {
+    let parsedUrl;
     try {
-        const u = new URL(url.trim());
-        if (u.hostname === 'youtu.be') return u.pathname.slice(1).split('?')[0];
-        if (u.hostname.includes('youtube.com')) {
-            if (u.pathname.startsWith('/shorts/')) return u.pathname.split('/')[2];
-            if (u.pathname.startsWith('/embed/')) return u.pathname.split('/')[2];
-            return u.searchParams.get('v');
-        }
-    } catch {}
-    return null;
+        parsedUrl = new URL(url.trim());
+    } catch {
+        // not a url at all, so it has no video id
+        return null;
+    }
+
+    const { hostname, pathname, searchParams } = parsedUrl;
+    if (hostname === 'youtu.be') return pathname.slice(1).split('?')[0];
+    if (!hostname.includes('youtube.com')) return null;
+    if (pathname.startsWith('/shorts/') || pathname.startsWith('/embed/')) return pathname.split('/')[2];
+    return searchParams.get('v');
 }
 
 export async function fetchTrackedYouTubeData(videoUrl, apiKey) {

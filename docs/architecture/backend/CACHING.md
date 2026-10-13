@@ -69,7 +69,7 @@ return c.json(result);
 
 ## HMAC OAuth State (Not Redis)
 
-The `createOAuthState()` and `verifyOAuthState()` functions in `cache.js` are **not** Redis-based. They use `crypto.subtle.sign()` (native Web Crypto API in Workers) to create self-verifying state tokens. Redis is not involved.
+The `createOAuthState()` and `verifyOAuthState()` functions live in `lib/oauthState.js` and are re-exported from `cache.js` for existing importers. They are **not** Redis-based. They use `crypto.subtle.sign()` (native Web Crypto API in Workers) to create self-verifying state tokens. Redis is not involved.
 
 ```
 State format: base64url(userId:timestamp).base64url(HMAC-SHA256-signature)

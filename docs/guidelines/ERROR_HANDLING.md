@@ -29,17 +29,18 @@ Supabase errors are objects with `message`, `code`, and `details`. Throwing the 
 
 ### Cache Operations (lib/cache.js)
 
-Always catch and silently ignore - cache failures must never surface to users:
+Always catch and fall back silently - cache failures must never surface to users. Every `catch` returns an explicit fallback with a one-line reason, so no catch block is empty:
 
 ```js
 try {
-    return (await redis.get(key)) || null;
+    return await redis.get(key);
 } catch {
+    // a cache miss falls back to the live api
     return null;
 }
 ```
 
-The empty `catch` block is intentional. Do not log cache errors - they create noise for transient Redis connection issues.
+`cache.js` keeps this in three private helpers (`readKey`, `writeKey`, `deleteKey`) that every exported function uses. Do not log cache errors - they create noise for transient Redis connection issues.
 
 ### Route Handlers (routes/)
 

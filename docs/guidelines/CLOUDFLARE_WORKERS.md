@@ -99,7 +99,7 @@ async function hmacSign(secret, message) {
 }
 ```
 
-This pattern is used in `backend/lib/cache.js` for OAuth state tokens.
+This pattern is used in `backend/lib/oauthState.js` for OAuth state tokens.
 
 ## Local Development
 
