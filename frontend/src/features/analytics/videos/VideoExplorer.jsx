@@ -19,7 +19,7 @@ import MediaCard, { MediaChip } from '@/components/MediaCard';
 import { EmptyState } from '@/components/StateViews';
 import { VIEW_TIERS, filterByTier, matchesText, pageSlice } from '@/lib/library';
 import { useChannelVideos } from './useChannelVideos';
-import { fmtNum, fmtDate, fmtDuration, fmtPercent, timeAgo } from '../../../utils/formatters';
+import { fmtNum, fmtDate, fmtDuration, fmtPercent, timeAgo, fmtCount } from '../../../utils/formatters';
 import { cn } from '@/lib/utils';
 
 const ITEMS_PER_PAGE = 25;
@@ -232,8 +232,8 @@ export default function VideoExplorer() {
                   </TableCell>
                   {channels.length > 1 && <TableCell className="max-w-36 truncate text-small text-ink-muted">{v.channelTitle}</TableCell>}
                   <TableCell className="text-right font-semibold text-ink">{fmtNum(v.viewCount)}</TableCell>
-                  <TableCell className="text-right text-ink-muted">{fmtNum(v.likeCount)}</TableCell>
-                  <TableCell className="text-right text-ink-muted">{fmtNum(v.commentCount)}</TableCell>
+                  <TableCell className="text-right text-ink-muted">{fmtCount(v.likeCount)}</TableCell>
+                  <TableCell className="text-right text-ink-muted">{fmtCount(v.commentCount)}</TableCell>
                   <TableCell className="text-right">
                     <Badge variant={parseFloat(v.engagementRate) > 5 ? 'success' : 'secondary'}>{fmtPercent(v.engagementRate)}</Badge>
                   </TableCell>
@@ -264,8 +264,8 @@ export default function VideoExplorer() {
               bottomRight={v.durationSeconds > 0 && <MediaChip>{fmtDuration(v.durationSeconds)}</MediaChip>}
               meta={
                 <>
-                  <span className="flex items-center gap-1"><ThumbsUp />{fmtNum(v.likeCount)}</span>
-                  <span className="flex items-center gap-1"><MessageSquare />{fmtNum(v.commentCount)}</span>
+                  <span className="flex items-center gap-1"><ThumbsUp />{fmtCount(v.likeCount)}</span>
+                  <span className="flex items-center gap-1"><MessageSquare />{fmtCount(v.commentCount)}</span>
                   <span className="ml-auto">{channels.length > 1 ? v.channelTitle : timeAgo(v.publishedAt)}</span>
                 </>
               }

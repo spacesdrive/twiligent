@@ -15,6 +15,12 @@ async function ytFetch(endpoint, params, apiKey) {
     return data;
 }
 
+function optionalCount(value) {
+    if (value == null) return null;
+    const n = parseInt(value, 10);
+    return Number.isFinite(n) ? n : null;
+}
+
 function extractChannelId(input) {
     if (!input) return null;
     input = input.trim();
@@ -138,8 +144,9 @@ export async function fetchAllVideos(playlistId, apiKey, maxPages = 10) {
                 licensedContent: v.contentDetails.licensedContent || false,
                 projection: v.contentDetails.projection || 'rectangular',
                 viewCount: parseInt(v.statistics.viewCount) || 0,
-                likeCount: parseInt(v.statistics.likeCount) || 0,
-                commentCount: parseInt(v.statistics.commentCount) || 0,
+                // YouTube omits a count the owner hid (likes) or switched off (comments); null keeps that apart from zero.
+                likeCount: optionalCount(v.statistics.likeCount),
+                commentCount: optionalCount(v.statistics.commentCount),
                 privacyStatus: v.status?.privacyStatus || 'public',
                 embeddable: v.status?.embeddable || false,
                 madeForKids: v.status?.madeForKids || false,
@@ -203,8 +210,8 @@ export async function fetchTrackedYouTubeData(videoUrl, apiKey) {
         thumbnail: s.thumbnails?.medium?.url || s.thumbnails?.default?.url || '',
         publishedAt: s.publishedAt,
         viewCount: parseInt(st.viewCount || '0', 10),
-        likeCount: parseInt(st.likeCount || '0', 10),
-        commentCount: parseInt(st.commentCount || '0', 10),
+        likeCount: optionalCount(st.likeCount),
+        commentCount: optionalCount(st.commentCount),
         isShort,
         permalink: isShort
             ? `https://www.youtube.com/shorts/${videoId}`

@@ -13,7 +13,7 @@ import MediaCard, { MediaChip } from '@/components/MediaCard';
 import { EmptyState } from '@/components/StateViews';
 import { VIEW_TIERS, filterByTier, matchesText, pageSlice } from '@/lib/library';
 import { useChannelVideos } from '../videos/useChannelVideos';
-import { fmtNum, fmtDuration } from '../../../utils/formatters';
+import { fmtNum, fmtDuration, fmtCount } from '../../../utils/formatters';
 import { cn } from '@/lib/utils';
 
 const ITEMS_PER_PAGE = 24;
@@ -152,8 +152,8 @@ export default function ShortsExplorer() {
               bottomRight={<MediaChip>{fmtDuration(v.durationSeconds)}</MediaChip>}
               meta={
                 <>
-                  <span className="flex items-center gap-1"><ThumbsUp />{fmtNum(v.likeCount)}</span>
-                  <span className="flex items-center gap-1"><MessageSquare />{fmtNum(v.commentCount)}</span>
+                  <span className="flex items-center gap-1"><ThumbsUp />{fmtCount(v.likeCount)}</span>
+                  <span className="flex items-center gap-1"><MessageSquare />{fmtCount(v.commentCount)}</span>
                 </>
               }
             />

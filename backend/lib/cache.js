@@ -2,14 +2,24 @@
 // If redis is null (Upstash not configured) or the call fails, all operations
 // are silent no-ops - cache failures must never break the main request.
 
+// Platform stats change constantly, so cached analytics expire and refetch rather than going stale.
+const ANALYTICS_TTL_SECONDS = 6 * 60 * 60;
+
+// Bump when the cached video shape changes so entries written by older code read as a miss.
+// v2: likeCount and commentCount are null when YouTube hides them, instead of 0.
+const VIDEOS_CACHE_VERSION = 2;
+
 export async function getVideosCache(redis, userId, accountId) {
     if (!redis) return null;
-    try { return (await redis.get(`videos:${userId}:${accountId}`)) || null; } catch { return null; }
+    try {
+        const cached = await redis.get(`videos:${userId}:${accountId}`);
+        return cached?.version === VIDEOS_CACHE_VERSION ? cached : null;
+    } catch { return null; }
 }
 
 export async function setVideosCache(redis, userId, accountId, data) {
     if (!redis) return;
-    try { await redis.set(`videos:${userId}:${accountId}`, data); } catch { /* non-fatal */ }
+    try { await redis.set(`videos:${userId}:${accountId}`, { ...data, version: VIDEOS_CACHE_VERSION }, { ex: ANALYTICS_TTL_SECONDS }); } catch { /* non-fatal */ }
 }
 
 export async function deleteVideosCache(redis, userId, accountId) {
@@ -30,7 +40,7 @@ export async function getIGCache(redis, userId, accountId) {
 
 export async function setIGCache(redis, userId, accountId, data) {
     if (!redis) return;
-    try { await redis.set(`ig:${userId}:${accountId}`, { ...data, version: IG_CACHE_VERSION }); } catch { /* non-fatal */ }
+    try { await redis.set(`ig:${userId}:${accountId}`, { ...data, version: IG_CACHE_VERSION }, { ex: ANALYTICS_TTL_SECONDS }); } catch { /* non-fatal */ }
 }
 
 export async function deleteIGCache(redis, userId, accountId) {
@@ -45,7 +55,7 @@ export async function getRedditCache(redis, userId, accountId) {
 
 export async function setRedditCache(redis, userId, accountId, data) {
     if (!redis) return;
-    try { await redis.set(`reddit:${userId}:${accountId}`, data); } catch { /* non-fatal */ }
+    try { await redis.set(`reddit:${userId}:${accountId}`, data, { ex: ANALYTICS_TTL_SECONDS }); } catch { /* non-fatal */ }
 }
 
 export async function deleteRedditCache(redis, userId, accountId) {

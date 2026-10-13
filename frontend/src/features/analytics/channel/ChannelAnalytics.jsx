@@ -23,7 +23,7 @@ import { AccountAvatar } from '@/components/platform';
 import { SERIES, axisProps, axisTick, gridProps, legendStyle, tooltipCursor, tooltipStyle } from '@/lib/chart';
 import { useAppContext } from '../../../context/AppContext';
 import { api } from '../../../services/api';
-import { fmtNum, fmtNumFull, fmtDate, fmtPercent, fmtDuration, CATEGORY_MAP } from '../../../utils/formatters';
+import { fmtNum, fmtNumFull, fmtDate, fmtPercent, fmtDuration, CATEGORY_MAP, fmtCount } from '../../../utils/formatters';
 import { cn } from '@/lib/utils';
 
 const watchUrl = id => `https://www.youtube.com/watch?v=${id}`;
@@ -70,8 +70,8 @@ function VideoTable({ videos }) {
                   <a href={watchUrl(v.videoId)} target="_blank" rel="noopener noreferrer" className="block truncate text-sm font-medium text-ink hover:underline">{v.title}</a>
                 </TableCell>
                 <TableCell className="text-right font-semibold text-ink">{fmtNum(v.viewCount)}</TableCell>
-                <TableCell className="text-right text-ink-muted">{fmtNum(v.likeCount)}</TableCell>
-                <TableCell className="text-right text-ink-muted">{fmtNum(v.commentCount)}</TableCell>
+                <TableCell className="text-right text-ink-muted">{fmtCount(v.likeCount)}</TableCell>
+                <TableCell className="text-right text-ink-muted">{fmtCount(v.commentCount)}</TableCell>
                 <TableCell className="text-right">
                   <Badge variant={parseFloat(v.engagementRate) > 5 ? 'success' : 'secondary'}>{fmtPercent(v.engagementRate)}</Badge>
                 </TableCell>
@@ -283,7 +283,7 @@ export default function ChannelAnalytics() {
                 image={video.thumbnail}
                 title={video.title}
                 topLeft={<MediaChip>{label}</MediaChip>}
-                meta={<span>{fmtNum(video.viewCount)} views, {fmtNum(video.likeCount)} likes</span>}
+                meta={<span>{fmtNum(video.viewCount)} views, {video.likeCount == null ? 'likes hidden' : `${fmtNum(video.likeCount)} likes`}</span>}
               />
             ))}
           </div>

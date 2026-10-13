@@ -7,6 +7,11 @@ export function fmtNum(n) {
     return n.toLocaleString();
 }
 
+// For counts a platform can hide (YouTube likes, disabled comments): null means hidden, not zero.
+export function fmtCount(n) {
+    return n == null ? 'Hidden' : fmtNum(n);
+}
+
 export function fmtNumFull(n) {
     if (n == null) return '0';
     return Number(n).toLocaleString();
