@@ -38,28 +38,32 @@ function startWarm(context: SummaryContext, accountId: string, task: WarmTask | 
 }
 
 function redditWarmTask(context: SummaryContext, account: Account): WarmTask | null {
-    if (!account.username || !account.cookie) return null;
+    const { username, cookie } = account;
+    if (!username || !cookie) return null;
     return async () => {
         const [profile, posts] = await Promise.all([
-            fetchRedditProfile(account.username!, account.cookie),
-            fetchRedditPosts(account.username!, account.cookie, 100),
+            fetchRedditProfile(username, cookie),
+            fetchRedditPosts(username, cookie, 100),
         ]);
         await setRedditCache(context.redis, context.userId, account.id, { profile, analytics: computeRedditAnalytics(profile, posts), posts });
     };
 }
 
 function instagramWarmTask(context: SummaryContext, account: Account): WarmTask | null {
-    if (!account.igUserId || !account.accessToken) return null;
+    const { igUserId, accessToken } = account;
+    if (!igUserId || !accessToken) return null;
     return async () => {
-        const media = await fetchInstagramMedia(account.igUserId!, account.accessToken!, 500);
+        const media = await fetchInstagramMedia(igUserId, accessToken, 500);
         await setIGCache(context.redis, context.userId, account.id, { media, fetchedAt: new Date().toISOString() });
     };
 }
 
 function youtubeWarmTask(context: SummaryContext, account: Account): WarmTask | null {
-    if (!context.apiKey || !account.uploadsPlaylistId) return null;
+    const { apiKey } = context;
+    const { uploadsPlaylistId } = account;
+    if (!apiKey || !uploadsPlaylistId) return null;
     return async () => {
-        const videos = await fetchAllVideos(account.uploadsPlaylistId!, context.apiKey!, 10);
+        const videos = await fetchAllVideos(uploadsPlaylistId, apiKey, 10);
         await setVideosCache(context.redis, context.userId, account.id, { videos, fetchedAt: new Date().toISOString() });
     };
 }

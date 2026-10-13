@@ -38,13 +38,13 @@
             },
             {
                 "call": "GET /accounts/yt3/analytics",
-                "status": 200,
-                "body": "{\"success\":true,\"channel\":{\"id\":\"yt3\",\"platform\":\"youtube\",\"channelId\":\"UC3\",\"title\":\"Gamma\",\"customUrl\":\"@gamma\",\"publishedAt\":\"2025-09-01T00:00:00Z\",\"country\":\"Unknown\",\"thumbnails\":{\"default\":\"\",\"medium\":\"\",\"high\":\"\"},\"subscriberCount\":20,\"viewCount\":400,\"videoCount\":2,\"hiddenSubscriberCount\":false,\"uploadsPlaylistId\":\"UU3\",\"keywords\":\"\",\"bannerUrl\":\"\",\"madeForKids\":false,\"topicCategories\":[],\"isLinked\":false,\"channelAge\":365,\"channelAgeYears\":\"1.0\",\"viewsPerSubscriber\":20,\"subscriberToViewRatio\":5,\"avgViewsPerVideo\":200,\"avgSubGainPerDay\":0,\"avgViewsPerDay\":1,\"estimatedMonthlyViews\":30,\"estimatedMonthlySubGain\":0,\"estimatedYearlyViews\":365,\"estimatedYearlySubGain\":0},\"analytics\":{\"totalVideos\":1,\"totalViews\":70,\"totalLikes\":7,\"totalComments\":1,\"avgViews\":70,\"avgLikes\":7,\"avgComments\":1,\"medianViews\":70,\"totalEngagement\":8,\"overallEngagementRate\":\"11.43\",\"avgDurationSeconds\":45,\"avgDurationFormatted\":\"0m 45s\",\"totalDurationSeconds\":45,\"totalDurationFormatted\":\"0m 45s\",\"estimatedTotalWatchTimeHours\":1,\"bestByViews\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"bestByLikes\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"bestByComments\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"bestByEngagement\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"worstByViews\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"mostRecent\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"oldest\":{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45},\"top10ByViews\":[{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45}],\"top10ByLikes\":[{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45}],\"top10ByComments\":[{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45}],\"top10ByEngagement\":[{\"videoId\":\"v1\",\"title\":\"Fresh\",\"viewCount\":70,\"likeCount\":7,\"commentCount\":1,\"publishedAt\":\"2026-08-20T10:00:00Z\",\"thumbnail\":\"\",\"engagementRate\":\"11.43\",\"durationSeconds\":45}],\"shortsCount\":1,\"regularCount\":0,\"avgShortViews\":70,\"avgRegularViews\":0,\"avgShortLikes\":7,\"avgRegularLikes\":0,\"hdCount\":1,\"sdCount\":0,\"hdPercentage\":\"100.0\",\"captionCount\":0,\"captionPercentage\":\"0.0\",\"licensedCount\":0,\"licensedPercentage\":\"0.0\",\"madeForKidsCount\":0,\"embeddableCount\":0,\"embeddablePercentage\":\"0.0\",\"publishDayDistribution\":{\"Thursday\":1},\"publishHourDistribution\":{\"10\":1},\"peakPublishDay\":\"Thursday\",\"peakPublishHour\":10,\"durationDistribution\":{\"short\":1,\"medium\":0,\"long\":0,\"veryLong\":0},\"categoryDistribution\":{\"Unknown\":1},\"tagFrequency\":[],\"videosLast7Days\":0,\"videosLast30Days\":1,\"videosLast90Days\":1,\"videosLast365Days\":1,\"uploadFrequencyPerWeek\":\"0.6\",\"uploadFrequencyPerMonth\":\"1.0\",\"consistencyScore\":100,\"viralityScore\":1,\"viewsDistribution\":{\"ranges\":[\"0-7\",\"7-14\",\"14-21\",\"21-28\",\"28-35\",\"35-42\",\"42-49\",\"49-56\",\"56-63\",\"63-70\"],\"counts\":[0,0,0,0,0,0,0,0,0,0]},\"viewsTrend\":[{\"month\":\"2026-08\",\"value\":70,\"count\":1}],\"engagementTrend\":[{\"month\":\"2026-08\",\"value\":\"11.43\"}],\"likeRateTrend\":[{\"month\":\"2026-08\",\"value\":\"10.00\"}]},\"videoCount\":1}"
+                "status": 400,
+                "body": "{\"success\":false,\"message\":\"No uploads playlist stored - delete this channel and add it again\"}"
             },
             {
                 "call": "GET /accounts/missing/analytics",
                 "status": 404,
-                "body": "{\"success\":false,\"message\":\"Account not found\"}"
+                "body": "{\"success\":false,\"message\":\"YouTube channel not found\"}"
             }
         ],
         "queries": [
@@ -155,54 +155,6 @@
                 "filters": [
                     [
                         "id",
-                        "yt3"
-                    ],
-                    [
-                        "user_id",
-                        "user-1"
-                    ]
-                ]
-            },
-            {
-                "type": "update",
-                "table": "accounts",
-                "values": {
-                    "platform": "youtube",
-                    "data": {
-                        "channelId": "UC3",
-                        "title": "Gamma",
-                        "publishedAt": "2025-09-01T00:00:00Z",
-                        "subscriberCount": 20,
-                        "viewCount": 400,
-                        "videoCount": 2,
-                        "thumbnails": {
-                            "default": "",
-                            "medium": "",
-                            "high": ""
-                        },
-                        "customUrl": "@gamma",
-                        "country": "Unknown",
-                        "lastUpdated": "2026-09-01T12:00:00.000Z"
-                    }
-                },
-                "filters": [
-                    [
-                        "id",
-                        "yt3"
-                    ],
-                    [
-                        "user_id",
-                        "user-1"
-                    ]
-                ]
-            },
-            {
-                "type": "select",
-                "table": "accounts",
-                "columns": "id, platform, data",
-                "filters": [
-                    [
-                        "id",
                         "missing"
                     ],
                     [
@@ -232,18 +184,6 @@
             {
                 "url": "https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics%2CcontentDetails%2CbrandingSettings%2Cstatus%2CtopicDetails&id=UC2&key=YTKEY",
                 "method": "GET"
-            },
-            {
-                "url": "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet%2CcontentDetails&playlistId=undefined&maxResults=50&key=YTKEY",
-                "method": "GET"
-            },
-            {
-                "url": "https://www.googleapis.com/youtube/v3/videos?part=statistics%2CcontentDetails%2Csnippet%2Cstatus&id=v1&key=YTKEY",
-                "method": "GET"
-            },
-            {
-                "url": "https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics%2CcontentDetails%2CbrandingSettings%2Cstatus%2CtopicDetails&id=UC3&key=YTKEY",
-                "method": "GET"
             }
         ],
         "logLines": [
@@ -263,13 +203,6 @@
             },
             {
                 "key": "videos:user-1:yt2",
-                "options": {
-                    "ex": 21600
-                },
-                "version": 2
-            },
-            {
-                "key": "videos:user-1:yt3",
                 "options": {
                     "ex": 21600
                 },

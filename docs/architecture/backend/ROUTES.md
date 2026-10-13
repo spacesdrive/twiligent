@@ -38,8 +38,8 @@ Channel metrics, the comparison and the all videos filter live in `services/yout
 
 | Method | Path | File | Purpose |
 |---|---|---|---|
-| GET | `/api/accounts/:id/analytics` | `routes/analytics.ts` | Full YouTube analytics - fetches up to 500 videos, runs `computeVideoAnalytics()`, returns 50+ metrics |
-| GET | `/api/accounts/:id/videos` | `routes/analytics.ts` | Returns cached video list (from Redis if available) |
+| GET | `/api/accounts/:id/analytics` | `routes/analytics.ts` | Full YouTube analytics - fetches up to 500 videos, runs `computeVideoAnalytics()`, returns 50+ metrics; 404 for an account that is not a YouTube channel, 400 when no uploads playlist is stored |
+| GET | `/api/accounts/:id/videos` | `routes/analytics.ts` | Returns cached video list (from Redis if available); the same 404 and 400 checks before a live fetch |
 | GET | `/api/accounts/:id/ig-analytics` | `routes/analytics.ts` | Instagram analytics - fetches up to 500 media with views, classifies each as reel, post, or video, runs `computeInstagramAnalytics()` |
 | GET | `/api/accounts/:id/ig-media` | `routes/analytics.ts` | Returns the Instagram media list (with `contentType` and `viewCount`) from cache, fetching live on a miss |
 | GET | `/api/comparison` | `routes/analytics.ts` | Cross-account comparison data for the Overview dashboard |
@@ -73,7 +73,7 @@ Channel metrics, the comparison and the all videos filter live in `services/yout
 | Method | Path | File | Purpose |
 |---|---|---|---|
 | POST | `/api/accounts/reddit` | `routes/accounts.ts` | Add Reddit account by username + optional session cookie |
-| GET | `/api/accounts/:id/reddit-analytics` | `routes/reddit.ts` | Fetch profile + posts + computed analytics; cached in Redis |
+| GET | `/api/accounts/:id/reddit-analytics` | `routes/reddit.ts` | Fetch profile + posts + computed analytics; cached in Redis; 400 when the cookie or username is missing |
 | GET | `/api/accounts/:id/reddit-posts` | `routes/reddit.ts` | Returns cached post list or live-fetched posts |
 
 ### Overview

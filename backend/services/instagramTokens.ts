@@ -48,13 +48,15 @@ export async function refreshLongLivedToken(longToken: string): Promise<Instagra
     return toTokenResult(data as IssuedToken);
 }
 
-function isInstagramWithToken(account: Account): string | false | null | undefined {
-    return account.platform === 'instagram' && account.accessToken && account.tokenExpiresAt;
+type ExpiringInstagramAccount = Account & { accessToken: string; tokenExpiresAt: string };
+
+function isInstagramWithToken(account: Account): account is ExpiringInstagramAccount {
+    return account.platform === 'instagram' && !!account.accessToken && !!account.tokenExpiresAt;
 }
 
-async function refreshStoredToken(supabase: SupabaseClient, account: Account): Promise<void> {
+async function refreshStoredToken(supabase: SupabaseClient, account: ExpiringInstagramAccount): Promise<void> {
     try {
-        const refreshed = await refreshLongLivedToken(account.accessToken!);
+        const refreshed = await refreshLongLivedToken(account.accessToken);
         const tokenExpiresAt = new Date(Date.now() + (refreshed.expiresIn || DEFAULT_TOKEN_LIFETIME_S) * 1000).toISOString();
         await updateAccount(supabase, account.id, { accessToken: refreshed.accessToken, tokenExpiresAt });
         console.log(`Token refreshed for @${account.username} - expires ${tokenExpiresAt}`);

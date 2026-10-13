@@ -14,7 +14,7 @@ import { mountWithContext, callRoute } from '../fixtures/routeHarness.ts';
 import type { RouteStep } from '../fixtures/routeHarness.ts';
 import type { AppEnv } from '../../types/app.ts';
 import type { Env } from '../../types/env.ts';
-import type { YouTubeComparisonResponse } from '../../../shared/types/youtube.ts';
+import type { YouTubeAnalyticsPayload, YouTubeComparisonResponse } from '../../../shared/types/youtube.ts';
 import assert from 'node:assert/strict';
 
 interface StoreWrite {
@@ -122,6 +122,35 @@ describe('analytics and overview routes golden output', () => {
         ], { redis: cachedRedis() });
         const withoutKey = await runCalls(analyticsRouter, [['GET', '/accounts/yt1/analytics']], { env: {} });
         assertGolden({ result, withoutKey }, 'analyticsRoutes.youtube');
+    });
+
+    test('channel analytics and videos refuse other platforms and channels without an uploads playlist', async () => {
+        const supabase = fakeSupabase([
+            accountRow({ id: 'ig1', platform: 'instagram', igUserId: 'IG1', accessToken: 'T1' }),
+            accountRow({ id: 'ytOld', platform: 'youtube', channelId: 'UC9' }),
+        ]);
+        const app = mountWithContext(server => server.route('/', analyticsRouter), { supabase, redis: null, userId: 'user-1' });
+        fetchMock = installFetch(youtubeReply);
+        const notChannel = { status: 404, body: JSON.stringify({ success: false, message: 'YouTube channel not found' }) };
+        const noPlaylist = { status: 400, body: JSON.stringify({ success: false, message: 'No uploads playlist stored - delete this channel and add it again' }) };
+        assert.deepEqual(await callRoute(app, 'GET', '/accounts/ig1/analytics', { env: ENV }), notChannel);
+        assert.deepEqual(await callRoute(app, 'GET', '/accounts/ig1/videos', { env: ENV }), notChannel);
+        assert.deepEqual(await callRoute(app, 'GET', '/accounts/ytOld/analytics', { env: ENV }), noPlaylist);
+        assert.deepEqual(await callRoute(app, 'GET', '/accounts/ytOld/videos', { env: ENV }), noPlaylist);
+        assert.deepEqual(fetchMock.requests, []);
+    });
+
+    test('backfilling an older channel adds only stored account fields to the response', async () => {
+        const supabase = fakeSupabase([accountRow({ id: 'ytNew', platform: 'youtube', channelId: 'UC3', uploadsPlaylistId: 'UU3', title: 'Gamma' })]);
+        const app = mountWithContext(server => server.route('/', analyticsRouter), { supabase, redis: null, userId: 'user-1' });
+        fetchMock = installFetch(youtubeReply);
+        const response = await callRoute(app, 'GET', '/accounts/ytNew/analytics', { env: ENV });
+        const { channel } = JSON.parse(response.body) as YouTubeAnalyticsPayload;
+        assert.equal(response.status, 200);
+        assert.equal(channel.publishedAt, '2025-09-01T00:00:00Z');
+        assert.equal(channel.customUrl, '@gamma');
+        assert.equal('bannerUrl' in channel, false);
+        assert.equal('isLinked' in channel, false);
     });
 
     test('the comparison ranks YouTube channels only and never returns stored secrets', async () => {

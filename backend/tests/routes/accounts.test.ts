@@ -2,6 +2,7 @@
 process.removeAllListeners('warning');
 
 import { test, describe, before, after, beforeEach, afterEach, mock } from 'node:test';
+import assert from 'node:assert/strict';
 import accountsRouter from '../../routes/accounts.ts';
 import { assertGolden } from '../fixtures/golden.ts';
 import { installFetch, reply } from '../fixtures/fakeFetch.ts';
@@ -199,5 +200,23 @@ describe('accounts routes golden output', () => {
             ['POST', '/accounts/ig1/refresh-ig-token'],
             ['DELETE', '/accounts/ig1'],
         ], { supabase: brokenSupabase }), 'accountsRoutes.dbFailure');
+    });
+
+    test('refreshing an account without a channel id or username fails before calling the platform', async () => {
+        const supabase = fakeSupabase([
+            accountRow({ id: 'ytOld', platform: 'youtube', title: 'No id' }),
+            accountRow({ id: 'rdOld', platform: 'reddit', cookie: 'COOKIE' }),
+        ]);
+        const app = mountWithContext(app => app.route('/', accountsRouter), { supabase, redis: fakeRedis(), userId: 'user-1' });
+        const single = async (id: string) => JSON.parse((await callRoute(app, 'POST', `/accounts/${id}/refresh`, { env: ENV })).body) as unknown;
+        assert.deepEqual(await single('ytOld'), { success: false, message: 'No YouTube channel ID stored - delete this channel and add it again' });
+        assert.deepEqual(await single('rdOld'), { success: false, message: 'No Reddit username stored - delete this account and add it again' });
+
+        const all = JSON.parse((await callRoute(app, 'POST', '/accounts/refresh-all', { env: ENV })).body) as { results: unknown[] };
+        assert.deepEqual(all.results, [
+            { id: 'ytOld', success: false, error: 'No YouTube channel ID stored - delete this channel and add it again' },
+            { id: 'rdOld', success: false, error: 'No Reddit username stored - delete this account and add it again' },
+        ]);
+        assert.deepEqual(fetchMock!.requests, []);
     });
 });

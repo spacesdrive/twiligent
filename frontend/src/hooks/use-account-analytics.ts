@@ -38,9 +38,10 @@ export function useAccountAnalytics<P, A>(
   useEffect(() => { loadAnalytics(); }, [loadAnalytics]);
 
   const handleRefresh = async () => {
+    if (!accountId) return;
     setRefreshing(true);
     try {
-      await api.refreshAccount(accountId!);
+      await api.refreshAccount(accountId);
       await loadAnalytics();
       showToast(`${label} account refreshed`);
     } catch (err) {

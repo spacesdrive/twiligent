@@ -25,6 +25,8 @@ interface SnapshotScope {
 // no stored account has a channelTitle field, so that fallback is always undefined
 type LegacyChannelAccount = Account & { channelTitle?: string };
 
+const NO_PLAYLIST_MESSAGE = 'No uploads playlist stored - delete this channel and add it again';
+
 const app = new Hono<AppEnv>();
 
 // api errors can echo request urls that carry the api key or access token
@@ -55,9 +57,10 @@ app.get('/accounts/:id/analytics', async (c) => {
         if (!apiKey) return c.json({ success: false, message: 'No API key' }, 400);
 
         const account = await getAccountById(supabase, c.req.param('id'), userId);
-        if (!account) return c.json({ success: false, message: 'Account not found' }, 404);
+        if (!account || account.platform !== 'youtube') return c.json({ success: false, message: 'YouTube channel not found' }, 404);
+        if (!account.uploadsPlaylistId) return c.json({ success: false, message: NO_PLAYLIST_MESSAGE }, 400);
 
-        const videos = await fetchAllVideos(account.uploadsPlaylistId!, apiKey, 10);
+        const videos = await fetchAllVideos(account.uploadsPlaylistId, apiKey, 10);
         await setVideosCache(c.get('redis'), userId, c.req.param('id'), { videos, fetchedAt: new Date().toISOString() });
         const analytics = computeVideoAnalytics(videos);
 
@@ -90,9 +93,10 @@ app.get('/accounts/:id/videos', async (c) => {
         if (!apiKey) return c.json({ success: false, message: 'No API key' }, 400);
 
         const account = await getAccountById(supabase, id, userId);
-        if (!account) return c.json({ success: false, message: 'Account not found' }, 404);
+        if (!account || account.platform !== 'youtube') return c.json({ success: false, message: 'YouTube channel not found' }, 404);
+        if (!account.uploadsPlaylistId) return c.json({ success: false, message: NO_PLAYLIST_MESSAGE }, 400);
 
-        const videos = await fetchAllVideos(account.uploadsPlaylistId!, apiKey, 10);
+        const videos = await fetchAllVideos(account.uploadsPlaylistId, apiKey, 10);
         const fetchedAt = new Date().toISOString();
         await setVideosCache(redis, userId, id, { videos, fetchedAt });
 
@@ -124,13 +128,13 @@ app.get('/accounts/:id/ig-analytics', async (c) => {
         if (!account || account.platform !== 'instagram') {
             return c.json({ success: false, message: 'Instagram account not found' }, 404);
         }
-        if (!account.accessToken) {
+        if (!account.accessToken || !account.igUserId) {
             return c.json({ success: false, message: 'No access token stored' }, 400);
         }
 
         const [profile, media] = await Promise.all([
             fetchInstagramProfile(account.igUserId, account.accessToken),
-            fetchInstagramMedia(account.igUserId!, account.accessToken, 500),
+            fetchInstagramMedia(account.igUserId, account.accessToken, 500),
         ]);
         await storeInstagramSnapshot({ supabase, redis: c.get('redis'), userId, id }, account, profile, media);
 
@@ -165,11 +169,11 @@ app.get('/accounts/:id/ig-media', async (c) => {
         if (!account || account.platform !== 'instagram') {
             return c.json({ success: false, message: 'Not found' }, 404);
         }
-        if (!account.accessToken) {
+        if (!account.accessToken || !account.igUserId) {
             return c.json({ success: false, message: 'No access token' }, 400);
         }
 
-        const media = await fetchInstagramMedia(account.igUserId!, account.accessToken, 500);
+        const media = await fetchInstagramMedia(account.igUserId, account.accessToken, 500);
         const fetchedAt = new Date().toISOString();
         await setIGCache(redis, userId, id, { media, fetchedAt });
 

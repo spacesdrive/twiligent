@@ -9,7 +9,7 @@ import type { YouTubeChannelData } from '../../shared/types/youtube.ts';
 import type { RedditProfile } from '../../shared/types/reddit.ts';
 import type { InstagramProfile } from '../../shared/types/instagram.ts';
 
-type Credential = 'accessToken' | 'cookie' | 'apiKey';
+type Credential = 'accessToken' | 'cookie' | 'username' | 'channelId' | 'apiKey';
 
 export type AccountRefreshOutcome = { failure: ServiceFailure; account?: undefined } | { account: Account; failure?: undefined };
 
@@ -21,12 +21,20 @@ export interface RefreshAllOutcome {
 const NO_COOKIE_MESSAGE = 'No session cookie stored - re-add this account with a session cookie from reddit.com DevTools';
 
 // known issue: the two refresh paths word a missing YouTube key differently
-const SINGLE_REFRESH_MESSAGES: Record<Credential, string> = { accessToken: 'No access token', cookie: NO_COOKIE_MESSAGE, apiKey: 'No API key' };
-const REFRESH_ALL_MESSAGES: Record<Credential, string> = { accessToken: 'No access token', cookie: NO_COOKIE_MESSAGE, apiKey: 'No YouTube API key' };
+const NO_USERNAME_MESSAGE = 'No Reddit username stored - delete this account and add it again';
+const NO_CHANNEL_MESSAGE = 'No YouTube channel ID stored - delete this channel and add it again';
+const SINGLE_REFRESH_MESSAGES: Record<Credential, string> = {
+    accessToken: 'No access token', cookie: NO_COOKIE_MESSAGE, username: NO_USERNAME_MESSAGE, channelId: NO_CHANNEL_MESSAGE, apiKey: 'No API key',
+};
+const REFRESH_ALL_MESSAGES: Record<Credential, string> = { ...SINGLE_REFRESH_MESSAGES, apiKey: 'No YouTube API key' };
 
 function findMissingCredential(account: Account, apiKey: string | undefined): Credential | null {
     if (account.platform === 'instagram') return account.accessToken ? null : 'accessToken';
-    if (account.platform === 'reddit') return account.cookie ? null : 'cookie';
+    if (account.platform === 'reddit') {
+        if (!account.username) return 'username';
+        return account.cookie ? null : 'cookie';
+    }
+    if (!account.channelId) return 'channelId';
     return apiKey ? null : 'apiKey';
 }
 
@@ -69,9 +77,10 @@ function youtubeUpdates(channelData: YouTubeChannelData, full: boolean): Partial
 
 // fills creation dates on older accounts once; a failure only skips the extras
 export async function backfillChannelData(supabase: SupabaseClient, account: Account, apiKey: string, userId: string): Promise<void> {
+    if (!account.channelId) return;
     try {
-        const channelData = await fetchChannelData(account.channelId!, apiKey);
-        await updateAccount(supabase, account.id, {
+        const channelData = await fetchChannelData(account.channelId, apiKey);
+        const updates: Partial<Account> = {
             publishedAt: channelData.publishedAt,
             subscriberCount: channelData.subscriberCount,
             viewCount: channelData.viewCount,
@@ -81,8 +90,9 @@ export async function backfillChannelData(supabase: SupabaseClient, account: Acc
             customUrl: channelData.customUrl,
             country: channelData.country,
             lastUpdated: new Date().toISOString(),
-        }, userId);
-        Object.assign(account, channelData);
+        };
+        await updateAccount(supabase, account.id, updates, userId);
+        Object.assign(account, updates);
     } catch (err) {
         console.error('Failed to backfill channel data:', (err as Error).message);
     }
@@ -90,14 +100,18 @@ export async function backfillChannelData(supabase: SupabaseClient, account: Acc
 
 export async function fetchAccountUpdates(account: Account, apiKey: string | undefined, full: boolean): Promise<Partial<Account>> {
     if (account.platform === 'instagram') {
-        const profile = await fetchInstagramProfile(account.igUserId, account.accessToken!);
+        if (!account.accessToken) throw new Error(SINGLE_REFRESH_MESSAGES.accessToken);
+        const profile = await fetchInstagramProfile(account.igUserId, account.accessToken);
         return instagramUpdates(profile, full);
     }
     if (account.platform === 'reddit') {
-        const profile = await fetchRedditProfile(account.username!, account.cookie);
+        if (!account.username) throw new Error(NO_USERNAME_MESSAGE);
+        const profile = await fetchRedditProfile(account.username, account.cookie);
         return redditUpdates(profile);
     }
-    const channelData = await fetchChannelData(account.channelId!, apiKey!);
+    if (!account.channelId) throw new Error(NO_CHANNEL_MESSAGE);
+    if (!apiKey) throw new Error(SINGLE_REFRESH_MESSAGES.apiKey);
+    const channelData = await fetchChannelData(account.channelId, apiKey);
     return youtubeUpdates(channelData, full);
 }
 

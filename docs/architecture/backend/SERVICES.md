@@ -154,7 +154,7 @@ The account routes in `routes/accounts.ts` only parse the request, check require
 |---|---|
 | `accountFactory.ts` | Pure builders: `newAccountId`, `tokenExpiryIso` (null without a lifetime), `buildYouTubeAccount`, `buildRedditAccount`, `buildInstagramAccount` |
 | `accountConnect.ts` | `addYouTubeAccount`, `addRedditAccount`, `addInstagramAccount` (tries the long-lived exchange when `INSTAGRAM_APP_SECRET` is set and keeps the pasted token if it fails), `refreshInstagramToken` |
-| `accountRefresh.ts` | `fetchAccountUpdates` (profile fields per platform; a single refresh updates more fields than refresh-all), `refreshAccount`, `refreshAllAccounts` (`Promise.allSettled`, results aligned with the account list by index), `backfillChannelData` (fills channel fields for a YouTube account without `publishedAt` when its analytics load; a failure is logged and skipped) |
+| `accountRefresh.ts` | `fetchAccountUpdates` (profile fields per platform; a single refresh updates more fields than refresh-all), `refreshAccount`, `refreshAllAccounts` (both check the fields the platform call needs first: an Instagram token, a Reddit username and cookie, a YouTube channel id and API key) (`Promise.allSettled`, results aligned with the account list by index), `backfillChannelData` (fills channel fields for a YouTube account without `publishedAt` when its analytics load; a failure is logged and skipped) |
 
 Duplicate accounts throw an `Error` whose message the route returns with status 400, the same shape as any other failure. Failures that need another status (404 for a missing account, 400 for a missing credential) come back as `{ failure: { status, message } }`.
 
