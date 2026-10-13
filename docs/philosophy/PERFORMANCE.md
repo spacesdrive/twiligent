@@ -42,6 +42,8 @@ await redis.set(key, data, { ex: 3600 }); // expire after 1 hour
 
 Each protected request runs two rate limit checks (`ip` before authentication, `user` after it), each one Redis script call, so a request pays two short Upstash round trips. A client already over its limit is answered from the isolate without Redis, and a Redis outage costs at most one 1 second timeout per isolate every 30 seconds. See `docs/architecture/backend/RATE_LIMITING.md`.
 
+The analytics cache follows the same rule: a 3 second timeout, one retry, then 30 seconds without Redis in that isolate after a failure (see `docs/architecture/backend/CACHING.md`).
+
 ## Edge Deployment
 
 The Cloudflare Worker runs at the edge - in a data center close to the user. This means:

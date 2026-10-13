@@ -30,6 +30,15 @@ export async function getRedditCache(redis: Redis | null, userId: string, accoun
 }
 ```
 
+## When Redis Fails
+
+A Redis outage must make the app slower to refresh, never slower to respond:
+
+- **Short timeout.** `getRedis()` in `lib/redis.ts` gives every call a 3 second timeout and one retry after 100 ms, instead of the SDK default of five retries with backoff (about 4 seconds per call).
+- **Cooldown.** When a read, write or delete fails, `lib/cache.ts` skips Redis in that isolate for 30 seconds (`CACHE_COOLDOWN_MS`): reads return a miss and writes are dropped. An outage therefore costs one timeout per isolate every 30 seconds, not one per cache call. `resetCacheState()` clears the cooldown in tests.
+
+The rate limiter uses its own client with a 1 second timeout and no retries; see `RATE_LIMITING.md`.
+
 `redis.get<T>()` does not validate what Redis returns; the type is what the matching setter wrote. Bump the cache version (below) when that shape changes.
 
 ## Cache Keys

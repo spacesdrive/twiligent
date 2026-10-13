@@ -1,8 +1,8 @@
-import { test } from 'node:test';
+import { test, beforeEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import {
     getVideosCache, setVideosCache, deleteVideosCache,
-    getIGCache, setIGCache, getRedditCache, setRedditCache,
+    getIGCache, setIGCache, getRedditCache, setRedditCache, resetCacheState,
 } from '../../lib/cache.ts';
 import type { Redis } from '../../types/app.ts';
 import type { VideosCacheData, YouTubeVideo } from '../../../shared/types/youtube.ts';
@@ -26,6 +26,8 @@ const failingRedis = {
     set: async () => { throw new Error('down'); },
     del: async () => { throw new Error('down'); },
 } as unknown as Redis;
+
+beforeEach(() => resetCacheState());
 
 test('every helper is a no-op without redis', async () => {
     assert.equal(await getVideosCache(null, 'u', 'a'), null);
@@ -68,4 +70,25 @@ test('delete removes the entry', async () => {
 
     assert.equal(await getVideosCache(redis, 'u', 'a'), null);
     assert.deepEqual(await getIGCache(redis, 'u', 'a'), { media: [], version: 2 });
+});
+
+test('after a failure redis is skipped for 30 seconds, then tried again', async () => {
+    mock.timers.enable({ apis: ['Date'], now: 1_000_000 });
+    try {
+        let calls = 0;
+        const flaky = {
+            get: async () => { calls++; throw new Error('down'); },
+        } as unknown as Redis;
+        const healthy = memoryRedis();
+        await setVideosCache(healthy, 'u', 'a', { videos: [] } as unknown as VideosCacheData);
+
+        assert.equal(await getVideosCache(flaky, 'u', 'a'), null);
+        assert.equal(await getVideosCache(healthy, 'u', 'a'), null);
+        assert.equal(calls, 1);
+
+        mock.timers.tick(30_000);
+        assert.deepEqual(await getVideosCache(healthy, 'u', 'a'), { videos: [], version: 2 });
+    } finally {
+        mock.timers.reset();
+    }
 });

@@ -13,36 +13,54 @@ const ANALYTICS_TTL_SECONDS = 6 * 60 * 60;
 const VIDEOS_CACHE_VERSION = 2;
 const IG_CACHE_VERSION = 2;
 
+// after a failure this isolate skips redis for a while, so an outage costs one timeout, not one per call
+const CACHE_COOLDOWN_MS = 30_000;
+
 type Versioned<T> = T & { version: number };
 
+let cacheDownUntil = 0;
+
+export function resetCacheState(): void {
+    cacheDownUntil = 0;
+}
+
+function cacheAvailable(redis: Redis | null): redis is Redis {
+    return redis !== null && Date.now() >= cacheDownUntil;
+}
+
+function markCacheDown(): void {
+    cacheDownUntil = Date.now() + CACHE_COOLDOWN_MS;
+}
+
 async function readKey<T>(redis: Redis | null, key: string): Promise<T | null> {
-    if (!redis) return null;
+    if (!cacheAvailable(redis)) return null;
     try {
         return await redis.get<T>(key);
     } catch {
         // a cache miss falls back to the live api
+        markCacheDown();
         return null;
     }
 }
 
 async function writeKey(redis: Redis | null, key: string, value: unknown): Promise<undefined> {
-    if (!redis) return undefined;
+    if (!cacheAvailable(redis)) return undefined;
     try {
         await redis.set(key, value, { ex: ANALYTICS_TTL_SECONDS });
     } catch {
         // a failed write only costs a refetch next time
-        return undefined;
+        markCacheDown();
     }
     return undefined;
 }
 
 async function deleteKey(redis: Redis | null, key: string): Promise<undefined> {
-    if (!redis) return undefined;
+    if (!cacheAvailable(redis)) return undefined;
     try {
         await redis.del(key);
     } catch {
         // the entry still expires on its own ttl
-        return undefined;
+        markCacheDown();
     }
     return undefined;
 }
