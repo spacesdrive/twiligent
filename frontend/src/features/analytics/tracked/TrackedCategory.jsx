@@ -18,6 +18,7 @@ import { useAppContext } from '../../../context/AppContext';
 import { api } from '../../../services/api';
 import { fmtNum, fmtNumFull, fmtDate } from '../../../utils/formatters';
 import { trackedViews, hasTrackedViews, isRedditItem } from '../../../utils/trackedContent';
+import ColumnHint from '@/components/ColumnHint';
 
 // fmtNum abbreviates only at 1000 and above, so the full value is redundant below that
 function showsFullValue(n) {
@@ -229,7 +230,7 @@ export default function TrackedCategory() {
                   <TableHead>Post</TableHead>
                   <TableHead className="w-28 text-right">Karma</TableHead>
                   <TableHead className="w-24 text-right">Views</TableHead>
-                  <TableHead className="w-20 text-right">Upvoted</TableHead>
+                  <TableHead className="w-32 text-right"><ColumnHint label="Upvote rate" hint="Share of votes on a Reddit post that are upvotes. Shows a dash for YouTube videos and for posts under 10 karma, where the ratio is not meaningful." /></TableHead>
                   <TableHead className="w-24 text-right">Comments</TableHead>
                   <TableHead className="w-28 text-right">Fetched</TableHead>
                   <TableHead className="w-10"><span className="sr-only">Open</span></TableHead>

@@ -11,6 +11,7 @@ import { EmptyState } from '@/components/StateViews';
 import { AccountAvatar } from '@/components/platform';
 import { MEDIA_TYPE_LABELS, REDDIT_SORT_OPTIONS } from './redditPostUtils';
 import { fmtNum, fmtDate } from '../../../utils/formatters';
+import ColumnHint from '@/components/ColumnHint';
 
 const MEDIA_TYPE_ICONS = { image: Image, video: Video, link: Link2, text: FileText };
 
@@ -74,7 +75,7 @@ export function RedditPostTable({ posts, showAccount = false, accountsById = {} 
             <TableHead className="w-24">Type</TableHead>
             <TableHead className="w-24 text-right">Karma</TableHead>
             <TableHead className="w-24 text-right">Comments</TableHead>
-            <TableHead className="w-24 text-right">Upvoted</TableHead>
+            <TableHead className="w-32 text-right"><ColumnHint label="Upvote rate" hint="Share of votes on the post that are upvotes. 96% means 96 of every 100 votes were up." /></TableHead>
             <TableHead className="w-28 text-right">Posted</TableHead>
             <TableHead className="w-10"><span className="sr-only">Open</span></TableHead>
           </TableRow>

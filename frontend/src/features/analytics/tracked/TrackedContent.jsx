@@ -31,6 +31,7 @@ import {
   trackedViews, hasTrackedViews, detectContentType, isRedditItem, trackedEngagement, trackedComments,
 } from '../../../utils/trackedContent';
 import { cn } from '@/lib/utils';
+import ColumnHint from '@/components/ColumnHint';
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 
@@ -449,7 +450,7 @@ export default function TrackedContent() {
                   <TableHead className="w-24 text-right">Views</TableHead>
                   <TableHead className="w-28 text-right">Likes or karma</TableHead>
                   <TableHead className="w-24 text-right">Comments</TableHead>
-                  <TableHead className="w-20 text-right">Upvoted</TableHead>
+                  <TableHead className="w-32 text-right"><ColumnHint label="Upvote rate" hint="Share of votes on a Reddit post that are upvotes. Shows a dash for YouTube videos and for posts under 10 karma, where the ratio is not meaningful." /></TableHead>
                   <TableHead className="w-28 text-right">Fetched</TableHead>
                   <TableHead className="w-32"><span className="sr-only">Actions</span></TableHead>
                 </TableRow>

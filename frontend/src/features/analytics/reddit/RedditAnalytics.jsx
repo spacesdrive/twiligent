@@ -22,6 +22,7 @@ import { api } from '../../../services/api';
 import { fmtNum, fmtNumFull, fmtDate, timeAgo } from '../../../utils/formatters';
 import { MEDIA_TYPE_LABELS } from './redditPostUtils';
 import { cn } from '@/lib/utils';
+import ColumnHint from '@/components/ColumnHint';
 
 const MEDIA_TYPE_ORDER = ['text', 'image', 'video', 'link'];
 
@@ -302,7 +303,7 @@ export default function RedditAnalytics() {
                 <TableHead>Post</TableHead>
                 <TableHead className="text-right">Karma</TableHead>
                 <TableHead className="text-right">Comments</TableHead>
-                <TableHead className="text-right">Upvoted</TableHead>
+                <TableHead className="text-right"><ColumnHint label="Upvote rate" hint="Share of votes on the post that are upvotes. 96% means 96 of every 100 votes were up." /></TableHead>
                 <TableHead className="text-right">Posted</TableHead>
                 <TableHead className="w-10"><span className="sr-only">Open</span></TableHead>
               </TableRow>
