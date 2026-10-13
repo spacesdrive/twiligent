@@ -3,67 +3,67 @@
         {
             "status": 302,
             "body": "",
-            "location": "https://app.example.com//accounts?ig_error=user_denied"
+            "location": "https://app.example.com/accounts?ig_error=user_denied"
         },
         {
             "status": 302,
             "body": "",
-            "location": "https://app.example.com//accounts?ig_error=access_denied"
+            "location": "https://app.example.com/accounts?ig_error=access_denied"
         },
         {
             "status": 302,
             "body": "",
-            "location": "https://app.example.com//accounts?ig_error=cancelled"
+            "location": "https://app.example.com/accounts?ig_error=cancelled"
         },
         {
             "status": 302,
             "body": "",
-            "location": "https://app.example.com//accounts?ig_error=invalid_state"
+            "location": "https://app.example.com/accounts?ig_error=invalid_state"
         },
         {
             "status": 302,
             "body": "",
-            "location": "https://app.example.com//accounts?ig_error=invalid_state"
+            "location": "https://app.example.com/accounts?ig_error=invalid_state"
         },
         {
             "status": 302,
             "body": "",
-            "location": "https://app.example.com//accounts?ig_error=invalid_state"
+            "location": "https://app.example.com/accounts?ig_error=invalid_state"
         },
         {
             "status": 302,
             "body": "",
-            "location": "https://app.example.com//accounts?ig_connected=true"
+            "location": "https://app.example.com/accounts?ig_connected=true"
         },
         {
             "status": 302,
             "body": "",
-            "location": "https://app.example.com//accounts?ig_connected=true"
+            "location": "https://app.example.com/accounts?ig_connected=true"
         },
         {
             "status": 302,
             "body": "",
-            "location": "https://app.example.com//accounts?ig_error=already_added"
+            "location": "https://app.example.com/accounts?ig_error=already_added"
         },
         {
             "status": 302,
             "body": "",
-            "location": "https://app.example.com//accounts?ig_error=Could%20not%20get%20Instagram%20User%20ID.%20Account%20must%20be%20a%20Business%20or%20Creator%20account."
+            "location": "https://app.example.com/accounts?ig_error=Could%20not%20get%20Instagram%20User%20ID.%20Account%20must%20be%20a%20Business%20or%20Creator%20account."
         },
         {
             "status": 302,
             "body": "",
-            "location": "https://app.example.com//accounts?ig_error=Invalid%20authorization%20code"
+            "location": "https://app.example.com/accounts?ig_error=Invalid%20authorization%20code"
         },
         {
             "status": 302,
             "body": "",
-            "location": "https://app.example.com//accounts?ig_error=%7B%22unexpected%22%3A%22xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+            "location": "https://app.example.com/accounts?ig_error=%7B%22unexpected%22%3A%22xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
         },
         {
             "status": 302,
             "body": "",
-            "location": "https://app.example.com//accounts?ig_error=getaddrinfo%20ENOTFOUND%20api.instagram.com"
+            "location": "https://app.example.com/accounts?ig_error=Instagram%20API%20unreachable%20(getaddrinfo%20ENOTFOUND%20api.instagram.com)"
         },
         {
             "status": 302,
@@ -249,23 +249,19 @@
     "logs": [
         [
             "error",
-            "Instagram OAuth callback error:",
-            "Could not get Instagram User ID. Account must be a Business or Creator account."
+            "{\"level\":\"error\",\"message\":\"instagram connection failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"error\":\"Could not get Instagram User ID. Account must be a Business or Creator account.\",\"errorName\":\"ValidationError\"}"
         ],
         [
             "error",
-            "Instagram OAuth callback error:",
-            "Invalid authorization code"
+            "{\"level\":\"error\",\"message\":\"instagram connection failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"error\":\"Invalid authorization code\",\"errorName\":\"UpstreamError\"}"
         ],
         [
             "error",
-            "Instagram OAuth callback error:",
-            "{\"unexpected\":\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\"}"
+            "{\"level\":\"error\",\"message\":\"instagram connection failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"error\":\"{\\\"unexpected\\\":\\\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\\\"}\",\"errorName\":\"UpstreamError\"}"
         ],
         [
             "error",
-            "Instagram OAuth callback error:",
-            "getaddrinfo ENOTFOUND api.instagram.com"
+            "{\"level\":\"error\",\"message\":\"instagram connection failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"error\":\"Instagram API unreachable (getaddrinfo ENOTFOUND api.instagram.com)\",\"errorName\":\"UpstreamError\",\"cause\":\"getaddrinfo ENOTFOUND api.instagram.com\"}"
         ]
     ]
 }

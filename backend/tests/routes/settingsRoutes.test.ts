@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import settingsRouter from '../../routes/settings.ts';
+import settingsRouter from '../../routes/settingsRoutes.ts';
 import { fakeSupabase, tableRow } from '../fixtures/fakeSupabase.ts';
 import { mountWithContext, callRoute } from '../fixtures/routeHarness.ts';
 

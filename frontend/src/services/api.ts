@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { failureMessage } from '../lib/apiErrors.ts';
 import type {
     AccountListResponse, AccountRefreshAllResponse, AccountResponse, ApiFailure, GitHubSettingsRequest,
     GitHubSettingsResponse, HealthResponse, KeysStatusResponse, OverviewResponse, ScheduledPostDeleteAllResponse,
@@ -18,16 +19,7 @@ import type {
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:8787/api';
 
-// the fields request() reads from any body to decide whether it failed
-interface ResponseStatusFields {
-    success?: boolean;
-    message?: string;
-    error?: string;
-}
-
-// callers that check success also handle a failure body the server sent with a 2xx status; success bodies carry no message
-export type ApiResult<T> = (T & { message?: undefined }) | ApiFailure;
-
+// every failure arrives with a 4xx or 5xx status and the ApiFailure body, so a 2xx is always a success
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
@@ -39,9 +31,10 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
         },
         ...options,
     });
-    const data = await res.json() as T & ResponseStatusFields;
-    if (!res.ok && !data.success) throw new Error(data.message || data.error || 'Request failed');
-    return data;
+    // a proxy error page is not JSON; the status still explains the failure
+    const data = await res.json().catch(() => null) as unknown;
+    if (!res.ok) throw new Error(failureMessage(res.status, data as Partial<ApiFailure> | null));
+    return data as T;
 }
 
 const CLOUDINARY_API = 'https://api.cloudinary.com/v1_1';
@@ -161,9 +154,9 @@ export const api = {
 
     // Instagram Publishing
     getIGPublishingLimit: (id: string) => request<InstagramPublishingLimitResponse>(`/accounts/${id}/ig-publishing-limit`),
-    createIGContainer: (id: string, data: InstagramPublishRequest) => request<ApiResult<InstagramPublishResponse>>(`/accounts/${id}/ig-publish`, { method: 'POST', body: JSON.stringify(data) }),
+    createIGContainer: (id: string, data: InstagramPublishRequest) => request<InstagramPublishResponse>(`/accounts/${id}/ig-publish`, { method: 'POST', body: JSON.stringify(data) }),
     getIGContainerStatus: (containerId: string, accountId: string) => request<InstagramContainerStatusResponse>(`/ig-container/${containerId}/status?accountId=${accountId}`),
-    publishIGContainer: (id: string, containerId: string) => request<ApiResult<InstagramMediaPublishResponse>>(`/accounts/${id}/ig-media-publish`, { method: 'POST', body: JSON.stringify({ containerId }) }),
+    publishIGContainer: (id: string, containerId: string) => request<InstagramMediaPublishResponse>(`/accounts/${id}/ig-media-publish`, { method: 'POST', body: JSON.stringify({ containerId }) }),
 
     addRedditAccount: (username: string, cookie: string) => request<AccountResponse>('/accounts/reddit', { method: 'POST', body: JSON.stringify({ username, cookie }) }),
     getRedditAnalytics: (id: string) => request<RedditCacheData>(`/accounts/${id}/reddit-analytics`),
@@ -183,9 +176,9 @@ export const api = {
     getGithubSettings: () => request<GitHubSettingsResponse>('/settings/github'),
     saveGithubSettings: (data: GitHubSettingsRequest) => request<SuccessResponse>('/settings/github', { method: 'PUT', body: JSON.stringify(data) }),
 
-    getScheduledPosts: () => request<ApiResult<ScheduledPostListResponse>>('/scheduled-posts'),
-    createScheduledPost: (data: ScheduledPostRequest) => request<ApiResult<ScheduledPostResponse>>('/scheduled-posts', { method: 'POST', body: JSON.stringify(data) }),
-    updateScheduledPost: (id: string, data: ScheduledPostUpdateRequest) => request<ApiResult<ScheduledPostUpdateResponse>>(`/scheduled-posts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    getScheduledPosts: () => request<ScheduledPostListResponse>('/scheduled-posts'),
+    createScheduledPost: (data: ScheduledPostRequest) => request<ScheduledPostResponse>('/scheduled-posts', { method: 'POST', body: JSON.stringify(data) }),
+    updateScheduledPost: (id: string, data: ScheduledPostUpdateRequest) => request<ScheduledPostUpdateResponse>(`/scheduled-posts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteScheduledPost: (id: string) => request<SuccessMessageResponse>(`/scheduled-posts/${id}`, { method: 'DELETE' }),
     deleteAllScheduledPosts: () => request<ScheduledPostDeleteAllResponse>('/scheduled-posts', { method: 'DELETE' }),
     processScheduled: () => request<ScheduledPublishRunResponse>('/process-scheduled'),

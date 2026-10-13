@@ -56,8 +56,7 @@ export async function scheduleSinglePost(
   const uploaded = await uploadPostMedia(form, cloudConfig, progress);
   progress.setPublishStatus('scheduling');
   progress.setStatusMessage('Saving the scheduled post');
-  const res = await api.createScheduledPost(buildScheduledPostPayload({ ...postDetails(form, uploaded), scheduledAt }));
-  if (!res.success) throw new Error(res.message || 'Failed to schedule');
+  await api.createScheduledPost(buildScheduledPostPayload({ ...postDetails(form, uploaded), scheduledAt }));
 }
 
 export async function publishSinglePost(
@@ -66,9 +65,8 @@ export async function publishSinglePost(
   const uploaded = await uploadPostMedia(form, cloudConfig, progress);
   progress.setPublishStatus('creating-container');
   progress.setStatusMessage('Creating the Instagram media container');
-  const containerRes = await api.createIGContainer(form.selectedAccount, buildContainerPayload(postDetails(form, uploaded)));
-  if (!containerRes.success || !containerRes.containerId) throw new Error(containerRes.message || 'Failed to create container');
-  await waitUntilReady(form.contentType, containerRes.containerId, form.selectedAccount, {
+  const { containerId } = await api.createIGContainer(form.selectedAccount, buildContainerPayload(postDetails(form, uploaded)));
+  await waitUntilReady(form.contentType, containerId, form.selectedAccount, {
     tolerant: true,
     onStatus: progress.setStatusMessage,
     onProcessing: () => {
@@ -78,7 +76,6 @@ export async function publishSinglePost(
   });
   progress.setPublishStatus('publishing');
   progress.setStatusMessage('Publishing to Instagram');
-  const publishRes = await api.publishIGContainer(form.selectedAccount, containerRes.containerId);
-  if (!publishRes.success || !publishRes.mediaId) throw new Error(publishRes.message || 'Publish failed');
-  return publishRes.mediaId;
+  const { mediaId } = await api.publishIGContainer(form.selectedAccount, containerId);
+  return mediaId;
 }

@@ -3,17 +3,17 @@
         {
             "call": "PUT /tracked-content/nope",
             "status": 404,
-            "body": "{\"error\":\"Tracked content not found\"}"
+            "body": "{\"success\":false,\"code\":\"NOT_FOUND\",\"message\":\"Tracked content not found\",\"requestId\":\"req-test\"}"
         },
         {
             "call": "PUT /tracked-content/t-youtube",
             "status": 400,
-            "body": "{\"error\":\"YouTube view counts are fetched automatically and cannot be set by hand\"}"
+            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"YouTube view counts are fetched automatically and cannot be set by hand\",\"requestId\":\"req-test\"}"
         },
         {
             "call": "PUT /tracked-content/t-youtube",
             "status": 400,
-            "body": "{\"error\":\"Images can only be attached to Reddit posts\"}"
+            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"Images can only be attached to Reddit posts\",\"requestId\":\"req-test\"}"
         },
         {
             "call": "PUT /tracked-content/t-reddit",
@@ -28,12 +28,12 @@
         {
             "call": "PUT /tracked-content/t-reddit",
             "status": 400,
-            "body": "{\"error\":\"Views must be a whole number of 0 or more\"}"
+            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"Views must be a whole number of 0 or more\",\"requestId\":\"req-test\"}"
         },
         {
             "call": "PUT /tracked-content/t-reddit",
             "status": 400,
-            "body": "{\"error\":\"Views must be a whole number of 0 or more\"}"
+            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"Views must be a whole number of 0 or more\",\"requestId\":\"req-test\"}"
         },
         {
             "call": "PUT /tracked-content/t-reddit",
@@ -48,12 +48,12 @@
         {
             "call": "PUT /tracked-content/t-reddit",
             "status": 400,
-            "body": "{\"error\":\"Image must be an https URL returned by the uploader\"}"
+            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"Image must be an https URL returned by the uploader\",\"requestId\":\"req-test\"}"
         },
         {
             "call": "PUT /tracked-content/t-reddit",
             "status": 400,
-            "body": "{\"error\":\"Image must be an https URL returned by the uploader\"}"
+            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"Image must be an https URL returned by the uploader\",\"requestId\":\"req-test\"}"
         },
         {
             "call": "PUT /tracked-content/t-reddit",

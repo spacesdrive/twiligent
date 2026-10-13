@@ -5,7 +5,7 @@ import { test, describe, before, after, afterEach, mock } from 'node:test';
 import type { Mock } from 'node:test';
 import type { Hono } from 'hono';
 import analyticsRouter from '../../routes/analyticsRoutes.ts';
-import overviewRouter from '../../routes/overview.ts';
+import overviewRouter from '../../routes/overviewRoutes.ts';
 import { assertGolden } from '../fixtures/golden.ts';
 import { installFetch, reply } from '../fixtures/fakeFetch.ts';
 import type { FetchMock, RecordedRequest } from '../fixtures/fakeFetch.ts';

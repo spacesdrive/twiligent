@@ -37,8 +37,7 @@ export function useScheduledPostEdit({ showToast, loadScheduledPosts }: Schedule
     const scheduledAt = new Date(`${draft.date}T${draft.time}`);
     setSavingEdit(true);
     try {
-      const res = await api.updateScheduledPost(draft.postId as string, { caption: draft.caption, scheduledAt: scheduledAt.toISOString() });
-      if (!res.success) throw new Error(res.message || 'Update failed');
+      await api.updateScheduledPost(draft.postId as string, { caption: draft.caption, scheduledAt: scheduledAt.toISOString() });
       showToast('Scheduled post updated');
       cancelEdit();
       loadScheduledPosts();

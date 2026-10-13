@@ -1,6 +1,6 @@
 import { test, describe, before, after, afterEach, mock } from 'node:test';
 import type { Mock } from 'node:test';
-import trackedContentRouter from '../../routes/trackedContent.ts';
+import trackedContentRouter from '../../routes/trackedContentRoutes.ts';
 import { assertGolden } from '../fixtures/golden.ts';
 import { installFetch, reply } from '../fixtures/fakeFetch.ts';
 import type { FetchMock } from '../fixtures/fakeFetch.ts';

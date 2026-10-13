@@ -4,12 +4,12 @@
             {
                 "call": "POST /tracked-content",
                 "status": 400,
-                "body": "{\"error\":\"url is required\"}"
+                "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"url is required\",\"requestId\":\"req-test\"}"
             },
             {
                 "call": "POST /tracked-content",
                 "status": 400,
-                "body": "{\"error\":\"Only Reddit and YouTube URLs are supported\"}"
+                "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"Only Reddit and YouTube URLs are supported\",\"requestId\":\"req-test\"}"
             },
             {
                 "call": "POST /tracked-content",
@@ -19,12 +19,12 @@
             {
                 "call": "POST /tracked-content",
                 "status": 404,
-                "body": "{\"error\":\"Reddit account not found\"}"
+                "body": "{\"success\":false,\"code\":\"NOT_FOUND\",\"message\":\"Reddit account not found\",\"requestId\":\"req-test\"}"
             },
             {
                 "call": "POST /tracked-content",
                 "status": 404,
-                "body": "{\"error\":\"Reddit account not found\"}"
+                "body": "{\"success\":false,\"code\":\"NOT_FOUND\",\"message\":\"Reddit account not found\",\"requestId\":\"req-test\"}"
             },
             {
                 "call": "POST /tracked-content",
@@ -293,12 +293,17 @@
         "responses": [
             {
                 "call": "POST /tracked-content",
-                "status": 400,
-                "body": "{\"error\":\"YouTube API key not configured on this server\"}"
+                "status": 503,
+                "body": "{\"success\":false,\"code\":\"NOT_CONFIGURED\",\"message\":\"YouTube API key not configured on this server\",\"requestId\":\"req-test\"}"
             }
         ],
         "queries": [],
         "requests": [],
-        "logLines": []
+        "logLines": [
+            [
+                "error",
+                "{\"level\":\"error\",\"message\":\"request failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"code\":\"NOT_CONFIGURED\",\"status\":503,\"error\":\"YouTube API key not configured on this server\",\"errorName\":\"NotConfiguredError\"}"
+            ]
+        ]
     }
 }

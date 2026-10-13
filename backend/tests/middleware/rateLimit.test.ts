@@ -6,6 +6,7 @@ import { resetRateLimitState } from '../../lib/rateLimit/limiter.ts';
 import type { RateLimitRule } from '../../lib/rateLimit/limiter.ts';
 import { RATE_LIMIT_RULES, QUOTA_ROUTES, PUBLISH_ROUTES, matchesRoute } from '../../lib/rateLimit/rules.ts';
 import type { AppContext, AppEnv } from '../../types/app.ts';
+import type { ApiFailure } from '../../../shared/types/domain.ts';
 
 const tightRule: RateLimitRule = {
     name: 'tight',
@@ -22,6 +23,7 @@ const looseRule: RateLimitRule = {
 function appWith(register: (app: Hono<AppEnv>) => void, userId?: string): Hono<AppEnv> {
     const app = new Hono<AppEnv>();
     app.use('*', async (c, next) => {
+        c.set('requestId', 'req-test');
         c.set('redis', null);
         c.set('rateLimitRedis', null);
         if (userId) c.set('userId', userId);
@@ -56,10 +58,12 @@ test('a request over the limit gets 429, Retry-After and a message that says whe
     const retryAfter = Number(response.headers.get('Retry-After'));
     assert.ok(retryAfter >= 1 && retryAfter <= 60);
     assert.equal(response.headers.get('RateLimit-Remaining'), '0');
-    const body = await response.json() as { success: boolean; error: string; retryAfter: number };
+    const body = await response.json() as ApiFailure;
     assert.equal(body.success, false);
+    assert.equal(body.code, 'RATE_LIMITED');
+    assert.equal(body.requestId, 'req-test');
     assert.equal(body.retryAfter, retryAfter);
-    assert.match(body.error, /^Too many requests - try again in \d+ seconds?\.$/);
+    assert.match(body.message, /^Too many requests - try again in \d+ seconds?\.$/);
 });
 
 test('different clients have separate limits', async () => {

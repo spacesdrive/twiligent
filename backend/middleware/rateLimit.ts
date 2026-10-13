@@ -2,6 +2,7 @@ import type { MiddlewareHandler } from 'hono';
 import { checkRateLimit } from '../lib/rateLimit/limiter.ts';
 import type { RateLimitRule } from '../lib/rateLimit/limiter.ts';
 import type { Decision } from '../lib/rateLimit/algorithms.ts';
+import { errorBody } from './errorHandler.ts';
 import type { AppContext, AppEnv } from '../types/app.ts';
 
 export const RATE_LIMIT_HEADERS = ['RateLimit-Limit', 'RateLimit-Remaining', 'RateLimit-Reset', 'Retry-After'];
@@ -62,11 +63,8 @@ export function rateLimit(rule: RateLimitRule, identify: Identify, applies?: (c:
 
         const decision = await checkRateLimit(c.get('rateLimitRedis'), rule, identifier);
         if (!decision.allowed) {
-            const response = c.json({
-                success: false,
-                error: `${rule.label} - try again in ${retryWording(decision.retryAfterMs)}.`,
-                retryAfter: seconds(decision.retryAfterMs),
-            }, 429);
+            const message = `${rule.label} - try again in ${retryWording(decision.retryAfterMs)}.`;
+            const response = c.json({ ...errorBody(c, 'RATE_LIMITED', message), retryAfter: seconds(decision.retryAfterMs) }, 429);
             setHeaders(response.headers, decision);
             response.headers.set('Retry-After', String(seconds(decision.retryAfterMs)));
             return response;
