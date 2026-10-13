@@ -4,12 +4,13 @@ import {
   Tooltip as ReTooltip, ResponsiveContainer,
 } from 'recharts';
 import { fmtNum, fmtNumFull } from '../utils/formatters';
+import { axisProps, gridProps, tooltipStyle } from '@/lib/chart';
 
 export default function MetricAreaChart({
   data,
   dataKey,
   label,
-  color = 'var(--primary)',
+  color = 'var(--chart-1)',
   height = 240,
   emptyMessage = 'No data to display',
 }) {
@@ -17,7 +18,7 @@ export default function MetricAreaChart({
   const gradientId = `metric-area-${useId().replace(/:/g, '')}`;
 
   if (!data || data.length === 0) {
-    return <p className="text-sm text-muted-foreground py-8 text-center">{emptyMessage}</p>;
+    return <p className="py-8 text-center text-small text-ink-faint">{emptyMessage}</p>;
   }
 
   return (
@@ -25,28 +26,16 @@ export default function MetricAreaChart({
       <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%"  stopColor={color} stopOpacity={0.28} />
+            <stop offset="5%"  stopColor={color} stopOpacity={0.2} />
             <stop offset="95%" stopColor={color} stopOpacity={0} />
           </linearGradient>
         </defs>
-        <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-        <XAxis
-          dataKey="name"
-          tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
-          axisLine={false}
-          tickLine={false}
-          interval="preserveStartEnd"
-        />
-        <YAxis
-          tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }}
-          tickFormatter={fmtNum}
-          axisLine={false}
-          tickLine={false}
-          width={48}
-          allowDecimals={false}
-        />
+        <CartesianGrid {...gridProps} vertical={false} />
+        <XAxis dataKey="name" {...axisProps} interval="preserveStartEnd" />
+        <YAxis {...axisProps} tickFormatter={fmtNum} width={48} allowDecimals={false} />
         <ReTooltip
-          contentStyle={{ background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 }}
+          contentStyle={tooltipStyle}
+          cursor={{ stroke: 'var(--line-strong)' }}
           formatter={(v) => [fmtNumFull(v), label]}
         />
         <Area
@@ -55,7 +44,7 @@ export default function MetricAreaChart({
           stroke={color}
           strokeWidth={2}
           fill={`url(#${gradientId})`}
-          dot={{ r: 3, fill: color, stroke: 'var(--card)', strokeWidth: 2 }}
+          dot={{ r: 3, fill: color, stroke: 'var(--surface-raised)', strokeWidth: 2 }}
           activeDot={{ r: 6 }}
         />
       </AreaChart>

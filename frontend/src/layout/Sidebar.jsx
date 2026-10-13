@@ -1,148 +1,97 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import React from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useTheme } from 'next-themes';
+import { Search, Tag, Settings, LogOut, Sun, Moon, Monitor, ChevronsUpDown } from 'lucide-react';
 import {
-  Sidebar, SidebarContent, SidebarFooter, SidebarGroup,
-  SidebarGroupLabel, SidebarHeader, SidebarMenu, SidebarMenuButton,
-  SidebarMenuItem, SidebarSeparator,
+  Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader,
+  SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar,
 } from '@/components/ui/sidebar';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
-  LayoutDashboard, PlaySquare, Scissors, Camera,
-  Upload, Users, Settings, Flame, Bookmark, Tag,
-} from 'lucide-react';
-
+  DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel,
+  DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Logo } from '@/components/brand/Logo';
+import { AccountAvatar } from '@/components/platform';
+import { accountName, accountPath } from '@/lib/accounts';
+import { NAV_GROUPS, isNavActive } from './navigation';
 import { useAppContext } from '../context/AppContext';
-import { api } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
-const NAV_GROUPS = [
-  {
-    label: 'Analytics',
-    items: [
-      { path: '/',             label: 'Overview',      icon: LayoutDashboard },
-      { path: '/videos',       label: 'All Videos',    icon: PlaySquare },
-      { path: '/shorts',       label: 'Shorts',        icon: Scissors },
-      { path: '/reels',        label: 'IG Content',    icon: Camera },
-      { path: '/reddit-posts',    label: 'Reddit Posts',    icon: Flame },
-      { path: '/tracked-content',  label: 'Tracked Content', icon: Bookmark },
-    ],
-  },
-  {
-    label: 'Publishing',
-    items: [
-      { path: '/upload', label: 'Publish', icon: Upload },
-    ],
-  },
-  {
-    label: 'Management',
-    items: [
-      { path: '/accounts', label: 'Accounts', icon: Users },
-      { path: '/settings', label: 'Settings', icon: Settings },
-    ],
-  },
-];
+const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
-export default function AppSidebar() {
-  const navigate = useNavigate();
+export default function AppSidebar({ categories, onOpenPalette, onSignOut }) {
   const location = useLocation();
   const { accounts } = useAppContext();
+  const { setOpenMobile } = useSidebar();
 
-  const [categories, setCategories] = useState([]);
-
-  useEffect(() => {
-    api.getTrackedContent()
-      .then(data => {
-        const all = Array.isArray(data) ? data : [];
-        const cats = [...new Set(all.map(p => p.category).filter(Boolean))].sort();
-        setCategories(cats);
-      })
-      .catch(() => {});
-  }, []);
-
-  const isActive = (path) => {
-    if (path === '/') return location.pathname === '/';
-    return location.pathname.startsWith(path);
-  };
+  const nav = (path, label, children, tooltip = label) => (
+    <SidebarMenuButton
+      isActive={isNavActive(path, location.pathname)}
+      tooltip={tooltip}
+      render={<Link to={path} onClick={() => setOpenMobile(false)} />}
+    >
+      {children}
+    </SidebarMenuButton>
+  );
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border">
-      {/* Header */}
-      <SidebarHeader className="border-b border-border">
+    <Sidebar collapsible="icon" className="border-r border-line">
+      <SidebarHeader className="gap-3 px-3 pt-4 pb-2">
+        <Link
+          to="/"
+          aria-label="Twiligent overview"
+          className="flex h-8 items-center rounded-row px-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
+        >
+          <Logo className="h-6 group-data-[collapsible=icon]:hidden" />
+          <Logo variant="mark" className="hidden h-6 group-data-[collapsible=icon]:block" />
+        </Link>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
-              size="lg"
-              className="cursor-default hover:bg-transparent active:bg-transparent"
+              tooltip="Search"
+              onClick={onOpenPalette}
+              className="border border-line bg-surface-raised text-ink-faint hover:text-ink group-data-[collapsible=icon]:border-0 group-data-[collapsible=icon]:bg-transparent"
             >
-              <img src="/logo.png" alt="Twiligent" className="size-8 object-contain shrink-0" />
-              <div className="flex flex-col leading-tight min-w-0">
-                <span className="font-bold text-sm truncate">Twiligent</span>
-                <span className="text-xs text-muted-foreground truncate">Analytics</span>
-              </div>
+              <Search className="size-4!" />
+              <span className="flex-1">Search</span>
+              <kbd className="font-mono text-caption text-ink-faint group-data-[collapsible=icon]:hidden">{isMac ? 'Cmd K' : 'Ctrl K'}</kbd>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
 
-      {/* Nav groups */}
-      <SidebarContent>
-        {NAV_GROUPS.map((group, gi) => (
-          <SidebarGroup key={gi}>
+      <SidebarContent className="gap-1 px-1">
+        {NAV_GROUPS.map(group => (
+          <SidebarGroup key={group.label} className="py-1">
             <SidebarGroupLabel>{group.label}</SidebarGroupLabel>
-            <SidebarMenu>
-              {group.items.map((item) => {
+            <SidebarMenu className="gap-0.5">
+              {group.items.map(item => {
                 const Icon = item.icon;
-                const active = isActive(item.path);
                 return (
                   <SidebarMenuItem key={item.path}>
-                    <SidebarMenuButton
-                      isActive={active}
-                      onClick={() => navigate(item.path)}
-                      tooltip={item.label}
-                    >
-                      <Icon />
-                      <span>{item.label}</span>
-                    </SidebarMenuButton>
+                    {nav(item.path, item.label, <><Icon /><span>{item.label}</span></>)}
                   </SidebarMenuItem>
                 );
               })}
             </SidebarMenu>
-            {gi < NAV_GROUPS.length - 1 && <SidebarSeparator className="mt-2" />}
           </SidebarGroup>
         ))}
 
-        {/* Accounts quick list */}
         {accounts.length > 0 && (
-          <SidebarGroup>
-            <SidebarSeparator />
+          <SidebarGroup className="py-1">
             <SidebarGroupLabel>Accounts</SidebarGroupLabel>
-            <SidebarMenu>
-              {accounts.map((acc) => {
-                const isIG     = acc.platform === 'instagram';
-                const isReddit = acc.platform === 'reddit';
-                const path     = isIG ? `/instagram/${acc.id}` : isReddit ? `/reddit/${acc.id}` : `/channel/${acc.id}`;
-                const initials = (acc.title || '?').slice(0, 2).toUpperCase();
-                const avatarBg = isIG ? '#ec4899' : isReddit ? '#f97316' : '#ef4444';
+            <SidebarMenu className="gap-0.5">
+              {accounts.map(account => {
+                const path = accountPath(account);
                 return (
-                  <SidebarMenuItem key={acc.id}>
-                    <SidebarMenuButton
-                      isActive={location.pathname === path}
-                      onClick={() => navigate(path)}
-                      tooltip={acc.title}
-                    >
-                      <Avatar className="size-5 flex-shrink-0">
-                        <AvatarImage
-                          src={acc.thumbnail || acc.profilePictureUrl || acc.thumbnails?.default}
-                          alt={acc.title}
-                        />
-                        <AvatarFallback
-                          style={{ background: avatarBg }}
-                          className="text-[0.5rem] font-bold text-white"
-                        >
-                          {initials}
-                        </AvatarFallback>
-                      </Avatar>
-                      <span className="truncate text-sm">{acc.title}</span>
-                    </SidebarMenuButton>
+                  <SidebarMenuItem key={account.id}>
+                    {nav(path, accountName(account), (
+                      <>
+                        <AccountAvatar account={account} size="xs" />
+                        <span>{accountName(account)}</span>
+                      </>
+                    ))}
                   </SidebarMenuItem>
                 );
               })}
@@ -150,24 +99,15 @@ export default function AppSidebar() {
           </SidebarGroup>
         )}
 
-        {/* Categories quick list */}
         {categories.length > 0 && (
-          <SidebarGroup>
-            <SidebarSeparator />
+          <SidebarGroup className="py-1">
             <SidebarGroupLabel>Categories</SidebarGroupLabel>
-            <SidebarMenu>
-              {categories.map((cat) => {
-                const path = `/tracked-content/category/${encodeURIComponent(cat)}`;
+            <SidebarMenu className="gap-0.5">
+              {categories.map(category => {
+                const path = `/tracked-content/category/${encodeURIComponent(category)}`;
                 return (
-                  <SidebarMenuItem key={cat}>
-                    <SidebarMenuButton
-                      isActive={location.pathname === path}
-                      onClick={() => navigate(path)}
-                      tooltip={cat}
-                    >
-                      <Tag className="size-4 text-purple-500 flex-shrink-0" />
-                      <span className="truncate text-sm">{cat}</span>
-                    </SidebarMenuButton>
+                  <SidebarMenuItem key={category}>
+                    {nav(path, category, <><Tag /><span>{category}</span></>)}
                   </SidebarMenuItem>
                 );
               })}
@@ -176,21 +116,51 @@ export default function AppSidebar() {
         )}
       </SidebarContent>
 
-      {/* Footer */}
-      <SidebarFooter className="border-t border-border p-2">
-        <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              onClick={() => navigate('/settings')}
-              tooltip="Settings"
-              className="text-muted-foreground"
-            >
-              <Settings />
-              <span>Settings</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
+      <SidebarFooter className="border-t border-line p-2">
+        <UserMenu onSignOut={onSignOut} />
       </SidebarFooter>
     </Sidebar>
+  );
+}
+
+function UserMenu({ onSignOut }) {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { theme, setTheme } = useTheme();
+  const email = user?.email ?? '';
+  const initial = email[0]?.toUpperCase() ?? 'T';
+
+  return (
+    <SidebarMenu>
+      <SidebarMenuItem>
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            render={<SidebarMenuButton size="lg" tooltip={email || 'Account'} className="data-popup-open:bg-surface-selected" />}
+          >
+            <Avatar className="size-7">
+              <AvatarFallback className="bg-brand text-caption font-semibold text-on-brand">{initial}</AvatarFallback>
+            </Avatar>
+            <span className="flex min-w-0 flex-1 flex-col text-left">
+              <span className="truncate text-sm font-medium text-ink">{email.split('@')[0] || 'Account'}</span>
+              <span className="truncate text-caption font-normal text-ink-faint">{email}</span>
+            </span>
+            <ChevronsUpDown className="size-4! text-ink-faint" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent side="top" align="start" className="w-(--anchor-width) min-w-56">
+            <DropdownMenuGroup>
+              <DropdownMenuLabel className="text-caption text-ink-faint">Theme</DropdownMenuLabel>
+              <DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>
+                <DropdownMenuRadioItem value="light"><Sun />Light</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="dark"><Moon />Dark</DropdownMenuRadioItem>
+                <DropdownMenuRadioItem value="system"><Monitor />Match system</DropdownMenuRadioItem>
+              </DropdownMenuRadioGroup>
+            </DropdownMenuGroup>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => navigate('/settings')}><Settings />Settings</DropdownMenuItem>
+            <DropdownMenuItem onClick={onSignOut}><LogOut />Sign out</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </SidebarMenuItem>
+    </SidebarMenu>
   );
 }

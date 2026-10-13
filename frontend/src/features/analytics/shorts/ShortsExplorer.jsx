@@ -1,216 +1,167 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { RefreshCw, Eye, ThumbsUp, MessageSquare, Scissors, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Progress } from '@/components/ui/progress';
-import {
-  Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
-import { Search, RefreshCw, Eye, ThumbsUp, MessageSquare, Play, Tv } from 'lucide-react';
-import { Empty, EmptyMedia, EmptyHeader, EmptyTitle, EmptyDescription } from '@/components/ui/empty';
-import MainCard from '../../../components/MainCard';
-import { useAppContext } from '../../../context/AppContext';
-import { api } from '../../../services/api';
-import { fmtNum, fmtDuration, timeAgo } from '../../../utils/formatters';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import PageHeader from '@/components/PageHeader';
+import SurfaceBox from '@/components/SurfaceBox';
+import SearchField from '@/components/SearchField';
+import FilterChips from '@/components/FilterChips';
+import Pager from '@/components/Pager';
+import MediaCard, { MediaChip } from '@/components/MediaCard';
+import { EmptyState } from '@/components/StateViews';
+import { VIEW_TIERS, filterByTier, matchesText, pageSlice } from '@/lib/library';
+import { useChannelVideos } from '../videos/useChannelVideos';
+import { fmtNum, fmtDuration } from '../../../utils/formatters';
+import { cn } from '@/lib/utils';
 
 const ITEMS_PER_PAGE = 24;
-
-function parseDurationToSeconds(iso) {
-  if (!iso || iso === 'P0D') return 0;
-  const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-  if (!m) return 0;
-  return (parseInt(m[1] || 0) * 3600) + (parseInt(m[2] || 0) * 60) + parseInt(m[3] || 0);
-}
-
-const PERFORMANCE_TIERS = [
-  { label: 'All',                value: 'all' },
-  { label: 'Viral (>1M)',        value: 'viral',  min: 1000000 },
-  { label: 'High (100K-1M)',     value: 'high',   min: 100000, max: 1000000 },
-  { label: 'Medium (10K-100K)', value: 'medium', min: 10000,  max: 100000 },
-  { label: 'Low (<10K)',         value: 'low',    max: 10000 },
-];
+const SHORT_MAX_SECONDS = 60;
 
 const SORT_OPTIONS = [
-  { label: 'Most Viewed',     field: 'viewCount' },
-  { label: 'Most Liked',      field: 'likeCount' },
-  { label: 'Most Comments',   field: 'commentCount' },
-  { label: 'Best Engagement', field: 'engagementRate' },
-  { label: 'Newest First',    field: 'publishedAt' },
+  { value: 'viewCount',      label: 'Most viewed' },
+  { value: 'likeCount',      label: 'Most liked' },
+  { value: 'commentCount',   label: 'Most comments' },
+  { value: 'engagementRate', label: 'Best engagement' },
+  { value: 'publishedAt',    label: 'Newest first' },
 ];
 
+function sortValue(item, field) {
+  if (field === 'publishedAt') return new Date(item.publishedAt).getTime() || 0;
+  return Number(item[field] ?? 0);
+}
+
 export default function ShortsExplorer() {
-  const { accounts, showToast } = useAppContext();
-  const [shorts,          setShorts]          = useState([]);
-  const [loading,         setLoading]         = useState(true);
-  const [search,          setSearch]          = useState('');
-  const [channelFilter,   setChannelFilter]   = useState('all');
-  const [performanceTier, setPerformanceTier] = useState('all');
-  const [sortField,       setSortField]       = useState('viewCount');
-  const [page,            setPage]            = useState(1);
-  const [channels,        setChannels]        = useState([]);
+  const { videos, channels, loading, reload } = useChannelVideos();
+  const [search, setSearch] = useState('');
+  const [channelFilter, setChannelFilter] = useState('all');
+  const [tier, setTier] = useState('all');
+  const [sortField, setSortField] = useState('viewCount');
+  const [page, setPage] = useState(1);
 
-  useEffect(() => { loadAllShorts(); }, [accounts]);
-
-  const loadAllShorts = async () => {
-    setLoading(true);
-    try {
-      const all = [];
-      const channelList = [];
-      for (const acct of (accounts || [])) {
-        if (acct.platform === 'instagram') continue;
-        try {
-          const res = await api.getVideos(acct.id);
-          const vids = res.videos || res.data?.videos || [];
-          const channelTitle = acct.title || 'Unknown';
-          channelList.push({ id: acct.id, title: channelTitle, thumbnail: acct.thumbnails?.default || '' });
-          const shortsOnly = vids.filter(v => {
-            const secs = v.durationSeconds || parseDurationToSeconds(v.duration);
-            return secs > 0 && secs <= 60;
-          });
-          all.push(...shortsOnly.map(v => ({
-            ...v,
-            thumbnail: v.thumbnail || v.thumbnails?.medium || v.thumbnails?.default || '',
-            channelTitle,
-            channelId: acct.id,
-            engagementRate: (v.viewCount || 0) > 0 ? (((v.likeCount || 0) + (v.commentCount || 0)) / v.viewCount * 100).toFixed(2) : '0.00',
-            durationSeconds: v.durationSeconds || parseDurationToSeconds(v.duration),
-          })));
-        } catch (e) { /* skip */ }
-      }
-      setShorts(all);
-      setChannels(channelList);
-    } catch (err) {
-      showToast('Failed to load Shorts: ' + err.message, 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const shorts = useMemo(
+    () => videos.filter(v => v.durationSeconds > 0 && v.durationSeconds <= SHORT_MAX_SECONDS),
+    [videos],
+  );
 
   const filtered = useMemo(() => {
-    let result = [...shorts];
-    if (channelFilter !== 'all') result = result.filter(v => v.channelId === channelFilter);
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter(v => v.title?.toLowerCase().includes(q));
-    }
-    if (performanceTier !== 'all') {
-      const tier = PERFORMANCE_TIERS.find(t => t.value === performanceTier);
-      if (tier?.min != null) result = result.filter(v => (v.viewCount || 0) >= tier.min);
-      if (tier?.max != null) result = result.filter(v => (v.viewCount || 0) < tier.max);
-    }
-    result.sort((a, b) => (b[sortField] ?? 0) - (a[sortField] ?? 0));
-    return result;
-  }, [shorts, channelFilter, search, performanceTier, sortField]);
+    let result = channelFilter === 'all' ? shorts : shorts.filter(v => v.channelId === channelFilter);
+    result = result.filter(v => matchesText([v.title], search));
+    result = filterByTier(result, VIEW_TIERS, tier, 'viewCount');
+    return [...result].sort((a, b) => sortValue(b, sortField) - sortValue(a, sortField));
+  }, [shorts, channelFilter, search, tier, sortField]);
 
-  const pageCount = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const paged     = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+  const paged = pageSlice(filtered, page, ITEMS_PER_PAGE);
+  const resetPage = setter => value => { setter(value); setPage(1); };
+
+  const header = (
+    <PageHeader
+      title="Shorts"
+      description={loading ? 'Loading Shorts from your channels' : `${fmtNum(shorts.length)} Shorts across ${channels.length} channel${channels.length === 1 ? '' : 's'}`}
+      actions={
+        <Button variant="outline" size="sm" onClick={reload} disabled={loading}>
+          <RefreshCw data-icon="inline-start" className={cn(loading && 'animate-spin')} />
+          Refresh
+        </Button>
+      }
+    />
+  );
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-48 mb-2" />
-        <Progress className="h-1" />
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-3">
-          {[...Array(12)].map((_, i) => <Skeleton key={i} className="aspect-[9/16] rounded-xl" />)}
+      <div className="flex flex-col gap-6">
+        {header}
+        <Skeleton className="h-10 rounded-field" />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
+          {Array.from({ length: 12 }).map((_, i) => <Skeleton key={i} className="aspect-[9/16] rounded-card" />)}
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Shorts Explorer</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {shorts.length} Shorts across {channels.length} channel{channels.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={loadAllShorts} className="gap-2">
-          <RefreshCw className="h-3.5 w-3.5" /> Refresh
-        </Button>
+  if (channels.length === 0) {
+    return (
+      <div className="flex flex-col gap-6">
+        {header}
+        <SurfaceBox>
+          <EmptyState
+            icon={<Scissors />}
+            title="No YouTube channels yet"
+            description="Add a channel and its Shorts appear here, ranked by views."
+            action={<Button render={<Link to="/accounts?add=1" />}><Plus data-icon="inline-start" />Add a channel</Button>}
+          />
+        </SurfaceBox>
       </div>
+    );
+  }
 
-      {/* Filters */}
-      <MainCard>
-        <div className="flex flex-wrap gap-3 items-center">
-          <div className="relative flex-1 min-w-48">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input className="pl-9" placeholder="Search Shorts…" value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
-          </div>
+  return (
+    <div className="flex flex-col gap-6">
+      {header}
+
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <SearchField value={search} onChange={resetPage(setSearch)} placeholder="Search Shorts" className="min-w-56 flex-1" />
           {channels.length > 1 && (
-            <Select value={channelFilter} onValueChange={v => { setChannelFilter(v); setPage(1); }}>
-              <SelectTrigger className="w-40"><SelectValue placeholder="All Channels" /></SelectTrigger>
+            <Select
+              value={channelFilter}
+              onValueChange={resetPage(setChannelFilter)}
+              items={[{ value: 'all', label: 'All channels' }, ...channels.map(c => ({ value: c.id, label: c.title }))]}
+            >
+              <SelectTrigger className="w-48" aria-label="Channel"><SelectValue /></SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  <SelectItem value="all">All Channels</SelectItem>
+                  <SelectItem value="all">All channels</SelectItem>
                   {channels.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
                 </SelectGroup>
               </SelectContent>
             </Select>
           )}
-          <Select value={performanceTier} onValueChange={v => { setPerformanceTier(v); setPage(1); }}>
-            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
-            <SelectContent><SelectGroup>{PERFORMANCE_TIERS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectGroup></SelectContent>
-          </Select>
-          <Select value={sortField} onValueChange={setSortField}>
-            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
-            <SelectContent><SelectGroup>{SORT_OPTIONS.map(o => <SelectItem key={o.field} value={o.field}>{o.label}</SelectItem>)}</SelectGroup></SelectContent>
+          <Select value={sortField} onValueChange={setSortField} items={SORT_OPTIONS}>
+            <SelectTrigger className="w-44" aria-label="Sort"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {SORT_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+              </SelectGroup>
+            </SelectContent>
           </Select>
         </div>
-        <p className="text-xs text-muted-foreground mt-2">Showing {paged.length} of {filtered.length} Shorts</p>
-      </MainCard>
-
-      {/* Vertical card grid */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6 gap-3">
-        {paged.map((v, i) => (
-          <div
-            key={`${v.videoId}-${i}`}
-            className="border border-border rounded-xl overflow-hidden cursor-pointer hover:shadow-md transition-shadow bg-card"
-            onClick={() => window.open(`https://www.youtube.com/watch?v=${v.videoId}`, '_blank', 'noopener')}
-          >
-            <div className="relative">
-              {v.thumbnail
-                ? <img src={v.thumbnail} className="w-full aspect-[9/16] object-cover" alt="" />
-                : <div className="w-full aspect-[9/16] bg-muted flex items-center justify-center"><Tv className="h-6 w-6 text-muted-foreground" /></div>}
-              <span className="absolute top-1.5 right-1.5 flex items-center gap-0.5 bg-black/75 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded">
-                <Eye className="h-2.5 w-2.5" />{fmtNum(v.viewCount)}
-              </span>
-              {v.durationSeconds > 0 && (
-                <span className="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded">{fmtDuration(v.durationSeconds)}</span>
-              )}
-            </div>
-            <div className="p-2 space-y-1">
-              <p className="text-[11px] font-semibold line-clamp-2 leading-snug">{v.title}</p>
-              <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                <span className="flex items-center gap-0.5"><ThumbsUp className="h-2.5 w-2.5" />{fmtNum(v.likeCount)}</span>
-                <span className="flex items-center gap-0.5"><MessageSquare className="h-2.5 w-2.5" />{fmtNum(v.commentCount)}</span>
-              </div>
-            </div>
-          </div>
-        ))}
+        <FilterChips label="Views" options={VIEW_TIERS} value={tier} onChange={resetPage(setTier)} />
       </div>
 
-      {filtered.length === 0 && !loading && (
-        <MainCard>
-          <Empty>
-            <EmptyMedia><Tv className="size-10 text-muted-foreground/40" /></EmptyMedia>
-            <EmptyHeader>
-              <EmptyDescription>No Shorts found. Try adjusting filters or add a YouTube channel.</EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        </MainCard>
-      )}
-
-      {pageCount > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Previous</Button>
-          <span className="text-sm text-muted-foreground px-2">Page {page} of {pageCount}</span>
-          <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={page === pageCount}>Next</Button>
+      {filtered.length === 0 ? (
+        <SurfaceBox>
+          <EmptyState
+            compact
+            icon={<Scissors />}
+            title={shorts.length === 0 ? 'No Shorts yet' : 'No Shorts match'}
+            description={shorts.length === 0 ? 'Videos of 60 seconds or less appear here once your channels publish them.' : 'Clear the search or choose a different view range.'}
+          />
+        </SurfaceBox>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
+          {paged.items.map((v, i) => (
+            <MediaCard
+              key={`${v.videoId}-${i}`}
+              aspect="vertical"
+              href={`https://www.youtube.com/shorts/${v.videoId}`}
+              image={v.thumbnail}
+              title={v.title}
+              topRight={<MediaChip><Eye />{fmtNum(v.viewCount)}</MediaChip>}
+              bottomRight={<MediaChip>{fmtDuration(v.durationSeconds)}</MediaChip>}
+              meta={
+                <>
+                  <span className="flex items-center gap-1"><ThumbsUp />{fmtNum(v.likeCount)}</span>
+                  <span className="flex items-center gap-1"><MessageSquare />{fmtNum(v.commentCount)}</span>
+                </>
+              }
+            />
+          ))}
         </div>
       )}
+
+      <Pager page={paged.page} pageCount={paged.pageCount} onPageChange={setPage} total={filtered.length} shown={paged.items.length} noun="Shorts" />
     </div>
   );
 }

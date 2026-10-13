@@ -1,288 +1,290 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Progress } from '@/components/ui/progress';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
-  ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell, Legend,
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, PieChart, Pie, Cell, Legend,
   AreaChart, Area,
 } from 'recharts';
-import StatCard from '../../../components/ui/StatCard';
-import MainCard from '../../../components/MainCard';
+import {
+  RefreshCw, Eye, Users, VideoIcon, ThumbsUp, MessageSquare, TrendingUp, Clock, Trophy, Zap, Flame,
+  Calendar, Timer, Film, Tag, Play, BarChart2, UserX,
+} from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import PageHeader from '@/components/PageHeader';
+import MetricBox from '@/components/MetricBox';
+import SurfaceBox from '@/components/SurfaceBox';
+import ChartPanel from '@/components/ChartPanel';
+import SectionHeader from '@/components/SectionHeader';
+import MediaCard, { MediaChip } from '@/components/MediaCard';
+import { EmptyState, PageSkeleton } from '@/components/StateViews';
+import { AccountAvatar } from '@/components/platform';
+import { SERIES, axisProps, axisTick, gridProps, legendStyle, tooltipCursor, tooltipStyle } from '@/lib/chart';
 import { useAppContext } from '../../../context/AppContext';
 import { api } from '../../../services/api';
 import { fmtNum, fmtNumFull, fmtDate, fmtPercent, fmtDuration, CATEGORY_MAP } from '../../../utils/formatters';
-import {
-  ArrowLeft, RefreshCw, Eye, Users, VideoIcon, ThumbsUp, MessageSquare,
-  TrendingUp, Clock, Trophy, Zap, Flame, Calendar, Timer, Film,
-  Tag, Play, BarChart2, AlertTriangle,
-} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const C = {
-  blue:   'hsl(221.2,83.2%,53.3%)',
-  green:  '#22c55e',
-  orange: '#f97316',
-  red:    '#ef4444',
-  purple: '#a855f7',
-  cyan:   '#06b6d4',
-  pink:   '#ec4899',
-  indigo: '#6366f1',
-  amber:  '#f59e0b',
-};
+const watchUrl = id => `https://www.youtube.com/watch?v=${id}`;
 
-const TS = { background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 };
+const TABS = [
+  { value: 'overview',   label: 'Overview' },
+  { value: 'videos',     label: 'Videos' },
+  { value: 'engagement', label: 'Engagement' },
+  { value: 'content',    label: 'Content' },
+  { value: 'publishing', label: 'Publishing' },
+  { value: 'growth',     label: 'Growth' },
+  { value: 'shorts',     label: 'Shorts and regular' },
+  { value: 'tags',       label: 'Tags and SEO' },
+];
 
-function ChartCard({ title, children, height = 280 }) {
-  return (
-    <MainCard title={title} contentClassName="p-3">
-      <ResponsiveContainer width="100%" height={height} debounce={200}>
-        {children}
-      </ResponsiveContainer>
-    </MainCard>
-  );
+function MetricGrid({ className, children }) {
+  return <div className={cn('grid grid-cols-2 gap-3 sm:grid-cols-4', className)}>{children}</div>;
 }
 
 function VideoTable({ videos }) {
+  const rows = (videos || []).filter(Boolean);
   return (
-    <MainCard content={false}>
-      <ScrollArea className="h-[480px]">
+    <SurfaceBox content={false} className="overflow-hidden">
+      <div className="max-h-[480px] overflow-y-auto">
         <Table>
-          <TableHeader className="sticky top-0 bg-background z-10">
+          <TableHeader className="sticky top-0 z-10 bg-surface-raised">
             <TableRow>
-              <TableHead className="w-8">#</TableHead>
+              <TableHead className="w-10 text-right">#</TableHead>
               <TableHead>Video</TableHead>
               <TableHead className="text-right">Views</TableHead>
               <TableHead className="text-right">Likes</TableHead>
               <TableHead className="text-right">Comments</TableHead>
-              <TableHead className="text-right">Eng%</TableHead>
-              <TableHead className="text-right">Duration</TableHead>
+              <TableHead className="text-right">Engagement</TableHead>
+              <TableHead className="text-right">Length</TableHead>
               <TableHead className="text-right">Published</TableHead>
-              <TableHead className="w-8" />
+              <TableHead className="w-10"><span className="sr-only">Watch</span></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {(videos || []).filter(Boolean).map((v, i) => (
-              <TableRow key={v.videoId} className="cursor-pointer" onClick={() => window.open(`https://www.youtube.com/watch?v=${v.videoId}`, '_blank', 'noopener')}>
-                <TableCell className="text-xs text-muted-foreground">{i + 1}</TableCell>
-                <TableCell className="max-w-[280px]"><p className="text-sm font-medium truncate">{v.title}</p></TableCell>
-                <TableCell className="text-right text-sm font-semibold">{fmtNum(v.viewCount)}</TableCell>
-                <TableCell className="text-right text-sm">{fmtNum(v.likeCount)}</TableCell>
-                <TableCell className="text-right text-sm">{fmtNum(v.commentCount)}</TableCell>
-                <TableCell className="text-right">
-                  <Badge variant="outline" className={cn('text-xs', parseFloat(v.engagementRate) > 5 ? 'border-green-200 bg-green-50 text-green-700' : '')}>
-                    {fmtPercent(v.engagementRate)}
-                  </Badge>
+            {rows.map((v, i) => (
+              <TableRow key={v.videoId}>
+                <TableCell className="text-right font-mono text-caption text-ink-faint">{i + 1}</TableCell>
+                <TableCell className="max-w-[280px]">
+                  <a href={watchUrl(v.videoId)} target="_blank" rel="noopener noreferrer" className="block truncate text-sm font-medium text-ink hover:underline">{v.title}</a>
                 </TableCell>
-                <TableCell className="text-right text-sm">{fmtDuration(v.durationSeconds)}</TableCell>
-                <TableCell className="text-right text-xs text-muted-foreground">{fmtDate(v.publishedAt)}</TableCell>
+                <TableCell className="text-right font-semibold text-ink">{fmtNum(v.viewCount)}</TableCell>
+                <TableCell className="text-right text-ink-muted">{fmtNum(v.likeCount)}</TableCell>
+                <TableCell className="text-right text-ink-muted">{fmtNum(v.commentCount)}</TableCell>
+                <TableCell className="text-right">
+                  <Badge variant={parseFloat(v.engagementRate) > 5 ? 'success' : 'secondary'}>{fmtPercent(v.engagementRate)}</Badge>
+                </TableCell>
+                <TableCell className="text-right text-ink-muted">{fmtDuration(v.durationSeconds)}</TableCell>
+                <TableCell className="text-right text-small text-ink-faint">{fmtDate(v.publishedAt)}</TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="icon" className="h-6 w-6 text-red-500 hover:bg-red-50" onClick={e => { e.stopPropagation(); window.open(`https://www.youtube.com/watch?v=${v.videoId}`, '_blank', 'noopener'); }}>
-                    <Play className="h-3 w-3" />
+                  <Button variant="ghost" size="icon-xs" render={<a href={watchUrl(v.videoId)} target="_blank" rel="noopener noreferrer" aria-label={`Watch ${v.title} on YouTube`} />}>
+                    <Play />
                   </Button>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
         </Table>
-      </ScrollArea>
-    </MainCard>
+      </div>
+    </SurfaceBox>
+  );
+}
+
+function TrendArea({ data, dataKey = 'value', color, name, percent = false, gradientId }) {
+  return (
+    <AreaChart data={data}>
+      <defs>
+        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="5%" stopColor={color} stopOpacity={0.2} />
+          <stop offset="95%" stopColor={color} stopOpacity={0} />
+        </linearGradient>
+      </defs>
+      <CartesianGrid {...gridProps} vertical={false} />
+      <XAxis dataKey="month" {...axisProps} />
+      <YAxis {...axisProps} tickFormatter={percent ? v => `${v}%` : fmtNum} width={48} />
+      <ReTooltip contentStyle={tooltipStyle} cursor={{ stroke: 'var(--line-strong)' }} formatter={percent ? undefined : v => fmtNumFull(v)} />
+      <Area type="monotone" dataKey={dataKey} stroke={color} fill={`url(#${gradientId})`} strokeWidth={2} name={name} />
+    </AreaChart>
   );
 }
 
 export default function ChannelAnalytics() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { accounts, showToast } = useAppContext();
   const account = accounts.find(a => a.id === id);
 
-  const [data,    setData]    = useState(null);
+  const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [tab,     setTab]     = useState('overview');
+  const [tab, setTab] = useState('overview');
 
-  useEffect(() => { if (id) loadAnalytics(); }, [id]);
-
-  const loadAnalytics = async () => {
+  const loadAnalytics = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await api.getAnalytics(id);
-      setData(res);
+      setData(await api.getAnalytics(id));
     } catch (err) {
-      showToast('Failed to load analytics: ' + err.message, 'error');
+      showToast(`Couldn't load channel analytics. ${err.message}`, 'error');
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, showToast]);
+
+  useEffect(() => { if (id) loadAnalytics(); }, [id, loadAnalytics]);
+
+  const back = { to: '/', label: 'Overview' };
 
   if (!account && !loading) {
     return (
-      <div className="space-y-4">
-        <Button variant="ghost" onClick={() => navigate('/')} className="gap-2 -ml-2 text-muted-foreground">
-          <ArrowLeft className="h-4 w-4" /> Back to Overview
-        </Button>
-        <Alert variant="destructive"><AlertTriangle className="h-4 w-4" /><AlertDescription>Account not found. It may have been removed.</AlertDescription></Alert>
+      <div className="flex flex-col gap-6">
+        <PageHeader title="YouTube channel" back={back} />
+        <SurfaceBox>
+          <EmptyState icon={<UserX />} title="Channel not found" description="It may have been removed. Choose another account from the sidebar." />
+        </SurfaceBox>
       </div>
     );
   }
 
-  if (loading) {
+  if (loading) return <PageSkeleton metrics={4} />;
+
+  if (!data) {
     return (
-      <div className="space-y-4">
-        <Button variant="ghost" className="gap-2 -ml-2 text-muted-foreground" onClick={() => navigate('/')}>
-          <ArrowLeft className="h-4 w-4" /> Back
-        </Button>
-        <Progress className="h-1" />
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {[...Array(8)].map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}
-        </div>
+      <div className="flex flex-col gap-6">
+        <PageHeader title={account?.title || 'YouTube channel'} back={back} />
+        <SurfaceBox>
+          <EmptyState
+            icon={<BarChart2 />}
+            title="Analytics are unavailable"
+            description="The channel's analytics could not be loaded. Check the YouTube API key in Settings, then try again."
+            action={<Button variant="outline" size="sm" onClick={loadAnalytics}>Try again</Button>}
+          />
+        </SurfaceBox>
       </div>
     );
   }
 
-  if (!data) return null;
   const { channel, analytics } = data;
 
-  const dayData  = analytics.publishDayDistribution
+  const dayData = analytics.publishDayDistribution
     ? Object.entries(analytics.publishDayDistribution).map(([day, count]) => ({ day, count }))
     : [];
   const hourData = analytics.publishHourDistribution
-    ? Object.entries(analytics.publishHourDistribution).sort((a, b) => parseInt(a[0]) - parseInt(b[0])).map(([hour, count]) => ({ hour: `${hour}:00`, count }))
+    ? Object.entries(analytics.publishHourDistribution).sort((a, b) => parseInt(a[0], 10) - parseInt(b[0], 10)).map(([hour, count]) => ({ hour: `${hour}:00`, count }))
     : [];
   const durationData = analytics.durationDistribution
     ? [
-        { name: 'Shorts (<1m)',    value: analytics.durationDistribution.short,    color: C.red    },
-        { name: 'Medium (1-10m)', value: analytics.durationDistribution.medium,   color: C.blue   },
-        { name: 'Long (10-60m)',  value: analytics.durationDistribution.long,     color: C.green  },
-        { name: 'Very Long (>1h)',value: analytics.durationDistribution.veryLong, color: C.orange },
+        { name: 'Shorts (under 1m)', value: analytics.durationDistribution.short,    color: SERIES.primary },
+        { name: 'Medium (1 to 10m)', value: analytics.durationDistribution.medium,   color: SERIES.cool },
+        { name: 'Long (10 to 60m)',  value: analytics.durationDistribution.long,     color: SERIES.neutral },
+        { name: 'Very long (1h+)',   value: analytics.durationDistribution.veryLong, color: SERIES.warm },
       ].filter(d => d.value > 0)
     : [];
   const catData = analytics.categoryDistribution
-    ? Object.entries(analytics.categoryDistribution).map(([id, count]) => ({ name: CATEGORY_MAP[id] || `Cat ${id}`, value: count }))
+    ? Object.entries(analytics.categoryDistribution).map(([catId, count]) => ({ name: CATEGORY_MAP[catId] || `Category ${catId}`, value: count }))
     : [];
+  const splitData = [
+    { name: 'Shorts', value: analytics.shortsCount, color: SERIES.primary },
+    { name: 'Regular', value: analytics.regularCount, color: SERIES.cool },
+  ].filter(d => d.value > 0);
+
+  const meta = [
+    channel.customUrl,
+    channel.country && channel.country !== 'Unknown' ? channel.country : null,
+    `${channel.channelAgeYears} years old`,
+    `Since ${fmtDate(channel.publishedAt)}`,
+  ].filter(Boolean);
 
   return (
-    <div className="space-y-4">
-      {/* Back */}
-      <Button variant="ghost" onClick={() => navigate('/')} className="gap-2 -ml-2 text-muted-foreground h-8">
-        <ArrowLeft className="h-4 w-4" /> Back to Overview
-      </Button>
-
-      {/* Channel header */}
-      <MainCard content={false}>
-        <div className="p-4 flex items-center gap-4 flex-wrap">
-          <Avatar className="h-16 w-16 border-2 border-border">
-            <AvatarImage src={channel.thumbnails?.high || channel.thumbnails?.medium} />
-            <AvatarFallback className="bg-red-500 text-white text-lg font-bold">{(channel.title || 'YT').slice(0, 2).toUpperCase()}</AvatarFallback>
-          </Avatar>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-xl font-bold">{channel.title}</h2>
-            <div className="flex flex-wrap gap-1.5 mt-1.5">
-              {channel.customUrl && <Badge variant="outline" className="text-xs">{channel.customUrl}</Badge>}
-              {channel.country && channel.country !== 'Unknown' && <Badge variant="outline" className="text-xs">{channel.country}</Badge>}
-              <Badge variant="outline" className="text-xs">{channel.channelAgeYears} years old</Badge>
-              <Badge variant="outline" className="text-xs">Since {fmtDate(channel.publishedAt)}</Badge>
-            </div>
-          </div>
-          <Button size="sm" onClick={loadAnalytics} className="gap-2 shrink-0">
-            <RefreshCw className="h-3.5 w-3.5" /> Refresh
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        back={back}
+        media={<AccountAvatar account={{ ...account, thumbnail: channel.thumbnails?.high || channel.thumbnails?.medium || account?.thumbnail }} size="xl" showPlatform />}
+        title={channel.title}
+        description={
+          <span className="flex flex-wrap gap-1.5">
+            {meta.map(m => <Badge key={m} variant="outline">{m}</Badge>)}
+          </span>
+        }
+        actions={
+          <Button variant="outline" size="sm" onClick={loadAnalytics}>
+            <RefreshCw data-icon="inline-start" />
+            Refresh
           </Button>
-        </div>
-      </MainCard>
+        }
+      />
 
-      {/* Tabs */}
-      <Tabs value={tab} onValueChange={setTab}>
-        <div className="overflow-x-auto scrollbar-hide">
-          <TabsList className="w-max">
-            {['overview','videos','engagement','content','publishing','growth','shorts','tags'].map((t, i) => (
-              <TabsTrigger key={t} value={t} className="text-xs px-3">
-                {['Overview','Videos','Engagement','Content','Publishing','Growth','Shorts vs Regular','Tags & SEO'][i]}
-              </TabsTrigger>
-            ))}
+      <Tabs value={tab} onValueChange={setTab} className="gap-6">
+        <div className="scrollbar-hide -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <TabsList className="w-max min-w-full">
+            {TABS.map(t => <TabsTrigger key={t.value} value={t.value}>{t.label}</TabsTrigger>)}
           </TabsList>
         </div>
 
-        {/* Overview */}
-        <TabsContent value="overview" className="space-y-4 mt-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
-            <StatCard icon={<Eye />}        label="Total Views"     value={fmtNum(channel.viewCount)}               subtitle={fmtNumFull(channel.viewCount)}         gradient="red"    small />
-            <StatCard icon={<Users />}      label="Subscribers"     value={fmtNum(channel.subscriberCount)}          subtitle={fmtNumFull(channel.subscriberCount)}   gradient="green"  small />
-            <StatCard icon={<VideoIcon />}  label="Total Videos"    value={fmtNum(channel.videoCount)}               subtitle={`${analytics.totalVideos} analyzed`}   gradient="orange" small />
-            <StatCard icon={<ThumbsUp />}   label="Total Likes"     value={fmtNum(analytics.totalLikes)}             subtitle={fmtNumFull(analytics.totalLikes)}      gradient="blue"   small />
-            <StatCard icon={<MessageSquare />} label="Comments"     value={fmtNum(analytics.totalComments)}          subtitle={fmtNumFull(analytics.totalComments)}   gradient="purple" small />
-            <StatCard icon={<TrendingUp />} label="Engagement"      value={fmtPercent(analytics.overallEngagementRate)} subtitle="Likes+Comments/Views"              gradient="teal"   small />
+        <TabsContent value="overview" className="flex flex-col gap-3">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+            <MetricBox small icon={<Eye />}           label="Total views"   value={fmtNum(channel.viewCount)}       subtitle={fmtNumFull(channel.viewCount)} highlight />
+            <MetricBox small icon={<Users />}         label="Subscribers"   value={fmtNum(channel.subscriberCount)} subtitle={fmtNumFull(channel.subscriberCount)} />
+            <MetricBox small icon={<VideoIcon />}     label="Total videos"  value={fmtNum(channel.videoCount)}      subtitle={`${analytics.totalVideos} analyzed`} />
+            <MetricBox small icon={<ThumbsUp />}      label="Total likes"   value={fmtNum(analytics.totalLikes)}    subtitle={fmtNumFull(analytics.totalLikes)} />
+            <MetricBox small icon={<MessageSquare />} label="Comments"      value={fmtNum(analytics.totalComments)} subtitle={fmtNumFull(analytics.totalComments)} />
+            <MetricBox small icon={<TrendingUp />}    label="Engagement"    value={fmtPercent(analytics.overallEngagementRate)} subtitle="Likes and comments per view" />
           </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard icon={<Zap />}     label="Avg Views/Video"   value={fmtNum(analytics.avgViews)}               gradient="cyan"   small />
-            <StatCard icon={<ThumbsUp />} label="Avg Likes/Video"  value={fmtNum(analytics.avgLikes)}               gradient="indigo" small />
-            <StatCard icon={<MessageSquare />} label="Avg Comments" value={fmtNum(analytics.avgComments)}            gradient="pink"   small />
-            <StatCard icon={<BarChart2 />} label="Median Views"     value={fmtNum(analytics.medianViews)}             gradient="amber"  small />
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard icon={<Eye />}         label="Views/Subscriber" value={channel.viewsPerSubscriber}              gradient="red"    small />
-            <StatCard icon={<TrendingUp />}  label="Avg Subs/Day"     value={fmtNum(channel.avgSubGainPerDay)}        gradient="green"  small />
-            <StatCard icon={<Eye />}         label="Avg Views/Day"    value={fmtNum(channel.avgViewsPerDay)}          gradient="blue"   small />
-            <StatCard icon={<Timer />}       label="Avg Duration"     value={analytics.avgDurationFormatted}          gradient="orange" small />
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard icon={<Clock />} label="Videos (7d)"   value={analytics.videosLast7Days}    gradient="red"    small />
-            <StatCard icon={<Clock />} label="Videos (30d)"  value={analytics.videosLast30Days}   gradient="blue"   small />
-            <StatCard icon={<Clock />} label="Videos (90d)"  value={analytics.videosLast90Days}   gradient="green"  small />
-            <StatCard icon={<Clock />} label="Videos (365d)" value={analytics.videosLast365Days}  gradient="orange" small />
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard icon={<Calendar />}   label="Est. Monthly Views" value={fmtNum(channel.estimatedMonthlyViews)}   gradient="indigo" small />
-            <StatCard icon={<Users />}      label="Est. Monthly Subs"  value={fmtNum(channel.estimatedMonthlySubGain)} gradient="teal"   small />
-            <StatCard icon={<Flame />}      label="Virality Score"     value={`${analytics.viralityScore}x`}           gradient="pink"   small />
-            <StatCard icon={<Trophy />}     label="Consistency"        value={`${analytics.consistencyScore}/100`}     gradient="amber"  small />
-          </div>
+          <MetricGrid>
+            <MetricBox small icon={<Zap />}           label="Average views per video"  value={fmtNum(analytics.avgViews)} />
+            <MetricBox small icon={<ThumbsUp />}      label="Average likes per video"  value={fmtNum(analytics.avgLikes)} />
+            <MetricBox small icon={<MessageSquare />} label="Average comments"         value={fmtNum(analytics.avgComments)} />
+            <MetricBox small icon={<BarChart2 />}     label="Median views"             value={fmtNum(analytics.medianViews)} />
+          </MetricGrid>
+          <MetricGrid>
+            <MetricBox small icon={<Eye />}        label="Views per subscriber"   value={channel.viewsPerSubscriber} />
+            <MetricBox small icon={<TrendingUp />} label="Subscribers per day"    value={fmtNum(channel.avgSubGainPerDay)} />
+            <MetricBox small icon={<Eye />}        label="Views per day"          value={fmtNum(channel.avgViewsPerDay)} />
+            <MetricBox small icon={<Timer />}      label="Average length"         value={analytics.avgDurationFormatted} />
+          </MetricGrid>
+          <MetricGrid>
+            <MetricBox small icon={<Clock />} label="Videos, last 7 days"   value={analytics.videosLast7Days} />
+            <MetricBox small icon={<Clock />} label="Videos, last 30 days"  value={analytics.videosLast30Days} />
+            <MetricBox small icon={<Clock />} label="Videos, last 90 days"  value={analytics.videosLast90Days} />
+            <MetricBox small icon={<Clock />} label="Videos, last 365 days" value={analytics.videosLast365Days} />
+          </MetricGrid>
+          <MetricGrid>
+            <MetricBox small icon={<Calendar />} label="Estimated monthly views"       value={fmtNum(channel.estimatedMonthlyViews)} />
+            <MetricBox small icon={<Users />}    label="Estimated monthly subscribers" value={fmtNum(channel.estimatedMonthlySubGain)} />
+            <MetricBox small icon={<Flame />}    label="Virality score"                value={`${analytics.viralityScore}x`} />
+            <MetricBox small icon={<Trophy />}   label="Consistency"                   value={`${analytics.consistencyScore}/100`} />
+          </MetricGrid>
 
-          <div>
-            <h3 className="text-base font-semibold mb-3 flex items-center gap-2">
-              <Trophy className="h-4 w-4 text-yellow-500" /> Best Performing Videos
-            </h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
-              {[
-                { label: 'Most Viewed',     video: analytics.bestByViews,      color: 'bg-red-500' },
-                { label: 'Most Liked',      video: analytics.bestByLikes,      color: 'bg-green-500' },
-                { label: 'Most Comments',   video: analytics.bestByComments,   color: 'bg-blue-500' },
-                { label: 'Best Engagement', video: analytics.bestByEngagement, color: 'bg-orange-500' },
-              ].filter(({ video }) => video).map(({ label, video, color }) => (
-                <div key={label} className="border border-border rounded-xl overflow-hidden cursor-pointer hover:shadow-md transition-shadow" onClick={() => window.open(`https://www.youtube.com/watch?v=${video.videoId}`, '_blank', 'noopener')}>
-                  <div className="relative">
-                    <img src={video.thumbnail} className="w-full aspect-video object-cover" alt="" />
-                    <span className={`absolute top-2 left-2 text-white text-xs font-semibold px-2 py-0.5 rounded ${color}`}>{label}</span>
-                  </div>
-                  <div className="p-2.5">
-                    <p className="text-xs font-semibold line-clamp-2">{video.title}</p>
-                    <p className="text-xs text-muted-foreground mt-1">{fmtNum(video.viewCount)} views · {fmtNum(video.likeCount)} likes</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <SectionHeader title="Best performing videos" className="mt-5" />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {[
+              { label: 'Most viewed',     video: analytics.bestByViews },
+              { label: 'Most liked',      video: analytics.bestByLikes },
+              { label: 'Most comments',   video: analytics.bestByComments },
+              { label: 'Best engagement', video: analytics.bestByEngagement },
+            ].filter(({ video }) => video).map(({ label, video }) => (
+              <MediaCard
+                key={label}
+                href={watchUrl(video.videoId)}
+                image={video.thumbnail}
+                title={video.title}
+                topLeft={<MediaChip>{label}</MediaChip>}
+                meta={<span>{fmtNum(video.viewCount)} views, {fmtNum(video.likeCount)} likes</span>}
+              />
+            ))}
           </div>
         </TabsContent>
 
-        {/* Videos */}
-        <TabsContent value="videos" className="space-y-4 mt-4">
-          <ChartCard title="Top 10 Videos by Views" height={320}>
-            <BarChart data={(analytics.top10ByViews || []).map(v => ({ name: (v?.title || '').slice(0, 28) + '…', views: v?.viewCount || 0, likes: v?.likeCount || 0 }))}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-              <XAxis dataKey="name" tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }} angle={-15} textAnchor="end" height={70} />
-              <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} tickFormatter={fmtNum} axisLine={false} tickLine={false} />
-              <ReTooltip contentStyle={TS} formatter={v => fmtNumFull(v)} />
-              <Bar dataKey="views" fill={C.red}   radius={[4, 4, 0, 0]} name="Views" />
-              <Bar dataKey="likes" fill={C.green} radius={[4, 4, 0, 0]} name="Likes" />
-              <Legend />
+        <TabsContent value="videos" className="flex flex-col gap-4">
+          <ChartPanel title="Top 10 videos by views" height={320}>
+            <BarChart data={(analytics.top10ByViews || []).map(v => ({ name: `${(v?.title || '').slice(0, 28)}…`, views: v?.viewCount || 0, likes: v?.likeCount || 0 }))}>
+              <CartesianGrid {...gridProps} vertical={false} />
+              <XAxis dataKey="name" tick={{ ...axisTick, fontSize: 10 }} angle={-15} textAnchor="end" height={70} />
+              <YAxis {...axisProps} tickFormatter={fmtNum} />
+              <ReTooltip contentStyle={tooltipStyle} cursor={tooltipCursor} formatter={v => fmtNumFull(v)} />
+              <Bar dataKey="views" fill={SERIES.primary} radius={[4, 4, 0, 0]} name="Views" />
+              <Bar dataKey="likes" fill={SERIES.neutral} radius={[4, 4, 0, 0]} name="Likes" />
+              <Legend wrapperStyle={legendStyle} />
             </BarChart>
-          </ChartCard>
+          </ChartPanel>
           <VideoTable videos={
             (analytics.top10ByViews || []).concat(analytics.top10ByLikes || [])
               .filter((v, i, arr) => v && arr.findIndex(x => x?.videoId === v?.videoId) === i)
@@ -290,214 +292,187 @@ export default function ChannelAnalytics() {
           } />
         </TabsContent>
 
-        {/* Engagement */}
-        <TabsContent value="engagement" className="space-y-4 mt-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
-            <StatCard icon={<ThumbsUp />}      label="Total Engagement"   value={fmtNum(analytics.totalEngagement)}            gradient="blue"   small />
-            <StatCard icon={<TrendingUp />}     label="Engagement Rate"    value={fmtPercent(analytics.overallEngagementRate)}  gradient="green"  small />
-            <StatCard icon={<ThumbsUp />}       label="Avg Like Rate"      value={analytics.totalViews > 0 ? fmtPercent(analytics.totalLikes / analytics.totalViews * 100) : '0%'} gradient="red" small />
-            <StatCard icon={<MessageSquare />}  label="Avg Comment Rate"   value={analytics.totalViews > 0 ? fmtPercent(analytics.totalComments / analytics.totalViews * 100) : '0%'} gradient="purple" small />
-            <StatCard icon={<Flame />}          label="Virality Score"     value={`${analytics.viralityScore}x`}               gradient="orange" small />
-            <StatCard icon={<BarChart2 />}      label="Like:Comment"       value={analytics.totalComments > 0 ? (analytics.totalLikes / analytics.totalComments).toFixed(1) + ':1' : 'N/A'} gradient="teal" small />
+        <TabsContent value="engagement" className="flex flex-col gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+            <MetricBox small icon={<ThumbsUp />}      label="Total engagement" value={fmtNum(analytics.totalEngagement)} />
+            <MetricBox small icon={<TrendingUp />}    label="Engagement rate"  value={fmtPercent(analytics.overallEngagementRate)} highlight />
+            <MetricBox small icon={<ThumbsUp />}      label="Like rate"        value={analytics.totalViews > 0 ? fmtPercent(analytics.totalLikes / analytics.totalViews * 100) : '0%'} />
+            <MetricBox small icon={<MessageSquare />} label="Comment rate"     value={analytics.totalViews > 0 ? fmtPercent(analytics.totalComments / analytics.totalViews * 100) : '0%'} />
+            <MetricBox small icon={<Flame />}         label="Virality score"   value={`${analytics.viralityScore}x`} />
+            <MetricBox small icon={<BarChart2 />}     label="Likes per comment" value={analytics.totalComments > 0 ? `${(analytics.totalLikes / analytics.totalComments).toFixed(1)}:1` : 'Not available'} />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ChartCard title="Engagement Rate Trend">
-              <AreaChart data={analytics.engagementTrend || []}>
-                <defs><linearGradient id="egGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={C.green} stopOpacity={0.15} /><stop offset="95%" stopColor={C.green} stopOpacity={0.01} /></linearGradient></defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="month" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} tickFormatter={v => v + '%'} axisLine={false} tickLine={false} />
-                <ReTooltip contentStyle={TS} />
-                <Area type="monotone" dataKey="value" stroke={C.green} fill="url(#egGrad)" strokeWidth={2} name="Engagement %" />
-              </AreaChart>
-            </ChartCard>
-            <ChartCard title="Like Rate Trend">
-              <AreaChart data={analytics.likeRateTrend || []}>
-                <defs><linearGradient id="lrGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={C.red} stopOpacity={0.12} /><stop offset="95%" stopColor={C.red} stopOpacity={0.01} /></linearGradient></defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="month" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} tickFormatter={v => v + '%'} axisLine={false} tickLine={false} />
-                <ReTooltip contentStyle={TS} />
-                <Area type="monotone" dataKey="value" stroke={C.red} fill="url(#lrGrad)" strokeWidth={2} name="Like Rate %" />
-              </AreaChart>
-            </ChartCard>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <ChartPanel title="Engagement rate by month">
+              <TrendArea data={analytics.engagementTrend || []} color={SERIES.cool} name="Engagement %" percent gradientId="egGrad" />
+            </ChartPanel>
+            <ChartPanel title="Like rate by month">
+              <TrendArea data={analytics.likeRateTrend || []} color={SERIES.primary} name="Like rate %" percent gradientId="lrGrad" />
+            </ChartPanel>
           </div>
-          <MainCard title="Top 10 by Engagement Rate" content={false}>
-            <VideoTable videos={analytics.top10ByEngagement} />
-          </MainCard>
+          <SectionHeader title="Top 10 by engagement rate" />
+          <VideoTable videos={analytics.top10ByEngagement} />
         </TabsContent>
 
-        {/* Content */}
-        <TabsContent value="content" className="space-y-4 mt-4">
-          <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
-            <StatCard icon={<Film />}         label="HD Videos"    value={analytics.hdCount}         subtitle={fmtPercent(analytics.hdPercentage)}         gradient="blue"   small />
-            <StatCard icon={<MessageSquare />} label="Captions"    value={analytics.captionCount}    subtitle={fmtPercent(analytics.captionPercentage)}    gradient="green"  small />
-            <StatCard icon={<Trophy />}        label="Licensed"    value={analytics.licensedCount}   subtitle={fmtPercent(analytics.licensedPercentage)}   gradient="purple" small />
-            <StatCard icon={<VideoIcon />}     label="Embeddable"  value={analytics.embeddableCount} subtitle={fmtPercent(analytics.embeddablePercentage)} gradient="orange" small />
-            <StatCard icon={<Users />}         label="Kids Content" value={analytics.madeForKidsCount}                                                      gradient="cyan"   small />
-            <StatCard icon={<Timer />}         label="Avg Duration" value={analytics.avgDurationFormatted}                                                   gradient="amber"  small />
+        <TabsContent value="content" className="flex flex-col gap-4">
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+            <MetricBox small icon={<Film />}          label="HD videos"     value={analytics.hdCount}         subtitle={fmtPercent(analytics.hdPercentage)} />
+            <MetricBox small icon={<MessageSquare />} label="Captions"      value={analytics.captionCount}    subtitle={fmtPercent(analytics.captionPercentage)} />
+            <MetricBox small icon={<Trophy />}        label="Licensed"      value={analytics.licensedCount}   subtitle={fmtPercent(analytics.licensedPercentage)} />
+            <MetricBox small icon={<VideoIcon />}     label="Embeddable"    value={analytics.embeddableCount} subtitle={fmtPercent(analytics.embeddablePercentage)} />
+            <MetricBox small icon={<Users />}         label="Made for kids" value={analytics.madeForKidsCount} />
+            <MetricBox small icon={<Timer />}         label="Average length" value={analytics.avgDurationFormatted} />
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ChartCard title="Duration Distribution">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <ChartPanel title="Length distribution" empty={durationData.length === 0}>
               <PieChart>
-                <Pie data={durationData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={95} innerRadius={50} paddingAngle={3} strokeWidth={0}>
-                  {durationData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                <Pie data={durationData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={95} innerRadius={55} paddingAngle={2} strokeWidth={0}>
+                  {durationData.map(d => <Cell key={d.name} fill={d.color} />)}
                 </Pie>
-                <ReTooltip contentStyle={TS} />
-                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+                <ReTooltip contentStyle={tooltipStyle} />
+                <Legend iconType="circle" iconSize={8} wrapperStyle={legendStyle} />
               </PieChart>
-            </ChartCard>
-            <ChartCard title="Category Distribution">
+            </ChartPanel>
+            <ChartPanel title="Videos by category" empty={catData.length === 0}>
               <BarChart data={catData} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-                <XAxis type="number" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis dataKey="name" type="category" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} width={110} axisLine={false} tickLine={false} />
-                <ReTooltip contentStyle={TS} />
-                <Bar dataKey="value" fill={C.blue} radius={[0, 4, 4, 0]} name="Videos" />
+                <CartesianGrid {...gridProps} horizontal={false} />
+                <XAxis type="number" {...axisProps} />
+                <YAxis dataKey="name" type="category" {...axisProps} width={120} />
+                <ReTooltip contentStyle={tooltipStyle} cursor={tooltipCursor} />
+                <Bar dataKey="value" fill={SERIES.cool} radius={[0, 4, 4, 0]} name="Videos" />
               </BarChart>
-            </ChartCard>
+            </ChartPanel>
           </div>
-          <ChartCard title="Views Distribution" height={240}>
+          <ChartPanel title="Videos by view range" height={240}>
             <BarChart data={(analytics.viewsDistribution?.ranges || []).map((r, i) => ({ range: r, count: analytics.viewsDistribution.counts[i] || 0 }))}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-              <XAxis dataKey="range" tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }} angle={-15} textAnchor="end" height={60} />
-              <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <ReTooltip contentStyle={TS} />
-              <Bar dataKey="count" fill={C.orange} radius={[4, 4, 0, 0]} name="Videos" />
+              <CartesianGrid {...gridProps} vertical={false} />
+              <XAxis dataKey="range" tick={{ ...axisTick, fontSize: 10 }} angle={-15} textAnchor="end" height={60} />
+              <YAxis {...axisProps} />
+              <ReTooltip contentStyle={tooltipStyle} cursor={tooltipCursor} />
+              <Bar dataKey="count" fill={SERIES.warm} radius={[4, 4, 0, 0]} name="Videos" />
             </BarChart>
-          </ChartCard>
+          </ChartPanel>
         </TabsContent>
 
-        {/* Publishing */}
-        <TabsContent value="publishing" className="space-y-4 mt-4">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard icon={<Calendar />}  label="Peak Publish Day"  value={analytics.peakPublishDay || 'N/A'}   gradient="blue"   small />
-            <StatCard icon={<Clock />}     label="Peak Publish Hour" value={analytics.peakPublishHour !== undefined ? `${analytics.peakPublishHour}:00 UTC` : 'N/A'} gradient="green" small />
-            <StatCard icon={<Zap />}       label="Uploads/Week"      value={analytics.uploadFrequencyPerWeek}     gradient="orange" small />
-            <StatCard icon={<Trophy />}    label="Consistency"       value={`${analytics.consistencyScore}/100`}  gradient="purple" small />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <ChartCard title="Publish Day Distribution">
+        <TabsContent value="publishing" className="flex flex-col gap-4">
+          <MetricGrid>
+            <MetricBox small icon={<Calendar />} label="Most common upload day"  value={analytics.peakPublishDay || 'Not available'} />
+            <MetricBox small icon={<Clock />}    label="Most common upload hour" value={analytics.peakPublishHour !== undefined ? `${analytics.peakPublishHour}:00 UTC` : 'Not available'} />
+            <MetricBox small icon={<Zap />}      label="Uploads per week"        value={analytics.uploadFrequencyPerWeek} />
+            <MetricBox small icon={<Trophy />}   label="Consistency"             value={`${analytics.consistencyScore}/100`} />
+          </MetricGrid>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <ChartPanel title="Uploads by day of week">
               <BarChart data={dayData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="day" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <ReTooltip contentStyle={TS} />
-                <Bar dataKey="count" fill={C.blue} radius={[4, 4, 0, 0]} name="Videos" />
+                <CartesianGrid {...gridProps} vertical={false} />
+                <XAxis dataKey="day" {...axisProps} />
+                <YAxis {...axisProps} />
+                <ReTooltip contentStyle={tooltipStyle} cursor={tooltipCursor} />
+                <Bar dataKey="count" fill={SERIES.cool} radius={[4, 4, 0, 0]} name="Videos" />
               </BarChart>
-            </ChartCard>
-            <ChartCard title="Publish Hour Distribution (UTC)">
+            </ChartPanel>
+            <ChartPanel title="Uploads by hour (UTC)">
               <AreaChart data={hourData}>
-                <defs><linearGradient id="hourGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={C.orange} stopOpacity={0.15} /><stop offset="95%" stopColor={C.orange} stopOpacity={0.01} /></linearGradient></defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="hour" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <ReTooltip contentStyle={TS} />
-                <Area type="monotone" dataKey="count" stroke={C.orange} fill="url(#hourGrad)" strokeWidth={2} name="Videos" />
+                <defs>
+                  <linearGradient id="hourGrad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={SERIES.warm} stopOpacity={0.2} />
+                    <stop offset="95%" stopColor={SERIES.warm} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid {...gridProps} vertical={false} />
+                <XAxis dataKey="hour" {...axisProps} />
+                <YAxis {...axisProps} />
+                <ReTooltip contentStyle={tooltipStyle} cursor={{ stroke: 'var(--line-strong)' }} />
+                <Area type="monotone" dataKey="count" stroke={SERIES.warm} fill="url(#hourGrad)" strokeWidth={2} name="Videos" />
               </AreaChart>
-            </ChartCard>
+            </ChartPanel>
           </div>
         </TabsContent>
 
-        {/* Growth */}
-        <TabsContent value="growth" className="space-y-4 mt-4">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard icon={<TrendingUp />} label="Est. Yearly Views" value={fmtNum(channel.estimatedYearlyViews)}    gradient="red"    small />
-            <StatCard icon={<Users />}      label="Est. Yearly Subs"  value={fmtNum(channel.estimatedYearlySubGain)} gradient="green"  small />
-            <StatCard icon={<Eye />}        label="Views/Day Avg"     value={fmtNum(channel.avgViewsPerDay)}          gradient="blue"   small />
-            <StatCard icon={<Users />}      label="Subs/Day Avg"      value={fmtNum(channel.avgSubGainPerDay)}        gradient="purple" small />
-          </div>
-          <ChartCard title="Monthly Views Trend" height={300}>
-            <AreaChart data={analytics.viewsTrend || []}>
-              <defs><linearGradient id="viewGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor={C.red} stopOpacity={0.12} /><stop offset="95%" stopColor={C.red} stopOpacity={0.01} /></linearGradient></defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-              <XAxis dataKey="month" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} tickFormatter={fmtNum} axisLine={false} tickLine={false} />
-              <ReTooltip contentStyle={TS} formatter={v => fmtNumFull(v)} />
-              <Area type="monotone" dataKey="value" stroke={C.red} fill="url(#viewGrad)" strokeWidth={2} name="Views" />
-            </AreaChart>
-          </ChartCard>
-          <ChartCard title="Monthly Upload Count" height={240}>
+        <TabsContent value="growth" className="flex flex-col gap-4">
+          <MetricGrid>
+            <MetricBox small icon={<TrendingUp />} label="Estimated yearly views"       value={fmtNum(channel.estimatedYearlyViews)} highlight />
+            <MetricBox small icon={<Users />}      label="Estimated yearly subscribers" value={fmtNum(channel.estimatedYearlySubGain)} />
+            <MetricBox small icon={<Eye />}        label="Views per day"                value={fmtNum(channel.avgViewsPerDay)} />
+            <MetricBox small icon={<Users />}      label="Subscribers per day"          value={fmtNum(channel.avgSubGainPerDay)} />
+          </MetricGrid>
+          <ChartPanel title="Views by month" height={300}>
+            <TrendArea data={analytics.viewsTrend || []} color={SERIES.primary} name="Views" gradientId="viewGrad" />
+          </ChartPanel>
+          <ChartPanel title="Uploads by month" height={240}>
             <BarChart data={(analytics.viewsTrend || []).map(t => ({ month: t.month, uploads: t.count }))}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-              <XAxis dataKey="month" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <ReTooltip contentStyle={TS} />
-              <Bar dataKey="uploads" fill={C.green} radius={[4, 4, 0, 0]} name="Uploads" />
+              <CartesianGrid {...gridProps} vertical={false} />
+              <XAxis dataKey="month" {...axisProps} />
+              <YAxis {...axisProps} />
+              <ReTooltip contentStyle={tooltipStyle} cursor={tooltipCursor} />
+              <Bar dataKey="uploads" fill={SERIES.neutral} radius={[4, 4, 0, 0]} name="Uploads" />
             </BarChart>
-          </ChartCard>
+          </ChartPanel>
         </TabsContent>
 
-        {/* Shorts vs Regular */}
-        <TabsContent value="shorts" className="space-y-4 mt-4">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard icon={<Flame />}     label="Shorts Count"      value={analytics.shortsCount}              gradient="red"    small />
-            <StatCard icon={<VideoIcon />} label="Regular Videos"    value={analytics.regularCount}             gradient="blue"   small />
-            <StatCard icon={<Eye />}       label="Avg Short Views"   value={fmtNum(analytics.avgShortViews)}    gradient="orange" small />
-            <StatCard icon={<Eye />}       label="Avg Regular Views" value={fmtNum(analytics.avgRegularViews)}  gradient="green"  small />
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-            <div className="md:col-span-2">
-              <ChartCard title="Content Split">
-                <PieChart>
-                  <Pie data={[{ name: 'Shorts', value: analytics.shortsCount, color: C.red }, { name: 'Regular', value: analytics.regularCount, color: C.blue }].filter(d => d.value > 0)}
-                    dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={95} innerRadius={50} paddingAngle={4} strokeWidth={0}>
-                    {[{ color: C.red }, { color: C.blue }].map((d, i) => <Cell key={i} fill={d.color} />)}
-                  </Pie>
-                  <ReTooltip contentStyle={TS} />
-                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
-                </PieChart>
-              </ChartCard>
-            </div>
-            <div className="md:col-span-3">
-              <ChartCard title="Performance Comparison">
-                <BarChart data={[
-                  { metric: 'Avg Views', Shorts: analytics.avgShortViews,  Regular: analytics.avgRegularViews  },
-                  { metric: 'Avg Likes', Shorts: analytics.avgShortLikes,  Regular: analytics.avgRegularLikes  },
-                ]}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                  <XAxis dataKey="metric" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} tickFormatter={fmtNum} axisLine={false} tickLine={false} />
-                  <ReTooltip contentStyle={TS} formatter={v => fmtNumFull(v)} />
-                  <Bar dataKey="Shorts"  fill={C.red}  radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="Regular" fill={C.blue} radius={[4, 4, 0, 0]} />
-                  <Legend />
-                </BarChart>
-              </ChartCard>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Tags & SEO */}
-        <TabsContent value="tags" className="space-y-4 mt-4">
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard icon={<Tag />}         label="Unique Tags"    value={analytics.tagFrequency?.length || 0}       gradient="blue"   small />
-            <StatCard icon={<MessageSquare />} label="Caption Rate" value={fmtPercent(analytics.captionPercentage)}   gradient="green"  small />
-            <StatCard icon={<Film />}        label="HD Rate"        value={fmtPercent(analytics.hdPercentage)}        gradient="purple" small />
-            <StatCard icon={<VideoIcon />}   label="Embeddable"     value={fmtPercent(analytics.embeddablePercentage)} gradient="orange" small />
-          </div>
-          <MainCard title="Most Used Tags">
-            <div className="flex flex-wrap gap-2">
-              {(analytics.tagFrequency || []).map(({ tag, count }, i) => (
-                <Badge key={i} variant={i < 5 ? 'default' : 'outline'} className={cn('text-xs', i < 5 ? 'bg-primary' : '')}>
-                  {tag} ({count})
-                </Badge>
-              ))}
-              {(!analytics.tagFrequency || analytics.tagFrequency.length === 0) && (
-                <p className="text-sm text-muted-foreground">No tags data available</p>
-              )}
-            </div>
-          </MainCard>
-          {(analytics.tagFrequency || []).length > 0 && (
-            <ChartCard title="Tag Usage Frequency (Top 20)" height={400}>
-              <BarChart data={(analytics.tagFrequency || []).slice(0, 20)} layout="vertical">
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" horizontal={false} />
-                <XAxis type="number" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis dataKey="tag" type="category" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} width={140} axisLine={false} tickLine={false} />
-                <ReTooltip contentStyle={TS} />
-                <Bar dataKey="count" fill={C.red} radius={[0, 4, 4, 0]} name="Usage Count" />
+        <TabsContent value="shorts" className="flex flex-col gap-4">
+          <MetricGrid>
+            <MetricBox small icon={<Flame />}     label="Shorts"                   value={analytics.shortsCount} />
+            <MetricBox small icon={<VideoIcon />} label="Regular videos"           value={analytics.regularCount} />
+            <MetricBox small icon={<Eye />}       label="Average views per Short"  value={fmtNum(analytics.avgShortViews)} />
+            <MetricBox small icon={<Eye />}       label="Average views per video"  value={fmtNum(analytics.avgRegularViews)} />
+          </MetricGrid>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-5">
+            <ChartPanel title="Content split" className="md:col-span-2" empty={splitData.length === 0}>
+              <PieChart>
+                <Pie data={splitData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={95} innerRadius={55} paddingAngle={2} strokeWidth={0}>
+                  {splitData.map(d => <Cell key={d.name} fill={d.color} />)}
+                </Pie>
+                <ReTooltip contentStyle={tooltipStyle} />
+                <Legend iconType="circle" iconSize={8} wrapperStyle={legendStyle} />
+              </PieChart>
+            </ChartPanel>
+            <ChartPanel title="Shorts compared with regular videos" className="md:col-span-3">
+              <BarChart data={[
+                { metric: 'Average views', Shorts: analytics.avgShortViews, Regular: analytics.avgRegularViews },
+                { metric: 'Average likes', Shorts: analytics.avgShortLikes, Regular: analytics.avgRegularLikes },
+              ]}>
+                <CartesianGrid {...gridProps} vertical={false} />
+                <XAxis dataKey="metric" {...axisProps} />
+                <YAxis {...axisProps} tickFormatter={fmtNum} />
+                <ReTooltip contentStyle={tooltipStyle} cursor={tooltipCursor} formatter={v => fmtNumFull(v)} />
+                <Bar dataKey="Shorts" fill={SERIES.primary} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="Regular" fill={SERIES.cool} radius={[4, 4, 0, 0]} />
+                <Legend wrapperStyle={legendStyle} />
               </BarChart>
-            </ChartCard>
+            </ChartPanel>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="tags" className="flex flex-col gap-4">
+          <MetricGrid>
+            <MetricBox small icon={<Tag />}           label="Unique tags"     value={analytics.tagFrequency?.length || 0} />
+            <MetricBox small icon={<MessageSquare />} label="Caption rate"    value={fmtPercent(analytics.captionPercentage)} />
+            <MetricBox small icon={<Film />}          label="HD rate"         value={fmtPercent(analytics.hdPercentage)} />
+            <MetricBox small icon={<VideoIcon />}     label="Embeddable rate" value={fmtPercent(analytics.embeddablePercentage)} />
+          </MetricGrid>
+          <SurfaceBox title="Most used tags">
+            {(analytics.tagFrequency || []).length === 0 ? (
+              <p className="text-small text-ink-faint">These videos have no tags.</p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {analytics.tagFrequency.map(({ tag, count }, i) => (
+                  <Badge key={tag} variant={i < 5 ? 'default' : 'outline'} className="h-6 px-2.5">
+                    {tag}<span className="opacity-70">{count}</span>
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </SurfaceBox>
+          {(analytics.tagFrequency || []).length > 0 && (
+            <ChartPanel title="Tag usage, top 20" height={400}>
+              <BarChart data={analytics.tagFrequency.slice(0, 20)} layout="vertical">
+                <CartesianGrid {...gridProps} horizontal={false} />
+                <XAxis type="number" {...axisProps} />
+                <YAxis dataKey="tag" type="category" {...axisProps} width={140} />
+                <ReTooltip contentStyle={tooltipStyle} cursor={tooltipCursor} />
+                <Bar dataKey="count" fill={SERIES.primary} radius={[0, 4, 4, 0]} name="Videos using this tag" />
+              </BarChart>
+            </ChartPanel>
           )}
         </TabsContent>
       </Tabs>

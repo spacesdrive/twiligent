@@ -1,364 +1,280 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import {
+  RefreshCw, List, LayoutGrid, ThumbsUp, MessageSquare, Play, Eye, PlaySquare, ArrowUp, ArrowDown, Plus,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import {
-  Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import {
-  Search, RefreshCw, List, LayoutGrid, ExternalLink, ThumbsUp, MessageSquare,
-  Play, Eye, Tv,
-} from 'lucide-react';
-import { Empty, EmptyMedia, EmptyHeader, EmptyTitle, EmptyDescription } from '@/components/ui/empty';
-import StatCard from '../../../components/ui/StatCard';
-import MainCard from '../../../components/MainCard';
-import { useAppContext } from '../../../context/AppContext';
-import { api } from '../../../services/api';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import PageHeader from '@/components/PageHeader';
+import MetricBox from '@/components/MetricBox';
+import SurfaceBox from '@/components/SurfaceBox';
+import SearchField from '@/components/SearchField';
+import FilterChips from '@/components/FilterChips';
+import Pager from '@/components/Pager';
+import MediaCard, { MediaChip } from '@/components/MediaCard';
+import { EmptyState } from '@/components/StateViews';
+import { VIEW_TIERS, filterByTier, matchesText, pageSlice } from '@/lib/library';
+import { useChannelVideos } from './useChannelVideos';
 import { fmtNum, fmtDate, fmtDuration, fmtPercent, timeAgo } from '../../../utils/formatters';
 import { cn } from '@/lib/utils';
 
 const ITEMS_PER_PAGE = 25;
+const watchUrl = id => `https://www.youtube.com/watch?v=${id}`;
+const LAYOUTS = [{ value: 'table', label: 'List', Icon: List }, { value: 'grid', label: 'Grid', Icon: LayoutGrid }];
 
-function parseDurationToSeconds(iso) {
-  if (!iso || iso === 'P0D') return 0;
-  const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-  if (!m) return 0;
-  return (parseInt(m[1] || 0) * 3600) + (parseInt(m[2] || 0) * 60) + parseInt(m[3] || 0);
-}
-
-const PERFORMANCE_TIERS = [
-  { label: 'All',                value: 'all' },
-  { label: 'Viral (>1M)',        value: 'viral',  min: 1000000 },
-  { label: 'High (100K-1M)',     value: 'high',   min: 100000, max: 1000000 },
-  { label: 'Medium (10K-100K)', value: 'medium', min: 10000,  max: 100000 },
-  { label: 'Low (<10K)',         value: 'low',    max: 10000 },
-];
-
-function SortButton({ field, label, sortField, sortOrder, onSort }) {
-  const active = sortField === field;
+function SortHeader({ field, label, sort, onSort, align = 'left' }) {
+  const active = sort.field === field;
+  const Arrow = sort.order === 'asc' ? ArrowUp : ArrowDown;
   return (
     <button
+      type="button"
       onClick={() => onSort(field)}
-      className={cn('flex items-center gap-1 text-xs font-medium hover:text-foreground transition-colors', active ? 'text-foreground' : 'text-muted-foreground')}
+      aria-sort={active ? (sort.order === 'asc' ? 'ascending' : 'descending') : undefined}
+      className={cn(
+        'inline-flex items-center gap-1 rounded-sm transition-colors hover:text-ink',
+        align === 'right' && 'flex-row-reverse',
+        active ? 'text-ink' : 'text-ink-muted',
+      )}
     >
       {label}
-      <span className="text-[10px]">{active ? (sortOrder === 'asc' ? '↑' : '↓') : ''}</span>
+      <Arrow className={cn('size-3', !active && 'invisible')} />
     </button>
   );
 }
 
 export default function VideoExplorer() {
-  const { accounts, showToast } = useAppContext();
-  const [videos,          setVideos]          = useState([]);
-  const [loading,         setLoading]         = useState(true);
-  const [search,          setSearch]          = useState('');
-  const [channelFilter,   setChannelFilter]   = useState('all');
-  const [performanceTier, setPerformanceTier] = useState('all');
-  const [sortField,       setSortField]       = useState('viewCount');
-  const [sortOrder,       setSortOrder]       = useState('desc');
-  const [viewMode,        setViewMode]        = useState('table');
-  const [page,            setPage]            = useState(1);
-  const [channels,        setChannels]        = useState([]);
+  const { videos, channels, loading, reload } = useChannelVideos();
+  const [search, setSearch] = useState('');
+  const [channelFilter, setChannelFilter] = useState('all');
+  const [tier, setTier] = useState('all');
+  const [sort, setSort] = useState({ field: 'viewCount', order: 'desc' });
+  const [viewMode, setViewMode] = useState('table');
+  const [page, setPage] = useState(1);
 
-  useEffect(() => { loadAllVideos(); }, [accounts]);
-
-  const loadAllVideos = async () => {
-    setLoading(true);
-    try {
-      const allVids = [];
-      const channelList = [];
-      for (const acct of (accounts || [])) {
-        if (acct.platform === 'instagram') continue;
-        try {
-          const res = await api.getVideos(acct.id);
-          const vids = res.videos || res.data?.videos || [];
-          const channelTitle = acct.title || acct.channelTitle || 'Unknown';
-          channelList.push({ id: acct.id, title: channelTitle, thumbnail: acct.thumbnails?.default || acct.thumbnailUrl || '' });
-          allVids.push(...vids.map(v => ({
-            ...v,
-            thumbnail: v.thumbnail || v.thumbnails?.medium || v.thumbnails?.high || v.thumbnails?.default || '',
-            channelTitle,
-            channelId: acct.id,
-            engagementRate: (v.viewCount || 0) > 0 ? (((v.likeCount || 0) + (v.commentCount || 0)) / v.viewCount * 100).toFixed(2) : '0.00',
-            durationSeconds: v.durationSeconds || parseDurationToSeconds(v.duration),
-          })));
-        } catch (e) { /* skip failed channels */ }
-      }
-      setVideos(allVids);
-      setChannels(channelList);
-    } catch (err) {
-      showToast('Failed to load videos: ' + err.message, 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filteredVideos = useMemo(() => {
-    let result = [...videos];
-    if (channelFilter !== 'all')   result = result.filter(v => v.channelId === channelFilter);
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter(v => v.title?.toLowerCase().includes(q) || (v.tags || []).some(t => t.toLowerCase().includes(q)));
-    }
-    if (performanceTier !== 'all') {
-      const tier = PERFORMANCE_TIERS.find(t => t.value === performanceTier);
-      if (tier?.min != null) result = result.filter(v => (v.viewCount || 0) >= tier.min);
-      if (tier?.max != null) result = result.filter(v => (v.viewCount || 0) < tier.max);
-    }
-    result.sort((a, b) => {
-      const aVal = a[sortField] ?? 0, bVal = b[sortField] ?? 0;
-      if (typeof aVal === 'string') return sortOrder === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
-      return sortOrder === 'asc' ? aVal - bVal : bVal - aVal;
+  const filtered = useMemo(() => {
+    let result = channelFilter === 'all' ? videos : videos.filter(v => v.channelId === channelFilter);
+    result = result.filter(v => matchesText([v.title, ...(v.tags || [])], search));
+    result = filterByTier(result, VIEW_TIERS, tier, 'viewCount');
+    const dir = sort.order === 'asc' ? 1 : -1;
+    return [...result].sort((a, b) => {
+      const av = a[sort.field] ?? 0;
+      const bv = b[sort.field] ?? 0;
+      if (typeof av === 'string' && typeof bv === 'string') return av.localeCompare(bv) * dir;
+      return (Number(av) - Number(bv)) * dir;
     });
-    return result;
-  }, [videos, channelFilter, search, performanceTier, sortField, sortOrder]);
+  }, [videos, channelFilter, search, tier, sort]);
 
-  const pageCount       = Math.ceil(filteredVideos.length / ITEMS_PER_PAGE);
-  const paginatedVideos = filteredVideos.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+  const paged = pageSlice(filtered, page, ITEMS_PER_PAGE);
 
-  const handleSort = (field) => {
-    if (sortField === field) setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
-    else { setSortField(field); setSortOrder('desc'); }
+  const stats = useMemo(() => {
+    const sum = key => filtered.reduce((s, v) => s + (v[key] || 0), 0);
+    const views = sum('viewCount');
+    return {
+      total: filtered.length,
+      views,
+      likes: sum('likeCount'),
+      comments: sum('commentCount'),
+      avgViews: filtered.length ? Math.round(views / filtered.length) : 0,
+    };
+  }, [filtered]);
+
+  const resetPage = setter => value => { setter(value); setPage(1); };
+  const handleSort = field => {
+    setSort(prev => prev.field === field ? { field, order: prev.order === 'asc' ? 'desc' : 'asc' } : { field, order: 'desc' });
   };
 
-  const stats = useMemo(() => ({
-    total:         filteredVideos.length,
-    totalViews:    filteredVideos.reduce((s, v) => s + (v.viewCount || 0), 0),
-    totalLikes:    filteredVideos.reduce((s, v) => s + (v.likeCount || 0), 0),
-    totalComments: filteredVideos.reduce((s, v) => s + (v.commentCount || 0), 0),
-    avgViews:      filteredVideos.length > 0 ? Math.round(filteredVideos.reduce((s, v) => s + (v.viewCount || 0), 0) / filteredVideos.length) : 0,
-  }), [filteredVideos]);
+  const header = (
+    <PageHeader
+      title="Videos"
+      description={loading ? 'Loading videos from your channels' : `${fmtNum(videos.length)} videos across ${channels.length} channel${channels.length === 1 ? '' : 's'}`}
+      actions={
+        <Button variant="outline" size="sm" onClick={reload} disabled={loading}>
+          <RefreshCw data-icon="inline-start" className={cn(loading && 'animate-spin')} />
+          Refresh
+        </Button>
+      }
+    />
+  );
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <div>
-          <Skeleton className="h-8 w-48 mb-2" />
-          <Progress className="h-1" />
+      <div className="flex flex-col gap-6">
+        {header}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-card" />)}
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-          {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-44 rounded-xl" />)}
-        </div>
+        <Skeleton className="h-10 rounded-pill" />
+        <Skeleton className="h-96 rounded-card" />
+      </div>
+    );
+  }
+
+  if (channels.length === 0) {
+    return (
+      <div className="flex flex-col gap-6">
+        {header}
+        <SurfaceBox>
+          <EmptyState
+            icon={<PlaySquare />}
+            title="No YouTube channels yet"
+            description="Add a channel to browse and compare its videos here."
+            action={<Button render={<Link to="/accounts?add=1" />}><Plus data-icon="inline-start" />Add a channel</Button>}
+          />
+        </SurfaceBox>
       </div>
     );
   }
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Video Explorer</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {videos.length} total videos across {channels.length} channel{channels.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={loadAllVideos} className="gap-2">
-          <RefreshCw className="h-3.5 w-3.5" /> Refresh
-        </Button>
+    <div className="flex flex-col gap-6">
+      {header}
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
+        <MetricBox small icon={<Play />} label="Videos" value={fmtNum(stats.total)} />
+        <MetricBox small icon={<Eye />} label="Views" value={fmtNum(stats.views)} highlight />
+        <MetricBox small icon={<ThumbsUp />} label="Likes" value={fmtNum(stats.likes)} />
+        <MetricBox small icon={<MessageSquare />} label="Comments" value={fmtNum(stats.comments)} />
+        <MetricBox small icon={<Eye />} label="Average views" value={fmtNum(stats.avgViews)} />
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-5 gap-3">
-        {[
-          { icon: <Play />,        label: 'Videos',       value: fmtNum(stats.total),         gradient: 'blue'   },
-          { icon: <Eye />,         label: 'Total Views',  value: fmtNum(stats.totalViews),    gradient: 'red'    },
-          { icon: <ThumbsUp />,    label: 'Total Likes',  value: fmtNum(stats.totalLikes),    gradient: 'green'  },
-          { icon: <MessageSquare />, label: 'Comments',   value: fmtNum(stats.totalComments), gradient: 'orange' },
-          { icon: <Eye />,         label: 'Avg Views',   value: fmtNum(stats.avgViews),      gradient: 'purple' },
-        ].map((s, i) => <StatCard key={i} {...s} small />)}
-      </div>
-
-      {/* Filters */}
-      <MainCard>
-        <div className="flex flex-wrap gap-3 items-center">
-          <div className="relative flex-1 min-w-48">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              className="pl-9"
-              placeholder="Search by title or tag…"
-              value={search}
-              onChange={e => { setSearch(e.target.value); setPage(1); }}
-            />
-          </div>
-          <Select value={channelFilter} onValueChange={v => { setChannelFilter(v); setPage(1); }}>
-            <SelectTrigger className="w-44">
-              <SelectValue placeholder="All Channels" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                <SelectItem value="all">All Channels ({channels.length})</SelectItem>
-                {channels.map(c => (
-                  <SelectItem key={c.id} value={c.id}>
-                    <div className="flex items-center gap-2">
-                      {c.thumbnail && <Avatar className="size-4"><AvatarImage src={c.thumbnail} /></Avatar>}
-                      <span className="truncate max-w-28">{c.title}</span>
-                    </div>
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          <Select value={performanceTier} onValueChange={v => { setPerformanceTier(v); setPage(1); }}>
-            <SelectTrigger className="w-44">
-              <SelectValue placeholder="Performance" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {PERFORMANCE_TIERS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-          <div className="flex border border-border rounded-md overflow-hidden">
-            <button
-              onClick={() => setViewMode('table')}
-              className={cn('px-3 py-1.5 transition-colors', viewMode === 'table' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted')}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <SearchField
+            value={search}
+            onChange={resetPage(setSearch)}
+            placeholder="Search titles and tags"
+            className="min-w-56 flex-1"
+          />
+          {channels.length > 1 && (
+            <Select
+              value={channelFilter}
+              onValueChange={resetPage(setChannelFilter)}
+              items={[{ value: 'all', label: 'All channels' }, ...channels.map(c => ({ value: c.id, label: c.title }))]}
             >
-              <List className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('grid')}
-              className={cn('px-3 py-1.5 transition-colors', viewMode === 'grid' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted')}
-            >
-              <LayoutGrid className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-        <p className="text-xs text-muted-foreground mt-2">
-          Showing {paginatedVideos.length} of {filteredVideos.length} videos
-        </p>
-      </MainCard>
-
-      {/* Table view */}
-      {viewMode === 'table' && (
-        <MainCard content={false}>
-          <ScrollArea className="h-[600px]">
-            <Table>
-              <TableHeader className="sticky top-0 bg-background z-10">
-                <TableRow>
-                  <TableHead className="w-10">#</TableHead>
-                  <TableHead className="w-16" />
-                  <TableHead><SortButton field="title" label="Video" sortField={sortField} sortOrder={sortOrder} onSort={handleSort} /></TableHead>
-                  {channels.length > 1 && <TableHead>Channel</TableHead>}
-                  <TableHead className="text-right"><SortButton field="viewCount" label="Views" sortField={sortField} sortOrder={sortOrder} onSort={handleSort} /></TableHead>
-                  <TableHead className="text-right"><SortButton field="likeCount" label="Likes" sortField={sortField} sortOrder={sortOrder} onSort={handleSort} /></TableHead>
-                  <TableHead className="text-right"><SortButton field="commentCount" label="Comments" sortField={sortField} sortOrder={sortOrder} onSort={handleSort} /></TableHead>
-                  <TableHead className="text-right"><SortButton field="engagementRate" label="Eng%" sortField={sortField} sortOrder={sortOrder} onSort={handleSort} /></TableHead>
-                  <TableHead className="text-right"><SortButton field="durationSeconds" label="Duration" sortField={sortField} sortOrder={sortOrder} onSort={handleSort} /></TableHead>
-                  <TableHead className="text-right"><SortButton field="publishedAt" label="Published" sortField={sortField} sortOrder={sortOrder} onSort={handleSort} /></TableHead>
-                  <TableHead className="w-10" />
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedVideos.map((v, i) => (
-                  <TableRow
-                    key={`${v.videoId}-${i}`}
-                    className="cursor-pointer"
-                    onClick={() => window.open(`https://www.youtube.com/watch?v=${v.videoId}`, '_blank', 'noopener')}
-                  >
-                    <TableCell className="text-xs text-muted-foreground">{(page - 1) * ITEMS_PER_PAGE + i + 1}</TableCell>
-                    <TableCell>
-                      {v.thumbnail && (
-                        <img src={v.thumbnail} className="w-16 h-9 object-cover rounded" alt="" />
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <p className="text-sm font-medium max-w-[280px] truncate">{v.title}</p>
-                    </TableCell>
-                    {channels.length > 1 && (
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs max-w-28 truncate">{v.channelTitle}</Badge>
-                      </TableCell>
-                    )}
-                    <TableCell className="text-right text-sm font-semibold">{fmtNum(v.viewCount)}</TableCell>
-                    <TableCell className="text-right text-sm">{fmtNum(v.likeCount)}</TableCell>
-                    <TableCell className="text-right text-sm">{fmtNum(v.commentCount)}</TableCell>
-                    <TableCell className="text-right">
-                      <Badge variant="outline" className={cn('text-xs', parseFloat(v.engagementRate) > 5 ? 'border-green-200 bg-green-50 text-green-700' : '')}>
-                        {fmtPercent(v.engagementRate)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right text-sm">{fmtDuration(v.durationSeconds)}</TableCell>
-                    <TableCell className="text-right text-xs text-muted-foreground">{fmtDate(v.publishedAt)}</TableCell>
-                    <TableCell>
-                      <Tooltip>
-                        <TooltipTrigger render={<Button variant="ghost" size="icon" className="size-7 text-red-500 hover:text-red-600 hover:bg-red-50" onClick={e => { e.stopPropagation(); window.open(`https://www.youtube.com/watch?v=${v.videoId}`, '_blank', 'noopener'); }} />}>
-                          <Play />
-                        </TooltipTrigger>
-                        <TooltipContent>Watch on YouTube</TooltipContent>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </ScrollArea>
-        </MainCard>
-      )}
-
-      {/* Grid view */}
-      {viewMode === 'grid' && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4">
-          {paginatedVideos.map((v, i) => (
-            <div
-              key={`${v.videoId}-${i}`}
-              className="border border-border rounded-xl overflow-hidden cursor-pointer hover:shadow-md transition-shadow bg-card group"
-              onClick={() => window.open(`https://www.youtube.com/watch?v=${v.videoId}`, '_blank', 'noopener')}
-            >
-              <div className="relative">
-                {v.thumbnail
-                  ? <img src={v.thumbnail} className="w-full aspect-video object-cover" alt="" />
-                  : <div className="w-full aspect-video bg-muted flex items-center justify-center"><Tv className="h-8 w-8 text-muted-foreground" /></div>}
-                {v.durationSeconds > 0 && (
-                  <span className="absolute bottom-1.5 right-1.5 bg-black/80 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded">{fmtDuration(v.durationSeconds)}</span>
+              <SelectTrigger className="w-48" aria-label="Channel"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="all">All channels</SelectItem>
+                  {channels.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          )}
+          <div role="radiogroup" aria-label="Layout" className="flex h-(--control-h-lg) items-center gap-0.5 rounded-field border border-line-control p-1">
+            {LAYOUTS.map(layout => {
+              const { value, label, Icon } = layout;
+              return (
+              <button
+                key={value}
+                type="button"
+                role="radio"
+                aria-checked={viewMode === value}
+                aria-label={`${label} layout`}
+                onClick={() => setViewMode(value)}
+                className={cn(
+                  'flex size-8 items-center justify-center rounded-[8px] transition-colors',
+                  viewMode === value ? 'bg-surface-selected text-ink' : 'text-ink-muted hover:text-ink',
                 )}
-                <span className="absolute top-1.5 right-1.5 flex items-center gap-1 bg-black/75 text-white text-[10px] font-semibold px-1.5 py-0.5 rounded">
-                  <Eye className="h-2.5 w-2.5" />{fmtNum(v.viewCount)}
-                </span>
-              </div>
-              <div className="p-3 space-y-1.5">
-                <p className="text-xs font-semibold leading-snug line-clamp-2">{v.title}</p>
-                {channels.length > 1 && <p className="text-[10px] text-muted-foreground">{v.channelTitle}</p>}
-                <div className="flex items-center gap-3 text-muted-foreground text-[11px]">
-                  <span className="flex items-center gap-0.5"><ThumbsUp className="h-2.5 w-2.5" />{fmtNum(v.likeCount)}</span>
-                  <span className="flex items-center gap-0.5"><MessageSquare className="h-2.5 w-2.5" />{fmtNum(v.commentCount)}</span>
-                  <span className="ml-auto">{timeAgo(v.publishedAt)}</span>
-                </div>
-              </div>
-            </div>
+              >
+                <Icon className="size-4 stroke-[1.75]" />
+              </button>
+              );
+            })}
+          </div>
+        </div>
+        <FilterChips label="Views" options={VIEW_TIERS} value={tier} onChange={resetPage(setTier)} />
+      </div>
+
+      {filtered.length === 0 ? (
+        <SurfaceBox>
+          <EmptyState
+            compact
+            icon={<PlaySquare />}
+            title="No videos match"
+            description="Clear the search or choose a different view range."
+            action={<Button variant="outline" size="sm" onClick={() => { setSearch(''); setTier('all'); setChannelFilter('all'); setPage(1); }}>Clear filters</Button>}
+          />
+        </SurfaceBox>
+      ) : viewMode === 'table' ? (
+        <SurfaceBox content={false} className="overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-10 text-right">#</TableHead>
+                <TableHead><SortHeader field="title" label="Video" sort={sort} onSort={handleSort} /></TableHead>
+                {channels.length > 1 && <TableHead>Channel</TableHead>}
+                <TableHead className="text-right"><SortHeader field="viewCount" label="Views" sort={sort} onSort={handleSort} align="right" /></TableHead>
+                <TableHead className="text-right"><SortHeader field="likeCount" label="Likes" sort={sort} onSort={handleSort} align="right" /></TableHead>
+                <TableHead className="text-right"><SortHeader field="commentCount" label="Comments" sort={sort} onSort={handleSort} align="right" /></TableHead>
+                <TableHead className="text-right"><SortHeader field="engagementRate" label="Engagement" sort={sort} onSort={handleSort} align="right" /></TableHead>
+                <TableHead className="text-right"><SortHeader field="durationSeconds" label="Length" sort={sort} onSort={handleSort} align="right" /></TableHead>
+                <TableHead className="text-right"><SortHeader field="publishedAt" label="Published" sort={sort} onSort={handleSort} align="right" /></TableHead>
+                <TableHead className="w-10"><span className="sr-only">Watch</span></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paged.items.map((v, i) => (
+                <TableRow key={`${v.videoId}-${i}`}>
+                  <TableCell className="text-right font-mono text-caption text-ink-faint">{paged.offset + i + 1}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-3">
+                      {v.thumbnail
+                        ? <img src={v.thumbnail} alt="" loading="lazy" className="h-9 w-16 shrink-0 rounded-sm object-cover" />
+                        : <span className="h-9 w-16 shrink-0 rounded-sm bg-surface-sunken" />}
+                      <a href={watchUrl(v.videoId)} target="_blank" rel="noopener noreferrer" className="max-w-[18rem] truncate text-sm font-medium text-ink hover:underline">
+                        {v.title}
+                      </a>
+                    </div>
+                  </TableCell>
+                  {channels.length > 1 && <TableCell className="max-w-36 truncate text-small text-ink-muted">{v.channelTitle}</TableCell>}
+                  <TableCell className="text-right font-semibold text-ink">{fmtNum(v.viewCount)}</TableCell>
+                  <TableCell className="text-right text-ink-muted">{fmtNum(v.likeCount)}</TableCell>
+                  <TableCell className="text-right text-ink-muted">{fmtNum(v.commentCount)}</TableCell>
+                  <TableCell className="text-right">
+                    <Badge variant={parseFloat(v.engagementRate) > 5 ? 'success' : 'secondary'}>{fmtPercent(v.engagementRate)}</Badge>
+                  </TableCell>
+                  <TableCell className="text-right text-ink-muted">{fmtDuration(v.durationSeconds)}</TableCell>
+                  <TableCell className="text-right text-small text-ink-faint">{fmtDate(v.publishedAt)}</TableCell>
+                  <TableCell>
+                    <Tooltip>
+                      <TooltipTrigger render={<Button variant="ghost" size="icon-xs" render={<a href={watchUrl(v.videoId)} target="_blank" rel="noopener noreferrer" aria-label={`Watch ${v.title} on YouTube`} />} />}>
+                        <Play />
+                      </TooltipTrigger>
+                      <TooltipContent>Watch on YouTube</TooltipContent>
+                    </Tooltip>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </SurfaceBox>
+      ) : (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+          {paged.items.map((v, i) => (
+            <MediaCard
+              key={`${v.videoId}-${i}`}
+              href={watchUrl(v.videoId)}
+              image={v.thumbnail}
+              title={v.title}
+              topRight={<MediaChip><Eye />{fmtNum(v.viewCount)}</MediaChip>}
+              bottomRight={v.durationSeconds > 0 && <MediaChip>{fmtDuration(v.durationSeconds)}</MediaChip>}
+              meta={
+                <>
+                  <span className="flex items-center gap-1"><ThumbsUp />{fmtNum(v.likeCount)}</span>
+                  <span className="flex items-center gap-1"><MessageSquare />{fmtNum(v.commentCount)}</span>
+                  <span className="ml-auto">{channels.length > 1 ? v.channelTitle : timeAgo(v.publishedAt)}</span>
+                </>
+              }
+            />
           ))}
         </div>
       )}
 
-      {/* Empty state */}
-      {filteredVideos.length === 0 && !loading && (
-        <MainCard>
-          <Empty>
-            <EmptyMedia><Tv className="size-10 text-muted-foreground/40" /></EmptyMedia>
-            <EmptyHeader>
-              <EmptyTitle>No videos found</EmptyTitle>
-              <EmptyDescription>
-                {accounts?.length === 0 ? 'Add a channel first to explore videos' : 'Try adjusting your filters'}
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        </MainCard>
-      )}
-
-      {/* Pagination */}
-      {pageCount > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Previous</Button>
-          <span className="text-sm text-muted-foreground px-2">Page {page} of {pageCount}</span>
-          <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={page === pageCount}>Next</Button>
-        </div>
-      )}
+      <Pager page={paged.page} pageCount={paged.pageCount} onPageChange={setPage} total={filtered.length} shown={paged.items.length} noun="videos" />
     </div>
   );
 }

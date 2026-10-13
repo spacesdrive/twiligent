@@ -35,12 +35,24 @@ const Toaster = ({
           "--normal-bg": "var(--popover)",
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
-          "--border-radius": "var(--radius)"
+          "--border-radius": "var(--radius-field)",
+          "--success-bg": "var(--success-soft)",
+          "--success-text": "var(--success)",
+          "--success-border": "color-mix(in oklab, var(--success) 30%, transparent)",
+          "--error-bg": "var(--danger-soft)",
+          "--error-text": "var(--danger)",
+          "--error-border": "color-mix(in oklab, var(--danger) 30%, transparent)",
+          "--warning-bg": "var(--warning-soft)",
+          "--warning-text": "var(--warning)",
+          "--warning-border": "color-mix(in oklab, var(--warning) 30%, transparent)",
+          "--info-bg": "var(--info-soft)",
+          "--info-text": "var(--info)",
+          "--info-border": "color-mix(in oklab, var(--info) 30%, transparent)"
         }
       }
       toastOptions={{
         classNames: {
-          toast: "cn-toast",
+          toast: "cn-toast font-sans",
         },
       }}
       {...props} />

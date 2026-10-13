@@ -2,10 +2,11 @@ import { fmtNum } from './formatters';
 
 export const IG_CONTENT_TYPES = ['reel', 'post', 'video'];
 
+// Colours are brand chart series so they follow the theme
 export const IG_CONTENT_TYPE_META = {
-    reel:  { label: 'Reel',  plural: 'Reels',  color: '#DD2A7B' },
-    post:  { label: 'Post',  plural: 'Posts',  color: '#F58529' },
-    video: { label: 'Video', plural: 'Videos', color: '#8134AF' },
+    reel:  { label: 'Reel',  plural: 'Reels',  color: 'var(--chart-1)' },
+    post:  { label: 'Post',  plural: 'Posts',  color: 'var(--chart-3)' },
+    video: { label: 'Video', plural: 'Videos', color: 'var(--chart-4)' },
 };
 
 export function igContentTypeMeta(type) {

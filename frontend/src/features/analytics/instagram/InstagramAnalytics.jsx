@@ -1,48 +1,65 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useCallback, useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, PieChart, Pie, Cell, Legend,
+  AreaChart, Area,
+} from 'recharts';
+import {
+  RefreshCw, Heart, MessageCircle, Users, UserPlus, Image, TrendingUp, Calendar, Clock, Zap, Flame,
+  Trophy, Star, ExternalLink, BarChart2, Hash, Eye, Clapperboard, Film, UserX,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Separator } from '@/components/ui/separator';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
-  ResponsiveContainer, PieChart, Pie, Cell, Legend, AreaChart, Area,
-} from 'recharts';
-import { Spinner } from '@/components/ui/spinner';
-import StatCard from '../../../components/ui/StatCard';
-import MainCard from '../../../components/MainCard';
+import PageHeader from '@/components/PageHeader';
+import MetricBox from '@/components/MetricBox';
+import SurfaceBox from '@/components/SurfaceBox';
+import ChartPanel from '@/components/ChartPanel';
+import { MediaChip } from '@/components/MediaCard';
+import { EmptyState, PageSkeleton } from '@/components/StateViews';
+import { AccountAvatar } from '@/components/platform';
+import { SERIES, axisProps, gridProps, legendStyle, tooltipCursor, tooltipStyle } from '@/lib/chart';
 import { useAppContext } from '../../../context/AppContext';
 import { api } from '../../../services/api';
 import { fmtNum, fmtNumFull, fmtDate, timeAgo } from '../../../utils/formatters';
 import { IG_CONTENT_TYPES, IG_CONTENT_TYPE_META, igContentTypeMeta, fmtIGViews } from '../../../utils/instagramContent';
-import {
-  ArrowLeft, RefreshCw, Heart, MessageCircle, Users, UserPlus, Image,
-  TrendingUp, Calendar, Clock, Zap, Flame, Trophy, Star, Camera,
-  ExternalLink, BarChart2, Hash, Eye, Clapperboard, Film,
-} from 'lucide-react';
+import { cn } from '@/lib/utils';
 
-const IG_COLORS = ['#F58529', '#DD2A7B', '#8134AF', '#515BD4', '#FEDA77', '#405DE6'];
-const CONTENT_TYPE_ICONS = { reel: <Clapperboard />, post: <Image />, video: <Film /> };
-const CONTENT_TYPE_GRADIENTS = { reel: 'pink', post: 'orange', video: 'purple' };
+const CONTENT_TYPE_ICONS = { reel: Clapperboard, post: Image, video: Film };
 
-const TS = { background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 };
+function TypeBadge({ type }) {
+  const meta = igContentTypeMeta(type);
+  return (
+    <span className="inline-flex h-5 items-center gap-1.5 rounded-pill border border-line px-2 text-caption font-medium text-ink-muted">
+      <span className="size-2 rounded-full" style={{ background: meta.color }} />
+      {meta.label}
+    </span>
+  );
+}
+
+function InsightChip({ icon, children }) {
+  const Icon = icon;
+  return (
+    <span className="inline-flex h-8 items-center gap-1.5 rounded-field border border-line bg-surface px-3 text-small font-medium text-ink">
+      <Icon className="size-3.5 stroke-[1.75] text-ink-faint" />
+      {children}
+    </span>
+  );
+}
 
 export default function InstagramAnalytics() {
   const { id } = useParams();
   const { accounts, showToast } = useAppContext();
-  const navigate = useNavigate();
   const account = accounts.find(a => a.id === id);
 
-  const [loading,    setLoading]    = useState(true);
-  const [profile,    setProfile]    = useState(null);
-  const [analytics,  setAnalytics]  = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadAnalytics = async () => {
+  const loadAnalytics = useCallback(async () => {
     if (!account) return;
     setLoading(true);
     try {
@@ -50,48 +67,43 @@ export default function InstagramAnalytics() {
       setProfile(data.profile);
       setAnalytics(data.analytics);
     } catch (err) {
-      showToast('Failed to load Instagram analytics: ' + err.message, 'error');
+      showToast(`Couldn't load Instagram analytics. ${err.message}`, 'error');
     } finally {
       setLoading(false);
     }
-  };
+    // Keyed on the account id so a background account refresh does not refetch analytics
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [account?.id, showToast]);
 
-  useEffect(() => { loadAnalytics(); }, [id]);
+  useEffect(() => { loadAnalytics(); }, [id, loadAnalytics]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
       await api.refreshAccount(account.id);
       await loadAnalytics();
-      showToast('Instagram account refreshed!');
+      showToast('Instagram account refreshed');
     } catch (err) {
-      showToast('Refresh failed: ' + err.message, 'error');
+      showToast(`Refresh failed. ${err.message}`, 'error');
     } finally {
       setRefreshing(false);
     }
   };
 
+  const back = { to: '/', label: 'Overview' };
+
   if (!account) {
     return (
-      <div className="space-y-3">
-        <Button variant="ghost" onClick={() => navigate('/')} className="gap-2 -ml-2 text-muted-foreground">
-          <ArrowLeft className="h-4 w-4" /> Back
-        </Button>
-        <p className="text-muted-foreground">Account not found.</p>
+      <div className="flex flex-col gap-6">
+        <PageHeader title="Instagram account" back={back} />
+        <SurfaceBox>
+          <EmptyState icon={<UserX />} title="Account not found" description="It may have been removed. Choose another account from the sidebar." />
+        </SurfaceBox>
       </div>
     );
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="flex flex-col items-center gap-3">
-          <Spinner className="size-10" />
-          <p className="text-sm text-muted-foreground">Loading analytics…</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton metrics={6} />;
 
   const p = profile || account;
   const a = analytics || {};
@@ -103,353 +115,291 @@ export default function InstagramAnalytics() {
   const contentMixData = typeRows.map(row => ({ name: row.name, value: row.count, color: row.color }));
   const topPostsData = (a.topPosts || []).slice(0, 8).map((post, i) => ({ name: `#${i + 1}`, likes: post.likeCount, comments: post.commentsCount }));
   const dayOfWeekData = (a.postsByDayOfWeek || []).map(d => ({ name: d.shortDay, posts: d.posts, avgEngagement: d.avgEngagement, avgLikes: d.avgLikes }));
-  const timelineData  = (a.engagementTimeline || []).map(m => ({ name: m.month, posts: m.posts, likes: m.likes, comments: m.comments, avgLikes: m.avgLikes }));
-  const captionData   = a.captionLengthCorrelation || [];
+  const timelineData = (a.engagementTimeline || []).map(m => ({ name: m.month, posts: m.posts, likes: m.likes, comments: m.comments, avgLikes: m.avgLikes }));
+  const captionData = a.captionLengthCorrelation || [];
 
   return (
-    <div className="space-y-5">
-      {/* Profile header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" onClick={() => navigate('/')} size="icon" className="h-9 w-9 text-muted-foreground">
-            <ArrowLeft className="h-4 w-4" />
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        back={back}
+        media={<AccountAvatar account={{ ...account, profilePictureUrl: p.profilePictureUrl || account.profilePictureUrl }} size="xl" showPlatform />}
+        title={p.name || p.username}
+        description={
+          <span className="flex flex-col gap-1">
+            <span>@{p.username}</span>
+            {p.biography && <span className="line-clamp-2 max-w-xl text-small text-ink-faint">{p.biography}</span>}
+          </span>
+        }
+        actions={
+          <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
+            <RefreshCw data-icon="inline-start" className={cn(refreshing && 'animate-spin')} />
+            {refreshing ? 'Refreshing' : 'Refresh'}
           </Button>
-          <Avatar className="h-14 w-14 border-2 border-border">
-            <AvatarImage src={p.profilePictureUrl} />
-            <AvatarFallback className="bg-gradient-to-br from-pink-500 to-purple-600 text-white font-bold">
-              {(p.name || p.username || 'IG').slice(0, 2).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-xl font-bold">{p.name || p.username}</h2>
-              <Camera className="h-4 w-4 text-pink-500" />
-            </div>
-            <p className="text-sm text-muted-foreground">@{p.username}</p>
-            {p.biography && <p className="text-xs text-muted-foreground mt-0.5 max-w-md line-clamp-2">{p.biography}</p>}
-          </div>
+        }
+      />
+
+      {refreshing && <Progress value={null} aria-label="Refreshing account" />}
+
+      <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+          <MetricBox small icon={<Users />}         label="Followers"       value={fmtNum(p.followersCount)}             subtitle={fmtNumFull(p.followersCount)} highlight />
+          <MetricBox small icon={<UserPlus />}      label="Following"       value={fmtNum(p.followsCount)}               subtitle={fmtNumFull(p.followsCount)} />
+          <MetricBox small icon={<Image />}         label="Total posts"     value={fmtNum(a.totalPosts || p.mediaCount)} subtitle={`${a.fetchedPosts || 0} analyzed`} />
+          <MetricBox small icon={<Heart />}         label="Total likes"     value={fmtNum(a.totalLikes)}                 subtitle={fmtNumFull(a.totalLikes)} />
+          <MetricBox small icon={<MessageCircle />} label="Total comments"  value={fmtNum(a.totalComments)}              subtitle={fmtNumFull(a.totalComments)} />
+          <MetricBox small icon={<TrendingUp />}    label="Engagement rate" value={`${a.engagementRate || 0}%`}          subtitle={`${fmtNum(a.avgLikes)} likes per post on average`} />
         </div>
-        <Button size="sm" onClick={handleRefresh} disabled={refreshing} className="gap-2 shrink-0">
-          <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-          Refresh
-        </Button>
-      </div>
-
-      {refreshing && <Progress className="h-1" />}
-
-      {/* KPI stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
-        <StatCard icon={<Users />}         label="Followers"       value={fmtNum(p.followersCount)}                  subtitle={fmtNumFull(p.followersCount)} gradient="purple" small />
-        <StatCard icon={<UserPlus />}      label="Following"       value={fmtNum(p.followsCount)}                    subtitle={fmtNumFull(p.followsCount)}   gradient="blue"   small />
-        <StatCard icon={<Image />}         label="Total Posts"     value={fmtNum(a.totalPosts || p.mediaCount)}      subtitle={`${a.fetchedPosts || 0} analyzed`} gradient="orange" small />
-        <StatCard icon={<Heart />}         label="Total Likes"     value={fmtNum(a.totalLikes)}                      subtitle={fmtNumFull(a.totalLikes)}     gradient="red"    small />
-        <StatCard icon={<MessageCircle />} label="Total Comments"  value={fmtNum(a.totalComments)}                   subtitle={fmtNumFull(a.totalComments)}  gradient="teal"   small />
-        <StatCard icon={<TrendingUp />}    label="Engagement Rate" value={`${a.engagementRate || 0}%`}               subtitle={`Avg ${fmtNum(a.avgLikes)} likes/post`} gradient="green" small />
-      </div>
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-        <StatCard icon={<Eye />} label="Total Views" value={fmtNum(a.totalViews)} subtitle={`${a.mediaWithViews || 0} of ${a.fetchedPosts || 0} items report views`} gradient="blue" small />
-        {IG_CONTENT_TYPES.map(type => {
-          const stats = typeStats[type] || {};
-          return (
-            <StatCard
-              key={type}
-              icon={CONTENT_TYPE_ICONS[type]}
-              label={IG_CONTENT_TYPE_META[type].plural}
-              value={fmtNum(stats.count)}
-              subtitle={stats.viewsReported > 0 ? `${fmtNum(stats.totalViews)} views, ${fmtNum(stats.avgViews)} avg` : 'no views reported'}
-              gradient={CONTENT_TYPE_GRADIENTS[type]}
-              small
-            />
-          );
-        })}
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
-        <StatCard icon={<Zap />}          label="Avg Likes/Post" value={fmtNum(a.avgLikes)}             gradient="cyan"   small />
-        <StatCard icon={<MessageCircle />} label="Avg Comments"  value={fmtNum(a.avgComments)}          gradient="indigo" small />
-        <StatCard icon={<BarChart2 />}    label="Median Likes"   value={fmtNum(a.medianLikes)}          gradient="amber"  small />
-        <StatCard icon={<Users />}        label="Follower Ratio" value={p.followersCount > 0 ? (p.followersCount / Math.max(1, p.followsCount)).toFixed(1) : '0'} subtitle="Followers / Following" gradient="pink" small />
-        <StatCard icon={<Heart />}        label="Likes/Follower" value={`${a.likesPerFollower || 0}%`}  subtitle="Per post avg"     gradient="red"  small />
-        <StatCard icon={<TrendingUp />}   label="Like:Comment"   value={`${a.likesToCommentsRatio || 0}:1`} subtitle="Ratio"        gradient="blue" small />
-      </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-6 gap-3">
-        <StatCard icon={<Calendar />}  label="Posts/Week"   value={a.postFrequency?.perWeek || 0}    subtitle={`${a.postFrequency?.perMonth || 0}/month`} gradient="orange" small />
-        <StatCard icon={<Calendar />}  label="Last 7 Days"  value={a.postsLast7Days || 0}            subtitle="Recent posts"        gradient="red"    small />
-        <StatCard icon={<Calendar />}  label="Last 30 Days" value={a.postsLast30Days || 0}           subtitle="Monthly"             gradient="green"  small />
-        <StatCard icon={<Calendar />}  label="Last 90 Days" value={a.postsLast90Days || 0}           subtitle="Quarterly"           gradient="blue"   small />
-        <StatCard icon={<Flame />}     label="Virality"     value={`${a.viralityScore || 0}x`}       subtitle="Best vs Average"     gradient="pink"   small />
-        <StatCard icon={<Trophy />}    label="Consistency"  value={`${a.consistencyScore || 0}/100`} subtitle="Engagement stability" gradient="amber"  small />
-      </div>
-
-      {/* Insights row */}
-      <MainCard>
-        <div className="flex gap-2 flex-wrap items-center">
-          {a.bestPostingDay && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 border border-amber-200 text-amber-700">
-              <Star className="h-3 w-3" /> Best Day: {a.bestPostingDay}
-            </span>
-          )}
-          {a.bestPostingHour && (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-green-50 border border-green-200 text-green-700">
-              <Clock className="h-3 w-3" /> Best Hour: {a.bestPostingHour}
-            </span>
-          )}
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-blue-50 border border-blue-200 text-blue-700">
-            <TrendingUp className="h-3 w-3" /> Avg Engagement: {fmtNum(a.avgEngagement || 0)}/post
-          </span>
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-purple-50 border border-purple-200 text-purple-700">
-            <Trophy className="h-3 w-3" /> Consistency: {a.consistencyScore || 0}/100
-          </span>
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          <MetricBox small icon={<Eye />} label="Total views" value={fmtNum(a.totalViews)} subtitle={`${a.mediaWithViews || 0} of ${a.fetchedPosts || 0} items report views`} />
+          {IG_CONTENT_TYPES.map(type => {
+            const stats = typeStats[type] || {};
+            const Icon = CONTENT_TYPE_ICONS[type];
+            return (
+              <MetricBox
+                key={type}
+                small
+                icon={<Icon />}
+                label={IG_CONTENT_TYPE_META[type].plural}
+                value={fmtNum(stats.count)}
+                subtitle={stats.viewsReported > 0 ? `${fmtNum(stats.totalViews)} views, ${fmtNum(stats.avgViews)} on average` : 'No views reported'}
+              />
+            );
+          })}
         </div>
-      </MainCard>
-
-      {/* Engagement timeline + content mix */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-        <MainCard title="Engagement Timeline" className="xl:col-span-2" contentClassName="p-3">
-          {timelineData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={280} debounce={200}>
-              <AreaChart data={timelineData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="name" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} width={44} />
-                <ReTooltip contentStyle={TS} />
-                <Area type="monotone" dataKey="likes"    name="Likes"    stroke="#DD2A7B" fill="rgba(221,42,123,0.1)" />
-                <Area type="monotone" dataKey="comments" name="Comments" stroke="#8134AF" fill="rgba(129,52,175,0.1)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          ) : <p className="text-sm text-muted-foreground text-center py-10">Not enough data for timeline</p>}
-        </MainCard>
-        <MainCard title="Content Type Mix" contentClassName="p-3">
-          {contentMixData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={280} debounce={200}>
-              <PieChart>
-                <Pie data={contentMixData} dataKey="value" nameKey="name" cx="50%" cy="44%" outerRadius={80} innerRadius={42} paddingAngle={3} strokeWidth={0}>
-                  {contentMixData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                </Pie>
-                <ReTooltip contentStyle={TS} formatter={(v, n) => [`${v} posts`, n]} />
-                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
-              </PieChart>
-            </ResponsiveContainer>
-          ) : <p className="text-sm text-muted-foreground text-center py-10">No data</p>}
-        </MainCard>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+          <MetricBox small icon={<Zap />}           label="Likes per post"      value={fmtNum(a.avgLikes)} />
+          <MetricBox small icon={<MessageCircle />} label="Comments per post"   value={fmtNum(a.avgComments)} />
+          <MetricBox small icon={<BarChart2 />}     label="Median likes"        value={fmtNum(a.medianLikes)} />
+          <MetricBox small icon={<Users />}         label="Follower ratio"      value={p.followersCount > 0 ? (p.followersCount / Math.max(1, p.followsCount)).toFixed(1) : '0'} subtitle="Followers per account followed" />
+          <MetricBox small icon={<Heart />}         label="Likes per follower"  value={`${a.likesPerFollower || 0}%`} subtitle="Per post, on average" />
+          <MetricBox small icon={<TrendingUp />}    label="Likes per comment"   value={`${a.likesToCommentsRatio || 0}:1`} />
+        </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+          <MetricBox small icon={<Calendar />} label="Posts per week" value={a.postFrequency?.perWeek || 0}    subtitle={`${a.postFrequency?.perMonth || 0} per month`} />
+          <MetricBox small icon={<Calendar />} label="Last 7 days"    value={a.postsLast7Days || 0}            subtitle="Posts" />
+          <MetricBox small icon={<Calendar />} label="Last 30 days"   value={a.postsLast30Days || 0}           subtitle="Posts" />
+          <MetricBox small icon={<Calendar />} label="Last 90 days"   value={a.postsLast90Days || 0}           subtitle="Posts" />
+          <MetricBox small icon={<Flame />}    label="Virality"       value={`${a.viralityScore || 0}x`}       subtitle="Best post against the average" />
+          <MetricBox small icon={<Trophy />}   label="Consistency"    value={`${a.consistencyScore || 0}/100`} subtitle="Engagement stability" />
+        </div>
       </div>
 
-      {/* Performance by type + Day of week */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <MainCard title="Performance by Content Type" contentClassName="p-3">
-          {typeRows.length > 0 ? (
-            <ResponsiveContainer width="100%" height={260} debounce={200}>
-              <BarChart data={typeRows}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="name" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} width={44} />
-                <ReTooltip contentStyle={TS} />
-                <Bar dataKey="avgLikes"    name="Avg Likes"    fill="#DD2A7B" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="avgComments" name="Avg Comments" fill="#8134AF" radius={[4, 4, 0, 0]} />
-                <Legend />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : <p className="text-sm text-muted-foreground text-center py-10">No data</p>}
-        </MainCard>
-        <MainCard title="Best Posting Days" contentClassName="p-3">
-          {dayOfWeekData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={260} debounce={200}>
-              <BarChart data={dayOfWeekData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="name" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} width={44} />
-                <ReTooltip contentStyle={TS} />
-                <Bar dataKey="avgEngagement" name="Avg Engagement" fill="#F58529" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="posts"         name="Posts"          fill="var(--muted)" radius={[4, 4, 0, 0]} />
-                <Legend />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : <p className="text-sm text-muted-foreground text-center py-10">No data</p>}
-        </MainCard>
+      <div className="flex flex-wrap items-center gap-2">
+        {a.bestPostingDay && <InsightChip icon={Star}>Best day: {a.bestPostingDay}</InsightChip>}
+        {a.bestPostingHour && <InsightChip icon={Clock}>Best hour: {a.bestPostingHour}</InsightChip>}
+        <InsightChip icon={TrendingUp}>Average engagement: {fmtNum(a.avgEngagement || 0)} per post</InsightChip>
+        <InsightChip icon={Trophy}>Consistency: {a.consistencyScore || 0}/100</InsightChip>
       </div>
 
-      {/* Top posts + caption length */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <MainCard title="Top Posts by Engagement" contentClassName="p-3">
-          {topPostsData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={260} debounce={200}>
-              <BarChart data={topPostsData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="name" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} width={44} />
-                <ReTooltip contentStyle={TS} />
-                <Bar dataKey="likes"    name="Likes"    fill="#DD2A7B" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="comments" name="Comments" fill="#8134AF" radius={[4, 4, 0, 0]} />
-                <Legend />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : <p className="text-sm text-muted-foreground text-center py-10">No data</p>}
-        </MainCard>
-        <MainCard title="Caption Length vs Engagement" contentClassName="p-3">
-          {captionData.length > 0 ? (
-            <ResponsiveContainer width="100%" height={260} debounce={200}>
-              <BarChart data={captionData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="label" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} width={44} />
-                <ReTooltip contentStyle={TS} />
-                <Bar dataKey="avgEngagement" name="Avg Engagement" fill="#515BD4" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          ) : <p className="text-sm text-muted-foreground text-center py-10">No data</p>}
-        </MainCard>
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+        <ChartPanel title="Engagement over time" className="xl:col-span-2" empty={timelineData.length === 0} emptyMessage="Not enough posts to chart a timeline">
+          <AreaChart data={timelineData}>
+            <defs>
+              <linearGradient id="igLikesGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor={SERIES.primary} stopOpacity={0.2} />
+                <stop offset="95%" stopColor={SERIES.primary} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid {...gridProps} vertical={false} />
+            <XAxis dataKey="name" {...axisProps} />
+            <YAxis {...axisProps} width={44} tickFormatter={fmtNum} />
+            <ReTooltip contentStyle={tooltipStyle} cursor={{ stroke: 'var(--line-strong)' }} />
+            <Area type="monotone" dataKey="likes" name="Likes" stroke={SERIES.primary} strokeWidth={2} fill="url(#igLikesGrad)" />
+            <Area type="monotone" dataKey="comments" name="Comments" stroke={SERIES.cool} strokeWidth={2} fill="transparent" />
+            <Legend wrapperStyle={legendStyle} />
+          </AreaChart>
+        </ChartPanel>
+        <ChartPanel title="Content type mix" empty={contentMixData.length === 0}>
+          <PieChart>
+            <Pie data={contentMixData} dataKey="value" nameKey="name" cx="50%" cy="44%" outerRadius={80} innerRadius={48} paddingAngle={2} strokeWidth={0}>
+              {contentMixData.map(entry => <Cell key={entry.name} fill={entry.color} />)}
+            </Pie>
+            <ReTooltip contentStyle={tooltipStyle} formatter={(v, n) => [`${v} items`, n]} />
+            <Legend iconType="circle" iconSize={8} wrapperStyle={{ ...legendStyle, paddingTop: 8 }} />
+          </PieChart>
+        </ChartPanel>
       </div>
 
-      {/* Monthly posting volume */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <ChartPanel title="Performance by content type" height={260} empty={typeRows.length === 0}>
+          <BarChart data={typeRows}>
+            <CartesianGrid {...gridProps} vertical={false} />
+            <XAxis dataKey="name" {...axisProps} />
+            <YAxis {...axisProps} width={44} tickFormatter={fmtNum} />
+            <ReTooltip contentStyle={tooltipStyle} cursor={tooltipCursor} />
+            <Bar dataKey="avgLikes" name="Average likes" fill={SERIES.primary} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="avgComments" name="Average comments" fill={SERIES.neutral} radius={[4, 4, 0, 0]} />
+            <Legend wrapperStyle={legendStyle} />
+          </BarChart>
+        </ChartPanel>
+        <ChartPanel title="Best days to post" height={260} empty={dayOfWeekData.length === 0}>
+          <BarChart data={dayOfWeekData}>
+            <CartesianGrid {...gridProps} vertical={false} />
+            <XAxis dataKey="name" {...axisProps} />
+            <YAxis {...axisProps} width={44} tickFormatter={fmtNum} />
+            <ReTooltip contentStyle={tooltipStyle} cursor={tooltipCursor} />
+            <Bar dataKey="avgEngagement" name="Average engagement" fill={SERIES.warm} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="posts" name="Posts" fill={SERIES.neutral} radius={[4, 4, 0, 0]} />
+            <Legend wrapperStyle={legendStyle} />
+          </BarChart>
+        </ChartPanel>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <ChartPanel title="Top posts by engagement" height={260} empty={topPostsData.length === 0}>
+          <BarChart data={topPostsData}>
+            <CartesianGrid {...gridProps} vertical={false} />
+            <XAxis dataKey="name" {...axisProps} />
+            <YAxis {...axisProps} width={44} tickFormatter={fmtNum} />
+            <ReTooltip contentStyle={tooltipStyle} cursor={tooltipCursor} />
+            <Bar dataKey="likes" name="Likes" fill={SERIES.primary} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="comments" name="Comments" fill={SERIES.neutral} radius={[4, 4, 0, 0]} />
+            <Legend wrapperStyle={legendStyle} />
+          </BarChart>
+        </ChartPanel>
+        <ChartPanel title="Caption length and engagement" height={260} empty={captionData.length === 0}>
+          <BarChart data={captionData}>
+            <CartesianGrid {...gridProps} vertical={false} />
+            <XAxis dataKey="label" {...axisProps} />
+            <YAxis {...axisProps} width={44} tickFormatter={fmtNum} />
+            <ReTooltip contentStyle={tooltipStyle} cursor={tooltipCursor} />
+            <Bar dataKey="avgEngagement" name="Average engagement" fill={SERIES.cool} radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ChartPanel>
+      </div>
+
       {timelineData.length > 1 && (
-        <MainCard title="Monthly Posting Volume" contentClassName="p-3">
-          <ResponsiveContainer width="100%" height={220} debounce={200}>
-            <BarChart data={timelineData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-              <XAxis dataKey="name" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} width={44} />
-              <ReTooltip contentStyle={TS} />
-              <Bar dataKey="posts" name="Posts" fill="#F58529" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </MainCard>
+        <ChartPanel title="Posts per month" height={220}>
+          <BarChart data={timelineData}>
+            <CartesianGrid {...gridProps} vertical={false} />
+            <XAxis dataKey="name" {...axisProps} />
+            <YAxis {...axisProps} width={44} />
+            <ReTooltip contentStyle={tooltipStyle} cursor={tooltipCursor} />
+            <Bar dataKey="posts" name="Posts" fill={SERIES.warm} radius={[4, 4, 0, 0]} />
+          </BarChart>
+        </ChartPanel>
       )}
 
-      {/* Top hashtags */}
       {(a.hashtagAnalysis || []).length > 0 && (
-        <MainCard title="Top Hashtags">
-          <div className="flex flex-wrap gap-2">
+        <SurfaceBox title="Top hashtags">
+          <div className="flex flex-wrap gap-1.5">
             {a.hashtagAnalysis.slice(0, 20).map((h, i) => (
               <Tooltip key={h.tag}>
-                <TooltipTrigger>
-                  <Badge
-                    variant="outline"
-                    className="text-xs cursor-default"
-                    style={{ borderColor: `${IG_COLORS[i % IG_COLORS.length]}60`, color: IG_COLORS[i % IG_COLORS.length], background: `${IG_COLORS[i % IG_COLORS.length]}10` }}
-                  >
-                    <Hash className="h-2.5 w-2.5 mr-0.5" />{h.tag} ({h.count})
-                  </Badge>
+                <TooltipTrigger render={<Badge variant={i < 5 ? 'default' : 'outline'} className="h-6 cursor-default px-2.5" />}>
+                  <Hash />{h.tag}<span className="opacity-70">{h.count}</span>
                 </TooltipTrigger>
-                <TooltipContent>Used {h.count}x · Avg engagement: {fmtNum(h.avgEngagement)}</TooltipContent>
+                <TooltipContent>Used {h.count} times, {fmtNum(h.avgEngagement)} average engagement</TooltipContent>
               </Tooltip>
             ))}
           </div>
-        </MainCard>
+        </SurfaceBox>
       )}
 
-      {/* Recent posts grid */}
-      <MainCard title={`Recent Posts (${a.fetchedPosts || 0} loaded)`}>
+      <SurfaceBox title="Recent posts" subheader={`${a.fetchedPosts || 0} loaded`}>
         {(a.recentMedia || []).length > 0 ? (
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 xl:grid-cols-8 gap-2">
-            {a.recentMedia.map((post) => (
-              <div
-                key={post.id}
-                className="relative aspect-square rounded-lg overflow-hidden border border-border cursor-pointer group hover:shadow-md transition-shadow"
-                onClick={() => post.permalink && window.open(post.permalink, '_blank')}
-              >
-                <img src={post.contentType === 'post' ? (post.thumbnailUrl || post.mediaUrl) : post.thumbnailUrl} className="w-full h-full object-cover" alt=""
-                  onError={e => { e.target.style.display = 'none'; }} />
-                {post.contentType !== 'post' && (
-                  <span className="absolute top-1 right-1 bg-black/65 text-white text-[9px] font-semibold px-1 rounded">
-                    {igContentTypeMeta(post.contentType).label}
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6 xl:grid-cols-8">
+            {a.recentMedia.map(post => {
+              const thumb = post.contentType === 'post' ? (post.thumbnailUrl || post.mediaUrl) : post.thumbnailUrl;
+              return (
+                <a
+                  key={post.id}
+                  href={post.permalink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Open ${igContentTypeMeta(post.contentType).label.toLowerCase()} on Instagram`}
+                  className="group relative aspect-square overflow-hidden rounded-control border border-line bg-surface-sunken focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                >
+                  {thumb && <img src={thumb} alt="" loading="lazy" className="size-full object-cover" onError={e => { e.currentTarget.style.display = 'none'; }} />}
+                  {post.contentType !== 'post' && (
+                    <span className="absolute top-1 right-1"><MediaChip className="px-1.5 text-[0.625rem]">{igContentTypeMeta(post.contentType).label}</MediaChip></span>
+                  )}
+                  <span className="absolute inset-x-0 bottom-0 flex justify-center gap-2 bg-gradient-to-t from-[#0C0809]/80 to-transparent pt-4 pb-1 text-[0.625rem] font-semibold text-white opacity-0 transition-opacity duration-(--duration-base) group-hover:opacity-100 group-focus-visible:opacity-100 [&_svg]:size-2.5">
+                    <span className="flex items-center gap-0.5"><Eye />{fmtIGViews(post.viewCount)}</span>
+                    <span className="flex items-center gap-0.5"><Heart />{fmtNum(post.likeCount)}</span>
+                    <span className="flex items-center gap-0.5"><MessageCircle />{fmtNum(post.commentsCount)}</span>
                   </span>
-                )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-1 gap-2">
-                  <span className="flex items-center gap-0.5 text-white text-[10px] font-semibold"><Eye className="h-2.5 w-2.5" />{fmtIGViews(post.viewCount)}</span>
-                  <span className="flex items-center gap-0.5 text-white text-[10px] font-semibold"><Heart className="h-2.5 w-2.5" />{fmtNum(post.likeCount)}</span>
-                  <span className="flex items-center gap-0.5 text-white text-[10px] font-semibold"><MessageCircle className="h-2.5 w-2.5" />{fmtNum(post.commentsCount)}</span>
-                </div>
-              </div>
-            ))}
+                </a>
+              );
+            })}
           </div>
-        ) : <p className="text-sm text-muted-foreground text-center py-6">No posts found</p>}
-      </MainCard>
+        ) : (
+          <EmptyState compact icon={<Image />} title="No posts yet" description="This account has not published anything we can read." />
+        )}
+      </SurfaceBox>
 
-      {/* Top posts table */}
       {(a.topPosts || []).length > 0 && (
-        <MainCard title="Top Performing Posts" content={false}>
+        <SurfaceBox title="Top performing posts" content={false} className="overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-8">#</TableHead>
+                <TableHead className="w-10 text-right">#</TableHead>
                 <TableHead>Caption</TableHead>
                 <TableHead>Type</TableHead>
                 <TableHead className="text-right">Views</TableHead>
                 <TableHead className="text-right">Likes</TableHead>
                 <TableHead className="text-right">Comments</TableHead>
                 <TableHead className="text-right">Engagement</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead className="w-8" />
+                <TableHead>Posted</TableHead>
+                <TableHead className="w-10"><span className="sr-only">Open</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {a.topPosts.slice(0, 10).map((post, i) => {
-                const meta = igContentTypeMeta(post.contentType);
-                return (
-                  <TableRow key={post.id}>
-                    <TableCell className="text-xs text-muted-foreground">{i + 1}</TableCell>
-                    <TableCell className="max-w-[200px]"><p className="text-sm truncate">{post.caption || '(no caption)'}</p></TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-[10px] h-5" style={{ borderColor: `${meta.color}50`, color: meta.color, background: `${meta.color}10` }}>
-                        {meta.label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right text-sm">{fmtIGViews(post.viewCount)}</TableCell>
-                    <TableCell className="text-right text-sm">{fmtNum(post.likeCount)}</TableCell>
-                    <TableCell className="text-right text-sm">{fmtNum(post.commentsCount)}</TableCell>
-                    <TableCell className="text-right text-sm">{fmtNum(post.engagement)}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{fmtDate(post.timestamp)}</TableCell>
-                    <TableCell>
-                      {post.permalink && (
-                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => window.open(post.permalink, '_blank')}>
-                          <ExternalLink className="h-3 w-3" />
-                        </Button>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+              {a.topPosts.slice(0, 10).map((post, i) => (
+                <TableRow key={post.id}>
+                  <TableCell className="text-right font-mono text-caption text-ink-faint">{i + 1}</TableCell>
+                  <TableCell className="max-w-[220px]"><p className="truncate text-sm text-ink">{post.caption || 'No caption'}</p></TableCell>
+                  <TableCell><TypeBadge type={post.contentType} /></TableCell>
+                  <TableCell className="text-right text-ink-muted">{fmtIGViews(post.viewCount)}</TableCell>
+                  <TableCell className="text-right font-semibold text-ink">{fmtNum(post.likeCount)}</TableCell>
+                  <TableCell className="text-right text-ink-muted">{fmtNum(post.commentsCount)}</TableCell>
+                  <TableCell className="text-right text-ink-muted">{fmtNum(post.engagement)}</TableCell>
+                  <TableCell className="text-small text-ink-faint">{fmtDate(post.timestamp)}</TableCell>
+                  <TableCell>
+                    {post.permalink && (
+                      <Button variant="ghost" size="icon-xs" render={<a href={post.permalink} target="_blank" rel="noopener noreferrer" aria-label="Open post on Instagram" />}>
+                        <ExternalLink />
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
             </TableBody>
           </Table>
-        </MainCard>
+        </SurfaceBox>
       )}
 
-      {/* Performance by type table */}
       {typeRows.length > 0 && (
-        <MainCard title="Performance Summary by Content Type" content={false}>
+        <SurfaceBox title="Summary by content type" content={false} className="overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
                 <TableHead>Type</TableHead>
                 <TableHead className="text-right">Count</TableHead>
-                <TableHead className="text-right">Total Views</TableHead>
-                <TableHead className="text-right">Avg Views</TableHead>
-                <TableHead className="text-right">Avg Likes</TableHead>
-                <TableHead className="text-right">Avg Comments</TableHead>
-                <TableHead className="text-right">Avg Engagement</TableHead>
+                <TableHead className="text-right">Total views</TableHead>
+                <TableHead className="text-right">Average views</TableHead>
+                <TableHead className="text-right">Average likes</TableHead>
+                <TableHead className="text-right">Average comments</TableHead>
+                <TableHead className="text-right">Average engagement</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {typeRows.map(row => (
                 <TableRow key={row.type}>
-                  <TableCell>
-                    <Badge variant="outline" className="text-xs" style={{ borderColor: `${row.color}50`, color: row.color, background: `${row.color}10` }}>
-                      {row.name}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="text-right">{row.count}</TableCell>
-                  <TableCell className="text-right">{row.viewsReported > 0 ? fmtNum(row.totalViews) : '-'}</TableCell>
-                  <TableCell className="text-right">{row.viewsReported > 0 ? fmtNum(row.avgViews) : '-'}</TableCell>
-                  <TableCell className="text-right">{fmtNum(row.avgLikes)}</TableCell>
-                  <TableCell className="text-right">{fmtNum(row.avgComments)}</TableCell>
-                  <TableCell className="text-right">{fmtNum(row.avgEngagement)}</TableCell>
+                  <TableCell><TypeBadge type={row.type} /></TableCell>
+                  <TableCell className="text-right text-ink">{row.count}</TableCell>
+                  <TableCell className="text-right text-ink-muted">{row.viewsReported > 0 ? fmtNum(row.totalViews) : '-'}</TableCell>
+                  <TableCell className="text-right text-ink-muted">{row.viewsReported > 0 ? fmtNum(row.avgViews) : '-'}</TableCell>
+                  <TableCell className="text-right text-ink-muted">{fmtNum(row.avgLikes)}</TableCell>
+                  <TableCell className="text-right text-ink-muted">{fmtNum(row.avgComments)}</TableCell>
+                  <TableCell className="text-right font-semibold text-ink">{fmtNum(row.avgEngagement)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        </MainCard>
+        </SurfaceBox>
       )}
 
-      <p className="text-xs text-muted-foreground text-center">Last updated: {timeAgo(account.lastUpdated)}</p>
+      <p className="text-center text-caption text-ink-faint">Last updated {timeAgo(account.lastUpdated).toLowerCase()}</p>
     </div>
   );
 }

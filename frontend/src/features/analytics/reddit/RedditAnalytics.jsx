@@ -1,46 +1,54 @@
-import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import React, { useCallback, useEffect, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import {
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, AreaChart, Area, PieChart, Pie,
+  Cell, Legend,
+} from 'recharts';
+import { RefreshCw, TrendingUp, MessageSquare, Award, Star, ExternalLink, FileText, UserX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Separator } from '@/components/ui/separator';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
-  ResponsiveContainer, AreaChart, Area, PieChart, Pie, Cell, Legend,
-} from 'recharts';
-import { Spinner } from '@/components/ui/spinner';
-import StatCard from '../../../components/ui/StatCard';
-import MainCard from '../../../components/MainCard';
+import PageHeader from '@/components/PageHeader';
+import MetricBox from '@/components/MetricBox';
+import SurfaceBox from '@/components/SurfaceBox';
+import ChartPanel from '@/components/ChartPanel';
+import { RankNumber } from '@/components/ListRow';
+import { EmptyState, PageSkeleton } from '@/components/StateViews';
+import { AccountAvatar } from '@/components/platform';
+import { SERIES, axisProps, axisTick, gridProps, legendStyle, seriesAt, tooltipCursor, tooltipStyle } from '@/lib/chart';
 import { useAppContext } from '../../../context/AppContext';
 import { api } from '../../../services/api';
 import { fmtNum, fmtNumFull, fmtDate, timeAgo } from '../../../utils/formatters';
-import {
-  ArrowLeft, RefreshCw, TrendingUp, MessageSquare, Award, BarChart2,
-  Calendar, Clock, Zap, Flame, Trophy, ExternalLink, FileText, Link2,
-  Image, Video, Star,
-} from 'lucide-react';
+import { MEDIA_TYPE_LABELS } from './redditPostUtils';
+import { cn } from '@/lib/utils';
 
-const REDDIT_COLORS = ['#FF4500', '#FF6534', '#FF8C00', '#FFA500', '#FFB347', '#FFC080'];
-const MEDIA_TYPE_LABELS = { text: 'Text', image: 'Image', video: 'Video', link: 'Link' };
-const MEDIA_TYPE_COLORS = { text: '#6366f1', image: '#22c55e', video: '#f97316', link: '#06b6d4' };
+const MEDIA_TYPE_ORDER = ['text', 'image', 'video', 'link'];
 
-const TS = { background: 'var(--card)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 12 };
+function StatList({ rows }) {
+  return (
+    <dl className="flex flex-col divide-y divide-divider">
+      {rows.map(row => (
+        <div key={row.label} className="flex items-center justify-between gap-4 py-2.5 first:pt-0 last:pb-0">
+          <dt className="text-sm text-ink-muted">{row.label}</dt>
+          <dd className="text-sm font-semibold text-ink tabular-nums">{row.value}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
 
 export default function RedditAnalytics() {
   const { id } = useParams();
   const { accounts, showToast } = useAppContext();
-  const navigate = useNavigate();
   const account = accounts.find(a => a.id === id);
 
-  const [loading,    setLoading]    = useState(true);
-  const [profile,    setProfile]    = useState(null);
-  const [analytics,  setAnalytics]  = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadAnalytics = async () => {
+  const loadAnalytics = useCallback(async () => {
     if (!account) return;
     setLoading(true);
     try {
@@ -48,13 +56,15 @@ export default function RedditAnalytics() {
       setProfile(data.profile);
       setAnalytics(data.analytics);
     } catch (err) {
-      showToast('Failed to load Reddit analytics: ' + err.message, 'error');
+      showToast(`Couldn't load Reddit analytics. ${err.message}`, 'error');
     } finally {
       setLoading(false);
     }
-  };
+    // Keyed on the account id so a background account refresh does not refetch analytics
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [account?.id, showToast]);
 
-  useEffect(() => { loadAnalytics(); }, [id]);
+  useEffect(() => { loadAnalytics(); }, [id, loadAnalytics]);
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -63,360 +73,267 @@ export default function RedditAnalytics() {
       await loadAnalytics();
       showToast('Reddit account refreshed');
     } catch (err) {
-      showToast('Refresh failed: ' + err.message, 'error');
+      showToast(`Refresh failed. ${err.message}`, 'error');
     } finally {
       setRefreshing(false);
     }
   };
 
+  const back = { to: '/', label: 'Overview' };
+
   if (!account) {
     return (
-      <div className="space-y-3">
-        <Button variant="ghost" onClick={() => navigate('/')} className="gap-2 -ml-2 text-muted-foreground">
-          <ArrowLeft className="h-4 w-4" /> Back
-        </Button>
-        <p className="text-muted-foreground">Account not found.</p>
+      <div className="flex flex-col gap-6">
+        <PageHeader title="Reddit account" back={back} />
+        <SurfaceBox>
+          <EmptyState icon={<UserX />} title="Account not found" description="It may have been removed. Choose another account from the sidebar." />
+        </SurfaceBox>
       </div>
     );
   }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[50vh]">
-        <div className="flex flex-col items-center gap-3">
-          <Spinner className="size-10" />
-          <p className="text-sm text-muted-foreground">Loading Reddit analytics...</p>
-        </div>
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton metrics={4} />;
 
   const p = profile || account;
   const a = analytics || {};
 
   const mediaTypeData = a.mediaTypeDistribution
-    ? Object.entries(a.mediaTypeDistribution).map(([key, value], i) => ({
+    ? Object.entries(a.mediaTypeDistribution).map(([key, value]) => ({
         name: MEDIA_TYPE_LABELS[key] || key,
         value,
-        color: MEDIA_TYPE_COLORS[key] || REDDIT_COLORS[i % REDDIT_COLORS.length],
+        color: seriesAt(Math.max(0, MEDIA_TYPE_ORDER.indexOf(key))),
       }))
     : [];
 
   return (
-    <div className="space-y-6">
-      {/* Back button */}
-      <Button variant="ghost" onClick={() => navigate('/')} className="gap-2 -ml-2 text-muted-foreground">
-        <ArrowLeft className="h-4 w-4" /> Back
-      </Button>
-
-      {/* Profile header */}
-      <MainCard>
-        <div className="flex flex-col sm:flex-row gap-4 sm:items-center sm:justify-between">
-          <div className="flex items-center gap-4">
-            <Avatar className="h-16 w-16">
-              <AvatarImage src={p.iconUrl || account.thumbnail} />
-              <AvatarFallback className="bg-orange-500 text-white font-bold text-lg">
-                {(p.username || account.title || '?').slice(0, 2).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="text-xl font-bold">u/{p.username || account.username}</h1>
-                {p.isGold && <Badge className="bg-yellow-500 text-white text-xs">Gold</Badge>}
-                {p.verified && <Badge className="bg-blue-500 text-white text-xs">Verified</Badge>}
-                {p.isMod && <Badge variant="outline" className="text-xs">Moderator</Badge>}
-              </div>
-              <p className="text-sm text-muted-foreground mt-0.5">
-                Reddit account
-                {p.createdAt ? ` - joined ${fmtDate(p.createdAt)}` : ''}
-              </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                Last refreshed: {timeAgo(account.lastUpdated)}
-              </p>
-            </div>
-          </div>
-          <div className="flex gap-2 shrink-0 flex-wrap">
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-2"
-              onClick={() => navigate(`/reddit-posts/${account.id}`)}
-            >
-              <FileText className="h-3.5 w-3.5" />
-              View Posts
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        back={back}
+        media={<AccountAvatar account={{ ...account, iconUrl: p.iconUrl || account.iconUrl }} size="xl" showPlatform />}
+        title={`u/${p.username || account.username}`}
+        description={
+          <span className="flex flex-wrap items-center gap-1.5">
+            {p.isGold && <Badge variant="warning">Gold</Badge>}
+            {p.verified && <Badge variant="info">Verified</Badge>}
+            {p.isMod && <Badge variant="outline">Moderator</Badge>}
+            <span>
+              {p.createdAt ? `Joined ${fmtDate(p.createdAt)}. ` : ''}Refreshed {timeAgo(account.lastUpdated).toLowerCase()}.
+            </span>
+          </span>
+        }
+        actions={
+          <>
+            <Button variant="outline" size="sm" render={<Link to={`/reddit-posts/${account.id}`} />}>
+              <FileText data-icon="inline-start" />
+              View posts
             </Button>
-            <Button
-              size="sm"
-              className="gap-2"
-              onClick={handleRefresh}
-              disabled={refreshing}
-            >
-              <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-              {refreshing ? 'Refreshing...' : 'Refresh'}
+            <Button variant="outline" size="sm" onClick={handleRefresh} disabled={refreshing}>
+              <RefreshCw data-icon="inline-start" className={cn(refreshing && 'animate-spin')} />
+              {refreshing ? 'Refreshing' : 'Refresh'}
             </Button>
-          </div>
-        </div>
-      </MainCard>
+          </>
+        }
+      />
 
-      {/* Karma - separate from profile since it's the key engagement metric on Reddit */}
-      <MainCard>
-        <div className="flex items-center gap-2 mb-4">
-          <Flame className="h-4 w-4 text-orange-500" />
-          <span className="text-sm font-semibold">Karma</span>
-          <span className="text-xs text-muted-foreground">earned across posts and comments</span>
-        </div>
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      {refreshing && <Progress value={null} aria-label="Refreshing account" />}
+
+      <SurfaceBox title="Karma" subheader="Earned across posts and comments">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4">
           {[
-            { label: 'Total Karma',   value: fmtNum(p.totalKarma),   sub: fmtNumFull(p.totalKarma) },
-            { label: 'Post Karma',    value: fmtNum(p.postKarma),    sub: 'from submitted posts' },
-            { label: 'Comment Karma', value: fmtNum(p.commentKarma), sub: 'from comments' },
-            { label: 'Awardee Karma', value: fmtNum(p.awardeeKarma ?? 0), sub: 'from received awards' },
+            { label: 'Total karma',   value: fmtNum(p.totalKarma),          sub: fmtNumFull(p.totalKarma), lead: true },
+            { label: 'Post karma',    value: fmtNum(p.postKarma),           sub: 'From submitted posts' },
+            { label: 'Comment karma', value: fmtNum(p.commentKarma),        sub: 'From comments' },
+            { label: 'Awardee karma', value: fmtNum(p.awardeeKarma ?? 0),   sub: 'From awards received' },
           ].map(item => (
-            <div key={item.label} className="text-center p-3 rounded-lg bg-muted/40">
-              <p className="text-xl font-bold tabular-nums text-orange-500">{item.value}</p>
-              <p className="text-xs font-medium mt-0.5">{item.label}</p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">{item.sub}</p>
+            <div key={item.label} className="flex flex-col gap-1">
+              <span className="text-small font-medium text-ink-muted">{item.label}</span>
+              <span className={cn('font-heading text-2xl font-semibold tracking-[-0.02em] tabular-nums', item.lead ? 'text-brand-text' : 'text-ink')}>{item.value}</span>
+              <span className="text-caption text-ink-faint">{item.sub}</span>
             </div>
           ))}
         </div>
-      </MainCard>
+      </SurfaceBox>
 
-      {/* KPI cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
-        <StatCard icon={<TrendingUp />}    label="Posts Fetched"   value={fmtNum(a.fetchedPosts)} subtitle={`${a.postsLast30Days ?? 0} in the last 30 days`} gradient="orange" />
-        <StatCard icon={<Award />}         label="Total Karma"     value={fmtNum(a.totalScore)} subtitle={`Avg ${fmtNum(a.avgScore)} per post`} gradient="red" />
-        <StatCard icon={<MessageSquare />} label="Total Comments"  value={fmtNum(a.totalComments)} subtitle={`Avg ${fmtNum(a.avgComments)} per post`} gradient="blue" />
-        <StatCard icon={<Star />}          label="Awards Received" value={fmtNum(a.totalAwards ?? 0)} subtitle={`Avg ${a.avgAwards ?? 0} per post`} gradient="purple" />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <MetricBox icon={<TrendingUp />}    label="Posts fetched"   value={fmtNum(a.fetchedPosts)}     subtitle={`${a.postsLast30Days ?? 0} in the last 30 days`} />
+        <MetricBox icon={<Award />}         label="Karma from posts" value={fmtNum(a.totalScore)}      subtitle={`${fmtNum(a.avgScore)} per post on average`} highlight />
+        <MetricBox icon={<MessageSquare />} label="Comments"        value={fmtNum(a.totalComments)}    subtitle={`${fmtNum(a.avgComments)} per post on average`} />
+        <MetricBox icon={<Star />}          label="Awards received" value={fmtNum(a.totalAwards ?? 0)} subtitle={`${a.avgAwards ?? 0} per post on average`} />
       </div>
 
-      {/* Karma timeline + media type pie */}
       {a.monthlyBreakdown?.length > 0 && (
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4">
-          <MainCard title="Karma Over Time" className="xl:col-span-2">
-            <ResponsiveContainer width="100%" height={240} debounce={200}>
-              <AreaChart data={a.monthlyBreakdown} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="redditGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%"  stopColor="#FF4500" stopOpacity={0.18} />
-                    <stop offset="95%" stopColor="#FF4500" stopOpacity={0.01} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="month" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} tickFormatter={fmtNum} axisLine={false} tickLine={false} width={48} />
-                <ReTooltip contentStyle={TS} formatter={(v, n) => [fmtNumFull(v), n === 'score' ? 'Total Karma' : 'Posts']} />
-                <Area type="monotone" dataKey="score" stroke="#FF4500" strokeWidth={2} fill="url(#redditGrad)" dot={{ fill: '#FF4500', r: 3, strokeWidth: 0 }} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </MainCard>
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+          <ChartPanel title="Karma over time" height={240} className="xl:col-span-2">
+            <AreaChart data={a.monthlyBreakdown} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+              <defs>
+                <linearGradient id="redditGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor={SERIES.primary} stopOpacity={0.2} />
+                  <stop offset="95%" stopColor={SERIES.primary} stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid {...gridProps} vertical={false} />
+              <XAxis dataKey="month" {...axisProps} />
+              <YAxis {...axisProps} tickFormatter={fmtNum} width={48} />
+              <ReTooltip contentStyle={tooltipStyle} cursor={{ stroke: 'var(--line-strong)' }} formatter={(v, n) => [fmtNumFull(v), n === 'score' ? 'Karma' : 'Posts']} />
+              <Area type="monotone" dataKey="score" stroke={SERIES.primary} strokeWidth={2} fill="url(#redditGrad)" dot={{ fill: SERIES.primary, r: 3, strokeWidth: 0 }} />
+            </AreaChart>
+          </ChartPanel>
 
           {mediaTypeData.length > 0 && (
-            <MainCard title="Post Type Breakdown">
-              <ResponsiveContainer width="100%" height={240} debounce={200}>
-                <PieChart>
-                  <Pie data={mediaTypeData} dataKey="value" nameKey="name" cx="50%" cy="44%" outerRadius={80} innerRadius={44} paddingAngle={3} strokeWidth={0}>
-                    {mediaTypeData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                  </Pie>
-                  <ReTooltip contentStyle={TS} formatter={(v) => [fmtNumFull(v), 'posts']} />
-                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11, paddingTop: 8 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            </MainCard>
+            <ChartPanel title="Post types" height={240}>
+              <PieChart>
+                <Pie data={mediaTypeData} dataKey="value" nameKey="name" cx="50%" cy="44%" outerRadius={80} innerRadius={48} paddingAngle={2} strokeWidth={0}>
+                  {mediaTypeData.map(entry => <Cell key={entry.name} fill={entry.color} />)}
+                </Pie>
+                <ReTooltip contentStyle={tooltipStyle} formatter={v => [fmtNumFull(v), 'Posts']} />
+                <Legend iconType="circle" iconSize={8} wrapperStyle={{ ...legendStyle, paddingTop: 8 }} />
+              </PieChart>
+            </ChartPanel>
           )}
         </div>
       )}
 
-      {/* Detailed metrics */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-        <MainCard title="Posting Frequency">
-          <div className="space-y-3">
-            {[
-              { label: 'Last 7 days',  value: `${a.postsLast7Days} posts` },
-              { label: 'Last 30 days', value: `${a.postsLast30Days} posts` },
-              { label: 'Last 90 days', value: `${a.postsLast90Days} posts` },
-            ].map(item => (
-              <div key={item.label} className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">{item.label}</span>
-                <span className="text-sm font-semibold tabular-nums">{item.value}</span>
-              </div>
-            ))}
-            <Separator />
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Avg per week</span>
-              <span className="text-sm font-semibold tabular-nums">{a.postFrequency?.perWeek ?? 0}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Avg per month</span>
-              <span className="text-sm font-semibold tabular-nums">{a.postFrequency?.perMonth ?? 0}</span>
-            </div>
-          </div>
-        </MainCard>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <SurfaceBox title="Posting frequency">
+          <StatList rows={[
+            { label: 'Last 7 days',  value: `${a.postsLast7Days ?? 0} posts` },
+            { label: 'Last 30 days', value: `${a.postsLast30Days ?? 0} posts` },
+            { label: 'Last 90 days', value: `${a.postsLast90Days ?? 0} posts` },
+            { label: 'Per week',     value: a.postFrequency?.perWeek ?? 0 },
+            { label: 'Per month',    value: a.postFrequency?.perMonth ?? 0 },
+          ]} />
+        </SurfaceBox>
 
-        <MainCard title="Karma Breakdown">
-          <div className="space-y-3">
-            {[
-              { label: 'Average karma',    value: fmtNum(a.avgScore) },
-              { label: 'Median karma',     value: fmtNum(a.medianScore) },
-              { label: 'Best single post', value: fmtNum(a.topPosts?.[0]?.score) },
-              { label: 'Avg upvote ratio', value: `${a.avgUpvoteRatio ?? 0}%` },
-              { label: 'Total comments',   value: fmtNum(a.totalComments) },
-              { label: 'Avg comments',     value: fmtNum(a.avgComments) },
-            ].map(item => (
-              <div key={item.label} className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">{item.label}</span>
-                <span className="text-sm font-semibold tabular-nums">{item.value}</span>
-              </div>
-            ))}
-          </div>
-        </MainCard>
+        <SurfaceBox title="Karma breakdown">
+          <StatList rows={[
+            { label: 'Average karma',          value: fmtNum(a.avgScore) },
+            { label: 'Median karma',           value: fmtNum(a.medianScore) },
+            { label: 'Best single post',       value: fmtNum(a.topPosts?.[0]?.score) },
+            { label: 'Average upvote ratio',   value: `${a.avgUpvoteRatio ?? 0}%` },
+            { label: 'Total comments',         value: fmtNum(a.totalComments) },
+            { label: 'Average comments',       value: fmtNum(a.avgComments) },
+          ]} />
+        </SurfaceBox>
 
-        <MainCard title="Performance Indicators">
-          <div className="space-y-4">
+        <SurfaceBox title="Performance indicators">
+          <div className="flex flex-col gap-5">
             {[
-              { label: 'Virality Score', value: a.viralityScore, max: Math.max(10, a.viralityScore), desc: 'Ratio of peak post karma to average - higher means bigger outlier hits' },
-              { label: 'Consistency',    value: a.consistencyScore, max: 100, desc: 'Karma reliability across posts - 100 means very uniform performance' },
+              { label: 'Virality score', value: a.viralityScore ?? 0, max: Math.max(10, a.viralityScore ?? 0), desc: 'Best post karma against the average. Higher means bigger outlier hits.' },
+              { label: 'Consistency',    value: a.consistencyScore ?? 0, max: 100, desc: 'How evenly karma spreads across posts. 100 means every post performs alike.' },
             ].map(item => (
-              <div key={item.label} className="space-y-1.5">
+              <div key={item.label} className="flex flex-col gap-2">
                 <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium">{item.label}</span>
-                  <span className="text-muted-foreground tabular-nums">{item.value}</span>
+                  <span className="font-medium text-ink">{item.label}</span>
+                  <span className="text-ink-muted tabular-nums">{item.value}</span>
                 </div>
-                <Progress value={(item.value / item.max) * 100} className="h-1.5" />
-                <p className="text-xs text-muted-foreground">{item.desc}</p>
+                <Progress value={(item.value / item.max) * 100} aria-label={item.label} />
+                <p className="text-caption text-ink-faint">{item.desc}</p>
               </div>
             ))}
           </div>
-        </MainCard>
+        </SurfaceBox>
       </div>
 
-      {/* Best posting times */}
       {a.postsByDayOfWeek?.length > 0 && (
-        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-          <MainCard title="Posts by Day of Week">
-            <ResponsiveContainer width="100%" height={220} debounce={200}>
-              <BarChart data={a.postsByDayOfWeek} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="shortDay" tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} tickFormatter={fmtNum} axisLine={false} tickLine={false} width={36} />
-                <ReTooltip contentStyle={TS} formatter={(v, n) => [fmtNumFull(v), n === 'avgScore' ? 'Avg Karma' : 'Posts']} />
-                <Bar dataKey="posts"    fill="#FF4500" opacity={0.35} radius={[3, 3, 0, 0]} />
-                <Bar dataKey="avgScore" fill="#FF4500" radius={[3, 3, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-            {a.bestPostingDay && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Best day: <span className="font-medium text-foreground">{a.bestPostingDay}</span>
-              </p>
-            )}
-          </MainCard>
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <ChartPanel title="Posts by day of week" subheader={a.bestPostingDay ? `Best day: ${a.bestPostingDay}` : undefined} height={220}>
+            <BarChart data={a.postsByDayOfWeek} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+              <CartesianGrid {...gridProps} vertical={false} />
+              <XAxis dataKey="shortDay" {...axisProps} />
+              <YAxis {...axisProps} tickFormatter={fmtNum} width={36} />
+              <ReTooltip contentStyle={tooltipStyle} cursor={tooltipCursor} formatter={(v, n) => [fmtNumFull(v), n === 'avgScore' ? 'Average karma' : 'Posts']} />
+              <Bar dataKey="posts" fill={SERIES.neutral} radius={[3, 3, 0, 0]} />
+              <Bar dataKey="avgScore" fill={SERIES.primary} radius={[3, 3, 0, 0]} />
+            </BarChart>
+          </ChartPanel>
 
-          <MainCard title="Posts by Hour">
-            <ResponsiveContainer width="100%" height={220} debounce={200}>
-              <BarChart data={a.postsByHour} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                <XAxis dataKey="hour" tickFormatter={h => `${h}h`} tick={{ fill: 'var(--muted-foreground)', fontSize: 10 }} axisLine={false} tickLine={false} interval={3} />
-                <YAxis tick={{ fill: 'var(--muted-foreground)', fontSize: 11 }} tickFormatter={fmtNum} axisLine={false} tickLine={false} width={36} />
-                <ReTooltip contentStyle={TS} formatter={(v, n) => [fmtNumFull(v), n === 'avgScore' ? 'Avg Karma' : 'Posts']} />
-                <Bar dataKey="avgScore" fill="#FF6534" radius={[3, 3, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-            {a.bestPostingHour && (
-              <p className="text-xs text-muted-foreground mt-2">
-                Best hour: <span className="font-medium text-foreground">{a.bestPostingHour}</span>
-              </p>
-            )}
-          </MainCard>
+          <ChartPanel title="Average karma by hour" subheader={a.bestPostingHour ? `Best hour: ${a.bestPostingHour}` : undefined} height={220}>
+            <BarChart data={a.postsByHour} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+              <CartesianGrid {...gridProps} vertical={false} />
+              <XAxis dataKey="hour" tickFormatter={h => `${h}h`} tick={{ ...axisTick, fontSize: 10 }} axisLine={false} tickLine={false} interval={3} />
+              <YAxis {...axisProps} tickFormatter={fmtNum} width={36} />
+              <ReTooltip contentStyle={tooltipStyle} cursor={tooltipCursor} formatter={(v, n) => [fmtNumFull(v), n === 'avgScore' ? 'Average karma' : 'Posts']} />
+              <Bar dataKey="avgScore" fill={SERIES.warm} radius={[3, 3, 0, 0]} />
+            </BarChart>
+          </ChartPanel>
         </div>
       )}
 
-      {/* Subreddit breakdown */}
       {a.subredditBreakdown?.length > 0 && (
-        <MainCard title="Top Subreddits" content={false}>
+        <SurfaceBox title="Top subreddits" content={false} className="overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-8">#</TableHead>
+                <TableHead className="w-10 text-right">#</TableHead>
                 <TableHead>Subreddit</TableHead>
                 <TableHead className="text-right">Posts</TableHead>
-                <TableHead className="text-right">Total Karma</TableHead>
-                <TableHead className="text-right">Avg Karma</TableHead>
-                <TableHead className="text-right">Avg Comments</TableHead>
+                <TableHead className="text-right">Total karma</TableHead>
+                <TableHead className="text-right">Average karma</TableHead>
+                <TableHead className="text-right">Average comments</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {a.subredditBreakdown.map((sub, i) => (
                 <TableRow key={sub.subreddit}>
-                  <TableCell className="text-xs text-muted-foreground">{i + 1}</TableCell>
+                  <TableCell className="text-right font-mono text-caption text-ink-faint">{i + 1}</TableCell>
                   <TableCell>
-                    <a
-                      href={`https://reddit.com/r/${sub.subreddit}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-sm font-medium hover:underline flex items-center gap-1"
-                    >
+                    <a href={`https://reddit.com/r/${sub.subreddit}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-sm font-medium text-ink hover:underline">
                       r/{sub.subreddit}
-                      <ExternalLink className="h-3 w-3 text-muted-foreground" />
+                      <ExternalLink className="size-3 text-ink-faint" />
                     </a>
                   </TableCell>
-                  <TableCell className="text-right text-sm tabular-nums">{sub.posts}</TableCell>
-                  <TableCell className="text-right text-sm tabular-nums">{fmtNum(sub.totalScore)}</TableCell>
-                  <TableCell className="text-right text-sm tabular-nums">{fmtNum(sub.avgScore)}</TableCell>
-                  <TableCell className="text-right text-sm tabular-nums">{fmtNum(sub.avgComments)}</TableCell>
+                  <TableCell className="text-right text-ink-muted">{sub.posts}</TableCell>
+                  <TableCell className="text-right font-semibold text-ink">{fmtNum(sub.totalScore)}</TableCell>
+                  <TableCell className="text-right text-ink-muted">{fmtNum(sub.avgScore)}</TableCell>
+                  <TableCell className="text-right text-ink-muted">{fmtNum(sub.avgComments)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        </MainCard>
+        </SurfaceBox>
       )}
 
-      {/* Top posts */}
       {a.topPosts?.length > 0 && (
-        <MainCard title="Top Posts by Karma" content={false}>
+        <SurfaceBox title="Top posts by karma" content={false} className="overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-8">#</TableHead>
+                <TableHead className="w-10 text-right">#</TableHead>
                 <TableHead>Post</TableHead>
                 <TableHead className="text-right">Karma</TableHead>
                 <TableHead className="text-right">Comments</TableHead>
-                <TableHead className="text-right">Upvote %</TableHead>
+                <TableHead className="text-right">Upvoted</TableHead>
                 <TableHead className="text-right">Posted</TableHead>
-                <TableHead className="w-8" />
+                <TableHead className="w-10"><span className="sr-only">Open</span></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {a.topPosts.map((post, i) => (
                 <TableRow key={post.id}>
-                  <TableCell>
-                    <span className={`text-xs font-bold ${i === 0 ? 'text-yellow-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-orange-400' : 'text-muted-foreground'}`}>
-                      {i + 1}
-                    </span>
-                  </TableCell>
-                  <TableCell>
+                  <TableCell className="text-right"><RankNumber rank={i + 1} className="w-auto" /></TableCell>
+                  <TableCell className="whitespace-normal">
                     <div className="max-w-sm">
-                      <p className="text-sm font-medium leading-snug line-clamp-2">{post.title}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-xs text-muted-foreground">{post.subredditPrefixed}</span>
-                        {post.flair && <Badge variant="outline" className="text-[10px] px-1 py-0">{post.flair}</Badge>}
+                      <p className="line-clamp-2 text-sm font-medium leading-snug text-ink">{post.title}</p>
+                      <div className="mt-1 flex items-center gap-1.5">
+                        <span className="text-caption text-ink-faint">{post.subredditPrefixed}</span>
+                        {post.flair && <Badge variant="outline">{post.flair}</Badge>}
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell className="text-right text-sm font-semibold tabular-nums text-orange-500">{fmtNum(post.score)}</TableCell>
-                  <TableCell className="text-right text-sm tabular-nums">{fmtNum(post.numComments)}</TableCell>
-                  <TableCell className="text-right text-sm tabular-nums">{Math.round((post.upvoteRatio ?? 0) * 100)}%</TableCell>
-                  <TableCell className="text-right text-xs text-muted-foreground">{fmtDate(post.createdAt)}</TableCell>
+                  <TableCell className="text-right font-semibold text-ink">{fmtNum(post.score)}</TableCell>
+                  <TableCell className="text-right text-ink-muted">{fmtNum(post.numComments)}</TableCell>
+                  <TableCell className="text-right text-ink-muted">{Math.round((post.upvoteRatio ?? 0) * 100)}%</TableCell>
+                  <TableCell className="text-right text-small text-ink-faint">{fmtDate(post.createdAt)}</TableCell>
                   <TableCell>
-                    <a href={post.permalink} target="_blank" rel="noopener noreferrer">
-                      <Button variant="ghost" size="icon" className="size-7">
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </Button>
-                    </a>
+                    <Button variant="ghost" size="icon-xs" render={<a href={post.permalink} target="_blank" rel="noopener noreferrer" aria-label={`Open "${post.title}" on Reddit`} />}>
+                      <ExternalLink />
+                    </Button>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
-        </MainCard>
+        </SurfaceBox>
       )}
     </div>
   );

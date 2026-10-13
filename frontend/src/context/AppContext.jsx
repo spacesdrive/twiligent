@@ -21,7 +21,7 @@ export function AppProvider({ children }) {
       const data = await api.getAccounts();
       setAccounts(data.map(normalizeAccount));
     } catch (err) {
-      showToast('Failed to load accounts: ' + err.message, 'error');
+      showToast(`Couldn't load your accounts. ${err.message}`, 'error');
     }
   }, [showToast]);
 
@@ -30,9 +30,9 @@ export function AppProvider({ children }) {
     try {
       const res = await api.refreshAll();
       setAccounts((res.accounts || []).map(normalizeAccount));
-      showToast('All accounts refreshed!');
+      showToast('All accounts refreshed');
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(`Refresh failed. ${err.message}`, 'error');
     } finally {
       setLoading(false);
     }

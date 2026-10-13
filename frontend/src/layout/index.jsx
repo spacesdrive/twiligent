@@ -1,36 +1,66 @@
-import React, { Suspense } from 'react';
-import { Outlet } from 'react-router-dom';
+import React, { Suspense, useCallback, useEffect, useState } from 'react';
+import { Outlet, useNavigate } from 'react-router-dom';
 import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
+import CommandPalette from '@/components/CommandPalette';
+import { useCommandPaletteShortcut } from '@/hooks/use-command-palette-shortcut';
+import { PageSkeleton } from '@/components/StateViews';
 import AppSidebar from './Sidebar';
-import AppHeader from './Header';
+import TopBar from './Header';
+import { useAppContext } from '../context/AppContext';
+import { useAuth } from '../context/AuthContext';
+import { api } from '../services/api';
 
-function PageSkeleton() {
-  return (
-    <div className="flex-1 p-4 sm:p-6 space-y-4 animate-pulse">
-      <div className="h-8 w-48 rounded-md bg-muted" />
-      <div className="h-4 w-72 rounded-md bg-muted" />
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mt-6">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="h-28 rounded-xl bg-muted" />
-        ))}
-      </div>
-      <div className="h-64 rounded-xl bg-muted" />
-    </div>
-  );
-}
+export default function AppShell() {
+  const navigate = useNavigate();
+  const { accounts, refreshAll } = useAppContext();
+  const { signOut } = useAuth();
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [categories, setCategories] = useState([]);
 
-export default function MainLayout() {
+  useCommandPaletteShortcut(setPaletteOpen);
+
+  useEffect(() => {
+    api.getTrackedContent()
+      .then(data => {
+        const items = Array.isArray(data) ? data : [];
+        setCategories([...new Set(items.map(p => p.category).filter(Boolean))].sort());
+      })
+      .catch(() => {});
+  }, []);
+
+  const openPalette = useCallback(() => setPaletteOpen(true), []);
+  const handleSignOut = useCallback(async () => {
+    await signOut();
+    navigate('/login');
+  }, [signOut, navigate]);
+
   return (
     <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <AppHeader />
-        <main className="flex-1 overflow-auto p-4 sm:p-6">
-          <Suspense fallback={<PageSkeleton />}>
-            <Outlet />
-          </Suspense>
-        </main>
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-pill focus:bg-ink focus:px-4 focus:py-2 focus:text-sm focus:text-ink-inverse"
+      >
+        Skip to content
+      </a>
+      <AppSidebar categories={categories} onOpenPalette={openPalette} onSignOut={handleSignOut} />
+      <SidebarInset className="min-w-0">
+        <TopBar onOpenPalette={openPalette} />
+        <div id="main-content" tabIndex={-1} className="flex-1 outline-none">
+          <div className="mx-auto w-full max-w-(--content-max) px-4 py-6 sm:px-5">
+            <Suspense fallback={<PageSkeleton />}>
+              <Outlet />
+            </Suspense>
+          </div>
+        </div>
       </SidebarInset>
+      <CommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        accounts={accounts}
+        categories={categories}
+        onRefreshAll={refreshAll}
+        onSignOut={handleSignOut}
+      />
     </SidebarProvider>
   );
 }

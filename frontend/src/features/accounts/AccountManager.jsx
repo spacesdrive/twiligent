@@ -1,58 +1,92 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import {
+  Plus, Trash2, RefreshCw, Search, Users, CheckCircle2, Link2, Info, ExternalLink, Lock, ArrowLeft, ArrowUpRight,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
-} from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  Plus, Trash2, RefreshCw, Search, Users, CheckCircle2,
-  Tv, Camera, Link2, Info, ExternalLink, MessageSquare, Lock,
-} from 'lucide-react';
-import MainCard from '../../components/MainCard';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Spinner } from '@/components/ui/spinner';
+import PageHeader from '@/components/PageHeader';
+import SurfaceBox from '@/components/SurfaceBox';
+import SectionHeader from '@/components/SectionHeader';
+import ChoiceCard from '@/components/ChoiceCard';
+import ConfirmDialog from '@/components/ConfirmDialog';
+import { FieldRow } from '@/components/DetailPanel';
+import { EmptyState } from '@/components/StateViews';
+import { AccountAvatar, PlatformIcon } from '@/components/platform';
+import { YouTubeIcon, InstagramIcon, RedditIcon } from '@/components/brand/platform-icons';
+import { PLATFORM_META, accountHandle, accountName, accountPath, groupByPlatform, platformSummary } from '@/lib/accounts';
 import { useAppContext } from '../../context/AppContext';
 import { api } from '../../services/api';
 import { fmtNum, timeAgo } from '../../utils/formatters';
 import { cn } from '@/lib/utils';
 
+const PLATFORM_CHOICES = [
+  { value: 'youtube',   title: 'YouTube channel',   description: 'Paste a channel link, @handle or channel ID.', icon: <YouTubeIcon /> },
+  { value: 'instagram', title: 'Instagram account', description: 'Sign in with Instagram. Business or Creator accounts only.', icon: <InstagramIcon /> },
+  { value: 'reddit',    title: 'Reddit account',    description: 'Add a username and a session cookie from your browser.', icon: <RedditIcon /> },
+];
+
+const IG_ERRORS = {
+  already_added: 'This Instagram account is already connected.',
+  cancelled: 'Instagram sign-in was cancelled. Try again when you are ready.',
+  access_denied: 'Instagram did not grant access. Approve every requested permission and try again.',
+  invalid_state: 'The Instagram sign-in link expired. Start the connection again.',
+};
+
+const METRICS = {
+  youtube:   acct => [['Subscribers', acct.subscriberCount], ['Views', acct.viewCount], ['Videos', acct.videoCount]],
+  instagram: acct => [['Followers', acct.followersCount], ['Following', acct.followsCount], ['Posts', acct.mediaCount]],
+  reddit:    acct => [['Karma', acct.totalKarma], ['Post karma', acct.postKarma], ['Comment karma', acct.commentKarma]],
+};
+
 export default function AccountManager() {
   const { accounts, showToast, loadAccounts } = useAppContext();
-  const [dialogOpen,   setDialogOpen]   = useState(false);
-  const [dialogTab,    setDialogTab]    = useState('youtube');
-  const [input,        setInput]        = useState('');
-  const [resolving,    setResolving]    = useState(false);
-  const [resolved,     setResolved]     = useState(null);
-  const [adding,       setAdding]       = useState(false);
-  const [connecting,      setConnecting]      = useState(false);
-  const [redditUsername, setRedditUsername] = useState('');
-  const [redditCookie,   setRedditCookie]   = useState('');
-  const [addingReddit,   setAddingReddit]   = useState(false);
-  const [refreshingId,    setRefreshingId]    = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  // Handle Instagram OAuth redirect result (?ig_connected=true or ?ig_error=...)
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [platform, setPlatform] = useState(null);
+  const [input, setInput] = useState('');
+  const [resolving, setResolving] = useState(false);
+  const [resolved, setResolved] = useState(null);
+  const [adding, setAdding] = useState(false);
+  const [connecting, setConnecting] = useState(false);
+  const [redditUsername, setRedditUsername] = useState('');
+  const [redditCookie, setRedditCookie] = useState('');
+  const [addingReddit, setAddingReddit] = useState(false);
+  const [refreshingId, setRefreshingId] = useState(null);
+  const [pendingDelete, setPendingDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // Instagram OAuth returns here with ?ig_connected=true or ?ig_error=...; ?add=1 opens the add flow
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const connected = params.get('ig_connected');
-    const igError   = params.get('ig_error');
+    const connected = searchParams.get('ig_connected');
+    const igError = searchParams.get('ig_error');
+    const add = searchParams.get('add');
+    if (!connected && !igError && !add) return;
 
     if (connected === 'true') {
-      showToast('Instagram account connected successfully!');
-      window.history.replaceState({}, '', window.location.pathname);
+      showToast('Instagram account connected');
       loadAccounts();
     } else if (igError) {
-      const msg =
-        igError === 'already_added'   ? 'This Instagram account is already connected' :
-        igError === 'cancelled'        ? 'Instagram authorization was cancelled' :
-        igError === 'access_denied'    ? 'Instagram authorization was denied' :
-        igError === 'invalid_state'    ? 'Authorization expired - please try again' :
-        'Instagram connection failed: ' + igError;
-      showToast(msg, 'error');
-      window.history.replaceState({}, '', window.location.pathname);
+      showToast(IG_ERRORS[igError] || `Instagram connection failed: ${igError}`, 'error');
     }
-  }, []);
+    if (add) setDialogOpen(true);
+    setSearchParams({}, { replace: true });
+  }, [searchParams, setSearchParams, showToast, loadAccounts]);
+
+  const closeDialog = () => {
+    setDialogOpen(false);
+    setPlatform(null);
+    setResolved(null);
+    setInput('');
+    setRedditUsername('');
+    setRedditCookie('');
+  };
 
   const handleResolve = async () => {
     if (!input.trim()) return;
@@ -62,7 +96,7 @@ export default function AccountManager() {
       const res = await api.resolveChannel(input.trim());
       setResolved(res.data || res);
     } catch (err) {
-      showToast('Could not resolve channel: ' + err.message, 'error');
+      showToast(`Couldn't find that channel. ${err.message}`, 'error');
     } finally {
       setResolving(false);
     }
@@ -73,11 +107,11 @@ export default function AccountManager() {
     setAdding(true);
     try {
       await api.addAccount(input.trim());
-      showToast('Channel added successfully!');
+      showToast('YouTube channel added');
       closeDialog();
       loadAccounts();
     } catch (err) {
-      showToast('Failed to add account: ' + err.message, 'error');
+      showToast(`Couldn't add the channel. ${err.message}`, 'error');
     } finally {
       setAdding(false);
     }
@@ -87,47 +121,11 @@ export default function AccountManager() {
     setConnecting(true);
     try {
       const { url } = await api.getInstagramAuthUrl();
-      // Navigate the same tab - Instagram will redirect back to /accounts?ig_connected=true
+      // Same tab: Instagram redirects back to /accounts?ig_connected=true
       window.location.href = url;
     } catch (err) {
-      showToast('Failed to start Instagram login: ' + err.message, 'error');
+      showToast(`Couldn't start Instagram sign-in. ${err.message}`, 'error');
       setConnecting(false);
-    }
-  };
-
-  const handleDelete = async (id) => {
-    try {
-      await api.deleteAccount(id);
-      showToast('Account removed');
-      loadAccounts();
-    } catch (err) {
-      showToast('Failed to delete: ' + err.message, 'error');
-    }
-  };
-
-  const handleRefreshOne = async (id) => {
-    setRefreshingId(id);
-    try {
-      await api.refreshAccount(id);
-      showToast('Account refreshed');
-      loadAccounts();
-    } catch (err) {
-      showToast('Refresh failed: ' + err.message, 'error');
-    } finally {
-      setRefreshingId(null);
-    }
-  };
-
-  const handleRefreshAll = async () => {
-    setRefreshingId('all');
-    try {
-      await api.refreshAll();
-      showToast('All accounts refreshed');
-      loadAccounts();
-    } catch (err) {
-      showToast('Refresh all failed: ' + err.message, 'error');
-    } finally {
-      setRefreshingId(null);
     }
   };
 
@@ -140,373 +138,337 @@ export default function AccountManager() {
       closeDialog();
       loadAccounts();
     } catch (err) {
-      showToast('Failed to add Reddit account: ' + err.message, 'error');
+      showToast(`Couldn't add the Reddit account. ${err.message}`, 'error');
     } finally {
       setAddingReddit(false);
     }
   };
 
-  const closeDialog = () => {
-    setDialogOpen(false);
-    setResolved(null);
-    setInput('');
-    setRedditUsername('');
-    setRedditCookie('');
+  const handleDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    try {
+      await api.deleteAccount(pendingDelete.id);
+      showToast(`${accountName(pendingDelete)} removed`);
+      setPendingDelete(null);
+      loadAccounts();
+    } catch (err) {
+      showToast(`Couldn't remove the account. ${err.message}`, 'error');
+    } finally {
+      setDeleting(false);
+    }
   };
 
-  const ytAccounts     = accounts.filter(a => !['instagram', 'reddit'].includes(a.platform));
-  const igAccounts     = accounts.filter(a => a.platform === 'instagram');
-  const redditAccounts = accounts.filter(a => a.platform === 'reddit');
+  const handleRefreshOne = async id => {
+    setRefreshingId(id);
+    try {
+      await api.refreshAccount(id);
+      showToast('Account refreshed');
+      loadAccounts();
+    } catch (err) {
+      showToast(`Refresh failed. ${err.message}`, 'error');
+    } finally {
+      setRefreshingId(null);
+    }
+  };
+
+  const handleRefreshAll = async () => {
+    setRefreshingId('all');
+    try {
+      await api.refreshAll();
+      showToast('All accounts refreshed');
+      loadAccounts();
+    } catch (err) {
+      showToast(`Refresh failed. ${err.message}`, 'error');
+    } finally {
+      setRefreshingId(null);
+    }
+  };
+
+  const groups = groupByPlatform(accounts);
+  const sections = [
+    { key: 'youtube',   title: 'YouTube channels' },
+    { key: 'instagram', title: 'Instagram accounts' },
+    { key: 'reddit',    title: 'Reddit accounts' },
+  ].filter(s => groups[s.key].length > 0);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Manage Accounts</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {[
-              ytAccounts.length     ? `${ytAccounts.length} YouTube`     : null,
-              igAccounts.length     ? `${igAccounts.length} Instagram`   : null,
-              redditAccounts.length ? `${redditAccounts.length} Reddit`  : null,
-            ].filter(Boolean).join(' · ') || 'No accounts added yet'}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleRefreshAll} disabled={refreshingId === 'all'} className="gap-2">
-            <RefreshCw className={cn('h-3.5 w-3.5', refreshingId === 'all' && 'animate-spin')} />
-            {refreshingId === 'all' ? 'Refreshing...' : 'Refresh All'}
-          </Button>
-          <Button size="sm" onClick={() => setDialogOpen(true)} className="gap-2">
-            <Plus className="h-3.5 w-3.5" />
-            Add Account
-          </Button>
-        </div>
-      </div>
+    <div className="flex flex-col gap-8">
+      <PageHeader
+        title="Accounts"
+        description={accounts.length > 0 ? platformSummary(accounts) : 'No accounts added yet'}
+        actions={
+          <>
+            {accounts.length > 0 && (
+              <Button variant="outline" onClick={handleRefreshAll} disabled={refreshingId === 'all'}>
+                <RefreshCw data-icon="inline-start" className={cn(refreshingId === 'all' && 'animate-spin')} />
+                {refreshingId === 'all' ? 'Refreshing' : 'Refresh all'}
+              </Button>
+            )}
+            <Button onClick={() => setDialogOpen(true)}>
+              <Plus data-icon="inline-start" />
+              Add account
+            </Button>
+          </>
+        }
+      />
 
       {accounts.length === 0 ? (
-        <MainCard>
-          <div className="flex flex-col items-center text-center py-12 gap-4">
-            <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center">
-              <Users className="h-7 w-7 text-primary" />
-            </div>
-            <div>
-              <h3 className="text-lg font-semibold">No Accounts Added</h3>
-              <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-                Add a YouTube channel or connect an Instagram account to start tracking analytics.
-              </p>
-            </div>
-            <Button onClick={() => setDialogOpen(true)} className="gap-2">
-              <Plus className="h-4 w-4" /> Add Your First Account
-            </Button>
+        <div className="flex flex-col gap-4">
+          <SectionHeader title="Choose what to connect" />
+          <div role="list" className="grid grid-cols-1 gap-x-3 gap-y-5 md:grid-cols-3">
+            {PLATFORM_CHOICES.map(choice => (
+              <div role="listitem" key={choice.value}>
+                <ChoiceCard
+                  icon={choice.icon}
+                  title={choice.title}
+                  description={choice.description}
+                  onSelect={() => { setPlatform(choice.value); setDialogOpen(true); }}
+                  className="h-full"
+                />
+              </div>
+            ))}
           </div>
-        </MainCard>
-      ) : (
-        <div className="space-y-8">
-          {/* YouTube */}
-          {ytAccounts.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Tv className="h-5 w-5 text-red-500" />
-                <h2 className="text-base font-semibold">YouTube Channels</h2>
-                <Badge variant="outline" className="border-red-200 bg-red-50 text-red-600 text-xs">{ytAccounts.length}</Badge>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                {ytAccounts.map(acct => (
-                  <AccountCard
-                    key={acct.id}
-                    acct={acct}
-                    platform="youtube"
-                    metrics={[
-                      { label: 'Subscribers', value: fmtNum(acct.subscriberCount), className: 'bg-red-50 text-red-700' },
-                      { label: 'Views',        value: fmtNum(acct.viewCount),       className: 'bg-blue-50 text-blue-700' },
-                      { label: 'Videos',       value: fmtNum(acct.videoCount),      className: 'bg-green-50 text-green-700' },
-                    ]}
-                    refreshingId={refreshingId}
-                    onRefresh={handleRefreshOne}
-                    onDelete={handleDelete}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Instagram */}
-          {igAccounts.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <Camera className="h-5 w-5 text-pink-500" />
-                <h2 className="text-base font-semibold">Instagram Accounts</h2>
-                <Badge variant="outline" className="border-pink-200 bg-pink-50 text-pink-600 text-xs">{igAccounts.length}</Badge>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                {igAccounts.map(acct => (
-                  <AccountCard
-                    key={acct.id}
-                    acct={acct}
-                    platform="instagram"
-                    metrics={[
-                      { label: 'Followers',  value: fmtNum(acct.followersCount), className: 'bg-pink-50 text-pink-700' },
-                      { label: 'Following',  value: fmtNum(acct.followsCount),   className: 'bg-purple-50 text-purple-700' },
-                      { label: 'Posts',      value: fmtNum(acct.mediaCount),     className: 'bg-green-50 text-green-700' },
-                    ]}
-                    refreshingId={refreshingId}
-                    onRefresh={handleRefreshOne}
-                    onDelete={handleDelete}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Reddit */}
-          {redditAccounts.length > 0 && (
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <MessageSquare className="h-5 w-5 text-orange-500" />
-                <h2 className="text-base font-semibold">Reddit Accounts</h2>
-                <Badge variant="outline" className="border-orange-200 bg-orange-50 text-orange-600 text-xs">{redditAccounts.length}</Badge>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-                {redditAccounts.map(acct => (
-                  <AccountCard
-                    key={acct.id}
-                    acct={acct}
-                    platform="reddit"
-                    metrics={[
-                      { label: 'Total Karma',   value: fmtNum(acct.totalKarma),   className: 'bg-orange-50 text-orange-700' },
-                      { label: 'Post Karma',    value: fmtNum(acct.postKarma),    className: 'bg-red-50 text-red-700' },
-                      { label: 'Comment Karma', value: fmtNum(acct.commentKarma), className: 'bg-amber-50 text-amber-700' },
-                    ]}
-                    refreshingId={refreshingId}
-                    onRefresh={handleRefreshOne}
-                    onDelete={handleDelete}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
         </div>
+      ) : (
+        sections.map(section => (
+          <section key={section.key} className="flex flex-col gap-3">
+            <SectionHeader
+              title={
+                <span className="flex items-center gap-2">
+                  <PlatformIcon platform={section.key} className="size-4 text-ink-muted" />
+                  {section.title}
+                  <Badge variant="secondary">{groups[section.key].length}</Badge>
+                </span>
+              }
+            />
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {groups[section.key].map(acct => (
+                <AccountCard
+                  key={acct.id}
+                  acct={acct}
+                  platform={section.key}
+                  refreshing={refreshingId === acct.id}
+                  onRefresh={() => handleRefreshOne(acct.id)}
+                  onDelete={() => setPendingDelete(acct)}
+                />
+              ))}
+            </div>
+          </section>
+        ))
       )}
 
-      {/* Add Account Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) closeDialog(); }}>
-        <DialogContent className="sm:max-w-md">
+      <Dialog open={dialogOpen} onOpenChange={open => { if (!open) closeDialog(); }}>
+        <DialogContent className="sm:max-w-xl">
           <DialogHeader>
-            <DialogTitle>Add Account</DialogTitle>
-            <DialogDescription>Connect a YouTube channel or Instagram account.</DialogDescription>
+            <DialogTitle>{platform ? PLATFORM_CHOICES.find(c => c.value === platform).title : 'Add an account'}</DialogTitle>
+            <DialogDescription>
+              {platform ? 'Fill in the details, review, then add.' : 'Choose the platform you want to track.'}
+            </DialogDescription>
           </DialogHeader>
 
-          <Tabs value={dialogTab} onValueChange={setDialogTab}>
-            <TabsList className="w-full">
-              <TabsTrigger value="youtube" className="flex-1 gap-1.5">
-                <Tv className="h-3.5 w-3.5" /> YouTube
-              </TabsTrigger>
-              <TabsTrigger value="instagram" className="flex-1 gap-1.5">
-                <Camera className="h-3.5 w-3.5" /> Instagram
-              </TabsTrigger>
-              <TabsTrigger value="reddit" className="flex-1 gap-1.5">
-                <MessageSquare className="h-3.5 w-3.5" /> Reddit
-              </TabsTrigger>
-            </TabsList>
+          {!platform && (
+            <div role="radiogroup" aria-label="Platform" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {PLATFORM_CHOICES.map(choice => (
+                <ChoiceCard
+                  key={choice.value}
+                  icon={choice.icon}
+                  title={PLATFORM_META[choice.value].label}
+                  description={choice.description}
+                  selected={false}
+                  onSelect={() => setPlatform(choice.value)}
+                />
+              ))}
+            </div>
+          )}
 
-            <TabsContent value="youtube" className="space-y-4 mt-4">
-              <p className="text-sm text-muted-foreground">
-                Enter a YouTube channel URL, @handle, or channel ID.
-              </p>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    className="pl-9"
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    placeholder="@MrBeast, https://youtube.com/@MrBeast, UCX6..."
-                    onKeyDown={e => e.key === 'Enter' && handleResolve()}
-                  />
+          {platform === 'youtube' && (
+            <div className="flex flex-col gap-4">
+              <FieldRow label="Channel" hint="A channel URL, an @handle or a channel ID that starts with UC." htmlFor="yt-channel">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Link2 className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-faint" />
+                    <Input
+                      id="yt-channel"
+                      className="h-(--control-h-lg) pl-9"
+                      value={input}
+                      onChange={e => { setInput(e.target.value); setResolved(null); }}
+                      placeholder="youtube.com/@channel"
+                      onKeyDown={e => e.key === 'Enter' && handleResolve()}
+                      autoFocus
+                    />
+                  </div>
+                  <Button variant="outline" size="lg" onClick={handleResolve} disabled={resolving || !input.trim()}>
+                    {resolving ? <Spinner className="size-4" /> : <Search data-icon="inline-start" />}
+                    Find
+                  </Button>
                 </div>
-                <Button onClick={handleResolve} disabled={resolving || !input.trim()} className="gap-1.5">
-                  {resolving ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                </Button>
-              </div>
+              </FieldRow>
 
               {resolved && (
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-green-50 border border-green-200">
-                  <Avatar className="h-10 w-10">
-                    <AvatarImage src={resolved.thumbnails?.medium || resolved.thumbnails?.default} />
-                    <AvatarFallback className="bg-green-200 text-green-700 text-xs font-bold">
-                      {(resolved.title || 'YT').slice(0, 2).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-sm font-semibold truncate">{resolved.title}</p>
-                      <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
-                    </div>
-                    <p className="text-xs text-muted-foreground">{resolved.customUrl}</p>
+                <div className="flex items-center gap-3 rounded-card border border-success/30 bg-success-soft p-3">
+                  <AccountAvatar account={{ platform: 'youtube', title: resolved.title, thumbnail: resolved.thumbnails?.medium || resolved.thumbnails?.default }} size="lg" />
+                  <div className="min-w-0 flex-1">
+                    <p className="flex items-center gap-1.5 text-sm font-semibold text-ink">
+                      <span className="truncate">{resolved.title}</span>
+                      <CheckCircle2 className="size-4 shrink-0 text-success" aria-label="Channel found" />
+                    </p>
+                    <p className="text-caption text-ink-muted">{resolved.customUrl}</p>
                     {resolved.subscriberCount != null && (
-                      <div className="flex gap-1.5 mt-1">
-                        <Badge variant="secondary" className="text-xs h-5">{fmtNum(resolved.subscriberCount)} subs</Badge>
-                        <Badge variant="secondary" className="text-xs h-5">{fmtNum(resolved.videoCount)} videos</Badge>
-                      </div>
+                      <p className="mt-0.5 text-caption text-ink-muted">
+                        {fmtNum(resolved.subscriberCount)} subscribers, {fmtNum(resolved.videoCount)} videos
+                      </p>
                     )}
                   </div>
                 </div>
               )}
-            </TabsContent>
+            </div>
+          )}
 
-            <TabsContent value="instagram" className="space-y-4 mt-4">
-              <p className="text-sm text-muted-foreground">
-                You'll be taken to Instagram to log in and grant access. After approval, you'll be redirected back automatically.
+          {platform === 'instagram' && (
+            <div className="flex flex-col gap-4">
+              <p className="text-sm text-ink-muted">
+                We open Instagram so you can sign in and approve access. When you finish, Instagram sends you back here and the account appears in the list.
               </p>
-              <Button
-                onClick={handleConnectInstagram}
-                disabled={connecting}
-                className="w-full gap-2 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-600 hover:to-purple-700 text-white border-0"
-              >
-                {connecting
-                  ? <RefreshCw className="h-4 w-4 animate-spin" />
-                  : <ExternalLink className="h-4 w-4" />}
-                {connecting ? 'Opening Instagram...' : 'Connect with Instagram'}
-              </Button>
-              <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription className="text-xs">
-                  Your account must be a <strong>Business</strong> or <strong>Creator</strong> professional account. Personal accounts are not supported by the Instagram API.
+              <Alert variant="info">
+                <Info />
+                <AlertDescription>
+                  The account must be an Instagram Business or Creator account. Personal accounts cannot be connected through the Instagram API.
                 </AlertDescription>
               </Alert>
-            </TabsContent>
+            </div>
+          )}
 
-            <TabsContent value="reddit" className="space-y-4 mt-4">
-              <p className="text-sm text-muted-foreground">
-                A session cookie is required to fetch Reddit analytics from the server.
-              </p>
-              <div className="space-y-3">
+          {platform === 'reddit' && (
+            <div className="flex flex-col gap-4">
+              <FieldRow label="Username" htmlFor="reddit-user">
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">u/</span>
+                  <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm font-medium text-ink-faint">u/</span>
                   <Input
-                    className="pl-8"
+                    id="reddit-user"
+                    className="h-(--control-h-lg) pl-8"
                     value={redditUsername}
                     onChange={e => setRedditUsername(e.target.value)}
-                    placeholder="your_username"
+                    placeholder="username"
                     onKeyDown={e => e.key === 'Enter' && handleAddReddit()}
+                    autoFocus
                   />
                 </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium">Session cookie</label>
-                  <Input
-                    type="password"
-                    value={redditCookie}
-                    onChange={e => setRedditCookie(e.target.value)}
-                    placeholder="reddit_session value"
-                    onKeyDown={e => e.key === 'Enter' && handleAddReddit()}
-                  />
-                </div>
-              </div>
+              </FieldRow>
+              <FieldRow label="Session cookie" hint="We store it on the server and never show it again." htmlFor="reddit-cookie">
+                <Input
+                  id="reddit-cookie"
+                  type="password"
+                  className="h-(--control-h-lg) font-mono"
+                  value={redditCookie}
+                  onChange={e => setRedditCookie(e.target.value)}
+                  placeholder="reddit_session value"
+                  onKeyDown={e => e.key === 'Enter' && handleAddReddit()}
+                />
+              </FieldRow>
               <Alert>
-                <Info className="h-4 w-4" />
-                <AlertDescription className="text-xs">
-                  Log in to reddit.com in your browser. Open DevTools (F12), go to <strong>Application &gt; Cookies &gt; https://www.reddit.com</strong>, find the cookie named <strong>reddit_session</strong>, and copy its value.
+                <Info />
+                <AlertDescription>
+                  Sign in to reddit.com in your browser, open DevTools (F12), go to Application, then Cookies, then https://www.reddit.com, and copy the value of <strong className="font-semibold text-ink">reddit_session</strong>.
                 </AlertDescription>
               </Alert>
-            </TabsContent>
-          </Tabs>
+            </div>
+          )}
 
           <DialogFooter>
-            <Button variant="ghost" onClick={closeDialog}>Cancel</Button>
-            {dialogTab === 'youtube' && (
-              <Button onClick={handleAdd} disabled={!input.trim() || adding} className="gap-1.5">
-                {adding && <RefreshCw className="h-3.5 w-3.5 animate-spin" />}
-                Add Channel
+            {platform ? (
+              <Button variant="ghost" onClick={() => { setPlatform(null); setResolved(null); }} className="sm:mr-auto">
+                <ArrowLeft data-icon="inline-start" />
+                Back
+              </Button>
+            ) : null}
+            <Button variant="outline" onClick={closeDialog}>Cancel</Button>
+            {platform === 'youtube' && (
+              <Button onClick={handleAdd} disabled={!input.trim() || adding}>
+                {adding && <Spinner className="size-4" />}
+                {adding ? 'Adding channel' : 'Add channel'}
               </Button>
             )}
-            {dialogTab === 'reddit' && (
-              <Button onClick={handleAddReddit} disabled={!redditUsername.trim() || !redditCookie.trim() || addingReddit} className="gap-1.5">
-                {addingReddit && <RefreshCw className="h-3.5 w-3.5 animate-spin" />}
-                Add Reddit Account
+            {platform === 'instagram' && (
+              <Button onClick={handleConnectInstagram} disabled={connecting}>
+                {connecting ? <Spinner className="size-4" /> : <ExternalLink data-icon="inline-start" />}
+                {connecting ? 'Opening Instagram' : 'Continue to Instagram'}
+              </Button>
+            )}
+            {platform === 'reddit' && (
+              <Button onClick={handleAddReddit} disabled={!redditUsername.trim() || !redditCookie.trim() || addingReddit}>
+                {addingReddit && <Spinner className="size-4" />}
+                {addingReddit ? 'Adding account' : 'Add Reddit account'}
               </Button>
             )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!pendingDelete}
+        onOpenChange={open => { if (!open) setPendingDelete(null); }}
+        title={pendingDelete ? `Remove ${accountName(pendingDelete)}?` : 'Remove account?'}
+        description="Its cached analytics are deleted. Scheduled posts for this account are removed with it. You can add the account again later."
+        confirmLabel="Remove"
+        onConfirm={handleDelete}
+        busy={deleting}
+        hold
+      />
     </div>
   );
 }
 
-function AccountCard({ acct, platform, metrics, refreshingId, onRefresh, onDelete }) {
-  const isIG     = platform === 'instagram';
-  const isReddit = platform === 'reddit';
-  const initials = (acct.title || '?').slice(0, 2).toUpperCase();
-  const fallbackBg = isIG ? 'bg-pink-500' : isReddit ? 'bg-orange-500' : 'bg-red-500';
-  const subtitle = isIG
-    ? `@${acct.username || acct.igUsername || ''}`
-    : isReddit
-    ? `u/${acct.username || ''}`
-    : (acct.customUrl || '');
-
+function AccountCard({ acct, platform, refreshing, onRefresh, onDelete }) {
+  const metrics = METRICS[platform](acct);
   return (
-    <div className="border border-border rounded-xl p-4 bg-card hover:shadow-sm transition-shadow space-y-3">
+    <article className="flex flex-col gap-4 rounded-card border border-line bg-surface-raised p-4">
       <div className="flex items-center gap-3">
-        <Avatar className="h-11 w-11">
-          <AvatarImage src={acct.thumbnail || acct.profilePictureUrl || acct.thumbnails?.default} />
-          <AvatarFallback className={`text-xs font-bold text-white ${fallbackBg}`}>
-            {initials}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold truncate">{acct.title || acct.channelId}</p>
-          <p className="text-xs text-muted-foreground truncate">{subtitle}</p>
+        <AccountAvatar account={acct} size="lg" showPlatform />
+        <div className="min-w-0 flex-1">
+          <Link to={accountPath(acct)} className="block truncate text-sm font-semibold text-ink hover:underline">{accountName(acct)}</Link>
+          <p className="truncate text-caption text-ink-faint">{platform === 'reddit' ? `u/${acct.username || ''}` : accountHandle(acct)}</p>
         </div>
+        <Tooltip>
+          <TooltipTrigger render={<Button variant="ghost" size="icon-sm" render={<Link to={accountPath(acct)} aria-label={`Open analytics for ${accountName(acct)}`} />} />}>
+            <ArrowUpRight />
+          </TooltipTrigger>
+          <TooltipContent>Open analytics</TooltipContent>
+        </Tooltip>
       </div>
 
-      <div className="grid grid-cols-3 gap-1.5">
-        {metrics.map(m => (
-          <div key={m.label} className={cn('text-center p-2 rounded-lg', m.className, 'bg-opacity-60')}>
-            <p className="text-[0.6rem] uppercase tracking-wide font-medium opacity-70">{m.label}</p>
-            <p className="text-sm font-bold">{m.value}</p>
+      <dl className="grid grid-cols-3 divide-x divide-divider rounded-control bg-surface-sunken/60 py-2.5">
+        {metrics.map(([label, value]) => (
+          <div key={label} className="flex flex-col items-center gap-0.5 px-2 text-center">
+            <dt className="text-caption text-ink-faint">{label}</dt>
+            <dd className="font-heading text-base font-semibold text-ink tabular-nums">{fmtNum(value)}</dd>
           </div>
         ))}
-      </div>
+      </dl>
 
-      {isReddit && (
-        <div className="flex items-center gap-1.5 text-xs">
-          {acct.hasCookie ? (
-            <>
-              <Lock className="h-3 w-3 text-green-500" />
-              <span className="text-green-600">Session cookie stored</span>
-            </>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-ink-faint">
+        {platform === 'reddit' && (
+          acct.hasCookie ? (
+            <span className="flex items-center gap-1 text-success"><Lock className="size-3" />Session cookie stored</span>
           ) : (
-            <>
-              <Lock className="h-3 w-3 text-destructive" />
-              <span className="text-destructive">No cookie - re-add account</span>
-            </>
-          )}
-        </div>
-      )}
-      {acct.lastUpdated && (
-        <p className="text-xs text-muted-foreground">Updated {timeAgo(acct.lastUpdated)}</p>
-      )}
-
-      <div className="flex gap-2">
-        <Button
-          variant="outline"
-          size="sm"
-          className="flex-1 gap-1.5"
-          onClick={() => onRefresh(acct.id)}
-          disabled={refreshingId === acct.id}
-        >
-          <RefreshCw className={cn('h-3.5 w-3.5', refreshingId === acct.id && 'animate-spin')} />
-          {refreshingId === acct.id ? 'Refreshing...' : 'Refresh'}
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          className="text-destructive hover:text-destructive hover:bg-destructive/10 border-destructive/30"
-          onClick={() => onDelete(acct.id)}
-        >
-          <Trash2 className="h-3.5 w-3.5" />
-        </Button>
+            <span className="flex items-center gap-1 text-danger"><Lock className="size-3" />Error: no session cookie. Remove and add the account again.</span>
+          )
+        )}
+        {acct.lastUpdated && <span>Updated {timeAgo(acct.lastUpdated).toLowerCase()}</span>}
       </div>
-    </div>
+
+      <div className="mt-auto flex gap-2">
+        <Button variant="outline" size="sm" className="flex-1" onClick={onRefresh} disabled={refreshing}>
+          <RefreshCw data-icon="inline-start" className={cn(refreshing && 'animate-spin')} />
+          {refreshing ? 'Refreshing' : 'Refresh'}
+        </Button>
+        <Tooltip>
+          <TooltipTrigger render={<Button variant="ghost" size="icon-sm" onClick={onDelete} aria-label={`Remove ${accountName(acct)}`} className="text-ink-muted hover:bg-danger-soft hover:text-danger" />}>
+            <Trash2 />
+          </TooltipTrigger>
+          <TooltipContent>Remove account</TooltipContent>
+        </Tooltip>
+      </div>
+    </article>
   );
 }

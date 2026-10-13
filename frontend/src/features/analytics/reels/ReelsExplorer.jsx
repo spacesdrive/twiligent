@@ -1,44 +1,34 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { RefreshCw, Heart, MessageCircle, Eye, Clapperboard, Image, Film, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Progress } from '@/components/ui/progress';
-import {
-  Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue,
-} from '@/components/ui/select';
-import { Search, RefreshCw, Heart, MessageCircle, Camera, Eye, Clapperboard, Image, Film } from 'lucide-react';
-import { Empty, EmptyMedia, EmptyHeader, EmptyDescription } from '@/components/ui/empty';
-import StatCard from '../../../components/ui/StatCard';
-import MainCard from '../../../components/MainCard';
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import PageHeader from '@/components/PageHeader';
+import MetricBox from '@/components/MetricBox';
+import SurfaceBox from '@/components/SurfaceBox';
+import SearchField from '@/components/SearchField';
+import FilterChips from '@/components/FilterChips';
+import Pager from '@/components/Pager';
+import MediaCard, { MediaChip } from '@/components/MediaCard';
+import { EmptyState } from '@/components/StateViews';
+import { InstagramIcon } from '@/components/brand/platform-icons';
+import { LIKE_TIERS, filterByTier, matchesText, pageSlice } from '@/lib/library';
 import { useAppContext } from '../../../context/AppContext';
 import { api } from '../../../services/api';
 import { fmtNum, timeAgo } from '../../../utils/formatters';
 import { IG_CONTENT_TYPES, IG_CONTENT_TYPE_META, igContentTypeMeta, fmtIGViews } from '../../../utils/instagramContent';
+import { cn } from '@/lib/utils';
 
 const ITEMS_PER_PAGE = 24;
-
-const CONTENT_TYPE_FILTER = [
-  { label: 'All Types', value: 'all' },
-  ...IG_CONTENT_TYPES.map(type => ({ label: IG_CONTENT_TYPE_META[type].plural, value: type })),
-];
-
-const CONTENT_TYPE_ICONS = { reel: <Clapperboard />, post: <Image />, video: <Film /> };
-const CONTENT_TYPE_GRADIENTS = { reel: 'pink', post: 'orange', video: 'purple' };
-
-const PERFORMANCE_TIERS = [
-  { label: 'All Likes',        value: 'all' },
-  { label: 'Viral (>100K)',    value: 'viral',  min: 100000 },
-  { label: 'High (10K-100K)',  value: 'high',   min: 10000, max: 100000 },
-  { label: 'Medium (1K-10K)',  value: 'medium', min: 1000,  max: 10000 },
-  { label: 'Low (<1K)',        value: 'low',    max: 1000 },
-];
+const CONTENT_TYPE_ICONS = { reel: Clapperboard, post: Image, video: Film };
 
 const SORT_OPTIONS = [
-  { label: 'Most Viewed',     value: 'viewCount' },
-  { label: 'Most Liked',      value: 'likeCount' },
-  { label: 'Most Comments',   value: 'commentsCount' },
-  { label: 'Best Engagement', value: 'engagementRate' },
-  { label: 'Newest First',    value: 'timestamp' },
+  { value: 'viewCount',      label: 'Most viewed' },
+  { value: 'likeCount',      label: 'Most liked' },
+  { value: 'commentsCount',  label: 'Most comments' },
+  { value: 'engagementRate', label: 'Best engagement' },
+  { value: 'timestamp',      label: 'Newest first' },
 ];
 
 function sortValue(item, field) {
@@ -48,45 +38,42 @@ function sortValue(item, field) {
 
 export default function ReelsExplorer() {
   const { accounts, showToast } = useAppContext();
-  const [media,             setMedia]             = useState([]);
-  const [loading,           setLoading]           = useState(true);
-  const [search,            setSearch]            = useState('');
-  const [accountFilter,     setAccountFilter]     = useState('all');
-  const [contentTypeFilter, setContentTypeFilter] = useState('all');
-  const [performanceTier,   setPerformanceTier]   = useState('all');
-  const [sortField,         setSortField]         = useState('viewCount');
-  const [page,              setPage]              = useState(1);
-  const [igAccounts,        setIgAccounts]        = useState([]);
+  const igAccounts = useMemo(() => accounts.filter(a => a.platform === 'instagram'), [accounts]);
+  const [media, setMedia] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [accountFilter, setAccountFilter] = useState('all');
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [tier, setTier] = useState('all');
+  const [sortField, setSortField] = useState('viewCount');
+  const [page, setPage] = useState(1);
 
-  useEffect(() => { loadAllMedia(); }, [accounts]);
-
-  const loadAllMedia = async () => {
+  const loadAllMedia = useCallback(async () => {
     setLoading(true);
     try {
+      const results = await Promise.allSettled(igAccounts.map(acct => api.getIGMedia(acct.id)));
       const all = [];
-      const accList = [];
-      for (const acct of (accounts || [])) {
-        if (acct.platform !== 'instagram') continue;
-        try {
-          const res = await api.getIGMedia(acct.id);
-          const items = res.media || [];
-          accList.push({ value: acct.id, label: acct.title || acct.username || 'Unknown' });
-          all.push(...items.map(m => ({
+      results.forEach((result, i) => {
+        if (result.status !== 'fulfilled') return;
+        const acct = igAccounts[i];
+        for (const m of result.value.media || []) {
+          all.push({
             ...m,
-            accountTitle: acct.title || acct.username || 'Unknown',
+            accountTitle: acct.title || acct.username || 'Unknown account',
             accountId: acct.id,
             engagementRate: m.viewCount > 0 ? ((m.likeCount || 0) + (m.commentsCount || 0)) / m.viewCount * 100 : null,
-          })));
-        } catch (e) { console.warn('Failed to load media for', acct.id, e.message); }
-      }
+          });
+        }
+      });
       setMedia(all);
-      setIgAccounts(accList);
     } catch (err) {
-      showToast('Failed to load content: ' + err.message, 'error');
+      showToast(`Couldn't load Instagram content. ${err.message}`, 'error');
     } finally {
       setLoading(false);
     }
-  };
+  }, [igAccounts, showToast]);
+
+  useEffect(() => { loadAllMedia(); }, [loadAllMedia]);
 
   const accountMedia = useMemo(
     () => accountFilter === 'all' ? media : media.filter(m => m.accountId === accountFilter),
@@ -110,161 +97,154 @@ export default function ReelsExplorer() {
   const viewsReported = IG_CONTENT_TYPES.reduce((s, t) => s + typeTotals[t].viewsReported, 0);
 
   const filtered = useMemo(() => {
-    let result = [...accountMedia];
-    if (contentTypeFilter !== 'all') result = result.filter(m => m.contentType === contentTypeFilter);
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      result = result.filter(m => m.caption?.toLowerCase().includes(q));
-    }
-    if (performanceTier !== 'all') {
-      const tier = PERFORMANCE_TIERS.find(t => t.value === performanceTier);
-      if (tier?.min != null) result = result.filter(m => (m.likeCount || 0) >= tier.min);
-      if (tier?.max != null) result = result.filter(m => (m.likeCount || 0) < tier.max);
-    }
-    result.sort((a, b) => sortValue(b, sortField) - sortValue(a, sortField));
-    return result;
-  }, [accountMedia, contentTypeFilter, search, performanceTier, sortField]);
+    let result = typeFilter === 'all' ? accountMedia : accountMedia.filter(m => m.contentType === typeFilter);
+    result = result.filter(m => matchesText([m.caption], search));
+    result = filterByTier(result, LIKE_TIERS, tier, 'likeCount');
+    return [...result].sort((a, b) => sortValue(b, sortField) - sortValue(a, sortField));
+  }, [accountMedia, typeFilter, search, tier, sortField]);
 
-  const pageCount = Math.ceil(filtered.length / ITEMS_PER_PAGE);
-  const paged     = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+  const paged = pageSlice(filtered, page, ITEMS_PER_PAGE);
+  const resetPage = setter => value => { setter(value); setPage(1); };
+
+  const typeChips = [
+    { value: 'all', label: 'All types', count: accountMedia.length },
+    ...IG_CONTENT_TYPES.map(t => ({ value: t, label: IG_CONTENT_TYPE_META[t].plural, icon: CONTENT_TYPE_ICONS[t], count: typeTotals[t].count })),
+  ];
+
+  const header = (
+    <PageHeader
+      title="Instagram content"
+      description={loading ? 'Loading content from your accounts' : `${fmtNum(media.length)} item${media.length === 1 ? '' : 's'} across ${igAccounts.length} account${igAccounts.length === 1 ? '' : 's'}`}
+      actions={
+        <Button variant="outline" size="sm" onClick={loadAllMedia} disabled={loading}>
+          <RefreshCw data-icon="inline-start" className={cn(loading && 'animate-spin')} />
+          Refresh
+        </Button>
+      }
+    />
+  );
+
+  if (igAccounts.length === 0) {
+    return (
+      <div className="flex flex-col gap-6">
+        {header}
+        <SurfaceBox>
+          <EmptyState
+            icon={<InstagramIcon />}
+            title="No Instagram accounts yet"
+            description="Connect a Business or Creator account to browse its reels, posts and videos."
+            action={<Button render={<Link to="/accounts?add=1" />}><Plus data-icon="inline-start" />Add an account</Button>}
+          />
+        </SurfaceBox>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
-      <div className="space-y-4">
-        <Skeleton className="h-8 w-48 mb-2" />
-        <Progress className="h-1" />
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {[...Array(8)].map((_, i) => <Skeleton key={i} className="aspect-square rounded-xl" />)}
+      <div className="flex flex-col gap-6">
+        {header}
+        <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-card" />)}
+        </div>
+        <Skeleton className="h-10 rounded-field" />
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
+          {Array.from({ length: 10 }).map((_, i) => <Skeleton key={i} className="aspect-square rounded-card" />)}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">IG Content Explorer</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {media.length} item{media.length !== 1 ? 's' : ''} across {igAccounts.length} account{igAccounts.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-        <Button variant="outline" size="sm" onClick={loadAllMedia} className="gap-2">
-          <RefreshCw data-icon="inline-start" /> Refresh
-        </Button>
-      </div>
+    <div className="flex flex-col gap-6">
+      {header}
 
-      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
-        <StatCard
-          icon={<Eye />}
-          label="Total Views"
-          value={fmtNum(totalViews)}
-          subtitle={`${viewsReported} of ${accountMedia.length} items report views`}
-          gradient="blue"
-          small
-        />
-        {IG_CONTENT_TYPES.map(type => (
-          <StatCard
-            key={type}
-            icon={CONTENT_TYPE_ICONS[type]}
-            label={IG_CONTENT_TYPE_META[type].plural}
-            value={fmtNum(typeTotals[type].count)}
-            subtitle={typeTotals[type].viewsReported > 0 ? `${fmtNum(typeTotals[type].views)} views` : 'no views reported'}
-            gradient={CONTENT_TYPE_GRADIENTS[type]}
-            small
-          />
-        ))}
-      </div>
-
-      <MainCard>
-        <div className="flex flex-wrap gap-3 items-center">
-          <div className="relative flex-1 min-w-48">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input className="pl-9" placeholder="Search captions..." value={search} onChange={e => { setSearch(e.target.value); setPage(1); }} />
-          </div>
-          {igAccounts.length > 1 && (
-            <Select value={accountFilter} onValueChange={v => { setAccountFilter(v); setPage(1); }} items={[{ value: 'all', label: 'All Accounts' }, ...igAccounts]}>
-              <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="all">All Accounts</SelectItem>
-                  {igAccounts.map(a => <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>)}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          )}
-          <Select value={contentTypeFilter} onValueChange={v => { setContentTypeFilter(v); setPage(1); }} items={CONTENT_TYPE_FILTER}>
-            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-            <SelectContent><SelectGroup>{CONTENT_TYPE_FILTER.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectGroup></SelectContent>
-          </Select>
-          <Select value={performanceTier} onValueChange={v => { setPerformanceTier(v); setPage(1); }} items={PERFORMANCE_TIERS}>
-            <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
-            <SelectContent><SelectGroup>{PERFORMANCE_TIERS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}</SelectGroup></SelectContent>
-          </Select>
-          <Select value={sortField} onValueChange={setSortField} items={SORT_OPTIONS}>
-            <SelectTrigger className="w-44"><SelectValue /></SelectTrigger>
-            <SelectContent><SelectGroup>{SORT_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}</SelectGroup></SelectContent>
-          </Select>
-        </div>
-        <p className="text-xs text-muted-foreground mt-2">Showing {paged.length} of {filtered.length} items</p>
-      </MainCard>
-
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5 gap-3">
-        {paged.map((m, i) => {
-          const meta = igContentTypeMeta(m.contentType);
-          const thumb = m.contentType === 'post' ? (m.thumbnailUrl || m.mediaUrl) : m.thumbnailUrl;
+      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <MetricBox small icon={<Eye />} label="Views" value={fmtNum(totalViews)} subtitle={`${viewsReported} of ${accountMedia.length} items report views`} highlight />
+        {IG_CONTENT_TYPES.map(type => {
+          const Icon = CONTENT_TYPE_ICONS[type];
           return (
-            <div
-              key={`${m.id}-${i}`}
-              className="border border-border rounded-xl overflow-hidden cursor-pointer hover:shadow-md transition-shadow bg-card group"
-              onClick={() => m.permalink && window.open(m.permalink, '_blank', 'noopener')}
-            >
-              <div className="relative aspect-square">
-                {thumb
-                  ? <img src={thumb} className="w-full h-full object-cover" alt="" />
-                  : <div className="w-full h-full bg-gradient-to-br from-pink-500 to-purple-600 flex items-center justify-center"><Camera className="h-8 w-8 text-white" /></div>}
-                <span className="absolute top-1.5 left-1.5 text-white text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: meta.color }}>
-                  {meta.label}
-                </span>
-              </div>
-              <div className="p-2.5 space-y-1.5">
-                {m.caption && (
-                  <p className="text-[11px] leading-snug line-clamp-2 text-foreground/80">{m.caption}</p>
-                )}
-                <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
-                  <span className="flex items-center gap-0.5"><Eye className="h-3 w-3" />{fmtIGViews(m.viewCount)}</span>
-                  <span className="flex items-center gap-0.5"><Heart className="h-3 w-3 text-pink-500" />{fmtNum(m.likeCount)}</span>
-                  <span className="flex items-center gap-0.5"><MessageCircle className="h-3 w-3" />{fmtNum(m.commentsCount)}</span>
-                  <span className="ml-auto">{timeAgo(m.timestamp)}</span>
-                </div>
-              </div>
-            </div>
+            <MetricBox
+              key={type}
+              small
+              icon={<Icon />}
+              label={IG_CONTENT_TYPE_META[type].plural}
+              value={fmtNum(typeTotals[type].count)}
+              subtitle={typeTotals[type].viewsReported > 0 ? `${fmtNum(typeTotals[type].views)} views` : 'No views reported'}
+            />
           );
         })}
       </div>
 
-      {filtered.length === 0 && !loading && (
-        <MainCard>
-          <Empty>
-            <EmptyMedia><Camera className="size-10 text-muted-foreground/40" /></EmptyMedia>
-            <EmptyHeader>
-              <EmptyDescription>
-                {accounts?.filter(a => a.platform === 'instagram').length === 0
-                  ? 'Add an Instagram account to explore content'
-                  : 'No content matches your filters'}
-              </EmptyDescription>
-            </EmptyHeader>
-          </Empty>
-        </MainCard>
-      )}
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <SearchField value={search} onChange={resetPage(setSearch)} placeholder="Search captions" className="min-w-56 flex-1" />
+          {igAccounts.length > 1 && (
+            <Select
+              value={accountFilter}
+              onValueChange={resetPage(setAccountFilter)}
+              items={[{ value: 'all', label: 'All accounts' }, ...igAccounts.map(a => ({ value: a.id, label: a.title || a.username }))]}
+            >
+              <SelectTrigger className="w-44" aria-label="Account"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="all">All accounts</SelectItem>
+                  {igAccounts.map(a => <SelectItem key={a.id} value={a.id}>{a.title || a.username}</SelectItem>)}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          )}
+          <Select value={tier} onValueChange={resetPage(setTier)} items={LIKE_TIERS}>
+            <SelectTrigger className="w-36" aria-label="Likes"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {LIKE_TIERS.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+          <Select value={sortField} onValueChange={setSortField} items={SORT_OPTIONS}>
+            <SelectTrigger className="w-44" aria-label="Sort"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                {SORT_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+        <FilterChips label="Content type" options={typeChips} value={typeFilter} onChange={resetPage(setTypeFilter)} />
+      </div>
 
-      {pageCount > 1 && (
-        <div className="flex items-center justify-center gap-2">
-          <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Previous</Button>
-          <span className="text-sm text-muted-foreground px-2">Page {page} of {pageCount}</span>
-          <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(pageCount, p + 1))} disabled={page === pageCount}>Next</Button>
+      {filtered.length === 0 ? (
+        <SurfaceBox>
+          <EmptyState compact icon={<InstagramIcon />} title="No content matches" description="Clear the search or choose a different type or like range." />
+        </SurfaceBox>
+      ) : (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-5">
+          {paged.items.map((m, i) => {
+            const meta = igContentTypeMeta(m.contentType);
+            return (
+              <MediaCard
+                key={`${m.id}-${i}`}
+                aspect="square"
+                href={m.permalink}
+                image={m.contentType === 'post' ? (m.thumbnailUrl || m.mediaUrl) : m.thumbnailUrl}
+                title={m.caption}
+                topLeft={<MediaChip>{meta.label}</MediaChip>}
+                meta={
+                  <>
+                    <span className="flex items-center gap-1"><Eye />{fmtIGViews(m.viewCount)}</span>
+                    <span className="flex items-center gap-1"><Heart />{fmtNum(m.likeCount)}</span>
+                    <span className="flex items-center gap-1"><MessageCircle />{fmtNum(m.commentsCount)}</span>
+                    <span className="ml-auto">{timeAgo(m.timestamp)}</span>
+                  </>
+                }
+              />
+            );
+          })}
         </div>
       )}
+
+      <Pager page={paged.page} pageCount={paged.pageCount} onPageChange={setPage} total={filtered.length} shown={paged.items.length} noun="items" />
     </div>
   );
 }

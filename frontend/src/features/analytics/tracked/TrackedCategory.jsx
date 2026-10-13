@@ -1,36 +1,49 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { CirclePlay, ExternalLink, Eye, ThumbsUp, MessageSquare, Tag, TrendingUp, MessagesSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Empty, EmptyHeader, EmptyMedia, EmptyTitle, EmptyDescription, EmptyContent,
-} from '@/components/ui/empty';
-import StatCard from '../../../components/ui/StatCard';
-import MainCard from '../../../components/MainCard';
-import MetricAreaChart from '../../../components/MetricAreaChart';
-import ImageLightbox from '../../../components/ImageLightbox';
+import PageHeader from '@/components/PageHeader';
+import MetricBox from '@/components/MetricBox';
+import SurfaceBox from '@/components/SurfaceBox';
+import SectionHeader from '@/components/SectionHeader';
+import MetricAreaChart from '@/components/MetricAreaChart';
+import ImageLightbox from '@/components/ImageLightbox';
+import { RankNumber } from '@/components/ListRow';
+import { EmptyState, PageSkeleton } from '@/components/StateViews';
+import { PlatformIcon } from '@/components/platform';
+import { PLATFORM_META } from '@/lib/accounts';
 import { useAppContext } from '../../../context/AppContext';
 import { api } from '../../../services/api';
 import { fmtNum, fmtNumFull, fmtDate } from '../../../utils/formatters';
-import { trackedViews, hasTrackedViews } from '../../../utils/trackedContent';
-import {
-  ArrowLeft, CirclePlay, Flame, ExternalLink, Eye,
-  ThumbsUp, MessageSquare, Tag, TrendingUp,
-} from 'lucide-react';
+import { trackedViews, hasTrackedViews, isRedditItem } from '../../../utils/trackedContent';
 
 // fmtNum abbreviates only at 1000 and above, so the full value is redundant below that
 function showsFullValue(n) {
   return Math.abs(Number(n) || 0) >= 1000;
 }
 
+function NumberCell({ value }) {
+  return (
+    <TableCell className="text-right">
+      <p className="font-semibold text-ink">{fmtNum(value ?? 0)}</p>
+      {showsFullValue(value) && <p className="text-caption text-ink-faint">{fmtNumFull(value)}</p>}
+    </TableCell>
+  );
+}
+
+function OpenLink({ href, label }) {
+  return (
+    <Button variant="ghost" size="icon-xs" render={<a href={href} target="_blank" rel="noopener noreferrer" aria-label={label} />}>
+      <ExternalLink />
+    </Button>
+  );
+}
+
 export default function TrackedCategory() {
   const { name } = useParams();
-  const navigate = useNavigate();
   const { showToast } = useAppContext();
-
   const categoryName = decodeURIComponent(name || '');
 
   const [items, setItems] = useState([]);
@@ -38,29 +51,23 @@ export default function TrackedCategory() {
 
   useEffect(() => {
     api.getTrackedContent()
-      .then(data => {
-        const all = Array.isArray(data) ? data : [];
-        setItems(all.filter(p => p.category === categoryName));
-      })
-      .catch(err => showToast(err.message, 'error'))
+      .then(data => setItems((Array.isArray(data) ? data : []).filter(p => p.category === categoryName)))
+      .catch(err => showToast(`Couldn't load this category. ${err.message}`, 'error'))
       .finally(() => setLoading(false));
   }, [categoryName, showToast]);
 
   const ytItems = useMemo(() => items.filter(p => p.contentType === 'youtube'), [items]);
-  const rdItems = useMemo(() => items.filter(p => (p.contentType || 'reddit') === 'reddit'), [items]);
+  const rdItems = useMemo(() => items.filter(isRedditItem), [items]);
 
   const ytStats = useMemo(() => {
-    const count    = ytItems.length;
-    const views    = ytItems.reduce((s, p) => s + trackedViews(p), 0);
-    const likes    = ytItems.reduce((s, p) => s + (p.likeCount    ?? 0), 0);
+    const count = ytItems.length;
+    const views = ytItems.reduce((s, p) => s + trackedViews(p), 0);
+    const likes = ytItems.reduce((s, p) => s + (p.likeCount ?? 0), 0);
     const comments = ytItems.reduce((s, p) => s + (p.commentCount ?? 0), 0);
     return {
-      count,
-      views,
-      likes,
-      comments,
-      avgViews:    count ? Math.round(views / count)    : 0,
-      avgLikes:    count ? Math.round(likes / count)    : 0,
+      count, views, likes, comments,
+      avgViews: count ? Math.round(views / count) : 0,
+      avgLikes: count ? Math.round(likes / count) : 0,
       avgComments: count ? Math.round(comments / count) : 0,
       likeRatio: views > 0 ? ((likes / views) * 100).toFixed(2) : '0',
     };
@@ -68,458 +75,194 @@ export default function TrackedCategory() {
 
   // Reddit post score is karma, so it is named and labelled as karma throughout
   const rdStats = useMemo(() => {
-    const count    = rdItems.length;
-    const karma    = rdItems.reduce((s, p) => s + (p.score       ?? 0), 0);
+    const count = rdItems.length;
+    const karma = rdItems.reduce((s, p) => s + (p.score ?? 0), 0);
     const comments = rdItems.reduce((s, p) => s + (p.numComments ?? 0), 0);
     const ratioSum = rdItems.reduce((s, p) => s + (p.upvoteRatio ?? 0), 0);
-    const views    = rdItems.reduce((s, p) => s + trackedViews(p), 0);
-    const withViews = rdItems.filter(hasTrackedViews).length;
+    const views = rdItems.reduce((s, p) => s + trackedViews(p), 0);
     return {
-      count,
-      karma,
-      comments,
-      views,
-      withViews,
-      avgKarma:    count ? Math.round(karma / count)    : 0,
+      count, karma, comments, views,
+      withViews: rdItems.filter(hasTrackedViews).length,
+      avgKarma: count ? Math.round(karma / count) : 0,
       avgComments: count ? Math.round(comments / count) : 0,
-      avgRatio:    count ? ratioSum / count             : 0,
+      avgRatio: count ? ratioSum / count : 0,
     };
   }, [rdItems]);
 
   const totalViews = ytStats.views + rdStats.views;
 
-  const ytChartData = useMemo(() =>
-    [...ytItems]
-      .sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0))
-      .slice(0, 12)
-      .map(p => ({
-        name:  (p.title || p.url || '').slice(0, 16),
-        views: p.viewCount ?? 0,
-      })),
-    [ytItems]
-  );
+  const ytSorted = useMemo(() => [...ytItems].sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0)), [ytItems]);
+  const rdSorted = useMemo(() => [...rdItems].sort((a, b) => (b.score ?? 0) - (a.score ?? 0)), [rdItems]);
+  const ytChartData = ytSorted.slice(0, 12).map(p => ({ name: (p.title || p.url || '').slice(0, 16), views: p.viewCount ?? 0 }));
+  const rdChartData = rdSorted.slice(0, 12).map(p => ({ name: (p.title || p.url || '').slice(0, 16), karma: p.score ?? 0 }));
 
-  const rdChartData = useMemo(() =>
-    [...rdItems]
-      .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
-      .slice(0, 12)
-      .map(p => ({
-        name:  (p.title || p.url || '').slice(0, 16),
-        karma: p.score ?? 0,
-      })),
-    [rdItems]
-  );
+  const back = { to: '/tracked-content', label: 'Tracked content' };
+  const split = (yt, rd) => [ytItems.length > 0 ? yt : null, rdItems.length > 0 ? rd : null].filter(Boolean).join(', ');
 
-  const medalColor = (i) =>
-    i === 0 ? 'text-yellow-500' : i === 1 ? 'text-slate-400' : i === 2 ? 'text-orange-400' : 'text-muted-foreground';
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <Skeleton className="h-9 w-9 rounded-md" />
-          <div className="space-y-1">
-            <Skeleton className="h-7 w-48" />
-            <Skeleton className="h-4 w-32" />
-          </div>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[0, 1, 2, 3].map(i => <Skeleton key={i} className="h-28" />)}
-        </div>
-        <Skeleton className="h-48" />
-        <Skeleton className="h-64" />
-      </div>
-    );
-  }
+  if (loading) return <PageSkeleton metrics={4} />;
 
   if (items.length === 0) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-3">
-          <Button variant="ghost" size="icon" className="shrink-0" onClick={() => navigate('/tracked-content')}>
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">{categoryName}</h1>
-            <p className="text-sm text-muted-foreground mt-0.5">No items in this category</p>
-          </div>
-        </div>
-        <MainCard>
-          <Empty className="py-8">
-            <EmptyHeader>
-              <EmptyMedia variant="icon">
-                <Tag />
-              </EmptyMedia>
-              <EmptyTitle>Nothing tracked in {categoryName}</EmptyTitle>
-              <EmptyDescription>
-                Assign this category to a Reddit post or YouTube video in Tracked Content and its analytics will appear here.
-              </EmptyDescription>
-            </EmptyHeader>
-            <EmptyContent>
-              <Button size="sm" onClick={() => navigate('/tracked-content')}>Manage Tracked Content</Button>
-            </EmptyContent>
-          </Empty>
-        </MainCard>
+      <div className="flex flex-col gap-6">
+        <PageHeader back={back} eyebrow="Category" title={categoryName} description="No items in this category" />
+        <SurfaceBox>
+          <EmptyState
+            icon={<Tag />}
+            title={`Nothing tracked in ${categoryName}`}
+            description="Assign this category to a Reddit post or YouTube video in Tracked content and its analytics appear here."
+            action={<Button size="sm" render={<Link to="/tracked-content" />}>Open tracked content</Button>}
+          />
+        </SurfaceBox>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start gap-3">
-        <Button variant="ghost" size="icon" className="shrink-0 mt-0.5" onClick={() => navigate('/tracked-content')}>
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-2xl font-bold tracking-tight">{categoryName}</h1>
-            <Badge variant="outline" className="text-xs border-purple-200 bg-purple-50 text-purple-700 dark:border-purple-900 dark:bg-purple-950 dark:text-purple-400">
-              <Tag className="h-3 w-3 mr-1" />
-              Category
-            </Badge>
-          </div>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            {items.length} item{items.length !== 1 ? 's' : ''}
-            {ytItems.length > 0 && ` · ${ytItems.length} YouTube`}
-            {rdItems.length > 0 && ` · ${rdItems.length} Reddit`}
-          </p>
-        </div>
-        <Button size="sm" variant="outline" onClick={() => navigate('/tracked-content')} className="shrink-0">
-          Manage Content
-        </Button>
+    <div className="flex flex-col gap-6">
+      <PageHeader
+        back={back}
+        eyebrow="Category"
+        title={categoryName}
+        description={[
+          `${items.length} item${items.length !== 1 ? 's' : ''}`,
+          ytItems.length > 0 ? `${ytItems.length} YouTube` : null,
+          rdItems.length > 0 ? `${rdItems.length} Reddit` : null,
+        ].filter(Boolean).join(', ')}
+        actions={<Button variant="outline" render={<Link to="/tracked-content" />}>Manage content</Button>}
+      />
+
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <MetricBox icon={<Tag />} label="Items" value={items.length} subtitle={split(`${ytItems.length} YouTube video${ytItems.length !== 1 ? 's' : ''}`, `${rdItems.length} Reddit post${rdItems.length !== 1 ? 's' : ''}`)} />
+        <MetricBox icon={<Eye />} label="Views" value={totalViews > 0 ? fmtNum(totalViews) : '-'} subtitle={totalViews > 0 ? split(`${fmtNum(ytStats.views)} YouTube`, `${fmtNum(rdStats.views)} Reddit`) : 'No views recorded yet'} highlight />
+        <MetricBox icon={<MessagesSquare />} label="Reddit karma" value={rdItems.length > 0 ? fmtNum(rdStats.karma) : '-'} subtitle={rdItems.length > 0 ? `${fmtNum(rdStats.avgKarma)} per post on average` : 'No Reddit posts in this category'} />
+        <MetricBox icon={<MessageSquare />} label="Comments" value={fmtNum(ytStats.comments + rdStats.comments)} subtitle={split(`${fmtNum(ytStats.comments)} YouTube`, `${fmtNum(rdStats.comments)} Reddit`)} />
       </div>
 
-      {/* Summary StatCards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          icon={<Tag />}
-          label="Total Content"
-          value={items.length}
-          subtitle={[
-            ytItems.length > 0 ? `${ytItems.length} YouTube video${ytItems.length !== 1 ? 's' : ''}` : null,
-            rdItems.length > 0 ? `${rdItems.length} Reddit post${rdItems.length !== 1 ? 's' : ''}`   : null,
-          ].filter(Boolean).join(' · ')}
-          gradient="purple"
-        />
-        <StatCard
-          icon={<Eye />}
-          label="Total Views"
-          value={totalViews > 0 ? fmtNum(totalViews) : '-'}
-          subtitle={
-            totalViews > 0
-              ? [
-                  ytItems.length > 0 ? `${fmtNum(ytStats.views)} YouTube` : null,
-                  rdItems.length > 0 ? `${fmtNum(rdStats.views)} Reddit`  : null,
-                ].filter(Boolean).join(' · ')
-              : 'no views recorded yet'
-          }
-          gradient="red"
-        />
-        <StatCard
-          icon={<Flame />}
-          label="Reddit Karma"
-          value={rdItems.length > 0 ? fmtNum(rdStats.karma) : '-'}
-          subtitle={rdItems.length > 0 ? `avg ${fmtNum(rdStats.avgKarma)} per post` : 'no Reddit posts in this category'}
-          gradient="orange"
-        />
-        <StatCard
-          icon={<MessageSquare />}
-          label="Total Comments"
-          value={fmtNum(ytStats.comments + rdStats.comments)}
-          subtitle={[
-            ytItems.length > 0 ? `${fmtNum(ytStats.comments)} YouTube` : null,
-            rdItems.length > 0 ? `${fmtNum(rdStats.comments)} Reddit`  : null,
-          ].filter(Boolean).join(' · ')}
-          gradient="blue"
-        />
-      </div>
-
-      {/* YouTube section */}
       {ytItems.length > 0 && (
-        <>
-          <div className="flex items-center gap-3 pt-2">
-            <CirclePlay className="h-5 w-5 text-red-500 shrink-0" />
-            <h2 className="text-base font-semibold">YouTube Videos</h2>
-            <Separator className="flex-1" />
-            <span className="text-sm text-muted-foreground shrink-0">
-              {ytItems.length} video{ytItems.length !== 1 ? 's' : ''}
-            </span>
+        <section className="flex flex-col gap-4">
+          <SectionHeader
+            className="mt-2"
+            title={<span className="flex items-center gap-2"><PlatformIcon platform="youtube" className="text-ink-muted" />YouTube videos</span>}
+            actions={<span className="text-small text-ink-faint">{ytItems.length} video{ytItems.length !== 1 ? 's' : ''}</span>}
+          />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <MetricBox small icon={<Eye />} label="Video views" value={fmtNum(ytStats.views)} subtitle={`${fmtNum(ytStats.avgViews)} per video on average`} />
+            <MetricBox small icon={<ThumbsUp />} label="Video likes" value={fmtNum(ytStats.likes)} subtitle={`${fmtNum(ytStats.avgLikes)} per video on average`} />
+            <MetricBox small icon={<MessageSquare />} label="Video comments" value={fmtNum(ytStats.comments)} subtitle={`${fmtNum(ytStats.avgComments)} per video on average`} />
+            <MetricBox small icon={<TrendingUp />} label="Likes per view" value={`${ytStats.likeRatio}%`} subtitle="Likes as a share of views" />
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard
-              icon={<Eye />}
-              label="Video Views"
-              value={fmtNum(ytStats.views)}
-              subtitle={`avg ${fmtNum(ytStats.avgViews)} per video`}
-              gradient="red"
-            />
-            <StatCard
-              icon={<ThumbsUp />}
-              label="Video Likes"
-              value={fmtNum(ytStats.likes)}
-              subtitle={`avg ${fmtNum(ytStats.avgLikes)} per video`}
-              gradient="orange"
-            />
-            <StatCard
-              icon={<MessageSquare />}
-              label="Video Comments"
-              value={fmtNum(ytStats.comments)}
-              subtitle={`avg ${fmtNum(ytStats.avgComments)} per video`}
-              gradient="blue"
-            />
-            <StatCard
-              icon={<TrendingUp />}
-              label="Like-to-View Ratio"
-              value={ytStats.likeRatio + '%'}
-              subtitle="likes as share of views"
-              gradient="purple"
-            />
-          </div>
-
           {ytChartData.length > 1 && (
-            <MainCard
-              title="Video Views"
-              subheader={`Top ${ytChartData.length} video${ytChartData.length !== 1 ? 's' : ''} in this category ranked by views`}
-            >
-              <MetricAreaChart
-                data={ytChartData}
-                dataKey="views"
-                label="Views"
-                color="#ef4444"
-                height={260}
-              />
-            </MainCard>
+            <SurfaceBox title="Video views" subheader={`Top ${ytChartData.length} videos in this category ranked by views`}>
+              <MetricAreaChart data={ytChartData} dataKey="views" label="Views" color={PLATFORM_META.youtube.series} height={260} />
+            </SurfaceBox>
           )}
-
-          <MainCard content={false}>
+          <SurfaceBox content={false} className="overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-8">#</TableHead>
+                  <TableHead className="w-10 text-right">#</TableHead>
                   <TableHead>Video</TableHead>
-                  <TableHead className="text-right w-32">Views</TableHead>
-                  <TableHead className="text-right w-24">Likes</TableHead>
-                  <TableHead className="text-right w-24">Comments</TableHead>
-                  <TableHead className="text-right w-28">Fetched</TableHead>
-                  <TableHead className="w-10" />
+                  <TableHead className="w-32 text-right">Views</TableHead>
+                  <TableHead className="w-24 text-right">Likes</TableHead>
+                  <TableHead className="w-24 text-right">Comments</TableHead>
+                  <TableHead className="w-28 text-right">Fetched</TableHead>
+                  <TableHead className="w-10"><span className="sr-only">Open</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {[...ytItems]
-                  .sort((a, b) => (b.viewCount ?? 0) - (a.viewCount ?? 0))
-                  .map((item, i) => (
-                    <TableRow key={item.id}>
-                      <TableCell>
-                        <span className={`text-xs font-bold tabular-nums ${medalColor(i)}`}>{i + 1}</span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-start gap-2.5">
-                          {item.thumbnail ? (
-                            <img
-                              src={item.thumbnail}
-                              alt=""
-                              className="h-10 w-16 rounded object-cover flex-shrink-0 mt-0.5"
-                            />
-                          ) : (
-                            <div className="h-10 w-16 rounded bg-red-500/10 flex items-center justify-center flex-shrink-0 mt-0.5">
-                              <CirclePlay className="h-4 w-4 text-red-500" />
-                            </div>
-                          )}
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium leading-snug line-clamp-2">
-                              {item.title || item.url}
-                            </p>
-                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                              {item.channelTitle && (
-                                <span className="text-xs text-muted-foreground">{item.channelTitle}</span>
-                              )}
-                              {item.isShort && (
-                                <Badge variant="outline" className="text-[10px] px-1.5 py-0">Short</Badge>
-                              )}
-                              {item.label && (
-                                <span className="text-xs text-muted-foreground italic">{item.label}</span>
-                              )}
-                            </div>
+                {ytSorted.map((item, i) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="text-right"><RankNumber rank={i + 1} className="w-auto" /></TableCell>
+                    <TableCell className="whitespace-normal">
+                      <div className="flex items-start gap-3">
+                        {item.thumbnail ? (
+                          <img src={item.thumbnail} alt="" loading="lazy" className="mt-0.5 h-10 w-16 shrink-0 rounded-sm object-cover" />
+                        ) : (
+                          <span className="mt-0.5 flex h-10 w-16 shrink-0 items-center justify-center rounded-sm bg-surface-sunken text-ink-faint"><CirclePlay className="size-4" /></span>
+                        )}
+                        <div className="min-w-0">
+                          <p className="line-clamp-2 text-sm font-medium leading-snug text-ink">{item.title || item.url}</p>
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                            {item.channelTitle && <span className="text-caption text-ink-faint">{item.channelTitle}</span>}
+                            {item.isShort && <Badge variant="outline">Short</Badge>}
+                            {item.label && <span className="text-caption text-ink-faint italic">{item.label}</span>}
                           </div>
                         </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <p className="text-sm font-bold tabular-nums">{fmtNum(item.viewCount ?? 0)}</p>
-                        {showsFullValue(item.viewCount) && (
-                          <p className="text-xs text-muted-foreground tabular-nums">{fmtNumFull(item.viewCount)}</p>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right text-sm font-semibold tabular-nums text-red-500">
-                        {fmtNum(item.likeCount ?? 0)}
-                      </TableCell>
-                      <TableCell className="text-right text-sm tabular-nums text-muted-foreground">
-                        {fmtNum(item.commentCount ?? 0)}
-                      </TableCell>
-                      <TableCell className="text-right text-xs text-muted-foreground">
-                        {item.lastFetchedAt ? fmtDate(item.lastFetchedAt) : '-'}
-                      </TableCell>
-                      <TableCell>
-                        <a href={item.url} target="_blank" rel="noopener noreferrer">
-                          <Button variant="ghost" size="icon" className="size-7">
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </Button>
-                        </a>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                      </div>
+                    </TableCell>
+                    <NumberCell value={item.viewCount} />
+                    <TableCell className="text-right text-ink-muted">{fmtNum(item.likeCount ?? 0)}</TableCell>
+                    <TableCell className="text-right text-ink-muted">{fmtNum(item.commentCount ?? 0)}</TableCell>
+                    <TableCell className="text-right text-small text-ink-faint">{item.lastFetchedAt ? fmtDate(item.lastFetchedAt) : '-'}</TableCell>
+                    <TableCell><OpenLink href={item.url} label={`Open "${item.title || 'video'}" on YouTube`} /></TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
-          </MainCard>
-        </>
+          </SurfaceBox>
+        </section>
       )}
 
-      {/* Reddit section */}
       {rdItems.length > 0 && (
-        <>
-          <div className="flex items-center gap-3 pt-2">
-            <Flame className="h-5 w-5 text-orange-500 shrink-0" />
-            <h2 className="text-base font-semibold">Reddit Posts</h2>
-            <Separator className="flex-1" />
-            <span className="text-sm text-muted-foreground shrink-0">
-              {rdItems.length} post{rdItems.length !== 1 ? 's' : ''}
-            </span>
+        <section className="flex flex-col gap-4">
+          <SectionHeader
+            className="mt-2"
+            title={<span className="flex items-center gap-2"><PlatformIcon platform="reddit" className="text-ink-muted" />Reddit posts</span>}
+            actions={<span className="text-small text-ink-faint">{rdItems.length} post{rdItems.length !== 1 ? 's' : ''}</span>}
+          />
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <MetricBox small icon={<MessagesSquare />} label="Post karma" value={fmtNum(rdStats.karma)} subtitle={`${fmtNum(rdStats.avgKarma)} per post on average`} />
+            <MetricBox small icon={<Eye />} label="Post views" value={rdStats.withViews > 0 ? fmtNum(rdStats.views) : '-'} subtitle={rdStats.withViews > 0 ? `Across ${rdItems.length} post${rdItems.length !== 1 ? 's' : ''}` : 'Reddit does not report views. Add them per post.'} />
+            <MetricBox small icon={<MessageSquare />} label="Post comments" value={fmtNum(rdStats.comments)} subtitle={`${fmtNum(rdStats.avgComments)} per post on average`} />
+            <MetricBox small icon={<TrendingUp />} label="Average upvote ratio" value={rdStats.avgRatio > 0 ? `${Math.round(rdStats.avgRatio * 100)}%` : '-'} subtitle="Upvotes as a share of all votes" />
           </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard
-              icon={<Flame />}
-              label="Post Karma"
-              value={fmtNum(rdStats.karma)}
-              subtitle={`avg ${fmtNum(rdStats.avgKarma)} per post`}
-              gradient="orange"
-            />
-            <StatCard
-              icon={<Eye />}
-              label="Post Views"
-              value={rdStats.withViews > 0 ? fmtNum(rdStats.views) : '-'}
-              subtitle={
-                rdStats.withViews > 0
-                  ? `across ${rdItems.length} post${rdItems.length !== 1 ? 's' : ''}`
-                  : 'Reddit does not report views - add them per post'
-              }
-              gradient="teal"
-            />
-            <StatCard
-              icon={<MessageSquare />}
-              label="Post Comments"
-              value={fmtNum(rdStats.comments)}
-              subtitle={`avg ${fmtNum(rdStats.avgComments)} per post`}
-              gradient="blue"
-            />
-            <StatCard
-              icon={<TrendingUp />}
-              label="Avg Upvote Ratio"
-              value={rdStats.avgRatio > 0 ? Math.round(rdStats.avgRatio * 100) + '%' : '-'}
-              subtitle="upvotes as share of total votes"
-              gradient="green"
-            />
-          </div>
-
           {rdChartData.length > 1 && (
-            <MainCard
-              title="Post Karma"
-              subheader={`Top ${rdChartData.length} post${rdChartData.length !== 1 ? 's' : ''} in this category ranked by karma`}
-            >
-              <MetricAreaChart
-                data={rdChartData}
-                dataKey="karma"
-                label="Karma"
-                color="#f97316"
-                height={260}
-              />
-            </MainCard>
+            <SurfaceBox title="Post karma" subheader={`Top ${rdChartData.length} posts in this category ranked by karma`}>
+              <MetricAreaChart data={rdChartData} dataKey="karma" label="Karma" color={PLATFORM_META.reddit.series} height={260} />
+            </SurfaceBox>
           )}
-
-          <MainCard content={false}>
+          <SurfaceBox content={false} className="overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-8">#</TableHead>
+                  <TableHead className="w-10 text-right">#</TableHead>
                   <TableHead>Post</TableHead>
-                  <TableHead className="text-right w-28">Karma</TableHead>
-                  <TableHead className="text-right w-24">Views</TableHead>
-                  <TableHead className="text-right w-20">Upvote %</TableHead>
-                  <TableHead className="text-right w-24">Comments</TableHead>
-                  <TableHead className="text-right w-28">Fetched</TableHead>
-                  <TableHead className="w-10" />
+                  <TableHead className="w-28 text-right">Karma</TableHead>
+                  <TableHead className="w-24 text-right">Views</TableHead>
+                  <TableHead className="w-20 text-right">Upvoted</TableHead>
+                  <TableHead className="w-24 text-right">Comments</TableHead>
+                  <TableHead className="w-28 text-right">Fetched</TableHead>
+                  <TableHead className="w-10"><span className="sr-only">Open</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {[...rdItems]
-                  .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
-                  .map((item, i) => (
-                    <TableRow key={item.id}>
-                      <TableCell>
-                        <span className={`text-xs font-bold tabular-nums ${medalColor(i)}`}>{i + 1}</span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-start gap-2.5">
-                          {item.imageUrl && (
-                            <ImageLightbox
-                              src={item.imageUrl}
-                              alt={item.title || 'Reddit post'}
-                              className="mt-0.5"
-                            />
-                          )}
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium leading-snug line-clamp-2">
-                              {item.title || item.url}
-                            </p>
-                            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                              {item.subredditPrefixed && (
-                                <span className="text-xs text-muted-foreground">{item.subredditPrefixed}</span>
-                              )}
-                              {item.label && (
-                                <span className="text-xs text-muted-foreground italic">{item.label}</span>
-                              )}
-                            </div>
+                {rdSorted.map((item, i) => (
+                  <TableRow key={item.id}>
+                    <TableCell className="text-right"><RankNumber rank={i + 1} className="w-auto" /></TableCell>
+                    <TableCell className="whitespace-normal">
+                      <div className="flex items-start gap-3">
+                        {item.imageUrl && <ImageLightbox src={item.imageUrl} alt={item.title || 'Reddit post'} className="mt-0.5" />}
+                        <div className="min-w-0">
+                          <p className="line-clamp-2 text-sm font-medium leading-snug text-ink">{item.title || item.url}</p>
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                            {item.subredditPrefixed && <span className="text-caption text-ink-faint">{item.subredditPrefixed}</span>}
+                            {item.label && <span className="text-caption text-ink-faint italic">{item.label}</span>}
                           </div>
                         </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <p className="text-sm font-bold tabular-nums text-orange-500">
-                          {fmtNum(item.score ?? 0)}
-                        </p>
-                        {showsFullValue(item.score) && (
-                          <p className="text-xs text-muted-foreground tabular-nums">{fmtNumFull(item.score)}</p>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-right text-sm tabular-nums">
-                        {hasTrackedViews(item)
-                          ? fmtNum(trackedViews(item))
-                          : <span className="text-muted-foreground">-</span>}
-                      </TableCell>
-                      <TableCell className="text-right text-sm tabular-nums text-muted-foreground">
-                        {(item.upvoteRatio != null && (item.score ?? 0) >= 10)
-                          ? Math.round(item.upvoteRatio * 100) + '%'
-                          : '-'}
-                      </TableCell>
-                      <TableCell className="text-right text-sm tabular-nums text-muted-foreground">
-                        {fmtNum(item.numComments ?? 0)}
-                      </TableCell>
-                      <TableCell className="text-right text-xs text-muted-foreground">
-                        {item.lastFetchedAt ? fmtDate(item.lastFetchedAt) : '-'}
-                      </TableCell>
-                      <TableCell>
-                        <a href={item.permalink || item.url} target="_blank" rel="noopener noreferrer">
-                          <Button variant="ghost" size="icon" className="size-7">
-                            <ExternalLink className="h-3.5 w-3.5" />
-                          </Button>
-                        </a>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                      </div>
+                    </TableCell>
+                    <NumberCell value={item.score} />
+                    <TableCell className="text-right text-ink-muted">{hasTrackedViews(item) ? fmtNum(trackedViews(item)) : '-'}</TableCell>
+                    <TableCell className="text-right text-ink-muted">{item.upvoteRatio != null && (item.score ?? 0) >= 10 ? `${Math.round(item.upvoteRatio * 100)}%` : '-'}</TableCell>
+                    <TableCell className="text-right text-ink-muted">{fmtNum(item.numComments ?? 0)}</TableCell>
+                    <TableCell className="text-right text-small text-ink-faint">{item.lastFetchedAt ? fmtDate(item.lastFetchedAt) : '-'}</TableCell>
+                    <TableCell><OpenLink href={item.permalink || item.url} label={`Open "${item.title || 'post'}" on Reddit`} /></TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
-          </MainCard>
-        </>
+          </SurfaceBox>
+        </section>
       )}
     </div>
   );

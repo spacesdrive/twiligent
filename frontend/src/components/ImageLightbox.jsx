@@ -21,9 +21,9 @@ export default function ImageLightbox({
             title="View image"
             aria-label={alt ? `View image for ${alt}` : 'View image'}
             className={cn(
-              'group relative shrink-0 overflow-hidden rounded border border-border bg-muted',
-              'cursor-zoom-in transition-opacity hover:opacity-80',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+              'group relative shrink-0 overflow-hidden rounded-sm border border-line bg-surface-sunken',
+              'cursor-zoom-in transition-opacity duration-(--duration-base) hover:opacity-85',
+              'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
               thumbClassName,
               className
             )}
@@ -33,12 +33,12 @@ export default function ImageLightbox({
         <img src={src} alt={alt} loading="lazy" className="h-full w-full object-cover" />
       </DialogTrigger>
 
-      <DialogContent className="sm:max-w-3xl p-2 gap-2">
+      <DialogContent className="gap-2 p-2 sm:max-w-3xl">
         <DialogTitle className="sr-only">{alt || 'Image preview'}</DialogTitle>
         <img
           src={src}
           alt={alt}
-          className="max-h-[75vh] w-full rounded-lg object-contain"
+          className="max-h-[75vh] w-full rounded-card object-contain"
         />
       </DialogContent>
     </Dialog>
