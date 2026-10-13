@@ -6,8 +6,21 @@ import { Spinner } from '@/components/ui/spinner';
 import { FieldRow } from '@/components/DetailPanel';
 import { AccountAvatar } from '@/components/platform';
 import { fmtNum } from '../../utils/formatters';
+import type { YouTubeChannelData } from '@shared/types/youtube.ts';
 
-function ResolvedChannel({ channel }) {
+interface ResolvedChannelProps {
+  channel: YouTubeChannelData;
+}
+
+export interface YouTubeAccountFieldsProps {
+  input: string;
+  onInputChange: (value: string) => void;
+  onResolve: () => void;
+  resolving: boolean;
+  resolved: YouTubeChannelData | null;
+}
+
+function ResolvedChannel({ channel }: ResolvedChannelProps) {
   return (
     <div className="flex items-center gap-3 rounded-card border border-success/30 bg-success-soft p-3">
       <AccountAvatar account={{ platform: 'youtube', title: channel.title, thumbnail: channel.thumbnails?.medium || channel.thumbnails?.default }} size="lg" />
@@ -27,7 +40,7 @@ function ResolvedChannel({ channel }) {
   );
 }
 
-export default function YouTubeAccountFields({ input, onInputChange, onResolve, resolving, resolved }) {
+export default function YouTubeAccountFields({ input, onInputChange, onResolve, resolving, resolved }: YouTubeAccountFieldsProps) {
   return (
     <div className="flex flex-col gap-4">
       <FieldRow label="Channel" hint="A channel URL, an @handle or a channel ID that starts with UC." htmlFor="yt-channel">

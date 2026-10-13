@@ -1,16 +1,23 @@
 import { useRef, useState } from 'react';
+import type { ChangeEvent } from 'react';
 import {
   applyCaptionToPending, newQueueItem, patchQueueItem, removeQueueItem, revokePreview,
 } from './queueHelpers.ts';
+import type { QueueItem, QueueItemPatch } from './queueHelpers.ts';
 
-export function useBulkQueue({ sharedCaption, onFirstFiles }) {
-  const [files, setFiles] = useState([]);
+export interface BulkQueueOptions {
+  sharedCaption: string;
+  onFirstFiles: () => void;
+}
+
+export function useBulkQueue({ sharedCaption, onFirstFiles }: BulkQueueOptions) {
+  const [files, setFiles] = useState<QueueItem[]>([]);
   const [processing, setProcessing] = useState(false);
-  const fileInputRef = useRef(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const idCounter = useRef(0);
   const cancelRef = useRef(false);
 
-  const handleFilesSelect = e => {
+  const handleFilesSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const picked = Array.from(e.target.files || []);
     if (!picked.length) return;
     const newItems = picked.map(file => newQueueItem(file, ++idCounter.current));
@@ -21,9 +28,9 @@ export function useBulkQueue({ sharedCaption, onFirstFiles }) {
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const removeFile = id => setFiles(prev => removeQueueItem(prev, id));
+  const removeFile = (id: number) => setFiles(prev => removeQueueItem(prev, id));
 
-  const patchFile = (id, patch) => setFiles(prev => patchQueueItem(prev, id, patch));
+  const patchFile = (id: number, patch: QueueItemPatch) => setFiles(prev => patchQueueItem(prev, id, patch));
 
   const applySharedCaption = () => {
     if (!sharedCaption) return;
@@ -42,3 +49,5 @@ export function useBulkQueue({ sharedCaption, onFirstFiles }) {
     handleFilesSelect, removeFile, patchFile, applySharedCaption, clearFiles,
   };
 }
+
+export type BulkQueue = ReturnType<typeof useBulkQueue>;

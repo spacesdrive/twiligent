@@ -4,10 +4,12 @@ import { Spinner } from '@/components/ui/spinner';
 import SurfaceBox from '@/components/SurfaceBox';
 import PublishResult from './PublishResult';
 import { progressHeading } from './queueHelpers.ts';
+import type { PublishStatus } from './queueHelpers.ts';
+import type { PublishResultProps } from './PublishResult';
 
-const WORKING_STATUSES = ['creating-container', 'publishing', 'scheduling', 'processing'];
+const WORKING_STATUSES: PublishStatus[] = ['creating-container', 'publishing', 'scheduling', 'processing'];
 
-export default function PublishProgress({ progress, ...resultProps }) {
+export default function PublishProgress({ progress, ...resultProps }: PublishResultProps) {
   const { publishStatus, statusMessage, uploadProgress } = progress;
   return (
     <SurfaceBox>

@@ -2,8 +2,14 @@ import { AlertCircle, Calendar, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import SurfaceBox from '@/components/SurfaceBox';
+import type { BulkStats } from './queueHelpers.ts';
 
-export default function BulkResults({ stats, processing }) {
+interface BulkResultsProps {
+  stats: BulkStats;
+  processing: boolean;
+}
+
+export default function BulkResults({ stats, processing }: BulkResultsProps) {
   const finished = stats.done + stats.scheduled + stats.errors;
   return (
     <SurfaceBox title={processing ? 'Working through the files' : 'Results'}>

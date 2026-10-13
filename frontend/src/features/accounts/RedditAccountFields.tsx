@@ -4,7 +4,15 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { FieldRow } from '@/components/DetailPanel';
 
-export default function RedditAccountFields({ username, cookie, onUsernameChange, onCookieChange, onSubmit }) {
+export interface RedditAccountFieldsProps {
+  username: string;
+  cookie: string;
+  onUsernameChange: (value: string) => void;
+  onCookieChange: (value: string) => void;
+  onSubmit: () => void;
+}
+
+export default function RedditAccountFields({ username, cookie, onUsernameChange, onCookieChange, onSubmit }: RedditAccountFieldsProps) {
   return (
     <div className="flex flex-col gap-4">
       <FieldRow label="Username" htmlFor="reddit-user">

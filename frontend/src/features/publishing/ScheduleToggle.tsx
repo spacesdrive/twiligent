@@ -1,7 +1,15 @@
 import { Calendar, Send } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-export default function ScheduleToggle({ scheduled, onChange, disabled, nowLabel = 'Publish now', laterLabel = 'Schedule' }) {
+interface ScheduleToggleProps {
+  scheduled: boolean;
+  onChange: (scheduled: boolean) => void;
+  disabled?: boolean;
+  nowLabel?: string;
+  laterLabel?: string;
+}
+
+export default function ScheduleToggle({ scheduled, onChange, disabled, nowLabel = 'Publish now', laterLabel = 'Schedule' }: ScheduleToggleProps) {
   return (
     <Tabs value={scheduled ? 'later' : 'now'} onValueChange={value => onChange(value === 'later')}>
       <TabsList variant="segmented" className="w-full">

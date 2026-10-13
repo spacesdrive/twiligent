@@ -8,8 +8,21 @@ import SurfaceBox from '@/components/SurfaceBox';
 import { cn } from '@/lib/utils';
 import SettingsSection from './SettingsSection';
 import { useApiHealthCheck } from './useApiHealthCheck';
+import type { KeysStatusResponse } from '@shared/types/domain.ts';
 
-function StatusRow({ label, ok, hint }) {
+interface StatusRowProps {
+  label: string;
+  ok?: boolean;
+  hint?: string;
+}
+
+export interface ServerKeysSectionProps {
+  serverStatus: KeysStatusResponse | null;
+  refreshAll: () => void;
+  refreshingAll: boolean;
+}
+
+function StatusRow({ label, ok, hint }: StatusRowProps) {
   return (
     <div className="flex items-center justify-between gap-4 px-4 py-3">
       <div className="min-w-0">
@@ -25,7 +38,7 @@ function StatusRow({ label, ok, hint }) {
   );
 }
 
-export default function ServerKeysSection({ serverStatus, refreshAll, refreshingAll }) {
+export default function ServerKeysSection({ serverStatus, refreshAll, refreshingAll }: ServerKeysSectionProps) {
   const { testing, testResult, handleTest } = useApiHealthCheck();
   return (
     <SettingsSection

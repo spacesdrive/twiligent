@@ -3,8 +3,18 @@ import MediaPicker from './MediaPicker';
 import PublishProgress from './PublishProgress';
 import SinglePostSettings from './SinglePostSettings';
 import { contentTypeOf } from './publishConstants';
+import type { AppAccount } from '../../utils/formatters';
+import type { SinglePostForm } from './useSinglePostForm';
+import type { SinglePublish } from './useSinglePublish';
 
-export default function SinglePostTab({ form, publish, igAccounts, onReset }) {
+interface SinglePostTabProps {
+  form: SinglePostForm;
+  publish: SinglePublish;
+  igAccounts: AppAccount[];
+  onReset: () => void;
+}
+
+export default function SinglePostTab({ form, publish, igAccounts, onReset }: SinglePostTabProps) {
   const selectedAcct = igAccounts.find(account => account.id === form.selectedAccount);
   const selectedType = contentTypeOf(form.contentType);
 

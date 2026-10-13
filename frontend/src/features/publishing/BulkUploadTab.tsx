@@ -3,8 +3,19 @@ import BulkResults from './BulkResults';
 import BulkSettings from './BulkSettings';
 import { contentTypeOf } from './publishConstants';
 import { bulkStatsOf } from './queueHelpers.ts';
+import type { AppAccount } from '../../utils/formatters';
+import type { BulkPublish } from './useBulkPublish';
+import type { BulkQueue } from './useBulkQueue';
+import type { BulkSettingsState } from './useBulkSettings';
 
-export default function BulkUploadTab({ bulk, queue, bulkPublish, igAccounts }) {
+interface BulkUploadTabProps {
+  bulk: BulkSettingsState;
+  queue: BulkQueue;
+  bulkPublish: BulkPublish;
+  igAccounts: AppAccount[];
+}
+
+export default function BulkUploadTab({ bulk, queue, bulkPublish, igAccounts }: BulkUploadTabProps) {
   const stats = bulkStatsOf(queue.files);
   const bulkType = contentTypeOf(bulk.settings.contentType);
   const showResults = queue.processing || stats.done > 0 || stats.scheduled > 0 || stats.errors > 0;

@@ -21,12 +21,15 @@ import { useScheduledPostEdit } from './useScheduledPostEdit';
 import { useScheduledPosts } from './useScheduledPosts';
 import { useSinglePostForm } from './useSinglePostForm';
 import { useSinglePublish } from './useSinglePublish';
+import type { AppAccount } from '../../utils/formatters';
+
+type UploadMode = 'single' | 'bulk';
 
 export default function UploadContent() {
   const { accounts, showToast } = useAppContext();
   const cloudConfig = useCloudinaryConfig(accounts);
-  const [igAccounts, setIgAccounts] = useState([]);
-  const [uploadMode, setUploadMode] = useState('single');
+  const [igAccounts, setIgAccounts] = useState<AppAccount[]>([]);
+  const [uploadMode, setUploadMode] = useState<UploadMode>('single');
   const schedule = useScheduledPosts();
   const { loadScheduledPosts } = schedule;
   const editor = useScheduledPostEdit({ showToast, loadScheduledPosts });

@@ -3,8 +3,13 @@ import { ArrowLeft, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
 import { Spinner } from '@/components/ui/spinner';
+import type { AddAccountFlow } from './useAddAccount';
 
-export default function AddAccountFooter({ flow }) {
+export interface AddAccountFooterProps {
+  flow: AddAccountFlow;
+}
+
+export default function AddAccountFooter({ flow }: AddAccountFooterProps) {
   const { platform, channel, reddit, channelAdd, redditAdd, instagram } = flow;
   const { adding } = channelAdd;
   const { connecting } = instagram;

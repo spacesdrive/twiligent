@@ -1,11 +1,12 @@
 import { useState } from 'react';
+import type { PublishStatus } from './queueHelpers.ts';
 
 export function usePublishProgress() {
   const [activeStep, setActiveStep] = useState(0);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [publishStatus, setPublishStatus] = useState('');
-  const [statusMessage, setStatusMessage] = useState('');
-  const [publishedMediaId, setPublishedMediaId] = useState(null);
+  const [publishStatus, setPublishStatus] = useState<PublishStatus>('');
+  const [statusMessage, setStatusMessage] = useState<string>('');
+  const [publishedMediaId, setPublishedMediaId] = useState<string | null>(null);
 
   // try again goes back to the form but keeps the last upload percentage
   const retry = () => {
@@ -26,3 +27,5 @@ export function usePublishProgress() {
     statusMessage, setStatusMessage, publishedMediaId, setPublishedMediaId, retry, resetProgress,
   };
 }
+
+export type PublishProgressState = ReturnType<typeof usePublishProgress>;

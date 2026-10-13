@@ -1,7 +1,23 @@
 import { fileSizeMb } from './queueHelpers.ts';
 import { goesLiveLabel } from './scheduleHelpers.ts';
+import type { ReactNode } from 'react';
+import type { AppAccount } from '../../utils/formatters';
+import type { ContentTypeOption } from './publishConstants';
+import type { ScheduleFieldValues } from './scheduleHelpers.ts';
 
-function SummaryRow({ label, children }) {
+interface SummaryRowProps {
+  label: string;
+  children: ReactNode;
+}
+
+interface PostSummaryProps {
+  selectedAcct: AppAccount | undefined;
+  selectedType: ContentTypeOption | undefined;
+  file: File | null;
+  fields: ScheduleFieldValues;
+}
+
+function SummaryRow({ label, children }: SummaryRowProps) {
   return (
     <div className="flex items-center justify-between gap-3 text-small">
       <span className="text-ink-faint">{label}</span>
@@ -10,7 +26,7 @@ function SummaryRow({ label, children }) {
   );
 }
 
-export default function PostSummary({ selectedAcct, selectedType, file, fields }) {
+export default function PostSummary({ selectedAcct, selectedType, file, fields }: PostSummaryProps) {
   return (
     <div className="flex flex-col gap-2 rounded-control bg-surface-sunken/60 p-3">
       <SummaryRow label="Account">{selectedAcct ? `@${selectedAcct.username || selectedAcct.title}` : '-'}</SummaryRow>

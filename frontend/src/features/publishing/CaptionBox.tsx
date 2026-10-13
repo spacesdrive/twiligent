@@ -3,7 +3,12 @@ import SurfaceBox from '@/components/SurfaceBox';
 import { cn } from '@/lib/utils';
 import { CAPTION_LIMIT } from './publishConstants';
 
-export default function CaptionBox({ caption, onChange }) {
+interface CaptionBoxProps {
+  caption: string;
+  onChange: (caption: string) => void;
+}
+
+export default function CaptionBox({ caption, onChange }: CaptionBoxProps) {
   const nearLimit = caption.length > CAPTION_LIMIT * 0.9;
   return (
     <SurfaceBox title="Caption">

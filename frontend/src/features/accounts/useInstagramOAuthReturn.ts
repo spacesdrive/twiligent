@@ -1,8 +1,13 @@
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { readOAuthReturn } from './accountManagerData';
+import type { AccountActionDeps } from './useAccountDelete';
 
-export function useInstagramOAuthReturn({ showToast, loadAccounts, setDialogOpen }) {
+interface InstagramOAuthReturnDeps extends AccountActionDeps {
+  setDialogOpen: (open: boolean) => void;
+}
+
+export function useInstagramOAuthReturn({ showToast, loadAccounts, setDialogOpen }: InstagramOAuthReturnDeps) {
   const [searchParams, setSearchParams] = useSearchParams();
 
   useEffect(() => {

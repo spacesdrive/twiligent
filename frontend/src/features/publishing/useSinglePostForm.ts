@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { useSinglePostMedia } from './useSinglePostMedia';
+import type { ContentTypeValue, SinglePostFields } from './publishHelpers.ts';
 
-const INITIAL_FIELDS = {
+const INITIAL_FIELDS: SinglePostFields = {
   caption: '',
   shareToFeed: true,
   audioName: '',
@@ -17,13 +18,13 @@ const INITIAL_FIELDS = {
 
 export function useSinglePostForm() {
   const media = useSinglePostMedia();
-  const [selectedAccount, setSelectedAccount] = useState('');
-  const [contentType, setContentType] = useState('');
-  const [fields, setFields] = useState(INITIAL_FIELDS);
+  const [selectedAccount, setSelectedAccount] = useState<string>('');
+  const [contentType, setContentType] = useState<ContentTypeValue | ''>('');
+  const [fields, setFields] = useState<SinglePostFields>(INITIAL_FIELDS);
 
-  const setField = (name, value) => setFields(prev => ({ ...prev, [name]: value }));
+  const setField = <K extends keyof SinglePostFields>(name: K, value: SinglePostFields[K]) => setFields(prev => ({ ...prev, [name]: value }));
 
-  const changeContentType = value => {
+  const changeContentType = (value: ContentTypeValue) => {
     setContentType(value);
     media.clearFile();
   };
@@ -44,3 +45,5 @@ export function useSinglePostForm() {
     fields, setField, resetForm, canPublish,
   };
 }
+
+export type SinglePostForm = ReturnType<typeof useSinglePostForm>;

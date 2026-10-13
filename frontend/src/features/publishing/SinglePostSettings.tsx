@@ -7,14 +7,31 @@ import IconInput from './IconInput';
 import PostSummary from './PostSummary';
 import ReelOptions from './ReelOptions';
 import ScheduleFields from './ScheduleFields';
+import type { AppAccount } from '../../utils/formatters';
+import type { ContentTypeOption } from './publishConstants';
+import type { SinglePostForm } from './useSinglePostForm';
+import type { SinglePublish } from './useSinglePublish';
 
-function PublishButtonIcon({ uploading, scheduleMode }) {
+interface PublishButtonIconProps {
+  uploading: boolean;
+  scheduleMode: boolean;
+}
+
+interface SinglePostSettingsProps {
+  form: SinglePostForm;
+  publish: SinglePublish;
+  igAccounts: AppAccount[];
+  selectedAcct: AppAccount | undefined;
+  selectedType: ContentTypeOption | undefined;
+}
+
+function PublishButtonIcon({ uploading, scheduleMode }: PublishButtonIconProps) {
   if (uploading) return <Spinner className="size-4" />;
   if (scheduleMode) return <Calendar data-icon="inline-start" />;
   return <Send data-icon="inline-start" />;
 }
 
-export default function SinglePostSettings({ form, publish, igAccounts, selectedAcct, selectedType }) {
+export default function SinglePostSettings({ form, publish, igAccounts, selectedAcct, selectedType }: SinglePostSettingsProps) {
   const { fields, setField, contentType } = form;
   const footer = (
     <Button size="lg" className="w-full" onClick={publish.handlePublish} disabled={publish.uploading || !form.canPublish}>

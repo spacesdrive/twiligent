@@ -9,10 +9,19 @@ import { BULK_INTERVAL_OPTIONS } from './publishConstants';
 import { bulkScheduledTime } from './publishHelpers.ts';
 import { intervalLabel } from './queueHelpers.ts';
 import { utcDateInput } from './scheduleHelpers.ts';
+import type { BulkSettings } from './publishHelpers.ts';
+import type { BulkSettingsState } from './useBulkSettings';
+
+interface BulkScheduleFieldsProps {
+  settings: BulkSettings;
+  setSetting: BulkSettingsState['setSetting'];
+  pending: number;
+  processing: boolean;
+}
 
 const INTERVAL_ITEMS = BULK_INTERVAL_OPTIONS.map(option => ({ value: String(option.value), label: option.label }));
 
-function SpreadOutFields({ settings, setSetting, pending, processing }) {
+function SpreadOutFields({ settings, setSetting, pending, processing }: BulkScheduleFieldsProps) {
   const { startDate, startTime, interval } = settings;
   const firstPost = new Date(`${startDate}T${startTime}`);
   return (
@@ -42,7 +51,7 @@ function SpreadOutFields({ settings, setSetting, pending, processing }) {
   );
 }
 
-export default function BulkScheduleFields({ settings, setSetting, pending, processing }) {
+export default function BulkScheduleFields({ settings, setSetting, pending, processing }: BulkScheduleFieldsProps) {
   const { scheduleMode } = settings;
   return (
     <div className="flex flex-col gap-4 border-t border-divider pt-5">

@@ -8,10 +8,28 @@ import ScheduledPostEditRow from './ScheduledPostEditRow';
 import StatusBadge from './StatusBadge';
 import { POST_STATUS, contentTypeOf } from './publishConstants';
 import { formatScheduleDate, isPastDue } from './scheduleHelpers.ts';
+import type { ScheduledPost } from '@shared/types/domain.ts';
+import type { AppAccount } from '../../utils/formatters';
+import type { ScheduledPostEditor } from './useScheduledPostEdit';
 
-function PostActions({ post, isEditing, editor, onDelete }) {
+interface PostActionsProps {
+  post: ScheduledPost;
+  isEditing: boolean;
+  editor: ScheduledPostEditor;
+  onDelete: (post: ScheduledPost) => void;
+}
+
+interface ScheduledPostRowProps {
+  post: ScheduledPost;
+  position: number;
+  account: AppAccount | undefined;
+  editor: ScheduledPostEditor;
+  onDelete: (post: ScheduledPost) => void;
+}
+
+function PostActions({ post, isEditing, editor, onDelete }: PostActionsProps) {
   // mirrors the backend edit check, which also accepts a 'scheduled' status
-  const canEdit = post.status === 'pending' || post.status === 'scheduled';
+  const canEdit = post.status === 'pending' || (post.status as string) === 'scheduled';
   const deleteLabel = post.status === 'published' ? 'Remove record' : 'Delete scheduled post';
   return (
     <TableCell className="text-right whitespace-nowrap">
@@ -32,7 +50,7 @@ function PostActions({ post, isEditing, editor, onDelete }) {
   );
 }
 
-export default function ScheduledPostRow({ post, position, account, editor, onDelete }) {
+export default function ScheduledPostRow({ post, position, account, editor, onDelete }: ScheduledPostRowProps) {
   const typeInfo = contentTypeOf(post.mediaType);
   const TypeIcon = typeInfo?.icon || ImageIcon;
   const isEditing = editor.draft.postId === post.id;

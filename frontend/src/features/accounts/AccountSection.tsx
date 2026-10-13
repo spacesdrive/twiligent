@@ -3,8 +3,18 @@ import { Badge } from '@/components/ui/badge';
 import SectionHeader from '@/components/SectionHeader';
 import { PlatformIcon } from '@/components/platform';
 import AccountCard from './AccountCard';
+import type { AccountSectionInfo } from './accountManagerData';
+import type { AppAccount } from '../../utils/formatters';
 
-export default function AccountSection({ section, accounts, refreshingId, onRefresh, onDelete }) {
+export interface AccountSectionProps {
+  section: AccountSectionInfo;
+  accounts: AppAccount[];
+  refreshingId: string | null;
+  onRefresh: (id: string) => void;
+  onDelete: (acct: AppAccount) => void;
+}
+
+export default function AccountSection({ section, accounts, refreshingId, onRefresh, onDelete }: AccountSectionProps) {
   return (
     <section className="flex flex-col gap-3">
       <SectionHeader

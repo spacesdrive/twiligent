@@ -1,6 +1,11 @@
 import ConfirmDialog from '@/components/ConfirmDialog';
+import type { ScheduledPostRemoval } from './useScheduledPostDelete';
 
-export default function ScheduledPostDialogs({ removal }) {
+interface ScheduledPostDialogsProps {
+  removal: ScheduledPostRemoval;
+}
+
+export default function ScheduledPostDialogs({ removal }: ScheduledPostDialogsProps) {
   const { pendingDelete, deleting } = removal;
   const isPublished = pendingDelete?.status === 'published';
   return (

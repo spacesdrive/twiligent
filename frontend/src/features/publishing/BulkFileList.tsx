@@ -3,8 +3,15 @@ import { Button } from '@/components/ui/button';
 import SurfaceBox from '@/components/SurfaceBox';
 import BulkFileItem from './BulkFileItem';
 import { bulkFilesTitle } from './queueHelpers.ts';
+import type { ContentTypeOption } from './publishConstants';
+import type { BulkQueue } from './useBulkQueue';
 
-export default function BulkFileList({ queue, bulkType }) {
+interface BulkFileListProps {
+  queue: BulkQueue;
+  bulkType: ContentTypeOption | undefined;
+}
+
+export default function BulkFileList({ queue, bulkType }: BulkFileListProps) {
   const { files, processing, fileInputRef } = queue;
   const openPicker = () => fileInputRef.current?.click();
   const actions = (

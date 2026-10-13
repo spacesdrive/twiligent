@@ -4,7 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 
-export default function GithubRepoForm({ owner, repo, onOwnerChange, onRepoChange, onSave, saving, canSave }) {
+export interface GithubRepoFormProps {
+  owner: string;
+  repo: string;
+  onOwnerChange: (value: string) => void;
+  onRepoChange: (value: string) => void;
+  onSave: (e: React.FormEvent<HTMLFormElement>) => void;
+  saving: boolean;
+  canSave: boolean;
+}
+
+export default function GithubRepoForm({ owner, repo, onOwnerChange, onRepoChange, onSave, saving, canSave }: GithubRepoFormProps) {
   return (
     <form onSubmit={onSave} className="flex flex-col gap-2 rounded-field bg-surface-sunken/60 p-4">
       <label htmlFor="gh-user" className="text-sm font-medium text-ink">Your GitHub username</label>

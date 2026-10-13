@@ -8,15 +8,29 @@ import { accountName, accountPath } from '@/lib/accounts';
 import { cn } from '@/lib/utils';
 import { fmtNum, timeAgo } from '../../utils/formatters';
 import { accountCardHandle, accountMetrics } from './accountManagerData';
+import type { Platform } from '@shared/types/domain.ts';
+import type { AppAccount } from '../../utils/formatters';
 
-function CookieStatus({ hasCookie }) {
+interface CookieStatusProps {
+  hasCookie: boolean;
+}
+
+export interface AccountCardProps {
+  acct: AppAccount;
+  platform: Platform;
+  refreshing: boolean;
+  onRefresh: () => void;
+  onDelete: () => void;
+}
+
+function CookieStatus({ hasCookie }: CookieStatusProps) {
   if (hasCookie) {
     return <span className="flex items-center gap-1 text-success"><Lock className="size-3" />Session cookie stored</span>;
   }
   return <span className="flex items-center gap-1 text-danger"><Lock className="size-3" />Error: no session cookie. Remove and add the account again.</span>;
 }
 
-export default function AccountCard({ acct, platform, refreshing, onRefresh, onDelete }) {
+export default function AccountCard({ acct, platform, refreshing, onRefresh, onDelete }: AccountCardProps) {
   const metrics = accountMetrics(platform, acct);
   return (
     <article className="flex flex-col gap-4 rounded-card border border-line bg-surface-raised p-4">

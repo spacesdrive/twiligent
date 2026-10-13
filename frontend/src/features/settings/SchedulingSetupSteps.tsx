@@ -4,12 +4,19 @@ import CopyChip from './CopyChip';
 import GuideLinkButton from './GuideLinkButton';
 import RepoLinkButton from './RepoLinkButton';
 import SetupStep from './SetupStep';
+import type { SetupProgress } from './schedulingProgress';
+
+export interface SchedulingSetupStepsProps {
+  done: SetupProgress;
+  toggle: (key: string) => () => void;
+  base: string | null;
+}
 
 const UPSTREAM_REPO = 'spacesdrive/twiligent';
 const SUPABASE_KEYS_URL = 'https://supabase.com/dashboard/project/_/settings/api-keys';
 const SUPABASE_URL_PAGE = 'https://supabase.com/dashboard/project/_/integrations/data_api/overview';
 
-export default function SchedulingSetupSteps({ done, toggle, base }) {
+export default function SchedulingSetupSteps({ done, toggle, base }: SchedulingSetupStepsProps) {
   return (
     <ol className="flex flex-col gap-3">
       <SetupStep

@@ -1,6 +1,12 @@
+import type { ComponentProps } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
-export default function IconInput({ icon, ...props }) {
+interface IconInputProps extends ComponentProps<typeof Input> {
+  icon: LucideIcon;
+}
+
+export default function IconInput({ icon, ...props }: IconInputProps) {
   const Icon = icon;
   return (
     <div className="relative">

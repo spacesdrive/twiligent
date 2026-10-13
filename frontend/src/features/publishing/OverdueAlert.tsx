@@ -4,7 +4,11 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ADMIN_EMAIL, adminMailto } from '@/lib/contact';
 import { overdueLead } from './scheduleHelpers.ts';
 
-export default function OverdueAlert({ count }) {
+interface OverdueAlertProps {
+  count: number;
+}
+
+export default function OverdueAlert({ count }: OverdueAlertProps) {
   return (
     <Alert variant="warning">
       <AlertCircle />

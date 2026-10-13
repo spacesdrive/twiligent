@@ -1,9 +1,13 @@
 import { useState } from 'react';
 import { accountName } from '@/lib/accounts';
 import { api } from '../../services/api';
+import type { AppContextValue } from '../../context/AppContext';
+import type { AppAccount } from '../../utils/formatters';
 
-export function useAccountDelete({ showToast, loadAccounts }) {
-  const [pendingDelete, setPendingDelete] = useState(null);
+export type AccountActionDeps = Pick<AppContextValue, 'showToast' | 'loadAccounts'>;
+
+export function useAccountDelete({ showToast, loadAccounts }: AccountActionDeps) {
+  const [pendingDelete, setPendingDelete] = useState<AppAccount | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const handleDelete = async () => {
@@ -15,7 +19,7 @@ export function useAccountDelete({ showToast, loadAccounts }) {
       setPendingDelete(null);
       loadAccounts();
     } catch (err) {
-      showToast(`Couldn't remove the account. ${err.message}`, 'error');
+      showToast(`Couldn't remove the account. ${(err as Error).message}`, 'error');
     } finally {
       setDeleting(false);
     }

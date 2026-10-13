@@ -1,18 +1,19 @@
 import { useState } from 'react';
 import { api } from '../../services/api';
+import type { AccountActionDeps } from './useAccountDelete';
 
 // one id for both buttons: 'all' for refresh-all, else the account id
-export function useAccountRefresh({ showToast, loadAccounts }) {
-  const [refreshingId, setRefreshingId] = useState(null);
+export function useAccountRefresh({ showToast, loadAccounts }: AccountActionDeps) {
+  const [refreshingId, setRefreshingId] = useState<string | null>(null);
 
-  const refreshOne = async id => {
+  const refreshOne = async (id: string) => {
     setRefreshingId(id);
     try {
       await api.refreshAccount(id);
       showToast('Account refreshed');
       loadAccounts();
     } catch (err) {
-      showToast(`Refresh failed. ${err.message}`, 'error');
+      showToast(`Refresh failed. ${(err as Error).message}`, 'error');
     } finally {
       setRefreshingId(null);
     }
@@ -25,7 +26,7 @@ export function useAccountRefresh({ showToast, loadAccounts }) {
       showToast('All accounts refreshed');
       loadAccounts();
     } catch (err) {
-      showToast(`Refresh failed. ${err.message}`, 'error');
+      showToast(`Refresh failed. ${(err as Error).message}`, 'error');
     } finally {
       setRefreshingId(null);
     }

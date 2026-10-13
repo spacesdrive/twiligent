@@ -1,25 +1,26 @@
 import { useRef, useState } from 'react';
+import type { ChangeEvent, RefObject } from 'react';
 
-function clearInput(inputRef) {
+function clearInput(inputRef: RefObject<HTMLInputElement | null>): void {
   if (inputRef.current) inputRef.current.value = '';
 }
 
 export function useSinglePostMedia() {
-  const [file, setFile] = useState(null);
-  const [filePreview, setFilePreview] = useState(null);
-  const [coverFile, setCoverFile] = useState(null);
-  const [coverPreview, setCoverPreview] = useState(null);
-  const fileInputRef = useRef(null);
-  const coverInputRef = useRef(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = e => {
+  const handleFileSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const picked = e.target.files?.[0];
     if (!picked) return;
     setFile(picked);
     setFilePreview(URL.createObjectURL(picked));
   };
 
-  const handleCoverSelect = e => {
+  const handleCoverSelect = (e: ChangeEvent<HTMLInputElement>) => {
     const picked = e.target.files?.[0];
     if (!picked) return;
     setCoverFile(picked);

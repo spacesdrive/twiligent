@@ -3,14 +3,19 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { FieldRow } from '@/components/DetailPanel';
 import IconInput from './IconInput';
+import type { SinglePostForm } from './useSinglePostForm';
 
-function CoverPicker({ form }) {
+interface ReelOptionsProps {
+  form: SinglePostForm;
+}
+
+function CoverPicker({ form }: ReelOptionsProps) {
   const { coverFile, coverInputRef } = form;
   return (
     <FieldRow label="Cover image" hint="Optional JPEG.">
       {coverFile ? (
         <div className="flex items-center gap-3 rounded-control border border-line p-2">
-          <img src={form.coverPreview} alt="Cover preview" className="size-10 rounded-sm object-cover" />
+          <img src={form.coverPreview as string} alt="Cover preview" className="size-10 rounded-sm object-cover" />
           <span className="min-w-0 flex-1 truncate text-small text-ink">{coverFile.name}</span>
           <Button variant="ghost" size="icon-xs" onClick={form.clearCover} aria-label="Remove cover"><X /></Button>
         </div>
@@ -24,7 +29,7 @@ function CoverPicker({ form }) {
   );
 }
 
-export default function ReelOptions({ form }) {
+export default function ReelOptions({ form }: ReelOptionsProps) {
   const { fields, setField } = form;
   return (
     <div className="flex flex-col gap-5 border-t border-divider pt-5">

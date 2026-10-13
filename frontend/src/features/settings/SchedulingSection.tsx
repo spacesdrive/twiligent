@@ -5,14 +5,29 @@ import SurfaceBox from '@/components/SurfaceBox';
 import { ADMIN_EMAIL, adminMailto } from '@/lib/contact';
 import SettingsSection from './SettingsSection';
 import SchedulingSetupGuide from './SchedulingSetupGuide';
+import type { GithubRepoSettings } from './useServerSettings';
 
-const HOW_IT_WORKS = [
+interface HowItWorksStep {
+  title: string;
+  body: React.ReactNode;
+  extra?: React.ReactNode;
+}
+
+interface StepsProps {
+  steps: HowItWorksStep[];
+}
+
+export interface SchedulingSectionProps {
+  github: GithubRepoSettings;
+}
+
+const HOW_IT_WORKS: HowItWorksStep[] = [
   { title: 'Schedule a post', body: 'In Publish, choose an account, the content type and the file, write the caption, pick Schedule, then a date and time, and choose Schedule post. The file uploads straight away.' },
   { title: 'The server publishes it', body: 'Within 15 minutes after the time you picked, the server publishes the post. Your browser can be closed and your computer can be off.' },
   { title: 'Keep the account connected', body: 'The post uses the Instagram account you picked. If that account is removed or its access expires before the time, the post fails and shows the reason under Publish, Scheduled posts. Refresh the account in Accounts if Instagram asks you to reconnect.' },
 ];
 
-function Steps({ steps }) {
+function Steps({ steps }: StepsProps) {
   return (
     <ol className="flex flex-col gap-4">
       {steps.map((step, i) => (
@@ -29,8 +44,8 @@ function Steps({ steps }) {
   );
 }
 
-export default function SchedulingSection({ github }) {
-  const pendingStep = {
+export default function SchedulingSection({ github }: SchedulingSectionProps) {
+  const pendingStep: HowItWorksStep = {
     title: 'If a post stays Pending',
     body: <>A post still Pending 30 minutes after its time means the scheduler on this server is not running. Email the administrator at <a href={adminMailto('Scheduled posts are not publishing on Twiligent')}>{ADMIN_EMAIL}</a> with the time of the post. You can edit or delete a Pending post at any time.</>,
   };

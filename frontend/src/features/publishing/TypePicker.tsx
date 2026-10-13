@@ -1,7 +1,14 @@
 import { cn } from '@/lib/utils';
 import { CONTENT_TYPES } from './publishConstants';
+import type { ContentTypeValue } from './publishHelpers.ts';
 
-export default function TypePicker({ value, onChange, disabled }) {
+interface TypePickerProps {
+  value: ContentTypeValue | '';
+  onChange: (value: ContentTypeValue) => void;
+  disabled?: boolean;
+}
+
+export default function TypePicker({ value, onChange, disabled }: TypePickerProps) {
   return (
     <div role="radiogroup" aria-label="Content type" className="grid grid-cols-3 gap-2">
       {CONTENT_TYPES.map(type => {

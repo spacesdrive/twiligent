@@ -2,16 +2,25 @@ import { useState } from 'react';
 import { api } from '../../services/api';
 import { editPostError } from './publishHelpers.ts';
 import { toLocalDateInput, toLocalTimeInput } from './scheduleHelpers.ts';
+import type { ScheduledPost } from '@shared/types/domain.ts';
+import type { ScheduledPostActionOptions } from './useScheduledPostDelete';
 
-const EMPTY_DRAFT = { postId: null, caption: '', date: '', time: '' };
+export interface EditDraft {
+  postId: string | null;
+  caption: string;
+  date: string;
+  time: string;
+}
 
-export function useScheduledPostEdit({ showToast, loadScheduledPosts }) {
+const EMPTY_DRAFT: EditDraft = { postId: null, caption: '', date: '', time: '' };
+
+export function useScheduledPostEdit({ showToast, loadScheduledPosts }: ScheduledPostActionOptions) {
   const [draft, setDraft] = useState(EMPTY_DRAFT);
   const [savingEdit, setSavingEdit] = useState(false);
 
-  const setDraftField = (name, value) => setDraft(prev => ({ ...prev, [name]: value }));
+  const setDraftField = <K extends keyof EditDraft>(name: K, value: EditDraft[K]) => setDraft(prev => ({ ...prev, [name]: value }));
 
-  const startEditPost = post => {
+  const startEditPost = (post: ScheduledPost) => {
     const scheduledAt = new Date(post.scheduledAt);
     const date = toLocalDateInput(scheduledAt);
     setDraft({ postId: post.id, caption: post.caption || '', date, time: toLocalTimeInput(scheduledAt) });
@@ -28,13 +37,13 @@ export function useScheduledPostEdit({ showToast, loadScheduledPosts }) {
     const scheduledAt = new Date(`${draft.date}T${draft.time}`);
     setSavingEdit(true);
     try {
-      const res = await api.updateScheduledPost(draft.postId, { caption: draft.caption, scheduledAt: scheduledAt.toISOString() });
+      const res = await api.updateScheduledPost(draft.postId as string, { caption: draft.caption, scheduledAt: scheduledAt.toISOString() });
       if (!res.success) throw new Error(res.message || 'Update failed');
       showToast('Scheduled post updated');
       cancelEdit();
       loadScheduledPosts();
     } catch (err) {
-      showToast(`Couldn't update the post. ${err.message}`, 'error');
+      showToast(`Couldn't update the post. ${(err as Error).message}`, 'error');
     } finally {
       setSavingEdit(false);
     }
@@ -42,3 +51,5 @@ export function useScheduledPostEdit({ showToast, loadScheduledPosts }) {
 
   return { draft, setDraftField, savingEdit, startEditPost, cancelEdit, handleSaveEdit };
 }
+
+export type ScheduledPostEditor = ReturnType<typeof useScheduledPostEdit>;

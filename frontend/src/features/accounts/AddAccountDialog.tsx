@@ -7,8 +7,18 @@ import { PLATFORM_CHOICES, platformChoiceTitle } from './platformChoices';
 import YouTubeAccountFields from './YouTubeAccountFields';
 import RedditAccountFields from './RedditAccountFields';
 import AddAccountFooter from './AddAccountFooter';
+import type { AddAccountFlow } from './useAddAccount';
+import type { Platform } from '@shared/types/domain.ts';
 
-function PlatformPicker({ onSelect }) {
+interface PlatformPickerProps {
+  onSelect: (platform: Platform) => void;
+}
+
+export interface AddAccountDialogProps {
+  flow: AddAccountFlow;
+}
+
+function PlatformPicker({ onSelect }: PlatformPickerProps) {
   return (
     <div role="radiogroup" aria-label="Platform" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
       {PLATFORM_CHOICES.map(choice => (
@@ -25,7 +35,7 @@ function PlatformPicker({ onSelect }) {
   );
 }
 
-export default function AddAccountDialog({ flow }) {
+export default function AddAccountDialog({ flow }: AddAccountDialogProps) {
   const { platform, channel, reddit } = flow;
   return (
     <Dialog open={flow.dialogOpen} onOpenChange={open => { if (!open) flow.closeDialog(); }}>

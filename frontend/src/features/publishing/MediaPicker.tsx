@@ -4,8 +4,22 @@ import SurfaceBox from '@/components/SurfaceBox';
 import { cn } from '@/lib/utils';
 import TypePicker from './TypePicker';
 import { fileSizeMb, isVideoFile } from './queueHelpers.ts';
+import type { ContentTypeOption } from './publishConstants';
+import type { SinglePostForm } from './useSinglePostForm';
 
-function MediaPreview({ file, filePreview, selectedType, onClear }) {
+interface MediaPreviewProps {
+  file: File;
+  filePreview: string;
+  selectedType: ContentTypeOption | undefined;
+  onClear: () => void;
+}
+
+interface MediaPickerProps {
+  form: SinglePostForm;
+  selectedType: ContentTypeOption | undefined;
+}
+
+function MediaPreview({ file, filePreview, selectedType, onClear }: MediaPreviewProps) {
   return (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
       <div className="relative w-full shrink-0 overflow-hidden rounded-control bg-surface-sunken sm:w-52">
@@ -32,14 +46,14 @@ function MediaPreview({ file, filePreview, selectedType, onClear }) {
   );
 }
 
-export default function MediaPicker({ form, selectedType }) {
+export default function MediaPicker({ form, selectedType }: MediaPickerProps) {
   const { contentType, file, fileInputRef } = form;
   return (
     <SurfaceBox title="Media" subheader={selectedType ? selectedType.desc : 'Choose what you are posting, then add the file.'}>
       <div className="flex flex-col gap-4">
         <TypePicker value={contentType} onChange={form.changeContentType} />
         {file ? (
-          <MediaPreview file={file} filePreview={form.filePreview} selectedType={selectedType} onClear={form.clearFile} />
+          <MediaPreview file={file} filePreview={form.filePreview as string} selectedType={selectedType} onClear={form.clearFile} />
         ) : (
           <button
             type="button"

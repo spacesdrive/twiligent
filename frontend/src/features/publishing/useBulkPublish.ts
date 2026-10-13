@@ -3,21 +3,51 @@ import { waitUntilReady, wait } from './containerPolling.ts';
 import {
   buildContainerPayload, buildScheduledPostPayload, bulkBaseTime, bulkPostDetails, bulkScheduledTime, bulkStartError,
 } from './publishHelpers.ts';
+import type { CloudinaryUploadConfig } from '../../services/api';
+import type { AppContextValue } from '../../context/AppContext';
+import type { BulkSettings } from './publishHelpers.ts';
+import type { QueueItem, QueueItemPatch } from './queueHelpers.ts';
+import type { BulkQueue } from './useBulkQueue';
+
+export interface BulkPublishOptions {
+  queue: BulkQueue;
+  settings: BulkSettings;
+  cloudConfig: CloudinaryUploadConfig | null;
+  showToast: AppContextValue['showToast'];
+  onScheduled: () => void;
+}
+
+// cloudConfig is set and baseTime is set in schedule mode once bulkStartError passes
+interface BulkRun {
+  settings: BulkSettings;
+  cloudConfig: CloudinaryUploadConfig | null;
+  baseTime: Date | null;
+  patchFile: (id: number, patch: QueueItemPatch) => void;
+  isCancelled: () => boolean;
+}
+
+interface QueueTally {
+  offset: number;
+  succeeded: number;
+  failed: number;
+}
 
 const CANCELLED = 'cancelled';
 const DONE = 'done';
+
+type ItemOutcome = typeof CANCELLED | typeof DONE;
 const BETWEEN_FILES_MS = 2000;
 
-async function scheduleItem(run, item, mediaUrl, offset) {
+async function scheduleItem(run: BulkRun, item: QueueItem, mediaUrl: string, offset: number): Promise<void> {
   const { settings } = run;
   run.patchFile(item.id, { status: 'scheduling', progress: 100 });
-  const scheduledAt = bulkScheduledTime(run.baseTime, offset, settings.interval);
+  const scheduledAt = bulkScheduledTime(run.baseTime as Date, offset, settings.interval);
   const res = await api.createScheduledPost(buildScheduledPostPayload({ ...bulkPostDetails(settings, item, mediaUrl), scheduledAt }));
   if (!res.success) throw new Error(res.message || 'Failed to schedule');
   run.patchFile(item.id, { status: 'scheduled', progress: 100 });
 }
 
-async function publishItem(run, item, mediaUrl) {
+async function publishItem(run: BulkRun, item: QueueItem, mediaUrl: string): Promise<ItemOutcome> {
   const { settings } = run;
   run.patchFile(item.id, { status: 'creating', progress: 100 });
   const containerRes = await api.createIGContainer(settings.account, buildContainerPayload(bulkPostDetails(settings, item, mediaUrl)));
@@ -34,10 +64,10 @@ async function publishItem(run, item, mediaUrl) {
   return DONE;
 }
 
-async function processItem(run, item, offset) {
+async function processItem(run: BulkRun, item: QueueItem, offset: number): Promise<ItemOutcome> {
   run.patchFile(item.id, { status: 'uploading', progress: 0 });
-  const onProgress = progress => run.patchFile(item.id, { progress });
-  const mediaUrl = await api.uploadToCloudinary(item.file, run.cloudConfig, { onProgress });
+  const onProgress = (progress: number) => run.patchFile(item.id, { progress });
+  const mediaUrl = await api.uploadToCloudinary(item.file, run.cloudConfig as CloudinaryUploadConfig, { onProgress });
   if (run.isCancelled()) return CANCELLED;
   if (!run.settings.scheduleMode) return publishItem(run, item, mediaUrl);
   await scheduleItem(run, item, mediaUrl, offset);
@@ -45,8 +75,8 @@ async function processItem(run, item, offset) {
 }
 
 // a stop request ends the loop without touching the file in progress
-async function runQueue(run, pendingFiles) {
-  const tally = { offset: 0, succeeded: 0, failed: 0 };
+async function runQueue(run: BulkRun, pendingFiles: QueueItem[]): Promise<QueueTally> {
+  const tally: QueueTally = { offset: 0, succeeded: 0, failed: 0 };
   for (let i = 0; i < pendingFiles.length; i++) {
     if (run.isCancelled()) break;
     const item = pendingFiles[i];
@@ -56,7 +86,7 @@ async function runQueue(run, pendingFiles) {
       if (run.settings.scheduleMode) tally.offset++;
       tally.succeeded++;
     } catch (err) {
-      run.patchFile(item.id, { status: 'error', error: err.message });
+      run.patchFile(item.id, { status: 'error', error: (err as Error).message });
       tally.failed++;
     }
     if (i < pendingFiles.length - 1 && !run.isCancelled()) await wait(BETWEEN_FILES_MS);
@@ -64,7 +94,7 @@ async function runQueue(run, pendingFiles) {
   return tally;
 }
 
-export function useBulkPublish({ queue, settings, cloudConfig, showToast, onScheduled }) {
+export function useBulkPublish({ queue, settings, cloudConfig, showToast, onScheduled }: BulkPublishOptions) {
   const { cancelRef } = queue;
 
   // the queue and settings are read once, as they are at the moment of the click
@@ -78,7 +108,7 @@ export function useBulkPublish({ queue, settings, cloudConfig, showToast, onSche
     queue.setProcessing(true);
     cancelRef.current = false;
     const pendingFiles = queue.files.filter(item => item.status === 'pending');
-    const run = { settings, cloudConfig, baseTime, patchFile: queue.patchFile, isCancelled: () => cancelRef.current };
+    const run: BulkRun = { settings, cloudConfig, baseTime, patchFile: queue.patchFile, isCancelled: () => cancelRef.current };
     const tally = await runQueue(run, pendingFiles);
     queue.setProcessing(false);
     if (cancelRef.current) {
@@ -95,3 +125,5 @@ export function useBulkPublish({ queue, settings, cloudConfig, showToast, onSche
 
   return { handleBulkProcess, stopBulk };
 }
+
+export type BulkPublish = ReturnType<typeof useBulkPublish>;

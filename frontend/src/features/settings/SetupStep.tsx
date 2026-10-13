@@ -1,8 +1,19 @@
 import React from 'react';
 import { Check } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-export default function SetupStep({ number, icon, title, done, onToggle, children, check }) {
+export interface SetupStepProps {
+  number: number;
+  icon: LucideIcon;
+  title: string;
+  done: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+  check?: React.ReactNode;
+}
+
+export default function SetupStep({ number, icon, title, done, onToggle, children, check }: SetupStepProps) {
   const Icon = icon;
   return (
     <li className={cn('flex gap-4 rounded-card border p-4 transition-colors', done ? 'border-success/30 bg-success-soft/40' : 'border-line')}>

@@ -1,9 +1,16 @@
 import { useState } from 'react';
 import { api } from '../../services/api';
 import { deleteAllMessage } from './scheduleHelpers.ts';
+import type { ScheduledPost } from '@shared/types/domain.ts';
+import type { AppContextValue } from '../../context/AppContext';
 
-export function useScheduledPostDelete({ showToast, loadScheduledPosts }) {
-  const [pendingDelete, setPendingDelete] = useState(null);
+export interface ScheduledPostActionOptions {
+  showToast: AppContextValue['showToast'];
+  loadScheduledPosts: () => Promise<void>;
+}
+
+export function useScheduledPostDelete({ showToast, loadScheduledPosts }: ScheduledPostActionOptions) {
+  const [pendingDelete, setPendingDelete] = useState<ScheduledPost | null>(null);
   const [confirmDeleteAll, setConfirmDeleteAll] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -15,7 +22,7 @@ export function useScheduledPostDelete({ showToast, loadScheduledPosts }) {
       showToast(pendingDelete.status === 'published' ? 'Record removed' : 'Scheduled post deleted');
       loadScheduledPosts();
     } catch (err) {
-      showToast(`Couldn't delete the post. ${err.message}`, 'error');
+      showToast(`Couldn't delete the post. ${(err as Error).message}`, 'error');
     } finally {
       setDeleting(false);
       setPendingDelete(null);
@@ -29,7 +36,7 @@ export function useScheduledPostDelete({ showToast, loadScheduledPosts }) {
       showToast(deleteAllMessage(res.deleted));
       loadScheduledPosts();
     } catch (err) {
-      showToast(`Couldn't delete the posts. ${err.message}`, 'error');
+      showToast(`Couldn't delete the posts. ${(err as Error).message}`, 'error');
     } finally {
       setDeleting(false);
       setConfirmDeleteAll(false);
@@ -41,3 +48,5 @@ export function useScheduledPostDelete({ showToast, loadScheduledPosts }) {
     handleDeleteScheduled, handleDeleteAll,
   };
 }
+
+export type ScheduledPostRemoval = ReturnType<typeof useScheduledPostDelete>;

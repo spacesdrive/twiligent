@@ -1,12 +1,23 @@
 import { useState } from 'react';
 import { api } from '../../services/api';
+import type { AppContextValue } from '../../context/AppContext';
+import type { Platform } from '@shared/types/domain.ts';
+import type { YouTubeChannelData } from '@shared/types/youtube.ts';
+import type { AccountActionDeps } from './useAccountDelete';
 
-function useChannelLookup(showToast) {
+type ShowToast = AppContextValue['showToast'];
+
+interface AddStepDeps {
+  showToast: ShowToast;
+  finishAdding: () => void;
+}
+
+function useChannelLookup(showToast: ShowToast) {
   const [input, setInput] = useState('');
   const [resolving, setResolving] = useState(false);
-  const [resolved, setResolved] = useState(null);
+  const [resolved, setResolved] = useState<YouTubeChannelData | null>(null);
 
-  const changeInput = value => {
+  const changeInput = (value: string) => {
     setInput(value);
     setResolved(null);
   };
@@ -19,7 +30,7 @@ function useChannelLookup(showToast) {
       const res = await api.resolveChannel(input.trim());
       setResolved(res.data || res);
     } catch (err) {
-      showToast(`Couldn't find that channel. ${err.message}`, 'error');
+      showToast(`Couldn't find that channel. ${(err as Error).message}`, 'error');
     } finally {
       setResolving(false);
     }
@@ -46,7 +57,7 @@ function useRedditFields() {
   return { username, cookie, setUsername, setCookie, reset };
 }
 
-function useChannelAdd({ input, showToast, finishAdding }) {
+function useChannelAdd({ input, showToast, finishAdding }: AddStepDeps & { input: string }) {
   const [adding, setAdding] = useState(false);
 
   const handleAdd = async () => {
@@ -57,7 +68,7 @@ function useChannelAdd({ input, showToast, finishAdding }) {
       showToast('YouTube channel added');
       finishAdding();
     } catch (err) {
-      showToast(`Couldn't add the channel. ${err.message}`, 'error');
+      showToast(`Couldn't add the channel. ${(err as Error).message}`, 'error');
     } finally {
       setAdding(false);
     }
@@ -66,7 +77,7 @@ function useChannelAdd({ input, showToast, finishAdding }) {
   return { adding, handleAdd };
 }
 
-function useRedditAdd({ username, cookie, showToast, finishAdding }) {
+function useRedditAdd({ username, cookie, showToast, finishAdding }: AddStepDeps & { username: string; cookie: string }) {
   const [addingReddit, setAddingReddit] = useState(false);
 
   const handleAddReddit = async () => {
@@ -77,7 +88,7 @@ function useRedditAdd({ username, cookie, showToast, finishAdding }) {
       showToast('Reddit account added');
       finishAdding();
     } catch (err) {
-      showToast(`Couldn't add the Reddit account. ${err.message}`, 'error');
+      showToast(`Couldn't add the Reddit account. ${(err as Error).message}`, 'error');
     } finally {
       setAddingReddit(false);
     }
@@ -86,7 +97,7 @@ function useRedditAdd({ username, cookie, showToast, finishAdding }) {
   return { addingReddit, handleAddReddit };
 }
 
-function useInstagramConnect(showToast) {
+function useInstagramConnect(showToast: ShowToast) {
   const [connecting, setConnecting] = useState(false);
 
   const handleConnectInstagram = async () => {
@@ -96,7 +107,7 @@ function useInstagramConnect(showToast) {
       // same tab: instagram redirects back to /accounts?ig_connected=true
       window.location.href = url;
     } catch (err) {
-      showToast(`Couldn't start Instagram sign-in. ${err.message}`, 'error');
+      showToast(`Couldn't start Instagram sign-in. ${(err as Error).message}`, 'error');
       setConnecting(false);
     }
   };
@@ -104,9 +115,9 @@ function useInstagramConnect(showToast) {
   return { connecting, handleConnectInstagram };
 }
 
-export function useAddAccount({ showToast, loadAccounts }) {
+export function useAddAccount({ showToast, loadAccounts }: AccountActionDeps) {
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [platform, setPlatform] = useState(null);
+  const [platform, setPlatform] = useState<Platform | null>(null);
   const channel = useChannelLookup(showToast);
   const reddit = useRedditFields();
 
@@ -128,7 +139,7 @@ export function useAddAccount({ showToast, loadAccounts }) {
     channel.clearResolved();
   };
 
-  const openWithPlatform = value => {
+  const openWithPlatform = (value: Platform) => {
     setPlatform(value);
     setDialogOpen(true);
   };
@@ -142,3 +153,5 @@ export function useAddAccount({ showToast, loadAccounts }) {
     channel, reddit, channelAdd, redditAdd, instagram,
   };
 }
+
+export type AddAccountFlow = ReturnType<typeof useAddAccount>;

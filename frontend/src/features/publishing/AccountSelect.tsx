@@ -1,10 +1,18 @@
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AccountAvatar } from '@/components/platform';
+import type { AppAccount } from '../../utils/formatters';
 
-export default function AccountSelect({ accounts, value, onChange, disabled }) {
+interface AccountSelectProps {
+  accounts: AppAccount[];
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+}
+
+export default function AccountSelect({ accounts, value, onChange, disabled }: AccountSelectProps) {
   const selected = accounts.find(account => account.id === value);
   return (
-    <Select value={value} onValueChange={onChange} disabled={disabled}>
+    <Select value={value} onValueChange={onChange as (value: string | null) => void} disabled={disabled}>
       <SelectTrigger className="h-(--control-h-lg) w-full" aria-label="Instagram account">
         {selected ? (
           <span className="flex min-w-0 items-center gap-2">

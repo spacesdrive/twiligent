@@ -7,8 +7,17 @@ import { cn } from '@/lib/utils';
 import StatusBadge from './StatusBadge';
 import { ACTIVE_BULK, BULK_STATUS } from './publishConstants';
 import { fileSizeMb, isVideoFile } from './queueHelpers.ts';
+import type { QueueItem } from './queueHelpers.ts';
 
-export default function BulkFileItem({ item, position, processing, onCaptionChange, onRemove }) {
+interface BulkFileItemProps {
+  item: QueueItem;
+  position: number;
+  processing: boolean;
+  onCaptionChange: (id: number, caption: string) => void;
+  onRemove: (id: number) => void;
+}
+
+export default function BulkFileItem({ item, position, processing, onCaptionChange, onRemove }: BulkFileItemProps) {
   const isActive = ACTIVE_BULK.includes(item.status);
   return (
     <li className={cn('flex items-start gap-3 rounded-field border p-3', isActive ? 'border-brand/40 bg-brand-soft/20' : 'border-line')}>

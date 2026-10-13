@@ -1,8 +1,19 @@
 import { AlertCircle, Calendar, CheckCircle2, ExternalLink, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import type { AppAccount } from '../../utils/formatters';
+import type { ContentTypeOption } from './publishConstants';
+import type { PublishProgressState } from './usePublishProgress';
 
-export default function PublishResult({ progress, selectedType, selectedAcct, scheduleMode, onReset }) {
+export interface PublishResultProps {
+  progress: PublishProgressState;
+  selectedType: ContentTypeOption | undefined;
+  selectedAcct: AppAccount | undefined;
+  scheduleMode: boolean;
+  onReset: () => void;
+}
+
+export default function PublishResult({ progress, selectedType, selectedAcct, scheduleMode, onReset }: PublishResultProps) {
   const { publishStatus, statusMessage, publishedMediaId } = progress;
 
   if (publishStatus === 'done') {

@@ -7,6 +7,17 @@ import { EmptyState } from '@/components/StateViews';
 import OverdueAlert from './OverdueAlert';
 import ScheduledPostRow from './ScheduledPostRow';
 import { filterScheduledPosts, overduePostsOf, scheduledStatusChips } from './scheduleHelpers.ts';
+import type { AppAccount } from '../../utils/formatters';
+import type { ScheduledPostRemoval } from './useScheduledPostDelete';
+import type { ScheduledPostEditor } from './useScheduledPostEdit';
+import type { ScheduledPostsState } from './useScheduledPosts';
+
+interface ScheduledPostsSectionProps {
+  schedule: ScheduledPostsState;
+  editor: ScheduledPostEditor;
+  removal: ScheduledPostRemoval;
+  igAccounts: AppAccount[];
+}
 
 function ScheduledPostsHeader() {
   return (
@@ -26,7 +37,7 @@ function ScheduledPostsHeader() {
   );
 }
 
-export default function ScheduledPostsSection({ schedule, editor, removal, igAccounts }) {
+export default function ScheduledPostsSection({ schedule, editor, removal, igAccounts }: ScheduledPostsSectionProps) {
   const { scheduledPosts, statusFilter } = schedule;
   const filteredScheduled = filterScheduledPosts(scheduledPosts, statusFilter);
   const overdueCount = overduePostsOf(scheduledPosts).length;

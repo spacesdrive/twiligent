@@ -5,8 +5,12 @@ import { Button } from '@/components/ui/button';
 import SurfaceBox from '@/components/SurfaceBox';
 import { cn } from '@/lib/utils';
 import { browserStorage, completedSteps, readProgress, repoBaseUrl, saveProgress } from './schedulingProgress';
+import type { SetupProgress } from './schedulingProgress';
 import GithubRepoForm from './GithubRepoForm';
 import SchedulingSetupSteps from './SchedulingSetupSteps';
+import type { GithubRepoFormProps } from './GithubRepoForm';
+
+export type SchedulingSetupGuideProps = Omit<GithubRepoFormProps, 'canSave'>;
 
 function SetupNotes() {
   return (
@@ -21,14 +25,14 @@ function SetupNotes() {
   );
 }
 
-export default function SchedulingSetupGuide({ owner, repo, onOwnerChange, onRepoChange, onSave, saving }) {
-  const [done, setDone] = useState(() => readProgress(browserStorage));
+export default function SchedulingSetupGuide({ owner, repo, onOwnerChange, onRepoChange, onSave, saving }: SchedulingSetupGuideProps) {
+  const [done, setDone] = useState<SetupProgress>(() => readProgress(browserStorage));
 
   useEffect(() => {
     saveProgress(browserStorage, done);
   }, [done]);
 
-  const toggle = key => () => setDone(prev => ({ ...prev, [key]: !prev[key] }));
+  const toggle = (key: string) => () => setDone(prev => ({ ...prev, [key]: !prev[key] }));
   const user = owner.trim();
   const base = repoBaseUrl(owner, repo);
   const completed = completedSteps(done);

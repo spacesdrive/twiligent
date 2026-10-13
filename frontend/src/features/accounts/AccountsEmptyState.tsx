@@ -2,8 +2,13 @@ import React from 'react';
 import SectionHeader from '@/components/SectionHeader';
 import ChoiceCard from '@/components/ChoiceCard';
 import { PLATFORM_CHOICES } from './platformChoices';
+import type { Platform } from '@shared/types/domain.ts';
 
-export default function AccountsEmptyState({ onChoose }) {
+export interface AccountsEmptyStateProps {
+  onChoose: (platform: Platform) => void;
+}
+
+export default function AccountsEmptyState({ onChoose }: AccountsEmptyStateProps) {
   return (
     <div className="flex flex-col gap-4">
       <SectionHeader title="Choose what to connect" />

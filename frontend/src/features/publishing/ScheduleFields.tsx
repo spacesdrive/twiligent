@@ -3,8 +3,15 @@ import { FieldRow } from '@/components/DetailPanel';
 import ScheduleHint from './ScheduleHint';
 import ScheduleToggle from './ScheduleToggle';
 import { utcDateInput } from './scheduleHelpers.ts';
+import type { SinglePostFields } from './publishHelpers.ts';
+import type { SinglePostForm } from './useSinglePostForm';
 
-export default function ScheduleFields({ fields, setField }) {
+interface ScheduleFieldsProps {
+  fields: SinglePostFields;
+  setField: SinglePostForm['setField'];
+}
+
+export default function ScheduleFields({ fields, setField }: ScheduleFieldsProps) {
   return (
     <div className="flex flex-col gap-4 border-t border-divider pt-5">
       <FieldRow label="When">

@@ -6,8 +6,13 @@ import { TableCell, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { CAPTION_LIMIT } from './publishConstants';
 import { utcDateInput } from './scheduleHelpers.ts';
+import type { ScheduledPostEditor } from './useScheduledPostEdit';
 
-export default function ScheduledPostEditRow({ editor }) {
+interface ScheduledPostEditRowProps {
+  editor: ScheduledPostEditor;
+}
+
+export default function ScheduledPostEditRow({ editor }: ScheduledPostEditRowProps) {
   const { draft, setDraftField, savingEdit } = editor;
   return (
     <TableRow className="hover:bg-transparent">

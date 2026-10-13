@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { Check, Copy } from 'lucide-react';
 
-export default function CopyChip({ text }) {
+export interface CopyChipProps {
+  text: string;
+}
+
+export default function CopyChip({ text }: CopyChipProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {

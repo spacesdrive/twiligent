@@ -9,8 +9,29 @@ import BulkScheduleFields from './BulkScheduleFields';
 import IconInput from './IconInput';
 import TypePicker from './TypePicker';
 import { bulkActionLabel } from './queueHelpers.ts';
+import type { AppAccount } from '../../utils/formatters';
+import type { BulkSettings as BulkSettingsValues } from './publishHelpers.ts';
+import type { BulkSettingsState } from './useBulkSettings';
 
-function BulkFooter({ settings, pending, processing, onStart, onStop }) {
+interface BulkFooterProps {
+  settings: BulkSettingsValues;
+  pending: number;
+  processing: boolean;
+  onStart: () => void;
+  onStop: () => void;
+}
+
+interface BulkSettingsProps {
+  bulk: BulkSettingsState;
+  igAccounts: AppAccount[];
+  pending: number;
+  processing: boolean;
+  onStart: () => void;
+  onStop: () => void;
+  onApplyCaption: () => void;
+}
+
+function BulkFooter({ settings, pending, processing, onStart, onStop }: BulkFooterProps) {
   if (processing) {
     return (
       <Button variant="destructive" size="lg" className="w-full" onClick={onStop}>
@@ -26,7 +47,7 @@ function BulkFooter({ settings, pending, processing, onStart, onStop }) {
   );
 }
 
-export default function BulkSettings({ bulk, igAccounts, pending, processing, onStart, onStop, onApplyCaption }) {
+export default function BulkSettings({ bulk, igAccounts, pending, processing, onStart, onStop, onApplyCaption }: BulkSettingsProps) {
   const { settings, setSetting } = bulk;
   const footer = <BulkFooter settings={settings} pending={pending} processing={processing} onStart={onStart} onStop={onStop} />;
   return (
