@@ -48,7 +48,7 @@ scripts/              publish-scheduled.ts, run by GitHub Actions with no depend
 - `npm install` at the root installs both apps. Never run `npm install` inside `backend/` or `frontend/`, and never commit a lockfile there.
 - `npm run dev` starts the Worker (port 8787) and Vite (port 5173) together; `npm run typecheck`, `npm test`, `npm run lint` and `npm run build` cover the whole repo.
 - Add a dependency to the app that uses it: `npm install <pkg> --workspace backend` or `--workspace frontend`. Only shared dev tooling belongs in the root `package.json`.
-- Tests never live next to source files. A test for `backend/services/youtube.ts` is `backend/tests/services/youtube.test.ts`; a test for `frontend/src/lib/accounts.ts` is `frontend/tests/lib/accounts.test.ts`.
+- Tests never live next to source files. A test for `backend/services/accountService.ts` is `backend/tests/services/accountService.test.ts`; a test for `frontend/src/lib/accounts.ts` is `frontend/tests/lib/accounts.test.ts`.
 
 ---
 

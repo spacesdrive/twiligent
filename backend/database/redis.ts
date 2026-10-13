@@ -11,7 +11,7 @@ function credentials(env: Env): { url: string; token: string } | null {
     return { url, token };
 }
 
-// one quick retry instead of the default five (about 4 seconds); lib/cache.ts then skips Redis for a while
+// one quick retry instead of the default five (about 4 seconds); the cache repository then skips Redis for a while
 export function getRedis(env: Env): Redis | null {
     const config = credentials(env);
     if (!config) return null;

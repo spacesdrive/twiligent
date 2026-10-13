@@ -26,7 +26,7 @@ Because Node runs `.ts` files by removing the types, only syntax that can be era
 - No `enum`. Use a union of string literals, or an object with `as const`.
 - No `namespace` with runtime code, no parameter properties (`constructor(private x)`), no `import x = require()`.
 - Type-only imports use `import type { X }` or `import { type X }`. `verbatimModuleSyntax` makes this an error otherwise, and without it Node would try to import a value that does not exist.
-- Relative imports name the file with its extension: `import { getAccounts } from '../lib/db.ts'`. The frontend's `@/` imports stay extensionless because Vite resolves them; files imported by Node tests (see `docs/workflows/TESTING.md`) use relative `.ts` imports only.
+- Relative imports name the file with its extension: `import { safeAccount } from '../lib/safeAccount.ts'`. The frontend's `@/` imports stay extensionless because Vite resolves them; files imported by Node tests (see `docs/workflows/TESTING.md`) use relative `.ts` imports only.
 
 ## Where Types Live
 
@@ -34,7 +34,10 @@ Because Node runs `.ts` files by removing the types, only syntax that can be era
 |---|---|
 | Shapes the API sends or receives: accounts, posts, analytics, request bodies, responses | `shared/types/*.ts` (`domain.ts`, `youtube.ts`, `instagram.ts`, `reddit.ts`) |
 | Worker bindings and Hono context | `backend/types/env.ts` (`Env`), `backend/types/app.ts` (`AppEnv`, `AppContext`, `AppVariables`) |
-| Raw payloads from YouTube, Instagram and Reddit | The service module that parses them (`YouTubeApiVideo` in `services/youtubeApi.ts`) |
+| Request metadata for services | `backend/types/context.ts` (`RequestContext`) |
+| Service and repository contracts | The module that implements them (`AccountService` and `AccountServiceDeps` in `services/accountService.ts`, `AccountRepository` in `repositories/accountRepository.ts`); `Services` in `backend/container.ts` |
+| Error codes | `ApiErrorCode` and `ApiFailure` in `shared/types/domain.ts`; the error classes in `backend/lib/errors.ts` |
+| Raw payloads from YouTube, Instagram and Reddit | The platform module that parses them (`YouTubeApiVideo` in `services/youtube/youtubeApi.ts`) |
 | Props, hook results, local state | The component or hook file, exported when another file needs it |
 
 `shared/types` holds types only. It never imports runtime code, so either app can import it with `import type` and nothing from it reaches a bundle. The backend imports it by relative path (`../../shared/types/domain.ts`), the frontend by alias (`@shared/types/domain.ts`), except files that Node tests import, which use the relative path.
@@ -43,31 +46,38 @@ When a route's response changes, change its type in `shared/types` first. The ty
 
 ## Typing Rules
 
-- `any` is a lint error. Use a precise type. At a true boundary (JSON from `fetch`, `c.req.json()`, a test fake), use `unknown` or cast once to a named interface right where the value enters: `const body = await c.req.json() as AddAccountBody`.
+- `any` is a lint error. Use a precise type. At a true boundary (JSON from `fetch`, a request body, a test fake), use `unknown` or cast once to a named interface right where the value enters: `const data = await response.json() as T & YouTubeApiErrorBody`. Request bodies enter through a validator in `backend/validators/`, which reads each field from `Fields` (`Record<string, unknown>`) and returns the shared request type.
 - Describe external API payloads with an interface covering the fields the code reads, not the whole upstream schema.
 - Exported functions declare their return type. Local helpers may rely on inference.
 - `interface` for object shapes, `type` for unions, aliases and mapped types.
 - Prefer narrowing (`if (!account) return ...`) over non-null assertions. Use `!` only where an earlier check guarantees the value, and never to hide a missing check.
 - Caught errors are `unknown`: read the message with `(err as Error).message`.
-- Response objects built in a route are checked with `satisfies`: `return c.json({ success: true, posts } satisfies ScheduledPostListResponse)`.
+- Response objects built in a controller are checked with `satisfies`: `return c.json({ success: true, posts } satisfies ScheduledPostListResponse)`.
 - No `// @ts-ignore` or `// @ts-expect-error`. Fix the type, or cast narrowly with a one-line comment that says why.
 
 ### Backend patterns
 
 ```ts
-import { Hono } from 'hono';
-import type { AppEnv, AppContext } from '../types/app.ts';
-
-const app = new Hono<AppEnv>();
-
-app.get('/accounts', async (c) => {
-    const accounts = await getAccounts(c.get('supabase'), c.get('userId'));
-    return c.json(accounts.map(safeAccount) satisfies AccountListResponse);
+// controllers: createHandlers keeps the validator's types, so c.req.valid() is typed
+export const addRedditAccount = controller.createHandlers(jsonBody(parseRedditAccount), async c => {
+    const account = await servicesFor(c).accounts.addReddit(c.get('userId'), c.req.valid('json'));
+    return c.json({ success: true, account: safeAccount(account) } satisfies AccountResponse);
 });
 
-// handlers extracted from the router take the typed context
-export async function callbackHandler(c: AppContext) { /* ... */ }
+// services: an interface for the contract and one for the dependencies, built by a factory
+export interface SettingsService {
+    githubSettings(userId: string): Promise<GitHubSettingsResponse>;
+}
+
+export function createSettingsService({ settings, config }: SettingsDeps): SettingsService {
+    return { /* ... */ };
+}
+
+// middleware and helpers outside a router take the typed context
+export async function requireAuth(c: AppContext, next: Next): Promise<void> { /* ... */ }
 ```
+
+Failures are typed errors from `backend/lib/errors.ts` (`throw new NotFoundError('Account not found')`), never a returned error object.
 
 ### Frontend patterns
 
@@ -97,14 +107,14 @@ ES modules everywhere (`"type": "module"` in both workspaces). Use `import`/`exp
 
 | Kind | Name | Example |
 |---|---|---|
-| Backend modules | `camelCase.ts` | `server.ts`, `db.ts`, `instagramApi.ts` |
+| Backend modules | `camelCase.ts`, with the layer as a suffix where there is one | `server.ts`, `accountRoutes.ts`, `accountController.ts`, `accountService.ts`, `accountRepository.ts`, `instagramApi.ts` |
 | Frontend helpers and services | `camelCase.ts` | `api.ts`, `formatters.ts`, `overviewStats.ts` |
 | React components and pages | `PascalCase.tsx` | `Overview.tsx`, `AppContext.tsx` |
 | Feature hooks | `useCamelCase.ts` in the feature folder | `useOverviewData.ts` |
 | Shared hooks | `use-kebab-case.ts` in `src/hooks` | `use-account-analytics.ts` |
 | shadcn generated files | `kebab-case.tsx`, do not rename | `dropdown-menu.tsx` |
 | Type-only modules | `camelCase.ts` | `shared/types/domain.ts`, `backend/types/env.ts` |
-| Tests | `<source name>.test.ts` in the workspace `tests/` folder | `backend/tests/services/youtube.test.ts` |
+| Tests | `<source name>.test.ts` in the workspace `tests/` folder | `backend/tests/services/youtube/youtubeChannels.test.ts` |
 
 A `.tsx` extension is only for files that contain JSX.
 
@@ -120,44 +130,38 @@ Write no comments by default. Add a comment only when the WHY is non-obvious and
 
 **Do write (sparingly):**
 ```ts
-// userId=null means service-level - used by cron handlers that scan all users
-export async function getAccounts(supabase: SupabaseClient, userId: string | null = null): Promise<Account[]> { ... }
+// methods named ...ForUser filter by the verified user id; the others reach every user and are only for cron jobs
+export interface AccountRepository { ... }
 ```
 
 ## Naming
 
-- Functions and variables: `camelCase` - `getAccounts`, `computeVideoAnalytics`, `scheduledAt`
+- Functions and variables: `camelCase` - `listForUser`, `computeVideoAnalytics`, `scheduledAt`
 - Types, interfaces and React components: `PascalCase` - `ScheduledPost`, `ChannelAnalytics`
 - Constants: `SCREAMING_SNAKE_CASE` only for true module-level constants
 - Prop interfaces: `<Component>Props`; request and response types: `<Thing>Request`, `<Thing>Response`
 
 Prefer names that describe intent, not implementation:
-- `getVideosCache` not `redisGetVideos`
+- `cache.getVideos` not `redisGetVideos`
 - `requireAuth` not `jwtMiddleware`
 - `safeAccount` not `stripToken`
 
 ## Error Handling
 
-In **route handlers**, always catch and return JSON errors:
+In **controllers**, do not catch: a thrown error reaches `middleware/errorHandler.ts`, which answers with the status for its code and `{ success: false, code, message, requestId }`.
+
+In **services and platform modules**, throw a typed error from `backend/lib/errors.ts` and let it propagate:
 ```ts
-try {
-    const data = await someOperation();
-    return c.json(data);
-} catch (err) {
-    console.error('GET /my-route:', (err as Error).message);
-    return c.json({ error: (err as Error).message }, 500);
-}
+if (!account) throw new NotFoundError('Account not found');
+if (data.error) throw new UpstreamError(data.error.message, { status: data.error.code });
 ```
 
-In **service functions**, throw descriptive errors and let the caller decide how to handle them:
+In **the cache repository**, always catch and fall back; cache failures must never bubble up:
 ```ts
-if (data.error) throw new Error(data.error.message);
+try { return await redis.get<T>(key); } catch { markDown(); return null; }
 ```
 
-In **cache functions**, always catch and silently ignore; cache failures must never bubble up:
-```ts
-try { return await redis.get<T>(key); } catch { return null; }
-```
+See `docs/guidelines/ERROR_HANDLING.md`.
 
 In **frontend components**, catch API errors and show toasts:
 ```ts

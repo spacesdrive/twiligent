@@ -1,35 +1,60 @@
 # Error Handling Standards
 
+Every backend failure is a typed error thrown where the problem is found and formatted in one place. `docs/architecture/backend/REQUEST_PIPELINE.md` has the full table of errors, codes and statuses.
+
+## Typed Errors (`backend/lib/errors.ts`)
+
+| Error | Code | Status | Throw when |
+|---|---|---|---|
+| `ValidationError` | `VALIDATION_ERROR` | 400 | Input is missing or malformed, or a stored field the request needs is missing |
+| `UnauthorizedError` | `UNAUTHORIZED` | 401 | No token, or an invalid or expired one (thrown by `requireAuth` only) |
+| `ForbiddenError` | `FORBIDDEN` | 403 | Reserved; another user's record is a `NotFoundError` |
+| `NotFoundError` | `NOT_FOUND` | 404 | The record does not exist for this user, or is on the wrong platform |
+| `ConflictError` | `CONFLICT` | 409 | The account is already added |
+| `UpstreamError` | `UPSTREAM_ERROR` | 502 | YouTube, Instagram or Reddit answered with an error |
+| `NotConfiguredError` | `NOT_CONFIGURED` | 503 | A Worker secret the request needs is not set |
+| `UpstreamTimeoutError` | `UPSTREAM_TIMEOUT` | 504 | A platform call was cancelled or timed out |
+| `DatabaseError` | `DATABASE_ERROR` | 500 | A Supabase query failed (thrown by `repositories/query.ts`) |
+
+An error carries a code, not a status; `middleware/errorHandler.ts` maps the code to the status. Anything that is not an `AppError` becomes `INTERNAL_ERROR` (500).
+
 ## Layer-by-Layer Rules
 
-### External API Calls (services/)
+### Platform API Calls (`services/youtube/`, `services/instagram/`, `services/reddit/`)
 
-Throw descriptive errors immediately when the external API returns an error object. Let the caller decide what to do:
-
-```ts
-const data = await res.json() as YouTubeApiErrorBody;
-if (data.error) throw new Error(data.error.message);
-```
-
-Cast the parsed JSON once to an interface that covers the fields the service reads (see `docs/guidelines/TYPESCRIPT.md`).
-
-For HTTP-level errors (non-200 but no error body):
-```ts
-if (!res.ok) throw new Error(`YouTube API ${res.status}: ${await res.text()}`);
-```
-
-### Database Calls (lib/db.ts)
-
-Check the Supabase `error` field and throw:
+Throw an `UpstreamError` as soon as the platform returns an error, keeping the platform's own wording (users can act on it) and its reason and status:
 
 ```ts
-const { data, error } = await supabase.from('accounts').select('*').eq('user_id', userId);
-if (error) throw error;
+const data = await response.json() as T & YouTubeApiErrorBody;
+if (data.error) {
+    throw new UpstreamError(data.error.message, { reason: data.error.errors?.[0]?.reason || '', status: data.error.code });
+}
 ```
 
-Supabase errors are objects with `message`, `code`, and `details`. Throwing the error object directly passes the message through cleanly.
+`UpstreamError` removes URLs from its message, because a platform error can echo the request URL with the API key or token in it. Cast the parsed JSON once to an interface that covers the fields the module reads (see `docs/guidelines/TYPESCRIPT.md`).
 
-### Cache Operations (lib/cache.ts)
+Pass the request's `AbortSignal` to every `fetch`. A cancelled or timed out call becomes an `UpstreamTimeoutError`; a network failure an `UpstreamError`:
+
+```ts
+try {
+    response = await fetch(url.toString(), { signal });
+} catch (err) {
+    if (isAbortError(err)) throw new UpstreamTimeoutError('YouTube', err);
+    throw new UpstreamError(`YouTube could not be reached (${(err as Error).message})`, { cause: err });
+}
+```
+
+### Database Calls (`repositories/`)
+
+Run every query through `execute`, `rows` or `maybeRow` in `repositories/query.ts`. A thrown error or a returned Supabase `error` becomes a `DatabaseError` named after the operation:
+
+```ts
+const found = await rows<AccountRow>('accounts.listForUser', () => db.from('accounts').select(COLUMNS).eq('user_id', userId));
+```
+
+The client gets a plain message (`The database request failed. Try again in a moment.`); the driver's message, which can name tables and constraints, goes to the log only. A query that finds nothing is not an error: `maybeRow` returns `null` and the service decides whether that is a `NotFoundError`.
+
+### Cache Operations (`repositories/analyticsCacheRepository.ts`)
 
 Always catch and fall back silently - cache failures must never surface to users. Every `catch` returns an explicit fallback with a one-line reason, so no catch block is empty:
 
@@ -38,41 +63,46 @@ try {
     return await redis.get<T>(key);
 } catch {
     // a cache miss falls back to the live api
+    markDown();
     return null;
 }
 ```
 
-`cache.ts` keeps this in three private helpers (`readKey`, `writeKey`, `deleteKey`) that every exported function uses. Do not log cache errors - they create noise for transient Redis connection issues.
+The repository keeps this in three private helpers (`readKey`, `writeKey`, `deleteKey`) that every method uses. Do not log cache errors - they create noise for transient Redis connection issues.
 
-### Route Handlers (routes/)
+### Services (`services/*Service.ts`)
 
-Wrap the main logic in try/catch, log the error, and return a JSON error response:
+Services hold the rules, so they throw most errors: `NotFoundError` when a `...ForUser` lookup returns `null`, `ValidationError` when a stored field the call needs is missing or a business rule fails, `ConflictError` for a duplicate, `NotConfiguredError` when a Worker secret is not set. Let platform and database errors propagate unchanged.
+
+Catch only when one failure must not stop other work, and say why:
 
 ```ts
-router.get('/accounts/:id/analytics', async (c) => {
-    const id = c.req.param('id');
-    const userId = c.get('userId');
-    const supabase = c.get('supabase');
-    try {
-        const account = await getAccountById(supabase, id, userId);
-        if (!account) return c.json({ error: 'Account not found' }, 404);
-        const analytics = await getAnalytics(account, c.env);
-        return c.json(analytics);
-    } catch (err) {
-        console.error(`GET /accounts/${id}/analytics:`, (err as Error).message);
-        return c.json({ error: (err as Error).message }, 500);
-    }
+// one failure must not stop the rest; results line up with the accounts by index
+const settled = await Promise.allSettled(listed.map(account => refreshListed(userId, account)));
+```
+
+### Controllers (`controllers/`)
+
+Controllers do not catch errors. A thrown error goes straight to the error handler:
+
+```ts
+export const getRedditAnalytics = controller.createHandlers(async c => {
+    const result = await servicesFor(c).redditAnalytics.analytics(c.get('userId'), pathParam(c, 'id'));
+    return c.json(result satisfies RedditCacheData);
 });
 ```
 
-Caught errors are `unknown` in strict TypeScript, so read the message with `(err as Error).message`.
+The one exception is the Instagram OAuth callback, which catches every error and redirects the browser back to the accounts page with `ig_error`, because the user arrives there from Instagram, not from the app.
 
-**Status codes:**
-- `400` - bad request (missing required fields, invalid input)
-- `401` - unauthorized (handled by `requireAuth`, not route handlers)
-- `403` - forbidden (account belongs to another user)
-- `404` - resource not found
-- `500` - unexpected server error
+### Global Error Handler (`middleware/errorHandler.ts`)
+
+Registered with `app.onError(errorHandler)` and `app.notFound(notFoundHandler)`. It is the only place a failure becomes a response:
+
+```json
+{ "success": false, "code": "NOT_FOUND", "message": "Account not found", "requestId": "3f2a..." }
+```
+
+It also maps Hono's own `HTTPException` (such as a malformed JSON body) by status, and answers anything else with `INTERNAL_ERROR` and a message asking the user to quote the request id. The rate limiter builds its 429 body with the same `errorBody()` helper, plus `retryAfter`.
 
 ### Frontend API Calls
 
@@ -95,35 +125,24 @@ async function handleSubmit() {
 }
 ```
 
-The `api.ts` `request()` function throws an `Error` built from the response's `message` or `error` field when the status is not 2xx, so `(err as Error).message` is the backend's error string. A body with `success: false` sent with a 2xx status is returned, not thrown; methods typed `ApiResult<T>` make the caller check `success`. See `docs/architecture/frontend/API_LAYER.md`.
-
-### Global Error Handler (server.ts)
-
-The Hono global error handler catches any uncaught errors that bubble up past route handlers:
-
-```ts
-app.onError((err, c) => {
-    console.error('Worker error:', err.message);
-    return c.json({ error: 'Internal server error' }, 500);
-});
-```
-
-This is the last resort. Route handlers should not rely on it.
+The `api.ts` `request()` function throws an `Error` for any status outside 2xx, with the message from `failureMessage(status, body)` in `frontend/src/lib/apiErrors.ts`: the backend's `message`, plus `(request <id>)` on a 5xx so the user can quote it. A 2xx response is always a success, so callers never check `success`. See `docs/architecture/frontend/API_LAYER.md`.
 
 ## Logging
 
-Use `console.error()` for errors in route handlers - Cloudflare Workers captures these in the dashboard logs.
+Log through `lib/logger.ts`: services use `context.log`, middleware and controllers use `requestLogger(c)`. Each call writes one JSON line with the level, message, request id, user id and any fields:
 
-Format: `console.error('METHOD /path:', (err as Error).message)` - includes the route for easy filtering.
+```ts
+log.error('scheduled post failed', { postId: post.id, ...errorFields(err) });
+```
 
-Do not log sensitive values: access tokens, API keys, user emails, Supabase URLs.
+`errorFields(err)` adds the error's message and cause with URLs removed, never the stack. The error handler already logs every failed request (500 and above at `error`, 4xx at `warn`), and `requestContext` writes one access line per request, so do not log an error you are about to throw. Never call `console` directly.
 
-Do not use `console.log()` in production code paths except for cron job status messages (these are useful for monitoring scheduled tasks).
+Do not log sensitive values: access tokens, API keys, cookies, user emails, Supabase URLs.
 
 ## User-Facing Error Messages
 
 Backend errors should be descriptive but not expose implementation details:
-- Good: `'Account not found'`, `'Instagram API rate limit exceeded'`, `'Missing required field: scheduledAt'`
+- Good: `'Account not found'`, `'This channel is already added'`, `'scheduledAt must be a valid future date'`
 - Bad: `'supabase error: duplicate key value violates unique constraint accounts_pkey'`
 
-When the Supabase or Instagram API returns a message that is end-user readable, pass it through. When it is technical (e.g., PostgreSQL constraint violation), translate it.
+Say what went wrong and what to do (`'No session cookie stored - re-add this account with a session cookie from reddit.com DevTools'`). When the platform API returns a message that is end-user readable, `UpstreamError` passes it through. Database driver messages never reach the client.

@@ -64,7 +64,7 @@ The Instagram OAuth flow uses a self-verifying HMAC state token to prevent CSRF:
 2. Nothing is stored server-side; the timestamp inside the signed payload expires the state after 10 minutes
 3. On OAuth callback: verify HMAC before accepting the `code` parameter
 
-If the HMAC check fails, the callback returns 400 and discards the code. An attacker cannot forge a valid state without the `INSTAGRAM_APP_SECRET`.
+If the HMAC check fails, the callback discards the code and redirects the browser back to the accounts page with `ig_error=invalid_state`. An attacker cannot forge a valid state without the `INSTAGRAM_APP_SECRET`.
 
 ## Rate Limiting
 
@@ -72,15 +72,17 @@ Every `/api` request is rate limited per client IP before authentication, so a f
 
 ## Input Validation
 
-The backend validates:
-- Required fields: `if (!field) return c.json({ error: 'Missing: field' }, 400)`
-- Platform enum: only known `platform` values are accepted when creating accounts
+The backend validates every body and query string before the controller runs: a parser in `backend/validators/` checks required fields, types and allowed values (`mediaType`, `platform`, sort order) and throws `ValidationError`, which the error handler answers with `400`. Services then check the rules that need stored data, such as a scheduled time in the future or a post that is still pending.
+
+- Required fields: `requiredString(body, 'url', 'url is required')`
+- Allowed values: only known media types are accepted, and scheduled posts accept only the `instagram` platform
 - File types: Cloudinary upload accepts only image and video MIME types
 
 The backend does not validate:
-- URL formats in user-provided content (the platform API will reject invalid URLs)
+- URL formats in user-provided content (the platform API will reject invalid URLs), except tracked content links (Reddit or YouTube only) and tracked item images (`https` only)
 - Text length in scheduled posts (the platform API enforces limits)
-- Future scheduled times (a post scheduled in the past is harmlessly treated as due)
+
+Error responses never carry a stack trace or a database driver message: `DatabaseError` sends a plain message and logs the driver's, and `UpstreamError` removes URLs, which can carry an API key or token, from the platform's message.
 
 ## What the Frontend Can Trust
 

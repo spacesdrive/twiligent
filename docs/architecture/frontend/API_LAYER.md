@@ -9,9 +9,7 @@ The single source of truth for all frontend-to-backend communication. **Never ca
 ```ts
 const API = import.meta.env.VITE_API_URL || 'http://localhost:8787/api';
 
-// callers that check success also handle a failure body the server sent with a 2xx status; success bodies carry no message
-export type ApiResult<T> = (T & { message?: undefined }) | ApiFailure;
-
+// every failure arrives with a 4xx or 5xx status and the ApiFailure body, so a 2xx is always a success
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
@@ -23,34 +21,38 @@ async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
         },
         ...options,
     });
-    const data = await res.json() as T & ResponseStatusFields;
-    if (!res.ok && !data.success) throw new Error(data.message || data.error || 'Request failed');
-    return data;
+    // a proxy error page is not JSON; the status still explains the failure
+    const data = await res.json().catch(() => null) as unknown;
+    if (!res.ok) throw new Error(failureMessage(res.status, data as Partial<ApiFailure> | null));
+    return data as T;
 }
 ```
 
-`T` is the response type from `shared/types/` that the route returns; `request<T>()` casts the parsed JSON to it once and does not validate it at runtime. `ResponseStatusFields` (`success?`, `message?`, `error?`) is the private type for the fields `request()` reads to decide whether the call failed. `import.meta.env` is typed by `ImportMetaEnv` in `frontend/src/vite-env.d.ts`; add a new `VITE_*` variable there.
+`T` is the response type from `shared/types/` that the route returns; `request<T>()` casts the parsed JSON to it once and does not validate it at runtime. `import.meta.env` is typed by `ImportMetaEnv` in `frontend/src/vite-env.d.ts`; add a new `VITE_*` variable there.
 
 **What it does automatically:**
 1. Gets the current Supabase session token
 2. Attaches `Authorization: Bearer <token>` header if logged in
-3. Parses the JSON response
-4. Throws an `Error` if the response is not OK (unless `data.success` is explicitly true)
+3. Parses the JSON response (a body that is not JSON, such as a proxy error page, is read as `null`)
+4. Throws an `Error` for any status outside 2xx; a 2xx response is always a success
 
-**Error handling:** The error message comes from the backend's `message` or `error` field, falling back to `'Request failed'`. Callers are responsible for catching this error and showing appropriate UI.
+**Error handling:** The backend answers every failure with a 4xx or 5xx status and one body, the `ApiFailure` type in `shared/types/domain.ts`:
 
-### `ApiResult<T>`
+```json
+{ "success": false, "code": "NOT_FOUND", "message": "Account not found", "requestId": "3f2a..." }
+```
 
-A few routes answer `{ success: false, message }` (the `ApiFailure` type in `shared/types/domain.ts`) with a 2xx status, which `request()` returns instead of throwing. Their methods return `request<ApiResult<T>>()`: `createIGContainer`, `publishIGContainer`, `getScheduledPosts`, `createScheduledPost` and `updateScheduledPost`. The caller narrows on `success` before reading the data:
+`failureMessage(status, body)` in `frontend/src/lib/apiErrors.ts` builds the thrown message: the backend's `message`, or `The server answered with status <status>. Try again in a moment.` when there is none. For a 5xx failure it adds the request id, `(request <id>)`, so a user can quote it and the owner can find the matching log line. Callers are responsible for catching this error and showing appropriate UI. Callers never check `success` on a 2xx response; there is no failure body with a success status.
 
 ```ts
-const res = await api.createScheduledPost(post);
-if (!res.success) {
-    showToast(res.message, 'error');
-    return;
+// a server-side failure is logged under its request id, so the message carries the id for the user to quote
+export function failureMessage(status: number, body: Partial<ApiFailure> | null): string {
+    const message = body?.message || `The server answered with status ${status}. Try again in a moment.`;
+    return status >= 500 && body?.requestId ? `${message} (request ${body.requestId})` : message;
 }
-// res is ScheduledPostResponse here
 ```
+
+A 429 body also carries `retryAfter` (seconds); `request()` shows its `message`, which already says how long to wait. See `docs/architecture/backend/REQUEST_PIPELINE.md` for the codes and statuses.
 
 ## The `api` Object
 

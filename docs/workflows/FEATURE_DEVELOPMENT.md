@@ -68,8 +68,8 @@ Determine:
 
 **Step 10 - Identify reuse opportunities**  
 Before creating new patterns, check:
-- Is there a db.ts function that almost does what you need? Extend it.
-- Is there a service function you can call? Use it.
+- Is there a repository method that almost does what you need? Extend it.
+- Is there a service method or platform function you can call? Use it.
 - Is there a shadcn component that fits? Use it.
 - Is there a formatting function in formatters.ts? Use it.
 
@@ -80,20 +80,20 @@ Before creating new patterns, check:
 **Step 11 - Implement in this order:**  
 1. DB schema changes (if any) - see `docs/features/NEW_DATABASE_TABLE.md`
 2. Types: request, response and entity shapes in `shared/types/` (types only, no runtime code); see `docs/guidelines/TYPESCRIPT.md`
-3. Backend: `lib/db.ts` additions (new query functions)
-4. Backend: `services/` additions (new external API calls)
-5. Backend: `routes/` additions (new route handlers on `new Hono<AppEnv>()`, responses checked with `satisfies`)
-6. Backend: `server.ts` mounting (if new router)
+3. Backend: `validators/` parsers for new request bodies and query strings
+4. Backend: `repositories/` additions (new query methods; user-scoped ones end in `ForUser`)
+5. Backend: `services/` additions (business rules in a feature service, platform calls in `services/<platform>/`), wired in `container.ts`
+6. Backend: `controllers/` (built with `controller.createHandlers`, responses checked with `satisfies`) and a line in the feature's `routes/<feature>Routes.ts`; a new route table goes in `routes/index.ts`. See `docs/features/NEW_API_ENDPOINT.md`
 7. Frontend: `services/api.ts` additions (new API methods returning the shared types)
 8. Frontend: new page/feature component, with a `<Component>Props` interface for each component that takes props
 9. Frontend: `App.tsx` routing (if new page)
 10. Frontend: `layout/navigation.ts` (if new page needs a nav entry)
-11. Tests for new pure logic, in the workspace's `tests/` folder at the path that mirrors the source file (`backend/services/youtube.ts` -> `backend/tests/services/youtube.test.ts`, `frontend/src/lib/accounts.ts` -> `frontend/tests/lib/accounts.test.ts`); see `docs/workflows/TESTING.md`
+11. Tests for new pure logic, in the workspace's `tests/` folder at the path that mirrors the source file (`backend/routes/accountRoutes.ts` -> `backend/tests/routes/accountRoutes.test.ts`, `backend/services/youtube/youtubeChannels.ts` -> `backend/tests/services/youtube/youtubeChannels.test.ts`, `frontend/src/lib/accounts.ts` -> `frontend/tests/lib/accounts.test.ts`); see `docs/workflows/TESTING.md`
 
 If the feature needs a new npm package (approval required, see CLAUDE.md), add it to the app that uses it from the repository root: `npm install <pkg> --workspace backend` or `--workspace frontend`. Never run `npm install` inside `backend/` or `frontend/`; the root `package-lock.json` is the only lockfile.
 
 **Step 12 - Eliminate duplication**  
-After implementing, look for logic that duplicates something that already existed. Extract it into the appropriate shared location (`lib/db.ts`, `services/`, `utils/formatters.ts`, shared components).
+After implementing, look for logic that duplicates something that already existed. Extract it into the appropriate shared location (`repositories/`, `services/`, `lib/analyticsMath.ts`, `utils/formatters.ts`, shared components).
 
 ---
 

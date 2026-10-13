@@ -21,24 +21,31 @@ Tests never sit next to source files. Each workspace has a `tests/` folder that 
 
 | Source file | Test file |
 |---|---|
-| `backend/services/youtube.ts` | `backend/tests/services/youtube.test.ts` |
-| `backend/routes/accounts.ts` | `backend/tests/routes/accounts.test.ts` |
+| `backend/services/youtube/youtubeChannels.ts` | `backend/tests/services/youtube/youtubeChannels.test.ts` |
+| `backend/routes/accountRoutes.ts` | `backend/tests/routes/accountRoutes.test.ts` |
 | `backend/routes/publishingRoutes.ts` | `backend/tests/routes/publishingRoutes.test.ts` |
-| `backend/routes/settings.ts` | `backend/tests/routes/settings.test.ts` |
-| `backend/utils/scheduler.ts` | `backend/tests/utils/scheduler.test.ts` |
+| `backend/routes/settingsRoutes.ts` | `backend/tests/routes/settingsRoutes.test.ts` |
+| `backend/services/scheduledPublisher.ts` | `backend/tests/services/scheduledPublisher.test.ts` |
+| `backend/services/tokenRefreshService.ts` | `backend/tests/services/tokenRefreshService.test.ts` |
+| `backend/repositories/accountRepository.ts` | `backend/tests/repositories/accountRepository.test.ts` |
+| `backend/middleware/errorHandler.ts` | `backend/tests/middleware/errorHandler.test.ts` |
+| `backend/validators/fields.ts` | `backend/tests/validators/fields.test.ts` |
 | `frontend/src/lib/accounts.ts` | `frontend/tests/lib/accounts.test.ts` |
+| `frontend/src/lib/apiErrors.ts` | `frontend/tests/lib/apiErrors.test.ts` |
 | `frontend/src/features/analytics/overview/overviewStats.ts` | `frontend/tests/features/analytics/overview/overviewStats.test.ts` |
 | `frontend/src/docs/nav.ts` | `frontend/tests/docs/nav.test.ts` |
 
-Backend tests are in `backend/tests/lib`, `backend/tests/middleware`, `backend/tests/routes`, `backend/tests/services` and `backend/tests/utils`. Shared test helpers (`fakeSupabase.ts`, `fakeFetch.ts`, `golden.ts`, `routeHarness.ts`, the per-platform `*Fixtures.ts` data) and the `*.golden.json` snapshots are in `backend/tests/fixtures/`. Wrangler only bundles files reachable from `server.ts`, so nothing in `backend/tests/` ships in the Worker.
+Backend tests are in `backend/tests/lib`, `backend/tests/middleware`, `backend/tests/repositories`, `backend/tests/routes`, `backend/tests/services` (with `youtube/`, `instagram/` and `reddit/` for the platform modules) and `backend/tests/validators`. A route test is named after its route table (`accountRoutes.test.ts`) and exercises the whole stack below it: controller, service and repository. Shared test helpers (`fakeSupabase.ts`, `fakeFetch.ts`, `golden.ts`, `routeHarness.ts`, the per-platform `*Fixtures.ts` data) and the `*.golden.json` snapshots are in `backend/tests/fixtures/`. Wrangler only bundles files reachable from `server.ts`, so nothing in `backend/tests/` ships in the Worker.
 
 Frontend tests cover shared helpers in `src/lib/` and `src/utils/` (hold-to-confirm timing, command palette ranking, library filtering and paging, platform helpers, and a check that every Lucide icon imported in `src` exists) and page helpers in `src/features/**` and `src/docs/**`, such as `features/analytics/overview/overviewStats.ts`. A testable helper is a plain `.ts` file with no JSX and no `@/` or `@shared/` imports, and its imports of project files (including `shared/types`) are relative paths that end in `.ts`, so Node can load it directly. It uses only erasable TypeScript (no `enum`, no parameter properties) and `import type` for types. This rule lives here, so helper files do not repeat it in a header comment.
 
 Test files import the code under test the same way, by relative path with the `.ts` extension (`../../src/lib/accounts.ts`). Type test fakes narrowly: cast a fake once to the interface it stands in for, rather than using `any`, which is a lint error.
 
+The error contract has its own tests: `tests/middleware/errorHandler.test.ts` (the status and body for each error code, platform messages without URLs, database and unexpected errors hidden from the client, validation and malformed JSON, and unknown routes) and, on the frontend, `tests/lib/apiErrors.test.ts` (the message `request()` throws, with the request id on 5xx). Repository tests (`tests/repositories/*.test.ts`) check the user filter, the `data` merge and the `DatabaseError` for a failed query against the fake Supabase client, and `analyticsCacheRepository.test.ts` the cache keys, versions and failure cooldown. Validator tests (`tests/validators/*.test.ts`) check the field helpers and their messages.
+
 Rate limiting has its own tests: `tests/lib/rateLimit/algorithms.test.ts` (each algorithm's decisions, retry and reset times), `tests/lib/rateLimit/limiter.test.ts` (Redis path, memory fallback, circuit breaker, deny cache, eviction) and `tests/middleware/rateLimit.test.ts` (headers, the 429 body, route filters, IPv6 keys). The Lua scripts in `lib/rateLimit/scripts.ts` cannot run in Node; when you change one, change the twin function in `algorithms.ts` the same way and check both against each other in a Lua VM (see `docs/architecture/backend/RATE_LIMITING.md`).
 
-Backend route and scheduler tests (`tests/routes/*.test.ts`, `tests/utils/scheduler.test.ts`) run the real handlers against `tests/fixtures/fakeSupabase.ts` and a scripted `fetch`, then compare responses, queries and outgoing requests with the `tests/fixtures/*.golden.json` snapshots. Rows tagged with `tableRow(name, row)` are only visible to that table; untagged rows are visible to every table. A refactor must leave the snapshots unchanged. Prettier ignores the snapshots (`.prettierignore`), because the tests compare them byte for byte.
+Backend route and cron service tests (`tests/routes/*Routes.test.ts`, `tests/services/scheduledPublisher.test.ts`, `tests/services/tokenRefreshService.test.ts`) run the real code against `tests/fixtures/fakeSupabase.ts` and a scripted `fetch`, then compare responses, queries and outgoing requests with the `tests/fixtures/*.golden.json` snapshots. Route tests mount a route table with `mountWithContext()` from `tests/fixtures/routeHarness.ts`, which installs the real error handler and not-found handler and sets the request id (`req-test`), the signal and the context values the pipeline would set, so error responses are checked with their real `{ success: false, code, message, requestId }` body and status. Rows tagged with `tableRow(name, row)` are only visible to that table; untagged rows are visible to every table. A refactor must leave the snapshots unchanged. Prettier ignores the snapshots (`.prettierignore`), because the tests compare them byte for byte.
 
 The testing workflow documented here describes what should run before shipping any change.
 
@@ -86,11 +93,14 @@ Prettier and EditorConfig are configured at the root (`.prettierrc.json`, `.pret
 For any backend change, verify the affected routes directly:
 
 ```bash
-# Health check (should always work)
-curl https://twiligent.ujjwalkrai.workers.dev/api/health
+# Health check (should always work); the response carries an X-Request-Id header
+curl -i https://twiligent.ujjwalkrai.workers.dev/api/health
 
 # Authenticated route (replace TOKEN with a real Supabase JWT)
 curl -H "Authorization: Bearer TOKEN" https://twiligent.ujjwalkrai.workers.dev/api/accounts
+
+# Without a token: 401 with { "success": false, "code": "UNAUTHORIZED", "message": ..., "requestId": ... }
+curl -i https://twiligent.ujjwalkrai.workers.dev/api/accounts
 ```
 
 For local testing:
@@ -108,9 +118,17 @@ Open the app in a browser. For each changed area, test:
 - [ ] Login with invalid credentials -> error message shown
 - [ ] Sign out -> redirects to login
 
+**Request pipeline (if middleware, CORS or error handling changed):**
+- [ ] Every response, including errors, has an `X-Request-Id` header and the security headers (`Content-Security-Policy`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff`)
+- [ ] `curl -i -H "Origin: <FRONTEND_URL>" .../api/health` returns `Access-Control-Allow-Origin` with that origin
+- [ ] `curl -i -H "Origin: https://unlisted.example.com" .../api/health` returns no `Access-Control-Allow-Origin` header, and the browser blocks a call from that origin
+- [ ] With the Worker on `localhost`, the Vite dev server on port 5173 can call it
+- [ ] A failing request returns `{ success: false, code, message, requestId }` with the status for its code, and `npx wrangler tail` shows a JSON log line with the same request id
+- [ ] A 5xx error toast in the app ends with `(request <id>)`
+
 **Rate limiting (if changed):**
 - [ ] `curl -i -H "CF-Connecting-IP: 203.0.113.1" http://localhost:8787/api/health` shows `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset`
-- [ ] More requests than the rule allows return `429` with `Retry-After` and a message that says when to retry
+- [ ] More requests than the rule allows return `429` with `Retry-After` and `{ success: false, code: "RATE_LIMITED", message, requestId, retryAfter }`, with a message that says when to retry
 - [ ] The Overview, bulk publishing and tracked content refresh still work without a `429`
 
 **Accounts:**
@@ -142,8 +160,9 @@ Open the app in a browser. For each changed area, test:
 
 - [ ] What happens with no accounts? (empty state)
 - [ ] What happens when the backend is unreachable? (error toast)
-- [ ] What happens when an Instagram token is expired? (descriptive error)
-- [ ] What happens when YouTube API quota is exceeded? (error propagated)
+- [ ] What happens when an Instagram token is expired? (descriptive error, `502`)
+- [ ] What happens when YouTube API quota is exceeded? (YouTube's message propagated, `502`)
+- [ ] What happens when a Worker secret is missing? (`503` with a message naming what is not configured)
 
 ### 6. Console Error Verification
 
@@ -183,11 +202,11 @@ After any change to `scripts/publish-scheduled.ts` or `publish-scheduled.yml`:
 2. Watch the run output
 3. Verify: "No posts due for publishing" (if no scheduled posts) or successful publish
 
-If you have a test post scheduled in the near future, use `GET /api/process-scheduled` to trigger the Worker cron manually.
+If you have a test post scheduled in the near future, use `GET /api/process-scheduled` to run the Worker's publisher (`scheduledPublisher.publishDue()`) manually.
 
 ## Future Test Infrastructure
 
-Already in place: golden tests for `computeVideoAnalytics()`, `computeInstagramAnalytics()` and `computeRedditAnalytics()`, and route tests that run the Hono handlers against a fake Supabase client (`backend/tests/fixtures/`). Still to add, in priority order:
+Already in place: golden tests for `computeVideoAnalytics()`, `computeInstagramAnalytics()` and `computeRedditAnalytics()`, route tests that run each route table, controller, service and repository against a fake Supabase client (`backend/tests/fixtures/`), and repository tests against the same fake. Still to add, in priority order:
 
-1. **Tests for `lib/db.ts` against a real database** - using a Supabase test project
+1. **Tests for the repositories against a real database** - using a Supabase test project
 2. **End-to-end tests** - Playwright for the full login -> view analytics -> publish flow

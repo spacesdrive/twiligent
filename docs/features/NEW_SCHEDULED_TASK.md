@@ -15,67 +15,94 @@ For most tasks: use the Cloudflare Worker cron first. It's simpler and doesn't r
 
 ## Option A: Add a New Worker Cron Handler
 
-### Step 1: Write the handler function
+### Step 1: Write the job as a service method
 
-There is no separate cron module. Cron work lives in the service or utils file it belongs to (`processScheduledPosts` in `backend/utils/scheduler.ts`, `autoRefreshInstagramTokens` in `backend/services/instagram.ts`) and takes the service-role Supabase client that `scheduled()` creates. Database access goes through `lib/db.ts`, called with `userId = null` because a cron job scans every user.
+Cron work is a service method, wired in `backend/container.ts` like any other service (`scheduledPublisher.publishDue()` in `services/scheduledPublisher.ts`, `tokenRefresh.refreshExpiringInstagramTokens()` in `services/tokenRefreshService.ts`). The job receives repositories and a `RequestContext`, so it logs with the cron's request id and passes the cron's deadline signal to every platform call. A job that scans every user uses the cross-user repository methods (`listAll`, `findById`, `updateById`); add one to the repository if the job needs a query that does not exist yet, and keep it out of every request path.
 
 ```ts
-// backend/services/myPlatform.ts
-import type { SupabaseClient } from '@supabase/supabase-js';
-import { getAccounts, updateAccount } from '../lib/db.ts';
+// backend/services/myPlatformTokenRefreshService.ts
+import { refreshMyPlatformToken } from './myPlatform/myPlatformTokens.ts';
+import { errorFields } from '../lib/logger.ts';
+import type { AccountRepository } from '../repositories/accountRepository.ts';
+import type { RequestContext } from '../types/context.ts';
 
-export async function autoRefreshMyPlatformTokens(supabase: SupabaseClient): Promise<void> {
-    const accounts = (await getAccounts(supabase)).filter(a => a.platform === 'myPlatform');
+export interface MyPlatformTokenRefreshDeps {
+    accounts: AccountRepository;
+    context: RequestContext;
+}
 
-    for (const account of accounts) {
-        if (!account.accessToken) continue;
-        try {
-            const accessToken = await refreshMyPlatformToken(account.accessToken);
-            await updateAccount(supabase, account.id, { accessToken });
-        } catch (err) {
-            console.error(`cron/my-platform-refresh account ${account.id}:`, (err as Error).message);
-        }
-    }
+export interface MyPlatformTokenRefreshService {
+    refreshTokens(): Promise<void>;
+}
+
+export function createMyPlatformTokenRefreshService({ accounts, context }: MyPlatformTokenRefreshDeps): MyPlatformTokenRefreshService {
+    const { signal, log } = context;
+
+    return {
+        async refreshTokens() {
+            const listed = (await accounts.listAll()).filter(account => account.platform === 'myPlatform');
+            for (const account of listed) {
+                if (!account.accessToken) continue;
+                try {
+                    const accessToken = await refreshMyPlatformToken(account.accessToken, signal);
+                    await accounts.updateById(account.id, { accessToken });
+                    log.info('my platform token refreshed', { accountId: account.id });
+                } catch (err) {
+                    // one failed account must not stop the others
+                    log.error('my platform token refresh failed', { accountId: account.id, ...errorFields(err) });
+                }
+            }
+        },
+    };
 }
 ```
 
-A cron job must never throw for one bad account: catch per account and log, as above. Comparing `a.platform` with `'myPlatform'` only type-checks once the platform is in the `Platform` union in `shared/types/domain.ts` (see `NEW_INTEGRATION.md`).
+A cron job must never throw for one bad account: catch per account and log, as above. Comparing `account.platform` with `'myPlatform'` only type-checks once the platform is in the `Platform` union in `shared/types/domain.ts` (see `NEW_INTEGRATION.md`).
+
+Add it to `Services` and `createServices()` in `backend/container.ts`:
+
+```ts
+myPlatformTokenRefresh: createMyPlatformTokenRefreshService({ accounts, context }),
+```
 
 ### Step 2: Register the Trigger in `wrangler.toml`
 
 ```toml
 [triggers]
 crons = [
-    "*/15 * * * *",   # existing: processScheduledPosts
-    "0 0 * * *",      # existing: autoRefreshInstagramTokens
-    "30 3 * * *"      # new: autoRefreshMyPlatformTokens (runs at 3:30 AM UTC daily)
+    "*/15 * * * *",   # existing: scheduledPublisher.publishDue()
+    "0 0 * * *",      # existing: tokenRefresh.refreshExpiringInstagramTokens()
+    "30 3 * * *"      # new: myPlatformTokenRefresh.refreshTokens() (runs at 3:30 AM UTC daily)
 ]
 ```
 
-**Important:** every cron trigger calls the same `scheduled()` handler exported from `backend/server.ts`. When you add a new cron string, you must also handle it there.
+**Important:** every cron trigger calls the same `scheduled()` handler exported from `backend/server.ts`, which hands the expression to `runScheduledJob()` in `backend/jobs/scheduled.ts`. When you add a new cron string, you must also handle it there.
 
-### Step 3: Dispatch in `server.ts`
+### Step 3: Dispatch in `jobs/scheduled.ts`
 
 ```ts
-// backend/server.ts
-export default {
-    fetch: app.fetch,
+// backend/jobs/scheduled.ts
+export const PUBLISH_DUE_POSTS_CRON = '*/15 * * * *';
+export const REFRESH_TOKENS_CRON = '0 0 * * *';
+export const REFRESH_MY_PLATFORM_TOKENS_CRON = '30 3 * * *';
 
-    async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext) {
-        const supabase = getSupabase(env);
+export async function runScheduledJob(cron: string, env: Env): Promise<void> {
+    const context = cronContext(cron);
+    const services = createServices({ supabase: getSupabase(env), redis: getRedis(env) }, readConfig(env), context);
 
-        if (event.cron === '*/15 * * * *') {
-            ctx.waitUntil(processScheduledPosts(supabase));
-        } else if (event.cron === '0 0 * * *') {
-            ctx.waitUntil(autoRefreshInstagramTokens(supabase));
-        } else if (event.cron === '30 3 * * *') {
-            ctx.waitUntil(autoRefreshMyPlatformTokens(supabase));
-        }
-    },
-} satisfies ExportedHandler<Env>;
+    if (cron === PUBLISH_DUE_POSTS_CRON) {
+        // ...
+    } else if (cron === REFRESH_TOKENS_CRON) {
+        await services.tokenRefresh.refreshExpiringInstagramTokens();
+    } else if (cron === REFRESH_MY_PLATFORM_TOKENS_CRON) {
+        await services.myPlatformTokenRefresh.refreshTokens();
+    } else {
+        context.log.warn('no job for this cron', { cron });
+    }
+}
 ```
 
-`event.cron` is the exact cron string from `wrangler.toml`, so the strings must match character for character. Run `npm run typecheck` before deploying.
+`event.cron` is the exact cron string from `wrangler.toml`, so the strings must match character for character. `server.ts` already wraps the job in `ctx.waitUntil()`, and the cron context gives it a `cron-` request id and a 14 minute deadline. Add a test in `backend/tests/services/` with fake repositories or the fake Supabase client (see `tokenRefreshService.test.ts`), and run `npm run typecheck` before deploying.
 
 ### Step 4: Test Locally
 

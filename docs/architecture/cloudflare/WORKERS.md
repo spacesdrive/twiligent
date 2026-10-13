@@ -22,20 +22,20 @@ The Worker exports two handlers:
 
 ```ts
 export default {
-    fetch: app.fetch,            // handles HTTP requests (the Hono app)
+    fetch: app.fetch,            // handles HTTP requests (the Hono app from backend/app.ts)
     async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext) {   // handles cron triggers
-        // event.cron - the cron expression that fired
-        // env - Worker environment bindings (secrets + vars)
-        // ctx.waitUntil(promise) - keeps Worker alive for background work
+        ctx.waitUntil(runScheduledJob(event.cron, env));
     },
 } satisfies ExportedHandler<Env>;
 ```
+
+`event.cron` is the cron expression that fired, `env` holds the Worker secrets and variables, and `ctx.waitUntil(promise)` keeps the Worker alive for the job. `runScheduledJob()` in `backend/jobs/scheduled.ts` picks the job for the expression; see `docs/architecture/backend/CRON.md`.
 
 `ScheduledController`, `ExecutionContext` and `ExportedHandler` come from `@cloudflare/workers-types`, which `backend/tsconfig.json` loads as its only ambient types.
 
 ## Environment Bindings (Secrets)
 
-All secrets are set via `npx wrangler secret put <NAME>`, run from `backend/`. They are available at runtime as `env.NAME` or `c.env.NAME`, typed by the `Env` interface in `backend/types/env.ts`. The three Supabase values are declared as `string`; the rest are optional (`?: string`), so code that reads them handles the missing case.
+All secrets are set via `npx wrangler secret put <NAME>`, run from `backend/`. They are available at runtime as `env.NAME` or `c.env.NAME`, typed by the `Env` interface in `backend/types/env.ts`. The three Supabase values are declared as `string`; the rest are optional (`?: string`), so code that reads them handles the missing case. Application code reads them through `readConfig(env)` in `backend/lib/config.ts`, which trims stray whitespace and byte order marks; a request that needs a missing optional value fails with `503` (`NOT_CONFIGURED`).
 
 | Secret | Required | Purpose |
 |---|---|---|
@@ -48,7 +48,8 @@ All secrets are set via `npx wrangler secret put <NAME>`, run from `backend/`. T
 | `CLOUDINARY_CLOUD_NAME` | Yes | Cloudinary cloud name |
 | `CLOUDINARY_UPLOAD_PRESET` | Yes | Unsigned upload preset for direct browser uploads |
 | `BACKEND_URL` | Yes | This Worker's public URL (for OAuth callback construction) |
-| `FRONTEND_URL` | Yes | Frontend URL (for post-OAuth redirect back to the SPA) |
+| `FRONTEND_URL` | Yes | Frontend URL: the browser origin CORS allows, and the post-OAuth redirect back to the SPA |
+| `ALLOWED_ORIGINS` | Optional | Comma-separated extra browser origins CORS allows besides `FRONTEND_URL`, such as a second domain (`https://a.example.com,https://b.example.com`). Set it with `wrangler secret put` like the others, so the next `wrangler deploy` keeps it (a plain variable added in the dashboard can be replaced on deploy) |
 | `UPSTASH_REDIS_REST_URL` | Optional | Upstash Redis endpoint; caching disabled if absent |
 | `UPSTASH_REDIS_REST_TOKEN` | Optional | Upstash auth token |
 
@@ -76,11 +77,16 @@ CLOUDINARY_CLOUD_NAME=mycloud
 CLOUDINARY_UPLOAD_PRESET=ml_default
 BACKEND_URL=http://localhost:8787
 FRONTEND_URL=http://localhost:5173
+# ALLOWED_ORIGINS=https://another-domain.example.com
 UPSTASH_REDIS_REST_URL=https://...
 UPSTASH_REDIS_REST_TOKEN=...
 ```
 
 Run locally from the repository root: `npm run dev:backend` (Worker only, port 8787) or `npm run dev` (Worker and Vite together). Both run `wrangler dev` in `backend/`, which reloads on save.
+
+### CORS origins
+
+The API answers browsers only on `FRONTEND_URL` and the origins in `ALLOWED_ORIGINS`; a browser on any other origin is blocked. A Worker served from `localhost` or `127.0.0.1` also allows the Vite dev server (`http://localhost:5173` and `http://127.0.0.1:5173`), so local development needs no extra setting. Requests without an `Origin` header (curl, the GitHub Actions scheduler) are not affected. See `docs/architecture/backend/MIDDLEWARE.md`.
 
 ## Worker Constraints
 
@@ -90,7 +96,7 @@ These are hard constraints imposed by the Cloudflare Workers runtime. Violating 
 
 2. **No binary file handling.** The Worker cannot efficiently stream large binary files. Never add routes that accept file uploads - Cloudinary handles that directly from the browser.
 
-3. **No persistent state between requests.** The Worker isolate may be a fresh instance on every request. Do not rely on module-level variables to persist state across requests. All state must come from Supabase, Redis, or Worker KV.
+3. **No persistent state between requests.** The Worker isolate may be a fresh instance on every request. Do not rely on module-level variables to persist state across requests. All state must come from Supabase, Redis, or Worker KV. (The cache cooldown and the rate limiter's memory fallback keep per-isolate state on purpose, as a best-effort optimization that is safe to lose.)
 
 4. **CPU time limit.** Workers have a CPU time limit per request (typically 50ms on free tier, up to 30s on paid). Long-running synchronous operations will be killed. Use async/await for all I/O.
 
@@ -100,7 +106,7 @@ These are hard constraints imposed by the Cloudflare Workers runtime. Violating 
 
 ## Adding a New Worker Secret
 
-1. Declare it in the `Env` interface in `backend/types/env.ts` (`NEW_SECRET_NAME?: string` unless the Worker cannot run without it)
+1. Declare it in the `Env` interface in `backend/types/env.ts` (`NEW_SECRET_NAME?: string` unless the Worker cannot run without it), and read it into `AppConfig` in `backend/lib/config.ts` with `cleanSecret()`
 2. Set via `npx wrangler secret put NEW_SECRET_NAME` from `backend/`
 3. Add to `backend/.env.example` with a placeholder value
 4. Add to `backend/.dev.vars` locally

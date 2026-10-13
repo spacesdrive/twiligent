@@ -100,7 +100,7 @@ release: v1.1.0 - Reddit integration
 ## What to Commit Together
 
 ### Always group these in a single commit:
-- A new route + its db.ts functions + its api.ts method
+- A new route + its controller, service and repository methods + its api.ts method
 - A new page + its route in App.tsx + its Sidebar entry
 - A bug fix + updated docs if the fix changes documented behavior
 - A new feature + CHANGELOG.md update + relevant architecture doc updates

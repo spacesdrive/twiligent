@@ -2,163 +2,184 @@
 
 ## Entry Point: `backend/server.ts`
 
-The entire backend is a single Hono application exported as a Cloudflare Workers module. `backend/wrangler.toml` points at it with `main = "server.ts"`; Wrangler bundles it and strips the types, and `npm run typecheck` checks them.
+The backend is a single Hono application exported as a Cloudflare Workers module. `backend/wrangler.toml` points at it with `main = "server.ts"`; Wrangler bundles it and strips the types, and `npm run typecheck` checks them.
 
 ```ts
-// The two exports Cloudflare Workers looks for:
+// the Worker's two entry points: HTTP requests go through the pipeline in app.ts, cron triggers to jobs/
 export default {
-    fetch: app.fetch,       // handles all HTTP requests
-    async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext) { ... }  // handles cron triggers
+    fetch: app.fetch,
+    async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext) {
+        ctx.waitUntil(runScheduledJob(event.cron, env));
+    },
 } satisfies ExportedHandler<Env>;
 ```
 
+`server.ts` holds nothing else. The application is built by `createApp()` in `backend/app.ts`, and cron work starts in `backend/jobs/scheduled.ts` (see `CRON.md`).
+
+## Folder Layout
+
+The backend is split into layers, each with one job. `REQUEST_PIPELINE.md` is the reference for the layers, their order and the error model; this table is the map of where files live.
+
+| Path | Contents |
+|---|---|
+| `app.ts` | `createApp()`: the ordered middleware pipeline and the two route groups |
+| `server.ts` | The Worker export: `fetch` and `scheduled` |
+| `container.ts` | The composition root: `createServices(clients, config, context)` wires repositories into services |
+| `middleware/` | `cors.ts`, `requestContext.ts`, `securityHeaders.ts`, `clients.ts`, `rateLimit.ts`, `auth.ts`, `validate.ts`, `errorHandler.ts` (see `MIDDLEWARE.md`) |
+| `routes/` | One route table per feature (`<feature>Routes.ts`) and `index.ts`, which groups them into `publicRoutes` and `protectedRoutes` |
+| `controllers/` | One controller file per feature (`<feature>Controller.ts`) and `http.ts` with `controller`, `servicesFor(c)` and `pathParam(c, name)` |
+| `validators/` | Request body and query parsers (`<feature>Validators.ts`) and the field helpers in `fields.ts` |
+| `services/` | Feature services (`<feature>Service.ts`, `scheduledPublisher.ts`) and the platform modules in `youtube/`, `instagram/` and `reddit/` (see `SERVICES.md`) |
+| `repositories/` | Data access, one repository per table or cache (`<table>Repository.ts`), and the query helpers in `query.ts` |
+| `database/` | `supabase.ts` (`getSupabase`, `getSupabaseAuth`) and `redis.ts` (`getRedis`, `getRateLimitRedis`) |
+| `jobs/` | `scheduled.ts`: the cron entry point, `runScheduledJob(cron, env)` |
+| `lib/` | Helpers with no HTTP or database code: `errors.ts`, `logger.ts`, `config.ts`, `redact.ts`, `safeAccount.ts`, `oauthState.ts`, `analyticsMath.ts`, `rateLimit/` |
+| `types/` | `env.ts` (`Env`), `app.ts` (`AppEnv`, `AppVariables`, `AppContext`), `context.ts` (`RequestContext`) |
+
 ## Application Structure
 
+`backend/app.ts` builds the pipeline. Each numbered step can answer early, so the cheap checks come first:
+
 ```ts
-const app = new Hono<AppEnv>();  // root application
+export function createApp(): Hono<AppEnv> {
+    const app = new Hono<AppEnv>();
+    app.onError(errorHandler);
+    app.notFound(notFoundHandler);
 
-// Global middleware (runs on every request)
-app.use('*', cors({ exposeHeaders: RATE_LIMIT_HEADERS }));
-app.use('*', async (c, next) => { /* sets supabase, redis, rateLimitRedis */ await next(); });
-app.use('/api/*', rateLimit(RATE_LIMIT_RULES.ip, clientIp));
+    app.use('*', apiCors);                                        // 1. CORS
+    app.use('*', requestId());                                    // 2. request id
+    app.use('*', requestContext);                                 //    signal and access log line
+    app.use('*', securityHeaders);                                // 3. security headers
+    app.use('*', injectClients);                                  // 4. Supabase and Redis clients
+    app.use('/api/*', rateLimit(RATE_LIMIT_RULES.ip, clientIp));  // 5. limit by IP
 
-// Public routes
-app.get('/api/health', ...);
-app.get('/api/auth/instagram/callback', rateLimit(RATE_LIMIT_RULES.oauth, clientIp), callbackHandler);
+    app.route('/api', publicRoutes);                              // health check and the OAuth callback
 
-// Protected sub-application
-const api = new Hono<AppEnv>();
-api.use('*', requireAuth);       // JWT verification on all /api/* routes
-api.use('*', rateLimit(RATE_LIMIT_RULES.user, userKey));
-// plus the quota and publish limits for the routes listed in lib/rateLimit/rules.ts
-api.route('/', keysRouter);
-api.route('/', accountsRouter);
-api.route('/', analyticsRouter);
-api.route('/', publishingRouter);
-api.route('/', scheduledPostsRouter);
-api.route('/', settingsRouter);
-api.route('/', redditRouter);
-api.route('/', trackedContentRouter);
-api.route('/', overviewRouter);
-api.get('/auth/instagram/url', urlHandler);
+    const api = new Hono<AppEnv>();
+    api.use('*', requireAuth);                                    // 6. authentication
+    api.use('*', rateLimit(RATE_LIMIT_RULES.user, userKey));      // 7. per-user limits
+    // plus the quota and publish limits for the routes listed in lib/rateLimit/rules.ts
+    api.route('/', protectedRoutes);                              // 8. route tables
+    app.route('/api', api);
 
-app.route('/api', api);          // mount protected sub-app under /api
+    return app;
+}
 ```
 
-See `docs/architecture/backend/RATE_LIMITING.md` for the rate limit rules.
+`routes/index.ts` registers the public routes on `publicRoutes` (`GET /health`, and `GET /auth/instagram/callback` with the `oauth` rate limit) and mounts every feature route table on `protectedRoutes`. The public group is registered before the protected one, so those two paths answer without a token.
+
+See `REQUEST_PIPELINE.md` for what each step does and `RATE_LIMITING.md` for the rate limit rules.
 
 ## Types
 
 | Type | File | Purpose |
 |---|---|---|
-| `Env` | `backend/types/env.ts` | Worker secrets and bindings, read through `c.env` or the `env` argument of `scheduled()` |
+| `Env` | `backend/types/env.ts` | Worker secrets and variables, read through `c.env` or the `env` argument of `scheduled()`; `lib/config.ts` turns them into a cleaned `AppConfig` |
 | `AppVariables` | `backend/types/app.ts` | The keys set with `c.set()` and read with `c.get()` |
 | `AppEnv` | `backend/types/app.ts` | `{ Bindings: Env; Variables: AppVariables }`, the type argument of every `new Hono<AppEnv>()` |
-| `AppContext` | `backend/types/app.ts` | `Context<AppEnv>`, for middleware and handlers declared outside a router |
-| Request and response shapes | `shared/types/*.ts` | Shared with the frontend; routes check responses with `satisfies` |
+| `AppContext` | `backend/types/app.ts` | `Context<AppEnv>`, for middleware and helpers declared outside a router |
+| `RequestContext` | `backend/types/context.ts` | `requestId`, `signal` and `log`: the request metadata services receive, free of Hono types |
+| `Services` | `backend/container.ts` | Every service for one request or cron run, returned by `createServices()` |
+| Request and response shapes | `shared/types/*.ts` | Shared with the frontend; controllers check responses with `satisfies` |
 
 `ScheduledController`, `ExecutionContext` and `ExportedHandler` are global types from `@cloudflare/workers-types`.
 
 ## Context Values
 
-These are set on the Hono context (`c`) and available in all route handlers:
+The Hono context carries only small request-scoped values:
 
 | Key | Type | Set by | Available after |
 |---|---|---|---|
-| `supabase` | `SupabaseClient` (service-role) | global middleware | All routes |
-| `redis` | `Redis \| null` | global middleware | All routes |
-| `rateLimitRedis` | `Redis \| null` (no retries, 1 second timeout) | global middleware | All routes; used only by `rateLimit` |
+| `requestId` | `string` | `hono/request-id` | All routes; returned in the `X-Request-Id` header |
+| `signal` | `AbortSignal` | `requestContext` | All routes; aborts on client disconnect or after 30 seconds |
+| `supabase` | `SupabaseClient` (service-role) | `injectClients` | All routes |
+| `redis` | `Redis \| null` | `injectClients` | All routes |
+| `rateLimitRedis` | `Redis \| null` (no retries, 1 second timeout) | `injectClients` | All routes; used only by `rateLimit` |
 | `userId` | `string` (UUID) | `requireAuth` | Protected routes only |
 | `userEmail` | `string \| undefined` | `requireAuth` | Protected routes only |
 
 The keys and their types are declared in `AppVariables`, so `c.get('redis')` is typed `Redis | null` without a cast. Add a key there before setting a new one.
 
-**Accessing context values in a handler declared outside a router:**
+Controllers read `userId` with `c.get('userId')` and pass it to a service method. They never hand the clients to a service directly: `servicesFor(c)` in `controllers/http.ts` builds the request's services from the clients, the cleaned config and the request context.
+
 ```ts
-export async function myHandler(c: AppContext) {
-    const supabase = c.get('supabase');
-    const redis = c.get('redis');
-    const userId = c.get('userId');
-    // ...
-}
+export const listAccounts = controller.createHandlers(async c => {
+    const accounts = await servicesFor(c).accounts.list(c.get('userId'));
+    return c.json(accounts.map(safeAccount) satisfies AccountListResponse);
+});
 ```
 
-## Route File Pattern
+## Route Table and Controller Pattern
 
-Every route file follows this structure:
+A feature has a route table in `routes/` and a controller in `controllers/`. The route table only maps a method and path to a controller:
 
 ```ts
-// backend/routes/myFeature.ts
+// backend/routes/trackedContentRoutes.ts
 import { Hono } from 'hono';
-import { getMyData, createMyData } from '../lib/db.ts';
+import {
+    listTrackedContent, addTrackedContent, updateTrackedContent, deleteTrackedContent, refreshTrackedContent,
+} from '../controllers/trackedContentController.ts';
 import type { AppEnv } from '../types/app.ts';
-import type { MyData, MyDataRequest } from '../../shared/types/domain.ts';
 
 const router = new Hono<AppEnv>();
 
-router.get('/my-resource', async (c) => {
-    const userId = c.get('userId');
-    const supabase = c.get('supabase');
-    try {
-        const data = await getMyData(supabase, userId);
-        return c.json(data satisfies MyData[]);
-    } catch (err) {
-        console.error('GET /my-resource:', (err as Error).message);
-        return c.json({ error: (err as Error).message }, 500);
-    }
-});
-
-router.post('/my-resource', async (c) => {
-    const userId = c.get('userId');
-    const supabase = c.get('supabase');
-    const body = await c.req.json() as MyDataRequest;
-    // validate body...
-    try {
-        await createMyData(supabase, body, userId);
-        return c.json({ success: true }, 201);
-    } catch (err) {
-        console.error('POST /my-resource:', (err as Error).message);
-        return c.json({ error: (err as Error).message }, 500);
-    }
-});
+router.get('/tracked-content', ...listTrackedContent);
+router.post('/tracked-content', ...addTrackedContent);
+router.put('/tracked-content/:id', ...updateTrackedContent);
+router.delete('/tracked-content/:id', ...deleteTrackedContent);
+router.post('/tracked-content/:id/refresh', ...refreshTrackedContent);
 
 export default router;
 ```
 
-Then in `server.ts`:
-```ts
-import myFeatureRouter from './routes/myFeature.ts';
-// ...
-api.route('/', myFeatureRouter);
-```
+Each controller is built with `controller.createHandlers(...)` from `controllers/http.ts`. A validator from `middleware/validate.ts` comes first, so `c.req.valid('json')` is typed inside the handler:
 
-## Error Handling
-
-The global error handler catches uncaught errors (Hono types `err` as `Error` here):
 ```ts
-app.onError((err, c) => {
-    console.error('Worker error:', err.message);
-    return c.json({ error: 'Internal server error' }, 500);
+// backend/controllers/trackedContentController.ts
+export const addTrackedContent = controller.createHandlers(jsonBody(parseNewTrackedContent), async c => {
+    const item = await servicesFor(c).trackedContent.add(c.get('userId'), c.req.valid('json'));
+    return c.json(item, 201);
+});
+
+export const deleteTrackedContent = controller.createHandlers(async c => {
+    await servicesFor(c).trackedContent.remove(c.get('userId'), pathParam(c, 'id'));
+    return c.json({ success: true } satisfies SuccessResponse);
 });
 ```
 
-Route handlers should catch their own errors and return descriptive messages. Do not throw from route handlers - catch and return JSON error responses with appropriate status codes.
+`pathParam(c, name)` reads a path parameter, because Hono cannot type the parameters of a controller declared apart from its route. A new route table is added to the list in `routes/index.ts`. See `docs/features/NEW_API_ENDPOINT.md` for the full walkthrough.
+
+## Error Handling
+
+Controllers do not catch errors. Services, repositories, validators and middleware throw the typed errors in `lib/errors.ts` (`ValidationError`, `NotFoundError`, `ConflictError`, `UpstreamError`, `NotConfiguredError` and the rest), and `middleware/errorHandler.ts`, registered with `app.onError`, maps each error's code to a status and writes one body:
+
+```json
+{ "success": false, "code": "NOT_FOUND", "message": "Account not found", "requestId": "3f2a..." }
+```
+
+An unknown route gets the same body with `NOT_FOUND` from `notFoundHandler`. An error that is not an `AppError` is a bug: it is logged at `error` level and the client gets `INTERNAL_ERROR` with a message asking it to quote the request id. The status for each code is in `REQUEST_PIPELINE.md`.
+
+The one exception is the Instagram OAuth callback, which catches its own errors so the browser is always redirected back to the app.
+
+## Logging
+
+`lib/logger.ts` writes one JSON object per line (`level`, `message`, the request id, the user id and any extra fields), which Workers Logs indexes field by field. `requestContext` writes one access line per request with the method, path, status and duration, and the error handler logs each failure with its code. Services log through `context.log`; no other code calls `console` directly. `errorFields(err)` adds an error's message and cause to a log line with URLs removed, never the stack.
 
 ## Environment Access
 
-Worker environment variables are accessed via `c.env` in middleware and handlers, or via the `env` parameter in the `scheduled` handler:
+Worker variables are declared in `Env` and reach the code through `lib/config.ts`. `readConfig(env)` returns an `AppConfig` with every value trimmed (pasted secrets can carry a byte order mark): the YouTube key, the Instagram OAuth settings, the Cloudinary settings (or `null`) and the allowed CORS origins. Services receive the config from `createServices()`, and a service that needs a missing value throws `NotConfiguredError` (503).
 
 ```ts
-// In middleware or handler:
-const apiKey = c.env.YOUTUBE_API_KEY;   // string | undefined, declared in Env
+// in a service
+if (!config.youtubeApiKey) throw new NotConfiguredError(NO_YOUTUBE_KEY_MESSAGE);
 
-// In cron handler:
-async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext) {
-    const supabase = getSupabase(env);
-}
+// in the cron entry point, jobs/scheduled.ts
+const services = createServices({ supabase: getSupabase(env), redis: getRedis(env) }, readConfig(env), context);
 ```
 
-**Never hardcode secrets.** All secrets must come from `c.env` (Worker secrets set via `wrangler secret put`).
+The Supabase and Redis credentials are read by `database/supabase.ts` and `database/redis.ts`.
+
+**Never hardcode secrets.** All secrets must come from the Worker environment (Worker secrets set via `wrangler secret put`).
 
 ## Packages and Tooling
 

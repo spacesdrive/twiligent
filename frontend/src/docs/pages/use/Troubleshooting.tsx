@@ -20,7 +20,7 @@ export default function Troubleshooting() {
         ]}
       />
       <H2>Contact the administrator</H2>
-      <P>For anything only the person running this instance can fix, email <AdminLink subject="Help with Twiligent" />. Include what you were doing, the account involved and the exact message you saw.</P>
+      <P>For anything only the person running this instance can fix, email <AdminLink subject="Help with Twiligent" />. Include what you were doing, the account involved and the exact message you saw. If the message ends with a request id, include it; it lets the administrator find what happened.</P>
     </>
   );
 }

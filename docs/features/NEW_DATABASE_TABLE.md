@@ -42,20 +42,15 @@ Option B: Supabase Dashboard -> Table Editor -> create visually
 
 There is currently no migration tool configured. SQL is applied directly. **Document the SQL in this guide for future reference** if it needs to be recreated.
 
-### Step 3: Add Row-Level Security (Optional)
+### Step 3: Enable Row-Level Security (Required)
 
-The backend uses the service-role key which bypasses RLS. However, enabling RLS with a permissive policy is good defense-in-depth:
+The backend uses the service-role key, which bypasses RLS. Every application table must still have RLS enabled with no policies, so the public anon key cannot read or write it through Supabase's Data API (see `docs/architecture/database/SECURITY.md`):
 
 ```sql
 ALTER TABLE content_drafts ENABLE ROW LEVEL SECURITY;
-
--- The backend uses service-role key which bypasses RLS.
--- This policy would apply only if the anon key were used.
-CREATE POLICY "Users can manage their own drafts"
-    ON content_drafts
-    FOR ALL
-    USING (user_id = auth.uid());
 ```
+
+Add the statement to the setup SQL in the README and on the `/docs/self-host/supabase` page (`frontend/src/docs/pages/selfHost/selfHostSql.ts`).
 
 ### Step 4: Add the Types
 
@@ -78,14 +73,18 @@ export interface ContentDraft {
 export type ContentDraftUpdate = Partial<Omit<ContentDraft, 'id' | 'accountId' | 'platform' | 'createdAt' | 'updatedAt'>>;
 ```
 
-The raw row shape stays private to `lib/db.ts`, next to the functions that read it.
+The raw row shape stays private to the table's repository, next to the methods that read it.
 
-### Step 5: Add Query Functions to `lib/db.ts`
+### Step 5: Add a Repository
 
-Follow the established pattern exactly:
+Create `backend/repositories/contentDraftRepository.ts`. Follow the existing repositories (`trackedPostRepository.ts`, `scheduledPostRepository.ts`) exactly: an interface with one method per query, a factory that takes the Supabase client, user-scoped methods that end in `ForUser` and filter by `user_id`, and every query run through `rows`, `maybeRow` or `execute` from `query.ts` so a failure becomes a `DatabaseError`.
 
 ```ts
-// backend/lib/db.ts
+// backend/repositories/contentDraftRepository.ts
+import { execute, maybeRow, rows } from './query.ts';
+import type { SupabaseClient } from '../types/app.ts';
+import type { ContentDraft, ContentDraftUpdate, DraftStatus, Platform } from '../../shared/types/domain.ts';
+
 interface ContentDraftRow {
     id: string;
     account_id: string;
@@ -96,7 +95,9 @@ interface ContentDraftRow {
     data: Partial<ContentDraft> | null;
 }
 
-function rowToDraft(row: ContentDraftRow): ContentDraft {
+const COLUMNS = 'id, account_id, platform, status, created_at, updated_at, data';
+
+function toDraft(row: ContentDraftRow): ContentDraft {
     return {
         ...(row.data || {}),
         id: row.id,
@@ -108,55 +109,74 @@ function rowToDraft(row: ContentDraftRow): ContentDraft {
     };
 }
 
-export async function getDrafts(supabase: SupabaseClient, userId: string): Promise<ContentDraft[]> {
-    const { data, error } = await supabase
-        .from('content_drafts')
-        .select('id, account_id, platform, status, created_at, updated_at, data')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-    if (error) throw error;
-    return ((data || []) as ContentDraftRow[]).map(rowToDraft);
+// every method is scoped to the verified user
+export interface ContentDraftRepository {
+    listForUser(userId: string): Promise<ContentDraft[]>;
+    findForUser(id: string, userId: string): Promise<ContentDraft | null>;
+    create(draft: ContentDraft, userId: string): Promise<void>;
+    updateForUser(id: string, updates: ContentDraftUpdate, userId: string): Promise<void>;
+    deleteForUser(id: string, userId: string): Promise<void>;
 }
 
-export async function createDraft(supabase: SupabaseClient, draft: ContentDraft, userId: string): Promise<void> {
-    const { id, accountId, platform, status, createdAt: _c, updatedAt: _u, ...rest } = draft;
-    const { error } = await supabase.from('content_drafts').insert({
-        id,
-        user_id: userId,
-        account_id: accountId,
-        platform,
-        status,
-        data: rest,
-    });
-    if (error) throw error;
-}
-
-export async function updateDraft(supabase: SupabaseClient, id: string, updates: ContentDraftUpdate, userId: string | null = null): Promise<void> {
-    // Merge data fields with existing (never replace the whole data object)
-    const current = await getDraftById(supabase, id, userId);
-    if (!current) throw new Error('Draft not found: ' + id);
-    const colUpdates: { updated_at: string; status?: DraftStatus; data?: Partial<ContentDraft> } = { updated_at: new Date().toISOString() };
-    const { status, ...dataUpdates } = updates;
-    if (status) colUpdates.status = status;
-    if (Object.keys(dataUpdates).length > 0) {
-        const { id: _id, accountId: _aid, platform: _p, status: _s, createdAt: _c, updatedAt: _u, ...currentData } = current;
-        colUpdates.data = { ...currentData, ...dataUpdates };
+export function createContentDraftRepository(db: SupabaseClient): ContentDraftRepository {
+    async function findForUser(id: string, userId: string): Promise<ContentDraft | null> {
+        const row = await maybeRow<ContentDraftRow>('contentDrafts.findForUser', () => db
+            .from('content_drafts')
+            .select(COLUMNS)
+            .eq('id', id)
+            .eq('user_id', userId)
+            .maybeSingle());
+        return row ? toDraft(row) : null;
     }
-    let query = supabase.from('content_drafts').update(colUpdates).eq('id', id);
-    if (userId) query = query.eq('user_id', userId);
-    const { error } = await query;
-    if (error) throw error;
-}
 
-export async function deleteDraft(supabase: SupabaseClient, id: string, userId: string | null = null): Promise<void> {
-    let query = supabase.from('content_drafts').delete().eq('id', id);
-    if (userId) query = query.eq('user_id', userId);
-    const { error } = await query;
-    if (error) throw error;
+    return {
+        async listForUser(userId) {
+            const found = await rows<ContentDraftRow>('contentDrafts.listForUser', () => db
+                .from('content_drafts')
+                .select(COLUMNS)
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false }));
+            return found.map(toDraft);
+        },
+
+        findForUser,
+
+        async create(draft, userId) {
+            const { id, accountId, platform, status, createdAt: _c, updatedAt: _u, ...rest } = draft;
+            await execute('contentDrafts.create', () => db.from('content_drafts').insert({
+                id,
+                user_id: userId,
+                account_id: accountId,
+                platform,
+                status,
+                data: rest,
+            }));
+        },
+
+        // merges into data, so fields the update does not name are kept
+        async updateForUser(id, updates, userId) {
+            const current = await findForUser(id, userId);
+            if (!current) return;
+            const columns: { updated_at: string; status?: DraftStatus; data?: Partial<ContentDraft> } = { updated_at: new Date().toISOString() };
+            const { status, ...dataUpdates } = updates;
+            if (status) columns.status = status;
+            if (Object.keys(dataUpdates).length > 0) {
+                const { id: _id, accountId: _aid, platform: _p, status: _s, createdAt: _c, updatedAt: _u, ...currentData } = current;
+                columns.data = { ...currentData, ...dataUpdates };
+            }
+            await execute('contentDrafts.update', () => db.from('content_drafts').update(columns).eq('id', id).eq('user_id', userId));
+        },
+
+        async deleteForUser(id, userId) {
+            await execute('contentDrafts.delete', () => db.from('content_drafts').delete().eq('id', id).eq('user_id', userId));
+        },
+    };
 }
 ```
 
-Run `npm run typecheck` from the root after adding them.
+Whether a missing draft is a `NotFoundError` is the service's decision: it calls `findForUser` first and throws. Only add a method without a `userId` if a cron job needs to scan every user, and name it without the `ForUser` suffix (`listAll`, `findById`, `updateById`).
+
+Build the repository in `createServices()` in `backend/container.ts` (`const drafts = createContentDraftRepository(clients.supabase);`) and pass it to the services that need it. Add a test in `backend/tests/repositories/contentDraftRepository.test.ts` against the fake Supabase client (see `accountRepository.test.ts`), then run `npm run typecheck` from the root.
 
 ### Step 6: Document the Schema
 
@@ -169,9 +189,8 @@ Update `docs/architecture/database/SCHEMA.md` with:
 ### Step 7: Wire Up the Feature
 
 Follow the guides for:
-- `docs/features/NEW_API_ENDPOINT.md` - add backend routes
+- `docs/features/NEW_API_ENDPOINT.md` - add the validator, service, controller, route table and frontend `api.ts` methods
 - `docs/features/NEW_REACT_PAGE.md` - add frontend page
-- `docs/features/NEW_API_ENDPOINT.md` - add frontend api.ts methods
 
 ## Naming Conventions for New Tables
 

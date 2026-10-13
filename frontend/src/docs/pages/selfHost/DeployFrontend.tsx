@@ -28,14 +28,14 @@ npx wrangler pages deploy dist --project-name=twiligent
           <P><Code>npm run build</Code> runs Vite with <Code>frontend/vite.config.ts</Code> and writes the site to <Code>frontend/dist</Code>. The first time, Wrangler creates the Pages project and prints the address, for example <Code>https://twiligent.pages.dev</Code>.</P>
         </Step>
         <Step title="Point the backend at it">
-          <P>Set <Code>FRONTEND_URL</Code> on the Worker to that address, so Instagram sign-in returns members to the right place:</P>
+          <P>Set <Code>FRONTEND_URL</Code> on the Worker to that address. The backend only answers requests from it, and Instagram sign-in returns members there:</P>
           <CodeBlock>{`
 cd ../backend
 npx wrangler secret put FRONTEND_URL
 `}</CodeBlock>
         </Step>
       </Steps>
-      <P>Open the site, create your account and connect something. For a custom domain, add it under the Pages project's <strong>Custom domains</strong> tab and update <Code>FRONTEND_URL</Code> to match.</P>
+      <P>Open the site, create your account and connect something. For a custom domain, add it under the Pages project's <strong>Custom domains</strong> tab and update <Code>FRONTEND_URL</Code> to match. To keep the <Code>pages.dev</Code> address working too, add it to <Code>ALLOWED_ORIGINS</Code> on the Worker.</P>
     </>
   );
 }

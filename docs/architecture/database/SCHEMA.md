@@ -6,7 +6,7 @@ Supabase (PostgreSQL) with four application tables. All tables include `user_id`
 
 The backend uses the **service-role key** (bypasses Row Level Security) but enforces isolation by always appending `.eq('user_id', userId)` on user-scoped queries. The `userId` comes exclusively from the verified JWT - never from request input.
 
-Cron handlers (`processScheduledPosts`, `autoRefreshInstagramTokens`) intentionally omit the `userId` filter to operate across all users.
+The cron jobs (`scheduledPublisher.publishDue()`, `tokenRefresh.refreshExpiringInstagramTokens()`) intentionally use the repository methods without a `userId` filter to operate across all users.
 
 RLS must be enabled on all four tables, with no policies, so the public anon key cannot reach them. See `SECURITY.md`.
 
@@ -162,7 +162,7 @@ Stores Reddit posts and YouTube videos the user wants to monitor. Previously Red
 
 ### `data` jsonb shape for Reddit items
 
-Populated by `fetchTrackedPostData()` in `backend/services/reddit.ts`:
+Populated by `fetchTrackedPostData()` in `backend/services/reddit/redditApi.ts`:
 
 ```json
 {
@@ -200,7 +200,7 @@ Both keys are rejected for YouTube items, which already carry a real `viewCount`
 
 ### `data` jsonb shape for YouTube items
 
-Populated by `fetchTrackedYouTubeData()` in `backend/services/youtube.ts`:
+Populated by `fetchTrackedYouTubeData()` in `backend/services/youtube/youtubeTracked.ts`:
 
 ```json
 {
@@ -249,44 +249,50 @@ ALTER TABLE tracked_posts ADD COLUMN IF NOT EXISTS content_type text NOT NULL DE
 
 ---
 
-## `lib/db.ts` - Query Layer
+## Repositories - Query Layer
 
-All SQL operations are centralized in `backend/lib/db.ts`. Route handlers and cron handlers import named functions from this file - they never call `supabase.from()` directly.
+All SQL operations live in `backend/repositories/`, one repository per table. Services receive repositories from `backend/container.ts` and call their methods - they never call `supabase.from()` directly. Every query runs through `execute`, `rows` or `maybeRow` in `repositories/query.ts`, which turn a failed query into a `DatabaseError` named after the operation (a 500 whose driver message goes to the log, not the client).
 
-### Available functions
+### Available methods
 
-Each function takes the `SupabaseClient` first and returns a type from `shared/types/domain.ts`. A `userId` of `null` means service-level access (cron handlers that scan every user).
+Each repository is built with `createXRepository(supabase)` and returns types from `shared/types/domain.ts`. Methods named `...ForUser` take the verified `userId` and always filter by it. The methods without a `userId` (`listAll`, `findById`, `updateById`, `listDue`, `claim`) reach every user and are only for the cron jobs.
 
 ```ts
-// Accounts
-getAccounts(supabase, userId: string | null = null): Promise<Account[]>
-getAccountById(supabase, id, userId: string | null = null): Promise<Account | null>
-createAccount(supabase, account: NewAccount, userId): Promise<void>
-updateAccount(supabase, id, updates: Partial<Account>, userId: string | null = null): Promise<void>
-deleteAccount(supabase, id, userId: string | null = null): Promise<void>
+// Accounts (accountRepository.ts)
+listForUser(userId): Promise<Account[]>
+listAll(): Promise<Account[]>                                         // cron only
+findForUser(id, userId): Promise<Account | null>
+findById(id): Promise<Account | null>                                 // cron only
+create(account: NewAccount, userId): Promise<void>
+updateForUser(id, updates: Partial<Account>, userId): Promise<void>   // merges into data
+updateById(id, updates: Partial<Account>): Promise<void>              // cron only
+deleteForUser(id, userId): Promise<void>
 
-// Settings
-getSettings(supabase, userId): Promise<Settings>
-saveSettings(supabase, keys: Settings, userId): Promise<void>
+// Settings (settingsRepository.ts)
+getForUser(userId): Promise<Settings>
+saveForUser(settings: Settings, userId): Promise<void>
 
-// Scheduled Posts
-getPosts(supabase, userId: string | null): Promise<ScheduledPost[]>
-getPostById(supabase, id, userId: string | null = null): Promise<ScheduledPost | null>
-getDuePosts(supabase): Promise<ScheduledPost[]>                 // for cron - no userId filter, selects pending+overdue
-claimPost(supabase, id): Promise<boolean>                        // pending to publishing; false when another scheduler won
-createPost(supabase, post: ScheduledPost, userId): Promise<void>
-updatePost(supabase, id, updates: Partial<ScheduledPost>, userId: string | null = null): Promise<void>
-deletePost(supabase, id, userId: string | null = null): Promise<void>
-deleteAllPosts(supabase, userId: string | null): Promise<{ deleted: number; kept: number }>   // skips 'publishing' status posts
+// Scheduled Posts (scheduledPostRepository.ts)
+listForUser(userId): Promise<ScheduledPost[]>
+findForUser(id, userId): Promise<ScheduledPost | null>
+listDue(): Promise<ScheduledPost[]>                                   // cron only - pending and overdue, every user
+claim(id): Promise<boolean>                                           // cron only - pending to publishing; false when another scheduler won
+create(post: ScheduledPost, userId): Promise<void>
+updateForUser(id, updates: Partial<ScheduledPost>, userId): Promise<void>
+updateById(id, updates: Partial<ScheduledPost>): Promise<void>        // cron only
+deleteForUser(id, userId): Promise<void>
+deleteAllForUser(userId): Promise<{ deleted: number; kept: number }> // skips 'publishing' status posts
 
-// Tracked Content
-getTrackedPosts(supabase, userId): Promise<TrackedPost[]>
-getTrackedPostById(supabase, id, userId): Promise<TrackedPost | null>
-createTrackedPost(supabase, post: NewTrackedPost, userId): Promise<void>
-updateTrackedPost(supabase, id, updates: TrackedPostUpdates, userId): Promise<void>
-patchTrackedPostData(supabase, id, patch: Record<string, unknown>, userId): Promise<void>
-deleteTrackedPost(supabase, id, userId): Promise<void>
+// Tracked Content (trackedPostRepository.ts)
+listForUser(userId): Promise<TrackedPost[]>
+findForUser(id, userId): Promise<TrackedPost | null>
+create(post: NewTrackedPost, userId): Promise<void>
+updateForUser(id, updates: TrackedPostUpdates, userId): Promise<void>
+patchDataForUser(id, patch: Record<string, unknown>, userId): Promise<void>
+deleteForUser(id, userId): Promise<void>
 ```
+
+The Redis analytics cache has its own repository, `analyticsCacheRepository.ts`; see `docs/architecture/backend/CACHING.md`.
 
 ## Adding a New Table
 

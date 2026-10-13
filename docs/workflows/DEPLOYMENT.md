@@ -69,11 +69,14 @@ npx wrangler secret put CLOUDINARY_CLOUD_NAME
 npx wrangler secret put CLOUDINARY_UPLOAD_PRESET
 npx wrangler secret put BACKEND_URL
 npx wrangler secret put FRONTEND_URL
+npx wrangler secret put ALLOWED_ORIGINS             # optional; extra browser origins, comma-separated
 npx wrangler secret put UPSTASH_REDIS_REST_URL      # optional
 npx wrangler secret put UPSTASH_REDIS_REST_TOKEN    # optional
 ```
 
 Each command prompts for the value (no echo - the value is not shown).
+
+`FRONTEND_URL` is also the browser origin the API accepts: CORS answers only `FRONTEND_URL` and the origins listed in `ALLOWED_ORIGINS`. Set `ALLOWED_ORIGINS` when the app is served from more than one address (for example a custom domain and the `pages.dev` address), and update `FRONTEND_URL` when the domain changes, or the browser blocks every API call.
 
 ## Setting GitHub Actions Secrets
 
@@ -105,9 +108,14 @@ Required for `deploy-frontend.yml` and `publish-scheduled.yml`:
 
 **Backend:**
 ```bash
-curl https://twiligent.ujjwalkrai.workers.dev/api/health
-# Expected: {"status":"ok","timestamp":"2025-..."}
+curl -i https://twiligent.ujjwalkrai.workers.dev/api/health
+# Expected: 200 with {"status":"ok","timestamp":"2025-..."} and an X-Request-Id header
+
+curl -i -H "Origin: https://twiligent.ujjwal.fyi" https://twiligent.ujjwalkrai.workers.dev/api/health
+# Expected: Access-Control-Allow-Origin: https://twiligent.ujjwal.fyi (the FRONTEND_URL origin)
 ```
+
+A request with any other `Origin` gets no `Access-Control-Allow-Origin` header. The Worker writes one JSON log line per request with its request id; use `npx wrangler tail` from `backend/` to watch them, and search for the id a user quotes from an error message.
 
 **Frontend:**  
 Open `https://twiligent.ujjwal.fyi` (custom domain on the `twiligent` Pages project; `twiligent.spacesdrive.cc` 301-redirects here) -> verify login page loads -> sign in -> verify accounts load.
