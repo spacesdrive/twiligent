@@ -1,0 +1,12 @@
+{
+    "result": {
+        "processed": 0,
+        "errors": []
+    },
+    "logLines": [
+        [
+            "error",
+            "{\"level\":\"error\",\"message\":\"scheduler could not load due posts\",\"requestId\":\"cron-test\",\"error\":\"The database request failed. Try again in a moment.\",\"errorName\":\"DatabaseError\",\"cause\":\"db down\"}"
+        ]
+    ]
+}

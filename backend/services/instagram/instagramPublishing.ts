@@ -1,4 +1,8 @@
-import type { InstagramPublishRequest } from '../../../shared/types/instagram.ts';
+import { igFetch, igPost } from './instagramApi.ts';
+import type { GraphParams, InstagramApiContainerStatus, InstagramApiIdResponse } from './instagramApi.ts';
+import type {
+    InstagramContainerStatusCode, InstagramPublishingLimit, InstagramPublishRequest,
+} from '../../../shared/types/instagram.ts';
 
 // query parameters of POST /{ig-user-id}/media; URLSearchParams turns the booleans and numbers into strings
 export interface InstagramMediaParams {
@@ -79,7 +83,7 @@ function addPhotoParams(params: InstagramMediaParams, post: InstagramPublishRequ
     return params;
 }
 
-// scripts/publish-scheduled.js keeps its own copy because it must stay dependency-free
+// scripts/publish-scheduled.ts keeps its own copy because it must stay dependency-free
 export function buildMediaParams(post: InstagramPublishRequest, accessToken: string): InstagramMediaParams {
     const params: InstagramMediaParams = { access_token: accessToken };
     const { mediaType } = post;
@@ -89,4 +93,32 @@ export function buildMediaParams(post: InstagramPublishRequest, accessToken: str
     if (mediaType === 'REELS') return addReelParams(params, post);
     if (mediaType === 'STORIES') return addStoryParams(params, post);
     return addPhotoParams(params, post);
+}
+
+export interface ContainerStatus {
+    statusCode: InstagramContainerStatusCode;
+    status: string;
+}
+
+// URLSearchParams turns the boolean and number values into strings
+export async function createMediaContainer(igUserId: string, params: InstagramMediaParams, signal?: AbortSignal): Promise<string> {
+    const data = await igPost<InstagramApiIdResponse>(`/${igUserId}/media`, params as unknown as GraphParams, signal);
+    return data.id;
+}
+
+export async function fetchContainerStatus(containerId: string, accessToken: string, signal?: AbortSignal): Promise<ContainerStatus> {
+    const data = await igFetch<InstagramApiContainerStatus>(`/${containerId}`, { fields: 'status_code,status', access_token: accessToken }, 1, signal);
+    return { statusCode: data.status_code ?? 'IN_PROGRESS', status: data.status ?? '' };
+}
+
+export async function publishMediaContainer(igUserId: string, containerId: string, accessToken: string, signal?: AbortSignal): Promise<string> {
+    const data = await igPost<InstagramApiIdResponse>(`/${igUserId}/media_publish`, { creation_id: containerId, access_token: accessToken }, signal);
+    return data.id;
+}
+
+export async function fetchPublishingLimit(igUserId: string, accessToken: string, signal?: AbortSignal): Promise<InstagramPublishingLimit[]> {
+    const data = await igFetch<{ data?: InstagramPublishingLimit[] }>(
+        `/${igUserId}/content_publishing_limit`, { fields: 'quota_usage,config', access_token: accessToken }, 1, signal,
+    );
+    return data.data ?? [];
 }

@@ -11,15 +11,14 @@ import { RATE_LIMIT_RULES, QUOTA_ROUTES, PUBLISH_ROUTES, matchesRoute } from './
 import keysRouter from './routes/keys.ts';
 import accountRoutes from './routes/accountRoutes.ts';
 import analyticsRoutes from './routes/analyticsRoutes.ts';
-import publishingRouter from './routes/publishing.ts';
-import scheduledPostsRouter from './routes/scheduledPosts.ts';
+import publishingRoutes from './routes/publishingRoutes.ts';
+import scheduledPostRoutes from './routes/scheduledPostRoutes.ts';
 import settingsRouter from './routes/settings.ts';
 import redditRoutes from './routes/redditRoutes.ts';
 import trackedContentRouter from './routes/trackedContent.ts';
 import overviewRouter from './routes/overview.ts';
 import { urlHandler, callbackHandler } from './routes/instagramAuth.ts';
-import { processScheduledPosts } from './utils/scheduler.ts';
-import { autoRefreshInstagramTokens } from './services/instagram/instagramTokens.ts';
+import { runScheduledJob } from './jobs/scheduled.ts';
 import type { AppEnv } from './types/app.ts';
 import type { Env } from './types/env.ts';
 
@@ -58,8 +57,8 @@ api.use('*', rateLimit(RATE_LIMIT_RULES.publish, userKey, c => matchesRoute(PUBL
 api.route('/', keysRouter);
 api.route('/', accountRoutes);
 api.route('/', analyticsRoutes);
-api.route('/', publishingRouter);
-api.route('/', scheduledPostsRouter);
+api.route('/', publishingRoutes);
+api.route('/', scheduledPostRoutes);
 api.route('/', settingsRouter);
 api.route('/', redditRoutes);
 api.route('/', trackedContentRouter);
@@ -75,12 +74,6 @@ export default {
 
     // wrangler.toml schedules: due posts every 15 minutes, token refresh daily
     async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext) {
-        const supabase = getSupabase(env);
-
-        if (event.cron === '*/15 * * * *') {
-            ctx.waitUntil(processScheduledPosts(supabase));
-        } else if (event.cron === '0 0 * * *') {
-            ctx.waitUntil(autoRefreshInstagramTokens(supabase));
-        }
+        ctx.waitUntil(runScheduledJob(event.cron, env));
     },
 } satisfies ExportedHandler<Env>;

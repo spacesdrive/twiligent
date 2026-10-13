@@ -101,39 +101,39 @@
     "logLines": [
         [
             "log",
-            "Published scheduled post p-image → media m-c-IG1"
+            "{\"level\":\"info\",\"message\":\"scheduled post published\",\"requestId\":\"cron-test\",\"postId\":\"p-image\",\"mediaId\":\"m-c-IG1\"}"
         ],
         [
             "log",
-            "Published scheduled post p-reel → media m-c-IG1"
+            "{\"level\":\"info\",\"message\":\"scheduled post published\",\"requestId\":\"cron-test\",\"postId\":\"p-reel\",\"mediaId\":\"m-c-IG1\"}"
         ],
         [
             "error",
-            "Failed to publish scheduled post p-story: Processing failed: Bad video"
+            "{\"level\":\"error\",\"message\":\"scheduled post failed\",\"requestId\":\"cron-test\",\"postId\":\"p-story\",\"error\":\"Processing failed: Bad video\",\"errorName\":\"UpstreamError\"}"
         ],
         [
             "error",
-            "Failed to publish scheduled post p-expired: Container expired"
+            "{\"level\":\"error\",\"message\":\"scheduled post failed\",\"requestId\":\"cron-test\",\"postId\":\"p-expired\",\"error\":\"Container expired\",\"errorName\":\"UpstreamError\"}"
         ],
         [
             "error",
-            "Failed to publish scheduled post p-missing: Account not found: gone"
+            "{\"level\":\"error\",\"message\":\"scheduled post failed\",\"requestId\":\"cron-test\",\"postId\":\"p-missing\",\"error\":\"Account not found: gone\",\"errorName\":\"NotFoundError\"}"
         ],
         [
             "error",
-            "Failed to publish scheduled post p-create: Invalid image"
+            "{\"level\":\"error\",\"message\":\"scheduled post failed\",\"requestId\":\"cron-test\",\"postId\":\"p-create\",\"error\":\"Invalid image\",\"errorName\":\"UpstreamError\"}"
         ],
         [
             "error",
-            "Failed to publish scheduled post p-publish: Publish refused"
+            "{\"level\":\"error\",\"message\":\"scheduled post failed\",\"requestId\":\"cron-test\",\"postId\":\"p-publish\",\"error\":\"Publish refused\",\"errorName\":\"UpstreamError\"}"
         ],
         [
             "error",
-            "Failed to publish scheduled post p-slow: Instagram did not finish processing the media within 3 minutes"
+            "{\"level\":\"error\",\"message\":\"scheduled post failed\",\"requestId\":\"cron-test\",\"postId\":\"p-slow\",\"error\":\"Instagram did not finish processing the media within 3 minutes\",\"errorName\":\"UpstreamError\"}"
         ],
         [
             "log",
-            "Published scheduled post p-dup → media m-c-IG1"
+            "{\"level\":\"info\",\"message\":\"scheduled post published\",\"requestId\":\"cron-test\",\"postId\":\"p-dup\",\"mediaId\":\"m-c-IG1\"}"
         ]
     ],
     "requests": [
@@ -150,11 +150,11 @@
             "method": "POST"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-IG1?fields=status_code,status&access_token=T1",
+            "url": "https://graph.instagram.com/v25.0/c-IG1?fields=status_code%2Cstatus&access_token=T1",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-IG1?fields=status_code,status&access_token=T1",
+            "url": "https://graph.instagram.com/v25.0/c-IG1?fields=status_code%2Cstatus&access_token=T1",
             "method": "GET"
         },
         {
@@ -166,7 +166,7 @@
             "method": "POST"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-ERR?fields=status_code,status&access_token=T2",
+            "url": "https://graph.instagram.com/v25.0/c-ERR?fields=status_code%2Cstatus&access_token=T2",
             "method": "GET"
         },
         {
@@ -174,11 +174,11 @@
             "method": "POST"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-EXP?fields=status_code,status&access_token=T3",
+            "url": "https://graph.instagram.com/v25.0/c-EXP?fields=status_code%2Cstatus&access_token=T3",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-EXP?fields=status_code,status&access_token=T3",
+            "url": "https://graph.instagram.com/v25.0/c-EXP?fields=status_code%2Cstatus&access_token=T3",
             "method": "GET"
         },
         {
@@ -198,243 +198,243 @@
             "method": "POST"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {
-            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code,status&access_token=T6",
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
             "method": "GET"
         },
         {

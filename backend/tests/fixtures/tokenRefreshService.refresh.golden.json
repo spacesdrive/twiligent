@@ -2,15 +2,15 @@
     "lines": [
         [
             "log",
-            "Token refreshed for @soon - expires 2026-10-31T12:00:00.000Z"
+            "{\"level\":\"info\",\"message\":\"instagram token refreshed\",\"requestId\":\"cron-test\",\"accountId\":\"a1\",\"username\":\"soon\",\"tokenExpiresAt\":\"2026-10-31T12:00:00.000Z\"}"
         ],
         [
             "error",
-            "Failed to refresh token for @failing: Session has expired"
+            "{\"level\":\"error\",\"message\":\"instagram token refresh failed\",\"requestId\":\"cron-test\",\"accountId\":\"a6\",\"username\":\"failing\",\"error\":\"Session has expired\",\"errorName\":\"UpstreamError\"}"
         ],
         [
             "log",
-            "Token refreshed for @expired - expires 2026-10-31T12:00:00.000Z"
+            "{\"level\":\"info\",\"message\":\"instagram token refreshed\",\"requestId\":\"cron-test\",\"accountId\":\"a7\",\"username\":\"expired\",\"tokenExpiresAt\":\"2026-10-31T12:00:00.000Z\"}"
         ]
     ],
     "requests": [
