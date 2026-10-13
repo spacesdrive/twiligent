@@ -2,12 +2,27 @@
 
 ## Project Identity
 
-Twiligent is a self-hosted social media analytics and publishing dashboard for creators and teams managing multiple YouTube channels and Instagram accounts. It is a private deployment product - the owner runs their own instance with their own API credentials. There is no SaaS model, no multi-tenancy abstraction, and no billing system.
+Twiligent is a self-hosted social media analytics and publishing dashboard for creators and teams managing multiple YouTube channels, Instagram accounts and Reddit profiles. It is a private deployment product - the owner runs their own instance with their own API credentials. There is no SaaS model, no multi-tenancy abstraction, and no billing system.
 
 - Primary users: Small creator teams, agencies, individual power users
 - Primary value: Unified analytics and scheduled Instagram publishing across multiple accounts
-- Current platforms: YouTube (analytics only), Instagram (analytics and publishing)
+- Current platforms: YouTube (analytics only), Instagram (analytics and publishing), Reddit (analytics only)
 - GitHub repository: https://github.com/spacesdrive/twiligent
+- Goals and priorities: `ROADMAP.md`
+
+---
+
+## Issue Tracking (Required for Every Task)
+
+Every task is tracked by a GitHub issue, no matter how small: features, fixes, refactors, docs, dependency updates, deployments and repository chores. Read `docs/workflows/ISSUES.md` for the full workflow. The non-negotiable rules:
+
+1. Before writing any code or docs, search the open issues (`gh issue list --state open --search "<keywords>"`). Reuse a matching issue, otherwise open one with `gh issue create`. A task with several parts gets a parent issue with one sub-issue per part.
+2. Every commit references its issue: `Refs #N` in the body while the work continues, `Closes #N` in the commit or pull request that finishes it.
+3. Tick the issue's task list as parts finish, and record decisions, blockers and scope changes as issue comments.
+4. Close the issue as soon as the work is complete: committed and pushed, docs updated, and the checks in `docs/workflows/TESTING.md` passing. If a `Closes #N` commit did not close it on `main`, run `gh issue close N --comment "<what changed and how it was verified>"`.
+5. Never close an issue for unfinished work. When a session ends mid-task, leave the issue open with a comment listing what is done and what remains.
+6. When the user asks for several things at once, open one issue per request before starting the first, so nothing is lost.
+7. Never put secrets, tokens, `.dev.vars` values or personal data in an issue; the repository is public.
 
 ---
 
@@ -38,12 +53,14 @@ scripts/              publish-scheduled.js, run by GitHub Actions with no depend
 Before implementing any feature or fix, read these documents in this exact order:
 
 1. This file - project identity, rules, and documentation map
-2. `docs/WRITING_STANDARDS.md` - typography, icons, writing style, UI copy rules
-3. `docs/architecture/OVERVIEW.md` - system topology and request flow
-4. `docs/guidelines/JAVASCRIPT.md` - code standards (always apply)
-5. Relevant architecture doc - backend, frontend, database, or cloudflare
-6. Relevant feature guide - if one exists in `docs/features/`
-7. Relevant engineering guideline - if the task touches a specific layer
+2. `docs/workflows/ISSUES.md` - open or find the GitHub issue for the task before anything else
+3. `docs/WRITING_STANDARDS.md` - typography, icons, writing style, UI copy rules
+4. `docs/architecture/OVERVIEW.md` - system topology and request flow
+5. `docs/guidelines/JAVASCRIPT.md` - code standards (always apply)
+6. Relevant architecture doc - backend, frontend, database, or cloudflare
+7. Relevant feature guide - if one exists in `docs/features/`
+8. Relevant engineering guideline - if the task touches a specific layer
+9. `ROADMAP.md` - if the task is a planned item, link its issue there
 
 For MCP usage, read `docs/mcp/OVERVIEW.md` before using any MCP server.
 
@@ -102,7 +119,8 @@ docs/
     SEQUENTIAL_THINKING.md Complex planning, architecture decisions
     PARALLEL_SEARCH.md     UX research, best practices, browser compat
   workflows/
-    FEATURE_DEVELOPMENT.md 25-step feature implementation sequence
+    ISSUES.md              GitHub issue lifecycle: open before work, reference in commits, close on completion
+    FEATURE_DEVELOPMENT.md Feature sequence from opening the issue to closing it
     TESTING.md             Test types, commands, pass criteria
     GIT.md                 Commit format, branch rules, changelog
     DEPLOYMENT.md          Backend deploy, frontend deploy, verification
@@ -234,6 +252,8 @@ This is not optional for features that touch new UI patterns, new APIs, or new i
 
 ## AI Operating Rules
 
+**Open the issue first.** No task starts without a GitHub issue, and no task is reported as done while its issue is still open. See Issue Tracking above and `docs/workflows/ISSUES.md`.
+
 **Always read before writing.** Read every file you will modify. Read all files in the same directory that might be affected. Read sibling files to understand conventions before adding new ones.
 
 **Match the existing pattern.** This project has established conventions for routes, context hooks, db.js queries, cache.js patterns, and api.js methods. Find the nearest existing example and follow it exactly before introducing anything new.
@@ -272,7 +292,11 @@ Commit after every meaningful change. Do not batch unrelated changes into one co
 type(scope): short imperative description
 
 Optional body explaining why, not what.
+
+Refs #12
 ```
+
+Every commit body ends with the issue reference: `Refs #N` for partial work, `Closes #N` for the commit that completes the issue. Pull requests list `Closes #N` for every issue they finish.
 
 Tag releases after changes or patches:
 - Bug fixes: patch version (v1.0.1, v1.0.2)
@@ -289,6 +313,11 @@ When anything changes, update every relevant docs file from the table below. The
 
 | What changed | Files to update |
 |---|---|
+| Any task started | GitHub issue opened (or an existing one reused) before the first edit; see `docs/workflows/ISSUES.md` |
+| Any task finished | GitHub issue closed with a summary of what changed and how it was verified; task list ticked; parent issue closed after its last sub-issue |
+| Roadmap item started or finished | `ROADMAP.md` (link the issue when work starts; remove the entry and add it to `CHANGELOG.md` when the issue closes) |
+| Project goals or priorities changed | `ROADMAP.md` (Goals section), this file (Project Identity section) |
+| Issue workflow, labels or templates changed | `docs/workflows/ISSUES.md`, `.github/ISSUE_TEMPLATE/`, `.github/pull_request_template.md`, this file (Issue Tracking section) |
 | New route added | `docs/architecture/backend/ROUTES.md`, `docs/architecture/OVERVIEW.md`, `docs/workflows/TESTING.md` (add to manual verification checklist) |
 | Route deleted or changed | `docs/architecture/backend/ROUTES.md`, `docs/architecture/OVERVIEW.md` |
 | New DB table | `docs/architecture/database/SCHEMA.md`, `docs/architecture/database/SECURITY.md`, `DECISIONS.md`, `CHANGELOG.md` |

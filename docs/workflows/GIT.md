@@ -36,7 +36,18 @@ type(scope): short description in present tense
 
 Optional body explaining WHY, not WHAT. Wrap at 72 characters.
 Reference which docs were updated if any.
+
+Refs #12
 ```
+
+### Issue reference
+
+Every commit ends with a reference to the GitHub issue that tracks the work (see `docs/workflows/ISSUES.md`):
+
+- `Refs #N` - the commit is part of the work; the issue stays open
+- `Closes #N` - the commit completes the issue; GitHub closes it when the commit reaches `main`
+
+A commit that finishes several issues lists each one: `Closes #3, closes #4`. A commit on a branch that closes an issue only takes effect when it is merged to `main`.
 
 ### Types
 
@@ -121,6 +132,8 @@ Users can now upload a CSV file to schedule multiple posts at once.
 Each row in the CSV maps to one scheduled_post record.
 
 Docs updated: ROUTES.md, SCHEDULING.md, CHANGELOG.md.
+
+Closes #42
 ```
 
 ---
@@ -170,6 +183,8 @@ git merge feat/reddit-integration
 git push origin main
 ```
 
+A branch can also be merged through a pull request (`gh pr create`); its body lists `Closes #N` for each issue it finishes, following `.github/pull_request_template.md`.
+
 Delete the branch after merging:
 ```bash
 git push origin --delete feat/reddit-integration
@@ -192,6 +207,7 @@ Run the commands from the repository root:
 6. Check no secrets or credentials appear in the diff
 7. Check no lockfile appears inside `backend/` or `frontend/`; the root `package-lock.json` is the only lockfile
 8. Verify CHANGELOG.md is updated if the commit adds a feature or fix
+9. Verify the commit body ends with `Refs #N` or `Closes #N` for the tracking issue
 
 ---
 
@@ -206,6 +222,9 @@ After pushing to `main`, monitor GitHub Actions:
 
 If a deployment workflow fails:
 1. Read the failure log at https://github.com/spacesdrive/twiligent/actions
-2. Fix the issue locally
-3. Create a new commit (never amend a published commit)
-4. Push the fix
+2. Open a `bug` issue for the failure, or comment on the issue the push was for
+3. Fix the issue locally
+4. Create a new commit (never amend a published commit) that references the issue
+5. Push the fix
+
+After the push, check that every issue the work finished is closed (`gh issue list --state open`). Close any that a `Closes #N` line did not close, with a comment naming the commit.

@@ -551,7 +551,7 @@ Twiligent is different on each point:
 
 ## Contributing
 
-Contributions are welcome. For significant changes, open an issue first to discuss the approach.
+Contributions are welcome. Every change starts with a GitHub issue: search the [open issues](https://github.com/spacesdrive/twiligent/issues) first, and open one if nothing covers your change. Commits and pull requests reference it (`Refs #N`, `Closes #N`); see `docs/workflows/ISSUES.md`.
 
 1. Fork the repository from [github.com/spacesdrive/twiligent](https://github.com/spacesdrive/twiligent)
 2. Create a feature branch
@@ -566,7 +566,7 @@ git checkout -b feature/your-feature-name
 git commit -m "feat: add your feature description"
 ```
 
-4. Push and open a pull request
+4. Push and open a pull request whose description lists `Closes #N` for the issue
 
 ```bash
 git push origin feature/your-feature-name

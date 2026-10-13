@@ -9,6 +9,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+**Issue tracking for every change**
+- Every task is tracked by a GitHub issue that is opened before work starts and closed when it is complete; commits reference it with `Refs #N` or `Closes #N`
+- Issue templates, a pull request template and `docs/workflows/ISSUES.md` describe the lifecycle, labels and `gh` commands
+- `ROADMAP.md` now starts with the project goals and links in-progress items to their issues
+
 **Sign in with Google**
 - Continue with Google on the sign-in page, using Google's own button and a nonce-checked ID token sent to Supabase; shown only when `VITE_GOOGLE_CLIENT_ID` is set
 - Docs page for administrators: branding, audience, scopes, client, Supabase provider and brand verification

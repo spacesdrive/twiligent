@@ -6,6 +6,9 @@ Every feature - large or small - follows this sequence. Steps that don't apply t
 
 ## Phase 1: Understand
 
+**Step 0 - Open the GitHub issue**  
+Before anything else, find or open the issue that tracks the work, following `docs/workflows/ISSUES.md`. Every later commit references it.
+
 **Step 1 - Read CLAUDE.md**  
 Confirm you have the project context and know which docs to load.
 
@@ -157,10 +160,13 @@ Based on what changed (see `claude.md` Documentation Maintenance Policy):
 Add an entry under `[Unreleased]` describing what was added, changed, or fixed.
 
 **Step 23 - Update ROADMAP.md**  
-If the feature was on the roadmap, move it to the completed list. If it opened new follow-up work, add that.
+If the feature was on the roadmap, remove it from the roadmap (CHANGELOG.md now records it). If it opened new follow-up work, add that.
 
 **Step 24 - Commit**  
-Follow the Git workflow in `docs/workflows/GIT.md`.
+Follow the Git workflow in `docs/workflows/GIT.md`. The commit body ends with `Refs #N`, or `Closes #N` on the commit that completes the issue.
 
 **Step 25 - Deploy (if ready)**  
 Follow `docs/workflows/DEPLOYMENT.md`.
+
+**Step 26 - Close the issue**  
+Once the work is pushed and verified, confirm the issue is closed. If `Closes #N` did not close it, run `gh issue close N --comment "..."` with what changed and how it was verified. Open follow-up issues for anything left out.
