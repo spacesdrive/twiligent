@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'backend/**'
+      - 'shared/**'
+      - 'tsconfig.base.json'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/deploy-backend.yml'
@@ -26,6 +28,13 @@ jobs:
       # one install at the root covers every workspace, including wrangler
       - name: Install dependencies
         run: npm ci
+
+      # deploy only code that type-checks; Wrangler and Vite strip types without checking them
+      - name: Type check
+        run: npm run typecheck --workspace backend
+
+      - name: Test
+        run: npm test --workspace backend
 
       - name: Deploy Worker
         uses: cloudflare/wrangler-action@v4

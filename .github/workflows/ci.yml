@@ -1,0 +1,40 @@
+name: CI
+
+# Checks every pull request and every branch push before it can reach main and deploy.
+on:
+  pull_request:
+  push:
+    branches-ignore: [main]
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    name: Type check, lint, test, build
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: 'npm'
+          cache-dependency-path: package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Bundle Worker
+        run: npx wrangler deploy --dry-run --outdir dist
+        working-directory: backend
