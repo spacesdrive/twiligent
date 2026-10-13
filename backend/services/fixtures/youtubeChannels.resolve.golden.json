@@ -1,0 +1,54 @@
+{
+    "outcomes": [
+        {
+            "value": "UCabcdefghijklmnopqrstuv"
+        },
+        {
+            "value": "UC_creator.name"
+        },
+        {
+            "value": "UC_legacy-name"
+        },
+        {
+            "value": "UC_olduser"
+        },
+        {
+            "value": "UC_plainname"
+        },
+        {
+            "value": "UC_just-a-name"
+        },
+        {
+            "error": "Invalid input",
+            "reason": "[undefined]",
+            "status": "[undefined]"
+        },
+        {
+            "error": "Invalid input",
+            "reason": "[undefined]",
+            "status": "[undefined]"
+        }
+    ],
+    "requests": [
+        {
+            "url": "https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=creator.name&key=KEY",
+            "method": "GET"
+        },
+        {
+            "url": "https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=legacy-name&key=KEY",
+            "method": "GET"
+        },
+        {
+            "url": "https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=olduser&key=KEY",
+            "method": "GET"
+        },
+        {
+            "url": "https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=plainname&key=KEY",
+            "method": "GET"
+        },
+        {
+            "url": "https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=just-a-name&key=KEY",
+            "method": "GET"
+        }
+    ]
+}

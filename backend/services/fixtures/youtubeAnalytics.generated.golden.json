@@ -1,0 +1,892 @@
+{
+    "totalVideos": 36,
+    "totalViews": 838970,
+    "totalLikes": 11590,
+    "totalComments": 1575,
+    "avgViews": 23305,
+    "avgLikes": 322,
+    "avgComments": 44,
+    "medianViews": 22745,
+    "totalEngagement": 13165,
+    "overallEngagementRate": "1.57",
+    "avgDurationSeconds": 5379,
+    "avgDurationFormatted": "1h 29m",
+    "totalDurationSeconds": 193650,
+    "totalDurationFormatted": "53h 47m",
+    "estimatedTotalWatchTimeHours": 45129595,
+    "bestByViews": {
+        "videoId": "g25",
+        "title": "Video g25",
+        "viewCount": 47975,
+        "likeCount": null,
+        "commentCount": 75,
+        "publishedAt": "2026-01-05T08:00:00.000Z",
+        "thumbnail": "https://i/g25/m.jpg",
+        "engagementRate": "0.16",
+        "durationSeconds": 6925
+    },
+    "bestByLikes": {
+        "videoId": "g29",
+        "title": "Video g29",
+        "viewCount": 29651,
+        "likeCount": 899,
+        "commentCount": 87,
+        "publishedAt": "2025-11-28T08:00:00.000Z",
+        "thumbnail": "https://i/g29/m.jpg",
+        "engagementRate": "3.33",
+        "durationSeconds": 8597
+    },
+    "bestByComments": {
+        "videoId": "g34",
+        "title": "Video g34",
+        "viewCount": 19246,
+        "likeCount": 154,
+        "commentCount": 102,
+        "publishedAt": "2025-10-11T20:00:00.000Z",
+        "thumbnail": "https://i/g34/m.jpg",
+        "engagementRate": "1.33",
+        "durationSeconds": 7102
+    },
+    "bestByEngagement": {
+        "videoId": "g19",
+        "title": "Video g19",
+        "viewCount": 461,
+        "likeCount": 589,
+        "commentCount": 57,
+        "publishedAt": "2026-03-03T08:00:00.000Z",
+        "thumbnail": "https://i/g19/m.jpg",
+        "engagementRate": "140.13",
+        "durationSeconds": 4387
+    },
+    "worstByViews": {
+        "videoId": "g00",
+        "title": "Video g00",
+        "viewCount": 0,
+        "likeCount": null,
+        "commentCount": null,
+        "publishedAt": "2026-08-30T20:00:00.000Z",
+        "thumbnail": "https://i/g00/m.jpg",
+        "engagementRate": "0.00",
+        "durationSeconds": 0
+    },
+    "mostRecent": {
+        "videoId": "g00",
+        "title": "Video g00",
+        "viewCount": 0,
+        "likeCount": null,
+        "commentCount": null,
+        "publishedAt": "2026-08-30T20:00:00.000Z",
+        "thumbnail": "https://i/g00/m.jpg",
+        "engagementRate": "0.00",
+        "durationSeconds": 0
+    },
+    "oldest": {
+        "videoId": "g35",
+        "title": "Video g35",
+        "viewCount": 27165,
+        "likeCount": null,
+        "commentCount": null,
+        "publishedAt": "2025-10-02T08:00:00.000Z",
+        "thumbnail": "https://i/g35/m.jpg",
+        "engagementRate": "0.00",
+        "durationSeconds": 7535
+    },
+    "top10ByViews": [
+        {
+            "videoId": "g25",
+            "title": "Video g25",
+            "viewCount": 47975,
+            "likeCount": null,
+            "commentCount": 75,
+            "publishedAt": "2026-01-05T08:00:00.000Z",
+            "thumbnail": "https://i/g25/m.jpg",
+            "engagementRate": "0.16",
+            "durationSeconds": 6925
+        },
+        {
+            "videoId": "g06",
+            "title": "Video g06",
+            "viewCount": 47514,
+            "likeCount": 186,
+            "commentCount": 18,
+            "publishedAt": "2026-07-04T20:00:00.000Z",
+            "thumbnail": "https://i/g06/m.jpg",
+            "engagementRate": "0.43",
+            "durationSeconds": 2538
+        },
+        {
+            "videoId": "g31",
+            "title": "Video g31",
+            "viewCount": 45489,
+            "likeCount": 61,
+            "commentCount": 93,
+            "publishedAt": "2025-11-09T08:00:00.000Z",
+            "thumbnail": "https://i/g31/m.jpg",
+            "engagementRate": "0.34",
+            "durationSeconds": 5863
+        },
+        {
+            "videoId": "g12",
+            "title": "Video g12",
+            "viewCount": 45028,
+            "likeCount": 372,
+            "commentCount": 36,
+            "publishedAt": "2026-05-08T20:00:00.000Z",
+            "thumbnail": "https://i/g12/m.jpg",
+            "engagementRate": "0.91",
+            "durationSeconds": 1476
+        },
+        {
+            "videoId": "g18",
+            "title": "Video g18",
+            "viewCount": 42542,
+            "likeCount": 558,
+            "commentCount": 54,
+            "publishedAt": "2026-03-12T20:00:00.000Z",
+            "thumbnail": "https://i/g18/m.jpg",
+            "engagementRate": "1.44",
+            "durationSeconds": 414
+        },
+        {
+            "videoId": "g24",
+            "title": "Video g24",
+            "viewCount": 40056,
+            "likeCount": 744,
+            "commentCount": 72,
+            "publishedAt": "2026-01-14T20:00:00.000Z",
+            "thumbnail": "https://i/g24/m.jpg",
+            "engagementRate": "2.04",
+            "durationSeconds": 2892
+        },
+        {
+            "videoId": "g05",
+            "title": "Video g05",
+            "viewCount": 39595,
+            "likeCount": null,
+            "commentCount": 15,
+            "publishedAt": "2026-07-14T08:00:00.000Z",
+            "thumbnail": "https://i/g05/m.jpg",
+            "engagementRate": "0.04",
+            "durationSeconds": 9305
+        },
+        {
+            "videoId": "g30",
+            "title": "Video g30",
+            "viewCount": 37570,
+            "likeCount": null,
+            "commentCount": 90,
+            "publishedAt": "2025-11-18T20:00:00.000Z",
+            "thumbnail": "https://i/g30/m.jpg",
+            "engagementRate": "0.24",
+            "durationSeconds": 1830
+        },
+        {
+            "videoId": "g11",
+            "title": "Video g11",
+            "viewCount": 37109,
+            "likeCount": 341,
+            "commentCount": 33,
+            "publishedAt": "2026-05-18T08:00:00.000Z",
+            "thumbnail": "https://i/g11/m.jpg",
+            "engagementRate": "1.01",
+            "durationSeconds": 8243
+        },
+        {
+            "videoId": "g17",
+            "title": "Video g17",
+            "viewCount": 34623,
+            "likeCount": 527,
+            "commentCount": 51,
+            "publishedAt": "2026-03-22T08:00:00.000Z",
+            "thumbnail": "https://i/g17/m.jpg",
+            "engagementRate": "1.67",
+            "durationSeconds": 10781
+        }
+    ],
+    "top10ByLikes": [
+        {
+            "videoId": "g29",
+            "title": "Video g29",
+            "viewCount": 29651,
+            "likeCount": 899,
+            "commentCount": 87,
+            "publishedAt": "2025-11-28T08:00:00.000Z",
+            "thumbnail": "https://i/g29/m.jpg",
+            "engagementRate": "3.33",
+            "durationSeconds": 8597
+        },
+        {
+            "videoId": "g28",
+            "title": "Video g28",
+            "viewCount": 21732,
+            "likeCount": 868,
+            "commentCount": null,
+            "publishedAt": "2025-12-07T20:00:00.000Z",
+            "thumbnail": "https://i/g28/m.jpg",
+            "engagementRate": "3.99",
+            "durationSeconds": 4564
+        },
+        {
+            "videoId": "g27",
+            "title": "Video g27",
+            "viewCount": 13813,
+            "likeCount": 837,
+            "commentCount": 81,
+            "publishedAt": "2025-12-17T08:00:00.000Z",
+            "thumbnail": "https://i/g27/m.jpg",
+            "engagementRate": "6.65",
+            "durationSeconds": 591
+        },
+        {
+            "videoId": "g26",
+            "title": "Video g26",
+            "viewCount": 5894,
+            "likeCount": 806,
+            "commentCount": 78,
+            "publishedAt": "2025-12-26T20:00:00.000Z",
+            "thumbnail": "https://i/g26/m.jpg",
+            "engagementRate": "15.00",
+            "durationSeconds": 7358
+        },
+        {
+            "videoId": "g24",
+            "title": "Video g24",
+            "viewCount": 40056,
+            "likeCount": 744,
+            "commentCount": 72,
+            "publishedAt": "2026-01-14T20:00:00.000Z",
+            "thumbnail": "https://i/g24/m.jpg",
+            "engagementRate": "2.04",
+            "durationSeconds": 2892
+        },
+        {
+            "videoId": "g23",
+            "title": "Video g23",
+            "viewCount": 32137,
+            "likeCount": 713,
+            "commentCount": 69,
+            "publishedAt": "2026-01-24T08:00:00.000Z",
+            "thumbnail": "https://i/g23/m.jpg",
+            "engagementRate": "2.43",
+            "durationSeconds": 9719
+        },
+        {
+            "videoId": "g22",
+            "title": "Video g22",
+            "viewCount": 24218,
+            "likeCount": 682,
+            "commentCount": 66,
+            "publishedAt": "2026-02-02T20:00:00.000Z",
+            "thumbnail": "https://i/g22/m.jpg",
+            "engagementRate": "3.09",
+            "durationSeconds": 5686
+        },
+        {
+            "videoId": "g21",
+            "title": "Video g21",
+            "viewCount": 16299,
+            "likeCount": 651,
+            "commentCount": null,
+            "publishedAt": "2026-02-12T08:00:00.000Z",
+            "thumbnail": "https://i/g21/m.jpg",
+            "engagementRate": "3.99",
+            "durationSeconds": 1653
+        },
+        {
+            "videoId": "g19",
+            "title": "Video g19",
+            "viewCount": 461,
+            "likeCount": 589,
+            "commentCount": 57,
+            "publishedAt": "2026-03-03T08:00:00.000Z",
+            "thumbnail": "https://i/g19/m.jpg",
+            "engagementRate": "140.13",
+            "durationSeconds": 4387
+        },
+        {
+            "videoId": "g18",
+            "title": "Video g18",
+            "viewCount": 42542,
+            "likeCount": 558,
+            "commentCount": 54,
+            "publishedAt": "2026-03-12T20:00:00.000Z",
+            "thumbnail": "https://i/g18/m.jpg",
+            "engagementRate": "1.44",
+            "durationSeconds": 414
+        }
+    ],
+    "top10ByComments": [
+        {
+            "videoId": "g34",
+            "title": "Video g34",
+            "viewCount": 19246,
+            "likeCount": 154,
+            "commentCount": 102,
+            "publishedAt": "2025-10-11T20:00:00.000Z",
+            "thumbnail": "https://i/g34/m.jpg",
+            "engagementRate": "1.33",
+            "durationSeconds": 7102
+        },
+        {
+            "videoId": "g33",
+            "title": "Video g33",
+            "viewCount": 11327,
+            "likeCount": 123,
+            "commentCount": 99,
+            "publishedAt": "2025-10-21T08:00:00.000Z",
+            "thumbnail": "https://i/g33/m.jpg",
+            "engagementRate": "1.96",
+            "durationSeconds": 3069
+        },
+        {
+            "videoId": "g32",
+            "title": "Video g32",
+            "viewCount": 3408,
+            "likeCount": 92,
+            "commentCount": 96,
+            "publishedAt": "2025-10-30T20:00:00.000Z",
+            "thumbnail": "https://i/g32/m.jpg",
+            "engagementRate": "5.52",
+            "durationSeconds": 9896
+        },
+        {
+            "videoId": "g31",
+            "title": "Video g31",
+            "viewCount": 45489,
+            "likeCount": 61,
+            "commentCount": 93,
+            "publishedAt": "2025-11-09T08:00:00.000Z",
+            "thumbnail": "https://i/g31/m.jpg",
+            "engagementRate": "0.34",
+            "durationSeconds": 5863
+        },
+        {
+            "videoId": "g30",
+            "title": "Video g30",
+            "viewCount": 37570,
+            "likeCount": null,
+            "commentCount": 90,
+            "publishedAt": "2025-11-18T20:00:00.000Z",
+            "thumbnail": "https://i/g30/m.jpg",
+            "engagementRate": "0.24",
+            "durationSeconds": 1830
+        },
+        {
+            "videoId": "g29",
+            "title": "Video g29",
+            "viewCount": 29651,
+            "likeCount": 899,
+            "commentCount": 87,
+            "publishedAt": "2025-11-28T08:00:00.000Z",
+            "thumbnail": "https://i/g29/m.jpg",
+            "engagementRate": "3.33",
+            "durationSeconds": 8597
+        },
+        {
+            "videoId": "g27",
+            "title": "Video g27",
+            "viewCount": 13813,
+            "likeCount": 837,
+            "commentCount": 81,
+            "publishedAt": "2025-12-17T08:00:00.000Z",
+            "thumbnail": "https://i/g27/m.jpg",
+            "engagementRate": "6.65",
+            "durationSeconds": 591
+        },
+        {
+            "videoId": "g26",
+            "title": "Video g26",
+            "viewCount": 5894,
+            "likeCount": 806,
+            "commentCount": 78,
+            "publishedAt": "2025-12-26T20:00:00.000Z",
+            "thumbnail": "https://i/g26/m.jpg",
+            "engagementRate": "15.00",
+            "durationSeconds": 7358
+        },
+        {
+            "videoId": "g25",
+            "title": "Video g25",
+            "viewCount": 47975,
+            "likeCount": null,
+            "commentCount": 75,
+            "publishedAt": "2026-01-05T08:00:00.000Z",
+            "thumbnail": "https://i/g25/m.jpg",
+            "engagementRate": "0.16",
+            "durationSeconds": 6925
+        },
+        {
+            "videoId": "g24",
+            "title": "Video g24",
+            "viewCount": 40056,
+            "likeCount": 744,
+            "commentCount": 72,
+            "publishedAt": "2026-01-14T20:00:00.000Z",
+            "thumbnail": "https://i/g24/m.jpg",
+            "engagementRate": "2.04",
+            "durationSeconds": 2892
+        }
+    ],
+    "top10ByEngagement": [
+        {
+            "videoId": "g19",
+            "title": "Video g19",
+            "viewCount": 461,
+            "likeCount": 589,
+            "commentCount": 57,
+            "publishedAt": "2026-03-03T08:00:00.000Z",
+            "thumbnail": "https://i/g19/m.jpg",
+            "engagementRate": "140.13",
+            "durationSeconds": 4387
+        },
+        {
+            "videoId": "g13",
+            "title": "Video g13",
+            "viewCount": 2947,
+            "likeCount": 403,
+            "commentCount": 39,
+            "publishedAt": "2026-04-29T08:00:00.000Z",
+            "thumbnail": "https://i/g13/m.jpg",
+            "engagementRate": "15.00",
+            "durationSeconds": 5509
+        },
+        {
+            "videoId": "g26",
+            "title": "Video g26",
+            "viewCount": 5894,
+            "likeCount": 806,
+            "commentCount": 78,
+            "publishedAt": "2025-12-26T20:00:00.000Z",
+            "thumbnail": "https://i/g26/m.jpg",
+            "engagementRate": "15.00",
+            "durationSeconds": 7358
+        },
+        {
+            "videoId": "g27",
+            "title": "Video g27",
+            "viewCount": 13813,
+            "likeCount": 837,
+            "commentCount": 81,
+            "publishedAt": "2025-12-17T08:00:00.000Z",
+            "thumbnail": "https://i/g27/m.jpg",
+            "engagementRate": "6.65",
+            "durationSeconds": 591
+        },
+        {
+            "videoId": "g32",
+            "title": "Video g32",
+            "viewCount": 3408,
+            "likeCount": 92,
+            "commentCount": 96,
+            "publishedAt": "2025-10-30T20:00:00.000Z",
+            "thumbnail": "https://i/g32/m.jpg",
+            "engagementRate": "5.52",
+            "durationSeconds": 9896
+        },
+        {
+            "videoId": "g07",
+            "title": "Video g07",
+            "viewCount": 5433,
+            "likeCount": 217,
+            "commentCount": null,
+            "publishedAt": "2026-06-25T08:00:00.000Z",
+            "thumbnail": "https://i/g07/m.jpg",
+            "engagementRate": "3.99",
+            "durationSeconds": 6571
+        },
+        {
+            "videoId": "g14",
+            "title": "Video g14",
+            "viewCount": 10866,
+            "likeCount": 434,
+            "commentCount": null,
+            "publishedAt": "2026-04-19T20:00:00.000Z",
+            "thumbnail": "https://i/g14/m.jpg",
+            "engagementRate": "3.99",
+            "durationSeconds": 9482
+        },
+        {
+            "videoId": "g21",
+            "title": "Video g21",
+            "viewCount": 16299,
+            "likeCount": 651,
+            "commentCount": null,
+            "publishedAt": "2026-02-12T08:00:00.000Z",
+            "thumbnail": "https://i/g21/m.jpg",
+            "engagementRate": "3.99",
+            "durationSeconds": 1653
+        },
+        {
+            "videoId": "g28",
+            "title": "Video g28",
+            "viewCount": 21732,
+            "likeCount": 868,
+            "commentCount": null,
+            "publishedAt": "2025-12-07T20:00:00.000Z",
+            "thumbnail": "https://i/g28/m.jpg",
+            "engagementRate": "3.99",
+            "durationSeconds": 4564
+        },
+        {
+            "videoId": "g29",
+            "title": "Video g29",
+            "viewCount": 29651,
+            "likeCount": 899,
+            "commentCount": 87,
+            "publishedAt": "2025-11-28T08:00:00.000Z",
+            "thumbnail": "https://i/g29/m.jpg",
+            "engagementRate": "3.33",
+            "durationSeconds": 8597
+        }
+    ],
+    "shortsCount": 1,
+    "regularCount": 35,
+    "avgShortViews": 0,
+    "avgRegularViews": 23971,
+    "avgShortLikes": 0,
+    "avgRegularLikes": 331,
+    "hdCount": 36,
+    "sdCount": 0,
+    "hdPercentage": "100.0",
+    "captionCount": 0,
+    "captionPercentage": "0.0",
+    "licensedCount": 36,
+    "licensedPercentage": "100.0",
+    "madeForKidsCount": 0,
+    "embeddableCount": 36,
+    "embeddablePercentage": "100.0",
+    "publishDayDistribution": {
+        "Sunday": 6,
+        "Friday": 5,
+        "Tuesday": 6,
+        "Thursday": 6,
+        "Saturday": 5,
+        "Monday": 4,
+        "Wednesday": 4
+    },
+    "publishHourDistribution": {
+        "8": 18,
+        "20": 18
+    },
+    "peakPublishDay": "Sunday",
+    "peakPublishHour": 8,
+    "durationDistribution": {
+        "short": 1,
+        "medium": 3,
+        "long": 8,
+        "veryLong": 24
+    },
+    "categoryDistribution": {
+        "20": 6,
+        "21": 6,
+        "22": 6,
+        "23": 6,
+        "24": 6,
+        "25": 6
+    },
+    "tagFrequency": [
+        {
+            "tag": "tag0",
+            "count": 9
+        },
+        {
+            "tag": "tag4",
+            "count": 9
+        },
+        {
+            "tag": "tag8",
+            "count": 9
+        },
+        {
+            "tag": "tag12",
+            "count": 9
+        },
+        {
+            "tag": "tag16",
+            "count": 9
+        },
+        {
+            "tag": "tag20",
+            "count": 9
+        },
+        {
+            "tag": "tag24",
+            "count": 9
+        },
+        {
+            "tag": "tag28",
+            "count": 9
+        },
+        {
+            "tag": "tag32",
+            "count": 9
+        },
+        {
+            "tag": "tag36",
+            "count": 9
+        },
+        {
+            "tag": "tag3",
+            "count": 9
+        },
+        {
+            "tag": "tag7",
+            "count": 9
+        },
+        {
+            "tag": "tag11",
+            "count": 9
+        },
+        {
+            "tag": "tag15",
+            "count": 9
+        },
+        {
+            "tag": "tag19",
+            "count": 9
+        },
+        {
+            "tag": "tag23",
+            "count": 9
+        },
+        {
+            "tag": "tag27",
+            "count": 9
+        },
+        {
+            "tag": "tag31",
+            "count": 9
+        },
+        {
+            "tag": "tag35",
+            "count": 9
+        },
+        {
+            "tag": "tag39",
+            "count": 9
+        },
+        {
+            "tag": "tag2",
+            "count": 9
+        },
+        {
+            "tag": "tag6",
+            "count": 9
+        },
+        {
+            "tag": "tag10",
+            "count": 9
+        },
+        {
+            "tag": "tag14",
+            "count": 9
+        },
+        {
+            "tag": "tag18",
+            "count": 9
+        },
+        {
+            "tag": "tag22",
+            "count": 9
+        },
+        {
+            "tag": "tag26",
+            "count": 9
+        },
+        {
+            "tag": "tag30",
+            "count": 9
+        },
+        {
+            "tag": "tag34",
+            "count": 9
+        },
+        {
+            "tag": "tag38",
+            "count": 9
+        }
+    ],
+    "videosLast7Days": 1,
+    "videosLast30Days": 3,
+    "videosLast90Days": 10,
+    "videosLast365Days": 36,
+    "uploadFrequencyPerWeek": "0.8",
+    "uploadFrequencyPerMonth": "3.3",
+    "consistencyScore": 100,
+    "viralityScore": 2.1,
+    "viewsDistribution": {
+        "ranges": [
+            "0-4.8K",
+            "4.8K-9.6K",
+            "9.6K-14.4K",
+            "14.4K-19.2K",
+            "19.2K-24.0K",
+            "24.0K-28.8K",
+            "28.8K-33.6K",
+            "33.6K-38.4K",
+            "38.4K-43.2K",
+            "43.2K-48.0K"
+        ],
+        "counts": [
+            4,
+            4,
+            4,
+            3,
+            4,
+            3,
+            4,
+            3,
+            3,
+            4
+        ]
+    },
+    "viewsTrend": [
+        {
+            "month": "2025-10",
+            "value": 61146,
+            "count": 4
+        },
+        {
+            "month": "2025-11",
+            "value": 112710,
+            "count": 3
+        },
+        {
+            "month": "2025-12",
+            "value": 41439,
+            "count": 3
+        },
+        {
+            "month": "2026-01",
+            "value": 120168,
+            "count": 3
+        },
+        {
+            "month": "2026-02",
+            "value": 48897,
+            "count": 3
+        },
+        {
+            "month": "2026-03",
+            "value": 104330,
+            "count": 4
+        },
+        {
+            "month": "2026-04",
+            "value": 32598,
+            "count": 3
+        },
+        {
+            "month": "2026-05",
+            "value": 111327,
+            "count": 3
+        },
+        {
+            "month": "2026-06",
+            "value": 40056,
+            "count": 3
+        },
+        {
+            "month": "2026-07",
+            "value": 118785,
+            "count": 3
+        },
+        {
+            "month": "2026-08",
+            "value": 47514,
+            "count": 4
+        }
+    ],
+    "engagementTrend": [
+        {
+            "month": "2025-10",
+            "value": "1.09"
+        },
+        {
+            "month": "2025-11",
+            "value": "1.09"
+        },
+        {
+            "month": "2025-12",
+            "value": "6.44"
+        },
+        {
+            "month": "2026-01",
+            "value": "1.39"
+        },
+        {
+            "month": "2026-02",
+            "value": "2.98"
+        },
+        {
+            "month": "2026-03",
+            "value": "2.28"
+        },
+        {
+            "month": "2026-04",
+            "value": "2.83"
+        },
+        {
+            "month": "2026-05",
+            "value": "0.73"
+        },
+        {
+            "month": "2026-06",
+            "value": "1.98"
+        },
+        {
+            "month": "2026-07",
+            "value": "0.30"
+        },
+        {
+            "month": "2026-08",
+            "value": "0.43"
+        }
+    ],
+    "likeRateTrend": [
+        {
+            "month": "2025-10",
+            "value": "0.60"
+        },
+        {
+            "month": "2025-11",
+            "value": "0.85"
+        },
+        {
+            "month": "2025-12",
+            "value": "6.06"
+        },
+        {
+            "month": "2026-01",
+            "value": "1.21"
+        },
+        {
+            "month": "2026-02",
+            "value": "2.73"
+        },
+        {
+            "month": "2026-03",
+            "value": "2.08"
+        },
+        {
+            "month": "2026-04",
+            "value": "2.57"
+        },
+        {
+            "month": "2026-05",
+            "value": "0.64"
+        },
+        {
+            "month": "2026-06",
+            "value": "1.86"
+        },
+        {
+            "month": "2026-07",
+            "value": "0.26"
+        },
+        {
+            "month": "2026-08",
+            "value": "0.39"
+        }
+    ]
+}

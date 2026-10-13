@@ -72,30 +72,28 @@ function safeAccount(account) {
 
 ---
 
-## `backend/services/youtube.js`
+## YouTube (`backend/services/youtube*.js`)
 
-### HTTP Client
+`services/youtube.js` is a barrel that re-exports `resolveChannelId`, `fetchChannelData`, `fetchAllVideos`, `fetchTrackedYouTubeData` and `computeVideoAnalytics`, so importers are unchanged.
 
-All YouTube Data API v3 calls use `ytFetch(path, params, env)`:
-
-```js
-async function ytFetch(path, params, env) {
-    const qs = new URLSearchParams({ ...params, key: env.YOUTUBE_API_KEY });
-    const res = await fetch(`https://www.googleapis.com/youtube/v3${path}?${qs}`);
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message);
-    return data;
-}
-```
+| Module | Contents |
+|---|---|
+| `youtubeApi.js` | `ytFetch(endpoint, params, apiKey)` (adds `key` to the params object it is given; errors carry `reason` and `status`) and `optionalCount` (null for a hidden or missing count) |
+| `youtubeChannels.js` | Channel id extraction from URLs and handles, the handle, username, search lookup chain, `resolveChannelId`, `fetchChannelData` |
+| `youtubeVideos.js` | `normalizeYouTubeVideo`, the playlist page fetch that treats `playlistNotFound` as no videos, `fetchAllVideos` |
+| `youtubeTracked.js` | `extractYouTubeVideoId`, `fetchTrackedYouTubeData` |
+| `youtubeFormat.js` | `parseDuration`, `formatCompact`, `formatDuration`, `formatVideoSummary` |
+| `youtubeAnalytics.js` | `computeVideoAnalytics` orchestrator, the empty state, totals, durations, rankings, Shorts split, format flags |
+| `youtubeTrends.js` | Publish day and hour distribution, categories, tags, recency counts, upload frequency, weekly consistency, views histogram, monthly trends |
 
 ### Key Functions
 
 | Function | Purpose |
 |---|---|
-| `resolveChannelId(input, env)` | Resolves a YouTube URL, handle, or channel ID to a canonical channel ID |
-| `fetchChannelData(channelId, env)` | Fetches channel snippet, statistics, and branding |
-| `fetchAllVideos(channelId, uploadPlaylistId, env)` | Paginates through playlist items API (50 per page, up to 10 pages = 500 videos) + batch-fetches video statistics |
-| `computeVideoAnalytics(videos, channel)` | Computes 50+ analytics metrics from the video dataset |
+| `resolveChannelId(input, apiKey)` | Resolves a YouTube URL, handle, or channel ID to a canonical channel ID |
+| `fetchChannelData(channelId, apiKey)` | Fetches channel snippet, statistics, and branding |
+| `fetchAllVideos(playlistId, apiKey, maxPages)` | Paginates through playlist items API (50 per page, up to 10 pages = 500 videos) + batch-fetches video statistics |
+| `computeVideoAnalytics(videos)` | Computes 50+ analytics metrics from the video dataset; captures the current time once and passes it to the trend helpers |
 
 ### Analytics Computation
 

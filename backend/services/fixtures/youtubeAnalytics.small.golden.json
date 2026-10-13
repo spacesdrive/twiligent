@@ -1,0 +1,808 @@
+{
+    "single": {
+        "totalVideos": 1,
+        "totalViews": 98000,
+        "totalLikes": 4100,
+        "totalComments": 640,
+        "avgViews": 98000,
+        "avgLikes": 4100,
+        "avgComments": 640,
+        "medianViews": 98000,
+        "totalEngagement": 4740,
+        "overallEngagementRate": "4.84",
+        "avgDurationSeconds": 3723,
+        "avgDurationFormatted": "1h 2m",
+        "totalDurationSeconds": 3723,
+        "totalDurationFormatted": "1h 2m",
+        "estimatedTotalWatchTimeHours": 101348,
+        "bestByViews": {
+            "videoId": "v04",
+            "title": "Video v04",
+            "viewCount": 98000,
+            "likeCount": 4100,
+            "commentCount": 640,
+            "publishedAt": "2026-08-02T21:00:00Z",
+            "thumbnail": "https://i/v04/m.jpg",
+            "engagementRate": "4.84",
+            "durationSeconds": 3723
+        },
+        "bestByLikes": {
+            "videoId": "v04",
+            "title": "Video v04",
+            "viewCount": 98000,
+            "likeCount": 4100,
+            "commentCount": 640,
+            "publishedAt": "2026-08-02T21:00:00Z",
+            "thumbnail": "https://i/v04/m.jpg",
+            "engagementRate": "4.84",
+            "durationSeconds": 3723
+        },
+        "bestByComments": {
+            "videoId": "v04",
+            "title": "Video v04",
+            "viewCount": 98000,
+            "likeCount": 4100,
+            "commentCount": 640,
+            "publishedAt": "2026-08-02T21:00:00Z",
+            "thumbnail": "https://i/v04/m.jpg",
+            "engagementRate": "4.84",
+            "durationSeconds": 3723
+        },
+        "bestByEngagement": {
+            "videoId": "v04",
+            "title": "Video v04",
+            "viewCount": 98000,
+            "likeCount": 4100,
+            "commentCount": 640,
+            "publishedAt": "2026-08-02T21:00:00Z",
+            "thumbnail": "https://i/v04/m.jpg",
+            "engagementRate": "4.84",
+            "durationSeconds": 3723
+        },
+        "worstByViews": {
+            "videoId": "v04",
+            "title": "Video v04",
+            "viewCount": 98000,
+            "likeCount": 4100,
+            "commentCount": 640,
+            "publishedAt": "2026-08-02T21:00:00Z",
+            "thumbnail": "https://i/v04/m.jpg",
+            "engagementRate": "4.84",
+            "durationSeconds": 3723
+        },
+        "mostRecent": {
+            "videoId": "v04",
+            "title": "Video v04",
+            "viewCount": 98000,
+            "likeCount": 4100,
+            "commentCount": 640,
+            "publishedAt": "2026-08-02T21:00:00Z",
+            "thumbnail": "https://i/v04/m.jpg",
+            "engagementRate": "4.84",
+            "durationSeconds": 3723
+        },
+        "oldest": {
+            "videoId": "v04",
+            "title": "Video v04",
+            "viewCount": 98000,
+            "likeCount": 4100,
+            "commentCount": 640,
+            "publishedAt": "2026-08-02T21:00:00Z",
+            "thumbnail": "https://i/v04/m.jpg",
+            "engagementRate": "4.84",
+            "durationSeconds": 3723
+        },
+        "top10ByViews": [
+            {
+                "videoId": "v04",
+                "title": "Video v04",
+                "viewCount": 98000,
+                "likeCount": 4100,
+                "commentCount": 640,
+                "publishedAt": "2026-08-02T21:00:00Z",
+                "thumbnail": "https://i/v04/m.jpg",
+                "engagementRate": "4.84",
+                "durationSeconds": 3723
+            }
+        ],
+        "top10ByLikes": [
+            {
+                "videoId": "v04",
+                "title": "Video v04",
+                "viewCount": 98000,
+                "likeCount": 4100,
+                "commentCount": 640,
+                "publishedAt": "2026-08-02T21:00:00Z",
+                "thumbnail": "https://i/v04/m.jpg",
+                "engagementRate": "4.84",
+                "durationSeconds": 3723
+            }
+        ],
+        "top10ByComments": [
+            {
+                "videoId": "v04",
+                "title": "Video v04",
+                "viewCount": 98000,
+                "likeCount": 4100,
+                "commentCount": 640,
+                "publishedAt": "2026-08-02T21:00:00Z",
+                "thumbnail": "https://i/v04/m.jpg",
+                "engagementRate": "4.84",
+                "durationSeconds": 3723
+            }
+        ],
+        "top10ByEngagement": [
+            {
+                "videoId": "v04",
+                "title": "Video v04",
+                "viewCount": 98000,
+                "likeCount": 4100,
+                "commentCount": 640,
+                "publishedAt": "2026-08-02T21:00:00Z",
+                "thumbnail": "https://i/v04/m.jpg",
+                "engagementRate": "4.84",
+                "durationSeconds": 3723
+            }
+        ],
+        "shortsCount": 0,
+        "regularCount": 1,
+        "avgShortViews": 0,
+        "avgRegularViews": 98000,
+        "avgShortLikes": 0,
+        "avgRegularLikes": 4100,
+        "hdCount": 1,
+        "sdCount": 0,
+        "hdPercentage": "100.0",
+        "captionCount": 1,
+        "captionPercentage": "100.0",
+        "licensedCount": 1,
+        "licensedPercentage": "100.0",
+        "madeForKidsCount": 0,
+        "embeddableCount": 1,
+        "embeddablePercentage": "100.0",
+        "publishDayDistribution": {
+            "Sunday": 1
+        },
+        "publishHourDistribution": {
+            "21": 1
+        },
+        "peakPublishDay": "Sunday",
+        "peakPublishHour": 21,
+        "durationDistribution": {
+            "short": 0,
+            "medium": 0,
+            "long": 0,
+            "veryLong": 1
+        },
+        "categoryDistribution": {
+            "22": 1
+        },
+        "tagFrequency": [
+            {
+                "tag": "travel",
+                "count": 1
+            },
+            {
+                "tag": "long form",
+                "count": 1
+            }
+        ],
+        "videosLast7Days": 0,
+        "videosLast30Days": 1,
+        "videosLast90Days": 1,
+        "videosLast365Days": 1,
+        "uploadFrequencyPerWeek": "0.2",
+        "uploadFrequencyPerMonth": "1.0",
+        "consistencyScore": 100,
+        "viralityScore": 1,
+        "viewsDistribution": {
+            "ranges": [
+                "0-9.8K",
+                "9.8K-19.6K",
+                "19.6K-29.4K",
+                "29.4K-39.2K",
+                "39.2K-49.0K",
+                "49.0K-58.8K",
+                "58.8K-68.6K",
+                "68.6K-78.4K",
+                "78.4K-88.2K",
+                "88.2K-98.0K"
+            ],
+            "counts": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ]
+        },
+        "viewsTrend": [
+            {
+                "month": "2026-08",
+                "value": 98000,
+                "count": 1
+            }
+        ],
+        "engagementTrend": [
+            {
+                "month": "2026-08",
+                "value": "4.84"
+            }
+        ],
+        "likeRateTrend": [
+            {
+                "month": "2026-08",
+                "value": "4.18"
+            }
+        ]
+    },
+    "pair": {
+        "totalVideos": 2,
+        "totalViews": 10800,
+        "totalLikes": 210,
+        "totalComments": 31,
+        "avgViews": 5400,
+        "avgLikes": 105,
+        "avgComments": 16,
+        "medianViews": 5400,
+        "totalEngagement": 241,
+        "overallEngagementRate": "2.23",
+        "avgDurationSeconds": 276,
+        "avgDurationFormatted": "4m 36s",
+        "totalDurationSeconds": 552,
+        "totalDurationFormatted": "9m 12s",
+        "estimatedTotalWatchTimeHours": 1656,
+        "bestByViews": {
+            "videoId": "v02",
+            "title": "Video v02",
+            "viewCount": 5400,
+            "likeCount": null,
+            "commentCount": 31,
+            "publishedAt": "2026-08-25T12:00:00Z",
+            "thumbnail": "https://i/v02/m.jpg",
+            "engagementRate": "0.57",
+            "durationSeconds": 492
+        },
+        "bestByLikes": {
+            "videoId": "v03",
+            "title": "Video v03",
+            "viewCount": 5400,
+            "likeCount": 210,
+            "commentCount": null,
+            "publishedAt": "2026-08-25T12:00:00Z",
+            "thumbnail": "https://i/v03/m.jpg",
+            "engagementRate": "3.89",
+            "durationSeconds": 60
+        },
+        "bestByComments": {
+            "videoId": "v02",
+            "title": "Video v02",
+            "viewCount": 5400,
+            "likeCount": null,
+            "commentCount": 31,
+            "publishedAt": "2026-08-25T12:00:00Z",
+            "thumbnail": "https://i/v02/m.jpg",
+            "engagementRate": "0.57",
+            "durationSeconds": 492
+        },
+        "bestByEngagement": {
+            "videoId": "v03",
+            "title": "Video v03",
+            "viewCount": 5400,
+            "likeCount": 210,
+            "commentCount": null,
+            "publishedAt": "2026-08-25T12:00:00Z",
+            "thumbnail": "https://i/v03/m.jpg",
+            "engagementRate": "3.89",
+            "durationSeconds": 60
+        },
+        "worstByViews": {
+            "videoId": "v03",
+            "title": "Video v03",
+            "viewCount": 5400,
+            "likeCount": 210,
+            "commentCount": null,
+            "publishedAt": "2026-08-25T12:00:00Z",
+            "thumbnail": "https://i/v03/m.jpg",
+            "engagementRate": "3.89",
+            "durationSeconds": 60
+        },
+        "mostRecent": {
+            "videoId": "v02",
+            "title": "Video v02",
+            "viewCount": 5400,
+            "likeCount": null,
+            "commentCount": 31,
+            "publishedAt": "2026-08-25T12:00:00Z",
+            "thumbnail": "https://i/v02/m.jpg",
+            "engagementRate": "0.57",
+            "durationSeconds": 492
+        },
+        "oldest": {
+            "videoId": "v03",
+            "title": "Video v03",
+            "viewCount": 5400,
+            "likeCount": 210,
+            "commentCount": null,
+            "publishedAt": "2026-08-25T12:00:00Z",
+            "thumbnail": "https://i/v03/m.jpg",
+            "engagementRate": "3.89",
+            "durationSeconds": 60
+        },
+        "top10ByViews": [
+            {
+                "videoId": "v02",
+                "title": "Video v02",
+                "viewCount": 5400,
+                "likeCount": null,
+                "commentCount": 31,
+                "publishedAt": "2026-08-25T12:00:00Z",
+                "thumbnail": "https://i/v02/m.jpg",
+                "engagementRate": "0.57",
+                "durationSeconds": 492
+            },
+            {
+                "videoId": "v03",
+                "title": "Video v03",
+                "viewCount": 5400,
+                "likeCount": 210,
+                "commentCount": null,
+                "publishedAt": "2026-08-25T12:00:00Z",
+                "thumbnail": "https://i/v03/m.jpg",
+                "engagementRate": "3.89",
+                "durationSeconds": 60
+            }
+        ],
+        "top10ByLikes": [
+            {
+                "videoId": "v03",
+                "title": "Video v03",
+                "viewCount": 5400,
+                "likeCount": 210,
+                "commentCount": null,
+                "publishedAt": "2026-08-25T12:00:00Z",
+                "thumbnail": "https://i/v03/m.jpg",
+                "engagementRate": "3.89",
+                "durationSeconds": 60
+            },
+            {
+                "videoId": "v02",
+                "title": "Video v02",
+                "viewCount": 5400,
+                "likeCount": null,
+                "commentCount": 31,
+                "publishedAt": "2026-08-25T12:00:00Z",
+                "thumbnail": "https://i/v02/m.jpg",
+                "engagementRate": "0.57",
+                "durationSeconds": 492
+            }
+        ],
+        "top10ByComments": [
+            {
+                "videoId": "v02",
+                "title": "Video v02",
+                "viewCount": 5400,
+                "likeCount": null,
+                "commentCount": 31,
+                "publishedAt": "2026-08-25T12:00:00Z",
+                "thumbnail": "https://i/v02/m.jpg",
+                "engagementRate": "0.57",
+                "durationSeconds": 492
+            },
+            {
+                "videoId": "v03",
+                "title": "Video v03",
+                "viewCount": 5400,
+                "likeCount": 210,
+                "commentCount": null,
+                "publishedAt": "2026-08-25T12:00:00Z",
+                "thumbnail": "https://i/v03/m.jpg",
+                "engagementRate": "3.89",
+                "durationSeconds": 60
+            }
+        ],
+        "top10ByEngagement": [
+            {
+                "videoId": "v03",
+                "title": "Video v03",
+                "viewCount": 5400,
+                "likeCount": 210,
+                "commentCount": null,
+                "publishedAt": "2026-08-25T12:00:00Z",
+                "thumbnail": "https://i/v03/m.jpg",
+                "engagementRate": "3.89",
+                "durationSeconds": 60
+            },
+            {
+                "videoId": "v02",
+                "title": "Video v02",
+                "viewCount": 5400,
+                "likeCount": null,
+                "commentCount": 31,
+                "publishedAt": "2026-08-25T12:00:00Z",
+                "thumbnail": "https://i/v02/m.jpg",
+                "engagementRate": "0.57",
+                "durationSeconds": 492
+            }
+        ],
+        "shortsCount": 1,
+        "regularCount": 1,
+        "avgShortViews": 5400,
+        "avgRegularViews": 5400,
+        "avgShortLikes": 210,
+        "avgRegularLikes": 0,
+        "hdCount": 1,
+        "sdCount": 1,
+        "hdPercentage": "50.0",
+        "captionCount": 0,
+        "captionPercentage": "0.0",
+        "licensedCount": 2,
+        "licensedPercentage": "100.0",
+        "madeForKidsCount": 0,
+        "embeddableCount": 2,
+        "embeddablePercentage": "100.0",
+        "publishDayDistribution": {
+            "Tuesday": 2
+        },
+        "publishHourDistribution": {
+            "12": 2
+        },
+        "peakPublishDay": "Tuesday",
+        "peakPublishHour": 12,
+        "durationDistribution": {
+            "short": 1,
+            "medium": 1,
+            "long": 0,
+            "veryLong": 0
+        },
+        "categoryDistribution": {
+            "22": 1,
+            "Unknown": 1
+        },
+        "tagFrequency": [
+            {
+                "tag": "travel",
+                "count": 1
+            },
+            {
+                "tag": "vlog",
+                "count": 1
+            }
+        ],
+        "videosLast7Days": 0,
+        "videosLast30Days": 2,
+        "videosLast90Days": 2,
+        "videosLast365Days": 2,
+        "uploadFrequencyPerWeek": "2.0",
+        "uploadFrequencyPerMonth": "2.0",
+        "consistencyScore": 100,
+        "viralityScore": 1,
+        "viewsDistribution": {
+            "ranges": [
+                "0-540",
+                "540-1.1K",
+                "1.1K-1.6K",
+                "1.6K-2.2K",
+                "2.2K-2.7K",
+                "2.7K-3.2K",
+                "3.2K-3.8K",
+                "3.8K-4.3K",
+                "4.3K-4.9K",
+                "4.9K-5.4K"
+            ],
+            "counts": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ]
+        },
+        "viewsTrend": [
+            {
+                "month": "2026-08",
+                "value": 10800,
+                "count": 2
+            }
+        ],
+        "engagementTrend": [
+            {
+                "month": "2026-08",
+                "value": "2.23"
+            }
+        ],
+        "likeRateTrend": [
+            {
+                "month": "2026-08",
+                "value": "1.94"
+            }
+        ]
+    },
+    "zero": {
+        "totalVideos": 2,
+        "totalViews": 0,
+        "totalLikes": 0,
+        "totalComments": 0,
+        "avgViews": 0,
+        "avgLikes": 0,
+        "avgComments": 0,
+        "medianViews": 0,
+        "totalEngagement": 0,
+        "overallEngagementRate": 0,
+        "avgDurationSeconds": 615,
+        "avgDurationFormatted": "10m 15s",
+        "totalDurationSeconds": 1230,
+        "totalDurationFormatted": "20m 30s",
+        "estimatedTotalWatchTimeHours": 0,
+        "bestByViews": {
+            "videoId": "z1",
+            "title": "Video z1",
+            "viewCount": 0,
+            "likeCount": 0,
+            "commentCount": 0,
+            "publishedAt": "2026-08-01T10:00:00Z",
+            "thumbnail": "https://i/z1/m.jpg",
+            "engagementRate": "0.00",
+            "durationSeconds": 30
+        },
+        "bestByLikes": {
+            "videoId": "z1",
+            "title": "Video z1",
+            "viewCount": 0,
+            "likeCount": 0,
+            "commentCount": 0,
+            "publishedAt": "2026-08-01T10:00:00Z",
+            "thumbnail": "https://i/z1/m.jpg",
+            "engagementRate": "0.00",
+            "durationSeconds": 30
+        },
+        "bestByComments": {
+            "videoId": "z1",
+            "title": "Video z1",
+            "viewCount": 0,
+            "likeCount": 0,
+            "commentCount": 0,
+            "publishedAt": "2026-08-01T10:00:00Z",
+            "thumbnail": "https://i/z1/m.jpg",
+            "engagementRate": "0.00",
+            "durationSeconds": 30
+        },
+        "bestByEngagement": {
+            "videoId": "z1",
+            "title": "Video z1",
+            "viewCount": 0,
+            "likeCount": 0,
+            "commentCount": 0,
+            "publishedAt": "2026-08-01T10:00:00Z",
+            "thumbnail": "https://i/z1/m.jpg",
+            "engagementRate": "0.00",
+            "durationSeconds": 30
+        },
+        "worstByViews": {
+            "videoId": "z2",
+            "title": "Video z2",
+            "viewCount": 0,
+            "likeCount": null,
+            "commentCount": null,
+            "publishedAt": "2026-08-01T10:00:00Z",
+            "thumbnail": "https://i/z2/m.jpg",
+            "engagementRate": "0.00",
+            "durationSeconds": 1200
+        },
+        "mostRecent": {
+            "videoId": "z1",
+            "title": "Video z1",
+            "viewCount": 0,
+            "likeCount": 0,
+            "commentCount": 0,
+            "publishedAt": "2026-08-01T10:00:00Z",
+            "thumbnail": "https://i/z1/m.jpg",
+            "engagementRate": "0.00",
+            "durationSeconds": 30
+        },
+        "oldest": {
+            "videoId": "z2",
+            "title": "Video z2",
+            "viewCount": 0,
+            "likeCount": null,
+            "commentCount": null,
+            "publishedAt": "2026-08-01T10:00:00Z",
+            "thumbnail": "https://i/z2/m.jpg",
+            "engagementRate": "0.00",
+            "durationSeconds": 1200
+        },
+        "top10ByViews": [
+            {
+                "videoId": "z1",
+                "title": "Video z1",
+                "viewCount": 0,
+                "likeCount": 0,
+                "commentCount": 0,
+                "publishedAt": "2026-08-01T10:00:00Z",
+                "thumbnail": "https://i/z1/m.jpg",
+                "engagementRate": "0.00",
+                "durationSeconds": 30
+            },
+            {
+                "videoId": "z2",
+                "title": "Video z2",
+                "viewCount": 0,
+                "likeCount": null,
+                "commentCount": null,
+                "publishedAt": "2026-08-01T10:00:00Z",
+                "thumbnail": "https://i/z2/m.jpg",
+                "engagementRate": "0.00",
+                "durationSeconds": 1200
+            }
+        ],
+        "top10ByLikes": [
+            {
+                "videoId": "z1",
+                "title": "Video z1",
+                "viewCount": 0,
+                "likeCount": 0,
+                "commentCount": 0,
+                "publishedAt": "2026-08-01T10:00:00Z",
+                "thumbnail": "https://i/z1/m.jpg",
+                "engagementRate": "0.00",
+                "durationSeconds": 30
+            },
+            {
+                "videoId": "z2",
+                "title": "Video z2",
+                "viewCount": 0,
+                "likeCount": null,
+                "commentCount": null,
+                "publishedAt": "2026-08-01T10:00:00Z",
+                "thumbnail": "https://i/z2/m.jpg",
+                "engagementRate": "0.00",
+                "durationSeconds": 1200
+            }
+        ],
+        "top10ByComments": [
+            {
+                "videoId": "z1",
+                "title": "Video z1",
+                "viewCount": 0,
+                "likeCount": 0,
+                "commentCount": 0,
+                "publishedAt": "2026-08-01T10:00:00Z",
+                "thumbnail": "https://i/z1/m.jpg",
+                "engagementRate": "0.00",
+                "durationSeconds": 30
+            },
+            {
+                "videoId": "z2",
+                "title": "Video z2",
+                "viewCount": 0,
+                "likeCount": null,
+                "commentCount": null,
+                "publishedAt": "2026-08-01T10:00:00Z",
+                "thumbnail": "https://i/z2/m.jpg",
+                "engagementRate": "0.00",
+                "durationSeconds": 1200
+            }
+        ],
+        "top10ByEngagement": [
+            {
+                "videoId": "z1",
+                "title": "Video z1",
+                "viewCount": 0,
+                "likeCount": 0,
+                "commentCount": 0,
+                "publishedAt": "2026-08-01T10:00:00Z",
+                "thumbnail": "https://i/z1/m.jpg",
+                "engagementRate": "0.00",
+                "durationSeconds": 30
+            },
+            {
+                "videoId": "z2",
+                "title": "Video z2",
+                "viewCount": 0,
+                "likeCount": null,
+                "commentCount": null,
+                "publishedAt": "2026-08-01T10:00:00Z",
+                "thumbnail": "https://i/z2/m.jpg",
+                "engagementRate": "0.00",
+                "durationSeconds": 1200
+            }
+        ],
+        "shortsCount": 1,
+        "regularCount": 1,
+        "avgShortViews": 0,
+        "avgRegularViews": 0,
+        "avgShortLikes": 0,
+        "avgRegularLikes": 0,
+        "hdCount": 2,
+        "sdCount": 0,
+        "hdPercentage": "100.0",
+        "captionCount": 0,
+        "captionPercentage": "0.0",
+        "licensedCount": 2,
+        "licensedPercentage": "100.0",
+        "madeForKidsCount": 0,
+        "embeddableCount": 2,
+        "embeddablePercentage": "100.0",
+        "publishDayDistribution": {
+            "Saturday": 2
+        },
+        "publishHourDistribution": {
+            "10": 2
+        },
+        "peakPublishDay": "Saturday",
+        "peakPublishHour": 10,
+        "durationDistribution": {
+            "short": 1,
+            "medium": 0,
+            "long": 1,
+            "veryLong": 0
+        },
+        "categoryDistribution": {
+            "22": 2
+        },
+        "tagFrequency": [],
+        "videosLast7Days": 0,
+        "videosLast30Days": 0,
+        "videosLast90Days": 2,
+        "videosLast365Days": 2,
+        "uploadFrequencyPerWeek": "0.5",
+        "uploadFrequencyPerMonth": "2.0",
+        "consistencyScore": 100,
+        "viralityScore": 0,
+        "viewsDistribution": {
+            "ranges": [
+                "0-1",
+                "1-2",
+                "2-3",
+                "3-4",
+                "4-5",
+                "5-6",
+                "6-7",
+                "7-8",
+                "8-9",
+                "9-10"
+            ],
+            "counts": [
+                2,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+            ]
+        },
+        "viewsTrend": [
+            {
+                "month": "2026-08",
+                "value": 0,
+                "count": 2
+            }
+        ],
+        "engagementTrend": [
+            {
+                "month": "2026-08",
+                "value": 0
+            }
+        ],
+        "likeRateTrend": [
+            {
+                "month": "2026-08",
+                "value": 0
+            }
+        ]
+    }
+}

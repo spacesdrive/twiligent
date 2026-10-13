@@ -1,0 +1,136 @@
+{
+    "videos": [
+        {
+            "videoId": "full",
+            "title": "Full",
+            "description": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+            "publishedAt": "2026-08-01T10:00:00Z",
+            "channelTitle": "Ribbon",
+            "thumbnails": {
+                "default": "d",
+                "medium": "m",
+                "high": "h"
+            },
+            "tags": [
+                "a"
+            ],
+            "categoryId": "22",
+            "liveBroadcastContent": "live",
+            "defaultAudioLanguage": "de",
+            "duration": "PT3M",
+            "dimension": "3d",
+            "definition": "sd",
+            "caption": true,
+            "licensedContent": true,
+            "projection": "360",
+            "viewCount": 1500,
+            "likeCount": 40,
+            "commentCount": 0,
+            "privacyStatus": "unlisted",
+            "embeddable": true,
+            "madeForKids": true
+        },
+        {
+            "videoId": "hidden",
+            "title": "Hidden",
+            "description": "",
+            "publishedAt": "2026-08-02T10:00:00Z",
+            "channelTitle": "Ribbon",
+            "thumbnails": {
+                "default": "",
+                "medium": "",
+                "high": ""
+            },
+            "tags": [],
+            "categoryId": "",
+            "liveBroadcastContent": "none",
+            "defaultAudioLanguage": "",
+            "duration": "PT10S",
+            "dimension": "2d",
+            "definition": "hd",
+            "caption": false,
+            "licensedContent": false,
+            "projection": "rectangular",
+            "viewCount": 0,
+            "likeCount": null,
+            "commentCount": null,
+            "privacyStatus": "public",
+            "embeddable": false,
+            "madeForKids": false
+        },
+        {
+            "videoId": "odd",
+            "title": "Odd",
+            "description": "",
+            "publishedAt": "2026-08-03T10:00:00Z",
+            "channelTitle": "Ribbon",
+            "thumbnails": {
+                "default": "",
+                "medium": "",
+                "high": ""
+            },
+            "tags": [],
+            "categoryId": "",
+            "liveBroadcastContent": "none",
+            "defaultAudioLanguage": "",
+            "duration": "PT1H",
+            "dimension": "2d",
+            "definition": "hd",
+            "caption": false,
+            "licensedContent": false,
+            "projection": "rectangular",
+            "viewCount": 7,
+            "likeCount": null,
+            "commentCount": 12,
+            "privacyStatus": "public",
+            "embeddable": false,
+            "madeForKids": false
+        },
+        {
+            "videoId": "extra",
+            "title": "Odd",
+            "description": "",
+            "publishedAt": "2026-08-03T10:00:00Z",
+            "channelTitle": "Ribbon",
+            "thumbnails": {
+                "default": "",
+                "medium": "",
+                "high": ""
+            },
+            "tags": [],
+            "categoryId": "",
+            "liveBroadcastContent": "none",
+            "defaultAudioLanguage": "",
+            "duration": "PT1H",
+            "dimension": "2d",
+            "definition": "hd",
+            "caption": false,
+            "licensedContent": false,
+            "projection": "rectangular",
+            "viewCount": 7,
+            "likeCount": null,
+            "commentCount": 12,
+            "privacyStatus": "public",
+            "embeddable": false,
+            "madeForKids": false
+        }
+    ],
+    "requests": [
+        {
+            "url": "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet%2CcontentDetails&playlistId=UU123&maxResults=50&key=KEY",
+            "method": "GET"
+        },
+        {
+            "url": "https://www.googleapis.com/youtube/v3/videos?part=statistics%2CcontentDetails%2Csnippet%2Cstatus&id=full%2Chidden&key=KEY",
+            "method": "GET"
+        },
+        {
+            "url": "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet%2CcontentDetails&playlistId=UU123&maxResults=50&pageToken=P2&key=KEY",
+            "method": "GET"
+        },
+        {
+            "url": "https://www.googleapis.com/youtube/v3/videos?part=statistics%2CcontentDetails%2Csnippet%2Cstatus&id=odd%2Cextra&key=KEY",
+            "method": "GET"
+        }
+    ]
+}

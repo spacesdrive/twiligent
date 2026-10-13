@@ -1,0 +1,49 @@
+{
+    "partial": {
+        "value": [
+            {
+                "videoId": "full",
+                "title": "Full",
+                "description": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                "publishedAt": "2026-08-01T10:00:00Z",
+                "channelTitle": "Ribbon",
+                "thumbnails": {
+                    "default": "d",
+                    "medium": "m",
+                    "high": "h"
+                },
+                "tags": [
+                    "a"
+                ],
+                "categoryId": "22",
+                "liveBroadcastContent": "live",
+                "defaultAudioLanguage": "de",
+                "duration": "PT3M",
+                "dimension": "3d",
+                "definition": "sd",
+                "caption": true,
+                "licensedContent": true,
+                "projection": "360",
+                "viewCount": 1500,
+                "likeCount": 40,
+                "commentCount": 0,
+                "privacyStatus": "unlisted",
+                "embeddable": true,
+                "madeForKids": true
+            }
+        ]
+    },
+    "none": {
+        "value": []
+    },
+    "quota": {
+        "error": "Quota exceeded",
+        "reason": "quotaExceeded",
+        "status": 403
+    },
+    "bare": {
+        "error": "Bad request",
+        "reason": "",
+        "status": "[undefined]"
+    }
+}

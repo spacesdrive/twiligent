@@ -1,0 +1,76 @@
+{
+    "outcomes": [
+        {
+            "value": {
+                "contentType": "youtube",
+                "title": "Watch",
+                "channelTitle": "Ribbon",
+                "channelId": "UC1",
+                "thumbnail": "m",
+                "publishedAt": "2026-08-01T10:00:00Z",
+                "viewCount": 1500,
+                "likeCount": 40,
+                "commentCount": 3,
+                "isShort": false,
+                "permalink": "https://www.youtube.com/watch?v=abc123",
+                "lastFetchedAt": "2026-09-01T12:00:00.000Z"
+            }
+        },
+        {
+            "value": {
+                "contentType": "youtube",
+                "title": "Short",
+                "channelTitle": "Ribbon",
+                "channelId": "UC1",
+                "thumbnail": "d",
+                "publishedAt": "2026-08-02T10:00:00Z",
+                "viewCount": 0,
+                "likeCount": null,
+                "commentCount": null,
+                "isShort": true,
+                "permalink": "https://www.youtube.com/shorts/short1",
+                "lastFetchedAt": "2026-09-01T12:00:00.000Z"
+            }
+        },
+        {
+            "value": {
+                "contentType": "youtube",
+                "title": "Bare",
+                "channelTitle": "Ribbon",
+                "channelId": "UC1",
+                "thumbnail": "",
+                "publishedAt": "2026-08-03T10:00:00Z",
+                "viewCount": 9,
+                "likeCount": 0,
+                "commentCount": null,
+                "isShort": false,
+                "permalink": "https://www.youtube.com/watch?v=bare1",
+                "lastFetchedAt": "2026-09-01T12:00:00.000Z"
+            }
+        },
+        {
+            "error": "Quota exceeded"
+        },
+        {
+            "error": "Invalid YouTube URL - could not extract video ID"
+        }
+    ],
+    "requests": [
+        {
+            "url": "https://www.googleapis.com/youtube/v3/videos?part=snippet%2Cstatistics&id=abc123&key=KEY",
+            "method": "GET"
+        },
+        {
+            "url": "https://www.googleapis.com/youtube/v3/videos?part=snippet%2Cstatistics&id=short1&key=KEY",
+            "method": "GET"
+        },
+        {
+            "url": "https://www.googleapis.com/youtube/v3/videos?part=snippet%2Cstatistics&id=bare1&key=KEY",
+            "method": "GET"
+        },
+        {
+            "url": "https://www.googleapis.com/youtube/v3/videos?part=snippet%2Cstatistics&id=err1&key=KEY",
+            "method": "GET"
+        }
+    ]
+}

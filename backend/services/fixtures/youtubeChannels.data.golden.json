@@ -1,0 +1,93 @@
+{
+    "outcomes": [
+        {
+            "value": {
+                "channelId": "UCfull",
+                "title": "Ribbon",
+                "description": "Channel",
+                "customUrl": "@ribbon",
+                "publishedAt": "2020-01-01T00:00:00Z",
+                "country": "GB",
+                "thumbnails": {
+                    "default": "d",
+                    "medium": "m",
+                    "high": "h"
+                },
+                "subscriberCount": 1200,
+                "viewCount": 98000,
+                "videoCount": 45,
+                "hiddenSubscriberCount": true,
+                "uploadsPlaylistId": "UUfull",
+                "keywords": "travel vlog",
+                "bannerUrl": "https://banner",
+                "madeForKids": true,
+                "topicCategories": [
+                    "https://en.wikipedia.org/wiki/Travel"
+                ],
+                "isLinked": true
+            }
+        },
+        {
+            "value": {
+                "channelId": "UCsparse",
+                "title": "Sparse",
+                "description": "",
+                "customUrl": "",
+                "publishedAt": "2021-01-01T00:00:00Z",
+                "country": "Unknown",
+                "thumbnails": {
+                    "default": "",
+                    "medium": "",
+                    "high": ""
+                },
+                "subscriberCount": 0,
+                "viewCount": 0,
+                "videoCount": 0,
+                "hiddenSubscriberCount": false,
+                "uploadsPlaylistId": "",
+                "keywords": "",
+                "bannerUrl": "",
+                "madeForKids": false,
+                "topicCategories": [],
+                "isLinked": false
+            }
+        },
+        {
+            "error": "Channel not found",
+            "reason": "[undefined]",
+            "status": "[undefined]"
+        },
+        {
+            "error": "Channel not found",
+            "reason": "[undefined]",
+            "status": "[undefined]"
+        },
+        {
+            "error": "API key not valid",
+            "reason": "keyInvalid",
+            "status": 400
+        }
+    ],
+    "requests": [
+        {
+            "url": "https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics%2CcontentDetails%2CbrandingSettings%2Cstatus%2CtopicDetails&id=UC0&key=KEY",
+            "method": "GET"
+        },
+        {
+            "url": "https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics%2CcontentDetails%2CbrandingSettings%2Cstatus%2CtopicDetails&id=UC1&key=KEY",
+            "method": "GET"
+        },
+        {
+            "url": "https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics%2CcontentDetails%2CbrandingSettings%2Cstatus%2CtopicDetails&id=UC2&key=KEY",
+            "method": "GET"
+        },
+        {
+            "url": "https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics%2CcontentDetails%2CbrandingSettings%2Cstatus%2CtopicDetails&id=UC3&key=KEY",
+            "method": "GET"
+        },
+        {
+            "url": "https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics%2CcontentDetails%2CbrandingSettings%2Cstatus%2CtopicDetails&id=UC4&key=KEY",
+            "method": "GET"
+        }
+    ]
+}

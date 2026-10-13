@@ -1,0 +1,10 @@
+{
+    "capped": [
+        "full"
+    ],
+    "all": [
+        "full",
+        "hidden"
+    ],
+    "requests": 7
+}
