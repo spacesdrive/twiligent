@@ -1,16 +1,20 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { BookOpen } from 'lucide-react';
+import { BookOpen, MailWarning } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '@/components/ui/button';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Logo } from '@/components/brand/Logo';
 import GoogleSignInButton from '@/components/GoogleSignInButton';
 import type { GoogleButtonText } from '@/lib/googleIdentity';
 import { GOOGLE_CLIENT_ID } from '@/lib/googleIdentity';
+import { emailErrorNotice, isExistingAccount } from '@/lib/authErrors';
+import type { AuthErrorLike } from '@/lib/authErrors';
 import LoginBrandPanel from './LoginBrandPanel';
 import LoginForm from './LoginForm';
+import LoginCodeForm from './LoginCodeForm';
 import { LOGIN_COPY, PRIVACY_URL } from './loginCopy';
 import type { LoginMode } from './loginCopy';
 
@@ -37,36 +41,107 @@ function GoogleOption({ text, onCredential }: GoogleOptionProps) {
 }
 
 export default function Login() {
-  const { signIn, signUp, signInWithGoogle } = useAuth();
+  const { signIn, signUp, verifySignUpCode, resendSignUpCode, signInWithGoogle } = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState<LoginMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
   // kept here, above the keyed panel, so only the mode switch link resets it
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendIn, setResendIn] = useState(0);
+  const [emailLimitMessage, setEmailLimitMessage] = useState<string | null>(null);
   const isLogin = mode === 'login';
   const copy = LOGIN_COPY[mode];
+
+  useEffect(() => {
+    if (resendIn <= 0) return;
+    const timer = setTimeout(() => setResendIn(seconds => seconds - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendIn]);
+
+  // Supabase allows one code a minute per address, so the button waits as long after each send
+  function openCodeStep(justSent: boolean) {
+    setCode('');
+    setResendIn(justSent ? 60 : 0);
+    setMode('verify');
+  }
+
+  function showEmailError(prefix: string, err: unknown) {
+    const notice = emailErrorNotice(err as AuthErrorLike, !!GOOGLE_CLIENT_ID);
+    // the warning above the Google button says it already
+    if (notice.emailLimitReached) setEmailLimitMessage(notice.message);
+    else toast.error(`${prefix} ${notice.message}`);
+  }
+
+  async function submitLogin() {
+    const { error } = await signIn(email, password);
+    if (error?.code === 'email_not_confirmed') {
+      openCodeStep(false);
+      toast.info('Confirm your email to sign in. Enter the code from your sign-up email, or send a new one.');
+      return;
+    }
+    if (error) throw error;
+    navigate('/');
+  }
+
+  async function submitSignUp() {
+    const { data, error } = await signUp(email, password);
+    if (error) throw error;
+    // email confirmation is off in Supabase, so the account is ready
+    if (data.session) {
+      navigate('/');
+      return;
+    }
+    if (isExistingAccount(data.user)) {
+      toast.error('This email already has an account. Sign in instead.');
+      setMode('login');
+      return;
+    }
+    openCodeStep(true);
+  }
+
+  async function submitCode() {
+    const { error } = await verifySignUpCode(email, code);
+    if (error) throw error;
+    toast.success('Email confirmed');
+    navigate('/');
+  }
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     try {
-      if (isLogin) {
-        const { error } = await signIn(email, password);
-        if (error) throw error;
-        navigate('/');
-      } else {
-        const { error } = await signUp(email, password);
-        if (error) throw error;
-        toast.success('Account created. Sign in to continue.');
-        setMode('login');
-      }
+      if (mode === 'verify') await submitCode();
+      else if (isLogin) await submitLogin();
+      else await submitSignUp();
     } catch (err) {
-      toast.error(isLogin ? `Couldn't sign in. ${(err as Error).message}` : `Couldn't create the account. ${(err as Error).message}`);
+      const prefix = { login: "Couldn't sign in.", signup: "Couldn't create the account.", verify: "Couldn't confirm the email." }[mode];
+      showEmailError(prefix, err);
     } finally {
       setLoading(false);
     }
+  }
+
+  async function handleResend() {
+    setResending(true);
+    try {
+      const { error } = await resendSignUpCode(email);
+      if (error) throw error;
+      setResendIn(60);
+      toast.success('New code sent');
+    } catch (err) {
+      showEmailError("Couldn't send a new code.", err);
+    } finally {
+      setResending(false);
+    }
+  }
+
+  function switchMode() {
+    setMode(mode === 'signup' ? 'login' : 'signup');
+    setShowPassword(false);
   }
 
   async function handleGoogleCredential(idToken: string, nonce: string) {
@@ -100,26 +175,48 @@ export default function Login() {
               <p className="text-sm text-ink-muted">{copy.lead}</p>
             </div>
 
-            {GOOGLE_CLIENT_ID && <GoogleOption text={copy.google} onCredential={handleGoogleCredential} />}
+            {emailLimitMessage && !isLogin && (
+              <Alert variant="warning">
+                <MailWarning />
+                <AlertTitle>Email codes are paused until tomorrow</AlertTitle>
+                <AlertDescription>{emailLimitMessage}</AlertDescription>
+              </Alert>
+            )}
 
-            <LoginForm
-              isLogin={isLogin}
-              copy={copy}
-              email={email}
-              password={password}
-              onEmailChange={setEmail}
-              onPasswordChange={setPassword}
-              showPassword={showPassword}
-              onTogglePassword={() => setShowPassword(visible => !visible)}
-              loading={loading}
-              onSubmit={handleSubmit}
-            />
+            {GOOGLE_CLIENT_ID && (mode !== 'verify' || emailLimitMessage) && <GoogleOption text={copy.google} onCredential={handleGoogleCredential} />}
+
+            {mode === 'verify' ? (
+              <LoginCodeForm
+                copy={copy}
+                email={email}
+                code={code}
+                onCodeChange={setCode}
+                loading={loading}
+                onSubmit={handleSubmit}
+                resendIn={resendIn}
+                resending={resending}
+                onResend={handleResend}
+              />
+            ) : (
+              <LoginForm
+                isLogin={isLogin}
+                copy={copy}
+                email={email}
+                password={password}
+                onEmailChange={setEmail}
+                onPasswordChange={setPassword}
+                showPassword={showPassword}
+                onTogglePassword={() => setShowPassword(visible => !visible)}
+                loading={loading}
+                onSubmit={handleSubmit}
+              />
+            )}
 
             <p className="text-center text-sm text-ink-muted">
               {copy.switchPrompt}{' '}
               <button
                 type="button"
-                onClick={() => { setMode(isLogin ? 'signup' : 'login'); setShowPassword(false); }}
+                onClick={switchMode}
                 className="rounded-sm font-medium text-brand-text underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
                 {copy.switchAction}

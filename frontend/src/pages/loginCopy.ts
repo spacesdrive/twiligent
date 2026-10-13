@@ -2,7 +2,8 @@ import type { GoogleButtonText } from '@/lib/googleIdentity';
 
 export const PRIVACY_URL = 'https://blog.ujjwal.fyi/privacy/';
 
-export type LoginMode = 'login' | 'signup';
+// verify is the code step after sign-up, or after signing in with an email that is not confirmed yet
+export type LoginMode = 'login' | 'signup' | 'verify';
 
 export interface LoginCopy {
   title: string;
@@ -32,5 +33,14 @@ export const LOGIN_COPY: Record<LoginMode, LoginCopy> = {
     switchPrompt: 'Already have an account?',
     switchAction: 'Sign in',
     google: 'signup_with',
+  },
+  verify: {
+    title: 'Check your email',
+    lead: 'Enter the 6-digit code we emailed you to confirm your address.',
+    submit: 'Confirm email',
+    busy: 'Confirming',
+    switchPrompt: 'Wrong address?',
+    switchAction: 'Start again',
+    google: 'continue_with',
   },
 };
