@@ -41,10 +41,10 @@ export default function AppSidebar({ categories, onOpenPalette, onSignOut }) {
         <Link
           to="/"
           aria-label="Twiligent overview"
-          className="flex h-8 items-center rounded-row px-1 group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-0"
+          className="flex h-8 items-center rounded-row px-1"
         >
-          <Logo className="h-6 group-data-[collapsible=icon]:hidden" />
-          <Logo variant="mark" className="hidden h-6 group-data-[collapsible=icon]:block" />
+          <Logo variant="mark" className="h-6" />
+          <Logo variant="wordmark" className="ml-2 h-4 transition-opacity duration-(--duration-base) group-data-[collapsible=icon]:opacity-0" />
         </Link>
         <SidebarMenu>
           <SidebarMenuItem>

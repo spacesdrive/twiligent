@@ -6,6 +6,15 @@ const LOGO_DIR = '/Logos';
 // Brand rule: the colour lockup sits on paper, the reversed lockup on dusk. Both are rendered and
 // CSS picks one, so the right file shows on first paint without waiting for the theme hook.
 export function Logo({ variant = 'lockup', className }) {
+  if (variant === 'wordmark') {
+    return (
+      <span className={cn('inline-flex shrink-0 select-none', className)}>
+        <img src={`${LOGO_DIR}/twiligent-wordmark-dusk.svg`} alt="Twiligent" className="h-full w-auto dark:hidden" draggable={false} />
+        <img src={`${LOGO_DIR}/twiligent-wordmark-white.svg`} alt="" className="hidden h-full w-auto dark:block" draggable={false} />
+      </span>
+    );
+  }
+
   if (variant === 'mark') {
     return (
       <img
