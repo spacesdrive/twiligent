@@ -15,6 +15,7 @@ frontend/src/
 │   ├── nav.js                              <- Tabs, groups and pages; the single source for navigation
 │   ├── routes.js                           <- Slug to lazy page map; nav.test.js checks it matches nav.js
 │   └── pages/                              <- Overview, Use, SelfHost, Reference (one chunk each)
+│       └── selfHost/                       <- One file per self-hosting page plus selfHostSql.js (selfHostSql.test.js); SelfHost.jsx re-exports them
 ├── features/
 │   ├── analytics/
 │   │   ├── channel/
