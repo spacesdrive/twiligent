@@ -82,6 +82,7 @@ frontend/src/
     use-command-palette-shortcut.js  Ctrl+K / Cmd+K toggle
     use-smooth-theme.js   useSmoothTheme(), theme cross-fade
     use-cloudinary-config.js  useCloudinaryConfig(reloadKey), shared by Publish and Tracked content
+    use-account-analytics.js  useAccountAnalytics(account, fetchAnalytics, label), shared by Instagram and Reddit analytics
   layout/
     index.jsx             AppShell: SidebarProvider + AppSidebar + TopBar + Outlet + CommandPalette
     navigation.js         NAV_GROUPS and route titles (single source for sidebar, top bar, palette)

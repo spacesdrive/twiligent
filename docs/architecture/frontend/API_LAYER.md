@@ -128,7 +128,7 @@ These are the only calls in `api.js` that do not go to the Worker.
 uploadImage(file, cloudConfig)
 ```
 
-Used for tracked item screenshots. It posts the image with `fetch` to `https://api.cloudinary.com/v1_1/<cloudName>/image/upload` and resolves with `secure_url`. It throws an `Error` with Cloudinary's own message, or `'Cloudinary did not return an image URL'`, and network or JSON failures reject with the browser's own error. This is the exact behaviour the tracked content page had before the refactor.
+Used for tracked item screenshots. It posts the image with `fetch` to `https://api.cloudinary.com/v1_1/<cloudName>/image/upload` and resolves with `secure_url`. It throws an `Error` with Cloudinary's own message, or `'Cloudinary did not return an image URL'`, and network or JSON failures reject with the browser's own error. The tracked content editor shows that `err.message` after `Image upload failed.` in an error toast.
 
 ```js
 uploadToCloudinary(file, cloudConfig, { onProgress, resourceType })
@@ -151,9 +151,8 @@ Failures reject with an `Error` that carries a `reason` so each page keeps its o
 | `rejected` | Cloudinary answered with a non-2xx status | `Upload failed` | `cloudinaryMessage` (Cloudinary's `error.message`, if any) or `parseMessage` (the body was not JSON) |
 
 The bulk upload shows the default messages. The single post flow maps the error to its own
-wording (`singleUploadMessage` in `features/publishing/publishHelpers.js`), and so does the Tracked
-Content image upload (`imageUploadMessage` in `features/analytics/tracked/trackedList.js`), which
-passes `resourceType: 'image'` and no progress callback.
+wording (`singleUploadMessage` in `features/publishing/publishHelpers.js`). Tracked Content does
+not use this function: its screenshots go through `uploadImage()` above.
 
 ## Authentication
 
