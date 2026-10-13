@@ -1,6 +1,8 @@
+import type { Next } from 'hono';
 import { getSupabaseAuth } from '../lib/supabase.ts';
+import type { AppContext } from '../types/app.ts';
 
-export async function requireAuth(c, next) {
+export async function requireAuth(c: AppContext, next: Next) {
     const token = c.req.header('Authorization')?.replace('Bearer ', '');
     if (!token) return c.json({ error: 'Unauthorized' }, 401);
     const supabaseAuth = getSupabaseAuth(c.env);

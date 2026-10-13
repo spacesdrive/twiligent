@@ -1,11 +1,11 @@
 // state format: base64url(userId:timestamp).base64url(hmac-sha256 signature)
 const STATE_TTL_MS = 10 * 60 * 1000;
 
-function toBase64Url(text) {
+function toBase64Url(text: string): string {
     return btoa(text).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-async function hmacSign(secret, message) {
+async function hmacSign(secret: string, message: string): Promise<string> {
     const key = await crypto.subtle.importKey(
         'raw',
         new TextEncoder().encode(secret),
@@ -17,18 +17,18 @@ async function hmacSign(secret, message) {
     return toBase64Url(String.fromCharCode(...new Uint8Array(signature)));
 }
 
-async function hmacVerify(secret, message, signature) {
+async function hmacVerify(secret: string, message: string, signature: string): Promise<boolean> {
     const expected = await hmacSign(secret, message);
     return expected === signature;
 }
 
-export async function createOAuthState(userId, secret) {
+export async function createOAuthState(userId: string, secret: string): Promise<string> {
     const payload = toBase64Url(`${userId}:${Date.now()}`);
     const signature = await hmacSign(secret, payload);
     return `${payload}.${signature}`;
 }
 
-export async function verifyOAuthState(state, secret) {
+export async function verifyOAuthState(state: string, secret: string): Promise<string | null> {
     const separatorIndex = state.lastIndexOf('.');
     if (separatorIndex === -1) return null;
 

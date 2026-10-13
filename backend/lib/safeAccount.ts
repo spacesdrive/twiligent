@@ -1,8 +1,10 @@
-// hasCookie shows reddit session status without sending the cookie
-const SECRET_FIELDS = ['accessToken', 'cookie', 'encryptedPassword', 'encryptedTotpSecret', 'authToken', 'ct0'];
+import type { Account, SafeAccount } from '../../shared/types/domain.ts';
 
-export function safeAccount(account) {
-    const copy = { ...account, hasCookie: !!account.cookie };
+// hasCookie shows reddit session status without sending the cookie
+const SECRET_FIELDS: (keyof Account)[] = ['accessToken', 'cookie', 'encryptedPassword', 'encryptedTotpSecret', 'authToken', 'ct0'];
+
+export function safeAccount(account: Account): SafeAccount {
+    const copy: Partial<Account> & { hasCookie: boolean } = { ...account, hasCookie: !!account.cookie };
     for (const field of SECRET_FIELDS) delete copy[field];
-    return copy;
+    return copy as SafeAccount;
 }

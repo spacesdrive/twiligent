@@ -16,8 +16,10 @@ import { urlHandler, callbackHandler } from './routes/instagramAuth.ts';
 import { processScheduledPosts } from './utils/scheduler.ts';
 import { autoRefreshInstagramTokens } from './services/instagram.ts';
 import { autoRefreshRedditSessions } from './services/reddit.ts';
+import type { AppEnv } from './types/app.ts';
+import type { Env } from './types/env.ts';
 
-const app = new Hono();
+const app = new Hono<AppEnv>();
 
 app.onError((err, c) => {
     console.error('Worker error:', err.message);
@@ -38,7 +40,7 @@ app.get('/api/health', (c) => c.json({ status: 'ok', timestamp: new Date().toISO
 // public: the oauth redirect has no jwt; the signed hmac state names the user
 app.get('/api/auth/instagram/callback', callbackHandler);
 
-const api = new Hono();
+const api = new Hono<AppEnv>();
 api.use('*', requireAuth);
 
 api.route('/', keysRouter);
@@ -60,7 +62,7 @@ export default {
     fetch: app.fetch,
 
     // wrangler.toml schedules: due posts every 15 minutes, token refresh daily
-    async scheduled(event, env, ctx) {
+    async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext) {
         const supabase = getSupabase(env);
 
         if (event.cron === '*/15 * * * *') {
@@ -70,4 +72,4 @@ export default {
             ctx.waitUntil(autoRefreshRedditSessions(supabase, env.REDDIT_ENCRYPTION_KEY));
         }
     },
-};
+} satisfies ExportedHandler<Env>;

@@ -1,20 +1,20 @@
 // web crypto, no npm dependency; 64 hex char key, output "<iv_hex>:<cipher_hex>"
 
-function hexToBuffer(hex) {
+function hexToBuffer(hex: string): ArrayBuffer {
     const bytes = new Uint8Array(hex.length / 2);
     for (let i = 0; i < hex.length; i += 2) bytes[i / 2] = parseInt(hex.slice(i, i + 2), 16);
     return bytes.buffer;
 }
 
-function bufferToHex(buf) {
+function bufferToHex(buf: ArrayBuffer): string {
     return [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function importKey(keyHex) {
+async function importKey(keyHex: string): Promise<CryptoKey> {
     return crypto.subtle.importKey('raw', hexToBuffer(keyHex), { name: 'AES-GCM' }, false, ['encrypt', 'decrypt']);
 }
 
-export async function encryptPassword(plaintext, keyHex) {
+export async function encryptPassword(plaintext: string, keyHex: string): Promise<string> {
     const key = await importKey(keyHex);
     const initVector = crypto.getRandomValues(new Uint8Array(12));
     const ciphertext = await crypto.subtle.encrypt(
@@ -25,7 +25,7 @@ export async function encryptPassword(plaintext, keyHex) {
     return `${bufferToHex(initVector.buffer)}:${bufferToHex(ciphertext)}`;
 }
 
-export async function decryptPassword(encrypted, keyHex) {
+export async function decryptPassword(encrypted: string, keyHex: string): Promise<string> {
     const [ivHex, cipherHex] = encrypted.split(':');
     const key = await importKey(keyHex);
     const plaintext = await crypto.subtle.decrypt(
@@ -37,11 +37,11 @@ export async function decryptPassword(encrypted, keyHex) {
 }
 
 // totp (rfc 6238) takes the raw base32 secret from the authenticator app qr code
-function base32Decode(base32) {
+function base32Decode(base32: string): Uint8Array<ArrayBuffer> {
     const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
     const cleaned = base32.toUpperCase().replace(/[^A-Z2-7]/g, '');
     let bits = 0, value = 0;
-    const output = [];
+    const output: number[] = [];
     for (const char of cleaned) {
         const idx = alphabet.indexOf(char);
         if (idx === -1) continue;
@@ -55,7 +55,7 @@ function base32Decode(base32) {
     return new Uint8Array(output);
 }
 
-export async function generateTOTP(base32Secret) {
+export async function generateTOTP(base32Secret: string): Promise<string> {
     const secret = base32Decode(base32Secret);
     const counter = Math.floor(Date.now() / 30000);
     const counterBuf = new ArrayBuffer(8);

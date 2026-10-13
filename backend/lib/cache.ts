@@ -1,3 +1,8 @@
+import type { Redis } from '@upstash/redis';
+import type { VideosCacheData } from '../../shared/types/youtube.ts';
+import type { IGCacheData } from '../../shared/types/instagram.ts';
+import type { RedditCacheData } from '../../shared/types/reddit.ts';
+
 // every helper is a no-op without redis: the cache is optional
 export { createOAuthState, verifyOAuthState } from './oauthState.ts';
 
@@ -8,17 +13,19 @@ const ANALYTICS_TTL_SECONDS = 6 * 60 * 60;
 const VIDEOS_CACHE_VERSION = 2;
 const IG_CACHE_VERSION = 2;
 
-async function readKey(redis, key) {
+type Versioned<T> = T & { version: number };
+
+async function readKey<T>(redis: Redis | null, key: string): Promise<T | null> {
     if (!redis) return null;
     try {
-        return await redis.get(key);
+        return await redis.get<T>(key);
     } catch {
         // a cache miss falls back to the live api
         return null;
     }
 }
 
-async function writeKey(redis, key, value) {
+async function writeKey(redis: Redis | null, key: string, value: unknown): Promise<undefined> {
     if (!redis) return undefined;
     try {
         await redis.set(key, value, { ex: ANALYTICS_TTL_SECONDS });
@@ -29,7 +36,7 @@ async function writeKey(redis, key, value) {
     return undefined;
 }
 
-async function deleteKey(redis, key) {
+async function deleteKey(redis: Redis | null, key: string): Promise<undefined> {
     if (!redis) return undefined;
     try {
         await redis.del(key);
@@ -40,40 +47,40 @@ async function deleteKey(redis, key) {
     return undefined;
 }
 
-export async function getVideosCache(redis, userId, accountId) {
-    const cached = await readKey(redis, `videos:${userId}:${accountId}`);
+export async function getVideosCache(redis: Redis | null, userId: string, accountId: string): Promise<Versioned<VideosCacheData> | null> {
+    const cached = await readKey<Versioned<VideosCacheData>>(redis, `videos:${userId}:${accountId}`);
     return cached?.version === VIDEOS_CACHE_VERSION ? cached : null;
 }
 
-export async function setVideosCache(redis, userId, accountId, data) {
+export async function setVideosCache(redis: Redis | null, userId: string, accountId: string, data: VideosCacheData): Promise<void> {
     await writeKey(redis, `videos:${userId}:${accountId}`, { ...data, version: VIDEOS_CACHE_VERSION });
 }
 
-export async function deleteVideosCache(redis, userId, accountId) {
+export async function deleteVideosCache(redis: Redis | null, userId: string, accountId: string): Promise<void> {
     await deleteKey(redis, `videos:${userId}:${accountId}`);
 }
 
-export async function getIGCache(redis, userId, accountId) {
-    const cached = await readKey(redis, `ig:${userId}:${accountId}`);
+export async function getIGCache(redis: Redis | null, userId: string, accountId: string): Promise<Versioned<IGCacheData> | null> {
+    const cached = await readKey<Versioned<IGCacheData>>(redis, `ig:${userId}:${accountId}`);
     return cached?.version === IG_CACHE_VERSION ? cached : null;
 }
 
-export async function setIGCache(redis, userId, accountId, data) {
+export async function setIGCache(redis: Redis | null, userId: string, accountId: string, data: IGCacheData): Promise<void> {
     await writeKey(redis, `ig:${userId}:${accountId}`, { ...data, version: IG_CACHE_VERSION });
 }
 
-export async function deleteIGCache(redis, userId, accountId) {
+export async function deleteIGCache(redis: Redis | null, userId: string, accountId: string): Promise<void> {
     await deleteKey(redis, `ig:${userId}:${accountId}`);
 }
 
-export async function getRedditCache(redis, userId, accountId) {
-    return (await readKey(redis, `reddit:${userId}:${accountId}`)) || null;
+export async function getRedditCache(redis: Redis | null, userId: string, accountId: string): Promise<RedditCacheData | null> {
+    return (await readKey<RedditCacheData>(redis, `reddit:${userId}:${accountId}`)) || null;
 }
 
-export async function setRedditCache(redis, userId, accountId, data) {
+export async function setRedditCache(redis: Redis | null, userId: string, accountId: string, data: RedditCacheData): Promise<void> {
     await writeKey(redis, `reddit:${userId}:${accountId}`, data);
 }
 
-export async function deleteRedditCache(redis, userId, accountId) {
+export async function deleteRedditCache(redis: Redis | null, userId: string, accountId: string): Promise<void> {
     await deleteKey(redis, `reddit:${userId}:${accountId}`);
 }

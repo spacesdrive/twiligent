@@ -1,21 +1,68 @@
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Account, NewAccount, Platform, PostStatus, ScheduledPost, TrackedPost } from '../../shared/types/domain.ts';
+
+interface AccountRow {
+    id: string;
+    platform: Platform;
+    data: Omit<Account, 'id' | 'platform'>;
+}
+
+interface ScheduledPostRow {
+    id: string;
+    account_id: string;
+    status: PostStatus;
+    scheduled_at: string;
+    data: Partial<ScheduledPost> | null;
+}
+
+interface TrackedPostRow {
+    id: string;
+    account_id: string | null;
+    url: string;
+    label: string | null;
+    category: string | null;
+    content_type: string | null;
+    created_at: string;
+    updated_at: string;
+    data: Record<string, unknown> | null;
+}
+
+export type Settings = Record<string, unknown>;
+
+export interface NewTrackedPost {
+    id: string;
+    accountId?: string | null;
+    url: string;
+    label?: string;
+    category?: string;
+    contentType?: string;
+}
+
+export interface TrackedPostUpdates {
+    label?: string;
+    category?: string;
+    accountId?: string | null;
+    data?: Record<string, unknown>;
+}
+
 // crons share these, so supabase is an argument; a null userId skips the filter
-export async function getAccounts(supabase, userId = null) {
+export async function getAccounts(supabase: SupabaseClient, userId: string | null = null): Promise<Account[]> {
     let query = supabase.from('accounts').select('id, platform, data');
     if (userId) query = query.eq('user_id', userId);
     const { data, error } = await query;
     if (error) throw error;
-    return (data || []).map(row => ({ id: row.id, platform: row.platform, ...row.data }));
+    return ((data || []) as AccountRow[]).map(row => ({ id: row.id, platform: row.platform, ...row.data }));
 }
 
-export async function getAccountById(supabase, id, userId = null) {
+export async function getAccountById(supabase: SupabaseClient, id: string, userId: string | null = null): Promise<Account | null> {
     let query = supabase.from('accounts').select('id, platform, data').eq('id', id);
     if (userId) query = query.eq('user_id', userId);
     const { data, error } = await query.single();
     if (error || !data) return null;
-    return { id: data.id, platform: data.platform, ...data.data };
+    return { id: data.id, platform: data.platform, ...(data as AccountRow).data };
 }
 
-export async function createAccount(supabase, account, userId) {
+export async function createAccount(supabase: SupabaseClient, account: NewAccount, userId: string): Promise<void> {
     const { id, platform, ...rest } = account;
     const { error } = await supabase
         .from('accounts')
@@ -23,7 +70,7 @@ export async function createAccount(supabase, account, userId) {
     if (error) throw error;
 }
 
-export async function updateAccount(supabase, id, updates, userId = null) {
+export async function updateAccount(supabase: SupabaseClient, id: string, updates: Partial<Account>, userId: string | null = null): Promise<void> {
     const current = await getAccountById(supabase, id, userId);
     if (!current) throw new Error('Account not found: ' + id);
     const { id: _, platform: currentPlatform, ...currentData } = current;
@@ -37,7 +84,7 @@ export async function updateAccount(supabase, id, updates, userId = null) {
     if (error) throw error;
 }
 
-export async function deleteAccount(supabase, id, userId = null) {
+export async function deleteAccount(supabase: SupabaseClient, id: string, userId: string | null = null): Promise<void> {
     let query = supabase.from('accounts').delete().eq('id', id);
     if (userId) query = query.eq('user_id', userId);
     const { error } = await query;
@@ -45,9 +92,9 @@ export async function deleteAccount(supabase, id, userId = null) {
 }
 
 // rows are keyed by (user_id, key); every saved value lives under 'api_keys'
-const DEFAULT_KEYS = {};
+const DEFAULT_KEYS: Settings = {};
 
-export async function getSettings(supabase, userId) {
+export async function getSettings(supabase: SupabaseClient, userId: string): Promise<Settings> {
     const { data, error } = await supabase
         .from('settings')
         .select('value')
@@ -58,14 +105,14 @@ export async function getSettings(supabase, userId) {
     return { ...DEFAULT_KEYS, ...data.value };
 }
 
-export async function saveSettings(supabase, keys, userId) {
+export async function saveSettings(supabase: SupabaseClient, keys: Settings, userId: string): Promise<void> {
     const { error } = await supabase
         .from('settings')
         .upsert({ user_id: userId, key: 'api_keys', value: keys }, { onConflict: 'user_id,key' });
     if (error) throw error;
 }
 
-function rowToPost(row) {
+function rowToPost(row: ScheduledPostRow): ScheduledPost {
     return {
         id: row.id,
         accountId: row.account_id,
@@ -75,7 +122,7 @@ function rowToPost(row) {
     };
 }
 
-export async function getPosts(supabase, userId) {
+export async function getPosts(supabase: SupabaseClient, userId: string | null): Promise<ScheduledPost[]> {
     let query = supabase
         .from('scheduled_posts')
         .select('id, account_id, status, scheduled_at, data')
@@ -86,7 +133,7 @@ export async function getPosts(supabase, userId) {
     return (data || []).map(rowToPost);
 }
 
-export async function getPostById(supabase, id, userId = null) {
+export async function getPostById(supabase: SupabaseClient, id: string, userId: string | null = null): Promise<ScheduledPost | null> {
     let query = supabase
         .from('scheduled_posts')
         .select('id, account_id, status, scheduled_at, data')
@@ -97,7 +144,7 @@ export async function getPostById(supabase, id, userId = null) {
     return rowToPost(data);
 }
 
-export async function getDuePosts(supabase) {
+export async function getDuePosts(supabase: SupabaseClient): Promise<ScheduledPost[]> {
     const { data, error } = await supabase
         .from('scheduled_posts')
         .select('id, account_id, status, scheduled_at, data')
@@ -108,7 +155,7 @@ export async function getDuePosts(supabase) {
 }
 
 // atomic pending to publishing; false means the cron or github workflow won
-export async function claimPost(supabase, id) {
+export async function claimPost(supabase: SupabaseClient, id: string): Promise<boolean> {
     const { data, error } = await supabase
         .from('scheduled_posts')
         .update({ status: 'publishing' })
@@ -119,7 +166,7 @@ export async function claimPost(supabase, id) {
     return (data || []).length > 0;
 }
 
-export async function createPost(supabase, post, userId) {
+export async function createPost(supabase: SupabaseClient, post: ScheduledPost, userId: string): Promise<void> {
     const { id, accountId, status, scheduledAt, ...rest } = post;
     const { error } = await supabase.from('scheduled_posts').insert({
         id,
@@ -132,9 +179,9 @@ export async function createPost(supabase, post, userId) {
     if (error) throw error;
 }
 
-export async function updatePost(supabase, id, updates, userId = null) {
+export async function updatePost(supabase: SupabaseClient, id: string, updates: Partial<ScheduledPost>, userId: string | null = null): Promise<void> {
     const { status, scheduledAt, accountId: _, ...dataUpdates } = updates;
-    const colUpdates = {};
+    const colUpdates: { status?: PostStatus; scheduled_at?: string; data?: Partial<ScheduledPost> } = {};
 
     if (status !== undefined) colUpdates.status = status;
     if (scheduledAt !== undefined) colUpdates.scheduled_at = scheduledAt;
@@ -153,14 +200,14 @@ export async function updatePost(supabase, id, updates, userId = null) {
     if (error) throw error;
 }
 
-export async function deletePost(supabase, id, userId = null) {
+export async function deletePost(supabase: SupabaseClient, id: string, userId: string | null = null): Promise<void> {
     let query = supabase.from('scheduled_posts').delete().eq('id', id);
     if (userId) query = query.eq('user_id', userId);
     const { error } = await query;
     if (error) throw error;
 }
 
-export async function deleteAllPosts(supabase, userId) {
+export async function deleteAllPosts(supabase: SupabaseClient, userId: string | null): Promise<{ deleted: number; kept: number }> {
     let countQ = supabase.from('scheduled_posts').select('*', { count: 'exact', head: true });
     let keepQ = supabase.from('scheduled_posts').select('*', { count: 'exact', head: true }).eq('status', 'publishing');
     let delQ = supabase.from('scheduled_posts').delete().neq('status', 'publishing');
@@ -178,7 +225,7 @@ export async function deleteAllPosts(supabase, userId) {
     return { deleted: (total || 0) - (keeping || 0), kept: keeping || 0 };
 }
 
-function rowToTrackedPost(row) {
+function rowToTrackedPost(row: TrackedPostRow): TrackedPost {
     return {
         id: row.id,
         accountId: row.account_id,
@@ -192,7 +239,7 @@ function rowToTrackedPost(row) {
     };
 }
 
-export async function getTrackedPosts(supabase, userId) {
+export async function getTrackedPosts(supabase: SupabaseClient, userId: string): Promise<TrackedPost[]> {
     const { data, error } = await supabase
         .from('tracked_posts')
         .select('id, account_id, url, label, category, content_type, created_at, updated_at, data')
@@ -202,7 +249,7 @@ export async function getTrackedPosts(supabase, userId) {
     return (data || []).map(rowToTrackedPost);
 }
 
-export async function getTrackedPostById(supabase, id, userId) {
+export async function getTrackedPostById(supabase: SupabaseClient, id: string, userId: string): Promise<TrackedPost | null> {
     const { data, error } = await supabase
         .from('tracked_posts')
         .select('id, account_id, url, label, category, content_type, created_at, updated_at, data')
@@ -213,7 +260,7 @@ export async function getTrackedPostById(supabase, id, userId) {
     return rowToTrackedPost(data);
 }
 
-export async function createTrackedPost(supabase, post, userId) {
+export async function createTrackedPost(supabase: SupabaseClient, post: NewTrackedPost, userId: string): Promise<void> {
     const { id, accountId, url, label, category, contentType } = post;
     const { error } = await supabase.from('tracked_posts').insert({
         id,
@@ -227,8 +274,14 @@ export async function createTrackedPost(supabase, post, userId) {
     if (error) throw error;
 }
 
-export async function updateTrackedPost(supabase, id, updates, userId) {
-    const colUpdates = { updated_at: new Date().toISOString() };
+export async function updateTrackedPost(supabase: SupabaseClient, id: string, updates: TrackedPostUpdates, userId: string): Promise<void> {
+    const colUpdates: {
+        updated_at: string;
+        label?: string;
+        category?: string;
+        account_id?: string | null;
+        data?: Record<string, unknown>;
+    } = { updated_at: new Date().toISOString() };
     if (updates.label    !== undefined) colUpdates.label    = updates.label;
     if (updates.category !== undefined) colUpdates.category = updates.category;
     if (updates.accountId !== undefined) colUpdates.account_id = updates.accountId || null;
@@ -242,7 +295,7 @@ export async function updateTrackedPost(supabase, id, updates, userId) {
 }
 
 // merges into data so manual fields and live refresh fields survive each other
-export async function patchTrackedPostData(supabase, id, patch, userId) {
+export async function patchTrackedPostData(supabase: SupabaseClient, id: string, patch: Record<string, unknown>, userId: string): Promise<void> {
     const { data: row, error: readError } = await supabase
         .from('tracked_posts')
         .select('data')
@@ -260,7 +313,7 @@ export async function patchTrackedPostData(supabase, id, patch, userId) {
     if (error) throw error;
 }
 
-export async function deleteTrackedPost(supabase, id, userId) {
+export async function deleteTrackedPost(supabase: SupabaseClient, id: string, userId: string): Promise<void> {
     const { error } = await supabase
         .from('tracked_posts')
         .delete()
