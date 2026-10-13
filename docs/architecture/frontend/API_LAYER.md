@@ -131,17 +131,16 @@ uploadImage(file, cloudConfig)
 Used for tracked item screenshots. It posts the image with `fetch` to `https://api.cloudinary.com/v1_1/<cloudName>/image/upload` and resolves with `secure_url`. It throws an `Error` with Cloudinary's own message, or `'Cloudinary did not return an image URL'`, and network or JSON failures reject with the browser's own error. The tracked content editor shows that `err.message` after `Image upload failed.` in an error toast.
 
 ```js
-uploadToCloudinary(file, cloudConfig, { onProgress, resourceType })
+uploadToCloudinary(file, cloudConfig, { onProgress })
 ```
 
 Used by publishing. It posts `file` and the unsigned
 `upload_preset` from `getCloudinaryConfig()` to
-`https://api.cloudinary.com/v1_1/<cloudName>/<resourceType>/upload` with `XMLHttpRequest`, so
+`https://api.cloudinary.com/v1_1/<cloudName>/<video|image>/upload` (`video` for `video/*` files, `image` otherwise) with `XMLHttpRequest`, so
 upload progress is available, and resolves with the response's `secure_url`.
 
 - `cloudConfig`: the object from `getCloudinaryConfig()` (`cloudName`, `uploadPreset`). Callers check it is set first.
 - `onProgress(percent)`: optional; called with a whole number from 0 to 100. The progress listener is only attached when this is passed.
-- `resourceType`: optional; defaults to `video` for `video/*` files and `image` otherwise.
 
 Failures reject with an `Error` that carries a `reason` so each page keeps its own wording:
 

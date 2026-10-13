@@ -86,7 +86,8 @@ frontend/src/
 │   │   ├── useSinglePublish.js, usePublishProgress.js    <- Single post publish or schedule run
 │   │   ├── useBulkSettings.js, useBulkQueue.js, useBulkPublish.js   <- Bulk settings, file queue, upload loop
 │   │   ├── useScheduledPosts.js, useScheduledPostEdit.js, useScheduledPostDelete.js
-│   │   ├── igPublishFlow.js                <- Cloudinary upload, container polling, single post publish steps
+│   │   ├── containerPolling.js             <- Waits for an Instagram container (single post and bulk)
+│   │   ├── singlePostFlow.js               <- Single post Cloudinary upload, then publish or schedule
 │   │   ├── publishConstants.js             <- Content types, statuses, intervals, caption limit
 │   │   └── publishHelpers.js, scheduleHelpers.js, queueHelpers.js   <- Pure helpers with *.test.js
 │   ├── settings/

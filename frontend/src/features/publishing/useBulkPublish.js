@@ -1,5 +1,5 @@
 import { api } from '../../services/api';
-import { waitUntilReady, wait } from './igPublishFlow.js';
+import { waitUntilReady, wait } from './containerPolling.js';
 import {
   buildContainerPayload, buildScheduledPostPayload, bulkBaseTime, bulkPostDetails, bulkScheduledTime, bulkStartError,
 } from './publishHelpers.js';

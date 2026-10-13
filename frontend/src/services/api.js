@@ -39,11 +39,11 @@ function readUploadError(responseText) {
 }
 
 // the browser posts the file straight to Cloudinary so the Worker never handles binary uploads
-function uploadToCloudinary(file, cloudConfig, { onProgress, resourceType } = {}) {
+function uploadToCloudinary(file, cloudConfig, { onProgress } = {}) {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', cloudConfig.uploadPreset);
-    const type = resourceType || (file.type.startsWith('video/') ? 'video' : 'image');
+    const type = file.type.startsWith('video/') ? 'video' : 'image';
     const xhr = new XMLHttpRequest();
     return new Promise((resolve, reject) => {
         if (onProgress) {

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { usePublishProgress } from './usePublishProgress';
-import { publishSinglePost, scheduleSinglePost } from './igPublishFlow.js';
+import { publishSinglePost, scheduleSinglePost } from './singlePostFlow.js';
 import { singlePostError } from './publishHelpers.js';
 
 function beginRun(run) {
