@@ -3,8 +3,7 @@ import { cn } from '@/lib/utils';
 
 const LOGO_DIR = '/Logos';
 
-// Brand rule: the colour lockup sits on paper, the reversed lockup on dusk. Both are rendered and
-// CSS picks one, so the right file shows on first paint without waiting for the theme hook.
+// both lockups render and css picks one, so the right file shows before the theme hook runs
 export function Logo({ variant = 'lockup', className }) {
   if (variant === 'wordmark') {
     return (

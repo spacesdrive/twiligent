@@ -7,7 +7,7 @@ import {
 import { Spinner } from '@/components/ui/spinner';
 import HoldToConfirmButton from './HoldToConfirmButton';
 
-// Confirmation for consequential actions. Destructive ones use `hold` so they cannot fire on a stray click.
+// destructive actions use `hold` so a stray click cannot confirm them
 export default function ConfirmDialog({
   open,
   onOpenChange,

@@ -6,8 +6,7 @@ function resolve(theme) {
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-// Switches theme as one cross-fade of the whole page instead of every element easing at its own
-// speed. The class is applied synchronously inside the transition so the new snapshot is complete.
+// one page cross-fade; the class is set inside the transition so the new snapshot is complete
 export function useSmoothTheme() {
   const { theme, resolvedTheme, setTheme } = useTheme();
 

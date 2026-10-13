@@ -26,57 +26,57 @@ function harness(duration = 1000) {
 }
 
 test('a full hold confirms exactly once', () => {
-  const h = harness(1000);
-  h.controller.start();
-  h.advance(400);
-  h.advance(400);
-  assert.equal(h.completed, 0);
-  h.advance(400);
-  assert.equal(h.completed, 1);
-  assert.equal(h.progress.at(-1), 1);
-  h.advance(400);
-  assert.equal(h.completed, 1, 'no further ticks after completion');
+  const hold = harness(1000);
+  hold.controller.start();
+  hold.advance(400);
+  hold.advance(400);
+  assert.equal(hold.completed, 0);
+  hold.advance(400);
+  assert.equal(hold.completed, 1);
+  assert.equal(hold.progress.at(-1), 1);
+  hold.advance(400);
+  assert.equal(hold.completed, 1, 'no further ticks after completion');
 });
 
 test('releasing early cancels and resets progress', () => {
-  const h = harness(1000);
-  h.controller.start();
-  h.advance(500);
-  h.controller.cancel();
-  assert.equal(h.progress.at(-1), 0);
-  h.advance(2000);
-  assert.equal(h.completed, 0);
-  assert.equal(h.controller.holding, false);
+  const hold = harness(1000);
+  hold.controller.start();
+  hold.advance(500);
+  hold.controller.cancel();
+  assert.equal(hold.progress.at(-1), 0);
+  hold.advance(2000);
+  assert.equal(hold.completed, 0);
+  assert.equal(hold.controller.holding, false);
 });
 
 test('a quick click never confirms', () => {
-  const h = harness(1200);
-  h.controller.start();
-  h.advance(16);
-  h.controller.cancel();
-  h.advance(5000);
-  assert.equal(h.completed, 0);
+  const hold = harness(1200);
+  hold.controller.start();
+  hold.advance(16);
+  hold.controller.cancel();
+  hold.advance(5000);
+  assert.equal(hold.completed, 0);
 });
 
 test('starting twice does not restart the timer', () => {
-  const h = harness(1000);
-  h.controller.start();
-  h.advance(600);
-  h.controller.start();
-  h.advance(500);
-  assert.equal(h.completed, 1);
+  const hold = harness(1000);
+  hold.controller.start();
+  hold.advance(600);
+  hold.controller.start();
+  hold.advance(500);
+  assert.equal(hold.completed, 1);
 });
 
 test('a completed controller ignores new holds until reset', () => {
-  const h = harness(100);
-  h.controller.start();
-  h.advance(150);
-  assert.equal(h.controller.completed, true);
-  h.controller.start();
-  h.advance(150);
-  assert.equal(h.completed, 1);
-  h.controller.reset();
-  h.controller.start();
-  h.advance(150);
-  assert.equal(h.completed, 2);
+  const hold = harness(100);
+  hold.controller.start();
+  hold.advance(150);
+  assert.equal(hold.controller.completed, true);
+  hold.controller.start();
+  hold.advance(150);
+  assert.equal(hold.completed, 1);
+  hold.controller.reset();
+  hold.controller.start();
+  hold.advance(150);
+  assert.equal(hold.completed, 2);
 });

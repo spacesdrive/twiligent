@@ -1,5 +1,4 @@
-// Shared Recharts styling. Series follow the brand data-visualisation order; values are CSS variables
-// so charts switch with the theme.
+// series follow the brand chart order; values are css variables so charts follow the theme
 
 export const SERIES = {
   primary: 'var(--chart-1)',

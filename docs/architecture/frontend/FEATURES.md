@@ -10,11 +10,15 @@ frontend/src/
 │   ├── ChartPanel.jsx                      <- Titled chart container with an empty state
 │   └── ImageLightbox.jsx                   <- Thumbnail that opens the full image in a Dialog
 ├── docs/                                   <- Public documentation at /docs (outside the feature tree: no auth, no AppContext)
-│   ├── DocsLayout.jsx                      <- Header, tabs, sidebar, outline, search, previous and next
+│   ├── DocsLayout.jsx                      <- Page frame: theme, search shortcut, copy page, scroll to hash
+│   ├── DocsHeader.jsx, DocsSidebarNav.jsx, DocsMobileNav.jsx, DocsPager.jsx, DocsToc.jsx, DocsSearch.jsx
+│   ├── useTableOfContents.js               <- Collects page headings and tracks the one in view
 │   ├── components.jsx                      <- DocTitle, H2, H3, Callout, Steps, CodeBlock, Table, PathCards, Badge
-│   ├── nav.js                              <- Tabs, groups and pages; the single source for navigation
+│   ├── nav.js                              <- Tabs, groups and pages; the single source for navigation; firstPagePath(tab)
 │   ├── routes.js                           <- Slug to lazy page map; nav.test.js checks it matches nav.js
 │   └── pages/                              <- Overview, Use, SelfHost, Reference (one chunk each)
+│       ├── use/                            <- One file per page plus AdminLink.jsx; Use.jsx re-exports them
+│       ├── reference/                      <- One file per page; Reference.jsx re-exports them
 │       └── selfHost/                       <- One file per self-hosting page plus selfHostSql.js (selfHostSql.test.js); SelfHost.jsx re-exports them
 ├── features/
 │   ├── analytics/
@@ -46,7 +50,7 @@ frontend/src/
 │   │   │   ├── redditAnalyticsData.js      <- Pure chart rows and stat lists (redditAnalyticsData.test.js)
 │   │   │   ├── RedditPosts.jsx             <- Per-account post explorer
 │   │   │   ├── RedditPostsAll.jsx          <- Global post explorer (all Reddit accounts)
-│   │   │   ├── redditPostTable.jsx         <- Filters and table shared by both post explorers
+│   │   │   ├── RedditPostFilters.jsx, RedditPostTable.jsx   <- Filters and table shared by both post explorers
 │   │   │   └── redditPostUtils.js          <- Shared sort options, filtering and sorting
 │   │   └── tracked/
 │   │       ├── TrackedContent.jsx          <- Page: tracked Reddit posts and YouTube videos
@@ -99,8 +103,10 @@ frontend/src/
 │   │   ├── VideoExplorer.jsx               <- Page: YouTube video library with filtering
 │   │   ├── VideoFilters.jsx, LayoutToggle.jsx, VideoListTable.jsx, VideoSortHeader.jsx, VideoGrid.jsx
 │   │   ├── useChannelVideos.js             <- Loads every channel's videos; shared with Shorts
-│   │   └── videoLibrary.js                 <- Pure filter, sort and totals (videoLibrary.test.js)
-│   ├── analytics/shorts/ShortsExplorer.jsx <- YouTube Shorts (60 seconds or less)
+│   │   └── videoLibrary.js                 <- Pure channel merge, filter, sort and totals (videoLibrary.test.js)
+│   ├── analytics/shorts/
+│   │   ├── ShortsExplorer.jsx              <- Page: YouTube Shorts (60 seconds or less)
+│   │   └── ShortsFilters.jsx, ShortsGrid.jsx
 │   └── analytics/reels/
 │       ├── ReelsExplorer.jsx               <- Page: Instagram reels, posts and videos
 │       ├── ReelsMetrics.jsx, ReelsFilters.jsx, ReelsGrid.jsx

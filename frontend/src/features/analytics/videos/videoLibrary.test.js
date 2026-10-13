@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { watchUrl, filterAndSortVideos, videoStatsOf, nextSort, ariaSortOf, videosDescription } from './videoLibrary.js';
+import { watchUrl, filterAndSortVideos, videoStatsOf, nextSort, ariaSortOf, videosDescription, mergeChannelVideos } from './videoLibrary.js';
 
 const videos = [
   { videoId: 'a', title: 'Banana bread', channelId: 'c1', viewCount: 500, likeCount: 10, commentCount: 1, tags: ['baking'] },
@@ -49,4 +49,23 @@ test('description and watch links', () => {
   assert.equal(videosDescription(false, 1500, 1), '1.5K videos across 1 channel');
   assert.equal(videosDescription(false, 3, 2), '3 videos across 2 channels');
   assert.equal(watchUrl('xyz'), 'https://www.youtube.com/watch?v=xyz');
+});
+
+test('channel videos merge with their channel and skip failed channels', () => {
+  const channelAccounts = [{ id: 'c1', title: 'Alpha' }, { id: 'c2', channelTitle: 'Beta' }, { id: 'c3' }];
+  const results = [
+    { status: 'fulfilled', value: { videos: [{ videoId: 'a', viewCount: 200, likeCount: 10, commentCount: 0, duration: 'PT1M5S', thumbnails: { high: 'h.jpg' } }] } },
+    { status: 'rejected', reason: new Error('quota') },
+    { status: 'fulfilled', value: { data: { videos: [{ videoId: 'b', thumbnail: 't.jpg', durationSeconds: 30 }] } } },
+  ];
+  const merged = mergeChannelVideos(channelAccounts, results);
+  assert.deepEqual(merged.channels.map(channel => [channel.id, channel.title]), [['c1', 'Alpha'], ['c3', 'Unknown channel']]);
+  assert.equal(merged.channels[0].account, channelAccounts[0]);
+  assert.deepEqual(merged.videos[0], {
+    videoId: 'a', viewCount: 200, likeCount: 10, commentCount: 0, duration: 'PT1M5S', thumbnails: { high: 'h.jpg' },
+    thumbnail: 'h.jpg', channelTitle: 'Alpha', channelId: 'c1', engagementRate: '5.00', durationSeconds: 65,
+  });
+  assert.equal(merged.videos[1].thumbnail, 't.jpg');
+  assert.equal(merged.videos[1].durationSeconds, 30);
+  assert.equal(merged.videos[1].engagementRate, '0.00');
 });

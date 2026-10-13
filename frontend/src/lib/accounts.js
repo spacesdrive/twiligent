@@ -1,4 +1,4 @@
-// Platform helpers shared by every page. Kept free of JSX and path aliases so node --test can import it.
+// platform helpers for every page; no jsx or path aliases so node --test can import it
 
 export const PLATFORMS = ['youtube', 'instagram', 'reddit'];
 
@@ -10,8 +10,8 @@ export const PLATFORM_META = {
 
 // Accounts saved before multi-platform support have no platform field and are YouTube channels
 export function platformOf(account) {
-  const p = account?.platform;
-  return p === 'instagram' || p === 'reddit' ? p : 'youtube';
+  const platform = account?.platform;
+  return platform === 'instagram' || platform === 'reddit' ? platform : 'youtube';
 }
 
 export function accountPath(account) {

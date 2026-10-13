@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-// Side panel for a working surface: sticky on wide screens, stacked below the main area on narrow ones.
+// sticky on wide screens, stacked below the main area on narrow ones
 export default function DetailPanel({ title, description, children, footer, className }) {
   return (
     <aside

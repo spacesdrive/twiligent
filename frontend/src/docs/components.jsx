@@ -68,13 +68,13 @@ const CALLOUTS = {
 };
 
 export function Callout({ type = 'note', title, children }) {
-  const c = CALLOUTS[type];
-  const Icon = c.icon;
+  const callout = CALLOUTS[type];
+  const Icon = callout.icon;
   return (
-    <div className={cn('my-6 flex gap-3 rounded-field border px-4 py-3.5', c.cls)}>
-      <Icon className={cn('mt-0.5 size-4 shrink-0 stroke-[1.75]', c.iconCls)} aria-hidden="true" />
+    <div className={cn('my-6 flex gap-3 rounded-field border px-4 py-3.5', callout.cls)}>
+      <Icon className={cn('mt-0.5 size-4 shrink-0 stroke-[1.75]', callout.iconCls)} aria-hidden="true" />
       <div className="flex min-w-0 flex-col gap-1 text-[0.9375rem] leading-6 text-ink-muted [&_strong]:font-semibold [&_strong]:text-ink">
-        <p className="font-semibold text-ink"><span className="sr-only">{c.label}: </span>{title}</p>
+        <p className="font-semibold text-ink"><span className="sr-only">{callout.label}: </span>{title}</p>
         {children && <div className="[&>p]:m-0 flex flex-col gap-2">{children}</div>}
       </div>
     </div>

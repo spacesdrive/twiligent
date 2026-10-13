@@ -6,16 +6,16 @@ function normalize(text) {
 
 // Higher is better; 0 means no match. Every query word must appear in the label or keywords.
 export function scoreCommand(command, query) {
-  const q = normalize(query);
-  if (!q) return 1;
+  const needle = normalize(query);
+  if (!needle) return 1;
   const label = normalize(command.label);
   const haystack = `${label} ${normalize(command.group)} ${(command.keywords || []).map(normalize).join(' ')}`;
-  const words = q.split(/\s+/);
+  const words = needle.split(/\s+/);
   if (!words.every(w => haystack.includes(w))) return 0;
-  if (label === q) return 100;
-  if (label.startsWith(q)) return 80;
+  if (label === needle) return 100;
+  if (label.startsWith(needle)) return 80;
   if (label.split(/\s+/).some(part => part.startsWith(words[0]))) return 60;
-  if (label.includes(q)) return 40;
+  if (label.includes(needle)) return 40;
   return 20;
 }
 

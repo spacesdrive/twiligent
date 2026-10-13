@@ -1,20 +1,18 @@
 import React, { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { RefreshCw, Eye, ThumbsUp, MessageSquare, Scissors, Plus } from 'lucide-react';
+import { RefreshCw, Scissors, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import PageHeader from '@/components/PageHeader';
 import SurfaceBox from '@/components/SurfaceBox';
-import SearchField from '@/components/SearchField';
-import FilterChips from '@/components/FilterChips';
 import Pager from '@/components/Pager';
-import MediaCard, { MediaChip } from '@/components/MediaCard';
 import { EmptyState } from '@/components/StateViews';
 import { VIEW_TIERS, filterByTier, matchesText, pageSlice } from '@/lib/library';
 import { useChannelVideos } from '../videos/useChannelVideos';
-import { fmtNum, fmtDuration, fmtCount } from '../../../utils/formatters';
+import { fmtNum } from '../../../utils/formatters';
 import { cn } from '@/lib/utils';
+import ShortsFilters from './ShortsFilters';
+import ShortsGrid from './ShortsGrid';
 
 const ITEMS_PER_PAGE = 24;
 const SHORT_MAX_SECONDS = 60;
@@ -100,35 +98,18 @@ export default function ShortsExplorer() {
     <div className="flex flex-col gap-6">
       {header}
 
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <SearchField value={search} onChange={resetPage(setSearch)} placeholder="Search Shorts" className="min-w-56 flex-1" />
-          {channels.length > 1 && (
-            <Select
-              value={channelFilter}
-              onValueChange={resetPage(setChannelFilter)}
-              items={[{ value: 'all', label: 'All channels' }, ...channels.map(c => ({ value: c.id, label: c.title }))]}
-            >
-              <SelectTrigger className="w-48" aria-label="Channel"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="all">All channels</SelectItem>
-                  {channels.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          )}
-          <Select value={sortField} onValueChange={setSortField} items={SORT_OPTIONS}>
-            <SelectTrigger className="w-44" aria-label="Sort"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {SORT_OPTIONS.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
-        </div>
-        <FilterChips label="Views" options={VIEW_TIERS} value={tier} onChange={resetPage(setTier)} />
-      </div>
+      <ShortsFilters
+        channels={channels}
+        sortOptions={SORT_OPTIONS}
+        search={search}
+        onSearchChange={resetPage(setSearch)}
+        channelFilter={channelFilter}
+        onChannelChange={resetPage(setChannelFilter)}
+        sortField={sortField}
+        onSortChange={setSortField}
+        tier={tier}
+        onTierChange={resetPage(setTier)}
+      />
 
       {filtered.length === 0 ? (
         <SurfaceBox>
@@ -140,25 +121,7 @@ export default function ShortsExplorer() {
           />
         </SurfaceBox>
       ) : (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
-          {paged.items.map((v, i) => (
-            <MediaCard
-              key={`${v.videoId}-${i}`}
-              aspect="vertical"
-              href={`https://www.youtube.com/shorts/${v.videoId}`}
-              image={v.thumbnail}
-              title={v.title}
-              topRight={<MediaChip><Eye />{fmtNum(v.viewCount)}</MediaChip>}
-              bottomRight={<MediaChip>{fmtDuration(v.durationSeconds)}</MediaChip>}
-              meta={
-                <>
-                  <span className="flex items-center gap-1"><ThumbsUp />{fmtCount(v.likeCount)}</span>
-                  <span className="flex items-center gap-1"><MessageSquare />{fmtCount(v.commentCount)}</span>
-                </>
-              }
-            />
-          ))}
-        </div>
+        <ShortsGrid shorts={paged.items} />
       )}
 
       <Pager page={paged.page} pageCount={paged.pageCount} onPageChange={setPage} total={filtered.length} shown={paged.items.length} noun="Shorts" />

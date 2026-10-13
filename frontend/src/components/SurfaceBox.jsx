@@ -1,7 +1,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 
-// The one container for grouped content. A title row is optional; without one the box is a plain panel.
+// the one container for grouped content; without a title it is a plain panel
 export default function SurfaceBox({
   children,
   title,

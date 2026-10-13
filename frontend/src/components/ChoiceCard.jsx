@@ -2,7 +2,7 @@ import React from 'react';
 import { Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// Large selectable card for creation flows. Behaves as a radio when `selected` is defined, else as a button.
+// a radio when `selected` is defined, otherwise a plain button
 export default function ChoiceCard({ icon, title, description, selected, onSelect, disabled, className }) {
   const isRadio = selected !== undefined;
   return (

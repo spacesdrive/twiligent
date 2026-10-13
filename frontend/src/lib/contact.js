@@ -1,5 +1,4 @@
-// Who people on this instance contact for access requests and scheduling problems.
-// Self-hosters set VITE_ADMIN_EMAIL to their own address.
+// who members contact for access and scheduling help; self-hosters set VITE_ADMIN_EMAIL
 export const ADMIN_EMAIL = import.meta.env?.VITE_ADMIN_EMAIL || 'ujjwal@aevrin.net';
 
 export function adminMailto(subject, body = '') {

@@ -10,7 +10,8 @@ import { EmptyState } from '@/components/StateViews';
 import { useAppContext } from '../../../context/AppContext';
 import { api } from '../../../services/api';
 import { fmtNum } from '../../../utils/formatters';
-import { RedditPostFilters, RedditPostTable } from './redditPostTable';
+import RedditPostFilters from './RedditPostFilters';
+import RedditPostTable from './RedditPostTable';
 import { filterAndSortRedditPosts, subredditsOf } from './redditPostUtils';
 import { cn } from '@/lib/utils';
 

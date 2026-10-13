@@ -1,4 +1,4 @@
-// Documentation structure: tabs, sidebar groups, and pages. Page components are mapped in pages/index.js.
+// tabs, sidebar groups and pages; routes.js maps each page to its component
 
 export const DOC_TABS = [
   {
@@ -105,4 +105,9 @@ export function tabForPath(pathname) {
 export function neighbours(pathname) {
   const i = ALL_DOC_PAGES.findIndex(p => p.path === pathname);
   return { prev: i > 0 ? ALL_DOC_PAGES[i - 1] : null, next: i >= 0 && i < ALL_DOC_PAGES.length - 1 ? ALL_DOC_PAGES[i + 1] : null };
+}
+
+export function firstPagePath(tab) {
+  const page = tab.groups[0].pages[0];
+  return page.slug ? `/docs/${page.slug}` : '/docs';
 }

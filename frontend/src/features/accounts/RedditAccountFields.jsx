@@ -35,7 +35,8 @@ export default function RedditAccountFields({ username, cookie, onUsernameChange
       <Alert>
         <Info />
         <AlertDescription>
-          Sign in to reddit.com in your browser, open DevTools (F12), go to Application, then Cookies, then https://www.reddit.com, and copy the value of <strong className="font-semibold text-ink">reddit_session</strong>.
+          {'Sign in to reddit.com in your browser, open DevTools (F12), go to Application, then Cookies, then https://www.reddit.com, and copy the value of '}
+          <strong className="font-semibold text-ink">reddit_session</strong>.
         </AlertDescription>
       </Alert>
     </div>

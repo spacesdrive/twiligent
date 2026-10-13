@@ -8,7 +8,8 @@ import { EmptyState } from '@/components/StateViews';
 import { AccountAvatar } from '@/components/platform';
 import { useAppContext } from '../../../context/AppContext';
 import { api } from '../../../services/api';
-import { RedditPostFilters, RedditPostTable } from './redditPostTable';
+import RedditPostFilters from './RedditPostFilters';
+import RedditPostTable from './RedditPostTable';
 import { filterAndSortRedditPosts, subredditsOf } from './redditPostUtils';
 
 export default function RedditPosts() {
@@ -29,7 +30,7 @@ export default function RedditPosts() {
       .then(data => setPosts(Array.isArray(data) ? data : []))
       .catch(err => showToast(`Couldn't load posts. ${err.message}`, 'error'))
       .finally(() => setLoading(false));
-    // Reload only when the route changes, not on every account list refresh
+    // reload per route, not per account list refresh
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 

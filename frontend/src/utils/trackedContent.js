@@ -1,13 +1,11 @@
-// Views for a tracked item. YouTube reports a real view count; Reddit removed view_count
-// from their API in 2018, so Reddit views are whatever the user entered by hand.
+// youtube reports real views; reddit dropped view_count in 2018, so its views are typed by hand
 export function trackedViews(item) {
     if (!item) return 0;
     if (item.contentType === 'youtube') return item.viewCount ?? 0;
     return item.manualViews ?? 0;
 }
 
-// True when the item is a Reddit post whose views have not been entered yet, so the UI can
-// distinguish "no views recorded" from a genuine zero
+// false for reddit posts with no views entered, so the ui can tell that apart from a real zero
 export function hasTrackedViews(item) {
     if (!item) return false;
     if (item.contentType === 'youtube') return item.viewCount !== undefined && item.viewCount !== null;

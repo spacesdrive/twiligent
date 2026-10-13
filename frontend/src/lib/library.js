@@ -2,9 +2,9 @@
 
 export function parseIsoDuration(iso) {
   if (!iso || iso === 'P0D') return 0;
-  const m = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
-  if (!m) return 0;
-  return (parseInt(m[1] || 0, 10) * 3600) + (parseInt(m[2] || 0, 10) * 60) + parseInt(m[3] || 0, 10);
+  const parts = iso.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
+  if (!parts) return 0;
+  return (parseInt(parts[1] || 0, 10) * 3600) + (parseInt(parts[2] || 0, 10) * 60) + parseInt(parts[3] || 0, 10);
 }
 
 // (likes + comments) / views as a percentage string, matching the backend's two-decimal format
@@ -33,9 +33,9 @@ export function filterByTier(items, tiers, tierValue, field) {
   const tier = tiers.find(t => t.value === tierValue);
   if (!tier) return items;
   return items.filter(item => {
-    const n = item[field] || 0;
-    if (tier.min != null && n < tier.min) return false;
-    if (tier.max != null && n >= tier.max) return false;
+    const value = item[field] || 0;
+    if (tier.min != null && value < tier.min) return false;
+    if (tier.max != null && value >= tier.max) return false;
     return true;
   });
 }
@@ -52,7 +52,7 @@ export function pageSlice(items, page, perPage) {
 }
 
 export function matchesText(values, query) {
-  const q = query.trim().toLowerCase();
-  if (!q) return true;
-  return values.some(v => typeof v === 'string' && v.toLowerCase().includes(q));
+  const needle = query.trim().toLowerCase();
+  if (!needle) return true;
+  return values.some(v => typeof v === 'string' && v.toLowerCase().includes(needle));
 }

@@ -1,7 +1,31 @@
 // video library filters and totals; no JSX or path aliases so node --test can import it
 
-import { VIEW_TIERS, filterByTier, matchesText } from '../../../lib/library.js';
+import { VIEW_TIERS, filterByTier, matchesText, engagementPercent, parseIsoDuration } from '../../../lib/library.js';
 import { fmtNum } from '../../../utils/formatters.js';
+
+// failed channels are left out; each video gains its channel, thumbnail, engagement and duration
+export function mergeChannelVideos(channelAccounts, results) {
+  const videos = [];
+  const channels = [];
+  results.forEach((result, i) => {
+    if (result.status !== 'fulfilled') return;
+    const acct = channelAccounts[i];
+    const res = result.value;
+    const channelTitle = acct.title || acct.channelTitle || 'Unknown channel';
+    channels.push({ id: acct.id, title: channelTitle, account: acct });
+    for (const video of res.videos || res.data?.videos || []) {
+      videos.push({
+        ...video,
+        thumbnail: video.thumbnail || video.thumbnails?.medium || video.thumbnails?.high || video.thumbnails?.default || '',
+        channelTitle,
+        channelId: acct.id,
+        engagementRate: engagementPercent(video.viewCount, video.likeCount, video.commentCount),
+        durationSeconds: video.durationSeconds || parseIsoDuration(video.duration),
+      });
+    }
+  });
+  return { videos, channels };
+}
 
 export function watchUrl(videoId) {
   return `https://www.youtube.com/watch?v=${videoId}`;

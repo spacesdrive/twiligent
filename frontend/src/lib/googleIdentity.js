@@ -27,8 +27,7 @@ export async function sha256Hex(text) {
   return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('');
 }
 
-// Google embeds the hashed nonce in the ID token; Supabase receives the raw one and checks they match,
-// so a captured token cannot be replayed.
+// supabase checks the raw nonce against the hash in the token, so a captured token cannot replay
 export async function createNonce() {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
   const raw = btoa(String.fromCharCode(...bytes)).replace(/[+/=]/g, '');
