@@ -25,7 +25,7 @@ async function redditCookieFor(supabase, accountId, userId) {
 // returns the fetched data, or an error response the handler sends unchanged
 async function fetchNewTrackedData(c, contentType, url, accountId) {
     if (contentType === 'youtube') {
-        const apiKey = c.env.YOUTUBE_API_KEY?.replace(/^﻿/, '').trim();
+        const apiKey = c.env.YOUTUBE_API_KEY?.replace(/^\uFEFF/, '').trim();
         if (!apiKey) return { response: c.json({ error: 'YouTube API key not configured on this server' }, 400) };
         return { data: await fetchTrackedYouTubeData(url, apiKey) };
     }
@@ -149,7 +149,7 @@ router.post('/tracked-content/:id/refresh', async (c) => {
         let fetchedData;
 
         if (contentType === 'youtube') {
-            const apiKey = c.env.YOUTUBE_API_KEY?.replace(/^﻿/, '').trim();
+            const apiKey = c.env.YOUTUBE_API_KEY?.replace(/^\uFEFF/, '').trim();
             if (!apiKey) return c.json({ error: 'YouTube API key not configured on this server' }, 400);
             fetchedData = await fetchTrackedYouTubeData(existing.url, apiKey);
         } else {

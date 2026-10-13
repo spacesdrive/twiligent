@@ -30,7 +30,7 @@ app.get('/accounts/:id/analytics', async (c) => {
     try {
         const supabase = c.get('supabase');
         const userId = c.get('userId');
-        const apiKey = c.env.YOUTUBE_API_KEY?.replace(/^﻿/, '').trim();
+        const apiKey = c.env.YOUTUBE_API_KEY?.replace(/^\uFEFF/, '').trim();
         if (!apiKey) return c.json({ success: false, message: 'No API key' }, 400);
 
         const account = await getAccountById(supabase, c.req.param('id'), userId);
@@ -65,7 +65,7 @@ app.get('/accounts/:id/videos', async (c) => {
             return c.json({ success: true, videos: cached.videos, fetchedAt: cached.fetchedAt });
         }
 
-        const apiKey = c.env.YOUTUBE_API_KEY?.replace(/^﻿/, '').trim();
+        const apiKey = c.env.YOUTUBE_API_KEY?.replace(/^\uFEFF/, '').trim();
         if (!apiKey) return c.json({ success: false, message: 'No API key' }, 400);
 
         const account = await getAccountById(supabase, id, userId);

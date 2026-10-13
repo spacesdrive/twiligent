@@ -1,12 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 
 function clean(s) {
-    return s?.replace(/^﻿/, '').trim();
+    return s?.replace(/^\uFEFF/, '').trim();
 }
 
 // workers reject the `cache` RequestInit field, so supabase requests drop it
 function workerFetch(url, options = {}) {
-    const { cache, ...rest } = options;
+    const { cache: _cache, ...rest } = options;
     return fetch(url, rest);
 }
 

@@ -13,11 +13,11 @@ const OAUTH_SCOPES = 'instagram_business_basic,instagram_business_manage_message
 
 // pasted secrets can carry a byte order mark or stray whitespace
 function cleanSecret(value) {
-    return value?.replace(/^﻿/, '').trim();
+    return value?.replace(/^\uFEFF/, '').trim();
 }
 
 function cleanUrl(value, fallback) {
-    return (value || fallback).replace(/^﻿/, '').trim();
+    return (value || fallback).replace(/^\uFEFF/, '').trim();
 }
 
 export function readInstagramOAuthConfig(env) {

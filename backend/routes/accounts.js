@@ -26,7 +26,7 @@ app.get('/accounts', async (c) => {
 app.post('/resolve-channel', async (c) => {
     try {
         const { input } = await c.req.json();
-        const apiKey = c.env.YOUTUBE_API_KEY?.replace(/^﻿/, '').trim();
+        const apiKey = c.env.YOUTUBE_API_KEY?.replace(/^\uFEFF/, '').trim();
         if (!apiKey) return c.json({ success: false, message: 'YouTube API key not configured on server' }, 400);
         const channelId = await resolveChannelId(input, apiKey);
         const channelData = await fetchChannelData(channelId, apiKey);
@@ -39,7 +39,7 @@ app.post('/resolve-channel', async (c) => {
 app.post('/accounts', async (c) => {
     try {
         const { input } = await c.req.json();
-        const apiKey = c.env.YOUTUBE_API_KEY?.replace(/^﻿/, '').trim();
+        const apiKey = c.env.YOUTUBE_API_KEY?.replace(/^\uFEFF/, '').trim();
         if (!apiKey) return c.json({ success: false, message: 'YouTube API key not configured on server' }, 400);
         const account = await addYouTubeAccount(c.get('supabase'), c.get('userId'), input, apiKey);
         return c.json({ success: true, account });

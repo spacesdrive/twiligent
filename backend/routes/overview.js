@@ -19,7 +19,7 @@ router.get('/overview', async (c) => {
     const userId = c.get('userId');
     const supabase = c.get('supabase');
     const redis = c.get('redis');
-    const apiKey = c.env.YOUTUBE_API_KEY?.replace(/^﻿/, '').trim();
+    const apiKey = c.env.YOUTUBE_API_KEY?.replace(/^\uFEFF/, '').trim();
 
     try {
         const [accounts, tracked] = await Promise.all([
