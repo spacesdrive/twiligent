@@ -51,3 +51,6 @@ yarn-debug.log*
 skills-lock.json
 .dev.vars
 
+
+# Third-party interface reference captures (kept local, not redistributed)
+docs/screenshots/reference/

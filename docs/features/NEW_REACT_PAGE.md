@@ -8,7 +8,7 @@ Read `frontend/src/features/analytics/channel/ChannelAnalytics.jsx` as a referen
 |---|---|
 | Create | `frontend/src/features/myFeature/MyPage.jsx` |
 | Modify | `frontend/src/App.jsx` (add lazy import + route) |
-| Modify | `frontend/src/layout/Sidebar.jsx` (add nav link if needed) |
+| Modify | `frontend/src/layout/navigation.js` (add a nav item if the page belongs in the sidebar) |
 | Modify | `frontend/src/services/api.js` (add API methods) |
 | Update | `docs/architecture/frontend/REACT_ARCHITECTURE.md` |
 
@@ -47,30 +47,22 @@ export default function MyPage() {
         loadData();
     }, [loadData]);
 
-    if (loading) {
+    if (loading) return <PageSkeleton />;
+
+    if (!account) {
         return (
-            <div className="p-6 space-y-4">
-                <Skeleton className="h-8 w-48" />
-                <Skeleton className="h-48 w-full" />
-            </div>
+            <SurfaceBox>
+                <EmptyState icon={<UserX />} title="Account not found" description="It may have been removed. Choose another account from the sidebar." />
+            </SurfaceBox>
         );
     }
 
-    if (!account) {
-        return <div className="p-6 text-muted-foreground">Account not found.</div>;
-    }
-
     return (
-        <div className="p-6 space-y-6">
-            <h1 className="text-2xl font-bold">{account.title}</h1>
-            <Card>
-                <CardHeader>
-                    <CardTitle>My Data</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    {/* content */}
-                </CardContent>
-            </Card>
+        <div className="flex flex-col gap-6">
+            <PageHeader back={{ to: '/', label: 'Overview' }} title={account.title} />
+            <SurfaceBox title="My data">
+                {/* content */}
+            </SurfaceBox>
         </div>
     );
 }
@@ -86,18 +78,15 @@ const MyPage = lazy(() => import('./features/myFeature/MyPage'));
 { path: 'my-page/:id', element: <MyPage /> },
 ```
 
-## Step 3: Add Navigation in Sidebar.jsx
+## Step 3: Add Navigation
 
-If the page appears in the sidebar (e.g., once per account):
+If the page belongs in the sidebar, add it to `NAV_GROUPS` in `frontend/src/layout/navigation.js`. The sidebar, top bar title and command palette pick it up automatically:
 
-```jsx
-// In Sidebar.jsx, inside the per-account link generation
-{
-    title: 'My Feature',
-    url: `/my-page/${account.id}`,
-    icon: IconName,
-}
+```js
+{ path: '/my-page', label: 'My page', icon: IconName },
 ```
+
+Detail pages that are not in the sidebar get a top bar title in `DETAIL_ROUTES` in the same file.
 
 ## Step 4: Add API Methods
 
@@ -110,10 +99,11 @@ getMyData: (id) => request(`/accounts/${id}/my-data`),
 
 - Use `useAppContext()` - don't re-fetch the accounts list, use what's in context
 - Always handle loading and error states
-- Use `Skeleton` components for loading state (not spinners - shadcn's Skeleton matches the page layout)
+- Use `PageSkeleton` or `Skeleton` for loading states, `EmptyState` for no data, and a toast for failures
 - Use semantic HTML for the page structure
-- Wrap content in `className="p-6"` padding (matches existing pages)
-- Use `space-y-6` or `space-y-4` for vertical rhythm between sections
+- Start the page with `PageHeader`; the app shell already provides the page padding
+- Use `flex flex-col gap-6` for vertical rhythm between sections
+- Follow the page patterns in `docs/architecture/frontend/DESIGN_SYSTEM.md`
 
 ## Page That Doesn't Need an Account Parameter
 
@@ -129,8 +119,9 @@ export default function MyAggregatePage() {
     }, [accounts]);
 
     return (
-        <div className="p-6">
-            <p>Total views: {summary}</p>
+        <div className="flex flex-col gap-6">
+            <PageHeader title="My summary" />
+            <MetricBox label="Total views" value={fmtNum(summary)} />
         </div>
     );
 }

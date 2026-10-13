@@ -2,11 +2,14 @@
 
 ## Current State
 
-Most testing is manual. The backend has unit tests for pure service logic using Node's built-in test runner (no dependencies). Broader coverage is a known gap - see ROADMAP.md.
+Most testing is manual. Both the backend and the frontend have unit tests for pure logic using Node's built-in test runner (no dependencies). Broader coverage is a known gap - see ROADMAP.md.
 
 ```bash
 cd backend && npm test
+cd frontend && npm test
 ```
+
+Frontend tests cover `src/lib/`: hold-to-confirm timing, command palette ranking, library filtering and paging, platform helpers, and a check that every Lucide icon imported in `src` exists. Keep testable logic in `src/lib/` free of JSX and `@/` imports so Node can load it directly.
 
 Test files sit next to the module they cover as `*.test.js` (for example `services/instagram.test.js`). Wrangler only bundles files reachable from `server.js`, so test files never ship in the Worker.
 

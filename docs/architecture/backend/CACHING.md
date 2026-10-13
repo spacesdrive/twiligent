@@ -25,9 +25,8 @@ export async function getVideosCache(redis, userId, accountId) {
 | `videos:{userId}:{accountId}` | Array of YouTube video objects with stats | `GET /api/accounts/:id/analytics` succeeds | `DELETE /api/accounts/:id` |
 | `ig:{userId}:{accountId}` | `{ media, fetchedAt, version }` - normalized Instagram media (see `normalizeInstagramMedia()`) | `GET /api/accounts/:id/ig-analytics` or `ig-media` succeeds, or the Overview warms it | `DELETE /api/accounts/:id`, or a `version` mismatch |
 | `reddit:{userId}:{accountId}` | Object `{ profile, analytics, posts }` for Reddit account | `GET /api/accounts/:id/reddit-analytics` succeeds | `DELETE /api/accounts/:id` |
-| `oauth_ig:{state}` | userId string (legacy, Redis-backed) | Instagram OAuth URL generation | Consumed on callback; 10-min TTL |
 
-**Note:** The `oauth_ig:` key is a legacy path. The current OAuth implementation uses HMAC-signed state tokens that don't require Redis. This key is set and consumed only when Redis is available, as a secondary verification layer.
+**Note:** Instagram OAuth state is an HMAC-signed token and does not use Redis. The unused Redis-backed `oauth_ig:` helpers were removed.
 
 ## Cache Versioning
 

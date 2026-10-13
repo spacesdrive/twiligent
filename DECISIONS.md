@@ -506,3 +506,39 @@ Records every significant architectural decision, the alternatives considered, a
 - When any item on a page cannot return insights (for example media posted before the account became professional), Instagram fails the entire page. That page is refetched without views, so its items show `-` rather than a number. Page size is 50 to limit the impact.
 - Meta's reference labels `media_product_type` as Facebook Login only, but it is returned for Instagram Login in practice. The permalink fallback keeps classification correct if it is ever omitted.
 - Views are organic Instagram views only and can lag by up to 48 hours, per Meta.
+
+---
+
+## ADR-023: Interface rebuilt on a token system: measured reference structure, Twiligent brand skin
+
+**Date:** 2026-10-13
+**Status:** Accepted
+
+**Decision:** The frontend is restyled onto design tokens in `frontend/src/index.css`. Layout, density, component shapes, states and motion follow measurements taken from a reference interface (recorded in `docs/design-reference.md`). Colour, typography, logo, accent and copy voice come from the Twiligent brand kit in `frontend/public/`. Shared components (`PageHeader`, `SurfaceBox`, `MetricBox`, `ConfirmDialog`, `CommandPalette` and others, listed in `docs/architecture/frontend/DESIGN_SYSTEM.md`) replace per-page markup. `MainCard` and `StatCard` are removed.
+
+**Context:** Pages used hard-coded Tailwind palette colours (blue primary, pink, orange, purple) unrelated to the brand, repeated the same helpers on every page (platform badges, avatar fallbacks, rank colours, chart styling, filter tiers, pagination), and loaded Inter from Google Fonts while the brand kit ships Sora, Manrope and JetBrains Mono.
+
+**Alternatives considered:**
+- Recolouring the existing shadcn theme only: fast, but leaves the duplicated page markup and the off-brand palette classes in place.
+- Adopting the brand's capsule buttons everywhere: the measured reference uses 10 to 12px rounded rectangles for controls. Structure follows the reference, so controls use the measured radii and badges keep the capsule as the brand echo.
+
+**Trade-offs:**
+- shadcn primitives in `components/ui/` now carry project styling. Regenerating one with the shadcn CLI overwrites it, so diff before accepting.
+- Destructive actions (removing an account, untracking content, deleting scheduled posts) now require press-and-hold. This is slower by design.
+- Fonts are served from `/fonts` on the same origin and preloaded, removing the third-party Google Fonts request.
+- `@fontsource-variable/geist` was installed but never imported, and is removed.
+
+---
+
+## ADR-024: Removed dead and duplicated code
+
+**Date:** 2026-10-13
+**Status:** Accepted
+
+**Decision:** Removed the original vanilla-JS dashboard in the repository root `public/` (from the initial commit, pointed at `localhost:3000`), the unmounted `backend/routes/trackedPosts.js` (superseded by `trackedContent.js`), the unused Redis OAuth state helpers in `backend/lib/cache.js`, and unused shadcn block templates in `frontend/src/components/`. `safeRedditAccount()` and the route-local `safeAccount()` are merged into `backend/lib/safeAccount.js`. Instagram container parameters are built by one function, `buildMediaParams()`, used by both the publish route and the cron scheduler.
+
+**Context:** The duplicated publishing parameter logic had to be changed in two Worker files for every new Instagram field, and two sanitisers for the same response shape made it easy to forget a credential.
+
+**Trade-offs:**
+- `scripts/publish-scheduled.js` still has its own copy of the publishing logic. It runs in GitHub Actions with zero npm dependencies and cannot import Worker modules.
+- The root `package.json` (an Express setup with no server file) is left in place because it also pins the shadcn CLI used from the repository root.

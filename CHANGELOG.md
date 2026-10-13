@@ -7,6 +7,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed
+
+**Interface redesign in the Twiligent brand**
+- New app shell: 256px sidebar with the Twiligent lockup, search, grouped navigation, account and category lists, and a user menu with theme and sign-out; a 50px top bar with breadcrumb, refresh and theme toggle
+- Every page rebuilt on shared components and design tokens: Sora headings, Manrope text, JetBrains Mono numbers, brand red for primary actions and active states, warm dusk and paper surfaces, hairline borders
+- Light and dark themes from the same tokens, with a system option; the logo switches between the paper and dusk lockups with the theme
+- Overview opens with a greeting, quick actions and selectable metric tiles
+- Videos, Shorts, Instagram content, Reddit posts and Tracked content share one library layout: search, filter chips, quiet tables or card grids and a pager
+- Adding an account is a choice-card flow with a review step; Publish is a working surface with the editor on the left and settings on the right
+- Settings reorganised into labelled sections, with a theme picker
+- UI copy in sentence case, without exclamation marks; error messages say what to do next
+- Charts use the brand data-visualisation series in both themes
+
+### Removed
+
+- Legacy root `public/` dashboard, unmounted `trackedPosts.js` route, unused Redis OAuth helpers, unused shadcn block templates and the unused Geist font package
+- Duplicated helpers merged: platform badges and avatars, account paths, chart styling, filter tiers, pagination, Reddit post table, `safeAccount()`, Instagram publishing parameters
+
 ### Fixed
 
 **Instagram Reels counted as Videos**
@@ -16,6 +34,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Cached Instagram media from older versions is refetched automatically
 
 ### Added
+
+**Redesign additions**
+- Command palette (Ctrl+K or Cmd+K) for pages, accounts, categories, theme and actions
+- Hold-to-confirm for removing accounts, untracking content and deleting scheduled posts
+- `/accounts?add=1` opens the add-account flow directly
+- Location field in bulk publishing (the value was already sent with each post but had no input)
+- Frontend unit tests (`cd frontend && npm test`) and backend tests for credential stripping and Instagram publishing parameters
+- `docs/design-reference.md` and `docs/architecture/frontend/DESIGN_SYSTEM.md`
 
 **Instagram views by content type**
 - Views are fetched from the Instagram `views` insight alongside media, with no extra requests per item; items without insights show `-` instead of 0

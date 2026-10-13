@@ -32,6 +32,7 @@ For MCP usage, read `docs/mcp/OVERVIEW.md` before using any MCP server.
 ```
 docs/
   WRITING_STANDARDS.md     Typography, icons, writing style, UI copy, commit messages
+  design-reference.md      Measured interface reference, brand kit inventory, token sources
   architecture/
     OVERVIEW.md            System topology, connections, request lifecycle
     backend/
@@ -43,6 +44,7 @@ docs/
       CRON.md              Scheduled handlers, cron triggers
     frontend/
       REACT_ARCHITECTURE.md    Provider tree, lazy loading, App.jsx
+      DESIGN_SYSTEM.md         Tokens, shared components, page patterns
       ROUTING.md               All pages, paths, layout nesting
       CONTEXTS.md              AuthContext, AppContext, usage rules
       API_LAYER.md             api.js, request(), auth header injection
@@ -112,6 +114,8 @@ Read `docs/WRITING_STANDARDS.md` for the full specification. The non-negotiable 
 - Error messages explain what went wrong and what to do - no "Something went wrong"
 - One comment per non-obvious logic block, maximum - never restate what the code does
 - Every page must feel like it belongs to the same application: consistent padding, cards, skeletons, toasts, icons
+- All styling goes through the design tokens in `frontend/src/index.css` and the shared components listed in `docs/architecture/frontend/DESIGN_SYSTEM.md`; no hex or Tailwind palette colours in components
+- Brand assets (logos, fonts, tokens, guidelines) live in `frontend/public/`; sentence case in UI copy, no exclamation marks
 
 ---
 

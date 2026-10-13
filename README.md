@@ -1,6 +1,6 @@
 <div align="center">
 
-  <img src="frontend/public/logo.png" alt="Twiligent" width="96" />
+  <img src="frontend/public/Logos/twiligent-lockup-stacked.svg" alt="Twiligent" width="160" />
 
   <h1>Twiligent</h1>
 

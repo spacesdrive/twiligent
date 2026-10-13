@@ -27,7 +27,7 @@ Document the answers in `DECISIONS.md` as a new ADR before writing any code.
 | Frontend | `frontend/src/services/api.js` | Add methods |
 | Frontend | `frontend/src/features/` | Create page(s) |
 | Frontend | `frontend/src/App.jsx` | Add routes |
-| Frontend | `frontend/src/layout/Sidebar.jsx` | Add nav links |
+| Frontend | `frontend/src/lib/accounts.js`, `frontend/src/components/brand/platform-icons.jsx` | Add the platform to `PLATFORM_META`, `platformOf()`, `accountPath()` and an icon; the sidebar lists accounts automatically |
 | Frontend | `frontend/src/context/AppContext.jsx` | Add normalization |
 | Config | `.github/workflows/deploy-backend.yml` | Add new secret |
 | Docs | `DECISIONS.md` | Add ADR |

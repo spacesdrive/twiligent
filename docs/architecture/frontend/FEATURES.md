@@ -5,8 +5,9 @@
 ```
 frontend/src/
 ├── components/
-│   ├── MainCard.jsx                        <- Card wrapper with optional title/subheader/separator
+│   ├── SurfaceBox.jsx, MetricBox.jsx, PageHeader.jsx, ...   <- Shared components, see DESIGN_SYSTEM.md
 │   ├── MetricAreaChart.jsx                 <- Shared Recharts area chart for single-metric comparisons
+│   ├── ChartPanel.jsx                      <- Titled chart container with an empty state
 │   └── ImageLightbox.jsx                   <- Thumbnail that opens the full image in a Dialog
 ├── features/
 │   ├── analytics/
@@ -19,7 +20,9 @@ frontend/src/
 │   │   ├── reddit/
 │   │   │   ├── RedditAnalytics.jsx         <- Reddit account analytics (karma, subreddits)
 │   │   │   ├── RedditPosts.jsx             <- Per-account post explorer
-│   │   │   └── RedditPostsAll.jsx          <- Global post explorer (all Reddit accounts)
+│   │   │   ├── RedditPostsAll.jsx          <- Global post explorer (all Reddit accounts)
+│   │   │   ├── redditPostTable.jsx         <- Filters and table shared by both post explorers
+│   │   │   └── redditPostUtils.js          <- Shared sort options, filtering and sorting
 │   │   └── tracked/
 │   │       ├── TrackedContent.jsx          <- Tracked Reddit posts and YouTube videos
 │   │       └── TrackedCategory.jsx         <- Per-category analytics for tracked content
@@ -29,10 +32,11 @@ frontend/src/
 │   │   └── UploadContent.jsx               <- Instagram publish + scheduled post queue
 │   ├── settings/
 │   │   └── Settings.jsx                    <- GitHub PAT and other settings
-│   └── videos/
-│       ├── VideoExplorer.jsx               <- YouTube video library with filtering
-│       ├── ShortsExplorer.jsx              <- YouTube Shorts-filtered view
-│       └── ReelsExplorer.jsx               <- Instagram Reels-filtered view
+│   ├── analytics/videos/
+│   │   ├── VideoExplorer.jsx               <- YouTube video library with filtering
+│   │   └── useChannelVideos.js             <- Loads every channel's videos; shared with Shorts
+│   ├── analytics/shorts/ShortsExplorer.jsx <- YouTube Shorts (60 seconds or less)
+│   └── analytics/reels/ReelsExplorer.jsx   <- Instagram reels, posts and videos
 ```
 
 ## Metric Naming
@@ -55,7 +59,7 @@ grid, gradient, and tooltip styling. Use it instead of hand-rolling a Recharts `
   data={[{ name: 'Item', karma: 42 }]}
   dataKey="karma"
   label="Karma"
-  color="#f97316"
+  color={SERIES.warm}   // from @/lib/chart
   emptyMessage="Track content to compare karma"
 />
 ```

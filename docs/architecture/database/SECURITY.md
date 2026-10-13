@@ -57,5 +57,5 @@ The GitHub Personal Access Token stored in `settings.value.githubPat` is stored 
 When reviewing security, check these files:
 - `backend/middleware/auth.js` - JWT verification
 - `backend/lib/db.js` - every function that accepts an optional `userId` should either: require it explicitly, or have a documented reason for omitting it (cron use case)
-- `backend/services/instagram.js` - `safeAccount()` definition and usage
+- `backend/lib/safeAccount.js` - `safeAccount()` definition; it strips every stored credential for all platforms
 - All route files in `backend/routes/` - verify `safeAccount()` is called on every account response

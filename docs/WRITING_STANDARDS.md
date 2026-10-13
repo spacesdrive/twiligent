@@ -19,7 +19,7 @@ These rules apply to all generated code, documentation, UI copy, commit messages
 
 - Never use emoji as icons in UI.
 - Use SVG icons only.
-- Prefer Lucide React icons (`lucide-react`).
+- Prefer Lucide React icons (`lucide-react`) at a 1.75 stroke. Platform logos (YouTube, Instagram, Reddit) come from `components/brand/platform-icons.jsx`.
 - If Lucide does not have an appropriate icon, use another open-source SVG icon library (e.g. Heroicons, Radix Icons).
 - All icons in the same UI context must have consistent size, stroke width, spacing, and visual weight.
 
@@ -111,12 +111,15 @@ Every page must feel like it belongs to the same application.
 
 Maintain:
 
-- Consistent page padding (`p-6` wrapper)
-- Consistent vertical rhythm (`space-y-6` between sections)
-- Consistent card structure (shadcn `Card` with `CardHeader`/`CardContent`)
-- Consistent loading states (shadcn `Skeleton`)
-- Consistent error display (toast notifications via `showToast`)
-- Consistent icon usage (Lucide, same stroke width)
-- Consistent button variants (primary for main action, outline for secondary)
+- One `PageHeader` per page; the app shell provides page padding
+- Consistent vertical rhythm (`flex flex-col gap-6` between sections)
+- Consistent containers (`SurfaceBox`, `MetricBox`) and design tokens only, no palette colours
+- Consistent loading states (`PageSkeleton`, `Skeleton`), empty states (`EmptyState`) and error display (toasts via `showToast`)
+- Consistent icon usage (Lucide, 1.75 stroke)
+- Consistent button variants (default for the main action, outline for secondary, ghost for tertiary)
+- Destructive actions confirmed with `ConfirmDialog` and `hold`
+- Sentence case in all UI copy, and no exclamation marks
+
+See `docs/architecture/frontend/DESIGN_SYSTEM.md` and `docs/design-reference.md`.
 
 The entire project should feel like one polished application, not independently built pages.

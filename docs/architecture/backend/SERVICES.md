@@ -132,16 +132,21 @@ All Reddit public JSON API calls go through `redditFetch(path, cookie)`. Request
 | `fetchRedditProfile(username, cookie)` | Fetches profile data from `/user/{username}/about.json` |
 | `fetchRedditPosts(username, cookie, limit)` | Paginates submitted posts up to `limit` (default 100) via `/user/{username}/submitted.json` |
 | `computeRedditAnalytics(profile, posts)` | Computes score stats, subreddit breakdown, posting time patterns, monthly breakdown, virality/consistency scores |
-| `safeRedditAccount(account)` | Strips the `cookie` field before any API response |
 | `fetchTrackedPostData(postUrl, cookie)` | Fetches score, comments, and metadata for any public Reddit post URL using the `.json` trick; optionally uses a session cookie |
 
-### `safeRedditAccount(account)`
+### Credentials in responses
 
-Strips the `cookie` field before the account object is returned in any API response, identical in purpose to `safeAccount()` for Instagram access tokens.
+Account responses for every platform pass through `safeAccount()` in `backend/lib/safeAccount.js`, which strips the Reddit `cookie` along with the Instagram `accessToken` and sets `hasCookie` so the frontend can show session status.
 
 ### No Worker secrets required
 
 Reddit integration requires no Worker secrets. The session cookie is a per-user credential stored in `accounts.data.cookie` (in the Supabase DB). It is read server-side by the Worker and never returned to the frontend.
+
+---
+
+## Shared Instagram publishing parameters
+
+`buildMediaParams(post, accessToken)` in `services/instagram.js` builds the Graph API container parameters for photos, Reels, Stories and carousel items. The publish route (`routes/publishing.js`) and the cron scheduler (`utils/scheduler.js`) both call it. `scripts/publish-scheduled.js` keeps its own copy on purpose: it runs in GitHub Actions with zero npm dependencies and cannot import Worker code.
 
 ---
 

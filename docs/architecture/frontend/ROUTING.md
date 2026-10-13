@@ -11,7 +11,7 @@ The app uses React Router v6 in `frontend/src/App.jsx`. The router uses `Browser
 | `/login` | `Login.jsx` | Public - redirects to `/` if already authenticated |
 | `/` (layout) | `AppLayout` (inline) | Protected - redirects to `/login` if unauthenticated |
 | `/` (index) | `Overview.jsx` | Default page after login |
-| `/accounts` | `Accounts.jsx` | Connect/disconnect accounts |
+| `/accounts` | `AccountManager.jsx` | Connect and remove accounts. `?add=1` opens the add flow; `?ig_connected` and `?ig_error` report the Instagram OAuth result |
 | `/channel/:id` | `ChannelAnalytics.jsx` | `:id` = account.id for YouTube accounts |
 | `/instagram/:id` | `InstagramAnalytics.jsx` | `:id` = account.id for Instagram accounts |
 | `/reddit/:id` | `RedditAnalytics.jsx` | `:id` = account.id for Reddit accounts |
@@ -20,9 +20,10 @@ The app uses React Router v6 in `frontend/src/App.jsx`. The router uses `Browser
 | `/tracked-content` | `TrackedContent.jsx` | Tracked Reddit posts and YouTube videos - add, manage, categorize, refresh |
 | `/tracked-content/category/:name` | `TrackedCategory.jsx` | Per-category analytics page; `:name` is URL-encoded category label; shows YouTube and Reddit sections separately |
 | `/reddit-tracked` | redirect | Redirects to `/tracked-content` |
-| `/videos/:id` | `VideoExplorer.jsx` | `:id` = account.id for YouTube accounts |
-| `/publish/:id` | `Publish.jsx` | `:id` = account.id for Instagram accounts |
-| `/schedule/:id` | `Schedule.jsx` | `:id` = account.id for Instagram accounts |
+| `/videos` | `VideoExplorer.jsx` | Every video from every YouTube channel |
+| `/shorts` | `ShortsExplorer.jsx` | Videos of 60 seconds or less |
+| `/reels` | `ReelsExplorer.jsx` | Instagram reels, posts and videos |
+| `/upload` | `UploadContent.jsx` | Publish and schedule to Instagram, plus the scheduled post queue |
 | `/settings` | `Settings.jsx` | User/platform settings |
 
 ## Auth Guard
@@ -53,7 +54,7 @@ All lazy components are wrapped in `<Suspense>` with a shared fallback.
    { path: 'my-page/:id', element: <MyPage /> }
    ```
 
-3. If the page appears in the sidebar, add it to `Sidebar.jsx`.
+3. If the page appears in the sidebar, add it to `NAV_GROUPS` in `layout/navigation.js`. The sidebar, top bar title and command palette all read from it. Detail routes get a title in `DETAIL_ROUTES` in the same file.
 
 4. Update the Route Table in this file.
 
@@ -70,13 +71,12 @@ If `account` is undefined (invalid ID or account deleted), the page renders an e
 
 ## Navigation
 
-Navigation between routes uses React Router's `<Link>` component or the `useNavigate` hook. The `Sidebar.jsx` generates links dynamically from the accounts list in `AppContext`:
+Navigation between routes uses React Router's `<Link>` component or the `useNavigate` hook. Sidebar items render as real links. Per-account links come from `accountPath(account)` in `lib/accounts.js`:
 
 ```jsx
-// Per-account links generated at render time
-accounts
-  .filter(a => a.platform === 'youtube')
-  .map(a => ({ title: a.title, url: `/channel/${a.id}` }))
+accounts.map(account => ({ title: accountName(account), url: accountPath(account) }))
 ```
+
+The command palette (Ctrl+K or Cmd+K) searches pages, accounts, tracked categories and actions.
 
 This means the sidebar updates automatically when accounts are added or removed.

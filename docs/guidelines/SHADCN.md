@@ -84,20 +84,25 @@ import { cn } from '@/lib/utils';
 <div className={cn('base-class', isActive && 'active-class', className)}>
 ```
 
-## StatCard Component
+## Shared components
 
-A custom component at `frontend/src/components/ui/StatCard.jsx` is a KPI tile used across all analytics pages. Use it for metric display:
+Project components in `frontend/src/components/` sit on top of the shadcn primitives. Use them before composing primitives by hand. `MetricBox` is the KPI tile used across analytics pages:
 
 ```jsx
-import StatCard from '@/components/ui/StatCard';
+import MetricBox from '@/components/MetricBox';
 
-<StatCard
-    title="Total Views"
+<MetricBox
+    icon={<Eye />}
+    label="Total views"
     value={fmtNum(analytics.totalViews)}
-    icon={Eye}
-    description="Lifetime channel views"
+    subtitle="Lifetime channel views"
+    highlight
 />
 ```
+
+The full list (`PageHeader`, `SurfaceBox`, `ConfirmDialog`, `FilterChips`, and others) is in `docs/architecture/frontend/DESIGN_SYSTEM.md`.
+
+The shadcn primitives in `components/ui/` are restyled onto the design tokens. Keep that styling when regenerating a primitive with the shadcn CLI: diff the new file against the current one before overwriting.
 
 ## Theme
 

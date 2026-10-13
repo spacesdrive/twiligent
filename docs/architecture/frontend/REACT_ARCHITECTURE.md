@@ -13,6 +13,10 @@
 | Theming | next-themes | - |
 | Toasts | Sonner | - |
 | Icons | Lucide React | - |
+| Command palette | cmdk | - |
+| Fonts | Sora, Manrope, JetBrains Mono (self-hosted from `public/fonts`) | - |
+
+Visual tokens and shared components are described in `DESIGN_SYSTEM.md`.
 
 ## Entry: `frontend/src/main.jsx`
 
@@ -40,8 +44,11 @@ ThemeProvider (next-themes)          <- OS/user theme preference
           /* ->
             ProtectedRoute           <- redirects to /login if no session
               AppProvider            <- accounts[], loading, showToast
-                MainLayout           <- sidebar + header + <Outlet />
+                AppShell (layout/index.jsx)
+                  AppSidebar         <- navigation, accounts, categories, user menu
+                  TopBar             <- breadcrumb, refresh, theme
                   (lazy page)
+                  CommandPalette     <- Ctrl+K / Cmd+K
       Toaster (Sonner, bottom-right) <- toast notifications
 ```
 
@@ -57,6 +64,12 @@ frontend/src/
   lib/
     supabase.js          Supabase anon client (singleton)
     utils.js             cn() = clsx + tailwind-merge
+    accounts.js          Platform helpers: paths, names, handles, platform summary
+    chart.js             Recharts axis, grid, tooltip and series styling
+    library.js           Filter tiers, paging, duration and engagement helpers
+    commandSearch.js     Command palette ranking
+    holdProgress.js      Hold-to-confirm timing
+    *.test.js            Unit tests (npm test, Node test runner)
   services/
     api.js               All backend HTTP calls
   context/
@@ -66,14 +79,17 @@ frontend/src/
     formatters.js         fmtNum, fmtDate, fmtDuration, normalizeAccount, etc.
   hooks/
     use-mobile.js         useIsMobile()
+    use-command-palette-shortcut.js  Ctrl+K / Cmd+K toggle
   layout/
-    index.jsx             MainLayout: SidebarProvider + AppSidebar + Header + Outlet
-    Sidebar.jsx           Collapsible sidebar with per-account nav links
-    Header.jsx            Breadcrumb, refresh, theme toggle, sign-out
+    index.jsx             AppShell: SidebarProvider + AppSidebar + TopBar + Outlet + CommandPalette
+    navigation.js         NAV_GROUPS and route titles (single source for sidebar, top bar, palette)
+    Sidebar.jsx           Collapsible sidebar: logo, search, nav groups, accounts, categories, user menu
+    Header.jsx            TopBar: breadcrumb, refresh all, theme toggle
   components/
     ProtectedRoute.jsx    Auth guard component
-    MainCard.jsx          Standard page wrapper card
-    ui/                   shadcn generated components (40+)
+    PageHeader.jsx, SurfaceBox.jsx, MetricBox.jsx, ...   Shared components (see DESIGN_SYSTEM.md)
+    brand/                Logo and platform icons
+    ui/                   shadcn generated components, restyled onto the tokens
   pages/
     Login.jsx             Auth page (not lazy-loaded, always small)
   features/
@@ -84,6 +100,8 @@ frontend/src/
       videos/             VideoExplorer.jsx - all videos table
       shorts/             ShortsExplorer.jsx - shorts-filtered table
       reels/              ReelsExplorer.jsx - Instagram media grid
+      reddit/             RedditAnalytics, RedditPosts, RedditPostsAll, shared post table
+      tracked/            TrackedContent.jsx, TrackedCategory.jsx
     publishing/
       UploadContent.jsx   Instagram publishing + schedule queue
     accounts/

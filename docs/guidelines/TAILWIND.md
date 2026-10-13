@@ -10,23 +10,28 @@ This project uses **Tailwind CSS v4**. The v4 API is substantially different fro
 
 ## Token References
 
-Design tokens are defined in the CSS file (check `frontend/src/index.css` or `frontend/src/app.css` for the `@theme` block). Use these tokens via their utility class names - never use hardcoded hex values in class names.
+Design tokens are defined in `frontend/src/index.css` and listed in `docs/architecture/frontend/DESIGN_SYSTEM.md`. Use them through their utility class names. Never use hex values or Tailwind palette colours (`bg-red-500`, `text-pink-600`) in components.
 
 Common token utilities:
-- `bg-background` / `text-foreground` - page background and main text
-- `bg-card` / `text-card-foreground` - card surfaces
-- `bg-muted` / `text-muted-foreground` - subdued backgrounds and secondary text
-- `border-border` - default border color
-- `bg-primary` / `text-primary-foreground` - primary action color
-- `bg-destructive` / `text-destructive-foreground` - error/delete actions
+- `bg-surface` / `text-ink` - page background and main text
+- `bg-surface-raised` - cards and panels
+- `bg-surface-sunken` / `text-ink-muted` / `text-ink-faint` - wells and secondary text
+- `border-line` - hairline borders; `border-line-control` - control borders
+- `bg-brand` / `text-on-brand` - primary action; `text-brand-text` - red as text
+- `bg-danger-soft` / `text-danger`, plus `success`, `warning`, `info` - status
+
+The shadcn names (`bg-background`, `text-muted-foreground`, `bg-primary`) still work and map onto the same tokens.
 
 ## Layout
 
 ### Page wrapper
 
+The app shell already pads and centres the content column. Pages start with a flex column:
+
 ```jsx
-<div className="p-6 space-y-6">
-  {/* page content */}
+<div className="flex flex-col gap-6">
+  <PageHeader title="Videos" description="..." actions={...} />
+  {/* sections */}
 </div>
 ```
 
@@ -49,20 +54,22 @@ Common token utilities:
 ## Spacing System
 
 Use the spacing scale consistently. Common patterns in this project:
-- `p-6` - standard page padding
-- `p-4` - card inner padding
-- `gap-4` - grid column gap
-- `gap-2` - inline icon+label gap
-- `space-y-6` - vertical rhythm between major sections
-- `space-y-4` - vertical rhythm within a card
-- `mb-4` / `mb-6` - heading bottom margin
+- `gap-6` - between page sections (`gap-8` on pages with large sections)
+- `gap-3` - between metric boxes in a grid
+- `gap-4` - between boxes in a grid
+- `px-5 py-4` - inside a `SurfaceBox` (built in)
+- `gap-2` - inline icon and label
+- Prefer `gap-*` on flex and grid over `space-y-*`
 
 ## Typography
 
+Use `PageHeader` for the page title and `SectionHeader` or a `SurfaceBox` title for sections. When writing type directly:
+
 ```jsx
-<h1 className="text-2xl font-bold">Page Title</h1>
-<h2 className="text-lg font-semibold">Section</h2>
-<p className="text-sm text-muted-foreground">Secondary info</p>
+<h1 className="font-heading text-page-title font-semibold">Page title</h1>
+<h2 className="font-heading text-section font-semibold">Section</h2>
+<p className="text-small text-ink-muted">Secondary info</p>
+<span className="font-mono text-caption tabular-nums">42</span>
 ```
 
 Avoid using `text-xs` for anything the user needs to read comfortably. Use `text-sm` as the minimum for content.
@@ -76,7 +83,7 @@ Mobile-first. Most pages in this app are designed primarily for desktop (analyti
 
 ## Dark Mode
 
-This project uses shadcn's theme system, which manages light/dark via CSS custom properties - not Tailwind's `dark:` variant. Do not use `dark:` variants. Use token-based colors (`bg-card`, `text-muted-foreground`) which automatically respond to the theme.
+Light and dark values are both defined as tokens, so token utilities switch automatically. Do not use `dark:` variants for colour. The one sanctioned use of `dark:` is swapping the logo file in `components/brand/Logo.jsx`.
 
 If you need to add a custom dark-mode variant for non-token colors, add a CSS custom property to the `@theme` block instead.
 
