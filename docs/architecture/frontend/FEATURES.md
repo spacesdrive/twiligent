@@ -107,7 +107,8 @@ frontend/src/
 │   │   └── videoLibrary.js                 <- Pure channel merge, filter, sort and totals (videoLibrary.test.js)
 │   ├── analytics/shorts/
 │   │   ├── ShortsExplorer.jsx              <- Page: YouTube Shorts (60 seconds or less)
-│   │   └── ShortsFilters.jsx, ShortsGrid.jsx
+│   │   ├── ShortsFilters.jsx, ShortsGrid.jsx
+│   │   └── shortsLibrary.js                <- Pure Shorts selection, filter, sort and description (shortsLibrary.test.js)
 │   └── analytics/reels/
 │       ├── ReelsExplorer.jsx               <- Page: Instagram reels, posts and videos
 │       ├── ReelsMetrics.jsx, ReelsFilters.jsx, ReelsGrid.jsx

@@ -53,7 +53,12 @@ export default function VideoExplorer() {
   const paged = pageSlice(filtered, page, ITEMS_PER_PAGE);
   const stats = useMemo(() => videoStatsOf(filtered), [filtered]);
 
-  const resetPage = setter => value => { setter(value); setPage(1); };
+  function resetPage(setter) {
+    return value => {
+      setter(value);
+      setPage(1);
+    };
+  }
   const handleSort = field => setSort(prev => nextSort(prev, field));
   const clearFilters = () => { setSearch(''); setTier('all'); setChannelFilter('all'); setPage(1); };
 

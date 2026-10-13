@@ -38,7 +38,12 @@ export default function ReelsExplorer() {
   );
   const paged = pageSlice(filtered, page, ITEMS_PER_PAGE);
 
-  const resetPage = setter => value => { setter(value); setPage(1); };
+  function resetPage(setter) {
+    return value => {
+      setter(value);
+      setPage(1);
+    };
+  }
   const filters = { search, accountFilter, typeFilter, tier, sortField };
   const handlers = {
     onSearchChange: resetPage(setSearch),

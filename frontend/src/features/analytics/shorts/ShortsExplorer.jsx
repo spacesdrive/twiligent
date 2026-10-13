@@ -7,15 +7,14 @@ import PageHeader from '@/components/PageHeader';
 import SurfaceBox from '@/components/SurfaceBox';
 import Pager from '@/components/Pager';
 import { EmptyState } from '@/components/StateViews';
-import { VIEW_TIERS, filterByTier, matchesText, pageSlice } from '@/lib/library';
+import { pageSlice } from '@/lib/library';
 import { useChannelVideos } from '../videos/useChannelVideos';
-import { fmtNum } from '../../../utils/formatters';
 import { cn } from '@/lib/utils';
 import ShortsFilters from './ShortsFilters';
 import ShortsGrid from './ShortsGrid';
+import { shortsOf, filterAndSortShorts, shortsDescription } from './shortsLibrary.js';
 
 const ITEMS_PER_PAGE = 24;
-const SHORT_MAX_SECONDS = 60;
 
 const SORT_OPTIONS = [
   { value: 'viewCount',      label: 'Most viewed' },
@@ -25,11 +24,6 @@ const SORT_OPTIONS = [
   { value: 'publishedAt',    label: 'Newest first' },
 ];
 
-function sortValue(item, field) {
-  if (field === 'publishedAt') return new Date(item.publishedAt).getTime() || 0;
-  return Number(item[field] ?? 0);
-}
-
 export default function ShortsExplorer() {
   const { videos, channels, loading, reload } = useChannelVideos();
   const [search, setSearch] = useState('');
@@ -38,25 +32,26 @@ export default function ShortsExplorer() {
   const [sortField, setSortField] = useState('viewCount');
   const [page, setPage] = useState(1);
 
-  const shorts = useMemo(
-    () => videos.filter(v => v.durationSeconds > 0 && v.durationSeconds <= SHORT_MAX_SECONDS),
-    [videos],
+  const shorts = useMemo(() => shortsOf(videos), [videos]);
+
+  const filtered = useMemo(
+    () => filterAndSortShorts(shorts, { channelFilter, search, tier, sortField }),
+    [shorts, channelFilter, search, tier, sortField],
   );
 
-  const filtered = useMemo(() => {
-    let result = channelFilter === 'all' ? shorts : shorts.filter(v => v.channelId === channelFilter);
-    result = result.filter(v => matchesText([v.title], search));
-    result = filterByTier(result, VIEW_TIERS, tier, 'viewCount');
-    return [...result].sort((a, b) => sortValue(b, sortField) - sortValue(a, sortField));
-  }, [shorts, channelFilter, search, tier, sortField]);
-
   const paged = pageSlice(filtered, page, ITEMS_PER_PAGE);
-  const resetPage = setter => value => { setter(value); setPage(1); };
+
+  function resetPage(setter) {
+    return value => {
+      setter(value);
+      setPage(1);
+    };
+  }
 
   const header = (
     <PageHeader
       title="Shorts"
-      description={loading ? 'Loading Shorts from your channels' : `${fmtNum(shorts.length)} Shorts across ${channels.length} channel${channels.length === 1 ? '' : 's'}`}
+      description={shortsDescription(loading, shorts.length, channels.length)}
       actions={
         <Button variant="outline" size="sm" onClick={reload} disabled={loading}>
           <RefreshCw data-icon="inline-start" className={cn(loading && 'animate-spin')} />
