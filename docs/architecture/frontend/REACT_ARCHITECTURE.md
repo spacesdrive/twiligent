@@ -99,9 +99,9 @@ frontend/src/
       overview/           Overview.jsx - all-accounts dashboard (page; tabs, hooks and helpers beside it)
       channel/            ChannelAnalytics.jsx - per-channel YouTube (page; tabs, hook and helpers beside it)
       instagram/          InstagramAnalytics.jsx - per-account Instagram (page; sections and helpers beside it)
-      videos/             VideoExplorer.jsx - all videos table
+      videos/             VideoExplorer.jsx - all videos table (page; filters, table, grid and helpers beside it)
       shorts/             ShortsExplorer.jsx - shorts-filtered table
-      reels/              ReelsExplorer.jsx - Instagram media grid
+      reels/              ReelsExplorer.jsx - Instagram media grid (page; hook, filters and helpers beside it)
       reddit/             RedditAnalytics (page; sections and helpers beside it), RedditPosts, RedditPostsAll, shared post table
       tracked/            TrackedContent.jsx, TrackedCategory.jsx (pages; components, hooks and helpers beside them)
     publishing/

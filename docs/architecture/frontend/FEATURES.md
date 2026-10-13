@@ -80,10 +80,16 @@ frontend/src/
 │   │   ├── Settings.jsx                    <- Theme, server keys, scheduling, platform requirements, links
 │   │   └── SchedulingSetupGuide.jsx        <- Optional GitHub backup scheduler steps for administrators
 │   ├── analytics/videos/
-│   │   ├── VideoExplorer.jsx               <- YouTube video library with filtering
-│   │   └── useChannelVideos.js             <- Loads every channel's videos; shared with Shorts
+│   │   ├── VideoExplorer.jsx               <- Page: YouTube video library with filtering
+│   │   ├── VideoFilters.jsx, LayoutToggle.jsx, VideoListTable.jsx, VideoSortHeader.jsx, VideoGrid.jsx
+│   │   ├── useChannelVideos.js             <- Loads every channel's videos; shared with Shorts
+│   │   └── videoLibrary.js                 <- Pure filter, sort and totals (videoLibrary.test.js)
 │   ├── analytics/shorts/ShortsExplorer.jsx <- YouTube Shorts (60 seconds or less)
-│   └── analytics/reels/ReelsExplorer.jsx   <- Instagram reels, posts and videos
+│   └── analytics/reels/
+│       ├── ReelsExplorer.jsx               <- Page: Instagram reels, posts and videos
+│       ├── ReelsMetrics.jsx, ReelsFilters.jsx, ReelsGrid.jsx
+│       ├── useInstagramMedia.js            <- Loads media from every Instagram account
+│       └── reelsLibrary.js                 <- Pure merge, filter, sort and totals (reelsLibrary.test.js)
 ```
 
 ## Metric Naming

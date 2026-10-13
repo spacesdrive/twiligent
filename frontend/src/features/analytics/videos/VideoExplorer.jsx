@@ -1,49 +1,40 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  RefreshCw, List, LayoutGrid, ThumbsUp, MessageSquare, Play, Eye, PlaySquare, ArrowUp, ArrowDown, Plus,
-} from 'lucide-react';
+import { Eye, MessageSquare, Play, PlaySquare, Plus, RefreshCw, ThumbsUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import PageHeader from '@/components/PageHeader';
 import MetricBox from '@/components/MetricBox';
 import SurfaceBox from '@/components/SurfaceBox';
-import SearchField from '@/components/SearchField';
-import FilterChips from '@/components/FilterChips';
 import Pager from '@/components/Pager';
-import MediaCard, { MediaChip } from '@/components/MediaCard';
 import { EmptyState } from '@/components/StateViews';
-import { VIEW_TIERS, filterByTier, matchesText, pageSlice } from '@/lib/library';
-import { useChannelVideos } from './useChannelVideos';
-import { fmtNum, fmtDate, fmtDuration, fmtPercent, timeAgo, fmtCount } from '../../../utils/formatters';
+import { pageSlice } from '@/lib/library';
 import { cn } from '@/lib/utils';
+import { fmtNum } from '../../../utils/formatters';
+import { useChannelVideos } from './useChannelVideos';
+import { filterAndSortVideos, nextSort, videoStatsOf, videosDescription } from './videoLibrary.js';
+import VideoFilters from './VideoFilters';
+import VideoListTable from './VideoListTable';
+import VideoGrid from './VideoGrid';
 
 const ITEMS_PER_PAGE = 25;
-const watchUrl = id => `https://www.youtube.com/watch?v=${id}`;
-const LAYOUTS = [{ value: 'table', label: 'List', Icon: List }, { value: 'grid', label: 'Grid', Icon: LayoutGrid }];
 
-function SortHeader({ field, label, sort, onSort, align = 'left' }) {
-  const active = sort.field === field;
-  const Arrow = sort.order === 'asc' ? ArrowUp : ArrowDown;
-  return (
-    <button
-      type="button"
-      onClick={() => onSort(field)}
-      aria-sort={active ? (sort.order === 'asc' ? 'ascending' : 'descending') : undefined}
-      className={cn(
-        'inline-flex items-center gap-1 rounded-sm transition-colors hover:text-ink',
-        align === 'right' && 'flex-row-reverse',
-        active ? 'text-ink' : 'text-ink-muted',
-      )}
-    >
-      {label}
-      <Arrow className={cn('size-3', !active && 'invisible')} />
-    </button>
-  );
+function VideoResults({ filtered, paged, viewMode, sort, onSort, showChannel, onClearFilters }) {
+  if (filtered.length === 0) {
+    return (
+      <SurfaceBox>
+        <EmptyState
+          compact
+          icon={<PlaySquare />}
+          title="No videos match"
+          description="Clear the search or choose a different view range."
+          action={<Button variant="outline" size="sm" onClick={onClearFilters}>Clear filters</Button>}
+        />
+      </SurfaceBox>
+    );
+  }
+  if (viewMode === 'table') return <VideoListTable paged={paged} sort={sort} onSort={onSort} showChannel={showChannel} />;
+  return <VideoGrid items={paged.items} showChannel={showChannel} />;
 }
 
 export default function VideoExplorer() {
@@ -55,42 +46,21 @@ export default function VideoExplorer() {
   const [viewMode, setViewMode] = useState('table');
   const [page, setPage] = useState(1);
 
-  const filtered = useMemo(() => {
-    let result = channelFilter === 'all' ? videos : videos.filter(v => v.channelId === channelFilter);
-    result = result.filter(v => matchesText([v.title, ...(v.tags || [])], search));
-    result = filterByTier(result, VIEW_TIERS, tier, 'viewCount');
-    const dir = sort.order === 'asc' ? 1 : -1;
-    return [...result].sort((a, b) => {
-      const av = a[sort.field] ?? 0;
-      const bv = b[sort.field] ?? 0;
-      if (typeof av === 'string' && typeof bv === 'string') return av.localeCompare(bv) * dir;
-      return (Number(av) - Number(bv)) * dir;
-    });
-  }, [videos, channelFilter, search, tier, sort]);
-
+  const filtered = useMemo(
+    () => filterAndSortVideos(videos, { channelFilter, search, tier, sort }),
+    [videos, channelFilter, search, tier, sort],
+  );
   const paged = pageSlice(filtered, page, ITEMS_PER_PAGE);
-
-  const stats = useMemo(() => {
-    const sum = key => filtered.reduce((s, v) => s + (v[key] || 0), 0);
-    const views = sum('viewCount');
-    return {
-      total: filtered.length,
-      views,
-      likes: sum('likeCount'),
-      comments: sum('commentCount'),
-      avgViews: filtered.length ? Math.round(views / filtered.length) : 0,
-    };
-  }, [filtered]);
+  const stats = useMemo(() => videoStatsOf(filtered), [filtered]);
 
   const resetPage = setter => value => { setter(value); setPage(1); };
-  const handleSort = field => {
-    setSort(prev => prev.field === field ? { field, order: prev.order === 'asc' ? 'desc' : 'asc' } : { field, order: 'desc' });
-  };
+  const handleSort = field => setSort(prev => nextSort(prev, field));
+  const clearFilters = () => { setSearch(''); setTier('all'); setChannelFilter('all'); setPage(1); };
 
   const header = (
     <PageHeader
       title="Videos"
-      description={loading ? 'Loading videos from your channels' : `${fmtNum(videos.length)} videos across ${channels.length} channel${channels.length === 1 ? '' : 's'}`}
+      description={videosDescription(loading, videos.length, channels.length)}
       actions={
         <Button variant="outline" size="sm" onClick={reload} disabled={loading}>
           <RefreshCw data-icon="inline-start" className={cn(loading && 'animate-spin')} />
@@ -141,138 +111,27 @@ export default function VideoExplorer() {
         <MetricBox small icon={<Eye />} label="Average views" value={fmtNum(stats.avgViews)} />
       </div>
 
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center gap-2">
-          <SearchField
-            value={search}
-            onChange={resetPage(setSearch)}
-            placeholder="Search titles and tags"
-            className="min-w-56 flex-1"
-          />
-          {channels.length > 1 && (
-            <Select
-              value={channelFilter}
-              onValueChange={resetPage(setChannelFilter)}
-              items={[{ value: 'all', label: 'All channels' }, ...channels.map(c => ({ value: c.id, label: c.title }))]}
-            >
-              <SelectTrigger className="w-48" aria-label="Channel"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="all">All channels</SelectItem>
-                  {channels.map(c => <SelectItem key={c.id} value={c.id}>{c.title}</SelectItem>)}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
-          )}
-          <div role="radiogroup" aria-label="Layout" className="flex h-(--control-h-lg) items-center gap-0.5 rounded-field border border-line-control p-1">
-            {LAYOUTS.map(layout => {
-              const { value, label, Icon } = layout;
-              return (
-              <button
-                key={value}
-                type="button"
-                role="radio"
-                aria-checked={viewMode === value}
-                aria-label={`${label} layout`}
-                onClick={() => setViewMode(value)}
-                className={cn(
-                  'flex size-8 items-center justify-center rounded-[8px] transition-colors',
-                  viewMode === value ? 'bg-surface-selected text-ink' : 'text-ink-muted hover:text-ink',
-                )}
-              >
-                <Icon className="size-4 stroke-[1.75]" />
-              </button>
-              );
-            })}
-          </div>
-        </div>
-        <FilterChips label="Views" options={VIEW_TIERS} value={tier} onChange={resetPage(setTier)} />
-      </div>
+      <VideoFilters
+        channels={channels}
+        search={search}
+        onSearchChange={resetPage(setSearch)}
+        channelFilter={channelFilter}
+        onChannelChange={resetPage(setChannelFilter)}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
+        tier={tier}
+        onTierChange={resetPage(setTier)}
+      />
 
-      {filtered.length === 0 ? (
-        <SurfaceBox>
-          <EmptyState
-            compact
-            icon={<PlaySquare />}
-            title="No videos match"
-            description="Clear the search or choose a different view range."
-            action={<Button variant="outline" size="sm" onClick={() => { setSearch(''); setTier('all'); setChannelFilter('all'); setPage(1); }}>Clear filters</Button>}
-          />
-        </SurfaceBox>
-      ) : viewMode === 'table' ? (
-        <SurfaceBox content={false} className="overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10 text-right">#</TableHead>
-                <TableHead><SortHeader field="title" label="Video" sort={sort} onSort={handleSort} /></TableHead>
-                {channels.length > 1 && <TableHead>Channel</TableHead>}
-                <TableHead className="text-right"><SortHeader field="viewCount" label="Views" sort={sort} onSort={handleSort} align="right" /></TableHead>
-                <TableHead className="text-right"><SortHeader field="likeCount" label="Likes" sort={sort} onSort={handleSort} align="right" /></TableHead>
-                <TableHead className="text-right"><SortHeader field="commentCount" label="Comments" sort={sort} onSort={handleSort} align="right" /></TableHead>
-                <TableHead className="text-right"><SortHeader field="engagementRate" label="Engagement" sort={sort} onSort={handleSort} align="right" /></TableHead>
-                <TableHead className="text-right"><SortHeader field="durationSeconds" label="Length" sort={sort} onSort={handleSort} align="right" /></TableHead>
-                <TableHead className="text-right"><SortHeader field="publishedAt" label="Published" sort={sort} onSort={handleSort} align="right" /></TableHead>
-                <TableHead className="w-10"><span className="sr-only">Watch</span></TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {paged.items.map((v, i) => (
-                <TableRow key={`${v.videoId}-${i}`}>
-                  <TableCell className="text-right font-mono text-caption text-ink-faint">{paged.offset + i + 1}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      {v.thumbnail
-                        ? <img src={v.thumbnail} alt="" loading="lazy" className="h-9 w-16 shrink-0 rounded-sm object-cover" />
-                        : <span className="h-9 w-16 shrink-0 rounded-sm bg-surface-sunken" />}
-                      <a href={watchUrl(v.videoId)} target="_blank" rel="noopener noreferrer" className="max-w-[18rem] truncate text-sm font-medium text-ink hover:underline">
-                        {v.title}
-                      </a>
-                    </div>
-                  </TableCell>
-                  {channels.length > 1 && <TableCell className="max-w-36 truncate text-small text-ink-muted">{v.channelTitle}</TableCell>}
-                  <TableCell className="text-right font-semibold text-ink">{fmtNum(v.viewCount)}</TableCell>
-                  <TableCell className="text-right text-ink-muted">{fmtCount(v.likeCount)}</TableCell>
-                  <TableCell className="text-right text-ink-muted">{fmtCount(v.commentCount)}</TableCell>
-                  <TableCell className="text-right">
-                    <Badge variant={parseFloat(v.engagementRate) > 5 ? 'success' : 'secondary'}>{fmtPercent(v.engagementRate)}</Badge>
-                  </TableCell>
-                  <TableCell className="text-right text-ink-muted">{fmtDuration(v.durationSeconds)}</TableCell>
-                  <TableCell className="text-right text-small text-ink-faint">{fmtDate(v.publishedAt)}</TableCell>
-                  <TableCell>
-                    <Tooltip>
-                      <TooltipTrigger render={<Button variant="ghost" size="icon-xs" render={<a href={watchUrl(v.videoId)} target="_blank" rel="noopener noreferrer" aria-label={`Watch ${v.title} on YouTube`} />} />}>
-                        <Play />
-                      </TooltipTrigger>
-                      <TooltipContent>Watch on YouTube</TooltipContent>
-                    </Tooltip>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </SurfaceBox>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
-          {paged.items.map((v, i) => (
-            <MediaCard
-              key={`${v.videoId}-${i}`}
-              href={watchUrl(v.videoId)}
-              image={v.thumbnail}
-              title={v.title}
-              topRight={<MediaChip><Eye />{fmtNum(v.viewCount)}</MediaChip>}
-              bottomRight={v.durationSeconds > 0 && <MediaChip>{fmtDuration(v.durationSeconds)}</MediaChip>}
-              meta={
-                <>
-                  <span className="flex items-center gap-1"><ThumbsUp />{fmtCount(v.likeCount)}</span>
-                  <span className="flex items-center gap-1"><MessageSquare />{fmtCount(v.commentCount)}</span>
-                  <span className="ml-auto">{channels.length > 1 ? v.channelTitle : timeAgo(v.publishedAt)}</span>
-                </>
-              }
-            />
-          ))}
-        </div>
-      )}
+      <VideoResults
+        filtered={filtered}
+        paged={paged}
+        viewMode={viewMode}
+        sort={sort}
+        onSort={handleSort}
+        showChannel={channels.length > 1}
+        onClearFilters={clearFilters}
+      />
 
       <Pager page={paged.page} pageCount={paged.pageCount} onPageChange={setPage} total={filtered.length} shown={paged.items.length} noun="videos" />
     </div>
