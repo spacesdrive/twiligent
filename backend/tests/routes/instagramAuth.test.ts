@@ -6,7 +6,9 @@ import { urlHandler, callbackHandler } from '../../routes/instagramAuth.ts';
 import { createOAuthState } from '../../lib/cache.ts';
 import { assertGolden } from '../fixtures/golden.ts';
 import { installFetch, reply } from '../fixtures/fakeFetch.ts';
+import type { FetchMock, RecordedRequest } from '../fixtures/fakeFetch.ts';
 import { fakeSupabase, accountRow } from '../fixtures/fakeSupabase.ts';
+import type { FakeSupabase } from '../fixtures/fakeSupabase.ts';
 import { mountWithContext, callRoute } from '../fixtures/routeHarness.ts';
 
 // a byte order mark that pasted secrets sometimes start with
@@ -29,40 +31,40 @@ const profiles = {
 // the short token returned for each authorization code decides the rest of the flow
 const shortTokens = { good: 'SHORT_GOOD', fallback: 'SHORT_FALLBACK', noid: 'SHORT_NOID', dup: 'SHORT_DUP' };
 
-function instagramServer(request) {
+function instagramServer(request: RecordedRequest) {
     const url = new URL(request.url);
     if (url.hostname === 'api.instagram.com') {
         const code = new URLSearchParams(request.body).get('code');
         if (code === 'bad') return reply({ error_type: 'OAuthException', code: 400, error_message: 'Invalid authorization code' });
         if (code === 'weird') return reply({ unexpected: 'x'.repeat(200) });
         if (code === 'offline') return new Error('getaddrinfo ENOTFOUND api.instagram.com');
-        return reply({ access_token: shortTokens[code], user_id: 1 });
+        return reply({ access_token: shortTokens[code as keyof typeof shortTokens], user_id: 1 });
     }
     const token = url.searchParams.get('access_token');
     if (url.pathname === '/access_token') {
         if (token === 'SHORT_GOOD') return reply({ access_token: 'LONG', token_type: 'bearer', expires_in: 5183944 });
         return reply({ error: { message: 'Unsupported request' } });
     }
-    return reply(profiles[token] ?? { error: { message: 'Invalid OAuth access token' } });
+    return reply(profiles[token as keyof typeof profiles] ?? { error: { message: 'Invalid OAuth access token' } });
 }
 
-let fetchMock = null;
-let logLines = [];
+let fetchMock: FetchMock | null = null;
+let logLines: unknown[][] = [];
 
 before(() => mock.timers.enable({ apis: ['Date'], now: FIXED_NOW }));
 after(() => mock.timers.reset());
 beforeEach(() => {
     mock.method(Math, 'random', () => 0.987654321);
     logLines = [];
-    mock.method(console, 'error', (...args) => logLines.push(['error', ...args]));
+    mock.method(console, 'error', (...args: unknown[]) => logLines.push(['error', ...args]));
     fetchMock = installFetch(instagramServer);
 });
 afterEach(() => {
-    fetchMock.restore();
+    fetchMock!.restore();
     mock.restoreAll();
 });
 
-function buildApp(supabase) {
+function buildApp(supabase: FakeSupabase) {
     return mountWithContext(app => {
         app.get('/url', urlHandler);
         app.get('/callback', callbackHandler);
@@ -109,6 +111,6 @@ describe('instagram oauth golden output', () => {
         const responses = [];
         for (const path of paths) responses.push(await callRoute(app, 'GET', path, { env: ENV }));
         responses.push(await callRoute(app, 'GET', `/callback?code=good&state=${validState}`, { env: {} }));
-        assertGolden({ responses, requests: fetchMock.requests, calls: supabase.calls, logs: logLines }, 'instagramAuth.callback');
+        assertGolden({ responses, requests: fetchMock!.requests, calls: supabase.calls, logs: logLines }, 'instagramAuth.callback');
     });
 });

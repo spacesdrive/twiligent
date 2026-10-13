@@ -8,7 +8,7 @@ import {
 } from '../../services/analyticsMath.ts';
 
 const NOW = Date.parse('2026-09-01T12:00:00Z');
-const daysAgo = (days) => new Date(NOW - days * DAY_MS);
+const daysAgo = (days: number) => new Date(NOW - days * DAY_MS);
 
 describe('analyticsMath', () => {
     test('day names start on Sunday like Date#getDay', () => {
@@ -18,7 +18,7 @@ describe('analyticsMath', () => {
 
     test('sumOf and roundedAverage', () => {
         assert.equal(sumOf([{ score: 2 }, { score: 5 }], item => item.score), 7);
-        assert.equal(sumOf([], item => item.score), 0);
+        assert.equal(sumOf<{ score: number }>([], item => item.score), 0);
         assert.equal(roundedAverage(7, 2), 4);
         assert.equal(roundedAverage(7, 0), 0);
     });

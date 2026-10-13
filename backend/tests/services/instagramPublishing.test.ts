@@ -1,6 +1,7 @@
 import { test, describe } from 'node:test';
 import { buildMediaParams } from '../../services/instagramPublishing.ts';
 import { assertGolden } from '../fixtures/golden.ts';
+import type { InstagramPublishMediaType } from '../../../shared/types/instagram.ts';
 
 const fullPost = {
     mediaUrl: 'https://cdn.example/file.jpg',
@@ -25,7 +26,7 @@ const emptyPost = {
     thumbOffset: null,
 };
 
-const mediaTypes = ['CAROUSEL', 'CAROUSEL_ITEM_IMAGE', 'CAROUSEL_ITEM_VIDEO', 'REELS', 'STORIES', 'IMAGE', undefined];
+const mediaTypes: (InstagramPublishMediaType | undefined)[] = ['CAROUSEL', 'CAROUSEL_ITEM_IMAGE', 'CAROUSEL_ITEM_VIDEO', 'REELS', 'STORIES', 'IMAGE', undefined];
 
 describe('buildMediaParams golden output', () => {
     test('builds container parameters for every media type, full and empty', () => {

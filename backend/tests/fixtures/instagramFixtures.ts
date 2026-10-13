@@ -1,6 +1,9 @@
+import type { InstagramMedia } from '../../../shared/types/instagram.ts';
+
 export const FIXED_NOW = Date.parse('2026-09-01T12:00:00Z');
 
-function mediaItem(id, contentType, timestamp, counts, caption = '') {
+// 'story' is not a known content type, so contentType is any string here
+function mediaItem(id: string, contentType: string, timestamp: string, counts: [number, number, number | null], caption = ''): InstagramMedia {
     const [likeCount, commentsCount, viewCount] = counts;
     return {
         id,
@@ -14,7 +17,7 @@ function mediaItem(id, contentType, timestamp, counts, caption = '') {
         likeCount,
         commentsCount,
         viewCount,
-    };
+    } as InstagramMedia;
 }
 
 const longCaption = `${'Behind the scenes of the shoot. '.repeat(6)}#Café #travel #reels`;
@@ -41,8 +44,8 @@ export const zeroEngagementMedia = [
     mediaItem('z3', 'reel', '2026-08-03T10:00:00+0000', [0, 0, 0]),
 ];
 
-function generatedCaption(index) {
-    const tags = [];
+function generatedCaption(index: number) {
+    const tags: string[] = [];
     for (let tag = 0; tag < 25; tag++) {
         if ((tag + index) % 3 === 0) tags.push(`#tag${tag}`);
     }

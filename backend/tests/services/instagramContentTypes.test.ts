@@ -2,6 +2,7 @@ import { test, describe } from 'node:test';
 import { CONTENT_TYPES, summarizeContentTypes } from '../../services/instagramContentTypes.ts';
 import { assertGolden } from '../fixtures/golden.ts';
 import { richMedia, generatedMedia } from '../fixtures/instagramFixtures.ts';
+import type { InstagramMedia } from '../../../shared/types/instagram.ts';
 
 describe('summarizeContentTypes golden output', () => {
     test('summarizes media of every type, unknown types and missing counts', () => {
@@ -14,7 +15,7 @@ describe('summarizeContentTypes golden output', () => {
             types: CONTENT_TYPES,
             rich: summarizeContentTypes(richMedia),
             generated: summarizeContentTypes(generatedMedia),
-            odd: summarizeContentTypes(odd),
+            odd: summarizeContentTypes(odd as unknown as InstagramMedia[]),
             missing: summarizeContentTypes(null),
         }, 'instagramContentTypes.summary');
     });

@@ -2,12 +2,30 @@
 process.removeAllListeners('warning');
 
 import { test, describe, before, after, afterEach, mock } from 'node:test';
+import type { Mock } from 'node:test';
+import type { Hono } from 'hono';
 import analyticsRouter from '../../routes/analytics.ts';
 import overviewRouter from '../../routes/overview.ts';
 import { assertGolden } from '../fixtures/golden.ts';
 import { installFetch, reply } from '../fixtures/fakeFetch.ts';
+import type { FetchMock, RecordedRequest } from '../fixtures/fakeFetch.ts';
 import { fakeSupabase, accountRow, tableRow } from '../fixtures/fakeSupabase.ts';
 import { mountWithContext, callRoute } from '../fixtures/routeHarness.ts';
+import type { RouteStep } from '../fixtures/routeHarness.ts';
+import type { AppEnv } from '../../types/app.ts';
+import type { Env } from '../../types/env.ts';
+
+interface StoreWrite {
+    key: string;
+    options: unknown;
+    version: unknown;
+}
+
+interface FakeStore {
+    writes: StoreWrite[];
+    get(key: string): Promise<unknown>;
+    set(key: string, value: { version?: unknown }, options: unknown): Promise<void>;
+}
 
 const FIXED_NOW = Date.parse('2026-09-01T12:00:00Z');
 const ENV = { YOUTUBE_API_KEY: 'YTKEY' };
@@ -45,16 +63,16 @@ function cachedRedis() {
     return fakeStore(store);
 }
 
-function fakeStore(store) {
-    const writes = [];
+function fakeStore(store: Record<string, unknown>): FakeStore {
+    const writes: StoreWrite[] = [];
     return {
         writes,
-        async get(key) { return store[key] ?? null; },
-        async set(key, value, options) { writes.push({ key, options, version: value.version }); store[key] = value; },
+        async get(key: string) { return store[key] ?? null; },
+        async set(key: string, value: { version?: unknown }, options: unknown) { writes.push({ key, options, version: value.version }); store[key] = value; },
     };
 }
 
-function youtubeReply(request) {
+function youtubeReply(request: RecordedRequest) {
     const url = new URL(request.url);
     const endpoint = url.pathname.split('/').pop();
     if (endpoint === 'playlistItems') return reply({ items: [{ snippet: { resourceId: { videoId: 'v1' } } }] });
@@ -67,20 +85,20 @@ function youtubeReply(request) {
     return reply({ error: { message: 'Channel lookup failed', errors: [{ reason: 'notFound' }], code: 404 } });
 }
 
-let fetchMock = null;
+let fetchMock: FetchMock | null = null;
 afterEach(() => fetchMock?.restore());
 
-async function runCalls(router, calls, { redis = null, env = ENV } = {}) {
+async function runCalls(router: Hono<AppEnv>, calls: RouteStep[], { redis = null, env = ENV }: { redis?: FakeStore | null; env?: Partial<Env> } = {}) {
     const supabase = fakeSupabase(ROWS);
     const app = mountWithContext(server => server.route('/', router), { supabase, redis, userId: 'user-1' });
     fetchMock = installFetch(youtubeReply);
-    const logLines = [];
-    mock.method(console, 'error', (...args) => logLines.push(['error', ...args]));
+    const logLines: unknown[][] = [];
+    mock.method(console, 'error', (...args: unknown[]) => logLines.push(['error', ...args]));
     const responses = [];
     for (const [method, path] of calls) {
         responses.push({ call: `${method} ${path}`, ...(await callRoute(app, method, path, { env })) });
     }
-    console.error.mock.restore();
+    (console.error as Mock<typeof console.error>).mock.restore();
     return { responses, queries: supabase.calls, requests: fetchMock.requests, logLines, redisWrites: redis?.writes ?? null };
 }
 
@@ -121,8 +139,8 @@ describe('analytics and overview routes golden output', () => {
         const redis = fakeStore({});
         const app = mountWithContext(server => server.route('/', overviewRouter), { supabase, redis, userId: 'user-1' });
         fetchMock = installFetch(() => reply({}));
-        const background = [];
-        const executionCtx = { waitUntil: promise => background.push(promise), passThroughOnException() {} };
+        const background: Promise<unknown>[] = [];
+        const executionCtx = { waitUntil: (promise: Promise<unknown>) => background.push(promise), passThroughOnException() {} } as unknown as ExecutionContext;
         const response = await app.request('/overview', { method: 'GET' }, ENV, executionCtx);
         const body = await response.text();
         const settled = await Promise.all(background);

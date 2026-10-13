@@ -2,15 +2,17 @@ import { test, describe, afterEach } from 'node:test';
 import { resolveChannelId, fetchChannelData } from '../../services/youtubeChannels.ts';
 import { assertGolden } from '../fixtures/golden.ts';
 import { installFetch, reply } from '../fixtures/fakeFetch.ts';
+import type { FetchMock } from '../fixtures/fakeFetch.ts';
+import type { YouTubeApiError } from '../../services/youtubeApi.ts';
 
-let fetchMock = null;
+let fetchMock: FetchMock | null = null;
 afterEach(() => fetchMock?.restore());
 
-async function outcomeOf(promise) {
+async function outcomeOf(promise: Promise<unknown>) {
     try {
         return { value: await promise };
     } catch (err) {
-        return { error: err.message, reason: err.reason, status: err.status };
+        return { error: (err as YouTubeApiError).message, reason: (err as YouTubeApiError).reason, status: (err as YouTubeApiError).status };
     }
 }
 

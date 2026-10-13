@@ -1,14 +1,34 @@
+export interface RecordedRequest {
+    url: string;
+    method: string;
+    headers?: RequestInit['headers'];
+    body?: string;
+}
+
+export interface FakeReply {
+    body: unknown;
+    status: number;
+    statusText: string;
+}
+
+export type Responder = (request: RecordedRequest, count: number) => FakeReply | Error | Promise<FakeReply | Error>;
+
+export interface FetchMock {
+    requests: RecordedRequest[];
+    restore(): void;
+}
+
 // replaces global fetch with a scripted responder and records each request
-export function reply(body, status = 200, statusText = 'OK') {
+export function reply(body: unknown, status = 200, statusText = 'OK'): FakeReply {
     return { body, status, statusText };
 }
 
-export function installFetch(respond) {
-    const requests = [];
+export function installFetch(respond: Responder): FetchMock {
+    const requests: RecordedRequest[] = [];
     const originalFetch = globalThis.fetch;
 
-    globalThis.fetch = async (url, options = {}) => {
-        const request = { url: String(url), method: options.method ?? 'GET' };
+    globalThis.fetch = async (url: unknown, options: RequestInit = {}): Promise<Response> => {
+        const request: RecordedRequest = { url: String(url), method: options.method ?? 'GET' };
         if (options.headers) request.headers = options.headers;
         if (options.body !== undefined) request.body = String(options.body);
         requests.push(request);
@@ -20,7 +40,7 @@ export function installFetch(respond) {
             statusText: outcome.statusText,
             ok: outcome.status >= 200 && outcome.status < 300,
             json: async () => outcome.body,
-        };
+        } as unknown as Response;
     };
 
     return {

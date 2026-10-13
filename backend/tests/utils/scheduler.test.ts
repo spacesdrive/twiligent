@@ -2,11 +2,14 @@ import { test, describe, before, after, afterEach, mock } from 'node:test';
 import { processScheduledPosts } from '../../utils/scheduler.ts';
 import { assertGolden } from '../fixtures/golden.ts';
 import { installFetch, reply } from '../fixtures/fakeFetch.ts';
+import type { FetchMock, RecordedRequest } from '../fixtures/fakeFetch.ts';
 import { fakeSupabase, accountRow, tableRow } from '../fixtures/fakeSupabase.ts';
+import type { Row } from '../fixtures/fakeSupabase.ts';
+import type { SupabaseClient } from '../../types/app.ts';
 
 const FIXED_NOW = Date.parse('2026-09-01T12:00:00Z');
 
-function postRow(id, accountId, data, overrides = {}) {
+function postRow(id: string, accountId: string, data: Row, overrides: Row = {}) {
     return tableRow('scheduled_posts', { id, user_id: 'user-1', account_id: accountId, status: 'pending', scheduled_at: '2026-09-01T11:00:00.000Z', data, ...overrides });
 }
 
@@ -35,14 +38,14 @@ const ROWS = [
     postRow('p-later', 'ig1', { mediaType: 'IMAGE' }, { scheduled_at: '2026-09-02T00:00:00.000Z' }),
 ];
 
-const STATUS_SEQUENCES = {
+const STATUS_SEQUENCES: Record<string, string[]> = {
     'c-IG1': ['IN_PROGRESS', 'FINISHED'],
     'c-ERR': ['ERROR'],
     'c-EXP': ['IN_PROGRESS', 'EXPIRED'],
     'c-SLOW': [],
 };
 
-function graphReply(request) {
+function graphReply(request: RecordedRequest) {
     const url = new URL(request.url);
     const parts = url.pathname.split('/');
     if (parts[3] === 'media') {
@@ -58,11 +61,11 @@ function graphReply(request) {
     return reply({ status_code: statusCode, status: statusCode === 'ERROR' ? 'Bad video' : undefined });
 }
 
-function describeArg(arg) {
+function describeArg(arg: unknown) {
     return arg instanceof Error ? `Error: ${arg.message}` : arg;
 }
 
-let fetchMock = null;
+let fetchMock: FetchMock | null = null;
 afterEach(() => fetchMock?.restore());
 
 describe('processScheduledPosts golden output', () => {
@@ -72,11 +75,11 @@ describe('processScheduledPosts golden output', () => {
     test('publishes due posts, waits for video processing and records failures', async () => {
         const supabase = fakeSupabase(ROWS);
         fetchMock = installFetch(graphReply);
-        const delays = [];
-        const logLines = [];
-        mock.method(globalThis, 'setTimeout', (callback, ms) => { delays.push(ms); callback(); return 0; });
-        mock.method(console, 'log', (...args) => logLines.push(['log', ...args.map(describeArg)]));
-        mock.method(console, 'error', (...args) => logLines.push(['error', ...args.map(describeArg)]));
+        const delays: number[] = [];
+        const logLines: unknown[][] = [];
+        mock.method(globalThis, 'setTimeout', (callback: () => void, ms: number) => { delays.push(ms); callback(); return 0; });
+        mock.method(console, 'log', (...args: unknown[]) => logLines.push(['log', ...args.map(describeArg)]));
+        mock.method(console, 'error', (...args: unknown[]) => logLines.push(['error', ...args.map(describeArg)]));
 
         const result = await processScheduledPosts(supabase);
         mock.restoreAll();
@@ -85,9 +88,9 @@ describe('processScheduledPosts golden output', () => {
     });
 
     test('a failing due post query is logged and nothing is processed', async () => {
-        const logLines = [];
-        mock.method(console, 'error', (...args) => logLines.push(['error', ...args.map(describeArg)]));
-        const result = await processScheduledPosts({ from() { throw new Error('db down'); } });
+        const logLines: unknown[][] = [];
+        mock.method(console, 'error', (...args: unknown[]) => logLines.push(['error', ...args.map(describeArg)]));
+        const result = await processScheduledPosts({ from() { throw new Error('db down'); } } as unknown as SupabaseClient);
         mock.restoreAll();
 
         assertGolden({ result, logLines }, 'scheduler.dbFailure');

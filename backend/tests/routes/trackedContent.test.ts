@@ -1,9 +1,14 @@
 import { test, describe, before, after, afterEach, mock } from 'node:test';
+import type { Mock } from 'node:test';
 import trackedContentRouter from '../../routes/trackedContent.ts';
 import { assertGolden } from '../fixtures/golden.ts';
 import { installFetch, reply } from '../fixtures/fakeFetch.ts';
+import type { FetchMock } from '../fixtures/fakeFetch.ts';
 import { fakeSupabase, accountRow, tableRow } from '../fixtures/fakeSupabase.ts';
+import type { Row } from '../fixtures/fakeSupabase.ts';
 import { mountWithContext, callRoute } from '../fixtures/routeHarness.ts';
+import type { RouteStep } from '../fixtures/routeHarness.ts';
+import type { Env } from '../../types/env.ts';
 
 const FIXED_NOW = Date.parse('2026-09-01T12:00:00Z');
 const ENV = { YOUTUBE_API_KEY: 'YTKEY' };
@@ -11,7 +16,7 @@ const ENV = { YOUTUBE_API_KEY: 'YTKEY' };
 const REDDIT_POST = [{ data: { children: [{ data: { id: 'p1', title: 'Tracked', subreddit: 'webdev', score: 77, upvote_ratio: 0.93, num_comments: 8, permalink: '/r/webdev/comments/p1/tracked/', over_18: false, created_utc: 1785000000 } }] } }];
 const YOUTUBE_VIDEO = { items: [{ snippet: { title: 'Watch', channelTitle: 'Ribbon', channelId: 'UC1', publishedAt: '2026-08-01T10:00:00Z', thumbnails: { medium: { url: 'm' } } }, statistics: { viewCount: '1500', likeCount: '40', commentCount: '3' } }] };
 
-function trackedRow(id, contentType, extra = {}) {
+function trackedRow(id: string, contentType: string, extra: { accountId?: string; url?: string; data?: Row } = {}) {
     return tableRow('tracked_posts', { id, user_id: 'user-1', account_id: extra.accountId ?? null, url: extra.url ?? `https://example/${id}`, label: '', category: '', content_type: contentType, created_at: '2026-08-01T00:00:00Z', updated_at: '2026-08-01T00:00:00Z', data: extra.data ?? {} });
 }
 
@@ -25,20 +30,20 @@ function seedRows() {
     ];
 }
 
-let fetchMock = null;
+let fetchMock: FetchMock | null = null;
 afterEach(() => fetchMock?.restore());
 
-async function runCalls(calls, env = ENV) {
+async function runCalls(calls: RouteStep[], env: Partial<Env> = ENV) {
     const supabase = fakeSupabase(seedRows());
     const app = mountWithContext(server => server.route('/', trackedContentRouter), { supabase, userId: 'user-1' });
     fetchMock = installFetch(request => (request.url.includes('googleapis') ? reply(YOUTUBE_VIDEO) : reply(REDDIT_POST)));
     const responses = [];
-    const logLines = [];
-    mock.method(console, 'error', (...args) => logLines.push(['error', ...args]));
+    const logLines: unknown[][] = [];
+    mock.method(console, 'error', (...args: unknown[]) => logLines.push(['error', ...args]));
     for (const [method, path, json] of calls) {
         responses.push({ call: `${method} ${path}`, ...(await callRoute(app, method, path, { json, env })) });
     }
-    console.error.mock.restore();
+    (console.error as Mock<typeof console.error>).mock.restore();
     return { responses, queries: supabase.calls, requests: fetchMock.requests, logLines };
 }
 

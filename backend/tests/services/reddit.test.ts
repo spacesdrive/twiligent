@@ -2,20 +2,21 @@ import { test, describe, before, after, afterEach, mock } from 'node:test';
 import { fetchRedditProfile, fetchRedditPosts, fetchTrackedPostData, autoRefreshRedditSessions } from '../../services/reddit.ts';
 import { assertGolden } from '../fixtures/golden.ts';
 import { installFetch, reply } from '../fixtures/fakeFetch.ts';
+import type { FetchMock } from '../fixtures/fakeFetch.ts';
 import { FIXED_NOW, rawRedditPosts } from '../fixtures/redditFixtures.ts';
 
-let fetchMock = null;
+let fetchMock: FetchMock | null = null;
 afterEach(() => fetchMock?.restore());
 
-async function outcomeOf(promise) {
+async function outcomeOf(promise: Promise<unknown>) {
     try {
         return { value: await promise };
     } catch (err) {
-        return { error: err.message };
+        return { error: (err as Error).message };
     }
 }
 
-function listing(children, after = null) {
+function listing(children: unknown[], after: string | null = null) {
     return reply({ data: { children: children.map(data => ({ data })), after } });
 }
 

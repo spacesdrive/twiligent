@@ -4,8 +4,9 @@ import { test, describe, before, after, mock } from 'node:test';
 import { computeRedditAnalytics } from '../../services/redditAnalytics.ts';
 import { assertGolden } from '../fixtures/golden.ts';
 import { FIXED_NOW, richPosts, zeroScorePosts, generatedPosts } from '../fixtures/redditFixtures.ts';
+import type { RedditProfile } from '../../../shared/types/reddit.ts';
 
-const profile = { username: 'ribbon', totalKarma: 900 };
+const profile = { username: 'ribbon', totalKarma: 900 } as RedditProfile;
 
 describe('computeRedditAnalytics golden output', () => {
     before(() => mock.timers.enable({ apis: ['Date'], now: FIXED_NOW }));

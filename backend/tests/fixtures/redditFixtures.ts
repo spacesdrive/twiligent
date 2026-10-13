@@ -1,8 +1,16 @@
+import type { RedditPost } from '../../../shared/types/reddit.ts';
+
+// mediaType is any string and awardsCount is left out when the counts tuple has no fourth entry
+interface RedditPostFixture extends Omit<RedditPost, 'mediaType' | 'awardsCount'> {
+    mediaType: string;
+    awardsCount?: number;
+}
+
 export const FIXED_NOW = Date.parse('2026-09-01T12:00:00Z');
 
-function redditPost(id, subreddit, createdAt, counts, mediaType = 'text') {
+function redditPost(id: string, subreddit: string, createdAt: string, counts: [number, number, number, number?], mediaType = 'text'): RedditPost {
     const [score, numComments, upvoteRatio, awardsCount] = counts;
-    const post = {
+    const post: RedditPostFixture = {
         id,
         title: `Post ${id}`,
         subreddit,
@@ -21,7 +29,7 @@ function redditPost(id, subreddit, createdAt, counts, mediaType = 'text') {
         flair: '',
     };
     if (awardsCount !== undefined) post.awardsCount = awardsCount;
-    return post;
+    return post as RedditPost;
 }
 
 export const richPosts = [

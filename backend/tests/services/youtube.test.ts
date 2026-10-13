@@ -5,21 +5,21 @@ import { resolveChannelId, fetchTrackedYouTubeData } from '../../services/youtub
 const realFetch = globalThis.fetch;
 afterEach(() => { globalThis.fetch = realFetch; });
 
-function lookupName({ pathname, searchParams }) {
+function lookupName({ pathname, searchParams }: URL) {
     if (searchParams.get('forHandle')) return 'forHandle';
     if (searchParams.get('forUsername')) return 'forUsername';
     return pathname.split('/').pop();
 }
 
 // answers each youtube endpoint from a table and records the calls
-function fakeYouTube(responses) {
-    const calls = [];
-    globalThis.fetch = async (url) => {
-        const lookup = lookupName(new URL(url));
+function fakeYouTube(responses: Record<string, unknown>) {
+    const calls: (string | undefined)[] = [];
+    globalThis.fetch = async (url: unknown): Promise<Response> => {
+        const lookup = lookupName(new URL(url as string));
         calls.push(lookup);
-        const body = responses[lookup] ?? { items: [] };
+        const body = responses[lookup as string] ?? { items: [] };
         if (body instanceof Error) throw body;
-        return { json: async () => body };
+        return { json: async () => body } as unknown as Response;
     };
     return calls;
 }
@@ -59,10 +59,10 @@ test('an unparseable video link is rejected before any api call', async () => {
 });
 
 test('watch, short, embed and youtu.be links all reach the api with the video id', async () => {
-    const ids = [];
-    globalThis.fetch = async (url) => {
-        ids.push(new URL(url).searchParams.get('id'));
-        return { json: async () => ({ items: [] }) };
+    const ids: (string | null)[] = [];
+    globalThis.fetch = async (url: unknown): Promise<Response> => {
+        ids.push(new URL(url as string).searchParams.get('id'));
+        return { json: async () => ({ items: [] }) } as unknown as Response;
     };
     const links = [
         'https://www.youtube.com/watch?v=aaa',

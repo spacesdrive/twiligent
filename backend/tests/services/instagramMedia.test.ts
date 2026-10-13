@@ -1,9 +1,11 @@
 import { test, describe, afterEach } from 'node:test';
 import { classifyInstagramMedia, extractInstagramViews, normalizeInstagramMedia, fetchInstagramMedia } from '../../services/instagramMedia.ts';
+import type { InstagramApiMedia } from '../../services/instagramMedia.ts';
 import { assertGolden } from '../fixtures/golden.ts';
 import { installFetch, reply } from '../fixtures/fakeFetch.ts';
+import type { FetchMock } from '../fixtures/fakeFetch.ts';
 
-let fetchMock = null;
+let fetchMock: FetchMock | null = null;
 afterEach(() => fetchMock?.restore());
 
 const rawItems = [
@@ -14,7 +16,7 @@ const rawItems = [
     { id: '5', permalink: 'https://instagram.com/reels/5/', insights: { data: [{ name: 'views', values: [{ value: null }] }] } },
     { id: '6', media_type: 'reel', insights: { data: [{ name: 'views', values: [{ value: 'Infinity' }] }] } },
     { id: '7' },
-];
+] as unknown as InstagramApiMedia[];
 
 describe('instagram media golden output', () => {
     test('classifies, reads views and normalizes raw items', () => {
@@ -29,7 +31,7 @@ describe('instagram media golden output', () => {
         fetchMock = installFetch((request) => {
             const params = new URL(request.url).searchParams;
             const after = params.get('after') ?? '';
-            if (after === 'p2' && params.get('fields').includes('insights')) return reply({ error: { message: 'insights unavailable' } });
+            if (after === 'p2' && params.get('fields')!.includes('insights')) return reply({ error: { message: 'insights unavailable' } });
             if (after === '') return reply({ data: [rawItems[0], rawItems[1], null, { media_type: 'IMAGE' }], paging: { next: 'https://next', cursors: { after: 'p2' } } });
             if (after === 'p2') return reply({ data: [rawItems[1], rawItems[2]], paging: { next: 'https://next', cursors: { after: 'p3' } } });
             return reply({ data: [rawItems[3]], paging: { cursors: { after: 'p4' } } });

@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {
     newAccountId, tokenExpiryIso, buildYouTubeAccount, buildRedditAccount, buildInstagramAccount,
 } from '../../services/accountFactory.ts';
+import type { YouTubeChannelData } from '../../../shared/types/youtube.ts';
+import type { RedditProfile } from '../../../shared/types/reddit.ts';
 
 const FIXED_NOW = Date.parse('2026-09-01T12:00:00Z');
 const NOW_ISO = '2026-09-01T12:00:00.000Z';
@@ -21,7 +23,7 @@ describe('accountFactory', () => {
     test('tokenExpiryIso adds seconds to now, or returns null without a lifetime', () => {
         assert.equal(tokenExpiryIso(3600), '2026-09-01T13:00:00.000Z');
         assert.equal(tokenExpiryIso(0), null);
-        assert.equal(tokenExpiryIso(undefined), null);
+        assert.equal(tokenExpiryIso(undefined as unknown as number), null);
     });
 
     test('buildYouTubeAccount copies the channel fields in a fixed order', () => {
@@ -30,7 +32,7 @@ describe('accountFactory', () => {
             thumbnails: { default: 'd' }, subscriberCount: 1, viewCount: 2, videoCount: 3, hiddenSubscriberCount: false,
             uploadsPlaylistId: 'UU1', keywords: 'k', topicCategories: ['t'], madeForKids: false, bannerUrl: 'ignored',
         };
-        const account = buildYouTubeAccount(channelData);
+        const account = buildYouTubeAccount(channelData as unknown as YouTubeChannelData);
         assert.deepStrictEqual(Object.keys(account), [
             'id', 'channelId', 'title', 'description', 'customUrl', 'publishedAt', 'country', 'thumbnails',
             'subscriberCount', 'viewCount', 'videoCount', 'hiddenSubscriberCount', 'uploadsPlaylistId', 'keywords',
@@ -43,7 +45,7 @@ describe('accountFactory', () => {
 
     test('buildRedditAccount keeps the cookie and prefixes the title', () => {
         const profile = { username: 'ribbon', totalKarma: 3, postKarma: 2, commentKarma: 1, iconUrl: 'i', createdAt: 'c', isGold: true };
-        assert.deepStrictEqual(buildRedditAccount(profile, 'COOKIE'), {
+        assert.deepStrictEqual(buildRedditAccount(profile as RedditProfile, 'COOKIE'), {
             id: ACCOUNT_ID, platform: 'reddit', username: 'ribbon', title: 'u/ribbon',
             totalKarma: 3, postKarma: 2, commentKarma: 1, iconUrl: 'i', createdAt: 'c', cookie: 'COOKIE',
             addedAt: NOW_ISO, lastUpdated: NOW_ISO,

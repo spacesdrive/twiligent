@@ -2,11 +2,13 @@ import { test, describe, before, after, afterEach, mock } from 'node:test';
 import { exchangeForLongLivedToken, refreshLongLivedToken, autoRefreshInstagramTokens } from '../../services/instagramTokens.ts';
 import { assertGolden } from '../fixtures/golden.ts';
 import { installFetch, reply } from '../fixtures/fakeFetch.ts';
+import type { FetchMock } from '../fixtures/fakeFetch.ts';
 import { fakeSupabase, accountRow } from '../fixtures/fakeSupabase.ts';
 import { FIXED_NOW } from '../fixtures/instagramFixtures.ts';
+import type { SupabaseClient } from '../../types/app.ts';
 
 const DAY_MS = 86400000;
-let fetchMock = null;
+let fetchMock: FetchMock | null = null;
 
 before(() => mock.timers.enable({ apis: ['Date'], now: FIXED_NOW }));
 after(() => mock.timers.reset());
@@ -15,22 +17,22 @@ afterEach(() => {
     mock.restoreAll();
 });
 
-async function outcomeOf(promise) {
+async function outcomeOf(promise: Promise<unknown>) {
     try {
         return { value: await promise };
     } catch (err) {
-        return { error: err.message };
+        return { error: (err as Error).message };
     }
 }
 
 function captureConsole() {
-    const lines = [];
-    mock.method(console, 'log', (...args) => lines.push(['log', ...args]));
-    mock.method(console, 'error', (...args) => lines.push(['error', ...args]));
+    const lines: unknown[][] = [];
+    mock.method(console, 'log', (...args: unknown[]) => lines.push(['log', ...args]));
+    mock.method(console, 'error', (...args: unknown[]) => lines.push(['error', ...args]));
     return lines;
 }
 
-function expiresIn(days) {
+function expiresIn(days: number) {
     return new Date(FIXED_NOW + days * DAY_MS).toISOString();
 }
 
@@ -73,7 +75,7 @@ describe('autoRefreshInstagramTokens golden output', () => {
             T6: { error: { message: 'Session has expired' } },
             T7: { access_token: 'N7' },
         };
-        fetchMock = installFetch((request) => reply(bodies[new URL(request.url).searchParams.get('access_token')]));
+        fetchMock = installFetch((request) => reply(bodies[new URL(request.url).searchParams.get('access_token') as keyof typeof bodies]));
         const lines = captureConsole();
         await autoRefreshInstagramTokens(supabase);
         assertGolden({ lines, requests: fetchMock.requests, calls: supabase.calls, table: supabase.table }, 'instagramTokens.autoRefresh');
@@ -85,7 +87,7 @@ describe('autoRefreshInstagramTokens golden output', () => {
         const notDue = fakeSupabase([accountRow({ id: 'b1', platform: 'instagram', accessToken: 'T', tokenExpiresAt: expiresIn(30) })]);
         await autoRefreshInstagramTokens(notDue);
         await autoRefreshInstagramTokens(fakeSupabase([]));
-        await autoRefreshInstagramTokens({ from() { throw new Error('database unavailable'); } });
+        await autoRefreshInstagramTokens({ from() { throw new Error('database unavailable'); } } as unknown as SupabaseClient);
         assertGolden({ lines, requests: fetchMock.requests, calls: notDue.calls }, 'instagramTokens.idle');
     });
 });

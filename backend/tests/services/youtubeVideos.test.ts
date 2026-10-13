@@ -2,29 +2,31 @@ import { test, describe, afterEach } from 'node:test';
 import { fetchAllVideos } from '../../services/youtubeVideos.ts';
 import { assertGolden } from '../fixtures/golden.ts';
 import { installFetch, reply } from '../fixtures/fakeFetch.ts';
+import type { FetchMock, FakeReply } from '../fixtures/fakeFetch.ts';
 import { rawPlaylistItem, rawVideos } from '../fixtures/youtubeFixtures.ts';
+import type { YouTubeApiError } from '../../services/youtubeApi.ts';
 
-let fetchMock = null;
+let fetchMock: FetchMock | null = null;
 afterEach(() => fetchMock?.restore());
 
-async function outcomeOf(promise) {
+async function outcomeOf(promise: Promise<unknown>) {
     try {
         return { value: await promise };
     } catch (err) {
-        return { error: err.message, reason: err.reason, status: err.status };
+        return { error: (err as YouTubeApiError).message, reason: (err as YouTubeApiError).reason, status: (err as YouTubeApiError).status };
     }
 }
 
-function apiError(message, reason, code) {
+function apiError(message: string, reason?: string, code?: number) {
     const errors = reason === undefined ? undefined : [{ reason }];
     return reply({ error: { message, errors, code } });
 }
 
-function youtubeServer(playlistPages) {
+function youtubeServer(playlistPages: Record<string, FakeReply>) {
     return installFetch((request) => {
         const url = new URL(request.url);
         if (url.pathname.endsWith('/videos')) {
-            const items = url.searchParams.get('id').split(',').map(id => rawVideos[id] ?? { ...rawVideos.odd, id });
+            const items = url.searchParams.get('id')!.split(',').map(id => (rawVideos as Record<string, unknown>)[id] ?? { ...rawVideos.odd, id });
             return reply({ items });
         }
         const page = playlistPages[url.searchParams.get('pageToken') ?? ''];

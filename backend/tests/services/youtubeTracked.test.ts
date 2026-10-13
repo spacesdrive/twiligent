@@ -2,16 +2,17 @@ import { test, describe, before, after, afterEach, mock } from 'node:test';
 import { fetchTrackedYouTubeData } from '../../services/youtubeTracked.ts';
 import { assertGolden } from '../fixtures/golden.ts';
 import { installFetch, reply } from '../fixtures/fakeFetch.ts';
+import type { FetchMock } from '../fixtures/fakeFetch.ts';
 import { FIXED_NOW } from '../fixtures/youtubeFixtures.ts';
 
-let fetchMock = null;
+let fetchMock: FetchMock | null = null;
 afterEach(() => fetchMock?.restore());
 
-async function outcomeOf(promise) {
+async function outcomeOf(promise: Promise<unknown>) {
     try {
         return { value: await promise };
     } catch (err) {
-        return { error: err.message };
+        return { error: (err as Error).message };
     }
 }
 

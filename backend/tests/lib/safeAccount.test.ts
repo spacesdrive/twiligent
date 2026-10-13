@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { safeAccount } from '../../lib/safeAccount.ts';
 import { buildMediaParams } from '../../services/instagram.ts';
+import type { Account } from '../../../shared/types/domain.ts';
 
 test('safeAccount strips every credential and reports cookie presence', () => {
     const out = safeAccount({
@@ -13,7 +14,7 @@ test('safeAccount strips every credential and reports cookie presence', () => {
 
 test('safeAccount does not mutate its input', () => {
     const input = { id: 'a1', accessToken: 't' };
-    safeAccount(input);
+    safeAccount(input as Account);
     assert.equal(input.accessToken, 't');
 });
 

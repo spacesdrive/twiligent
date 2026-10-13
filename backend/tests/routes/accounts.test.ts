@@ -5,8 +5,11 @@ import { test, describe, before, after, beforeEach, afterEach, mock } from 'node
 import accountsRouter from '../../routes/accounts.ts';
 import { assertGolden } from '../fixtures/golden.ts';
 import { installFetch, reply } from '../fixtures/fakeFetch.ts';
+import type { FetchMock, RecordedRequest } from '../fixtures/fakeFetch.ts';
 import { fakeSupabase, accountRow } from '../fixtures/fakeSupabase.ts';
+import type { SupabaseCall } from '../fixtures/fakeSupabase.ts';
 import { mountWithContext, callRoute, fakeRedis } from '../fixtures/routeHarness.ts';
+import type { RouteStep } from '../fixtures/routeHarness.ts';
 
 // a byte order mark that pasted secrets sometimes start with
 const BOM = String.fromCharCode(0xfeff);
@@ -25,7 +28,7 @@ const storedAccounts = [
     accountRow({ id: 'other', platform: 'youtube', channelId: CHANNEL_NEW }, 'user-2'),
 ];
 
-function channelBody(channelId) {
+function channelBody(channelId: string) {
     if (channelId.startsWith('UCmissing')) return { items: [] };
     return {
         items: [{
@@ -47,7 +50,7 @@ const instagramProfiles = {
     NOID: { username: 'ghost' },
 };
 
-function instagramReply(url) {
+function instagramReply(url: URL) {
     const params = url.searchParams;
     const token = params.get('access_token');
     if (url.pathname === '/access_token') {
@@ -58,11 +61,11 @@ function instagramReply(url) {
         if (token === 'IGTOKEN') return reply({ access_token: 'IGTOKEN2', expires_in: 86400 });
         return reply({ error: { message: 'Token cannot be refreshed' } });
     }
-    const profile = instagramProfiles[token];
+    const profile = instagramProfiles[token as keyof typeof instagramProfiles];
     return profile ? reply(profile) : reply({ error: { message: 'Invalid OAuth access token' } });
 }
 
-function platformServer(request) {
+function platformServer(request: RecordedRequest) {
     const url = new URL(request.url);
     if (url.hostname === 'graph.instagram.com') return instagramReply(url);
     if (url.hostname === 'www.reddit.com') {
@@ -73,27 +76,27 @@ function platformServer(request) {
     const params = url.searchParams;
     if (params.get('forHandle')) return reply({ items: [{ id: params.get('forHandle') === 'existing' ? CHANNEL_A : CHANNEL_NEW }] });
     if (params.get('forUsername') || params.get('q')) return reply({ items: [] });
-    return reply(channelBody(params.get('id')));
+    return reply(channelBody(params.get('id')!));
 }
 
-let fetchMock = null;
-let logLines = [];
+let fetchMock: FetchMock | null = null;
+let logLines: unknown[][] = [];
 
 before(() => mock.timers.enable({ apis: ['Date'], now: FIXED_NOW }));
 after(() => mock.timers.reset());
 beforeEach(() => {
     mock.method(Math, 'random', () => 0.123456789);
     logLines = [];
-    mock.method(console, 'log', (...args) => logLines.push(['log', ...args]));
-    mock.method(console, 'error', (...args) => logLines.push(['error', ...args]));
+    mock.method(console, 'log', (...args: unknown[]) => logLines.push(['log', ...args]));
+    mock.method(console, 'error', (...args: unknown[]) => logLines.push(['error', ...args]));
     fetchMock = installFetch(platformServer);
 });
 afterEach(() => {
-    fetchMock.restore();
+    fetchMock!.restore();
     mock.restoreAll();
 });
 
-async function runScenario(steps, options = {}) {
+async function runScenario(steps: RouteStep[], options: { supabase?: { calls: SupabaseCall[] } } = {}) {
     const supabase = options.supabase ?? fakeSupabase(storedAccounts);
     const redis = fakeRedis();
     const app = mountWithContext(app => app.route('/', accountsRouter), { supabase, redis, userId: 'user-1' });
@@ -101,7 +104,7 @@ async function runScenario(steps, options = {}) {
     for (const [method, path, json, env] of steps) {
         responses.push(await callRoute(app, method, path, { json, env: env ?? ENV }));
     }
-    return { responses, requests: fetchMock.requests, calls: supabase.calls, redis: redis.deleted, logs: logLines };
+    return { responses, requests: fetchMock!.requests, calls: supabase.calls, redis: redis.deleted, logs: logLines };
 }
 
 const brokenSupabase = { calls: [], from() { throw new Error('database unavailable'); } };

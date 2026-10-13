@@ -8,8 +8,11 @@ import {
     summarizeContentTypes,
     computeInstagramAnalytics,
 } from '../../services/instagram.ts';
+import type { InstagramApiMedia } from '../../services/instagram.ts';
+import type { AnalyticsProfile } from '../../services/instagramAnalytics.ts';
+import type { InstagramMedia } from '../../../shared/types/instagram.ts';
 
-const viewsInsight = (value) => ({ data: [{ name: 'views', period: 'lifetime', values: [{ value }] }] });
+const viewsInsight = (value: unknown) => ({ data: [{ name: 'views', period: 'lifetime', values: [{ value }] }] }) as unknown as InstagramApiMedia['insights'];
 
 describe('classifyInstagramMedia', () => {
     test('reel reported as VIDEO with REELS product type is a reel', () => {
@@ -92,14 +95,14 @@ describe('fetchInstagramMedia', () => {
     afterEach(() => { globalThis.fetch = originalFetch; });
 
     test('retries a page without insights when the insights request fails', async () => {
-        const requests = [];
-        globalThis.fetch = async (url) => {
-            const fields = new URL(url).searchParams.get('fields');
+        const requests: (string | null)[] = [];
+        globalThis.fetch = async (url: unknown): Promise<Response> => {
+            const fields = new URL(url as string).searchParams.get('fields');
             requests.push(fields);
-            if (fields.includes('insights')) {
-                return { json: async () => ({ error: { message: 'Media posted before business account conversion' } }) };
+            if (fields!.includes('insights')) {
+                return { json: async () => ({ error: { message: 'Media posted before business account conversion' } }) } as unknown as Response;
             }
-            return { json: async () => ({ data: [{ id: 'a', media_type: 'VIDEO', media_product_type: 'REELS' }] }) };
+            return { json: async () => ({ data: [{ id: 'a', media_type: 'VIDEO', media_product_type: 'REELS' }] }) } as unknown as Response;
         };
 
         const media = await fetchInstagramMedia('123', 'token', 500);
@@ -114,9 +117,9 @@ describe('fetchInstagramMedia', () => {
             '': { data: [{ id: 'a', media_type: 'IMAGE' }, { id: 'b', media_type: 'VIDEO', media_product_type: 'REELS', insights: viewsInsight(5) }], paging: { cursors: { after: 'p2' }, next: 'https://next' } },
             p2: { data: [{ id: 'b', media_type: 'VIDEO', media_product_type: 'REELS' }, { id: 'c', media_type: 'VIDEO', media_product_type: 'FEED' }], paging: { cursors: { after: 'p3' } } },
         };
-        globalThis.fetch = async (url) => {
-            const after = new URL(url).searchParams.get('after') ?? '';
-            return { json: async () => pages[after] };
+        globalThis.fetch = async (url: unknown): Promise<Response> => {
+            const after = new URL(url as string).searchParams.get('after') ?? '';
+            return { json: async () => pages[after as keyof typeof pages] } as unknown as Response;
         };
 
         const media = await fetchInstagramMedia('123', 'token', 500);
@@ -134,7 +137,7 @@ describe('content type tracking', () => {
         { id: '2', contentType: 'reel', likeCount: 11, commentsCount: 8, viewCount: null, timestamp: '2026-08-21T10:00:00+0000', caption: '' },
         { id: '3', contentType: 'post', likeCount: 2, commentsCount: 0, viewCount: 50, timestamp: '2026-06-01T10:00:00+0000', caption: '' },
         { id: '4', contentType: 'video', likeCount: 7, commentsCount: 1, viewCount: 300, timestamp: '2025-01-01T10:00:00+0000', caption: '' },
-    ];
+    ] as InstagramMedia[];
 
     test('summarizeContentTypes counts each item exactly once', () => {
         const summary = summarizeContentTypes(media);
@@ -166,7 +169,7 @@ describe('content type tracking', () => {
     });
 
     test('computeInstagramAnalytics returns empty type stats with no media', () => {
-        const analytics = computeInstagramAnalytics({ mediaCount: 0 }, []);
+        const analytics = computeInstagramAnalytics({ mediaCount: 0 } as AnalyticsProfile, []);
         assert.equal(analytics.totalViews, 0);
         assert.equal(analytics.contentTypeStats.reel.count, 0);
         assert.equal(analytics.contentTypeStats.video.avgViews, 0);

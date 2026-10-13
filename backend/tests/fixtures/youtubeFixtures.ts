@@ -1,6 +1,8 @@
+import type { YouTubeVideo } from '../../../shared/types/youtube.ts';
+
 export const FIXED_NOW = Date.parse('2026-09-01T12:00:00Z');
 
-function video(videoId, publishedAt, duration, counts, extra = {}) {
+function video(videoId: string, publishedAt: string, duration: string, counts: [number, number | null, number | null], extra: Record<string, unknown> = {}): YouTubeVideo {
     const [viewCount, likeCount, commentCount] = counts;
     return {
         videoId,
@@ -26,7 +28,7 @@ function video(videoId, publishedAt, duration, counts, extra = {}) {
         embeddable: true,
         madeForKids: false,
         ...extra,
-    };
+    } as YouTubeVideo;
 }
 
 export const richVideos = [
@@ -48,8 +50,8 @@ export const zeroViewVideos = [
     video('z2', '2026-08-01T10:00:00Z', 'PT20M', [0, null, null]),
 ];
 
-function generatedTags(index) {
-    const tags = [];
+function generatedTags(index: number) {
+    const tags: string[] = [];
     for (let tag = 0; tag < 40; tag++) {
         if ((tag + index) % 4 === 0) tags.push(`Tag${tag}`);
     }
@@ -64,7 +66,7 @@ export const generatedVideos = Array.from({ length: 36 }, (_, index) => video(
     { tags: generatedTags(index), categoryId: String(20 + (index % 6)) },
 ));
 
-export const rawPlaylistItem = (videoId) => ({ snippet: { resourceId: { videoId } } });
+export const rawPlaylistItem = (videoId: string) => ({ snippet: { resourceId: { videoId } } });
 
 export const rawVideos = {
     full: {
