@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -96,6 +96,12 @@ export default function Login() {
                             >
                                 {isLogin ? 'Create an account' : 'Sign in'}
                             </button>
+                        </p>
+                        <p className="text-center text-small text-ink-faint">
+                            Need help getting started?{' '}
+                            <Link to="/docs" className="rounded-sm font-medium text-ink-muted underline-offset-4 hover:text-ink hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+                                Read the docs
+                            </Link>
                         </p>
                     </div>
                 </div>

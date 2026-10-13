@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useSmoothTheme } from '@/hooks/use-smooth-theme';
 import {
   LayoutDashboard, PlaySquare, Scissors, Clapperboard, MessagesSquare, Bookmark, Send,
-  Users, Settings, RefreshCw, Sun, Moon, Monitor, LogOut, Tag, Plus,
-} from 'lucide-react';
+  Users, Settings, RefreshCw, Sun, Moon, Monitor, LogOut, Tag, Plus, BookOpen } from 'lucide-react';
 import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandShortcut,
 } from '@/components/ui/command';
@@ -45,6 +44,7 @@ export default function CommandPalette({ open, onOpenChange, accounts, categorie
       icon: Tag, run: () => navigate(`/tracked-content/category/${encodeURIComponent(category)}`),
     })),
     { id: 'action:add-account', group: 'Actions', label: 'Add an account', keywords: ['connect', 'youtube', 'instagram', 'reddit'], icon: Plus, run: () => navigate('/accounts?add=1') },
+    { id: 'action:docs', group: 'Actions', label: 'Open documentation', keywords: ['help', 'guide', 'docs', 'setup', 'self-host'], icon: BookOpen, run: () => navigate('/docs') },
     { id: 'action:refresh', group: 'Actions', label: 'Refresh all accounts', keywords: ['sync', 'update'], icon: RefreshCw, run: onRefreshAll },
     { id: 'action:theme-light', group: 'Theme', label: 'Use light theme', keywords: ['appearance', 'paper'], icon: Sun, run: () => setTheme('light') },
     { id: 'action:theme-dark', group: 'Theme', label: 'Use dark theme', keywords: ['appearance', 'dusk'], icon: Moon, run: () => setTheme('dark') },

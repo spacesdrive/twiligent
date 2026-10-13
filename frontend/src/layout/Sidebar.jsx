@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useSmoothTheme } from '@/hooks/use-smooth-theme';
-import { Search, Tag, Settings, LogOut, Sun, Moon, Monitor, ChevronsUpDown } from 'lucide-react';
+import { Search, Tag, Settings, LogOut, Sun, Moon, Monitor, ChevronsUpDown, BookOpen } from 'lucide-react';
 import {
   Sidebar, SidebarContent, SidebarFooter, SidebarGroup, SidebarGroupLabel, SidebarHeader,
   SidebarMenu, SidebarMenuButton, SidebarMenuItem, useSidebar,
@@ -157,6 +157,7 @@ function UserMenu({ onSignOut }) {
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => navigate('/settings')}><Settings />Settings</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/docs')}><BookOpen />Documentation</DropdownMenuItem>
             <DropdownMenuItem onClick={onSignOut}><LogOut />Sign out</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
