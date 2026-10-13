@@ -3,6 +3,7 @@ import type { Env } from '../types/env.ts';
 const DEFAULT_BACKEND_URL = 'http://localhost:8787';
 const DEFAULT_FRONTEND_URL = 'http://localhost:5173';
 const DEV_ORIGINS = ['http://localhost:5173', 'http://127.0.0.1:5173'];
+const LOCAL_HOSTNAMES = ['localhost', '127.0.0.1'];
 const CALLBACK_PATH = '/api/auth/instagram/callback';
 
 export interface CloudinaryConfig {
@@ -43,14 +44,20 @@ function originOf(url: string): string | null {
     }
 }
 
-// FRONTEND_URL and any ALLOWED_ORIGINS; the local Vite server only when neither is set
+// FRONTEND_URL and any ALLOWED_ORIGINS, by origin
 function allowedOrigins(env: Env): string[] {
     const listed = [env.FRONTEND_URL, ...(env.ALLOWED_ORIGINS ?? '').split(',')]
         .map(value => cleanSecret(value))
         .filter((value): value is string => !!value)
         .map(originOf)
         .filter((origin): origin is string => origin !== null);
-    return listed.length > 0 ? [...new Set(listed)] : DEV_ORIGINS;
+    return [...new Set(listed)];
+}
+
+// a Worker served from localhost is a development instance, so the local Vite server may call it too
+export function corsOrigins(config: AppConfig, requestUrl: string): string[] {
+    const local = LOCAL_HOSTNAMES.includes(new URL(requestUrl).hostname);
+    return local ? [...config.allowedOrigins, ...DEV_ORIGINS] : config.allowedOrigins;
 }
 
 export function readInstagramOAuthConfig(env: Env): InstagramOAuthConfig {
