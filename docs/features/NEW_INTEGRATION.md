@@ -213,8 +213,9 @@ await deleteTwitterCache(redis, userId, id);
 
 ```bash
 # Add the secrets to the Worker
-wrangler secret put TWITTER_CLIENT_ID
-wrangler secret put TWITTER_CLIENT_SECRET
+cd backend
+npx wrangler secret put TWITTER_CLIENT_ID
+npx wrangler secret put TWITTER_CLIENT_SECRET
 ```
 
 Add corresponding secrets to GitHub Actions if the CI/CD pipeline needs them.
@@ -257,5 +258,5 @@ If the platform uses OAuth:
 - [ ] Access token never returned in any API response (use `safeTwitterAccount()` or equivalent)
 - [ ] Access token read from `account.accessToken` on the backend - never passed from frontend
 - [ ] OAuth callback validates HMAC state before accepting code
-- [ ] New Worker secrets added with `wrangler secret put` - not stored in `wrangler.toml` plaintext
+- [ ] New Worker secrets added with `npx wrangler secret put` - not stored in `wrangler.toml` plaintext
 - [ ] New secrets added to GitHub Actions repository secrets if needed by CI

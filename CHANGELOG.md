@@ -83,7 +83,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Hold-to-confirm for removing accounts, untracking content and deleting scheduled posts
 - `/accounts?add=1` opens the add-account flow directly
 - Location field in bulk publishing (the value was already sent with each post but had no input)
-- Frontend unit tests (`cd frontend && npm test`) and backend tests for credential stripping and Instagram publishing parameters
+- Frontend unit tests (`npm test` at the repo root) and backend tests for credential stripping and Instagram publishing parameters
 - `docs/design-reference.md` and `docs/architecture/frontend/DESIGN_SYSTEM.md`
 
 **Instagram views by content type**
@@ -311,7 +311,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 - Strip non-ASCII characters from `SUPABASE_URL` and `SUPABASE_SERVICE_KEY` env vars in `scripts/publish-scheduled.js` using `/[^\x20-\x7E]/g` to defend against BOM injected by PowerShell 5.1 when setting GitHub Actions secrets
-- Replaced embedded literal U+FEFF in BOM-strip regex with proper `﻿` unicode escape
+- Replaced embedded literal U+FEFF in BOM-strip regex with proper `\uFEFF` unicode escape
 
 ---
 

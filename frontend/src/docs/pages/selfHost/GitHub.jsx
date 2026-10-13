@@ -18,6 +18,7 @@ export default function GitHub() {
           [<Code>VITE_SUPABASE_ANON_KEY</Code>, 'Same value as in frontend/.env.'],
           [<Code>VITE_API_URL</Code>, 'Same value as in frontend/.env, ending in /api.'],
           [<Code>VITE_ADMIN_EMAIL</Code>, 'Optional. Your contact address.'],
+          [<Code>VITE_GOOGLE_CLIENT_ID</Code>, 'Optional. Shows Continue with Google on the sign-in page.'],
         ]}
       />
       <P>Worker secrets stay in Cloudflare; the backend workflow does not need them.</P>

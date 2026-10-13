@@ -33,7 +33,7 @@ export default {
 
 ## Environment Bindings (Secrets)
 
-All secrets are set via `wrangler secret put <NAME>`. They are available at runtime as `env.NAME` or `c.env.NAME`.
+All secrets are set via `npx wrangler secret put <NAME>`, run from `backend/`. They are available at runtime as `env.NAME` or `c.env.NAME`.
 
 | Secret | Required | Purpose |
 |---|---|---|
@@ -53,8 +53,9 @@ All secrets are set via `wrangler secret put <NAME>`. They are available at runt
 ### Setting secrets
 
 ```bash
-wrangler secret put SUPABASE_URL
-wrangler secret put SUPABASE_SERVICE_KEY
+cd backend
+npx wrangler secret put SUPABASE_URL
+npx wrangler secret put SUPABASE_SERVICE_KEY
 # (paste value when prompted - no echo)
 ```
 
@@ -97,7 +98,7 @@ These are hard constraints imposed by the Cloudflare Workers runtime. Violating 
 
 ## Adding a New Worker Secret
 
-1. Set via `wrangler secret put NEW_SECRET_NAME`
+1. Set via `npx wrangler secret put NEW_SECRET_NAME` from `backend/`
 2. Add to `backend/.env.example` with a placeholder value
 3. Add to `backend/.dev.vars` locally
 4. Set as a GitHub secret if needed by deploy workflow

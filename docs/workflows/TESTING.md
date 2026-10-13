@@ -170,9 +170,7 @@ If you have a test post scheduled in the near future, use `GET /api/process-sche
 
 ## Future Test Infrastructure
 
-When automated tests are added, this document will be updated. Priority order for adding tests:
+Already in place: golden tests for `computeVideoAnalytics()`, `computeInstagramAnalytics()` and `computeRedditAnalytics()`, and route tests that run the Hono handlers against a fake Supabase client (`backend/tests/fixtures/`). Still to add, in priority order:
 
-1. **Unit tests for `computeVideoAnalytics()` and `computeInstagramAnalytics()`** - pure functions with complex logic, easy to test
-2. **Unit tests for `lib/db.js` functions** - using a Supabase test project
-3. **Integration tests for backend routes** - using `miniflare` or similar Workers test runner
-4. **End-to-end tests** - Playwright for the full login -> view analytics -> publish flow
+1. **Tests for `lib/db.js` against a real database** - using a Supabase test project
+2. **End-to-end tests** - Playwright for the full login -> view analytics -> publish flow

@@ -10,7 +10,7 @@ Pure helpers whose formulas are identical in the Instagram and Reddit analytics:
 
 ## Instagram (`backend/services/instagram*.js`)
 
-`services/instagram.js` is a barrel that re-exports the public names below, so routes, the scheduler and tests import from it unchanged. Each module imports its siblings directly, never the barrel.
+`services/instagram.js` is a barrel that re-exports the public names below, so routes and the scheduler import from it unchanged. Tests in `backend/tests/services/` import the individual modules directly. Each module imports its siblings directly, never the barrel.
 
 | Module | Contents |
 |---|---|
