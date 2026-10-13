@@ -1,5 +1,5 @@
 import React from 'react';
-import { DocTitle, H2, P, Code, CodeBlock, Steps, Step, Table } from '../../components';
+import { DocTitle, H2, P, A, Code, CodeBlock, Steps, Step, Table } from '../../components';
 
 export default function DeployBackend() {
   return (
@@ -34,7 +34,7 @@ npx wrangler secret put CLOUDINARY_UPLOAD_PRESET
 npx wrangler secret put BACKEND_URL
 npx wrangler secret put FRONTEND_URL
 `}</CodeBlock>
-          <P>If you use Redis, also add <Code>UPSTASH_REDIS_REST_URL</Code> and <Code>UPSTASH_REDIS_REST_TOKEN</Code>. Skip any platform you do not use. <Code>FRONTEND_URL</Code> is the address of the site from the next page; you can set it after deploying the frontend, but the site cannot reach the backend until you do. If the site is served from more than one address, list the others in <Code>ALLOWED_ORIGINS</Code>, separated by commas.</P>
+          <P>If you use Redis, also add <Code>UPSTASH_REDIS_REST_URL</Code> and <Code>UPSTASH_REDIS_REST_TOKEN</Code>. Skip any platform you do not use. <Code>FRONTEND_URL</Code> is the address of the site from the next page; you can set it after deploying the frontend, but the site cannot reach the backend until you do. If the site is served from more than one address, list the others in <Code>ALLOWED_ORIGINS</Code>, separated by commas. To email verification codes, add the secrets in <A to="/docs/self-host/email-codes">Email verification codes</A>.</P>
         </Step>
         <Step title="Check it is running">
           <P>Open <Code>{'https://your-backend-url/api/health'}</Code>. It should return <Code>{'{"status":"ok"}'}</Code> with a timestamp. Every response also carries an <Code>X-Request-Id</Code> header; server error messages in the app show the same id, and you can find its log line with <Code>npx wrangler tail</Code>.</P>

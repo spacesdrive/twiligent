@@ -37,6 +37,8 @@ Defined in `backend/lib/rateLimit/rules.ts`.
 | `publish` | `POST /accounts/:id/ig-media-publish`, `/accounts/:id/ig-publish` | User id | Leaking bucket | 50 deep, drains 1 every 15 seconds |
 | `oauth` | `GET /auth/instagram/callback` | Client IP | Fixed window counter | 10 per 10 minutes |
 
+Auth emails have their own daily caps, which are not rate limit rules: the Send Email hook allows `EMAIL_DAILY_LIMIT` emails a day in total (100 by default) and 5 a day to one address, counted per UTC day by `repositories/emailQuotaRepository.ts`. See `docs/architecture/backend/CACHING.md` for the counters and `SERVICES.md` for the rules. Supabase calls the hook from its own servers, so the `ip` rule above counts Supabase, not the person signing up; the per-address cap and Supabase's own email rate limit are what slow down one person.
+
 The limits are sized for the dashboard: an Overview load sends about 20 requests, Instagram container polling sends one every 3 seconds, and bulk publishing sends two Instagram calls per file. Lowering them can block normal use; test the Overview, bulk publishing and tracked content refresh after any change.
 
 The client IP comes from `CF-Connecting-IP`, which Cloudflare always sets and which a client cannot override. Locally, `wrangler dev` does not set it, so the IP rule only applies when a test sends the header. IPv4-mapped IPv6 addresses (`::ffff:203.0.113.7`) are limited as the IPv4 address.

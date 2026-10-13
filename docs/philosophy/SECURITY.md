@@ -10,6 +10,8 @@
 | Instagram App Secret | Worker secret | Worker only | **Never** |
 | YouTube API key | Worker secret | Worker only | **Never** |
 | Cloudinary credentials | Worker secrets | Worker only | **Never** |
+| Send Email hook secret (`SEND_EMAIL_HOOK_SECRET`) | Worker secret, and Supabase's hook settings | Worker (verifies) and Supabase Auth (signs) | **Never** |
+| Resend API key | Worker secret | Worker only | **Never** |
 | User's Instagram access token | `accounts.data.accessToken` in DB | Worker only | **Never** |
 | Supabase JWT secret | Supabase (internal) | Supabase JWT verification | **Never** |
 
@@ -66,6 +68,18 @@ The Instagram OAuth flow uses a self-verifying HMAC state token to prevent CSRF:
 
 If the HMAC check fails, the callback discards the code and redirects the browser back to the accounts page with `ig_error=invalid_state`. An attacker cannot forge a valid state without the `INSTAGRAM_APP_SECRET`.
 
+## Auth Email Hook
+
+`POST /api/auth/email-hook` is public because Supabase Auth, not a browser, calls it. Its only proof of origin is the Standard Webhooks signature made with `SEND_EMAIL_HOOK_SECRET`:
+
+1. The Worker recomputes HMAC-SHA256 over `webhook-id.webhook-timestamp.body` and compares it in constant time (`crypto.subtle.verify`).
+2. A timestamp more than five minutes from now is refused, so a captured request cannot be replayed later.
+3. Without the secret the route answers 503 instead of sending anything.
+
+Without a valid signature nobody can make the Worker send email or read the codes. The codes travel only from Supabase to the Worker to Resend; they are never logged. The daily counters in Redis are keyed by a SHA-256 hash of the address, never the address.
+
+The caps also protect the free email quota. There are 100 emails a day by default and 5 a day to one address, and a refused send counts nothing, so repeated requests for one address cannot use up the day. Supabase's own email rate limit and CAPTCHA add protection against many addresses at once (see the self-hosting page `self-host/email-codes`).
+
 ## Rate Limiting
 
 Every `/api` request is rate limited per client IP before authentication, so a flood of invalid tokens never reaches Supabase Auth. Protected requests are also limited per user, and routes that spend the shared YouTube quota or the Instagram and Reddit limits have a tighter per-user rule. Limits are counted atomically in Redis (one Lua script per check) and fall back to per-isolate memory when Redis is absent or failing, so they never fail open entirely and never fail a request. See `docs/architecture/backend/RATE_LIMITING.md`.
@@ -101,6 +115,7 @@ If a credential is compromised:
 2. GitHub Actions secrets: update in repository Settings -> Secrets
 3. Instagram App Secret: rotate in Meta Developer dashboard, then update Worker secret
 4. Supabase service role key: rotate in Supabase project Settings -> API
-5. User Instagram tokens: user must reconnect their account via the OAuth flow
+5. Send Email hook secret: generate a new one in Supabase Authentication -> Auth Hooks, then `wrangler secret put SEND_EMAIL_HOOK_SECRET`; Resend API key: create a new key in Resend, update the Worker secret, then delete the old key
+6. User Instagram tokens: user must reconnect their account via the OAuth flow
 
 There is no automated secrets rotation. This is a known gap.

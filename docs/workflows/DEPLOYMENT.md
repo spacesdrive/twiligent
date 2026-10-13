@@ -72,11 +72,17 @@ npx wrangler secret put FRONTEND_URL
 npx wrangler secret put ALLOWED_ORIGINS             # optional; extra browser origins, comma-separated
 npx wrangler secret put UPSTASH_REDIS_REST_URL      # optional
 npx wrangler secret put UPSTASH_REDIS_REST_TOKEN    # optional
+npx wrangler secret put SEND_EMAIL_HOOK_SECRET      # optional; email verification codes (with the three below)
+npx wrangler secret put RESEND_API_KEY              # optional
+npx wrangler secret put EMAIL_FROM                  # optional
+npx wrangler secret put EMAIL_DAILY_LIMIT           # optional; defaults to 100
 ```
 
 Each command prompts for the value (no echo - the value is not shown).
 
 `FRONTEND_URL` is also the browser origin the API accepts: CORS answers only `FRONTEND_URL` and the origins listed in `ALLOWED_ORIGINS`. Set `ALLOWED_ORIGINS` when the app is served from more than one address (for example a custom domain and the `pages.dev` address), and update `FRONTEND_URL` when the domain changes, or the browser blocks every API call.
+
+The email secrets only matter once Supabase's Send Email hook points at `https://<worker>/api/auth/email-hook`. Set them before turning the hook on: while the hook is on and the secrets are missing, every sign-up and password reset fails with a 503. The full setup (Resend domain, hook, **Confirm email**, rate limit) is in the in-app guide at `/docs/self-host/email-codes`. To check the hook after a deploy, sign up with an address you own and watch `npx wrangler tail` for the `auth email sent` line.
 
 ## Setting GitHub Actions Secrets
 

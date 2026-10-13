@@ -66,7 +66,7 @@ You deploy one Cloudflare Worker and one Cloudflare Pages site using your own AP
 | **Bulk upload** | Upload multiple files at once, assign captions individually or apply a shared caption, schedule them with configurable intervals |
 | **Cloudinary CDN** | Upload media directly from the dashboard; Instagram requires public URLs before publishing |
 | **Token auto-refresh** | Instagram long-lived tokens renew automatically every 24 hours via a daily Worker cron so analytics never break |
-| **Authentication** | Supabase Auth with email and password; each user's accounts and posts are fully isolated |
+| **Authentication** | Supabase Auth with email and password or Google; optional 6-digit email verification codes sent through Resend with a daily cap; each user's accounts and posts are fully isolated |
 | **Dark and light mode** | Toggle between themes from the header |
 
 ---
@@ -236,7 +236,7 @@ alter table scheduled_posts enable row level security;
 alter table tracked_posts enable row level security;
 ```
 
-If you created the tables from an earlier version of this README, run the `tracked_posts` and `alter table` statements above as well. Then, in Supabase Authentication, turn off **Confirm email** unless you have set up an email provider, and turn off new signups once your team has accounts if the instance is private.
+If you created the tables from an earlier version of this README, run the `tracked_posts` and `alter table` statements above as well. Then, in Supabase Authentication, turn off **Confirm email** unless you have set up email verification codes (`/docs/self-host/email-codes`), and turn off new signups once your team has accounts if the instance is private.
 
 **4. Configure credentials**
 
@@ -332,7 +332,13 @@ npx wrangler secret put FRONTEND_URL
 npx wrangler secret put ALLOWED_ORIGINS             # optional
 npx wrangler secret put UPSTASH_REDIS_REST_URL      # optional
 npx wrangler secret put UPSTASH_REDIS_REST_TOKEN    # optional
+npx wrangler secret put SEND_EMAIL_HOOK_SECRET      # optional; email verification codes
+npx wrangler secret put RESEND_API_KEY              # optional
+npx wrangler secret put EMAIL_FROM                  # optional
+npx wrangler secret put EMAIL_DAILY_LIMIT           # optional; defaults to 100
 ```
+
+The four email secrets turn on 6-digit verification codes for email sign-ups, sent free through Resend (100 a day). Supabase Auth hands each email to the Worker through its Send Email hook (`POST /api/auth/email-hook`). Past the daily limit, the sign-up page asks people to sign in with Google instead. Setup steps are in the app at `/docs/self-host/email-codes`.
 
 ### Getting API credentials
 

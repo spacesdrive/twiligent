@@ -32,6 +32,9 @@ Tests never sit next to source files. Each workspace has a `tests/` folder that 
 | `backend/validators/fields.ts` | `backend/tests/validators/fields.test.ts` |
 | `frontend/src/lib/accounts.ts` | `frontend/tests/lib/accounts.test.ts` |
 | `frontend/src/lib/apiErrors.ts` | `frontend/tests/lib/apiErrors.test.ts` |
+| `backend/routes/authHookRoutes.ts` | `backend/tests/routes/authHookRoutes.test.ts` |
+| `backend/services/authEmailService.ts` | `backend/tests/services/authEmailService.test.ts` |
+| `frontend/src/lib/authErrors.ts` | `frontend/tests/lib/authErrors.test.ts` |
 | `frontend/src/features/analytics/overview/overviewStats.ts` | `frontend/tests/features/analytics/overview/overviewStats.test.ts` |
 | `frontend/src/docs/nav.ts` | `frontend/tests/docs/nav.test.ts` |
 
@@ -46,6 +49,8 @@ The error contract has its own tests: `tests/middleware/errorHandler.test.ts` (t
 Rate limiting has its own tests: `tests/lib/rateLimit/algorithms.test.ts` (each algorithm's decisions, retry and reset times), `tests/lib/rateLimit/limiter.test.ts` (Redis path, memory fallback, circuit breaker, deny cache, eviction) and `tests/middleware/rateLimit.test.ts` (headers, the 429 body, route filters, IPv6 keys). The Lua scripts in `lib/rateLimit/scripts.ts` cannot run in Node; when you change one, change the twin function in `algorithms.ts` the same way and check both against each other in a Lua VM (see `docs/architecture/backend/RATE_LIMITING.md`).
 
 Backend route and cron service tests (`tests/routes/*Routes.test.ts`, `tests/services/scheduledPublisher.test.ts`, `tests/services/tokenRefreshService.test.ts`) run the real code against `tests/fixtures/fakeSupabase.ts` and a scripted `fetch`, then compare responses, queries and outgoing requests with the `tests/fixtures/*.golden.json` snapshots. Route tests mount a route table with `mountWithContext()` from `tests/fixtures/routeHarness.ts`, which installs the real error handler and not-found handler and sets the request id (`req-test`), the signal and the context values the pipeline would set, so error responses are checked with their real `{ success: false, code, message, requestId }` body and status. Rows tagged with `tableRow(name, row)` are only visible to that table; untagged rows are visible to every table. A refactor must leave the snapshots unchanged. Prettier ignores the snapshots (`.prettierignore`), because the tests compare them byte for byte.
+
+The Send Email hook has its own tests: `tests/lib/webhookSignature.test.ts` (valid, tampered, wrong-key, multi-signature and replayed requests), `tests/validators/authHookValidators.test.ts`, `tests/services/email/authEmails.test.ts` (the email for each action, the verify links, HTML escaping and the two Secure Email Change emails), `tests/repositories/emailQuotaRepository.test.ts` (daily and per-address caps, hashed keys, Redis failures), `tests/services/authEmailService.test.ts` (Resend requests, idempotency keys, the caps and Resend's own quota errors, skipped notices) and `tests/routes/authHookRoutes.test.ts` (the hook error shape, and the route answering unsigned calls with 401 in the full app). `tests/fixtures/authHook.ts` signs requests the way Supabase Auth does. The Lua claim script cannot run in Node; the repository test runs the same rules in memory. On the frontend, `tests/lib/authErrors.test.ts` covers when the login page points to Google.
 
 The testing workflow documented here describes what should run before shipping any change.
 
@@ -117,6 +122,14 @@ Open the app in a browser. For each changed area, test:
 - [ ] Login with valid credentials -> lands on Overview
 - [ ] Login with invalid credentials -> error message shown
 - [ ] Sign out -> redirects to login
+
+**Email verification codes (if the hook, its secrets or the login page changed):**
+- [ ] Create an account with an address you own -> the code arrives from `EMAIL_FROM`, the page shows the code step, and entering the code lands on Overview
+- [ ] A wrong code -> "The code is wrong or has expired"; Send a new code -> a new email, then a 60 second wait
+- [ ] Sign in with an unconfirmed address -> the code step opens
+- [ ] An unsigned call, `curl -i -X POST -H "Content-Type: application/json" -d '{}' .../api/auth/email-hook` -> 401 with `{ "error": { "http_code": 401, ... } }` and no email sent
+- [ ] `npx wrangler tail` shows `auth email sent` for each code, and no code in any log line
+- [ ] To check the daily cap without spending the quota, run the Worker locally with `EMAIL_DAILY_LIMIT=1` and no Redis, and send signed requests (see `tests/fixtures/authHook.ts` for the signing) -> the second one answers 429 with the Google message
 
 **Request pipeline (if middleware, CORS or error handling changed):**
 - [ ] Every response, including errors, has an `X-Request-Id` header and the security headers (`Content-Security-Policy`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff`)

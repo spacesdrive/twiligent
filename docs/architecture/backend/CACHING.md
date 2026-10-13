@@ -57,6 +57,15 @@ The rate limiter uses its own client with a 1 second timeout and no retries; see
 
 Rate limit state also lives in Redis under `twiligent:ratelimit:{rule}:{identifier}` keys (hashes or sorted sets, each with its own expiry). They are written only by the Lua scripts in `lib/rateLimit/scripts.ts` through a separate fast-fail client; see `RATE_LIMITING.md`.
 
+The auth email counters are not cache either. `repositories/emailQuotaRepository.ts` writes them through the same fast-fail client, so a slow Redis cannot use up the Send Email hook's 5 second budget:
+
+| Key pattern | Content | Set when | Expires |
+|---|---|---|---|
+| `email:day:{YYYY-MM-DD}` | Emails sent on that UTC day, all users together | Each email the hook sends | 2 days after the last write |
+| `email:to:{sha256 of the lowercased address}:{YYYY-MM-DD}` | Emails sent to one address that day; the key holds a hash, never the address | Each email the hook sends | 2 days after the last write |
+
+One Lua script reads both counters and increments both only when neither cap is reached, so two calls at once cannot both take the last email, and a refused send counts nothing. When Redis is missing or fails, the repository answers `unknown` and the email is sent; Resend's own daily quota is then the cap.
+
 **Note:** Instagram OAuth state is an HMAC-signed token and does not use Redis.
 
 ## Cache Versioning

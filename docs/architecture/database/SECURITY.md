@@ -43,6 +43,8 @@ This denies the anon and authenticated roles everything, while the service-role 
 
 Supabase Auth accepts signups from anyone who knows the project URL and anon key. Private instances should turn off new signups in Supabase Authentication settings once their members have accounts.
 
+With **Confirm email** on and the Send Email hook set up, an email account cannot sign in until its owner enters the 6-digit code sent to the address. The Worker sends those emails through Resend and caps them at `EMAIL_DAILY_LIMIT` a day (100 by default) and 5 a day per address; see `docs/architecture/data-flows/AUTHENTICATION.md`.
+
 **The service-role key must never appear in:**
 - Frontend code
 - API responses
@@ -73,7 +75,8 @@ The Instagram `accessToken` stored in `accounts.data.accessToken` is a long-live
 
 When reviewing security, check these files:
 - `backend/middleware/auth.ts` - JWT verification
-- `backend/repositories/` - every user-scoped method ends in `ForUser` and filters by `user_id`; the methods without a `userId` are used only by `scheduledPublisher.ts` and `tokenRefreshService.ts`
+- `backend/repositories/` - every user-scoped method ends in `ForUser` and filters by `user_id`; the methods without a `userId` are used only by `scheduledPublisher.ts` and `tokenRefreshService.ts`. `emailQuotaRepository.ts` is not user-scoped: it keeps instance-wide Redis counters for the Send Email hook, keyed by a hash of the address
+- `backend/middleware/authHook.ts` and `backend/lib/webhookSignature.ts` - the only thing that authenticates the public Send Email hook
 - `backend/controllers/` and `backend/services/` - the `userId` passed to a repository always comes from `c.get('userId')`, never from the body or query
 - `backend/lib/safeAccount.ts` - `safeAccount()` definition; it strips every stored credential for all platforms
 - All controllers in `backend/controllers/` - verify `safeAccount()` is called on every account response

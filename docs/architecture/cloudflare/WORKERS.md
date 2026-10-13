@@ -52,6 +52,10 @@ All secrets are set via `npx wrangler secret put <NAME>`, run from `backend/`. T
 | `ALLOWED_ORIGINS` | Optional | Comma-separated extra browser origins CORS allows besides `FRONTEND_URL`, such as a second domain (`https://a.example.com,https://b.example.com`). Set it with `wrangler secret put` like the others, so the next `wrangler deploy` keeps it (a plain variable added in the dashboard can be replaced on deploy) |
 | `UPSTASH_REDIS_REST_URL` | Optional | Upstash Redis endpoint; caching disabled if absent |
 | `UPSTASH_REDIS_REST_TOKEN` | Optional | Upstash auth token |
+| `SEND_EMAIL_HOOK_SECRET` | Optional | The Send Email hook secret from Supabase (`v1,whsec_...`); verifies that `POST /api/auth/email-hook` was called by your Supabase Auth. Without it the hook answers 503 |
+| `RESEND_API_KEY` | Optional | Resend API key with sending access; sends the auth emails (verification codes) |
+| `EMAIL_FROM` | Optional | Sender of the auth emails on a domain verified in Resend, such as `Twiligent <no-reply@example.com>` |
+| `EMAIL_DAILY_LIMIT` | Optional | Auth emails a day across all users before sign-up points to Google; defaults to `100`, Resend's free daily quota |
 
 ### Setting secrets
 
@@ -80,6 +84,10 @@ FRONTEND_URL=http://localhost:5173
 # ALLOWED_ORIGINS=https://another-domain.example.com
 UPSTASH_REDIS_REST_URL=https://...
 UPSTASH_REDIS_REST_TOKEN=...
+# only to test the Send Email hook locally; Supabase cannot reach localhost, so sign request bodies yourself
+# SEND_EMAIL_HOOK_SECRET=v1,whsec_...
+# RESEND_API_KEY=re_...
+# EMAIL_FROM=Twiligent <no-reply@example.com>
 ```
 
 Run locally from the repository root: `npm run dev:backend` (Worker only, port 8787) or `npm run dev` (Worker and Vite together). Both run `wrangler dev` in `backend/`, which reloads on save.

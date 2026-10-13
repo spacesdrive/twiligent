@@ -8,7 +8,7 @@ Every API request passes through the same layers, and each layer has one job:
 | Route table | `backend/routes/` | Maps a method and path to its middleware and controller | HTTP |
 | Controller | `backend/controllers/` | Reads validated input and the user id, calls one service method, picks the status and builds the response | HTTP |
 | Service | `backend/services/` | Business rules and orchestration: what should happen | Application data only |
-| Repository | `backend/repositories/` | Data access: one method per query on a Supabase table or the Redis cache | The database |
+| Repository | `backend/repositories/` | Data access: one method per query on a Supabase table, the Redis cache or the Redis email counters (`emailQuotaRepository`) | The database |
 | Request context | `types/context.ts`, `AppVariables` | Request-scoped metadata: request id, user id, cancellation signal, logger | Nothing else |
 
 The rule of thumb: HTTP concerns stay in middleware and controllers, business concerns in services, database concerns in repositories, cross-cutting work in middleware and request metadata in the request context.
@@ -25,7 +25,8 @@ Request
   3. Security headers  middleware/securityHeaders.ts deny-all CSP, no framing, no-referrer, nosniff, HSTS
   4. Clients           middleware/clients.ts         per-request Supabase and Redis clients
   5. Rate limit by IP  middleware/rateLimit.ts       before authentication, so bad tokens never reach Supabase Auth
-     Public routes     routes/index.ts               /api/health, /api/auth/instagram/callback (with its own oauth limit)
+     Public routes     routes/index.ts               /api/health, /api/auth/instagram/callback (with its own oauth limit),
+                                                     /api/auth/email-hook (middleware/authHook.ts checks Supabase's signature)
   6. Authentication    middleware/auth.ts            verifies the JWT and sets userId; 401 otherwise
   7. Per-user limits   middleware/rateLimit.ts       user, quota and publish rules
   8. Route table       routes/<feature>Routes.ts
@@ -36,7 +37,7 @@ Request
 Response, or a thrown error -> middleware/errorHandler.ts
 ```
 
-Authorization is ownership: every user-scoped repository method filters by the verified user id, so another user's row is simply not found (404). There are no roles.
+Authorization is ownership: every user-scoped repository method filters by the verified user id, so another user's row is simply not found (404). There are no roles. The Send Email hook has no user: Supabase Auth calls it, and the webhook signature takes the place of the JWT.
 
 ## Request context
 
@@ -73,7 +74,7 @@ Services and repositories throw typed errors from `lib/errors.ts`. An error carr
 | `ForbiddenError` | `FORBIDDEN` | 403 | Reserved; ownership failures are 404 |
 | `NotFoundError` | `NOT_FOUND` | 404 | The resource does not exist for this user, or the route does not exist |
 | `ConflictError` | `CONFLICT` | 409 | The account is already added |
-| (rate limiter) | `RATE_LIMITED` | 429 | A rate limit rule is exceeded; the body adds `retryAfter` |
+| `RateLimitedError`, or the rate limiter | `RATE_LIMITED` | 429 | A daily allowance is used up (the auth email caps), or a rate limit rule is exceeded; the rate limiter's body adds `retryAfter` |
 | `UpstreamError` | `UPSTREAM_ERROR` | 502 | YouTube, Instagram or Reddit answered with an error; its message is kept, URLs are removed |
 | `NotConfiguredError` | `NOT_CONFIGURED` | 503 | A Worker secret the request needs is not set |
 | `UpstreamTimeoutError` | `UPSTREAM_TIMEOUT` | 504 | A platform call was cancelled or timed out |
@@ -83,6 +84,8 @@ Services and repositories throw typed errors from `lib/errors.ts`. An error carr
 Errors of status 500 and above are logged at `error` level with the request id; 4xx errors at `warn`. The frontend's `request()` shows the message and adds the request id to 5xx messages.
 
 Controllers do not catch errors to format them. The one exception is the Instagram OAuth callback, which must redirect the browser back to the app whatever happens.
+
+The Send Email hook is called by Supabase Auth, which reads failures as `{ "error": { "http_code": 429, "message": "..." } }`. Its route table, `routes/authHookRoutes.ts`, sets `router.onError(authHookErrorHandler)`; the status mapping and logging are the same as `errorHandler`'s, only the body differs.
 
 ## Validation
 
