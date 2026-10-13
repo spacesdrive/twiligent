@@ -117,8 +117,33 @@ keys are `label`, `category`, `accountId`, `manualViews`, and `imageUrl`. `manua
 clear a previously set value.
 
 `imageUrl` must already be a hosted `https:` URL. The Worker never accepts binary uploads, so
-the browser posts the file straight to Cloudinary with the unsigned preset from
-`getCloudinaryConfig()` and sends only the returned `secure_url`.
+the browser posts the file straight to Cloudinary with `api.uploadToCloudinary()` (below) and
+sends only the returned `secure_url`.
+
+## Cloudinary Uploads
+
+```js
+uploadToCloudinary(file, cloudConfig, { onProgress, resourceType })
+```
+
+The one call in `api.js` that does not go to the Worker. It posts `file` and the unsigned
+`upload_preset` from `getCloudinaryConfig()` to
+`https://api.cloudinary.com/v1_1/<cloudName>/<resourceType>/upload` with `XMLHttpRequest`, so
+upload progress is available, and resolves with the response's `secure_url`.
+
+- `cloudConfig`: the object from `getCloudinaryConfig()` (`cloudName`, `uploadPreset`). Callers check it is set first.
+- `onProgress(percent)`: optional; called with a whole number from 0 to 100. The progress listener is only attached when this is passed.
+- `resourceType`: optional; defaults to `video` for `video/*` files and `image` otherwise.
+
+Failures reject with an `Error` that carries a `reason` so each page keeps its own wording:
+
+| `reason` | When | Default `message` | Extra fields |
+|---|---|---|---|
+| `network` | The request lost its connection | `The upload lost its network connection` | none |
+| `rejected` | Cloudinary answered with a non-2xx status | `Upload failed` | `cloudinaryMessage` (Cloudinary's `error.message`, if any) or `parseMessage` (the body was not JSON) |
+
+The bulk upload shows the default messages. The single post flow and the Tracked Content image
+upload map the error to their own wording.
 
 ## Authentication
 

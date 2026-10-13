@@ -18,14 +18,58 @@ async function request(path, options = {}) {
     return data;
 }
 
+const CLOUDINARY_API = 'https://api.cloudinary.com/v1_1';
+
+const UPLOAD_ERROR_MESSAGES = {
+    network: 'The upload lost its network connection',
+    rejected: 'Upload failed',
+};
+
+// callers read the reason and details so each page keeps its own wording
+function uploadError(reason, details = {}) {
+    return Object.assign(new Error(UPLOAD_ERROR_MESSAGES[reason]), { reason, ...details });
+}
+
+function readUploadError(responseText) {
+    try {
+        return { cloudinaryMessage: JSON.parse(responseText).error?.message };
+    } catch (err) {
+        return { parseMessage: err.message };
+    }
+}
+
+// the browser posts the file straight to Cloudinary so the Worker never handles binary uploads
+function uploadToCloudinary(file, cloudConfig, { onProgress, resourceType } = {}) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', cloudConfig.uploadPreset);
+    const type = resourceType || (file.type.startsWith('video/') ? 'video' : 'image');
+    const xhr = new XMLHttpRequest();
+    return new Promise((resolve, reject) => {
+        if (onProgress) {
+            xhr.upload.addEventListener('progress', e => {
+                if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+            });
+        }
+        xhr.addEventListener('load', () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                resolve(JSON.parse(xhr.responseText).secure_url);
+                return;
+            }
+            reject(uploadError('rejected', readUploadError(xhr.responseText)));
+        });
+        xhr.addEventListener('error', () => reject(uploadError('network')));
+        xhr.open('POST', `${CLOUDINARY_API}/${cloudConfig.cloudName}/${type}/upload`);
+        xhr.send(formData);
+    });
+}
+
 export const api = {
-    // Health
     health: () => request('/health'),
 
     // Server key status - all keys are env vars, this just returns configured: true/false
     getKeys: () => request('/keys'),
 
-    // Accounts
     getAccounts: () => request('/accounts'),
     addAccount: (input) => request('/accounts', { method: 'POST', body: JSON.stringify({ input }) }),
     deleteAccount: (id) => request(`/accounts/${id}`, { method: 'DELETE' }),
@@ -35,7 +79,6 @@ export const api = {
     // Instagram OAuth - gets the auth URL to redirect the browser to
     getInstagramAuthUrl: () => request('/auth/instagram/url'),
 
-    // Instagram accounts
     addInstagramAccount: (accessToken) => request('/accounts/instagram', { method: 'POST', body: JSON.stringify({ accessToken }) }),
     refreshIGToken: (id) => request(`/accounts/${id}/refresh-ig-token`, { method: 'POST' }),
     getIGAnalytics: (id) => request(`/accounts/${id}/ig-analytics`),
@@ -48,11 +91,10 @@ export const api = {
     getAnalytics: (id) => request(`/accounts/${id}/analytics`),
     getVideos: (id) => request(`/accounts/${id}/videos`),
 
-    // Comparison
     getComparison: () => request('/comparison'),
 
-    // Cloudinary config
     getCloudinaryConfig: () => request('/cloudinary-config'),
+    uploadToCloudinary,
 
     // Instagram Publishing
     getIGPublishingLimit: (id) => request(`/accounts/${id}/ig-publishing-limit`),
@@ -60,7 +102,6 @@ export const api = {
     getIGContainerStatus: (containerId, accountId) => request(`/ig-container/${containerId}/status?accountId=${accountId}`),
     publishIGContainer: (id, containerId) => request(`/accounts/${id}/ig-media-publish`, { method: 'POST', body: JSON.stringify({ containerId }) }),
 
-    // Reddit accounts
     addRedditAccount: (username, cookie) => request('/accounts/reddit', { method: 'POST', body: JSON.stringify({ username, cookie }) }),
     getRedditAnalytics: (id) => request(`/accounts/${id}/reddit-analytics`),
     getRedditPosts: (id) => request(`/accounts/${id}/reddit-posts`),
@@ -79,7 +120,6 @@ export const api = {
     getGithubSettings: () => request('/settings/github'),
     saveGithubSettings: (data) => request('/settings/github', { method: 'PUT', body: JSON.stringify(data) }),
 
-    // Scheduled Posts
     getScheduledPosts: () => request('/scheduled-posts'),
     createScheduledPost: (data) => request('/scheduled-posts', { method: 'POST', body: JSON.stringify(data) }),
     updateScheduledPost: (id, data) => request(`/scheduled-posts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),

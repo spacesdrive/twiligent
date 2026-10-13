@@ -1,4 +1,4 @@
-import { fmtNum } from './formatters';
+import { fmtNum } from './formatters.js';
 
 export const IG_CONTENT_TYPES = ['reel', 'post', 'video'];
 

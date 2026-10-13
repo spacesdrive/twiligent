@@ -101,6 +101,21 @@ All feature pages and layout components use `useAppContext()`:
 
 ---
 
+## Shared Hooks (`frontend/src/hooks/`)
+
+Hooks used by more than one feature. Hooks used by a single feature live in that feature folder instead (see `docs/guidelines/REACT.md`).
+
+| Hook | File | Purpose |
+|---|---|---|
+| `useIsMobile()` | `use-mobile.js` | True below the mobile breakpoint |
+| `useCommandPaletteShortcut(setOpen)` | `use-command-palette-shortcut.js` | Ctrl+K / Cmd+K toggle for the command palette |
+| `useSmoothTheme()` | `use-smooth-theme.js` | Theme switch as one cross-fade |
+| `useCloudinaryConfig(reloadKey)` | `use-cloudinary-config.js` | Loads `api.getCloudinaryConfig()`; returns the config or `null` |
+
+`useCloudinaryConfig` sets the config only when the response has `success: true`. A failed request keeps the previous value (initially `null`), and pages show a missing config as an alert or a disabled upload field. The request runs again whenever `reloadKey` changes: the Publish page passes `accounts`, Tracked Content passes nothing and loads once.
+
+---
+
 ## Context Rules
 
 1. Never use `AuthContext` in feature pages - they should not care about auth state

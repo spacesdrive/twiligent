@@ -35,7 +35,12 @@ function MyComponent({ id }) {
 }
 ```
 
-**Custom hooks** go in `frontend/src/hooks/`. Name them `use-kebab-case.js`. Export a single function named `useSomething`.
+**Custom hooks** live where they are used:
+
+- A hook used by one feature lives in that feature folder as `useCamelCase.js`, for example `features/analytics/videos/useChannelVideos.js` or `features/publishing/useBulkQueue.js`.
+- A hook shared across features lives in `frontend/src/hooks/` as `use-kebab-case.js`, for example `hooks/use-cloudinary-config.js`.
+
+Either way, export a single function named `useSomething`. Move a feature hook into `hooks/` (and rename it) once a second feature needs it.
 
 ## State Management
 

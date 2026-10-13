@@ -80,6 +80,8 @@ frontend/src/
   hooks/
     use-mobile.js         useIsMobile()
     use-command-palette-shortcut.js  Ctrl+K / Cmd+K toggle
+    use-smooth-theme.js   useSmoothTheme(), theme cross-fade
+    use-cloudinary-config.js  useCloudinaryConfig(reloadKey), shared by Publish and Tracked content
   layout/
     index.jsx             AppShell: SidebarProvider + AppSidebar + TopBar + Outlet + CommandPalette
     navigation.js         NAV_GROUPS and route titles (single source for sidebar, top bar, palette)
@@ -115,7 +117,7 @@ frontend/src/
 - Feature files: `PascalCase.jsx` (matches component name)
 - Utility files: `camelCase.js`
 - Context files: `PascalCaseContext.jsx`
-- Hook files: `use-kebab-case.js`
+- Hook files: `use-kebab-case.js` in `hooks/` when shared across features; `useCamelCase.js` inside the feature folder when only one feature uses it
 - shadcn ui files: `kebab-case.jsx` (generated convention, do not rename)
 
 ## Adding a New Page
