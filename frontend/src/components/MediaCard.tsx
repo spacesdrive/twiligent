@@ -14,7 +14,7 @@ export interface MediaChipProps {
 
 export function MediaChip({ children, className }: MediaChipProps) {
   return (
-    <span className={cn('inline-flex items-center gap-1 rounded-pill bg-[#0C0809]/75 px-2 py-0.5 text-[0.6875rem] font-semibold text-white backdrop-blur-sm [&_svg]:size-3', className)}>
+    <span className={cn('inline-flex items-center gap-1 rounded-pill bg-media-scrim/75 px-2 py-0.5 text-[0.6875rem] font-semibold text-on-media backdrop-blur-sm [&_svg]:size-3', className)}>
       {children}
     </span>
   );

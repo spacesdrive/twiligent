@@ -29,7 +29,7 @@ function RecentPost({ post }: RecentPostProps) {
       {post.contentType !== 'post' && (
         <span className="absolute top-1 right-1"><MediaChip className="px-1.5 text-[0.625rem]">{igContentTypeMeta(post.contentType).label}</MediaChip></span>
       )}
-      <span className="absolute inset-x-0 bottom-0 flex justify-center gap-2 bg-gradient-to-t from-[#0C0809]/80 to-transparent pt-4 pb-1 text-[0.625rem] font-semibold text-white opacity-0 transition-opacity duration-(--duration-base) group-hover:opacity-100 group-focus-visible:opacity-100 [&_svg]:size-2.5">
+      <span className="absolute inset-x-0 bottom-0 flex justify-center gap-2 bg-gradient-to-t from-media-scrim/80 to-transparent pt-4 pb-1 text-[0.625rem] font-semibold text-on-media opacity-0 transition-opacity duration-(--duration-base) group-hover:opacity-100 group-focus-visible:opacity-100 [&_svg]:size-2.5">
         <span className="flex items-center gap-0.5"><Eye />{fmtIGViews(post.viewCount)}</span>
         <span className="flex items-center gap-0.5"><Heart />{fmtNum(post.likeCount)}</span>
         <span className="flex items-center gap-0.5"><MessageCircle />{fmtNum(post.commentsCount)}</span>

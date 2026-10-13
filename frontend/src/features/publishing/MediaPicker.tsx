@@ -24,7 +24,7 @@ function MediaPreview({ file, filePreview, selectedType, onClear }: MediaPreview
     <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
       <div className="relative w-full shrink-0 overflow-hidden rounded-control bg-surface-sunken sm:w-52">
         {isVideoFile(file) ? (
-          <video src={filePreview} controls muted className="max-h-72 w-full bg-black object-contain" />
+          <video src={filePreview} controls muted className="max-h-72 w-full bg-media-scrim object-contain" />
         ) : (
           <img src={filePreview} alt="Selected media preview" className="max-h-72 w-full object-contain" />
         )}
@@ -32,7 +32,7 @@ function MediaPreview({ file, filePreview, selectedType, onClear }: MediaPreview
           type="button"
           onClick={onClear}
           aria-label="Remove file"
-          className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-[#0C0809]/75 text-white transition-colors hover:bg-brand"
+          className="absolute top-2 right-2 flex size-7 items-center justify-center rounded-full bg-media-scrim/75 text-on-media transition-colors hover:bg-brand"
         >
           <X className="size-3.5" />
         </button>

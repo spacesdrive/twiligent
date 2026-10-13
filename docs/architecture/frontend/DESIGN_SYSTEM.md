@@ -11,6 +11,7 @@ All tokens live in `frontend/src/index.css`: raw values on `:root` and `.dark`, 
 | Surfaces | `bg-surface`, `bg-surface-raised`, `bg-surface-sunken`, `bg-surface-hover`, `bg-surface-selected`, `bg-surface-wash` | Page, cards, wells, hover, selected rows, choice cards |
 | Lines | `border-line`, `border-line-control`, `border-line-strong`, `border-divider` | Hairlines, control borders, text input borders (3:1), dividers inside boxes |
 | Text | `text-ink`, `text-ink-muted`, `text-ink-faint`, `text-ink-inverse` | All pass WCAG AA on every surface in both themes |
+| Media overlays | `bg-media-scrim` (with an opacity such as `/75`), `from-media-scrim/80`, `text-on-media` | Chips, scrims and buttons drawn over photos and video; the same in both themes, because the image behind them does not change with the theme |
 | Brand | `bg-brand`, `hover:bg-brand-hover`, `bg-brand-soft`, `text-brand-text`, `text-on-brand` | Red as text is always `text-brand-text` |
 | Status | `success`, `warning`, `danger`, `info`, each with `-soft` | Errors share the brand red, so they always carry an icon and the word "Error" |
 | Charts | `var(--chart-1)` to `var(--chart-5)` via `lib/chart.ts` `SERIES` | Brand series order; platforms map to series in `lib/accounts.ts` |
@@ -18,6 +19,8 @@ All tokens live in `frontend/src/index.css`: raw values on `:root` and `.dark`, 
 | Radius | `rounded-row` 10, `rounded-control` 10, `rounded-field` 12, `rounded-card` 16, `rounded-panel` 24, `rounded-dialog` 24, `rounded-pill` | Buttons, inputs and chips are rounded rectangles; badges keep the brand capsule |
 | Sizes | `h-(--control-h-sm)` 32, `h-(--control-h)` 36, `h-(--control-h-lg)` 40, `--nav-row-h` 32, `--topbar-h` 50, `--sidebar-w` 256 | |
 | Motion | `duration-(--duration-fast)` 75ms, `--duration-base` 150ms, `--duration-overlay` 200ms, `animate-fold-in` 220ms | `prefers-reduced-motion` collapses all motion |
+
+`TabsList` has three variants: `default` (underline tabs), `segmented` (a pill control) and `none` (no list styling, for layouts such as the Overview metric tiles that style each trigger themselves).
 
 Light is the `:root` default; `.dark` (set by `next-themes`, `attribute="class"`) redefines the same tokens. Users choose Light, Dark or System in Settings, the sidebar user menu, the top bar, or the command palette.
 

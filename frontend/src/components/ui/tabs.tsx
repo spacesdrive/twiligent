@@ -26,6 +26,7 @@ const tabsListVariants = cva(
       variant: {
         default: "h-[2.625rem] gap-4 border-b border-line bg-transparent",
         segmented: "h-(--control-h) gap-0.5 rounded-control bg-surface-sunken p-1",
+        none: "",
       },
     },
     defaultVariants: {

@@ -44,6 +44,10 @@
   --ink-faint: #6A6565;
   --ink-inverse: #FFFFFF;
 
+  /* Chips and scrims drawn over photos and video stay dark in both themes */
+  --media-scrim: #0C0809;
+  --on-media: #FFFFFF;
+
   /* Brand accent */
   --brand: #C11F2F;
   --brand-hover: #9A1423;
@@ -247,6 +251,8 @@
   --color-ink-muted: var(--ink-muted);
   --color-ink-faint: var(--ink-faint);
   --color-ink-inverse: var(--ink-inverse);
+  --color-media-scrim: var(--media-scrim);
+  --color-on-media: var(--on-media);
   --color-brand: var(--brand);
   --color-brand-hover: var(--brand-hover);
   --color-brand-soft: var(--brand-soft);

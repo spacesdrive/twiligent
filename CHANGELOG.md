@@ -62,6 +62,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- Media chips and scrims over photos used a hex colour and `text-white`; they now use the `media-scrim` and `on-media` design tokens. The Overview metric tabs use a declared `none` variant of `TabsList`, and the mobile sidebar keeps the class and HTML attributes passed to `Sidebar` instead of dropping them
 - YouTube analytics counted hidden like and comment counts as zero, which pulled averages and engagement rates down; averages and rates now use only the videos that report each count, and hidden counts sort last (see `docs/architecture/data-flows/ANALYTICS.md`). A channel with no videos now returns the same fields and formats as a full result, a Reddit profile without karma totals reports 0 instead of NaN, and date checks use `getTime()`
 - Saving the scheduling repository in Settings erased the stored GitHub token and then reported `configured: false` and `patSet: false`. The unused token is no longer stored or reported: `GET /api/settings/github` returns only `repoOwner`, `repoName` and `branch`
 - Refreshing or loading an account without the field its platform needs (a YouTube channel id or uploads playlist, a Reddit username) called the platform with `undefined`; it now answers with a message that says to re-add the account. Channel analytics also refuse accounts on other platforms, and the analytics response no longer carries `bannerUrl` and `isLinked`, which are not account fields

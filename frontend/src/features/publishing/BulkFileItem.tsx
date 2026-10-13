@@ -25,7 +25,7 @@ export default function BulkFileItem({ item, position, processing, onCaptionChan
         {isVideoFile(item.file)
           ? <video src={item.preview} muted className="size-full object-cover" />
           : <img src={item.preview} alt="" className="size-full object-cover" />}
-        <span className="absolute top-0.5 left-0.5 rounded-sm bg-[#0C0809]/75 px-1 font-mono text-[0.5625rem] font-semibold text-white">{position}</span>
+        <span className="absolute top-0.5 left-0.5 rounded-sm bg-media-scrim/75 px-1 font-mono text-[0.5625rem] font-semibold text-on-media">{position}</span>
       </div>
       <div className="min-w-0 flex-1">
         <div className="mb-1 flex items-center gap-2">
