@@ -2,6 +2,8 @@
 
 All routes live under `/api`. Routes under the `api` sub-app require a valid Supabase JWT (`requireAuth` middleware). Public routes bypass auth.
 
+Every route is rate limited and can answer `429` with `Retry-After`; see `RATE_LIMITING.md` for which rule covers which route.
+
 ## Public Routes
 
 | Method | Path | Handler | Purpose |

@@ -41,6 +41,7 @@ The `request()` function in `frontend/src/services/api.js` reads `data.error` an
 | `401` | Authentication required or token invalid (returned by `requireAuth`) |
 | `403` | Authenticated but not authorized (wrong user for this resource) |
 | `404` | Resource not found |
+| `429` | Rate limit exceeded; returned by the `rateLimit` middleware only, with `Retry-After` and `{ success: false, error, retryAfter }` (see `docs/architecture/backend/RATE_LIMITING.md`) |
 | `500` | Unexpected server error |
 
 ## Request Bodies

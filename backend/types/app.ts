@@ -9,6 +9,8 @@ export type { SupabaseClient, Redis };
 export interface AppVariables {
     supabase: SupabaseClient;
     redis: Redis | null;
+    // a separate client that fails fast; see getRateLimitRedis()
+    rateLimitRedis: Redis | null;
     userId: string;
     userEmail: string | undefined;
 }

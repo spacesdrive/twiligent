@@ -15,9 +15,9 @@
 │  https://twiligent.ujjwalkrai.workers.dev/api                   │
 │                                                                  │
 │  Hono v4 app                                                     │
-│  ├── Global middleware: CORS, Supabase client, Redis client      │
+│  ├── Global middleware: CORS, clients, per-IP rate limit         │
 │  ├── Public: GET /api/health, GET /api/auth/instagram/callback   │
-│  └── Protected (/api/*): requireAuth -> routes                   │
+│  └── Protected (/api/*): requireAuth -> rate limits -> routes    │
 │                                                                  │
 │  Cron handlers (wrangler.toml triggers):                         │
 │  ├── */15 * * * *  -> processScheduledPosts()                     │
@@ -61,10 +61,12 @@ Browser
 Cloudflare Worker edge node (nearest to user)
   -> CORS middleware (checks origin)
   -> Client injection middleware (creates Supabase + Redis clients from env)
+  -> rateLimit(ip) middleware (per client IP; 429 when over the limit)
   -> requireAuth middleware
       -> extracts Bearer token from Authorization header
       -> supabaseAuth.auth.getUser(token) -> Supabase validates JWT
       -> sets c.userId, c.userEmail on Hono context
+  -> rateLimit(user), and rateLimit(quota) or rateLimit(publish) on the routes they cover
   -> route handler (e.g., accounts router)
       -> db.getAccounts(supabase, userId)  [lib/db.js]
           -> supabase.from('accounts').select(...).eq('user_id', userId)
@@ -115,7 +117,7 @@ The SPA also serves public documentation at `/docs` (no sign-in, no API calls). 
 
 1. **The Worker never receives binary file uploads.** Cloudinary handles file ingestion directly from the browser. The Worker only receives Cloudinary URLs.
 
-2. **Redis is always optional.** Every cache call is wrapped in try/catch and falls back to live APIs. Removing Upstash credentials degrades performance but never breaks functionality.
+2. **Redis is always optional.** Every cache call is wrapped in try/catch and falls back to live APIs, and rate limits fall back to per-isolate memory. Removing Upstash credentials degrades performance and loosens rate limits but never breaks functionality.
 
 3. **The service-role key is never used on the frontend.** The frontend uses only the anon key (for Supabase Auth client-side). The service-role key is a Worker secret.
 
@@ -123,4 +125,6 @@ The SPA also serves public documentation at `/docs` (no sign-in, no API calls). 
 
 5. **`db.js` is the only file that contains Supabase queries.** Route handlers import and call db functions - they never call `supabase.from()` directly.
 
-6. **`api.js` is the only file that calls `fetch()` in the frontend.** Components call `api.methodName()` - they never construct fetch calls.
+6. **Every `/api` request is rate limited.** Per IP before authentication, per user after it, and tighter on routes that spend platform API quota. See `docs/architecture/backend/RATE_LIMITING.md`.
+
+7. **`api.js` is the only file that calls `fetch()` in the frontend.** Components call `api.methodName()` - they never construct fetch calls.

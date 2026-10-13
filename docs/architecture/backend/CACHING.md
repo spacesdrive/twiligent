@@ -26,6 +26,8 @@ export async function getVideosCache(redis, userId, accountId) {
 | `ig:{userId}:{accountId}` | `{ media, fetchedAt, version }` - normalized Instagram media (see `normalizeInstagramMedia()`) | `GET /api/accounts/:id/ig-analytics` or `ig-media` succeeds, or the Overview warms it | `DELETE /api/accounts/:id`, or a `version` mismatch |
 | `reddit:{userId}:{accountId}` | Object `{ profile, analytics, posts }` for Reddit account | `GET /api/accounts/:id/reddit-analytics` succeeds | `DELETE /api/accounts/:id` |
 
+Rate limit state also lives in Redis under `ratelimit:{rule}:{identifier}` keys (hashes or sorted sets, each with its own expiry). They are written only by the Lua scripts in `lib/rateLimit/scripts.ts` through a separate fast-fail client; see `RATE_LIMITING.md`.
+
 **Note:** Instagram OAuth state is an HMAC-signed token and does not use Redis. The unused Redis-backed `oauth_ig:` helpers were removed.
 
 ## Cache Versioning

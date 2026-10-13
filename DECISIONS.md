@@ -607,3 +607,20 @@ Records every significant architectural decision, the alternatives considered, a
 - Shared packages are hoisted to the root `node_modules`, so a script can resolve a package its own workspace does not declare. Declaring dependencies in the workspace that uses them stays a review rule, not something npm enforces.
 - Prettier is configured but the existing code was not reformatted in bulk, to keep history readable; nothing enforces formatting until someone runs `npm run format` in its own commit.
 - Tests import source through longer relative paths (`../../services/...`) in exchange for a source tree that holds only code that ships.
+
+---
+
+## ADR-029: Rate limiting in the Worker with Redis Lua scripts and an in-memory fallback
+
+**Date:** 2026-10-14
+**Status:** Accepted
+
+**Decision:** Every `/api` request passes Hono middleware (`backend/middleware/rateLimit.ts`) that applies named rules from `backend/lib/rateLimit/rules.ts`: per client IP before authentication (sliding window counter, 300 per minute), per user after it (token bucket, bursts of 120, 2 per second), per user on routes that spend platform API quota (sliding window log, 30 per 10 minutes), per user on Instagram publishing (leaking bucket, 50 deep, 1 per 15 seconds), and per IP on the public OAuth callback (fixed window, 10 per 10 minutes). Each of the five algorithms is a pure TypeScript function and an equivalent Lua script. With Upstash Redis the script runs atomically (`EVALSHA`, falling back to `EVAL`), with the clock passed in as an argument. Without Redis, or after a Redis failure, the TypeScript function runs against a per-isolate memory store. Limited responses return `429` with `Retry-After`, `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset`, and CORS exposes those headers.
+
+**Context:** Nothing limited the API. Cloudflare's WAF rate limiting rules need a zone the owner controls, which a `workers.dev` Worker does not have, and the Workers rate limiting binding counts per location, only supports 10 or 60 second periods and needs Wrangler 4. One client could spend the shared YouTube quota, hit Instagram's limits for every account, or flood Supabase Auth with invalid tokens. `@upstash/ratelimit` would add a runtime dependency to the Worker, which the project avoids.
+
+**Trade-offs:**
+- Each protected request makes two Redis script calls. A per-isolate deny cache answers clients that are already over their limit without Redis, and the limiter uses its own Upstash client with no retries and a 1 second timeout, then skips Redis for 30 seconds in that isolate after a failure, so a Redis outage cannot slow the API.
+- Without Redis the limits are per isolate, which is looser than a global count. Rate limiting is still on, not off.
+- The Lua scripts and the TypeScript functions must change together. Bucket levels are rounded to a millionth so the two agree exactly; they were checked against each other in a Lua VM on 110,000 random requests.
+- Behind a shared IP (an office or a carrier NAT), many users share the `ip` rule. Its limit is high for that reason, and IPv6 is keyed per /64.

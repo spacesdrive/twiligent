@@ -31,6 +31,8 @@ Backend tests are in `backend/tests/lib`, `backend/tests/routes`, `backend/tests
 
 Frontend tests cover shared helpers in `src/lib/` and `src/utils/` (hold-to-confirm timing, command palette ranking, library filtering and paging, platform helpers, and a check that every Lucide icon imported in `src` exists) and page helpers in `src/features/**` and `src/docs/**`, such as `features/analytics/overview/overviewStats.js`. A testable helper is a plain `.js` file with no JSX and no `@/` imports, and its imports of project files are relative paths that end in `.js`, so Node can load it directly. This rule lives here, so helper files do not repeat it in a header comment.
 
+Rate limiting has its own tests: `tests/lib/rateLimit/algorithms.test.ts` (each algorithm's decisions, retry and reset times), `tests/lib/rateLimit/limiter.test.ts` (Redis path, memory fallback, circuit breaker, deny cache, eviction) and `tests/middleware/rateLimit.test.ts` (headers, the 429 body, route filters, IPv6 keys). The Lua scripts in `lib/rateLimit/scripts.ts` cannot run in Node; when you change one, change the twin function in `algorithms.ts` the same way and check both against each other in a Lua VM (see `docs/architecture/backend/RATE_LIMITING.md`).
+
 Backend route and scheduler tests (`tests/routes/*.test.js`, `tests/utils/scheduler.test.js`) run the real handlers against `tests/fixtures/fakeSupabase.js` and a scripted `fetch`, then compare responses, queries and outgoing requests with the `tests/fixtures/*.golden.json` snapshots. Rows tagged with `tableRow(name, row)` are only visible to that table; untagged rows are visible to every table. A refactor must leave the snapshots unchanged. Prettier ignores the snapshots (`.prettierignore`), because the tests compare them byte for byte.
 
 The testing workflow documented here describes what should run before shipping any change.
@@ -95,6 +97,11 @@ Open the app in a browser. For each changed area, test:
 - [ ] Login with valid credentials -> lands on Overview
 - [ ] Login with invalid credentials -> error message shown
 - [ ] Sign out -> redirects to login
+
+**Rate limiting (if changed):**
+- [ ] `curl -i -H "CF-Connecting-IP: 203.0.113.1" http://localhost:8787/api/health` shows `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset`
+- [ ] More requests than the rule allows return `429` with `Retry-After` and a message that says when to retry
+- [ ] The Overview, bulk publishing and tracked content refresh still work without a `429`
 
 **Accounts:**
 - [ ] Add a YouTube channel by URL -> appears in sidebar

@@ -6,13 +6,19 @@
 Request arrives
     │
     ▼
-1. CORS middleware         app.use('*', cors())
+1. CORS middleware         app.use('*', cors({ exposeHeaders }))
     │
     ▼
 2. Client injection        app.use('*', clientInjectionMiddleware)
     │
     ▼
-3. requireAuth             api.use('*', requireAuth)    <- protected routes only
+3. rateLimit(ip)           app.use('/api/*', rateLimit(RATE_LIMIT_RULES.ip, clientIp))
+    │
+    ▼
+4. requireAuth             api.use('*', requireAuth)    <- protected routes only
+    │
+    ▼
+5. rateLimit(user, quota, publish)                       <- protected routes only
     │
     ▼
 Route handler
@@ -27,7 +33,7 @@ Route handler
 
 Configured with defaults - allows all origins in development. For production, the Worker's CORS behavior should be tightened to only allow `FRONTEND_URL`.
 
-**Current config:** `cors()` with no options (allows all origins). This is acceptable for a self-hosted deployment where the Worker URL is not publicly advertised.
+**Current config:** `cors({ exposeHeaders: RATE_LIMIT_HEADERS })`. All origins are allowed, which is acceptable for a self-hosted deployment where the Worker URL is not publicly advertised. `exposeHeaders` lets the browser read `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset` and `Retry-After`.
 
 ---
 
@@ -42,12 +48,14 @@ Creates per-request Supabase and Redis client instances and sets them on the Hon
 app.use('*', async (c, next) => {
     c.set('supabase', getSupabase(c.env));
     c.set('redis', getRedis(c.env));
+    c.set('rateLimitRedis', getRateLimitRedis(c.env));
     await next();
 });
 ```
 
 **`getSupabase(env)`** - creates a Supabase client with the service-role key. Used for all DB operations.  
-**`getRedis(env)`** - creates an Upstash Redis client if `UPSTASH_REDIS_REST_URL` is set, otherwise returns `null`. All cache functions in `lib/cache.js` handle `null` silently.
+**`getRedis(env)`** - creates an Upstash Redis client if `UPSTASH_REDIS_REST_URL` is set, otherwise returns `null`. All cache functions in `lib/cache.ts` handle `null` silently.  
+**`getRateLimitRedis(env)`** - a second Upstash client for the rate limiter, with retries off and a 1 second timeout, so a Redis outage cannot slow every request. `null` without credentials.
 
 ---
 
@@ -77,6 +85,17 @@ export async function requireAuth(c, next) {
 5. Returns 401 JSON if token is missing, invalid, or expired
 
 **Critical:** `userId` from this middleware is the only trusted source of user identity. Route handlers must use `c.get('userId')` - never accept a userId from request body or query params.
+
+---
+
+## 4. rateLimit Middleware
+
+**Source:** `backend/middleware/rateLimit.ts`, rules and algorithms in `backend/lib/rateLimit/`  
+**Applied to:** every `/api` request (`ip` rule, before `requireAuth`), every protected request (`user`), quota-spending routes (`quota`), Instagram publishing routes (`publish`) and the public OAuth callback (`oauth`)
+
+`rateLimit(rule, identify, applies?)` returns a middleware. `identify(c)` returns the key (`clientIp` or `userKey`); a request without one is not limited. `applies(c)` restricts a rule to some routes (`matchesRoute(QUOTA_ROUTES, ...)`). Allowed responses get `RateLimit-*` headers for the most restrictive rule; a request over a limit gets `429` with `Retry-After` and `{ success: false, error, retryAfter }`.
+
+See `RATE_LIMITING.md` for the rules, the algorithms and how failures are handled.
 
 ---
 

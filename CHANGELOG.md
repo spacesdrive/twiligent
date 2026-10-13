@@ -9,6 +9,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+**API rate limiting**
+- Every API request is rate limited: per network before sign-in is checked, per user after it, and tighter on actions that use YouTube, Instagram or Reddit quota (adding accounts, refreshing, the scheduler trigger) and on Instagram publishing
+- Token bucket, leaking bucket, fixed window, sliding window log and sliding window counter algorithms, counted atomically in Redis with Lua scripts and per server instance in memory when Redis is not configured or not reachable
+- Requests over a limit get `429` with `Retry-After` and a message that says when to try again; every response carries `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset`
+
 **Issue tracking for every change**
 - Every task is tracked by a GitHub issue that is opened before work starts and closed when it is complete; commits reference it with `Refs #N` or `Closes #N`
 - Issue templates, a pull request template and `docs/workflows/ISSUES.md` describe the lifecycle, labels and `gh` commands

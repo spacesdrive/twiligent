@@ -62,10 +62,14 @@ const { data } = await supabase.from('accounts').select('*').eq('id', accountId)
 The Instagram OAuth flow uses a self-verifying HMAC state token to prevent CSRF:
 
 1. On OAuth start: state = `base64url(userId:timestamp)` + `.` + `HMAC-SHA256(secret, payload)`
-2. Stored in Redis with a TTL of 10 minutes
+2. Nothing is stored server-side; the timestamp inside the signed payload expires the state after 10 minutes
 3. On OAuth callback: verify HMAC before accepting the `code` parameter
 
 If the HMAC check fails, the callback returns 400 and discards the code. An attacker cannot forge a valid state without the `INSTAGRAM_APP_SECRET`.
+
+## Rate Limiting
+
+Every `/api` request is rate limited per client IP before authentication, so a flood of invalid tokens never reaches Supabase Auth. Protected requests are also limited per user, and routes that spend the shared YouTube quota or the Instagram and Reddit limits have a tighter per-user rule. Limits are counted atomically in Redis (one Lua script per check) and fall back to per-isolate memory when Redis is absent or failing, so they never fail open entirely and never fail a request. See `docs/architecture/backend/RATE_LIMITING.md`.
 
 ## Input Validation
 

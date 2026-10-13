@@ -47,6 +47,7 @@ These are set on the Hono context (`c`) and available in all route handlers:
 |---|---|---|---|
 | `supabase` | Supabase client (service-role) | global middleware | All routes |
 | `redis` | Upstash Redis client \| null | global middleware | All routes |
+| `rateLimitRedis` | Upstash Redis client \| null (no retries, 1 second timeout) | global middleware | All routes; used only by `rateLimit` |
 | `userId` | string (UUID) | `requireAuth` | Protected routes only |
 | `userEmail` | string | `requireAuth` | Protected routes only |
 

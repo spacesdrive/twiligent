@@ -38,6 +38,10 @@ When fixing the known TTL issue, use the Upstash Redis `EX` option:
 await redis.set(key, data, { ex: 3600 }); // expire after 1 hour
 ```
 
+## Rate Limiting Cost
+
+Each protected request runs two rate limit checks (`ip` before authentication, `user` after it), each one Redis script call, so a request pays two short Upstash round trips. A client already over its limit is answered from the isolate without Redis, and a Redis outage costs at most one 1 second timeout per isolate every 30 seconds. See `docs/architecture/backend/RATE_LIMITING.md`.
+
 ## Edge Deployment
 
 The Cloudflare Worker runs at the edge - in a data center close to the user. This means:
