@@ -36,8 +36,6 @@ const LINKS = [
   { label: 'Cloudflare dashboard', href: 'https://dash.cloudflare.com' },
 ];
 
-const STACK = ['React', 'shadcn/ui', 'Tailwind CSS', 'Hono', 'Supabase', 'Cloudflare', 'YouTube Data API', 'Instagram Graph API'];
-
 function CopyButton({ text }) {
   const [copied, setCopied] = useState(false);
   const handleCopy = async () => {
@@ -324,11 +322,7 @@ export default function Settings() {
           </SurfaceBox>
         </SettingsSection>
 
-        <SettingsSection id="about" title="About Twiligent" description="Analytics and publishing for YouTube, Instagram and Reddit, run on your own infrastructure.">
-          <div className="flex flex-wrap gap-1.5">
-            {STACK.map(item => <Badge key={item} variant="outline">{item}</Badge>)}
-          </div>
-        </SettingsSection>
+        <SettingsSection id="about" title="About Twiligent" description="Analytics and publishing for YouTube, Instagram and Reddit, run on your own infrastructure." />
       </div>
     </div>
   );
