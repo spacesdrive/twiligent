@@ -10,7 +10,7 @@ User selects account + uploads media + fills caption
    api.getCloudinaryConfig() -> GET /api/cloudinary-config
    -> returns { cloudName, uploadPreset }
    
-   Browser uploads directly to Cloudinary using unsigned preset
+   Browser uploads directly to Cloudinary using unsigned preset (api.uploadToCloudinary)
    -> Cloudinary returns public URL (e.g., https://res.cloudinary.com/cloud/image/upload/...)
         │
         ▼
@@ -27,7 +27,8 @@ User selects account + uploads media + fills caption
    api.getIGContainerStatus(containerId, accountId)
    -> GET /api/ig-container/:containerId/status?accountId=:id
    -> Backend: GET https://graph.instagram.com/v25.0/{containerId}?fields=status_code,status
-   -> Poll every 3 seconds, timeout at 3 minutes
+   -> Poll every 3 seconds, up to 30 times (about 90 seconds); a single post then fails,
+      the bulk upload goes on to publish
    -> Wait for status_code = 'FINISHED'
    -> ERROR -> throw error, mark as failed
    -> EXPIRED -> throw error

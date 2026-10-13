@@ -35,7 +35,22 @@ frontend/src/
 │   ├── accounts/
 │   │   └── AccountManager.jsx              <- Add/remove connected accounts
 │   ├── publishing/
-│   │   └── UploadContent.jsx               <- Instagram publish + scheduled post queue
+│   │   ├── UploadContent.jsx               <- Page: tabs, Cloudinary alert, scheduled posts (default export)
+│   │   ├── SinglePostTab.jsx               <- Single post form or its progress view
+│   │   ├── MediaPicker.jsx, CaptionBox.jsx, SinglePostSettings.jsx, ReelOptions.jsx, ScheduleFields.jsx, PostSummary.jsx
+│   │   ├── PublishProgress.jsx, PublishResult.jsx   <- Upload, processing, done, scheduled and error states
+│   │   ├── BulkUploadTab.jsx               <- Bulk queue, results and settings
+│   │   ├── BulkFileList.jsx, BulkFileItem.jsx, BulkResults.jsx, BulkSettings.jsx, BulkScheduleFields.jsx
+│   │   ├── ScheduledPostsSection.jsx       <- Scheduled post table with filters and the overdue alert
+│   │   ├── ScheduledPostRow.jsx, ScheduledPostEditRow.jsx, ScheduledPostDialogs.jsx, OverdueAlert.jsx
+│   │   ├── AccountSelect.jsx, TypePicker.jsx, ScheduleToggle.jsx, ScheduleHint.jsx, IconInput.jsx, StatusBadge.jsx, NoInstagramAccount.jsx
+│   │   ├── useSinglePostForm.js, useSinglePostMedia.js   <- Single post fields, file and cover
+│   │   ├── useSinglePublish.js, usePublishProgress.js    <- Single post publish or schedule run
+│   │   ├── useBulkSettings.js, useBulkQueue.js, useBulkPublish.js   <- Bulk settings, file queue, upload loop
+│   │   ├── useScheduledPosts.js, useScheduledPostEdit.js, useScheduledPostDelete.js
+│   │   ├── igPublishFlow.js                <- Cloudinary upload, container polling, single post publish steps
+│   │   ├── publishConstants.js             <- Content types, statuses, intervals, caption limit
+│   │   └── publishHelpers.js, scheduleHelpers.js, queueHelpers.js   <- Pure helpers with *.test.js
 │   ├── settings/
 │   │   ├── Settings.jsx                    <- Theme, server keys, scheduling, platform requirements, links
 │   │   └── SchedulingSetupGuide.jsx        <- Optional GitHub backup scheduler steps for administrators

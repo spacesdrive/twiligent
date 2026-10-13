@@ -105,7 +105,7 @@ frontend/src/
       reddit/             RedditAnalytics, RedditPosts, RedditPostsAll, shared post table
       tracked/            TrackedContent.jsx, TrackedCategory.jsx
     publishing/
-      UploadContent.jsx   Instagram publishing + schedule queue
+      UploadContent.jsx   Instagram publishing + schedule queue (page; components, hooks and helpers beside it)
     accounts/
       AccountManager.jsx  Add/remove/refresh accounts
     settings/
