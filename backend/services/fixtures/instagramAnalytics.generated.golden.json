@@ -1,0 +1,921 @@
+{
+    "totalPosts": 24,
+    "fetchedPosts": 24,
+    "totalLikes": 2212,
+    "totalComments": 336,
+    "totalEngagement": 2548,
+    "avgLikes": 92,
+    "avgComments": 14,
+    "avgEngagement": 106,
+    "medianLikes": 89,
+    "medianComments": 14,
+    "engagementRate": 11.8,
+    "likesPerFollower": 10.24,
+    "commentsPerFollower": 1.56,
+    "likesToCommentsRatio": 6.6,
+    "totalViews": 21600,
+    "avgViews": 1200,
+    "mediaWithViews": 18,
+    "bestByLikes": {
+        "id": "g16",
+        "caption": "Post number 16 #tag2 #tag5 #tag8 #tag11 #tag14 #tag17 #tag20 #tag23",
+        "contentType": "post",
+        "mediaType": "IMAGE",
+        "mediaUrl": "https://cdn.example/g16.jpg",
+        "thumbnailUrl": "",
+        "permalink": "https://www.instagram.com/p/g16/",
+        "timestamp": "2026-07-05T20:00:00+0000",
+        "likeCount": 192,
+        "commentsCount": 26,
+        "viewCount": null
+    },
+    "bestByComments": {
+        "id": "g19",
+        "caption": "Post number 19 #tag2 #tag5 #tag8 #tag11 #tag14 #tag17 #tag20 #tag23",
+        "contentType": "post",
+        "mediaType": "IMAGE",
+        "mediaUrl": "https://cdn.example/g19.jpg",
+        "thumbnailUrl": "",
+        "permalink": "https://www.instagram.com/p/g19/",
+        "timestamp": "2026-06-25T08:00:00+0000",
+        "likeCount": 103,
+        "commentsCount": 29,
+        "viewCount": 1900
+    },
+    "worstByLikes": {
+        "id": "g00",
+        "caption": "Post number 0 #tag0 #tag3 #tag6 #tag9 #tag12 #tag15 #tag18 #tag21 #tag24",
+        "contentType": "reel",
+        "mediaType": "VIDEO",
+        "mediaUrl": "https://cdn.example/g00.jpg",
+        "thumbnailUrl": "",
+        "permalink": "https://www.instagram.com/p/g00/",
+        "timestamp": "2026-08-30T20:00:00+0000",
+        "likeCount": 0,
+        "commentsCount": 0,
+        "viewCount": null
+    },
+    "recentMedia": [
+        {
+            "id": "g00",
+            "caption": "Post number 0 #tag0 #tag3 #tag6 #tag9 #tag12 #tag15 #tag18 #tag21 #tag24",
+            "contentType": "reel",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/g00.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g00/",
+            "timestamp": "2026-08-30T20:00:00+0000",
+            "likeCount": 0,
+            "commentsCount": 0,
+            "viewCount": null
+        },
+        {
+            "id": "g01",
+            "caption": "Post number 1 #tag2 #tag5 #tag8 #tag11 #tag14 #tag17 #tag20 #tag23",
+            "contentType": "post",
+            "mediaType": "IMAGE",
+            "mediaUrl": "https://cdn.example/g01.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g01/",
+            "timestamp": "2026-08-27T08:00:00+0000",
+            "likeCount": 37,
+            "commentsCount": 11,
+            "viewCount": 100
+        },
+        {
+            "id": "g02",
+            "caption": "Post number 2 #tag1 #tag4 #tag7 #tag10 #tag13 #tag16 #tag19 #tag22",
+            "contentType": "video",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/g02.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g02/",
+            "timestamp": "2026-08-23T20:00:00+0000",
+            "likeCount": 74,
+            "commentsCount": 22,
+            "viewCount": 200
+        },
+        {
+            "id": "g03",
+            "caption": "Post number 3 #tag0 #tag3 #tag6 #tag9 #tag12 #tag15 #tag18 #tag21 #tag24",
+            "contentType": "reel",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/g03.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g03/",
+            "timestamp": "2026-08-20T08:00:00+0000",
+            "likeCount": 111,
+            "commentsCount": 3,
+            "viewCount": 300
+        },
+        {
+            "id": "g04",
+            "caption": "Post number 4 #tag2 #tag5 #tag8 #tag11 #tag14 #tag17 #tag20 #tag23",
+            "contentType": "post",
+            "mediaType": "IMAGE",
+            "mediaUrl": "https://cdn.example/g04.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g04/",
+            "timestamp": "2026-08-16T20:00:00+0000",
+            "likeCount": 148,
+            "commentsCount": 14,
+            "viewCount": null
+        },
+        {
+            "id": "g05",
+            "caption": "Post number 5 #tag1 #tag4 #tag7 #tag10 #tag13 #tag16 #tag19 #tag22",
+            "contentType": "video",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/g05.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g05/",
+            "timestamp": "2026-08-13T08:00:00+0000",
+            "likeCount": 185,
+            "commentsCount": 25,
+            "viewCount": 500
+        },
+        {
+            "id": "g06",
+            "caption": "Post number 6 #tag0 #tag3 #tag6 #tag9 #tag12 #tag15 #tag18 #tag21 #tag24",
+            "contentType": "reel",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/g06.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g06/",
+            "timestamp": "2026-08-09T20:00:00+0000",
+            "likeCount": 22,
+            "commentsCount": 6,
+            "viewCount": 600
+        },
+        {
+            "id": "g07",
+            "caption": "Post number 7 #tag2 #tag5 #tag8 #tag11 #tag14 #tag17 #tag20 #tag23",
+            "contentType": "post",
+            "mediaType": "IMAGE",
+            "mediaUrl": "https://cdn.example/g07.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g07/",
+            "timestamp": "2026-08-06T08:00:00+0000",
+            "likeCount": 59,
+            "commentsCount": 17,
+            "viewCount": 700
+        },
+        {
+            "id": "g08",
+            "caption": "Post number 8 #tag1 #tag4 #tag7 #tag10 #tag13 #tag16 #tag19 #tag22",
+            "contentType": "video",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/g08.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g08/",
+            "timestamp": "2026-08-02T20:00:00+0000",
+            "likeCount": 96,
+            "commentsCount": 28,
+            "viewCount": null
+        },
+        {
+            "id": "g09",
+            "caption": "Post number 9 #tag0 #tag3 #tag6 #tag9 #tag12 #tag15 #tag18 #tag21 #tag24",
+            "contentType": "reel",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/g09.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g09/",
+            "timestamp": "2026-07-30T08:00:00+0000",
+            "likeCount": 133,
+            "commentsCount": 9,
+            "viewCount": 900
+        },
+        {
+            "id": "g10",
+            "caption": "Post number 10 #tag2 #tag5 #tag8 #tag11 #tag14 #tag17 #tag20 #tag23",
+            "contentType": "post",
+            "mediaType": "IMAGE",
+            "mediaUrl": "https://cdn.example/g10.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g10/",
+            "timestamp": "2026-07-26T20:00:00+0000",
+            "likeCount": 170,
+            "commentsCount": 20,
+            "viewCount": 1000
+        },
+        {
+            "id": "g11",
+            "caption": "Post number 11 #tag1 #tag4 #tag7 #tag10 #tag13 #tag16 #tag19 #tag22",
+            "contentType": "video",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/g11.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g11/",
+            "timestamp": "2026-07-23T08:00:00+0000",
+            "likeCount": 7,
+            "commentsCount": 1,
+            "viewCount": 1100
+        },
+        {
+            "id": "g12",
+            "caption": "Post number 12 #tag0 #tag3 #tag6 #tag9 #tag12 #tag15 #tag18 #tag21 #tag24",
+            "contentType": "reel",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/g12.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g12/",
+            "timestamp": "2026-07-19T20:00:00+0000",
+            "likeCount": 44,
+            "commentsCount": 12,
+            "viewCount": null
+        },
+        {
+            "id": "g13",
+            "caption": "Post number 13 #tag2 #tag5 #tag8 #tag11 #tag14 #tag17 #tag20 #tag23",
+            "contentType": "post",
+            "mediaType": "IMAGE",
+            "mediaUrl": "https://cdn.example/g13.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g13/",
+            "timestamp": "2026-07-16T08:00:00+0000",
+            "likeCount": 81,
+            "commentsCount": 23,
+            "viewCount": 1300
+        },
+        {
+            "id": "g14",
+            "caption": "Post number 14 #tag1 #tag4 #tag7 #tag10 #tag13 #tag16 #tag19 #tag22",
+            "contentType": "video",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/g14.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g14/",
+            "timestamp": "2026-07-12T20:00:00+0000",
+            "likeCount": 118,
+            "commentsCount": 4,
+            "viewCount": 1400
+        },
+        {
+            "id": "g15",
+            "caption": "Post number 15 #tag0 #tag3 #tag6 #tag9 #tag12 #tag15 #tag18 #tag21 #tag24",
+            "contentType": "reel",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/g15.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g15/",
+            "timestamp": "2026-07-09T08:00:00+0000",
+            "likeCount": 155,
+            "commentsCount": 15,
+            "viewCount": 1500
+        },
+        {
+            "id": "g16",
+            "caption": "Post number 16 #tag2 #tag5 #tag8 #tag11 #tag14 #tag17 #tag20 #tag23",
+            "contentType": "post",
+            "mediaType": "IMAGE",
+            "mediaUrl": "https://cdn.example/g16.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g16/",
+            "timestamp": "2026-07-05T20:00:00+0000",
+            "likeCount": 192,
+            "commentsCount": 26,
+            "viewCount": null
+        },
+        {
+            "id": "g17",
+            "caption": "Post number 17 #tag1 #tag4 #tag7 #tag10 #tag13 #tag16 #tag19 #tag22",
+            "contentType": "video",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/g17.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g17/",
+            "timestamp": "2026-07-02T08:00:00+0000",
+            "likeCount": 29,
+            "commentsCount": 7,
+            "viewCount": 1700
+        },
+        {
+            "id": "g18",
+            "caption": "Post number 18 #tag0 #tag3 #tag6 #tag9 #tag12 #tag15 #tag18 #tag21 #tag24",
+            "contentType": "reel",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/g18.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g18/",
+            "timestamp": "2026-06-28T20:00:00+0000",
+            "likeCount": 66,
+            "commentsCount": 18,
+            "viewCount": 1800
+        },
+        {
+            "id": "g19",
+            "caption": "Post number 19 #tag2 #tag5 #tag8 #tag11 #tag14 #tag17 #tag20 #tag23",
+            "contentType": "post",
+            "mediaType": "IMAGE",
+            "mediaUrl": "https://cdn.example/g19.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g19/",
+            "timestamp": "2026-06-25T08:00:00+0000",
+            "likeCount": 103,
+            "commentsCount": 29,
+            "viewCount": 1900
+        }
+    ],
+    "contentTypeStats": {
+        "reel": {
+            "count": 8,
+            "totalLikes": 708,
+            "totalComments": 84,
+            "totalViews": 7200,
+            "viewsReported": 6,
+            "avgLikes": 89,
+            "avgComments": 11,
+            "avgEngagement": 99,
+            "avgViews": 1200
+        },
+        "post": {
+            "count": 8,
+            "totalLikes": 804,
+            "totalComments": 142,
+            "totalViews": 7200,
+            "viewsReported": 6,
+            "avgLikes": 101,
+            "avgComments": 18,
+            "avgEngagement": 118,
+            "avgViews": 1200
+        },
+        "video": {
+            "count": 8,
+            "totalLikes": 700,
+            "totalComments": 110,
+            "totalViews": 7200,
+            "viewsReported": 6,
+            "avgLikes": 88,
+            "avgComments": 14,
+            "avgEngagement": 101,
+            "avgViews": 1200
+        }
+    },
+    "postFrequency": {
+        "perWeek": 2.1,
+        "perMonth": 8.9
+    },
+    "topPosts": [
+        {
+            "id": "g16",
+            "caption": "Post number 16 #tag2 #tag5 #tag8 #tag11 #tag14 #tag17 #tag20 #tag23",
+            "contentType": "post",
+            "mediaType": "IMAGE",
+            "mediaUrl": "https://cdn.example/g16.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g16/",
+            "timestamp": "2026-07-05T20:00:00+0000",
+            "likeCount": 192,
+            "commentsCount": 26,
+            "viewCount": null,
+            "engagement": 218
+        },
+        {
+            "id": "g05",
+            "caption": "Post number 5 #tag1 #tag4 #tag7 #tag10 #tag13 #tag16 #tag19 #tag22",
+            "contentType": "video",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/g05.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g05/",
+            "timestamp": "2026-08-13T08:00:00+0000",
+            "likeCount": 185,
+            "commentsCount": 25,
+            "viewCount": 500,
+            "engagement": 210
+        },
+        {
+            "id": "g21",
+            "caption": "Post number 21 #tag0 #tag3 #tag6 #tag9 #tag12 #tag15 #tag18 #tag21 #tag24",
+            "contentType": "reel",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/g21.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g21/",
+            "timestamp": "2026-06-18T08:00:00+0000",
+            "likeCount": 177,
+            "commentsCount": 21,
+            "viewCount": 2100,
+            "engagement": 198
+        },
+        {
+            "id": "g10",
+            "caption": "Post number 10 #tag2 #tag5 #tag8 #tag11 #tag14 #tag17 #tag20 #tag23",
+            "contentType": "post",
+            "mediaType": "IMAGE",
+            "mediaUrl": "https://cdn.example/g10.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g10/",
+            "timestamp": "2026-07-26T20:00:00+0000",
+            "likeCount": 170,
+            "commentsCount": 20,
+            "viewCount": 1000,
+            "engagement": 190
+        },
+        {
+            "id": "g15",
+            "caption": "Post number 15 #tag0 #tag3 #tag6 #tag9 #tag12 #tag15 #tag18 #tag21 #tag24",
+            "contentType": "reel",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/g15.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g15/",
+            "timestamp": "2026-07-09T08:00:00+0000",
+            "likeCount": 155,
+            "commentsCount": 15,
+            "viewCount": 1500,
+            "engagement": 170
+        },
+        {
+            "id": "g04",
+            "caption": "Post number 4 #tag2 #tag5 #tag8 #tag11 #tag14 #tag17 #tag20 #tag23",
+            "contentType": "post",
+            "mediaType": "IMAGE",
+            "mediaUrl": "https://cdn.example/g04.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g04/",
+            "timestamp": "2026-08-16T20:00:00+0000",
+            "likeCount": 148,
+            "commentsCount": 14,
+            "viewCount": null,
+            "engagement": 162
+        },
+        {
+            "id": "g20",
+            "caption": "Post number 20 #tag1 #tag4 #tag7 #tag10 #tag13 #tag16 #tag19 #tag22",
+            "contentType": "video",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/g20.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g20/",
+            "timestamp": "2026-06-21T20:00:00+0000",
+            "likeCount": 140,
+            "commentsCount": 10,
+            "viewCount": null,
+            "engagement": 150
+        },
+        {
+            "id": "g09",
+            "caption": "Post number 9 #tag0 #tag3 #tag6 #tag9 #tag12 #tag15 #tag18 #tag21 #tag24",
+            "contentType": "reel",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/g09.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g09/",
+            "timestamp": "2026-07-30T08:00:00+0000",
+            "likeCount": 133,
+            "commentsCount": 9,
+            "viewCount": 900,
+            "engagement": 142
+        },
+        {
+            "id": "g19",
+            "caption": "Post number 19 #tag2 #tag5 #tag8 #tag11 #tag14 #tag17 #tag20 #tag23",
+            "contentType": "post",
+            "mediaType": "IMAGE",
+            "mediaUrl": "https://cdn.example/g19.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g19/",
+            "timestamp": "2026-06-25T08:00:00+0000",
+            "likeCount": 103,
+            "commentsCount": 29,
+            "viewCount": 1900,
+            "engagement": 132
+        },
+        {
+            "id": "g08",
+            "caption": "Post number 8 #tag1 #tag4 #tag7 #tag10 #tag13 #tag16 #tag19 #tag22",
+            "contentType": "video",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/g08.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/g08/",
+            "timestamp": "2026-08-02T20:00:00+0000",
+            "likeCount": 96,
+            "commentsCount": 28,
+            "viewCount": null,
+            "engagement": 124
+        }
+    ],
+    "postsByDayOfWeek": [
+        {
+            "day": "Sunday",
+            "shortDay": "Sun",
+            "posts": 12,
+            "avgLikes": 90,
+            "avgComments": 14,
+            "avgEngagement": 104
+        },
+        {
+            "day": "Monday",
+            "shortDay": "Mon",
+            "posts": 0,
+            "avgLikes": 0,
+            "avgComments": 0,
+            "avgEngagement": 0
+        },
+        {
+            "day": "Tuesday",
+            "shortDay": "Tue",
+            "posts": 0,
+            "avgLikes": 0,
+            "avgComments": 0,
+            "avgEngagement": 0
+        },
+        {
+            "day": "Wednesday",
+            "shortDay": "Wed",
+            "posts": 0,
+            "avgLikes": 0,
+            "avgComments": 0,
+            "avgEngagement": 0
+        },
+        {
+            "day": "Thursday",
+            "shortDay": "Thu",
+            "posts": 12,
+            "avgLikes": 94,
+            "avgComments": 15,
+            "avgEngagement": 109
+        },
+        {
+            "day": "Friday",
+            "shortDay": "Fri",
+            "posts": 0,
+            "avgLikes": 0,
+            "avgComments": 0,
+            "avgEngagement": 0
+        },
+        {
+            "day": "Saturday",
+            "shortDay": "Sat",
+            "posts": 0,
+            "avgLikes": 0,
+            "avgComments": 0,
+            "avgEngagement": 0
+        }
+    ],
+    "bestPostingDay": "Thursday",
+    "postsByHour": [
+        {
+            "hour": 0,
+            "label": "0:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 1,
+            "label": "1:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 2,
+            "label": "2:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 3,
+            "label": "3:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 4,
+            "label": "4:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 5,
+            "label": "5:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 6,
+            "label": "6:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 7,
+            "label": "7:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 8,
+            "label": "8:00",
+            "posts": 12,
+            "avgEngagement": 109
+        },
+        {
+            "hour": 9,
+            "label": "9:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 10,
+            "label": "10:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 11,
+            "label": "11:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 12,
+            "label": "12:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 13,
+            "label": "13:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 14,
+            "label": "14:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 15,
+            "label": "15:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 16,
+            "label": "16:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 17,
+            "label": "17:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 18,
+            "label": "18:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 19,
+            "label": "19:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 20,
+            "label": "20:00",
+            "posts": 12,
+            "avgEngagement": 104
+        },
+        {
+            "hour": 21,
+            "label": "21:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 22,
+            "label": "22:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 23,
+            "label": "23:00",
+            "posts": 0,
+            "avgEngagement": 0
+        }
+    ],
+    "bestPostingHour": "8:00",
+    "engagementTimeline": [
+        {
+            "month": "2026-06",
+            "posts": 6,
+            "likes": 551,
+            "comments": 93,
+            "avgLikes": 92,
+            "avgComments": 16,
+            "engagement": 644
+        },
+        {
+            "month": "2026-07",
+            "posts": 9,
+            "likes": 929,
+            "comments": 117,
+            "avgLikes": 103,
+            "avgComments": 13,
+            "engagement": 1046
+        },
+        {
+            "month": "2026-08",
+            "posts": 9,
+            "likes": 732,
+            "comments": 126,
+            "avgLikes": 81,
+            "avgComments": 14,
+            "engagement": 858
+        }
+    ],
+    "monthlyBreakdown": [
+        {
+            "month": "2026-06",
+            "posts": 6,
+            "likes": 551,
+            "comments": 93,
+            "avgLikes": 92,
+            "avgComments": 16,
+            "engagement": 644
+        },
+        {
+            "month": "2026-07",
+            "posts": 9,
+            "likes": 929,
+            "comments": 117,
+            "avgLikes": 103,
+            "avgComments": 13,
+            "engagement": 1046
+        },
+        {
+            "month": "2026-08",
+            "posts": 9,
+            "likes": 732,
+            "comments": 126,
+            "avgLikes": 81,
+            "avgComments": 14,
+            "engagement": 858
+        }
+    ],
+    "postsLast7Days": 2,
+    "postsLast30Days": 9,
+    "postsLast90Days": 24,
+    "hashtagAnalysis": [
+        {
+            "tag": "#tag0",
+            "count": 8,
+            "likes": 708,
+            "comments": 84,
+            "avgEngagement": 99
+        },
+        {
+            "tag": "#tag3",
+            "count": 8,
+            "likes": 708,
+            "comments": 84,
+            "avgEngagement": 99
+        },
+        {
+            "tag": "#tag6",
+            "count": 8,
+            "likes": 708,
+            "comments": 84,
+            "avgEngagement": 99
+        },
+        {
+            "tag": "#tag9",
+            "count": 8,
+            "likes": 708,
+            "comments": 84,
+            "avgEngagement": 99
+        },
+        {
+            "tag": "#tag12",
+            "count": 8,
+            "likes": 708,
+            "comments": 84,
+            "avgEngagement": 99
+        },
+        {
+            "tag": "#tag15",
+            "count": 8,
+            "likes": 708,
+            "comments": 84,
+            "avgEngagement": 99
+        },
+        {
+            "tag": "#tag18",
+            "count": 8,
+            "likes": 708,
+            "comments": 84,
+            "avgEngagement": 99
+        },
+        {
+            "tag": "#tag21",
+            "count": 8,
+            "likes": 708,
+            "comments": 84,
+            "avgEngagement": 99
+        },
+        {
+            "tag": "#tag24",
+            "count": 8,
+            "likes": 708,
+            "comments": 84,
+            "avgEngagement": 99
+        },
+        {
+            "tag": "#tag2",
+            "count": 8,
+            "likes": 804,
+            "comments": 142,
+            "avgEngagement": 118
+        },
+        {
+            "tag": "#tag5",
+            "count": 8,
+            "likes": 804,
+            "comments": 142,
+            "avgEngagement": 118
+        },
+        {
+            "tag": "#tag8",
+            "count": 8,
+            "likes": 804,
+            "comments": 142,
+            "avgEngagement": 118
+        },
+        {
+            "tag": "#tag11",
+            "count": 8,
+            "likes": 804,
+            "comments": 142,
+            "avgEngagement": 118
+        },
+        {
+            "tag": "#tag14",
+            "count": 8,
+            "likes": 804,
+            "comments": 142,
+            "avgEngagement": 118
+        },
+        {
+            "tag": "#tag17",
+            "count": 8,
+            "likes": 804,
+            "comments": 142,
+            "avgEngagement": 118
+        },
+        {
+            "tag": "#tag20",
+            "count": 8,
+            "likes": 804,
+            "comments": 142,
+            "avgEngagement": 118
+        },
+        {
+            "tag": "#tag23",
+            "count": 8,
+            "likes": 804,
+            "comments": 142,
+            "avgEngagement": 118
+        },
+        {
+            "tag": "#tag1",
+            "count": 8,
+            "likes": 700,
+            "comments": 110,
+            "avgEngagement": 101
+        },
+        {
+            "tag": "#tag4",
+            "count": 8,
+            "likes": 700,
+            "comments": 110,
+            "avgEngagement": 101
+        },
+        {
+            "tag": "#tag7",
+            "count": 8,
+            "likes": 700,
+            "comments": 110,
+            "avgEngagement": 101
+        }
+    ],
+    "captionLengthCorrelation": [
+        {
+            "label": "Medium (51-150)",
+            "count": 24,
+            "avgLikes": 92,
+            "avgComments": 14,
+            "avgEngagement": 106
+        }
+    ],
+    "viralityScore": 2.1,
+    "consistencyScore": 62
+}

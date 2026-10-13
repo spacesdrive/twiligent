@@ -2,42 +2,42 @@
 
 Services in `backend/services/` contain all logic for communicating with external APIs (YouTube, Instagram) and computing analytics. Route handlers call services; services never import from routes.
 
-## `backend/services/instagram.js`
+## Shared analytics math (`backend/services/analyticsMath.js`)
 
-### HTTP Client
+Pure helpers whose formulas are identical in the Instagram and Reddit analytics: `DAY_NAMES`, `DAY_MS`, `sumOf`, `roundedAverage`, `medianOf`, `countWithinDays` (inclusive `<=`), `postFrequency` (posts per week and month over the dated span), `consistencyScore` (coefficient of variation, needs 3 values), `bestToAverageRatio` (virality), `pickHighest` and `monthKey` (local time). YouTube keeps its own recency (strict `<`) and weekly consistency formulas and only shares `monthKey`.
 
-All Instagram Graph API calls go through `igFetch(path, token, options)`:
+---
 
-```js
-async function igFetch(path, token, options = {}) {
-    const url = `https://graph.instagram.com/v25.0${path}`;
-    const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` },
-        ...options,
-    });
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.message);
-    return data;
-}
-```
+## Instagram (`backend/services/instagram*.js`)
+
+`services/instagram.js` is a barrel that re-exports the public names below, so routes, the scheduler and tests import from it unchanged. Each module imports its siblings directly, never the barrel.
+
+| Module | Contents |
+|---|---|
+| `instagramApi.js` | `igFetch(endpoint, params, retries)` transport (15 s timeout, one retry on abort, `EAI_AGAIN` or `ECONNRESET`, no API version prefix for `/oauth`, `/access_token`, `/refresh_access_token`) and `fetchInstagramProfile` |
+| `instagramTokens.js` | `exchangeForLongLivedToken`, `refreshLongLivedToken`, `autoRefreshInstagramTokens` |
+| `instagramMedia.js` | `classifyInstagramMedia`, `extractInstagramViews`, `normalizeInstagramMedia`, paged `fetchInstagramMedia` |
+| `instagramContentTypes.js` | `CONTENT_TYPES`, `summarizeContentTypes`, per type stats used by the analytics |
+| `instagramTiming.js` | Posts by day of week and hour, best posting day and hour, monthly breakdown |
+| `instagramCaptions.js` | Hashtag analysis and caption length correlation |
+| `instagramAnalytics.js` | `computeInstagramAnalytics` orchestrator, the empty state and the engagement, views and ranking helpers |
+| `instagramPublishing.js` | `buildMediaParams`, one helper per media type |
 
 ### Key Functions
 
 | Function | Purpose |
 |---|---|
-| `exchangeCodeForToken(code, env)` | Short-lived code -> short-lived token (Instagram OAuth step 1) |
-| `exchangeForLongLivedToken(shortToken, env)` | Short-lived -> 60-day long-lived token (Instagram OAuth step 2) |
-| `getIGProfile(accessToken)` | Fetches `id, username, account_type, media_count` for the token |
+| `fetchInstagramProfile(igUserId, accessToken)` | Fetches the profile for an account id, or for `/me` when `igUserId` is null |
+| `exchangeForLongLivedToken(shortToken, appSecret)` | Short-lived -> 60-day long-lived token |
+| `refreshLongLivedToken(accessToken)` | Extends a long-lived token; call before expiry |
+| `autoRefreshInstagramTokens(supabase)` | Cron handler - refreshes all tokens expiring within 15 days |
 | `fetchInstagramMedia(igUserId, accessToken, limit)` | Paginates media (50 per page, 10 pages max) up to `limit` (default 500), requesting `views` insights inline; returns normalized items |
 | `classifyInstagramMedia(raw)` | Returns `'reel'`, `'post'`, or `'video'` for a raw Graph API media item |
 | `extractInstagramViews(raw)` | Reads the `views` insight from a raw item; `null` when Instagram reports none |
 | `normalizeInstagramMedia(raw)` | Maps a raw item to the cached media shape (`contentType`, `viewCount`, counts, URLs) |
 | `summarizeContentTypes(media)` | Per content type `{ count, likes, comments, views, viewsReported }`; always returns all three types |
-| `refreshLongLivedToken(accessToken)` | Extends a long-lived token; call before expiry |
-| `autoRefreshInstagramTokens(supabase)` | Cron handler - refreshes all tokens expiring within 15 days |
 | `computeInstagramAnalytics(profile, media)` | Computes engagement rates, views, per-content-type stats, hashtag analysis, timing patterns, monthly breakdown |
-| `publishIGContainer(igUserId, params, token)` | Creates a media container via Graph API |
-| `publishIGMedia(igUserId, containerId, token)` | Publishes a container; returns `mediaId` |
+| `buildMediaParams(post, accessToken)` | Graph API container parameters for one media item |
 
 ### Content type classification
 
@@ -108,7 +108,7 @@ async function ytFetch(path, params, env) {
 - Monthly breakdown of uploads and views
 - Category distribution
 
-`computeInstagramAnalytics()` (in `instagram.js`) returns:
+`computeInstagramAnalytics()` (in `instagramAnalytics.js`) returns:
 - Engagement rate (likes + comments / followers)
 - Average likes, comments per post
 - Best performing post
@@ -146,7 +146,7 @@ Reddit integration requires no Worker secrets. The session cookie is a per-user 
 
 ## Shared Instagram publishing parameters
 
-`buildMediaParams(post, accessToken)` in `services/instagram.js` builds the Graph API container parameters for photos, Reels, Stories and carousel items. The publish route (`routes/publishing.js`) and the cron scheduler (`utils/scheduler.js`) both call it. `scripts/publish-scheduled.js` keeps its own copy on purpose: it runs in GitHub Actions with zero npm dependencies and cannot import Worker code.
+`buildMediaParams(post, accessToken)` in `services/instagramPublishing.js` (re-exported by `services/instagram.js`) builds the Graph API container parameters for photos, Reels, Stories and carousel items. The publish route (`routes/publishing.js`) and the cron scheduler (`utils/scheduler.js`) both call it. `scripts/publish-scheduled.js` keeps its own copy on purpose: it runs in GitHub Actions with zero npm dependencies and cannot import Worker code.
 
 ---
 

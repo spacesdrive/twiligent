@@ -1,0 +1,166 @@
+{
+    "lines": [
+        [
+            "log",
+            "Token refreshed for @soon - expires 2026-10-31T12:00:00.000Z"
+        ],
+        [
+            "error",
+            "Failed to refresh token for @failing: Session has expired"
+        ],
+        [
+            "log",
+            "Token refreshed for @expired - expires 2026-10-31T12:00:00.000Z"
+        ]
+    ],
+    "requests": [
+        {
+            "url": "https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=T1",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=T6",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=T7",
+            "method": "GET"
+        }
+    ],
+    "calls": [
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": []
+        },
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "id",
+                    "a1"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "accounts",
+            "values": {
+                "platform": "instagram",
+                "data": {
+                    "username": "soon",
+                    "accessToken": "N1",
+                    "tokenExpiresAt": "2026-10-31T12:00:00.000Z"
+                }
+            },
+            "filters": [
+                [
+                    "id",
+                    "a1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "id",
+                    "a7"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "accounts",
+            "values": {
+                "platform": "instagram",
+                "data": {
+                    "username": "expired",
+                    "accessToken": "N7",
+                    "tokenExpiresAt": "2026-10-31T12:00:00.000Z"
+                }
+            },
+            "filters": [
+                [
+                    "id",
+                    "a7"
+                ]
+            ]
+        }
+    ],
+    "table": [
+        {
+            "id": "a1",
+            "platform": "instagram",
+            "user_id": "user-1",
+            "data": {
+                "username": "soon",
+                "accessToken": "N1",
+                "tokenExpiresAt": "2026-10-31T12:00:00.000Z"
+            }
+        },
+        {
+            "id": "a2",
+            "platform": "instagram",
+            "user_id": "user-1",
+            "data": {
+                "username": "later",
+                "accessToken": "T2",
+                "tokenExpiresAt": "2026-10-11T12:00:00.000Z"
+            }
+        },
+        {
+            "id": "a3",
+            "platform": "instagram",
+            "user_id": "user-1",
+            "data": {
+                "username": "notoken",
+                "tokenExpiresAt": "2026-09-02T12:00:00.000Z"
+            }
+        },
+        {
+            "id": "a4",
+            "platform": "instagram",
+            "user_id": "user-1",
+            "data": {
+                "username": "noexpiry",
+                "accessToken": "T4"
+            }
+        },
+        {
+            "id": "a5",
+            "platform": "youtube",
+            "user_id": "user-1",
+            "data": {
+                "channelId": "UC1",
+                "accessToken": "T5",
+                "tokenExpiresAt": "2026-09-02T12:00:00.000Z"
+            }
+        },
+        {
+            "id": "a6",
+            "platform": "instagram",
+            "user_id": "user-1",
+            "data": {
+                "username": "failing",
+                "accessToken": "T6",
+                "tokenExpiresAt": "2026-09-16T12:00:00.000Z"
+            }
+        },
+        {
+            "id": "a7",
+            "platform": "instagram",
+            "user_id": "user-2",
+            "data": {
+                "username": "expired",
+                "accessToken": "N7",
+                "tokenExpiresAt": "2026-10-31T12:00:00.000Z"
+            }
+        }
+    ]
+}

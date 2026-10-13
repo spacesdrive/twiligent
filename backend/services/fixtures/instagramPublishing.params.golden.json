@@ -1,0 +1,164 @@
+{
+    "results": [
+        {
+            "mediaType": "CAROUSEL",
+            "full": {
+                "access_token": "TOKEN",
+                "media_type": "CAROUSEL",
+                "caption": "Caption #tag",
+                "children": "c1,c2,c3",
+                "collaborators": "[\"partner_one\",\"partner_two\"]",
+                "location_id": "110"
+            },
+            "empty": {
+                "access_token": "TOKEN",
+                "media_type": "CAROUSEL"
+            },
+            "bare": {
+                "access_token": "TOKEN",
+                "media_type": "CAROUSEL"
+            }
+        },
+        {
+            "mediaType": "CAROUSEL_ITEM_IMAGE",
+            "full": {
+                "access_token": "TOKEN",
+                "image_url": "https://cdn.example/file.jpg",
+                "is_carousel_item": true
+            },
+            "empty": {
+                "access_token": "TOKEN",
+                "image_url": "https://cdn.example/file.mov",
+                "is_carousel_item": true
+            },
+            "bare": {
+                "access_token": "TOKEN",
+                "image_url": "[undefined]",
+                "is_carousel_item": true
+            }
+        },
+        {
+            "mediaType": "CAROUSEL_ITEM_VIDEO",
+            "full": {
+                "access_token": "TOKEN",
+                "media_type": "VIDEO",
+                "video_url": "https://cdn.example/file.jpg",
+                "is_carousel_item": true
+            },
+            "empty": {
+                "access_token": "TOKEN",
+                "media_type": "VIDEO",
+                "video_url": "https://cdn.example/file.mov",
+                "is_carousel_item": true
+            },
+            "bare": {
+                "access_token": "TOKEN",
+                "media_type": "VIDEO",
+                "video_url": "[undefined]",
+                "is_carousel_item": true
+            }
+        },
+        {
+            "mediaType": "REELS",
+            "full": {
+                "access_token": "TOKEN",
+                "media_type": "REELS",
+                "video_url": "https://cdn.example/file.jpg",
+                "caption": "Caption #tag",
+                "share_to_feed": true,
+                "cover_url": "https://cdn.example/cover.jpg",
+                "collaborators": "[\"partner_one\",\"partner_two\"]",
+                "audio_name": "Original audio",
+                "thumb_offset": 1500,
+                "location_id": "110",
+                "user_tags": "[{\"username\":\"friend\",\"x\":0.5,\"y\":0.5}]"
+            },
+            "empty": {
+                "access_token": "TOKEN",
+                "media_type": "REELS",
+                "video_url": "https://cdn.example/file.mov"
+            },
+            "bare": {
+                "access_token": "TOKEN",
+                "media_type": "REELS",
+                "video_url": "[undefined]"
+            }
+        },
+        {
+            "mediaType": "STORIES",
+            "full": {
+                "access_token": "TOKEN",
+                "media_type": "STORIES",
+                "image_url": "https://cdn.example/file.jpg",
+                "user_tags": "[{\"username\":\"friend\",\"x\":0.5,\"y\":0.5}]"
+            },
+            "empty": {
+                "access_token": "TOKEN",
+                "media_type": "STORIES",
+                "video_url": "https://cdn.example/file.mov"
+            },
+            "bare": {
+                "access_token": "TOKEN",
+                "media_type": "STORIES",
+                "image_url": "[undefined]"
+            }
+        },
+        {
+            "mediaType": "IMAGE",
+            "full": {
+                "access_token": "TOKEN",
+                "image_url": "https://cdn.example/file.jpg",
+                "caption": "Caption #tag",
+                "location_id": "110",
+                "user_tags": "[{\"username\":\"friend\",\"x\":0.5,\"y\":0.5}]",
+                "alt_text": "A ribbon on a table"
+            },
+            "empty": {
+                "access_token": "TOKEN",
+                "image_url": "https://cdn.example/file.mov"
+            },
+            "bare": {
+                "access_token": "TOKEN",
+                "image_url": "[undefined]"
+            }
+        },
+        {
+            "mediaType": "none",
+            "full": {
+                "access_token": "TOKEN",
+                "image_url": "https://cdn.example/file.jpg",
+                "caption": "Caption #tag",
+                "location_id": "110",
+                "user_tags": "[{\"username\":\"friend\",\"x\":0.5,\"y\":0.5}]",
+                "alt_text": "A ribbon on a table"
+            },
+            "empty": {
+                "access_token": "TOKEN",
+                "image_url": "https://cdn.example/file.mov"
+            },
+            "bare": {
+                "access_token": "TOKEN",
+                "image_url": "[undefined]"
+            }
+        }
+    ],
+    "variants": [
+        {
+            "access_token": "T",
+            "media_type": "REELS",
+            "video_url": "https://cdn/v.mp4",
+            "share_to_feed": false,
+            "thumb_offset": 0
+        },
+        {
+            "access_token": "T",
+            "media_type": "STORIES",
+            "video_url": "https://cdn/story.WEBM?x=1"
+        },
+        {
+            "access_token": "T",
+            "media_type": "STORIES",
+            "video_url": "https://cdn/story.avi.jpg"
+        }
+    ]
+}

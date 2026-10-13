@@ -1,0 +1,121 @@
+[
+    {
+        "type": "reel",
+        "views": 300,
+        "normalized": {
+            "id": "1",
+            "caption": "Reel",
+            "contentType": "reel",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn/v.mp4",
+            "thumbnailUrl": "https://cdn/c.jpg",
+            "permalink": "https://www.instagram.com/reel/1/",
+            "timestamp": "2026-08-01T10:00:00+0000",
+            "likeCount": 9,
+            "commentsCount": 2,
+            "viewCount": 300
+        }
+    },
+    {
+        "type": "post",
+        "views": null,
+        "normalized": {
+            "id": "2",
+            "caption": "",
+            "contentType": "post",
+            "mediaType": "IMAGE",
+            "mediaUrl": "https://cdn/i.jpg",
+            "thumbnailUrl": "https://cdn/i.jpg",
+            "permalink": "",
+            "timestamp": "",
+            "likeCount": 0,
+            "commentsCount": 0,
+            "viewCount": null
+        }
+    },
+    {
+        "type": "video",
+        "views": 41,
+        "normalized": {
+            "id": "3",
+            "caption": "",
+            "contentType": "video",
+            "mediaType": "VIDEO",
+            "mediaUrl": "",
+            "thumbnailUrl": "https://cdn/t3.jpg",
+            "permalink": "",
+            "timestamp": "",
+            "likeCount": 0,
+            "commentsCount": 0,
+            "viewCount": 41
+        }
+    },
+    {
+        "type": "post",
+        "views": null,
+        "normalized": {
+            "id": "4",
+            "caption": "",
+            "contentType": "post",
+            "mediaType": "CAROUSEL_ALBUM",
+            "mediaUrl": "",
+            "thumbnailUrl": "",
+            "permalink": "",
+            "timestamp": "",
+            "likeCount": 0,
+            "commentsCount": 0,
+            "viewCount": null
+        }
+    },
+    {
+        "type": "reel",
+        "views": null,
+        "normalized": {
+            "id": "5",
+            "caption": "",
+            "contentType": "reel",
+            "mediaType": "IMAGE",
+            "mediaUrl": "",
+            "thumbnailUrl": "",
+            "permalink": "https://instagram.com/reels/5/",
+            "timestamp": "",
+            "likeCount": 0,
+            "commentsCount": 0,
+            "viewCount": null
+        }
+    },
+    {
+        "type": "reel",
+        "views": null,
+        "normalized": {
+            "id": "6",
+            "caption": "",
+            "contentType": "reel",
+            "mediaType": "REEL",
+            "mediaUrl": "",
+            "thumbnailUrl": "",
+            "permalink": "",
+            "timestamp": "",
+            "likeCount": 0,
+            "commentsCount": 0,
+            "viewCount": null
+        }
+    },
+    {
+        "type": "post",
+        "views": null,
+        "normalized": {
+            "id": "7",
+            "caption": "",
+            "contentType": "post",
+            "mediaType": "IMAGE",
+            "mediaUrl": "",
+            "thumbnailUrl": "",
+            "permalink": "",
+            "timestamp": "",
+            "likeCount": 0,
+            "commentsCount": 0,
+            "viewCount": null
+        }
+    }
+]

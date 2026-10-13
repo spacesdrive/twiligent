@@ -1,0 +1,27 @@
+{
+    "outcomes": [
+        {
+            "value": {
+                "igUserId": "7",
+                "name": "",
+                "username": "retried",
+                "profilePictureUrl": "",
+                "followersCount": 0,
+                "followsCount": 0,
+                "mediaCount": 0,
+                "biography": "",
+                "website": ""
+            }
+        },
+        {
+            "error": "Instagram API request timed out"
+        },
+        {
+            "error": "Instagram API unreachable (read ECONNRESET)"
+        },
+        {
+            "error": "Instagram API unreachable (certificate expired)"
+        }
+    ],
+    "requestCount": 7
+}

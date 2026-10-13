@@ -1,0 +1,828 @@
+{
+    "totalPosts": 13,
+    "fetchedPosts": 13,
+    "totalLikes": 1255,
+    "totalComments": 171,
+    "totalEngagement": 1426,
+    "avgLikes": 97,
+    "avgComments": 13,
+    "avgEngagement": 110,
+    "medianLikes": 45,
+    "medianComments": 5,
+    "engagementRate": 0,
+    "likesPerFollower": 0,
+    "commentsPerFollower": 0,
+    "likesToCommentsRatio": 7.3,
+    "totalViews": 50800,
+    "avgViews": 7257,
+    "mediaWithViews": 7,
+    "bestByLikes": {
+        "id": "m12",
+        "caption": "#Travel #TRAVEL #newyear",
+        "contentType": "reel",
+        "mediaType": "VIDEO",
+        "mediaUrl": "https://cdn.example/m12.jpg",
+        "thumbnailUrl": "",
+        "permalink": "https://www.instagram.com/p/m12/",
+        "timestamp": "2025-12-31T23:30:00+0000",
+        "likeCount": 500,
+        "commentsCount": 75,
+        "viewCount": 30000
+    },
+    "bestByComments": {
+        "id": "m12",
+        "caption": "#Travel #TRAVEL #newyear",
+        "contentType": "reel",
+        "mediaType": "VIDEO",
+        "mediaUrl": "https://cdn.example/m12.jpg",
+        "thumbnailUrl": "",
+        "permalink": "https://www.instagram.com/p/m12/",
+        "timestamp": "2025-12-31T23:30:00+0000",
+        "likeCount": 500,
+        "commentsCount": 75,
+        "viewCount": 30000
+    },
+    "worstByLikes": {
+        "id": "m06",
+        "caption": "#quiet",
+        "contentType": "post",
+        "mediaType": "IMAGE",
+        "mediaUrl": "https://cdn.example/m06.jpg",
+        "thumbnailUrl": "",
+        "permalink": "https://www.instagram.com/p/m06/",
+        "timestamp": "2026-07-14T06:30:00+0000",
+        "likeCount": 0,
+        "commentsCount": 0,
+        "viewCount": null
+    },
+    "recentMedia": [
+        {
+            "id": "m01",
+            "caption": "#Travel #sunset golden hour over the bay",
+            "contentType": "reel",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/m01.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/m01/",
+            "timestamp": "2026-08-31T09:15:00+0000",
+            "likeCount": 120,
+            "commentsCount": 14,
+            "viewCount": 5400
+        },
+        {
+            "id": "m02",
+            "caption": "",
+            "contentType": "post",
+            "mediaType": "IMAGE",
+            "mediaUrl": "https://cdn.example/m02.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/m02/",
+            "timestamp": "2026-08-29T18:40:00+0000",
+            "likeCount": 45,
+            "commentsCount": 3,
+            "viewCount": null
+        },
+        {
+            "id": "m03",
+            "caption": "Short clip #travel",
+            "contentType": "video",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/m03.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/m03/",
+            "timestamp": "2026-08-25T09:05:00+0000",
+            "likeCount": 45,
+            "commentsCount": 9,
+            "viewCount": 800
+        },
+        {
+            "id": "m04",
+            "caption": "Behind the scenes of the shoot. Behind the scenes of the shoot. Behind the scenes of the shoot. Behind the scenes of the shoot. Behind the scenes of the shoot. Behind the scenes of the shoot. #Café #travel #reels",
+            "contentType": "reel",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/m04.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/m04/",
+            "timestamp": "2026-08-10T21:00:00+0000",
+            "likeCount": 300,
+            "commentsCount": 40,
+            "viewCount": 12000
+        },
+        {
+            "id": "m05",
+            "caption": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx #longform",
+            "contentType": "post",
+            "mediaType": "IMAGE",
+            "mediaUrl": "https://cdn.example/m05.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/m05/",
+            "timestamp": "not-a-date",
+            "likeCount": 10,
+            "commentsCount": 1,
+            "viewCount": null
+        },
+        {
+            "id": "m06",
+            "caption": "#quiet",
+            "contentType": "post",
+            "mediaType": "IMAGE",
+            "mediaUrl": "https://cdn.example/m06.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/m06/",
+            "timestamp": "2026-07-14T06:30:00+0000",
+            "likeCount": 0,
+            "commentsCount": 0,
+            "viewCount": null
+        },
+        {
+            "id": "m07",
+            "caption": "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm #reels #Àpropos",
+            "contentType": "reel",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/m07.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/m07/",
+            "timestamp": "2026-07-02T12:00:00+0000",
+            "likeCount": 88,
+            "commentsCount": 12,
+            "viewCount": 0
+        },
+        {
+            "id": "m08",
+            "caption": "Unknown type",
+            "contentType": "story",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/m08.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/m08/",
+            "timestamp": "2026-06-20T23:59:00+0000",
+            "likeCount": 15,
+            "commentsCount": 2,
+            "viewCount": 100
+        },
+        {
+            "id": "m09",
+            "caption": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "contentType": "post",
+            "mediaType": "IMAGE",
+            "mediaUrl": "https://cdn.example/m09.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/m09/",
+            "timestamp": "2026-06-03T00:00:00+0000",
+            "likeCount": 45,
+            "commentsCount": 9,
+            "viewCount": null
+        },
+        {
+            "id": "m10",
+            "caption": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "contentType": "video",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/m10.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/m10/",
+            "timestamp": "2026-05-01T15:45:00+0000",
+            "likeCount": 60,
+            "commentsCount": 5,
+            "viewCount": 2500
+        },
+        {
+            "id": "m11",
+            "caption": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "contentType": "post",
+            "mediaType": "IMAGE",
+            "mediaUrl": "https://cdn.example/m11.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/m11/",
+            "timestamp": "2026-03-15T08:00:00+0000",
+            "likeCount": 22,
+            "commentsCount": 0,
+            "viewCount": null
+        },
+        {
+            "id": "m12",
+            "caption": "#Travel #TRAVEL #newyear",
+            "contentType": "reel",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/m12.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/m12/",
+            "timestamp": "2025-12-31T23:30:00+0000",
+            "likeCount": 500,
+            "commentsCount": 75,
+            "viewCount": 30000
+        },
+        {
+            "id": "m13",
+            "caption": "#travel",
+            "contentType": "post",
+            "mediaType": "IMAGE",
+            "mediaUrl": "https://cdn.example/m13.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/m13/",
+            "timestamp": "",
+            "likeCount": 5,
+            "commentsCount": 1,
+            "viewCount": null
+        }
+    ],
+    "contentTypeStats": {
+        "reel": {
+            "count": 4,
+            "totalLikes": 1008,
+            "totalComments": 141,
+            "totalViews": 47400,
+            "viewsReported": 4,
+            "avgLikes": 252,
+            "avgComments": 35,
+            "avgEngagement": 287,
+            "avgViews": 11850
+        },
+        "post": {
+            "count": 7,
+            "totalLikes": 142,
+            "totalComments": 16,
+            "totalViews": 100,
+            "viewsReported": 1,
+            "avgLikes": 20,
+            "avgComments": 2,
+            "avgEngagement": 23,
+            "avgViews": 100
+        },
+        "video": {
+            "count": 2,
+            "totalLikes": 105,
+            "totalComments": 14,
+            "totalViews": 3300,
+            "viewsReported": 2,
+            "avgLikes": 53,
+            "avgComments": 7,
+            "avgEngagement": 60,
+            "avgViews": 1650
+        }
+    },
+    "postFrequency": {
+        "perWeek": 0.4,
+        "perMonth": 1.6
+    },
+    "topPosts": [
+        {
+            "id": "m12",
+            "caption": "#Travel #TRAVEL #newyear",
+            "contentType": "reel",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/m12.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/m12/",
+            "timestamp": "2025-12-31T23:30:00+0000",
+            "likeCount": 500,
+            "commentsCount": 75,
+            "viewCount": 30000,
+            "engagement": 575
+        },
+        {
+            "id": "m04",
+            "caption": "Behind the scenes of the shoot. Behind the scenes of the shoot. Behind the scenes of the shoot. Behind the scenes of the shoot. Behind the scenes of the shoot. Behind the scenes of the shoot. #Café #travel #reels",
+            "contentType": "reel",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/m04.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/m04/",
+            "timestamp": "2026-08-10T21:00:00+0000",
+            "likeCount": 300,
+            "commentsCount": 40,
+            "viewCount": 12000,
+            "engagement": 340
+        },
+        {
+            "id": "m01",
+            "caption": "#Travel #sunset golden hour over the bay",
+            "contentType": "reel",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/m01.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/m01/",
+            "timestamp": "2026-08-31T09:15:00+0000",
+            "likeCount": 120,
+            "commentsCount": 14,
+            "viewCount": 5400,
+            "engagement": 134
+        },
+        {
+            "id": "m07",
+            "caption": "mmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmmm #reels #Àpropos",
+            "contentType": "reel",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/m07.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/m07/",
+            "timestamp": "2026-07-02T12:00:00+0000",
+            "likeCount": 88,
+            "commentsCount": 12,
+            "viewCount": 0,
+            "engagement": 100
+        },
+        {
+            "id": "m10",
+            "caption": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+            "contentType": "video",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/m10.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/m10/",
+            "timestamp": "2026-05-01T15:45:00+0000",
+            "likeCount": 60,
+            "commentsCount": 5,
+            "viewCount": 2500,
+            "engagement": 65
+        },
+        {
+            "id": "m03",
+            "caption": "Short clip #travel",
+            "contentType": "video",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/m03.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/m03/",
+            "timestamp": "2026-08-25T09:05:00+0000",
+            "likeCount": 45,
+            "commentsCount": 9,
+            "viewCount": 800,
+            "engagement": 54
+        },
+        {
+            "id": "m09",
+            "caption": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "contentType": "post",
+            "mediaType": "IMAGE",
+            "mediaUrl": "https://cdn.example/m09.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/m09/",
+            "timestamp": "2026-06-03T00:00:00+0000",
+            "likeCount": 45,
+            "commentsCount": 9,
+            "viewCount": null,
+            "engagement": 54
+        },
+        {
+            "id": "m02",
+            "caption": "",
+            "contentType": "post",
+            "mediaType": "IMAGE",
+            "mediaUrl": "https://cdn.example/m02.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/m02/",
+            "timestamp": "2026-08-29T18:40:00+0000",
+            "likeCount": 45,
+            "commentsCount": 3,
+            "viewCount": null,
+            "engagement": 48
+        },
+        {
+            "id": "m11",
+            "caption": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+            "contentType": "post",
+            "mediaType": "IMAGE",
+            "mediaUrl": "https://cdn.example/m11.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/m11/",
+            "timestamp": "2026-03-15T08:00:00+0000",
+            "likeCount": 22,
+            "commentsCount": 0,
+            "viewCount": null,
+            "engagement": 22
+        },
+        {
+            "id": "m08",
+            "caption": "Unknown type",
+            "contentType": "story",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn.example/m08.jpg",
+            "thumbnailUrl": "",
+            "permalink": "https://www.instagram.com/p/m08/",
+            "timestamp": "2026-06-20T23:59:00+0000",
+            "likeCount": 15,
+            "commentsCount": 2,
+            "viewCount": 100,
+            "engagement": 17
+        }
+    ],
+    "postsByDayOfWeek": [
+        {
+            "day": "Sunday",
+            "shortDay": "Sun",
+            "posts": 1,
+            "avgLikes": 60,
+            "avgComments": 5,
+            "avgEngagement": 65
+        },
+        {
+            "day": "Monday",
+            "shortDay": "Mon",
+            "posts": 2,
+            "avgLikes": 210,
+            "avgComments": 27,
+            "avgEngagement": 237
+        },
+        {
+            "day": "Tuesday",
+            "shortDay": "Tue",
+            "posts": 2,
+            "avgLikes": 28,
+            "avgComments": 5,
+            "avgEngagement": 33
+        },
+        {
+            "day": "Wednesday",
+            "shortDay": "Wed",
+            "posts": 2,
+            "avgLikes": 19,
+            "avgComments": 1,
+            "avgEngagement": 20
+        },
+        {
+            "day": "Thursday",
+            "shortDay": "Thu",
+            "posts": 1,
+            "avgLikes": 0,
+            "avgComments": 0,
+            "avgEngagement": 0
+        },
+        {
+            "day": "Friday",
+            "shortDay": "Fri",
+            "posts": 1,
+            "avgLikes": 45,
+            "avgComments": 9,
+            "avgEngagement": 54
+        },
+        {
+            "day": "Saturday",
+            "shortDay": "Sat",
+            "posts": 2,
+            "avgLikes": 67,
+            "avgComments": 8,
+            "avgEngagement": 74
+        }
+    ],
+    "bestPostingDay": "Monday",
+    "postsByHour": [
+        {
+            "hour": 0,
+            "label": "0:00",
+            "posts": 1,
+            "avgEngagement": 17
+        },
+        {
+            "hour": 1,
+            "label": "1:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 2,
+            "label": "2:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 3,
+            "label": "3:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 4,
+            "label": "4:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 5,
+            "label": "5:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 6,
+            "label": "6:00",
+            "posts": 1,
+            "avgEngagement": 11
+        },
+        {
+            "hour": 7,
+            "label": "7:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 8,
+            "label": "8:00",
+            "posts": 1,
+            "avgEngagement": 65
+        },
+        {
+            "hour": 9,
+            "label": "9:00",
+            "posts": 2,
+            "avgEngagement": 94
+        },
+        {
+            "hour": 10,
+            "label": "10:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 11,
+            "label": "11:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 12,
+            "label": "12:00",
+            "posts": 1,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 13,
+            "label": "13:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 14,
+            "label": "14:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 15,
+            "label": "15:00",
+            "posts": 1,
+            "avgEngagement": 54
+        },
+        {
+            "hour": 16,
+            "label": "16:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 17,
+            "label": "17:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 18,
+            "label": "18:00",
+            "posts": 1,
+            "avgEngagement": 48
+        },
+        {
+            "hour": 19,
+            "label": "19:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 20,
+            "label": "20:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 21,
+            "label": "21:00",
+            "posts": 1,
+            "avgEngagement": 340
+        },
+        {
+            "hour": 22,
+            "label": "22:00",
+            "posts": 0,
+            "avgEngagement": 0
+        },
+        {
+            "hour": 23,
+            "label": "23:00",
+            "posts": 2,
+            "avgEngagement": 61
+        }
+    ],
+    "bestPostingHour": "21:00",
+    "engagementTimeline": [
+        {
+            "month": "2025-12",
+            "posts": 1,
+            "likes": 500,
+            "comments": 75,
+            "avgLikes": 500,
+            "avgComments": 75,
+            "engagement": 575
+        },
+        {
+            "month": "2026-03",
+            "posts": 1,
+            "likes": 22,
+            "comments": 0,
+            "avgLikes": 22,
+            "avgComments": 0,
+            "engagement": 22
+        },
+        {
+            "month": "2026-05",
+            "posts": 1,
+            "likes": 60,
+            "comments": 5,
+            "avgLikes": 60,
+            "avgComments": 5,
+            "engagement": 65
+        },
+        {
+            "month": "2026-06",
+            "posts": 2,
+            "likes": 60,
+            "comments": 11,
+            "avgLikes": 30,
+            "avgComments": 6,
+            "engagement": 71
+        },
+        {
+            "month": "2026-07",
+            "posts": 2,
+            "likes": 88,
+            "comments": 12,
+            "avgLikes": 44,
+            "avgComments": 6,
+            "engagement": 100
+        },
+        {
+            "month": "2026-08",
+            "posts": 4,
+            "likes": 510,
+            "comments": 66,
+            "avgLikes": 128,
+            "avgComments": 17,
+            "engagement": 576
+        }
+    ],
+    "monthlyBreakdown": [
+        {
+            "month": "2025-12",
+            "posts": 1,
+            "likes": 500,
+            "comments": 75,
+            "avgLikes": 500,
+            "avgComments": 75,
+            "engagement": 575
+        },
+        {
+            "month": "2026-03",
+            "posts": 1,
+            "likes": 22,
+            "comments": 0,
+            "avgLikes": 22,
+            "avgComments": 0,
+            "engagement": 22
+        },
+        {
+            "month": "2026-05",
+            "posts": 1,
+            "likes": 60,
+            "comments": 5,
+            "avgLikes": 60,
+            "avgComments": 5,
+            "engagement": 65
+        },
+        {
+            "month": "2026-06",
+            "posts": 2,
+            "likes": 60,
+            "comments": 11,
+            "avgLikes": 30,
+            "avgComments": 6,
+            "engagement": 71
+        },
+        {
+            "month": "2026-07",
+            "posts": 2,
+            "likes": 88,
+            "comments": 12,
+            "avgLikes": 44,
+            "avgComments": 6,
+            "engagement": 100
+        },
+        {
+            "month": "2026-08",
+            "posts": 4,
+            "likes": 510,
+            "comments": 66,
+            "avgLikes": 128,
+            "avgComments": 17,
+            "engagement": 576
+        }
+    ],
+    "postsLast7Days": 2,
+    "postsLast30Days": 4,
+    "postsLast90Days": 7,
+    "hashtagAnalysis": [
+        {
+            "tag": "#travel",
+            "count": 6,
+            "likes": 1470,
+            "comments": 214,
+            "avgEngagement": 281
+        },
+        {
+            "tag": "#reels",
+            "count": 2,
+            "likes": 388,
+            "comments": 52,
+            "avgEngagement": 220
+        },
+        {
+            "tag": "#sunset",
+            "count": 1,
+            "likes": 120,
+            "comments": 14,
+            "avgEngagement": 134
+        },
+        {
+            "tag": "#café",
+            "count": 1,
+            "likes": 300,
+            "comments": 40,
+            "avgEngagement": 340
+        },
+        {
+            "tag": "#longform",
+            "count": 1,
+            "likes": 10,
+            "comments": 1,
+            "avgEngagement": 11
+        },
+        {
+            "tag": "#quiet",
+            "count": 1,
+            "likes": 0,
+            "comments": 0,
+            "avgEngagement": 0
+        },
+        {
+            "tag": "#àpropos",
+            "count": 1,
+            "likes": 88,
+            "comments": 12,
+            "avgEngagement": 100
+        },
+        {
+            "tag": "#newyear",
+            "count": 1,
+            "likes": 500,
+            "comments": 75,
+            "avgEngagement": 575
+        }
+    ],
+    "captionLengthCorrelation": [
+        {
+            "label": "No caption",
+            "count": 1,
+            "avgLikes": 45,
+            "avgComments": 3,
+            "avgEngagement": 48
+        },
+        {
+            "label": "Short (1-50)",
+            "count": 7,
+            "avgLikes": 104,
+            "avgComments": 16,
+            "avgEngagement": 120
+        },
+        {
+            "label": "Medium (51-150)",
+            "count": 1,
+            "avgLikes": 88,
+            "avgComments": 12,
+            "avgEngagement": 100
+        },
+        {
+            "label": "Long (151-300)",
+            "count": 3,
+            "avgLikes": 127,
+            "avgComments": 15,
+            "avgEngagement": 142
+        },
+        {
+            "label": "Very Long (300+)",
+            "count": 1,
+            "avgLikes": 10,
+            "avgComments": 1,
+            "avgEngagement": 11
+        }
+    ],
+    "viralityScore": 5.2,
+    "consistencyScore": 41
+}

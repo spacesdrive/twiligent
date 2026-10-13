@@ -1,0 +1,99 @@
+{
+    "types": [
+        "reel",
+        "post",
+        "video"
+    ],
+    "rich": {
+        "reel": {
+            "count": 4,
+            "likes": 1008,
+            "comments": 141,
+            "views": 47400,
+            "viewsReported": 4
+        },
+        "post": {
+            "count": 7,
+            "likes": 142,
+            "comments": 16,
+            "views": 100,
+            "viewsReported": 1
+        },
+        "video": {
+            "count": 2,
+            "likes": 105,
+            "comments": 14,
+            "views": 3300,
+            "viewsReported": 2
+        }
+    },
+    "generated": {
+        "reel": {
+            "count": 8,
+            "likes": 708,
+            "comments": 84,
+            "views": 7200,
+            "viewsReported": 6
+        },
+        "post": {
+            "count": 8,
+            "likes": 804,
+            "comments": 142,
+            "views": 7200,
+            "viewsReported": 6
+        },
+        "video": {
+            "count": 8,
+            "likes": 700,
+            "comments": 110,
+            "views": 7200,
+            "viewsReported": 6
+        }
+    },
+    "odd": {
+        "reel": {
+            "count": 1,
+            "likes": 0,
+            "comments": 0,
+            "views": 0,
+            "viewsReported": 0
+        },
+        "post": {
+            "count": 1,
+            "likes": 3,
+            "comments": 0,
+            "views": 0,
+            "viewsReported": 1
+        },
+        "video": {
+            "count": 1,
+            "likes": 1,
+            "comments": 1,
+            "views": "[NaN]",
+            "viewsReported": 1
+        }
+    },
+    "missing": {
+        "reel": {
+            "count": 0,
+            "likes": 0,
+            "comments": 0,
+            "views": 0,
+            "viewsReported": 0
+        },
+        "post": {
+            "count": 0,
+            "likes": 0,
+            "comments": 0,
+            "views": 0,
+            "viewsReported": 0
+        },
+        "video": {
+            "count": 0,
+            "likes": 0,
+            "comments": 0,
+            "views": 0,
+            "viewsReported": 0
+        }
+    }
+}

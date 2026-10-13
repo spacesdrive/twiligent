@@ -1,0 +1,64 @@
+{
+    "outcomes": [
+        {
+            "value": {
+                "accessToken": "LONG",
+                "tokenType": "Bearer",
+                "expiresIn": 3600
+            }
+        },
+        {
+            "value": {
+                "accessToken": "LONG2",
+                "tokenType": "bearer",
+                "expiresIn": 5184000
+            }
+        },
+        {
+            "error": "Failed to exchange token - check Instagram App Secret"
+        },
+        {
+            "value": {
+                "accessToken": "REFRESHED",
+                "tokenType": "bearer",
+                "expiresIn": 7200
+            }
+        },
+        {
+            "value": {
+                "accessToken": "REFRESHED2",
+                "tokenType": "bearer",
+                "expiresIn": 5184000
+            }
+        },
+        {
+            "error": "Failed to refresh token"
+        }
+    ],
+    "requests": [
+        {
+            "url": "https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=SECRET&access_token=SHORT",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=SECRET&access_token=SHORT",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=SECRET&access_token=SHORT",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=LONG",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=LONG",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=LONG",
+            "method": "GET"
+        }
+    ]
+}

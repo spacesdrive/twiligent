@@ -1,0 +1,51 @@
+{
+    "results": [
+        {
+            "igUserId": "1789",
+            "name": "Ribbon",
+            "username": "ribbon",
+            "profilePictureUrl": "https://cdn/p.jpg",
+            "followersCount": 2500,
+            "followsCount": 12,
+            "mediaCount": 140,
+            "biography": "Bio",
+            "website": "https://ribbon.example"
+        },
+        {
+            "igUserId": "42",
+            "name": "",
+            "username": "",
+            "profilePictureUrl": "",
+            "followersCount": 0,
+            "followsCount": 0,
+            "mediaCount": 0,
+            "biography": "",
+            "website": ""
+        },
+        {
+            "igUserId": "555",
+            "name": "",
+            "username": "",
+            "profilePictureUrl": "",
+            "followersCount": 0,
+            "followsCount": 0,
+            "mediaCount": 0,
+            "biography": "",
+            "website": ""
+        }
+    ],
+    "requests": [
+        {
+            "url": "https://graph.instagram.com/v25.0/1789?access_token=TOKEN&fields=user_id%2Cusername%2Cname%2Cprofile_picture_url%2Cfollowers_count%2Cfollows_count%2Cmedia_count%2Cbiography%2Cwebsite",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/me?access_token=TOKEN&fields=user_id%2Cusername%2Cname%2Cprofile_picture_url%2Cfollowers_count%2Cfollows_count%2Cmedia_count%2Cbiography%2Cwebsite",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/555?access_token=TOKEN&fields=user_id%2Cusername%2Cname%2Cprofile_picture_url%2Cfollowers_count%2Cfollows_count%2Cmedia_count%2Cbiography%2Cwebsite",
+            "method": "GET"
+        }
+    ]
+}

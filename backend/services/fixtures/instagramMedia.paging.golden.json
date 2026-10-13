@@ -1,0 +1,106 @@
+{
+    "media": [
+        {
+            "id": "1",
+            "caption": "Reel",
+            "contentType": "reel",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn/v.mp4",
+            "thumbnailUrl": "https://cdn/c.jpg",
+            "permalink": "https://www.instagram.com/reel/1/",
+            "timestamp": "2026-08-01T10:00:00+0000",
+            "likeCount": 9,
+            "commentsCount": 2,
+            "viewCount": 300
+        },
+        {
+            "id": "2",
+            "caption": "",
+            "contentType": "post",
+            "mediaType": "IMAGE",
+            "mediaUrl": "https://cdn/i.jpg",
+            "thumbnailUrl": "https://cdn/i.jpg",
+            "permalink": "",
+            "timestamp": "",
+            "likeCount": 0,
+            "commentsCount": 0,
+            "viewCount": null
+        },
+        {
+            "id": "3",
+            "caption": "",
+            "contentType": "video",
+            "mediaType": "VIDEO",
+            "mediaUrl": "",
+            "thumbnailUrl": "https://cdn/t3.jpg",
+            "permalink": "",
+            "timestamp": "",
+            "likeCount": 0,
+            "commentsCount": 0,
+            "viewCount": 41
+        },
+        {
+            "id": "4",
+            "caption": "",
+            "contentType": "post",
+            "mediaType": "CAROUSEL_ALBUM",
+            "mediaUrl": "",
+            "thumbnailUrl": "",
+            "permalink": "",
+            "timestamp": "",
+            "likeCount": 0,
+            "commentsCount": 0,
+            "viewCount": null
+        }
+    ],
+    "limited": [
+        {
+            "id": "1",
+            "caption": "Reel",
+            "contentType": "reel",
+            "mediaType": "VIDEO",
+            "mediaUrl": "https://cdn/v.mp4",
+            "thumbnailUrl": "https://cdn/c.jpg",
+            "permalink": "https://www.instagram.com/reel/1/",
+            "timestamp": "2026-08-01T10:00:00+0000",
+            "likeCount": 9,
+            "commentsCount": 2,
+            "viewCount": 300
+        },
+        {
+            "id": "2",
+            "caption": "",
+            "contentType": "post",
+            "mediaType": "IMAGE",
+            "mediaUrl": "https://cdn/i.jpg",
+            "thumbnailUrl": "https://cdn/i.jpg",
+            "permalink": "",
+            "timestamp": "",
+            "likeCount": 0,
+            "commentsCount": 0,
+            "viewCount": null
+        }
+    ],
+    "requests": [
+        {
+            "url": "https://graph.instagram.com/v25.0/17841/media?access_token=TOKEN&limit=50&fields=id%2Ccaption%2Cmedia_type%2Cmedia_product_type%2Cmedia_url%2Cthumbnail_url%2Ccover_url%2Cpermalink%2Ctimestamp%2Clike_count%2Ccomments_count%2Cinsights.metric%28views%29",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/17841/media?access_token=TOKEN&limit=50&after=p2&fields=id%2Ccaption%2Cmedia_type%2Cmedia_product_type%2Cmedia_url%2Cthumbnail_url%2Ccover_url%2Cpermalink%2Ctimestamp%2Clike_count%2Ccomments_count%2Cinsights.metric%28views%29",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/17841/media?access_token=TOKEN&limit=50&after=p2&fields=id%2Ccaption%2Cmedia_type%2Cmedia_product_type%2Cmedia_url%2Cthumbnail_url%2Ccover_url%2Cpermalink%2Ctimestamp%2Clike_count%2Ccomments_count",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/17841/media?access_token=TOKEN&limit=50&after=p3&fields=id%2Ccaption%2Cmedia_type%2Cmedia_product_type%2Cmedia_url%2Cthumbnail_url%2Ccover_url%2Cpermalink%2Ctimestamp%2Clike_count%2Ccomments_count%2Cinsights.metric%28views%29",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/17841/media?access_token=TOKEN&limit=50&fields=id%2Ccaption%2Cmedia_type%2Cmedia_product_type%2Cmedia_url%2Cthumbnail_url%2Ccover_url%2Cpermalink%2Ctimestamp%2Clike_count%2Ccomments_count%2Cinsights.metric%28views%29",
+            "method": "GET"
+        }
+    ]
+}

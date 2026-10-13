@@ -1,0 +1,18 @@
+{
+    "lines": [
+        [
+            "error",
+            "autoRefreshInstagramTokens error:",
+            "database unavailable"
+        ]
+    ],
+    "requests": [],
+    "calls": [
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": []
+        }
+    ]
+}
