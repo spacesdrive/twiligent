@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { useTheme } from 'next-themes';
+import { useSmoothTheme } from '@/hooks/use-smooth-theme';
+import { useLocation } from 'react-router-dom';
 import {
-  RefreshCw, CheckCircle2, Info, AlertTriangle, ExternalLink, Copy, Check, Save, Sun, Moon, Monitor, Activity,
+  RefreshCw, CheckCircle2, AlertTriangle, ExternalLink, Copy, Check, Save, Sun, Moon, Monitor, Activity, Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,23 +14,30 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PageHeader from '@/components/PageHeader';
 import SurfaceBox from '@/components/SurfaceBox';
 import { FieldRow } from '@/components/DetailPanel';
+import InstagramTesterNotice from '@/components/InstagramTesterNotice';
+import { ADMIN_EMAIL, adminMailto } from '@/lib/contact';
 import { useAppContext } from '../../context/AppContext';
 import { api } from '../../services/api';
 import { cn } from '@/lib/utils';
 
-const PAT_STEPS = [
-  { title: 'Open GitHub settings', body: <>On github.com, open your profile menu (top right) and choose <strong>Settings</strong>.</> },
-  { title: 'Open developer settings', body: <>At the bottom of the left sidebar, choose <strong>Developer settings</strong>.</> },
-  { title: 'Create a fine-grained token', body: <>Choose <strong>Personal access tokens</strong>, then <strong>Fine-grained tokens</strong>, then <strong>Generate new token</strong>. Fine-grained tokens let you pick exact permissions.</> },
-  { title: 'Name the token and pick the repository', body: <>Use a clear name such as <em>twiligent-actions</em>, an expiry of 90 days or less, and <em>Only select repositories</em> with this project selected.</> },
-  { title: 'Set permissions', body: <>Under Repository permissions, enable <Badge variant="secondary">Actions: read and write</Badge> <Badge variant="secondary">Secrets: read and write</Badge> <Badge variant="secondary">Contents: read-only</Badge></> },
-  { title: 'Copy the token now', body: <>Choose <strong>Generate token</strong>. GitHub shows it once, so copy it into a password manager straight away. A lost token has to be generated again.</> },
-  { title: 'Add it as an Actions secret', body: 'In the repository, open Settings, then Secrets and variables, then Actions, then New repository secret. Name it exactly:', code: 'GITHUB_PAT' },
+const WORKFLOW_FILE = '.github/workflows/publish-scheduled.yml';
+const SECRET_NAMES = [
+  { name: 'SUPABASE_URL', hint: 'Your Supabase project URL. Supabase dashboard, Project Settings, API.' },
+  { name: 'SUPABASE_SERVICE_KEY', hint: 'The service_role key from the same page. It can read and write every table, so it goes only into GitHub secrets, never into code or chat.' },
 ];
 
+function repoLinks(owner, repo) {
+  if (!owner || !repo) return null;
+  const base = `https://github.com/${owner.trim()}/${repo.trim()}`;
+  return {
+    newSecret: `${base}/settings/secrets/actions/new`,
+    actions: `${base}/actions`,
+    workflow: `${base}/actions/workflows/publish-scheduled.yml`,
+  };
+}
+
 const LINKS = [
-  { label: 'GitHub settings', href: 'https://github.com/settings/profile' },
-  { label: 'GitHub fine-grained tokens', href: 'https://github.com/settings/tokens?type=beta' },
+  { label: 'Supabase API settings', href: 'https://supabase.com/dashboard/project/_/settings/api' },
   { label: 'Cloudinary console', href: 'https://cloudinary.com/console' },
   { label: 'Google Cloud credentials', href: 'https://console.cloud.google.com/apis/credentials' },
   { label: 'Meta app dashboard', href: 'https://developers.facebook.com/apps' },
@@ -55,11 +63,28 @@ function CopyButton({ text }) {
   );
 }
 
+function Steps({ steps }) {
+  return (
+    <ol className="flex flex-col gap-4">
+      {steps.map((step, i) => (
+        <li key={step.title} className="flex gap-3">
+          <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-surface-sunken font-mono text-caption font-medium text-ink-muted">{i + 1}</span>
+          <div className="flex min-w-0 flex-1 flex-col gap-1 pt-0.5">
+            <p className="text-sm font-medium text-ink">{step.title}</p>
+            <div className="text-sm text-ink-muted [&_a]:font-medium [&_a]:text-brand-text [&_a]:underline-offset-4 [&_a:hover]:underline [&_strong]:font-semibold [&_strong]:text-ink">{step.body}</div>
+            {step.extra}
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
 function SettingsSection({ id, title, description, children }) {
   return (
-    <section aria-labelledby={id} className="grid grid-cols-1 gap-4 border-t border-line pt-8 first:border-t-0 first:pt-0 lg:grid-cols-[16rem_1fr] lg:gap-10">
+    <section id={id} aria-labelledby={`${id}-title`} className="grid scroll-mt-20 grid-cols-1 gap-4 border-t border-line pt-8 first:border-t-0 first:pt-0 lg:grid-cols-[16rem_1fr] lg:gap-10">
       <div className="flex flex-col gap-1">
-        <h2 id={id} className="font-heading text-section font-semibold text-ink">{title}</h2>
+        <h2 id={`${id}-title`} className="font-heading text-section font-semibold text-ink">{title}</h2>
         {description && <p className="text-small text-ink-muted">{description}</p>}
       </div>
       <div className="flex min-w-0 flex-col gap-4">{children}</div>
@@ -85,18 +110,16 @@ function StatusRow({ label, ok, hint }) {
 
 export default function Settings() {
   const { showToast, refreshAll, loading: refreshingAll } = useAppContext();
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme } = useSmoothTheme();
 
   const [serverStatus, setServerStatus] = useState(null);
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const [ghPat, setGhPat] = useState('');
+  const location = useLocation();
   const [ghRepoOwner, setGhRepoOwner] = useState('');
   const [ghRepoName, setGhRepoName] = useState('');
-  const [ghBranch, setGhBranch] = useState('main');
-  const [ghPatSet, setGhPatSet] = useState(false);
   const [ghSaving, setGhSaving] = useState(false);
 
   useEffect(() => {
@@ -108,8 +131,6 @@ export default function Settings() {
         setServerStatus(keys);
         setGhRepoOwner(gh.repoOwner || '');
         setGhRepoName(gh.repoName || '');
-        setGhBranch(gh.branch || 'main');
-        setGhPatSet(gh.patSet || false);
       } catch {
         try {
           const keys = await api.getKeys();
@@ -122,20 +143,66 @@ export default function Settings() {
     return () => { cancelled = true; };
   }, []);
 
+  // Links such as /settings#scheduling jump to their section once the page has loaded
+  useEffect(() => {
+    if (loading || !location.hash) return;
+    document.getElementById(location.hash.slice(1))?.scrollIntoView({ block: 'start' });
+  }, [loading, location.hash]);
+
+  // Only the repository is kept: it fills in the direct links in the setup guide. No token is needed.
   const handleSaveGithub = async e => {
     e.preventDefault();
     setGhSaving(true);
     try {
-      await api.saveGithubSettings({ pat: ghPat || undefined, repoOwner: ghRepoOwner, repoName: ghRepoName, branch: ghBranch });
-      showToast('GitHub settings saved');
-      if (ghPat) setGhPatSet(true);
-      setGhPat('');
+      await api.saveGithubSettings({ repoOwner: ghRepoOwner.trim(), repoName: ghRepoName.trim(), branch: 'main' });
+      showToast('Repository saved. The links in the guide now point to it.');
     } catch (err) {
-      showToast(`Couldn't save GitHub settings. ${err.message}`, 'error');
+      showToast(`Couldn't save the repository. ${err.message}`, 'error');
     } finally {
       setGhSaving(false);
     }
   };
+
+  const links = repoLinks(ghRepoOwner, ghRepoName);
+  const adminSteps = [
+    {
+      title: 'Check the server scheduler',
+      body: <>The Cloudflare Worker publishes due posts every 15 minutes. It is set up by deploying the backend (the cron is in <code className="font-mono text-small">backend/wrangler.toml</code>). In the Cloudflare dashboard, open Workers and Pages, then the twiligent Worker, then Settings, and confirm the trigger <code className="font-mono text-small">*/15 * * * *</code> is listed. Nothing else is required for scheduling to work.</>,
+    },
+    {
+      title: 'Optional: add the GitHub Actions backup',
+      body: <>The repository includes <code className="font-mono text-small">{WORKFLOW_FILE}</code>, which publishes due posts if the Worker cron is paused or failing. It needs your own copy of the repository on GitHub (a fork or a clone you pushed). Enter it below to get direct links.</>,
+    },
+    {
+      title: 'Add two repository secrets',
+      body: <>In the repository on GitHub, open Settings, then Secrets and variables, then Actions, then New repository secret. {links && <a href={links.newSecret} target="_blank" rel="noopener noreferrer">Open the new secret page</a>}</>,
+      extra: (
+        <div className="mt-1.5 flex flex-col gap-2">
+          {SECRET_NAMES.map(secret => (
+            <div key={secret.name} className="flex flex-col gap-1 rounded-control border border-line bg-surface-sunken px-3 py-2">
+              <div className="flex items-center gap-2">
+                <code className="flex-1 font-mono text-small text-ink">{secret.name}</code>
+                <CopyButton text={secret.name} />
+              </div>
+              <p className="text-caption text-ink-faint">{secret.hint}</p>
+            </div>
+          ))}
+        </div>
+      ),
+    },
+    {
+      title: 'Turn on the workflow',
+      body: <>Open the Actions tab. Forks start with workflows switched off: choose the button to enable them. Then open <strong>Instagram Scheduled Publisher</strong> and choose Enable workflow if GitHub shows it as disabled. {links && <a href={links.workflow} target="_blank" rel="noopener noreferrer">Open the workflow</a>}</>,
+    },
+    {
+      title: 'Run it once to test',
+      body: 'On the workflow page choose Run workflow. Open the run: the log ends with "No posts due for publishing" or lists the posts it published. A red run with "Missing SUPABASE_URL or SUPABASE_SERVICE_KEY" means a secret name is misspelled.',
+    },
+    {
+      title: 'Mind the free minutes on private repositories',
+      body: <>Public repositories run Actions for free. Private ones get 2,000 minutes a month, and a run every 15 minutes uses more than that. For a private repository, change the cron in <code className="font-mono text-small">{WORKFLOW_FILE}</code> to <code className="font-mono text-small">*/30 * * * *</code>. GitHub also pauses scheduled workflows in public repositories after 60 days without commits; re-enable it from the Actions tab if that happens.</>,
+    },
+  ];
 
   const handleTest = async () => {
     setTesting(true);
@@ -209,71 +276,51 @@ export default function Settings() {
         </SettingsSection>
 
         <SettingsSection
-          id="github"
-          title="GitHub"
-          description="Used for scheduled publishing through GitHub Actions. The token lets the scheduler trigger workflows in your repository."
+          id="scheduling"
+          title="Scheduled publishing"
+          description="How scheduled Instagram posts go out, and what the person who runs this instance sets up once."
         >
-          <SurfaceBox>
-            <form className="flex flex-col gap-5" onSubmit={handleSaveGithub}>
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-                <FieldRow label="Repository owner" htmlFor="gh-owner">
-                  <Input id="gh-owner" placeholder="owner" value={ghRepoOwner} onChange={e => setGhRepoOwner(e.target.value)} autoComplete="off" />
+          <SurfaceBox title="How it works for you">
+            <Steps steps={[
+              { title: 'Schedule a post', body: 'In Publish, choose an account, the content type and the file, write the caption, pick Schedule, then a date and time, and choose Schedule post. The file uploads straight away.' },
+              { title: 'The server publishes it', body: 'Within 15 minutes after the time you picked, the server publishes the post. Your browser can be closed and your computer can be off.' },
+              { title: 'Keep the account connected', body: 'The post uses the Instagram account you picked. If that account is removed or its access expires before the time, the post fails and shows the reason under Publish, Scheduled posts. Refresh the account in Accounts if Instagram asks you to reconnect.' },
+              {
+                title: 'If a post stays Pending',
+                body: <>A post still Pending 30 minutes after its time means the scheduler on this server is not running. Email the administrator at <a href={adminMailto('Scheduled posts are not publishing on Twiligent')}>{ADMIN_EMAIL}</a> with the time of the post. You can edit or delete a Pending post at any time.</>,
+              },
+            ]} />
+            <div className="mt-5 flex flex-wrap items-center gap-3 rounded-control bg-surface-sunken/60 px-3 py-2.5 text-small text-ink-muted">
+              <Clock className="size-4 shrink-0 stroke-[1.75] text-ink-faint" />
+              Instagram allows up to 100 posts per account in any 24 hours, including scheduled ones.
+            </div>
+          </SurfaceBox>
+
+          <SurfaceBox title="Set up for administrators" subheader="Only the person who deploys this Twiligent instance does this, once.">
+            <form className="mb-6 flex flex-col gap-4" onSubmit={handleSaveGithub}>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <FieldRow label="GitHub repository owner" hint="Your GitHub username or organisation" htmlFor="gh-owner">
+                  <Input id="gh-owner" placeholder="your-username" value={ghRepoOwner} onChange={e => setGhRepoOwner(e.target.value)} autoComplete="off" />
                 </FieldRow>
-                <FieldRow label="Repository name" htmlFor="gh-repo">
+                <FieldRow label="Repository name" hint="Your copy of the Twiligent repository" htmlFor="gh-repo">
                   <Input id="gh-repo" placeholder="twiligent" value={ghRepoName} onChange={e => setGhRepoName(e.target.value)} autoComplete="off" />
                 </FieldRow>
               </div>
-              <FieldRow label="Branch" htmlFor="gh-branch">
-                <Input id="gh-branch" placeholder="main" value={ghBranch} onChange={e => setGhBranch(e.target.value)} autoComplete="off" className="sm:max-w-xs" />
-              </FieldRow>
-              <FieldRow
-                label={<span className="flex items-center gap-2">Personal access token{ghPatSet && <Badge variant="success"><CheckCircle2 />Saved</Badge>}</span>}
-                hint="Leave blank to keep the saved token. The guide below explains how to create one."
-                htmlFor="gh-pat"
-              >
-                <Input
-                  id="gh-pat"
-                  type="password"
-                  placeholder={ghPatSet ? 'Enter a new token to replace the saved one' : 'github_pat_...'}
-                  value={ghPat}
-                  onChange={e => setGhPat(e.target.value)}
-                  autoComplete="off"
-                  className="font-mono"
-                />
-              </FieldRow>
-              <div>
-                <Button type="submit" disabled={ghSaving}>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button type="submit" variant="outline" disabled={ghSaving || !ghRepoOwner.trim() || !ghRepoName.trim()}>
                   {ghSaving ? <Spinner className="size-4" /> : <Save data-icon="inline-start" />}
-                  {ghSaving ? 'Saving' : 'Save GitHub settings'}
+                  {ghSaving ? 'Saving' : 'Save repository'}
                 </Button>
+                {links && (
+                  <Button variant="ghost" render={<a href={links.actions} target="_blank" rel="noopener noreferrer" />}>
+                    <ExternalLink data-icon="inline-start" />Open Actions
+                  </Button>
+                )}
               </div>
+              <p className="text-caption text-ink-faint">No personal access token is needed. Scheduling never writes to GitHub; the workflow only reads due posts from Supabase.</p>
             </form>
-          </SurfaceBox>
-
-          <SurfaceBox title="Create a GitHub personal access token" subheader="A token lets this app and its workflow act on your repository on your behalf.">
-            <ol className="flex flex-col gap-4">
-              {PAT_STEPS.map((step, i) => (
-                <li key={step.title} className="flex gap-3">
-                  <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-surface-sunken font-mono text-caption font-medium text-ink-muted">{i + 1}</span>
-                  <div className="flex min-w-0 flex-col gap-1 pt-0.5">
-                    <p className="text-sm font-medium text-ink">{step.title}</p>
-                    <div className="text-sm text-ink-muted [&_strong]:font-semibold [&_strong]:text-ink">{step.body}</div>
-                    {step.code && (
-                      <div className="mt-1.5 flex items-center gap-2 rounded-control border border-line bg-surface-sunken px-3 py-1.5">
-                        <code className="flex-1 font-mono text-small text-ink">{step.code}</code>
-                        <CopyButton text={step.code} />
-                      </div>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ol>
-            <Alert variant="warning" className="mt-5">
-              <AlertTriangle />
-              <AlertDescription>
-                Never put a token in code, a commit or a public place. If one is exposed, delete it on GitHub straight away and generate a new one.
-              </AlertDescription>
-            </Alert>
+            <Steps steps={adminSteps} />
+            <p className="mt-5 text-caption text-ink-faint">The Worker and the workflow can run side by side. Each post is claimed by whichever runs first, so it is never published twice.</p>
           </SurfaceBox>
         </SettingsSection>
 
@@ -287,16 +334,11 @@ export default function Settings() {
               <p className="text-sm font-medium text-ink">Instagram</p>
               <ol className="flex list-decimal flex-col gap-1 pl-5 text-sm text-ink-muted marker:text-ink-faint">
                 <li>The account must be an Instagram Business or Creator account.</li>
-                <li>In Accounts, choose Add account, then Instagram account.</li>
-                <li>Continue to Instagram and sign in there.</li>
+                <li>Get tester access from the administrator and accept the invite (below).</li>
+                <li>In Accounts, choose Add account, then Instagram account, then Continue to Instagram.</li>
                 <li>Approve the requested permissions. Instagram sends you back here automatically.</li>
               </ol>
-              <Alert variant="info" className="mt-2">
-                <Info />
-                <AlertDescription>
-                  While the Meta app is in development mode, only test users added in the Meta app dashboard can connect. Add your Instagram account as a tester first.
-                </AlertDescription>
-              </Alert>
+              <InstagramTesterNotice className="mt-2" />
             </div>
             <div className="flex flex-col gap-1 px-5 py-4">
               <p className="text-sm font-medium text-ink">Cloudinary</p>

@@ -117,7 +117,7 @@ You deploy one Cloudflare Worker and one Cloudflare Pages site using your own AP
     </td>
     <td width="33%" align="center">
       <img src="frontend/public/screenshots/Setting%20Page.png" alt="Settings" width="100%" />
-      <br/><sub><strong>Settings</strong> - configure your GitHub PAT and repository for the scheduled post fallback publisher</sub>
+      <br/><sub><strong>Settings</strong> - theme, server status, and setup guides for scheduled publishing and Instagram access</sub>
     </td>
   </tr>
 </table>
@@ -257,6 +257,8 @@ UPSTASH_REDIS_REST_TOKEN=...
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 VITE_API_URL=http://localhost:8787
+# Optional: who users contact for Instagram tester access and scheduling problems
+VITE_ADMIN_EMAIL=you@example.com
 ```
 
 ### Production (Cloudflare Workers secrets)
@@ -403,7 +405,7 @@ twiligent/
 │   │   ├── publishing.js            # Instagram Graph API publish flow
 │   │   ├── scheduledPosts.js        # CRUD for scheduled post queue
 │   │   ├── instagramAuth.js         # Instagram OAuth flow
-│   │   ├── settings.js              # User settings (GitHub PAT)
+│   │   ├── settings.js              # User settings (GitHub repository for setup links)
 │   │   └── keys.js                  # API key presence check
 │   ├── services/
 │   │   ├── youtube.js               # YouTube Data API v3 client
@@ -423,7 +425,7 @@ twiligent/
 │       │   │   └── reels/           # Instagram content explorer
 │       │   ├── accounts/            # Account management UI
 │       │   ├── publishing/          # Single and bulk upload with scheduler
-│       │   └── settings/            # GitHub PAT configuration
+│       │   └── settings/            # Theme, server status, setup guides
 │       ├── context/
 │       │   └── AppContext.jsx       # Global accounts and loading state
 │       ├── layout/

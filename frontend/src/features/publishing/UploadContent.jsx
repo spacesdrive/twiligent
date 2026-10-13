@@ -24,6 +24,7 @@ import ConfirmDialog from '@/components/ConfirmDialog';
 import { EmptyState } from '@/components/StateViews';
 import { AccountAvatar } from '@/components/platform';
 import { InstagramIcon } from '@/components/brand/platform-icons';
+import { ADMIN_EMAIL, adminMailto } from '@/lib/contact';
 import { useAppContext } from '../../context/AppContext';
 import { api } from '../../services/api';
 import { cn } from '@/lib/utils';
@@ -63,6 +64,16 @@ const BULK_STATUS = {
 
 const ACTIVE_BULK = ['uploading', 'creating', 'processing', 'publishing', 'scheduling'];
 const CAPTION_LIMIT = 2200;
+const OVERDUE_MS = 30 * 60 * 1000;
+
+function ScheduleHint() {
+  return (
+    <p className="text-caption text-ink-faint">
+      The server publishes the post within 15 minutes after this time, even with this page closed. Keep the account connected until then.{' '}
+      <Link to="/settings#scheduling" className="font-medium text-brand-text underline-offset-4 hover:underline">How scheduling works</Link>
+    </p>
+  );
+}
 
 function StatusBadge({ status, map }) {
   const s = map[status] || Object.values(map)[0];
@@ -509,6 +520,8 @@ export default function UploadContent() {
     .filter(p => statusFilter === 'all' || p.status === statusFilter)
     .sort((a, b) => new Date(b.scheduledAt) - new Date(a.scheduledAt));
 
+  const overduePosts = scheduledPosts.filter(p => p.status === 'pending' && Date.now() - new Date(p.scheduledAt).getTime() > OVERDUE_MS);
+
   const intervalText = bulkInterval >= 1440 ? `${bulkInterval / 1440} day${bulkInterval > 1440 ? 's' : ''}` : `${bulkInterval / 60} hours`;
 
   if (igAccounts.length === 0) {
@@ -598,7 +611,7 @@ export default function UploadContent() {
                     <span className="flex size-12 items-center justify-center rounded-full bg-warning-soft text-warning"><Calendar className="size-6" /></span>
                     <h2 className="font-heading text-page-title font-semibold text-ink">Post scheduled</h2>
                     <p className="text-sm text-ink-muted">{statusMessage}</p>
-                    <p className="max-w-md text-small text-ink-faint">The server publishes it at that time, even when this browser is closed.</p>
+                    <p className="max-w-md text-small text-ink-faint">The server publishes it within 15 minutes after that time, even when this browser is closed. Track it under Scheduled posts below.</p>
                     <Button onClick={resetAll} className="mt-2"><Plus data-icon="inline-start" />Schedule another</Button>
                   </>
                 )}
@@ -745,10 +758,13 @@ export default function UploadContent() {
                     <ScheduleToggle scheduled={scheduleMode} onChange={setScheduleMode} />
                   </FieldRow>
                   {scheduleMode && (
-                    <div className="grid grid-cols-2 gap-2">
-                      <Input type="date" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} min={today} aria-label="Schedule date" />
-                      <Input type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} aria-label="Schedule time" />
-                    </div>
+                    <>
+                      <div className="grid grid-cols-2 gap-2">
+                        <Input type="date" value={scheduleDate} onChange={e => setScheduleDate(e.target.value)} min={today} aria-label="Schedule date" />
+                        <Input type="time" value={scheduleTime} onChange={e => setScheduleTime(e.target.value)} aria-label="Schedule time" />
+                      </div>
+                      <ScheduleHint />
+                    </>
                   )}
                 </div>
 
@@ -907,6 +923,7 @@ export default function UploadContent() {
                       <Input type="date" value={bulkStartDate} onChange={e => setBulkStartDate(e.target.value)} min={today} disabled={bulkProcessing} aria-label="Start date" />
                       <Input type="time" value={bulkStartTime} onChange={e => setBulkStartTime(e.target.value)} disabled={bulkProcessing} aria-label="Start time" />
                     </div>
+                    <ScheduleHint />
                     <Select value={String(bulkInterval)} onValueChange={v => setBulkInterval(Number(v))} disabled={bulkProcessing} items={BULK_INTERVAL_OPTIONS.map(o => ({ value: String(o.value), label: o.label }))}>
                       <SelectTrigger className="w-full" aria-label="Interval"><SelectValue /></SelectTrigger>
                       <SelectContent>
@@ -948,6 +965,16 @@ export default function UploadContent() {
               <Button size="sm" variant="outline" onClick={() => setConfirmDeleteAll(true)} className="hover:bg-danger-soft hover:text-danger"><Trash2 data-icon="inline-start" />Delete all</Button>
             </div>
           </div>
+          {overduePosts.length > 0 && (
+            <Alert variant="warning">
+              <AlertCircle />
+              <AlertDescription>
+                {overduePosts.length === 1 ? '1 post is' : `${overduePosts.length} posts are`} more than 30 minutes past their time and still pending, so the scheduler on this server is not running. Email the administrator at{' '}
+                <a href={adminMailto('Scheduled posts are not publishing on Twiligent')} className="font-semibold underline underline-offset-4">{ADMIN_EMAIL}</a>.
+                If you run this instance, follow the checks in <Link to="/settings#scheduling" className="font-semibold underline underline-offset-4">Settings, Scheduled publishing</Link>.
+              </AlertDescription>
+            </Alert>
+          )}
           <FilterChips label="Status" options={statusChips} value={statusFilter} onChange={setStatusFilter} />
           <SurfaceBox content={false} className="overflow-hidden">
             <Table>

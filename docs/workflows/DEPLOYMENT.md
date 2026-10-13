@@ -68,6 +68,7 @@ Required for `deploy-frontend.yml` and `publish-scheduled.yml`:
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
 - `VITE_API_URL`
+- `VITE_ADMIN_EMAIL` (optional; the administrator contact shown in the app)
 
 **For backend deploy:**
 - `CLOUDFLARE_API_TOKEN`

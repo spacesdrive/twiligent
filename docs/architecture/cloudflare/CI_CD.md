@@ -34,6 +34,7 @@
 - `VITE_SUPABASE_URL` - injected at build time
 - `VITE_SUPABASE_ANON_KEY` - injected at build time
 - `VITE_API_URL` - injected at build time (the Worker URL)
+- `VITE_ADMIN_EMAIL` - optional, injected at build time; the administrator contact shown in the app
 
 **Note:** `VITE_*` variables are baked into the built JS bundle at build time. They are not runtime environment variables.
 

@@ -14,6 +14,8 @@ import PageHeader from '@/components/PageHeader';
 import SurfaceBox from '@/components/SurfaceBox';
 import SectionHeader from '@/components/SectionHeader';
 import ChoiceCard from '@/components/ChoiceCard';
+import InstagramTesterNotice from '@/components/InstagramTesterNotice';
+import { ADMIN_EMAIL } from '@/lib/contact';
 import ConfirmDialog from '@/components/ConfirmDialog';
 import { FieldRow } from '@/components/DetailPanel';
 import { EmptyState } from '@/components/StateViews';
@@ -31,10 +33,12 @@ const PLATFORM_CHOICES = [
   { value: 'reddit',    title: 'Reddit account',    description: 'Add a username and a session cookie from your browser.', icon: <RedditIcon /> },
 ];
 
+const TESTER_HINT = `If your account is not an Instagram tester yet, email ${ADMIN_EMAIL} to be added, then accept the invite in Instagram.`;
+
 const IG_ERRORS = {
   already_added: 'This Instagram account is already connected.',
   cancelled: 'Instagram sign-in was cancelled. Try again when you are ready.',
-  access_denied: 'Instagram did not grant access. Approve every requested permission and try again.',
+  access_denied: `Instagram did not grant access. Approve every requested permission and try again. ${TESTER_HINT}`,
   invalid_state: 'The Instagram sign-in link expired. Start the connection again.',
 };
 
@@ -73,7 +77,7 @@ export default function AccountManager() {
       showToast('Instagram account connected');
       loadAccounts();
     } else if (igError) {
-      showToast(IG_ERRORS[igError] || `Instagram connection failed: ${igError}`, 'error');
+      showToast(IG_ERRORS[igError] || `Instagram connection failed: ${igError}. ${TESTER_HINT}`, 'error');
     }
     if (add) setDialogOpen(true);
     setSearchParams({}, { replace: true });
@@ -328,14 +332,9 @@ export default function AccountManager() {
           {platform === 'instagram' && (
             <div className="flex flex-col gap-4">
               <p className="text-sm text-ink-muted">
-                We open Instagram so you can sign in and approve access. When you finish, Instagram sends you back here and the account appears in the list.
+                We open Instagram so you can sign in and approve access. When you finish, Instagram sends you back here and the account appears in the list. The account must be an Instagram Business or Creator account; personal accounts cannot be connected.
               </p>
-              <Alert variant="info">
-                <Info />
-                <AlertDescription>
-                  The account must be an Instagram Business or Creator account. Personal accounts cannot be connected through the Instagram API.
-                </AlertDescription>
-              </Alert>
+              <InstagramTesterNotice />
             </div>
           )}
 
