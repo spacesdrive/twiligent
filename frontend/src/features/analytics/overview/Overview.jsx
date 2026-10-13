@@ -31,6 +31,7 @@ import { IG_CONTENT_TYPES, IG_CONTENT_TYPE_META } from '../../../utils/instagram
 import { cn } from '@/lib/utils';
 
 const CATEGORY_SERIES = SERIES.neutral;
+const SYNC_POLL_DELAYS = [4000, 8000, 16000];
 
 function greeting(date = new Date()) {
   const hour = date.getHours();
@@ -57,22 +58,23 @@ export default function Overview() {
       .finally(() => setOverviewLoading(false));
   }, []);
 
-  // When the backend returns cacheWarmed: false for any account, it has fired a background
-  // analytics fetch. Auto-refresh once after 6 seconds to pick up the newly warmed data.
-  const isSyncing = !overviewLoading && accounts.some(a => {
-    const entry = overviewData.analyticsCache[a.id];
-    return entry?.cacheWarmed === false;
+  // The backend reports syncing: true for accounts whose analytics it started fetching in the
+  // background. Re-poll with backoff, and give up after a few tries so the label never hangs.
+  const [syncPolls, setSyncPolls] = useState(0);
+  const isSyncing = !overviewLoading && syncPolls < SYNC_POLL_DELAYS.length && accounts.some(a => {
+    return overviewData.analyticsCache[a.id]?.syncing === true;
   });
 
   useEffect(() => {
-    if (!isSyncing) return;
+    if (!isSyncing) return undefined;
     const timer = setTimeout(() => {
       api.getOverview()
         .then(data => { if (data && !data.error) setOverviewData(data); })
-        .catch(() => {});
-    }, 6000);
+        .catch(() => {})
+        .finally(() => setSyncPolls(n => n + 1));
+    }, SYNC_POLL_DELAYS[syncPolls]);
     return () => clearTimeout(timer);
-  }, [isSyncing]);
+  }, [isSyncing, syncPolls]);
 
   const loading = accountsLoading || overviewLoading;
 

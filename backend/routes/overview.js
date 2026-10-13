@@ -1,8 +1,9 @@
 import { Hono } from 'hono';
 import { getAccounts, getTrackedPosts } from '../lib/db.js';
-import { getVideosCache, setVideosCache, getIGCache, setIGCache, getRedditCache } from '../lib/cache.js';
+import { getVideosCache, setVideosCache, getIGCache, setIGCache, getRedditCache, setRedditCache } from '../lib/cache.js';
 import { fetchAllVideos } from '../services/youtube.js';
 import { fetchInstagramMedia, summarizeContentTypes } from '../services/instagram.js';
+import { fetchRedditProfile, fetchRedditPosts, computeRedditAnalytics } from '../services/reddit.js';
 
 const router = new Hono();
 
@@ -19,12 +20,27 @@ router.get('/overview', async (c) => {
         ]);
 
         const warmTasks = [];
+        // Starts a background fetch and reports syncing: true only when one actually started, so the
+        // client never waits on an account that cannot be fetched (no Redis, no key, no cookie).
+        const warm = (id, task) => {
+            if (!redis || !task) return { id, cacheWarmed: false, syncing: false };
+            warmTasks.push(task().catch(() => {}));
+            return { id, cacheWarmed: false, syncing: true };
+        };
 
         const cacheResults = await Promise.allSettled(
             rawAccounts.map(async (a) => {
                 if (a.platform === 'reddit') {
                     const cached = await getRedditCache(redis, userId, a.id);
-                    if (!cached?.analytics) return { id: a.id, cacheWarmed: false };
+                    if (!cached?.analytics) {
+                        return warm(a.id, a.username && a.cookie && (async () => {
+                            const [profile, posts] = await Promise.all([
+                                fetchRedditProfile(a.username, a.cookie),
+                                fetchRedditPosts(a.username, a.cookie, 100),
+                            ]);
+                            await setRedditCache(redis, userId, a.id, { profile, analytics: computeRedditAnalytics(profile, posts), posts });
+                        }));
+                    }
                     return {
                         id: a.id,
                         cacheWarmed: true,
@@ -36,17 +52,12 @@ router.get('/overview', async (c) => {
 
                 if (a.platform === 'instagram') {
                     const cached = await getIGCache(redis, userId, a.id);
-                    const media = cached?.media ?? [];
-                    if (!media.length) {
-                        if (redis && a.igUserId && a.accessToken) {
-                            warmTasks.push(
-                                fetchInstagramMedia(a.igUserId, a.accessToken, 500)
-                                    .then(m => setIGCache(redis, userId, a.id, { media: m, fetchedAt: new Date().toISOString() }))
-                                    .catch(() => {})
-                            );
-                        }
-                        return { id: a.id, cacheWarmed: false };
+                    if (!cached?.media) {
+                        return warm(a.id, a.igUserId && a.accessToken && (() =>
+                            fetchInstagramMedia(a.igUserId, a.accessToken, 500)
+                                .then(m => setIGCache(redis, userId, a.id, { media: m, fetchedAt: new Date().toISOString() }))));
                     }
+                    const media = cached.media;
                     const contentTypes = summarizeContentTypes(media);
                     const types = Object.values(contentTypes);
                     return {
@@ -61,17 +72,12 @@ router.get('/overview', async (c) => {
 
                 // YouTube
                 const cached = await getVideosCache(redis, userId, a.id);
-                const videos = cached?.videos ?? [];
-                if (!videos.length) {
-                    if (redis && apiKey && a.uploadsPlaylistId) {
-                        warmTasks.push(
-                            fetchAllVideos(a.uploadsPlaylistId, apiKey, 10)
-                                .then(v => setVideosCache(redis, userId, a.id, { videos: v, fetchedAt: new Date().toISOString() }))
-                                .catch(() => {})
-                        );
-                    }
-                    return { id: a.id, cacheWarmed: false };
+                if (!cached?.videos) {
+                    return warm(a.id, apiKey && a.uploadsPlaylistId && (() =>
+                        fetchAllVideos(a.uploadsPlaylistId, apiKey, 10)
+                            .then(v => setVideosCache(redis, userId, a.id, { videos: v, fetchedAt: new Date().toISOString() }))));
                 }
+                const videos = cached.videos;
                 return {
                     id: a.id,
                     cacheWarmed: true,
@@ -81,8 +87,7 @@ router.get('/overview', async (c) => {
             })
         );
 
-        // Fire warming tasks without blocking the response.
-        // The client will auto-refresh after a short delay when cacheWarmed: false is detected.
+        // Fire warming tasks without blocking the response; the client re-polls while any account reports syncing.
         if (warmTasks.length > 0) {
             const ctx = c.executionCtx;
             if (ctx?.waitUntil) {
