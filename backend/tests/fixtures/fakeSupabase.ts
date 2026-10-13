@@ -6,10 +6,11 @@ export type Row = Record<string, unknown>;
 type Filter = [column: string, value: unknown, operator?: 'lte'];
 
 interface Action {
-    type: 'select' | 'update' | 'insert' | 'delete';
+    type: 'select' | 'update' | 'insert' | 'upsert' | 'delete';
     table: string;
     columns?: string;
     values?: Row;
+    onConflict?: string;
 }
 
 export type SupabaseCall = Action & { filters: Filter[] };
@@ -85,6 +86,13 @@ export function fakeSupabase(rows: Row[] = []): FakeSupabase {
         const found = table.filter(row => inTable(row, action.table) && matchesFilters(row, filters));
         if (action.type === 'update') found.forEach(row => Object.assign(row, copy(action.values)));
         if (action.type === 'insert') table.push(copy(action.values!));
+        if (action.type === 'upsert') {
+            const values = action.values!;
+            const keys = (action.onConflict ?? 'id').split(',');
+            const existing = table.find(row => inTable(row, action.table) && keys.every(key => row[key] === values[key]));
+            if (existing) Object.assign(existing, copy(values));
+            else table.push({ _table: action.table, ...copy(values) });
+        }
         if (action.type === 'delete') {
             found.forEach(row => table.splice(table.indexOf(row), 1));
         }
@@ -99,6 +107,7 @@ export function fakeSupabase(rows: Row[] = []): FakeSupabase {
                 select: (columns: string) => queryBuilder({ type: 'select', table: name, columns }, run),
                 update: (values: Row) => queryBuilder({ type: 'update', table: name, values }, run),
                 insert: (values: Row) => queryBuilder({ type: 'insert', table: name, values }, run),
+                upsert: (values: Row, options: { onConflict?: string } = {}) => queryBuilder({ type: 'upsert', table: name, values, onConflict: options.onConflict }, run),
                 delete: () => queryBuilder({ type: 'delete', table: name }, run),
             };
         },

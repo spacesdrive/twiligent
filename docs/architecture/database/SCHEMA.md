@@ -89,7 +89,7 @@ This means each user can have one row per `key`. Upserts use `onConflict: 'user_
 }
 ```
 
-The `api_keys` setting currently stores GitHub PAT and repo for the planned GitHub push feature. This key name is generic enough to accommodate future per-user configuration values.
+The `api_keys` setting currently stores the GitHub repository (`github: { repoOwner, repoName, branch }`) used to build the scheduling guide links. No token is stored (ADR-031). This key name is generic enough to accommodate future per-user configuration values.
 
 ---
 

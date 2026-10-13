@@ -65,12 +65,9 @@ The Instagram `accessToken` stored in `accounts.data.accessToken` is a long-live
 
 **If you add a new route that returns account data, you must call `safeAccount()`.** There is no automatic stripping - it is an explicit step in route handlers.
 
-## GitHub PAT Security
+## GitHub Settings
 
-The GitHub Personal Access Token stored in `settings.value.githubPat` is stored in plaintext in Supabase. This is acceptable for a self-hosted deployment where the user controls the Supabase instance, but:
-- Never log this value
-- Never include it in API responses beyond the settings endpoint
-- The `GET /api/settings/github` route should consider returning a masked value (e.g., `ghp_...xxxx`) instead of the full token in the response
+`settings.value.github` holds only the repository owner, name and branch. No GitHub token is stored; saving the repository deletes a token left by older versions (ADR-031). If a future feature needs a token again, it must never be logged or returned, and the settings route should report only whether one is set.
 
 ## Audit Points
 

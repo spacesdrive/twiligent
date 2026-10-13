@@ -98,7 +98,7 @@ Cloudflare scheduler fires cron trigger
 |---|---|---|
 | User accounts (auth) | Supabase Auth | Built-in JWT issuance |
 | YouTube/Instagram accounts | `accounts` table, `data` jsonb | Flexible schema across platforms |
-| User settings (GitHub PAT) | `settings` table, `value` jsonb | Generic key-value per user |
+| User settings (GitHub repository) | `settings` table, `value` jsonb | Generic key-value per user |
 | Scheduled posts | `scheduled_posts` table | Queryable by status + scheduled_at |
 | Video/media analytics | Upstash Redis (`videos:` / `ig:` keys) | Avoids repeated heavy API calls |
 | Media files (for publishing) | Cloudinary CDN | Instagram requires public URL |

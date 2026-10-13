@@ -276,7 +276,7 @@ Records every significant architectural decision, the alternatives considered, a
 ## ADR-012: GitHub settings stored in Supabase `settings` table
 
 **Date:** 2024 (initial)  
-**Status:** Accepted
+**Status:** Amended by ADR-031 (2026-10-14): only the repository is stored, no token
 
 **Decision:** GitHub PAT and repo config for the future "push to GitHub" feature are stored in the `settings` table as `key='api_keys'`.
 
@@ -641,3 +641,18 @@ Records every significant architectural decision, the alternatives considered, a
 - Type stripping means no enums, namespaces or parameter properties, and type-only imports must be marked. The compiler enforces all three.
 - Node 22.18 is now the minimum for running tests and the publisher locally, and the GitHub Actions publisher moved from Node 20 to 24.
 - Some boundaries (external API JSON, test fakes) are typed by a single cast at the point where data enters, which the type checker trusts.
+
+---
+
+## ADR-031: GitHub settings store the repository only
+
+**Date:** 2026-10-14
+**Status:** Accepted
+
+**Decision:** `PUT /api/settings/github` stores `{ repoOwner, repoName, branch }` under `settings.github` and nothing else; `GET` returns those three fields. The `pat` field and the derived `configured` and `patSet` flags are removed from the route and from `GitHubSettingsRequest` and `GitHubSettingsResponse`. Saving rewrites `settings.github` whole, so a token stored by an older version is deleted the next time the repository is saved.
+
+**Context:** The Settings page stopped asking for a GitHub token because nothing read it (ADR-012's push feature was never built). Each save then wrote `pat: undefined`, which erased the stored token and made `configured` and `patSet` always false, so the response described something that no longer existed.
+
+**Trade-offs:**
+- The planned GitHub archive feature (ROADMAP.md) will need to add a token field again, with masked responses and a decision on where the secret lives.
+- An unused secret is no longer kept in plaintext in the database.

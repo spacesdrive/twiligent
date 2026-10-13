@@ -11,7 +11,6 @@
 | YouTube API key | Worker secret | Worker only | **Never** |
 | Cloudinary credentials | Worker secrets | Worker only | **Never** |
 | User's Instagram access token | `accounts.data.accessToken` in DB | Worker only | **Never** |
-| User's GitHub PAT | `settings` table in DB | Worker only | **Never** |
 | Supabase JWT secret | Supabase (internal) | Supabase JWT verification | **Never** |
 
 ## The Service Role Key

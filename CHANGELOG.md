@@ -62,6 +62,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- Saving the scheduling repository in Settings erased the stored GitHub token and then reported `configured: false` and `patSet: false`. The unused token is no longer stored or reported: `GET /api/settings/github` returns only `repoOwner`, `repoName` and `branch`
 - Refreshing or loading an account without the field its platform needs (a YouTube channel id or uploads playlist, a Reddit username) called the platform with `undefined`; it now answers with a message that says to re-add the account. Channel analytics also refuse accounts on other platforms, and the analytics response no longer carries `bannerUrl` and `isLinked`, which are not account fields
 - Publishing and scheduling checked too little before calling Instagram: a missing Instagram app secret made the OAuth callback fail with a server error, posts for an account without a token or on another platform called `/undefined/media`, and a Reel still processing after the last status check was published anyway. Each case now fails with a message that says what to fix, and `GET /api/cloudinary-config` answers 503 instead of 200 when Cloudinary is not configured
 - The Instagram sign-in state is now checked in constant time

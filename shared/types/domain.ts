@@ -251,21 +251,18 @@ export interface OverviewResponse {
     analyticsCache: OverviewAnalyticsCache;
 }
 
-// body of PUT /api/settings/github, stored as is under settings.github
+// body of PUT /api/settings/github; the repository fills the scheduling guide links
 export interface GitHubSettingsRequest {
-    pat?: string;
     repoOwner?: string;
     repoName?: string;
     branch?: string;
 }
 
-// GET /api/settings/github; the token itself is never sent back
+// GET /api/settings/github, exactly what is stored under settings.github
 export interface GitHubSettingsResponse {
-    configured: boolean;
     repoOwner: string;
     repoName: string;
     branch: string;
-    patSet: boolean;
 }
 
 export interface KeyStatus {

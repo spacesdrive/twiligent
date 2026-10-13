@@ -100,7 +100,7 @@ Bulk scheduling exists through the upload form (`features/publishing/Bulk*`), on
 
 Push published Instagram post data (caption, media URL, timestamp, engagement) to a GitHub repository as JSON or Markdown, for archiving and portfolio sites.
 
-The backend still has `GET` and `PUT /api/settings/github` storing a token and repository in the `settings` table, but the Settings page no longer shows the field because nothing used it. Building this feature means restoring that form and adding `backend/services/github`.
+`GET` and `PUT /api/settings/github` store only the repository (ADR-031). Building this feature means adding a token field back, with masked responses, and a `backend/services/github` client.
 
 ---
 

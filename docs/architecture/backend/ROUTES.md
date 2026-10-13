@@ -96,8 +96,8 @@ Link detection and the manual views and image checks live in `services/trackedCo
 ### Settings
 | Method | Path | File | Purpose |
 |---|---|---|---|
-| GET | `/api/settings/github` | `routes/settings.ts` | Retrieve GitHub PAT + repo config for the current user |
-| PUT | `/api/settings/github` | `routes/settings.ts` | Save GitHub PAT + repo config |
+| GET | `/api/settings/github` | `routes/settings.ts` | Retrieve the scheduling repository (`repoOwner`, `repoName`, `branch`) for the current user |
+| PUT | `/api/settings/github` | `routes/settings.ts` | Save the scheduling repository; rewrites `settings.github`, dropping any token an older version stored |
 
 ## Adding a New Route
 
