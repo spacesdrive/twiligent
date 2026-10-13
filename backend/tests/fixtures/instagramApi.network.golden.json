@@ -14,7 +14,7 @@
             }
         },
         {
-            "error": "Instagram API request timed out"
+            "error": "Instagram took too long to answer. Try again in a moment."
         },
         {
             "error": "Instagram API unreachable (read ECONNRESET)"

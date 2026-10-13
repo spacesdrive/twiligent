@@ -1,3 +1,4 @@
+import { UpstreamError, UpstreamTimeoutError } from '../../lib/errors.ts';
 import type { InstagramContainerStatusCode, InstagramProfile } from '../../../shared/types/instagram.ts';
 
 const IG_GRAPH_URL = 'https://graph.instagram.com';
@@ -56,45 +57,66 @@ function buildGraphUrl(endpoint: string, params: GraphParams): URL {
 }
 
 function isTransientError(err: Error): boolean | undefined {
-    return err.name === 'AbortError' ||
+    return err.name === 'AbortError' || err.name === 'TimeoutError' ||
         err.message?.includes('EAI_AGAIN') ||
         err.message?.includes('ECONNRESET');
 }
 
-function readGraphResponse<T>(data: T & InstagramApiErrorBody): T {
-    if (data.error) throw new Error(data.error.message || data.error.error_message || JSON.stringify(data.error));
-    if (data.error_message) throw new Error(data.error_message);
+export function readGraphResponse<T>(data: T & InstagramApiErrorBody): T {
+    if (data.error) {
+        throw new UpstreamError(data.error.message || data.error.error_message || JSON.stringify(data.error), { status: data.error.code });
+    }
+    if (data.error_message) throw new UpstreamError(data.error_message);
     return data;
 }
 
-export async function igFetch<T = unknown>(endpoint: string, params: GraphParams = {}, retries = 1): Promise<T> {
+function unreachable(err: unknown): Error {
+    return new UpstreamError(`Instagram API unreachable (${(err as Error).message})`, { cause: err });
+}
+
+// GET with a 15 second timeout and one retry on a network blip; a cancelled request is never retried
+export async function igFetch<T = unknown>(endpoint: string, params: GraphParams = {}, retries = 1, signal?: AbortSignal): Promise<T> {
     const url = buildGraphUrl(endpoint, params);
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+    const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
 
     let response: Response;
     try {
-        response = await fetch(url.toString(), { signal: controller.signal });
+        response = await fetch(url.toString(), { signal: signal ? AbortSignal.any([signal, timeout]) : timeout });
     } catch (err) {
-        clearTimeout(timer);
+        if (signal?.aborted) throw new UpstreamTimeoutError('Instagram', err);
         if (isTransientError(err as Error) && retries > 0) {
             await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
-            return igFetch<T>(endpoint, params, retries - 1);
+            return igFetch<T>(endpoint, params, retries - 1, signal);
         }
-        if ((err as Error).name === 'AbortError') throw new Error('Instagram API request timed out');
-        throw new Error(`Instagram API unreachable (${(err as Error).message})`);
+        if ((err as Error).name === 'AbortError' || (err as Error).name === 'TimeoutError') throw new UpstreamTimeoutError('Instagram', err);
+        throw unreachable(err);
     }
-    clearTimeout(timer);
 
     return readGraphResponse(await response.json() as T & InstagramApiErrorBody);
 }
 
-export async function fetchInstagramProfile(igUserId: string | null | undefined, accessToken: string): Promise<InstagramProfile> {
+// POST is never retried: a repeated media_publish could publish the post twice
+export async function igPost<T = unknown>(endpoint: string, params: GraphParams, signal?: AbortSignal): Promise<T> {
+    const url = buildGraphUrl(endpoint, params);
+    const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+    let response: Response;
+    try {
+        response = await fetch(url.toString(), { method: 'POST', signal: signal ? AbortSignal.any([signal, timeout]) : timeout });
+    } catch (err) {
+        if (signal?.aborted || (err as Error).name === 'AbortError' || (err as Error).name === 'TimeoutError') {
+            throw new UpstreamTimeoutError('Instagram', err);
+        }
+        throw unreachable(err);
+    }
+    return readGraphResponse(await response.json() as T & InstagramApiErrorBody);
+}
+
+export async function fetchInstagramProfile(igUserId: string | null | undefined, accessToken: string, signal?: AbortSignal): Promise<InstagramProfile> {
     const endpoint = igUserId ? `/${igUserId}` : '/me';
     const data = await igFetch<InstagramApiProfile>(endpoint, {
         access_token: accessToken,
         fields: 'user_id,username,name,profile_picture_url,followers_count,follows_count,media_count,biography,website',
-    });
+    }, 1, signal);
     return {
         igUserId: data.user_id || data.id || igUserId,
         name: data.name || '',

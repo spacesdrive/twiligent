@@ -1,4 +1,5 @@
 import type { RedditMediaType, RedditPost, RedditProfile, RedditTrackedPostData } from '../../../shared/types/reddit.ts';
+import { NotFoundError, UpstreamError, UpstreamTimeoutError, ValidationError, isAbortError } from '../../lib/errors.ts';
 
 export { computeRedditAnalytics } from './redditAnalytics.ts';
 
@@ -62,23 +63,29 @@ interface RedditListing<T> {
 
 type RedditCookie = string | null | undefined;
 
-async function redditFetch<T>(path: string, cookie: RedditCookie): Promise<T> {
+async function redditFetch<T>(path: string, cookie: RedditCookie, signal?: AbortSignal): Promise<T> {
     const headers: Record<string, string> = { 'User-Agent': USER_AGENT, 'Accept': 'application/json' };
     if (cookie) headers['Cookie'] = `reddit_session=${cookie}`;
-    const res = await fetch(`${REDDIT_BASE}${path}`, { headers });
+    let res: Response;
+    try {
+        res = await fetch(`${REDDIT_BASE}${path}`, { headers, signal });
+    } catch (err) {
+        if (isAbortError(err)) throw new UpstreamTimeoutError('Reddit', err);
+        throw new UpstreamError(`Reddit could not be reached (${(err as Error).message})`, { cause: err });
+    }
 
-    if (res.status === 404) throw new Error('Reddit user not found - check the username');
-    if (res.status === 403) throw new Error('Session cookie is invalid or expired - open reddit.com in your browser, copy a fresh reddit_session value from DevTools (Application > Cookies > reddit.com), delete this account, and re-add it');
-    if (res.status === 429) throw new Error('Reddit rate limit hit - try again in a moment');
-    if (!res.ok) throw new Error(`Reddit API ${res.status}: ${res.statusText}`);
+    if (res.status === 404) throw new NotFoundError('Reddit user not found - check the username');
+    if (res.status === 403) throw new UpstreamError('Session cookie is invalid or expired - open reddit.com in your browser, copy a fresh reddit_session value from DevTools (Application > Cookies > reddit.com), delete this account, and re-add it', { status: 403 });
+    if (res.status === 429) throw new UpstreamError('Reddit rate limit hit - try again in a moment', { status: 429 });
+    if (!res.ok) throw new UpstreamError(`Reddit API ${res.status}: ${res.statusText}`, { status: res.status });
 
     const data = await res.json() as T & RedditApiError;
-    if (data.error) throw new Error(data.message || 'Reddit API error');
+    if (data.error) throw new UpstreamError(data.message || 'Reddit API error');
     return data;
 }
 
-export async function fetchRedditProfile(username: string, cookie: RedditCookie): Promise<RedditProfile> {
-    const data = await redditFetch<RedditThing<RedditApiUser>>(`/user/${username}/about.json`, cookie);
+export async function fetchRedditProfile(username: string, cookie: RedditCookie, signal?: AbortSignal): Promise<RedditProfile> {
+    const data = await redditFetch<RedditThing<RedditApiUser>>(`/user/${username}/about.json`, cookie, signal);
     const user = data.data;
     return {
         username: user.name,
@@ -124,7 +131,7 @@ function normalizeRedditPost(post: RedditApiPost): RedditPost {
     };
 }
 
-export async function fetchRedditPosts(username: string, cookie: RedditCookie, limit = 100): Promise<RedditPost[]> {
+export async function fetchRedditPosts(username: string, cookie: RedditCookie, limit = 100, signal?: AbortSignal): Promise<RedditPost[]> {
     const allPosts: RedditApiPost[] = [];
     let after: string | null = null;
     let pages = 0;
@@ -136,7 +143,7 @@ export async function fetchRedditPosts(username: string, cookie: RedditCookie, l
         });
         if (after) query.set('after', after);
 
-        const data: RedditListing<RedditApiPost> = await redditFetch<RedditListing<RedditApiPost>>(`/user/${username}/submitted.json?${query}`, cookie);
+        const data: RedditListing<RedditApiPost> = await redditFetch<RedditListing<RedditApiPost>>(`/user/${username}/submitted.json?${query}`, cookie, signal);
         const children = data.data?.children ?? [];
         if (children.length === 0) break;
 
@@ -154,20 +161,20 @@ function parseRedditPostUrl(rawUrl: string): string {
     try {
         parsedUrl = new URL(rawUrl);
     } catch {
-        throw new Error('Invalid URL - paste the full post link from reddit.com');
+        throw new ValidationError('Invalid URL - paste the full post link from reddit.com');
     }
-    if (!parsedUrl.hostname.includes('reddit.com')) throw new Error('Not a Reddit URL - paste a link from reddit.com');
+    if (!parsedUrl.hostname.includes('reddit.com')) throw new ValidationError('Not a Reddit URL - paste a link from reddit.com');
     const match = parsedUrl.pathname.match(/^(\/r\/[^/]+\/comments\/[^/]+(?:\/[^/]+)?)\/?$/);
-    if (!match) throw new Error('Not a Reddit post URL - paste the full post link including /r/.../comments/...');
+    if (!match) throw new ValidationError('Not a Reddit post URL - paste the full post link including /r/.../comments/...');
     return match[1];
 }
 
-export async function fetchTrackedPostData(postUrl: string, cookie: RedditCookie): Promise<RedditTrackedPostData> {
+export async function fetchTrackedPostData(postUrl: string, cookie: RedditCookie, signal?: AbortSignal): Promise<RedditTrackedPostData> {
     const path = parseRedditPostUrl(postUrl);
-    const data = await redditFetch<RedditListing<RedditApiPost>[]>(`${path}.json`, cookie);
-    if (!Array.isArray(data) || !data[0]) throw new Error('Unexpected Reddit response - post may be deleted or private');
+    const data = await redditFetch<RedditListing<RedditApiPost>[]>(`${path}.json`, cookie, signal);
+    if (!Array.isArray(data) || !data[0]) throw new UpstreamError('Unexpected Reddit response - post may be deleted or private');
     const post = data[0]?.data?.children?.[0]?.data;
-    if (!post) throw new Error('Post not found or has been deleted');
+    if (!post) throw new NotFoundError('Post not found or has been deleted');
     return {
         postId: post.id,
         title: post.title,
