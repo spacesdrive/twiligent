@@ -1,7 +1,7 @@
 "use client"
 
 import { Tabs as TabsPrimitive } from "@base-ui/react/tabs"
-import { cva } from "class-variance-authority";
+import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils"
 
@@ -9,7 +9,7 @@ function Tabs({
   className,
   orientation = "horizontal",
   ...props
-}) {
+}: TabsPrimitive.Root.Props) {
   return (
     <TabsPrimitive.Root
       data-slot="tabs"
@@ -38,7 +38,7 @@ function TabsList({
   className,
   variant = "default",
   ...props
-}) {
+}: TabsPrimitive.List.Props & VariantProps<typeof tabsListVariants>) {
   return (
     <TabsPrimitive.List
       data-slot="tabs-list"
@@ -51,7 +51,7 @@ function TabsList({
 function TabsTrigger({
   className,
   ...props
-}) {
+}: TabsPrimitive.Tab.Props) {
   return (
     <TabsPrimitive.Tab
       data-slot="tabs-trigger"
@@ -68,7 +68,7 @@ function TabsTrigger({
 function TabsContent({
   className,
   ...props
-}) {
+}: TabsPrimitive.Panel.Props) {
   return (
     <TabsPrimitive.Panel
       data-slot="tabs-content"

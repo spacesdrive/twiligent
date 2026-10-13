@@ -2,7 +2,7 @@
 import * as React from "react"
 import { mergeProps } from "@base-ui/react/merge-props"
 import { useRender } from "@base-ui/react/use-render"
-import { cva } from "class-variance-authority";
+import { cva, type VariantProps } from "class-variance-authority";
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -32,7 +32,17 @@ const SIDEBAR_WIDTH_MOBILE = "18rem"
 const SIDEBAR_WIDTH_ICON = "3.625rem"
 const SIDEBAR_KEYBOARD_SHORTCUT = "b"
 
-const SidebarContext = React.createContext(null)
+interface SidebarContextValue {
+  state: "expanded" | "collapsed"
+  open: boolean
+  setOpen: (value: boolean | ((value: boolean) => boolean)) => void
+  openMobile: boolean
+  setOpenMobile: React.Dispatch<React.SetStateAction<boolean>>
+  isMobile: boolean
+  toggleSidebar: () => void
+}
+
+const SidebarContext = React.createContext<SidebarContextValue | null>(null)
 
 function useSidebar() {
   const context = React.useContext(SidebarContext)
@@ -51,6 +61,10 @@ function SidebarProvider({
   style,
   children,
   ...props
+}: React.ComponentProps<"div"> & {
+  defaultOpen?: boolean
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }) {
   const isMobile = useIsMobile()
   const [openMobile, setOpenMobile] = React.useState(false)
@@ -59,7 +73,7 @@ function SidebarProvider({
   // We use openProp and setOpenProp for control from outside the component.
   const [_open, _setOpen] = React.useState(defaultOpen)
   const open = openProp ?? _open
-  const setOpen = React.useCallback((value) => {
+  const setOpen = React.useCallback((value: boolean | ((value: boolean) => boolean)) => {
     const openState = typeof value === "function" ? value(open) : value
     if (setOpenProp) {
       setOpenProp(openState)
@@ -78,7 +92,7 @@ function SidebarProvider({
 
   // Adds a keyboard shortcut to toggle the sidebar.
   React.useEffect(() => {
-    const handleKeyDown = (event) => {
+    const handleKeyDown = (event: KeyboardEvent) => {
       if (
         event.key === SIDEBAR_KEYBOARD_SHORTCUT &&
         (event.metaKey || event.ctrlKey)
@@ -96,7 +110,7 @@ function SidebarProvider({
   // This makes it easier to style the sidebar with Tailwind classes.
   const state = open ? "expanded" : "collapsed"
 
-  const contextValue = React.useMemo(() => ({
+  const contextValue = React.useMemo<SidebarContextValue>(() => ({
     state,
     open,
     setOpen,
@@ -115,7 +129,7 @@ function SidebarProvider({
             "--sidebar-width": SIDEBAR_WIDTH,
             "--sidebar-width-icon": SIDEBAR_WIDTH_ICON,
             ...style
-          }
+          } as React.CSSProperties
         }
         className={cn(
           "group/sidebar-wrapper flex min-h-svh w-full has-data-[variant=inset]:bg-sidebar",
@@ -136,6 +150,10 @@ function Sidebar({
   children,
   dir,
   ...props
+}: React.ComponentProps<"div"> & {
+  side?: "left" | "right"
+  variant?: "sidebar" | "floating" | "inset"
+  collapsible?: "offcanvas" | "icon" | "none"
 }) {
   const { isMobile, state, openMobile, setOpenMobile } = useSidebar()
 
@@ -165,7 +183,7 @@ function Sidebar({
           style={
             {
               "--sidebar-width": SIDEBAR_WIDTH_MOBILE
-            }
+            } as React.CSSProperties
           }
           side={side}>
           <SheetHeader className="sr-only">
@@ -224,7 +242,7 @@ function SidebarTrigger({
   className,
   onClick,
   ...props
-}) {
+}: React.ComponentProps<typeof Button>) {
   const { toggleSidebar } = useSidebar()
 
   return (
@@ -248,7 +266,7 @@ function SidebarTrigger({
 function SidebarRail({
   className,
   ...props
-}) {
+}: React.ComponentProps<"button">) {
   const { toggleSidebar } = useSidebar()
 
   return (
@@ -275,7 +293,7 @@ function SidebarRail({
 function SidebarInset({
   className,
   ...props
-}) {
+}: React.ComponentProps<"main">) {
   return (
     <main
       data-slot="sidebar-inset"
@@ -290,7 +308,7 @@ function SidebarInset({
 function SidebarInput({
   className,
   ...props
-}) {
+}: React.ComponentProps<typeof Input>) {
   return (
     <Input
       data-slot="sidebar-input"
@@ -303,7 +321,7 @@ function SidebarInput({
 function SidebarHeader({
   className,
   ...props
-}) {
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="sidebar-header"
@@ -316,7 +334,7 @@ function SidebarHeader({
 function SidebarFooter({
   className,
   ...props
-}) {
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="sidebar-footer"
@@ -329,7 +347,7 @@ function SidebarFooter({
 function SidebarSeparator({
   className,
   ...props
-}) {
+}: React.ComponentProps<typeof Separator>) {
   return (
     <Separator
       data-slot="sidebar-separator"
@@ -342,7 +360,7 @@ function SidebarSeparator({
 function SidebarContent({
   className,
   ...props
-}) {
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="sidebar-content"
@@ -358,7 +376,7 @@ function SidebarContent({
 function SidebarGroup({
   className,
   ...props
-}) {
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="sidebar-group"
@@ -372,7 +390,7 @@ function SidebarGroupLabel({
   className,
   render,
   ...props
-}) {
+}: useRender.ComponentProps<"div"> & React.ComponentProps<"div">) {
   return useRender({
     defaultTagName: "div",
     props: mergeProps({
@@ -393,7 +411,7 @@ function SidebarGroupAction({
   className,
   render,
   ...props
-}) {
+}: useRender.ComponentProps<"button"> & React.ComponentProps<"button">) {
   return useRender({
     defaultTagName: "button",
     props: mergeProps({
@@ -413,7 +431,7 @@ function SidebarGroupAction({
 function SidebarGroupContent({
   className,
   ...props
-}) {
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="sidebar-group-content"
@@ -426,7 +444,7 @@ function SidebarGroupContent({
 function SidebarMenu({
   className,
   ...props
-}) {
+}: React.ComponentProps<"ul">) {
   return (
     <ul
       data-slot="sidebar-menu"
@@ -439,7 +457,7 @@ function SidebarMenu({
 function SidebarMenuItem({
   className,
   ...props
-}) {
+}: React.ComponentProps<"li">) {
   return (
     <li
       data-slot="sidebar-menu-item"
@@ -479,7 +497,11 @@ function SidebarMenuButton({
   tooltip,
   className,
   ...props
-}) {
+}: useRender.ComponentProps<"button"> &
+  React.ComponentProps<"button"> & {
+    isActive?: boolean
+    tooltip?: string | React.ComponentProps<typeof TooltipContent>
+  } & VariantProps<typeof sidebarMenuButtonVariants>) {
   const { isMobile, state } = useSidebar()
   const comp = useRender({
     defaultTagName: "button",
@@ -522,7 +544,10 @@ function SidebarMenuAction({
   render,
   showOnHover = false,
   ...props
-}) {
+}: useRender.ComponentProps<"button"> &
+  React.ComponentProps<"button"> & {
+    showOnHover?: boolean
+  }) {
   return useRender({
     defaultTagName: "button",
     props: mergeProps({
@@ -544,7 +569,7 @@ function SidebarMenuAction({
 function SidebarMenuBadge({
   className,
   ...props
-}) {
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="sidebar-menu-badge"
@@ -561,6 +586,8 @@ function SidebarMenuSkeleton({
   className,
   showIcon = false,
   ...props
+}: React.ComponentProps<"div"> & {
+  showIcon?: boolean
 }) {
   // Random width between 50 to 90%.
   const [width] = React.useState(() => {
@@ -582,7 +609,7 @@ function SidebarMenuSkeleton({
         style={
           {
             "--skeleton-width": width
-          }
+          } as React.CSSProperties
         } />
     </div>
   );
@@ -591,7 +618,7 @@ function SidebarMenuSkeleton({
 function SidebarMenuSub({
   className,
   ...props
-}) {
+}: React.ComponentProps<"ul">) {
   return (
     <ul
       data-slot="sidebar-menu-sub"
@@ -607,7 +634,7 @@ function SidebarMenuSub({
 function SidebarMenuSubItem({
   className,
   ...props
-}) {
+}: React.ComponentProps<"li">) {
   return (
     <li
       data-slot="sidebar-menu-sub-item"
@@ -623,7 +650,11 @@ function SidebarMenuSubButton({
   isActive = false,
   className,
   ...props
-}) {
+}: useRender.ComponentProps<"a"> &
+  React.ComponentProps<"a"> & {
+    size?: "sm" | "md"
+    isActive?: boolean
+  }) {
   return useRender({
     defaultTagName: "a",
     props: mergeProps({

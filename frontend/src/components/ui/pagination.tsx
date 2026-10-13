@@ -7,7 +7,7 @@ import { ChevronLeftIcon, ChevronRightIcon, MoreHorizontalIcon } from "lucide-re
 function Pagination({
   className,
   ...props
-}) {
+}: React.ComponentProps<"nav">) {
   return (
     <nav
       role="navigation"
@@ -21,7 +21,7 @@ function Pagination({
 function PaginationContent({
   className,
   ...props
-}) {
+}: React.ComponentProps<"ul">) {
   return (
     <ul
       data-slot="pagination-content"
@@ -32,16 +32,21 @@ function PaginationContent({
 
 function PaginationItem({
   ...props
-}) {
+}: React.ComponentProps<"li">) {
   return <li data-slot="pagination-item" {...props} />;
 }
+
+type PaginationLinkProps = {
+  isActive?: boolean
+} & Pick<React.ComponentProps<typeof Button>, "size"> &
+  React.ComponentProps<"a">
 
 function PaginationLink({
   className,
   isActive,
   size = "icon",
   ...props
-}) {
+}: PaginationLinkProps) {
   return (
     <Button
       variant={isActive ? "outline" : "ghost"}
@@ -62,7 +67,7 @@ function PaginationPrevious({
   className,
   text = "Previous",
   ...props
-}) {
+}: React.ComponentProps<typeof PaginationLink> & { text?: string }) {
   return (
     <PaginationLink
       aria-label="Go to previous page"
@@ -79,7 +84,7 @@ function PaginationNext({
   className,
   text = "Next",
   ...props
-}) {
+}: React.ComponentProps<typeof PaginationLink> & { text?: string }) {
   return (
     <PaginationLink
       aria-label="Go to next page"
@@ -95,7 +100,7 @@ function PaginationNext({
 function PaginationEllipsis({
   className,
   ...props
-}) {
+}: React.ComponentProps<"span">) {
   return (
     <span
       aria-hidden

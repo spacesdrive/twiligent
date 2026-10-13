@@ -1,6 +1,7 @@
 "use client";
 import * as React from "react"
 import * as RechartsPrimitive from "recharts"
+import type { TooltipValueType } from "recharts"
 
 import { cn } from "@/lib/utils"
 
@@ -8,14 +9,30 @@ import { cn } from "@/lib/utils"
 const THEMES = {
   light: "",
   dark: ".dark"
-}
+} as const
 
 const INITIAL_DIMENSION = {
   width: 320,
   height: 200
+} as const
+type TooltipNameType = number | string
+
+export type ChartConfig = Record<
+  string,
+  {
+    label?: React.ReactNode
+    icon?: React.ComponentType
+  } & (
+    | { color?: string; theme?: never }
+    | { color?: never; theme: Record<keyof typeof THEMES, string> }
+  )
+>
+
+interface ChartContextValue {
+  config: ChartConfig
 }
 
-const ChartContext = React.createContext(null)
+const ChartContext = React.createContext<ChartContextValue | null>(null)
 
 function useChart() {
   const context = React.useContext(ChartContext)
@@ -34,6 +51,15 @@ function ChartContainer({
   config,
   initialDimension = INITIAL_DIMENSION,
   ...props
+}: React.ComponentProps<"div"> & {
+  config: ChartConfig
+  children: React.ComponentProps<
+    typeof RechartsPrimitive.ResponsiveContainer
+  >["children"]
+  initialDimension?: {
+    width: number
+    height: number
+  }
 }) {
   const uniqueId = React.useId()
   const chartId = `chart-${id ?? uniqueId.replace(/:/g, "")}`
@@ -60,7 +86,7 @@ function ChartContainer({
 const ChartStyle = ({
   id,
   config
-}) => {
+}: { id: string; config: ChartConfig }) => {
   const colorConfig = Object.entries(config).filter(([, config]) => config.theme ?? config.color)
 
   if (!colorConfig.length) {
@@ -76,7 +102,7 @@ ${prefix} [data-chart=${id}] {
 ${colorConfig
 .map(([key, itemConfig]) => {
 const color =
-  itemConfig.theme?.[theme] ??
+  itemConfig.theme?.[theme as keyof typeof itemConfig.theme] ??
   itemConfig.color
 return color ? `  --color-${key}: ${color};` : null
 })
@@ -104,7 +130,20 @@ function ChartTooltipContent({
   color,
   nameKey,
   labelKey
-}) {
+}: React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
+  React.ComponentProps<"div"> & {
+    hideLabel?: boolean
+    hideIndicator?: boolean
+    indicator?: "line" | "dot" | "dashed"
+    nameKey?: string
+    labelKey?: string
+  } & Omit<
+    RechartsPrimitive.DefaultTooltipContentProps<
+      TooltipValueType,
+      TooltipNameType
+    >,
+    "accessibilityLayer"
+  >) {
   const { config } = useChart()
 
   const tooltipLabel = React.useMemo(() => {
@@ -191,7 +230,7 @@ function ChartTooltipContent({
                             {
                               "--color-bg": indicatorColor,
                               "--color-border": indicatorColor
-                            }
+                            } as React.CSSProperties
                           } />
                       )
                     )}
@@ -232,7 +271,10 @@ function ChartLegendContent({
   payload,
   verticalAlign = "bottom",
   nameKey
-}) {
+}: React.ComponentProps<"div"> & {
+  hideIcon?: boolean
+  nameKey?: string
+} & RechartsPrimitive.DefaultLegendContentProps) {
   const { config } = useChart()
 
   if (!payload?.length) {
@@ -276,9 +318,9 @@ function ChartLegendContent({
 }
 
 function getPayloadConfigFromPayload(
-  config,
-  payload,
-  key
+  config: ChartConfig,
+  payload: unknown,
+  key: string
 ) {
   if (typeof payload !== "object" || payload === null) {
     return undefined
@@ -291,19 +333,19 @@ function getPayloadConfigFromPayload(
       ? payload.payload
       : undefined
 
-  let configLabelKey = key
+  let configLabelKey: string = key
 
   if (
     key in payload &&
-    typeof payload[key] === "string"
+    typeof payload[key as keyof typeof payload] === "string"
   ) {
-    configLabelKey = payload[key]
+    configLabelKey = payload[key as keyof typeof payload] as string
   } else if (
     payloadPayload &&
     key in payloadPayload &&
-    typeof payloadPayload[key] === "string"
+    typeof payloadPayload[key as keyof typeof payloadPayload] === "string"
   ) {
-    configLabelKey = payloadPayload[key]
+    configLabelKey = payloadPayload[key as keyof typeof payloadPayload] as string
   }
 
   return configLabelKey in config ? config[configLabelKey] : config[key]

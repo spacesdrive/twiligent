@@ -1,11 +1,12 @@
-import { cva } from "class-variance-authority";
+import type * as React from "react"
+import { cva, type VariantProps } from "class-variance-authority";
 
 import { cn } from "@/lib/utils"
 
 function Empty({
   className,
   ...props
-}) {
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="empty"
@@ -20,7 +21,7 @@ function Empty({
 function EmptyHeader({
   className,
   ...props
-}) {
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="empty-header"
@@ -48,7 +49,7 @@ function EmptyMedia({
   className,
   variant = "default",
   ...props
-}) {
+}: React.ComponentProps<"div"> & VariantProps<typeof emptyMediaVariants>) {
   return (
     <div
       data-slot="empty-icon"
@@ -61,7 +62,7 @@ function EmptyMedia({
 function EmptyTitle({
   className,
   ...props
-}) {
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="empty-title"
@@ -73,7 +74,7 @@ function EmptyTitle({
 function EmptyDescription({
   className,
   ...props
-}) {
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="empty-description"
@@ -88,7 +89,7 @@ function EmptyDescription({
 function EmptyContent({
   className,
   ...props
-}) {
+}: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="empty-content"

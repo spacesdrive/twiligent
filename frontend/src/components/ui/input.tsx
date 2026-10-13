@@ -7,7 +7,7 @@ function Input({
   className,
   type,
   ...props
-}) {
+}: React.ComponentProps<"input">) {
   return (
     <InputPrimitive
       type={type}
