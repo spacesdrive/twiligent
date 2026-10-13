@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ExternalLink, FileText, Image, Video, Link2 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -10,15 +11,29 @@ import { AccountAvatar } from '@/components/platform';
 import { MEDIA_TYPE_LABELS } from './redditPostUtils';
 import { fmtNum, fmtDate } from '../../../utils/formatters';
 import ColumnHint from '@/components/ColumnHint';
+import type { RedditMediaType } from '@shared/types/reddit.ts';
+import type { AppAccount } from '../../../utils/formatters';
+import type { RedditPostRow } from './redditPostUtils';
 
-const MEDIA_TYPE_ICONS = { image: Image, video: Video, link: Link2, text: FileText };
+const MEDIA_TYPE_ICONS: Record<RedditMediaType, LucideIcon> = { image: Image, video: Video, link: Link2, text: FileText };
 
-function MediaTypeIcon({ type, className = 'size-3.5' }) {
+interface MediaTypeIconProps {
+  type: RedditMediaType;
+  className?: string;
+}
+
+function MediaTypeIcon({ type, className = 'size-3.5' }: MediaTypeIconProps) {
   const Icon = MEDIA_TYPE_ICONS[type] || FileText;
   return <Icon className={className} />;
 }
 
-export default function RedditPostTable({ posts, showAccount = false, accountsById = {} }) {
+export interface RedditPostTableProps {
+  posts: RedditPostRow[];
+  showAccount?: boolean;
+  accountsById?: Record<string, AppAccount>;
+}
+
+export default function RedditPostTable({ posts, showAccount = false, accountsById = {} }: RedditPostTableProps) {
   if (posts.length === 0) {
     return (
       <SurfaceBox>
@@ -59,7 +74,7 @@ export default function RedditPostTable({ posts, showAccount = false, accountsBy
               {showAccount && (
                 <TableCell>
                   <Link to={`/reddit/${post.accountId}`} className="flex items-center gap-2 text-small text-ink-muted hover:text-ink">
-                    <AccountAvatar account={accountsById[post.accountId] || { platform: 'reddit', username: post.accountUsername, iconUrl: post.accountIconUrl }} size="xs" />
+                    <AccountAvatar account={accountsById[post.accountId!] || { platform: 'reddit', username: post.accountUsername, iconUrl: post.accountIconUrl }} size="xs" />
                     u/{post.accountUsername}
                   </Link>
                 </TableCell>

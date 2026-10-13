@@ -1,24 +1,39 @@
 import { useState } from 'react';
+import type { FormEvent } from 'react';
 import { api } from '../../../services/api';
 import { detectContentType } from '../../../utils/trackedContent';
+import type { AppAccount } from '../../../utils/formatters';
+import type { SetTrackedItems, ShowToast } from './useTrackedItems';
 
-const EMPTY_DRAFT = { url: '', label: '', category: '' };
+export interface TrackedDraft {
+  url: string;
+  label: string;
+  category: string;
+}
+
+export interface UseAddTrackedOptions {
+  redditAccounts: AppAccount[];
+  setItems: SetTrackedItems;
+  showToast: ShowToast;
+}
+
+const EMPTY_DRAFT: TrackedDraft = { url: '', label: '', category: '' };
 
 // the default Reddit account is read once, when the page first renders
-export function useAddTracked({ redditAccounts, setItems, showToast }) {
+export function useAddTracked({ redditAccounts, setItems, showToast }: UseAddTrackedOptions) {
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(EMPTY_DRAFT);
   const [accountId, setAccountId] = useState(redditAccounts[0]?.id ?? 'none');
   const [adding, setAdding] = useState(false);
 
-  const setDraftField = (name, value) => setDraft(prev => ({ ...prev, [name]: value }));
+  const setDraftField = (name: keyof TrackedDraft, value: string) => setDraft(prev => ({ ...prev, [name]: value }));
 
-  const handleOpenChange = nextOpen => {
+  const handleOpenChange = (nextOpen: boolean) => {
     setOpen(nextOpen);
     if (!nextOpen) setDraft(EMPTY_DRAFT);
   };
 
-  const handleAdd = async e => {
+  const handleAdd = async (e?: FormEvent<HTMLFormElement>) => {
     e?.preventDefault();
     const url = draft.url.trim();
     if (!url) { showToast('Paste a Reddit post or YouTube video link to track it.', 'error'); return; }
@@ -33,7 +48,7 @@ export function useAddTracked({ redditAccounts, setItems, showToast }) {
       setDraft(EMPTY_DRAFT);
       showToast('Now tracking this content');
     } catch (err) {
-      showToast(`Couldn't track that link. ${err.message}`, 'error');
+      showToast(`Couldn't track that link. ${(err as Error).message}`, 'error');
     } finally {
       setAdding(false);
     }
@@ -44,3 +59,5 @@ export function useAddTracked({ redditAccounts, setItems, showToast }) {
     accountId, setAccountId, adding, handleAdd,
   };
 }
+
+export type AddTracked = ReturnType<typeof useAddTracked>;

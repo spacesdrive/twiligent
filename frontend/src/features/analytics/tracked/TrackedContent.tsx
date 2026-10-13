@@ -20,8 +20,9 @@ import { useTrackedEditor } from './useTrackedEditor';
 import { useTrackedFilters } from './useTrackedFilters';
 import { useTrackedItems } from './useTrackedItems';
 import { useTrackedSelection } from './useTrackedSelection';
+import type { TrackedContentItem } from '@shared/types/domain.ts';
 
-function deleteDescription(item) {
+function deleteDescription(item: TrackedContentItem | null): string {
   if (!item) return '';
   return `"${item.title || item.label || item.url}" and its saved views, image and category are removed from Twiligent. The original post or video is not affected.`;
 }

@@ -10,8 +10,15 @@ import { fmtDate, fmtNum } from '../../../utils/formatters';
 import { hasTrackedViews, trackedViews } from '../../../utils/trackedContent';
 import RowAction from './RowAction';
 import TrackedThumbnail from './TrackedThumbnail';
+import type { TrackedContentItem } from '@shared/types/domain.ts';
 
-function ViewsCell({ item, isYT, onEdit }) {
+interface ViewsCellProps {
+  item: TrackedContentItem;
+  isYT: boolean;
+  onEdit: (item: TrackedContentItem) => void;
+}
+
+function ViewsCell({ item, isYT, onEdit }: ViewsCellProps) {
   if (hasTrackedViews(item)) return <span className="text-ink">{fmtNum(trackedViews(item))}</span>;
   if (isYT) return <span className="text-ink-faint">-</span>;
   return (
@@ -24,7 +31,17 @@ function ViewsCell({ item, isYT, onEdit }) {
   );
 }
 
-export default function TrackedRow({ item, isSelected, isRefreshing, onToggle, onRefresh, onEdit, onDelete }) {
+export interface TrackedRowProps {
+  item: TrackedContentItem;
+  isSelected: boolean;
+  isRefreshing: boolean;
+  onToggle: (id: string) => void;
+  onRefresh: (id: string) => void;
+  onEdit: (item: TrackedContentItem) => void;
+  onDelete: (item: TrackedContentItem) => void;
+}
+
+export default function TrackedRow({ item, isSelected, isRefreshing, onToggle, onRefresh, onEdit, onDelete }: TrackedRowProps) {
   const isYT = item.contentType === 'youtube';
   const title = item.title || item.label || item.url;
   const engagement = isYT ? item.likeCount : item.score;

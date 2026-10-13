@@ -1,19 +1,27 @@
 import {
   XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, AreaChart, Area, PieChart, Pie, Cell, Legend,
 } from 'recharts';
+import type { TooltipValueType } from 'recharts';
 import ChartPanel from '@/components/ChartPanel';
 import { SERIES, axisProps, gridProps, legendStyle, tooltipStyle } from '@/lib/chart';
 import { fmtNum, fmtNumFull } from '../../../utils/formatters';
+import type { RedditMonthStats } from '@shared/types/reddit.ts';
+import type { RedditMediaSlice } from './redditAnalyticsData.ts';
 
-function formatKarmaTooltip(value, name) {
-  return [fmtNumFull(value), name === 'score' ? 'Karma' : 'Posts'];
+function formatKarmaTooltip(value: TooltipValueType | undefined, name: string | number | undefined) {
+  return [fmtNumFull(value as number), name === 'score' ? 'Karma' : 'Posts'];
 }
 
-function formatPostsTooltip(value) {
-  return [fmtNumFull(value), 'Posts'];
+function formatPostsTooltip(value: TooltipValueType | undefined) {
+  return [fmtNumFull(value as number), 'Posts'];
 }
 
-export default function RedditKarmaCharts({ monthlyBreakdown, mediaTypeData }) {
+export interface RedditKarmaChartsProps {
+  monthlyBreakdown: RedditMonthStats[];
+  mediaTypeData: RedditMediaSlice[];
+}
+
+export default function RedditKarmaCharts({ monthlyBreakdown, mediaTypeData }: RedditKarmaChartsProps) {
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
       <ChartPanel title="Karma over time" height={240} className="xl:col-span-2">

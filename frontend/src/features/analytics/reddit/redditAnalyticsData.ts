@@ -1,19 +1,48 @@
 import { seriesAt } from '../../../lib/chart.ts';
 import { fmtNum, fmtNumFull } from '../../../utils/formatters.ts';
+import type { RedditAnalytics, RedditMediaType, RedditProfile } from '../../../../../shared/types/reddit.ts';
 
-const MEDIA_TYPE_ORDER = ['text', 'image', 'video', 'link'];
+// the page falls back to the stored account until the live profile loads, and accounts can store createdAt as a number
+export type RedditProfileFields = Partial<Omit<RedditProfile, 'createdAt'>> & { createdAt?: string | number };
+
+export interface RedditMediaSlice {
+  name: string;
+  value: number;
+  color: string;
+}
+
+export interface RedditKarmaItem {
+  label: string;
+  value: string;
+  sub: string;
+  lead?: boolean;
+}
+
+export interface RedditStatRow {
+  label: string;
+  value: string | number;
+}
+
+export interface RedditIndicator {
+  label: string;
+  value: number;
+  max: number;
+  desc: string;
+}
+
+const MEDIA_TYPE_ORDER: string[] = ['text', 'image', 'video', 'link'];
 
 // labels are passed in because redditPostUtils.js imports through a path alias
-export function mediaTypeDataOf(distribution, labels) {
+export function mediaTypeDataOf(distribution: Partial<Record<RedditMediaType, number>> | undefined, labels: Partial<Record<string, string>>): RedditMediaSlice[] {
   if (!distribution) return [];
-  return Object.entries(distribution).map(([key, value]) => ({
+  return (Object.entries(distribution) as [string, number][]).map(([key, value]) => ({
     name: labels[key] || key,
     value,
     color: seriesAt(Math.max(0, MEDIA_TYPE_ORDER.indexOf(key))),
   }));
 }
 
-export function karmaSummaryOf(profile) {
+export function karmaSummaryOf(profile: RedditProfileFields): RedditKarmaItem[] {
   return [
     { label: 'Total karma',   value: fmtNum(profile.totalKarma),        sub: fmtNumFull(profile.totalKarma), lead: true },
     { label: 'Post karma',    value: fmtNum(profile.postKarma),         sub: 'From submitted posts' },
@@ -22,7 +51,7 @@ export function karmaSummaryOf(profile) {
   ];
 }
 
-export function postingFrequencyRows(analytics) {
+export function postingFrequencyRows(analytics: Partial<RedditAnalytics>): RedditStatRow[] {
   return [
     { label: 'Last 7 days',  value: `${analytics.postsLast7Days ?? 0} posts` },
     { label: 'Last 30 days', value: `${analytics.postsLast30Days ?? 0} posts` },
@@ -32,7 +61,7 @@ export function postingFrequencyRows(analytics) {
   ];
 }
 
-export function karmaBreakdownRows(analytics) {
+export function karmaBreakdownRows(analytics: Partial<RedditAnalytics>): RedditStatRow[] {
   return [
     { label: 'Average karma',        value: fmtNum(analytics.avgScore) },
     { label: 'Median karma',         value: fmtNum(analytics.medianScore) },
@@ -43,7 +72,7 @@ export function karmaBreakdownRows(analytics) {
   ];
 }
 
-export function performanceIndicators(analytics) {
+export function performanceIndicators(analytics: Partial<RedditAnalytics>): RedditIndicator[] {
   const virality = analytics.viralityScore ?? 0;
   return [
     { label: 'Virality score', value: virality, max: Math.max(10, virality), desc: 'Best post karma against the average. Higher means bigger outlier hits.' },

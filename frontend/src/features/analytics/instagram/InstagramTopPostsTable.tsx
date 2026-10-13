@@ -5,8 +5,13 @@ import SurfaceBox from '@/components/SurfaceBox';
 import { fmtDate, fmtNum } from '../../../utils/formatters';
 import { fmtIGViews } from '../../../utils/instagramContent';
 import TypeBadge from './TypeBadge';
+import type { InstagramTopPost } from '@shared/types/instagram.ts';
 
-export default function InstagramTopPostsTable({ posts }) {
+export interface InstagramTopPostsTableProps {
+  posts: InstagramTopPost[];
+}
+
+export default function InstagramTopPostsTable({ posts }: InstagramTopPostsTableProps) {
   return (
     <SurfaceBox title="Top performing posts" content={false} className="overflow-hidden">
       <Table>

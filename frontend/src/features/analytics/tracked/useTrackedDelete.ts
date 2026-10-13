@@ -1,8 +1,16 @@
 import { useState } from 'react';
 import { api } from '../../../services/api';
+import type { TrackedContentItem } from '@shared/types/domain.ts';
+import type { SetTrackedItems, ShowToast } from './useTrackedItems';
 
-export function useTrackedDelete({ setItems, dropSelection, showToast }) {
-  const [deleteItem, setDeleteItem] = useState(null);
+export interface UseTrackedDeleteOptions {
+  setItems: SetTrackedItems;
+  dropSelection: (id: string) => void;
+  showToast: ShowToast;
+}
+
+export function useTrackedDelete({ setItems, dropSelection, showToast }: UseTrackedDeleteOptions) {
+  const [deleteItem, setDeleteItem] = useState<TrackedContentItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
   const handleDelete = async () => {
@@ -16,7 +24,7 @@ export function useTrackedDelete({ setItems, dropSelection, showToast }) {
       setDeleteItem(null);
       showToast('Stopped tracking this content');
     } catch (err) {
-      showToast(`Couldn't stop tracking. ${err.message}`, 'error');
+      showToast(`Couldn't stop tracking. ${(err as Error).message}`, 'error');
     } finally {
       setDeleting(false);
     }

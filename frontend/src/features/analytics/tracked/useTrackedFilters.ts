@@ -1,7 +1,8 @@
 import { useMemo, useState } from 'react';
 import { categoriesOf, filterAndSortTracked, trackedStatsOf } from './trackedList.ts';
+import type { TrackedContentItem } from '@shared/types/domain.ts';
 
-export function useTrackedFilters(items) {
+export function useTrackedFilters(items: TrackedContentItem[]) {
   const [query, setQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -19,3 +20,5 @@ export function useTrackedFilters(items) {
     categories, filtered, stats,
   };
 }
+
+export type TrackedFilters = ReturnType<typeof useTrackedFilters>;

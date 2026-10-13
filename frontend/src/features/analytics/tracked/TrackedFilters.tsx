@@ -2,8 +2,13 @@ import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectVa
 import SearchField from '@/components/SearchField';
 import FilterChips from '@/components/FilterChips';
 import { SORT_OPTIONS, typeChipsOf } from './trackedList.ts';
+import type { TrackedFilters as TrackedFiltersState } from './useTrackedFilters';
 
-export default function TrackedFilters({ filters }) {
+export interface TrackedFiltersProps {
+  filters: TrackedFiltersState;
+}
+
+export default function TrackedFilters({ filters }: TrackedFiltersProps) {
   const { categories } = filters;
   return (
     <div className="flex flex-col gap-3">
@@ -12,7 +17,7 @@ export default function TrackedFilters({ filters }) {
         {categories.length > 0 && (
           <Select
             value={filters.categoryFilter}
-            onValueChange={filters.setCategoryFilter}
+            onValueChange={filters.setCategoryFilter as (value: string | null) => void}
             items={[{ value: 'all', label: 'All categories' }, ...categories.map(category => ({ value: category, label: category }))]}
           >
             <SelectTrigger className="w-44" aria-label="Category"><SelectValue /></SelectTrigger>
@@ -24,7 +29,7 @@ export default function TrackedFilters({ filters }) {
             </SelectContent>
           </Select>
         )}
-        <Select value={filters.sort} onValueChange={filters.setSort} items={SORT_OPTIONS}>
+        <Select value={filters.sort} onValueChange={filters.setSort as (value: string | null) => void} items={SORT_OPTIONS}>
           <SelectTrigger className="w-48" aria-label="Sort"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectGroup>

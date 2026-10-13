@@ -1,10 +1,30 @@
 import { matchesText } from '@/lib/library';
+import type { RedditMediaType, RedditPost } from '@shared/types/reddit.ts';
 
 // Filtering and sorting shared by the per-account and all-accounts Reddit posts pages.
 
-export const MEDIA_TYPE_LABELS = { text: 'Text', image: 'Image', video: 'Video', link: 'Link' };
+// posts on the all-accounts page carry the account they were fetched for
+export interface RedditPostRow extends RedditPost {
+  accountId?: string;
+  accountUsername?: string;
+  accountIconUrl?: string;
+}
 
-export const REDDIT_SORT_OPTIONS = [
+export interface RedditFilterOption {
+  value: string;
+  label: string;
+}
+
+export interface RedditPostFilterOptions {
+  query: string;
+  sort: string;
+  subreddit?: string;
+  accountId?: string;
+}
+
+export const MEDIA_TYPE_LABELS: Record<RedditMediaType, string> = { text: 'Text', image: 'Image', video: 'Video', link: 'Link' };
+
+export const REDDIT_SORT_OPTIONS: RedditFilterOption[] = [
   { value: 'score-desc',    label: 'Most karma' },
   { value: 'score-asc',     label: 'Least karma' },
   { value: 'comments-desc', label: 'Most comments' },
@@ -12,7 +32,7 @@ export const REDDIT_SORT_OPTIONS = [
   { value: 'date-asc',      label: 'Oldest first' },
 ];
 
-export function filterAndSortRedditPosts(posts, { query, sort, subreddit = 'all', accountId = 'all' }) {
+export function filterAndSortRedditPosts<T extends RedditPostRow>(posts: T[], { query, sort, subreddit = 'all', accountId = 'all' }: RedditPostFilterOptions): T[] {
   let result = posts;
   if (accountId !== 'all') result = result.filter(p => p.accountId === accountId);
   if (subreddit !== 'all') result = result.filter(p => p.subreddit === subreddit);
@@ -21,12 +41,12 @@ export function filterAndSortRedditPosts(posts, { query, sort, subreddit = 'all'
     if (sort === 'score-desc')    return b.score - a.score;
     if (sort === 'score-asc')     return a.score - b.score;
     if (sort === 'comments-desc') return b.numComments - a.numComments;
-    if (sort === 'date-desc')     return new Date(b.createdAt) - new Date(a.createdAt);
-    if (sort === 'date-asc')      return new Date(a.createdAt) - new Date(b.createdAt);
+    if (sort === 'date-desc')     return (new Date(b.createdAt) as unknown as number) - (new Date(a.createdAt) as unknown as number);
+    if (sort === 'date-asc')      return (new Date(a.createdAt) as unknown as number) - (new Date(b.createdAt) as unknown as number);
     return 0;
   });
 }
 
-export function subredditsOf(posts) {
+export function subredditsOf(posts: Pick<RedditPost, 'subreddit'>[]): string[] {
   return [...new Set(posts.map(p => p.subreddit))].sort();
 }

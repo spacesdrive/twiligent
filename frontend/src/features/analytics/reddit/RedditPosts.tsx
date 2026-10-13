@@ -11,6 +11,7 @@ import { api } from '../../../services/api';
 import RedditPostFilters from './RedditPostFilters';
 import RedditPostTable from './RedditPostTable';
 import { filterAndSortRedditPosts, subredditsOf } from './redditPostUtils';
+import type { RedditPost } from '@shared/types/reddit.ts';
 
 export default function RedditPosts() {
   const { id } = useParams();
@@ -18,7 +19,7 @@ export default function RedditPosts() {
   const account = accounts.find(a => a.id === id);
 
   const [loading, setLoading] = useState(true);
-  const [posts, setPosts] = useState([]);
+  const [posts, setPosts] = useState<RedditPost[]>([]);
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('score-desc');
   const [subFilter, setSubFilter] = useState('all');

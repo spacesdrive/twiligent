@@ -13,8 +13,15 @@ import { fmtDate, fmtNum } from '../../../utils/formatters';
 import NumberCell from './NumberCell';
 import OpenLink from './OpenLink';
 import { chartDataOf, sortedByViews } from './trackedCategoryStats.ts';
+import type { YouTubeCategoryStats } from './trackedCategoryStats.ts';
+import type { TrackedContentItem } from '@shared/types/domain.ts';
 
-function VideoRow({ item, rank }) {
+interface VideoRowProps {
+  item: TrackedContentItem;
+  rank: number;
+}
+
+function VideoRow({ item, rank }: VideoRowProps) {
   return (
     <TableRow>
       <TableCell className="text-right"><RankNumber rank={rank} className="w-auto" /></TableCell>
@@ -44,7 +51,12 @@ function VideoRow({ item, rank }) {
   );
 }
 
-export default function CategoryYouTubeSection({ items, stats }) {
+export interface CategoryYouTubeSectionProps {
+  items: TrackedContentItem[];
+  stats: YouTubeCategoryStats;
+}
+
+export default function CategoryYouTubeSection({ items, stats }: CategoryYouTubeSectionProps) {
   const sorted = useMemo(() => sortedByViews(items), [items]);
   const chartData = chartDataOf(sorted, 'views', item => item.viewCount ?? 0);
   return (

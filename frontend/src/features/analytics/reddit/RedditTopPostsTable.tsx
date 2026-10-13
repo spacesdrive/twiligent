@@ -6,8 +6,13 @@ import SurfaceBox from '@/components/SurfaceBox';
 import ColumnHint from '@/components/ColumnHint';
 import { RankNumber } from '@/components/ListRow';
 import { fmtDate, fmtNum } from '../../../utils/formatters';
+import type { RedditPost } from '@shared/types/reddit.ts';
 
-export default function RedditTopPostsTable({ posts }) {
+export interface RedditTopPostsTableProps {
+  posts: RedditPost[];
+}
+
+export default function RedditTopPostsTable({ posts }: RedditTopPostsTableProps) {
   return (
     <SurfaceBox title="Top posts by karma" content={false} className="overflow-hidden">
       <Table>

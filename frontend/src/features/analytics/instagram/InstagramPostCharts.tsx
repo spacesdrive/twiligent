@@ -2,8 +2,13 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, Legen
 import ChartPanel from '@/components/ChartPanel';
 import { SERIES, axisProps, gridProps, legendStyle, tooltipCursor, tooltipStyle } from '@/lib/chart';
 import { fmtNum } from '../../../utils/formatters';
+import type { InstagramCharts } from './instagramAnalyticsData.ts';
 
-export default function InstagramPostCharts({ charts }) {
+export interface InstagramPostChartsProps {
+  charts: InstagramCharts;
+}
+
+export default function InstagramPostCharts({ charts }: InstagramPostChartsProps) {
   const { topPosts, caption, timeline } = charts;
   return (
     <>

@@ -1,8 +1,15 @@
 import { Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import type { BulkCategory } from './useBulkCategory';
 
-export default function BulkCategoryBar({ selectedCount, bulk, onClear }) {
+export interface BulkCategoryBarProps {
+  selectedCount: number;
+  bulk: BulkCategory;
+  onClear: () => void;
+}
+
+export default function BulkCategoryBar({ selectedCount, bulk, onClear }: BulkCategoryBarProps) {
   return (
     <form
       onSubmit={bulk.handleBulkCategory}

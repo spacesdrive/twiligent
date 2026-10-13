@@ -3,8 +3,19 @@ import { Button } from '@/components/ui/button';
 import PageHeader from '@/components/PageHeader';
 import { AccountAvatar } from '@/components/platform';
 import { cn } from '@/lib/utils';
+import type { PageHeaderBack } from '@/components/PageHeader';
+import type { AppAccount } from '../../../utils/formatters';
+import type { InstagramProfileFields } from './instagramAnalyticsData.ts';
 
-export default function InstagramHeader({ account, profile, back, refreshing, onRefresh }) {
+export interface InstagramHeaderProps {
+  account: AppAccount;
+  profile: InstagramProfileFields;
+  back: PageHeaderBack;
+  refreshing: boolean;
+  onRefresh: () => void;
+}
+
+export default function InstagramHeader({ account, profile, back, refreshing, onRefresh }: InstagramHeaderProps) {
   return (
     <PageHeader
       back={back}

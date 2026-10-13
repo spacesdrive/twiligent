@@ -1,8 +1,14 @@
 import { Progress } from '@/components/ui/progress';
 import SurfaceBox from '@/components/SurfaceBox';
 import { karmaBreakdownRows, performanceIndicators, postingFrequencyRows } from './redditAnalyticsData.ts';
+import type { RedditStatRow } from './redditAnalyticsData.ts';
+import type { RedditAnalytics } from '@shared/types/reddit.ts';
 
-function StatList({ rows }) {
+interface StatListProps {
+  rows: RedditStatRow[];
+}
+
+function StatList({ rows }: StatListProps) {
   return (
     <dl className="flex flex-col divide-y divide-divider">
       {rows.map(row => (
@@ -15,7 +21,11 @@ function StatList({ rows }) {
   );
 }
 
-export default function RedditStatPanels({ analytics }) {
+export interface RedditStatPanelsProps {
+  analytics: Partial<RedditAnalytics>;
+}
+
+export default function RedditStatPanels({ analytics }: RedditStatPanelsProps) {
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
       <SurfaceBox title="Posting frequency">

@@ -15,8 +15,15 @@ import { hasTrackedViews, trackedViews } from '../../../utils/trackedContent';
 import NumberCell from './NumberCell';
 import OpenLink from './OpenLink';
 import { chartDataOf, redditViewsMetric, sortedByKarma, upvoteRatioLabel } from './trackedCategoryStats.ts';
+import type { RedditCategoryStats } from './trackedCategoryStats.ts';
+import type { TrackedContentItem } from '@shared/types/domain.ts';
 
-function PostRow({ item, rank }) {
+interface PostRowProps {
+  item: TrackedContentItem;
+  rank: number;
+}
+
+function PostRow({ item, rank }: PostRowProps) {
   return (
     <TableRow>
       <TableCell className="text-right"><RankNumber rank={rank} className="w-auto" /></TableCell>
@@ -42,7 +49,12 @@ function PostRow({ item, rank }) {
   );
 }
 
-export default function CategoryRedditSection({ items, stats }) {
+export interface CategoryRedditSectionProps {
+  items: TrackedContentItem[];
+  stats: RedditCategoryStats;
+}
+
+export default function CategoryRedditSection({ items, stats }: CategoryRedditSectionProps) {
   const sorted = useMemo(() => sortedByKarma(items), [items]);
   const chartData = chartDataOf(sorted, 'karma', item => item.score ?? 0);
   const views = redditViewsMetric(stats);

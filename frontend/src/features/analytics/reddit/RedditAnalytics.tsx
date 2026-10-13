@@ -11,6 +11,7 @@ import { api } from '../../../services/api';
 import { fmtNum } from '../../../utils/formatters';
 import { MEDIA_TYPE_LABELS } from './redditPostUtils';
 import { mediaTypeDataOf } from './redditAnalyticsData.ts';
+import type { RedditAnalytics as RedditAnalyticsData } from '@shared/types/reddit.ts';
 import RedditHeader from './RedditHeader';
 import RedditKarmaSummary from './RedditKarmaSummary';
 import RedditKarmaCharts from './RedditKarmaCharts';
@@ -41,7 +42,7 @@ export default function RedditAnalytics() {
   if (loading) return <PageSkeleton metrics={4} />;
 
   const profileData = profile || account;
-  const analyticsData = analytics || {};
+  const analyticsData: Partial<RedditAnalyticsData> = analytics || {};
 
   return (
     <div className="flex flex-col gap-6">
@@ -58,20 +59,20 @@ export default function RedditAnalytics() {
         <MetricBox icon={<Star />}          label="Awards received" value={fmtNum(analyticsData.totalAwards ?? 0)} subtitle={`${analyticsData.avgAwards ?? 0} per post on average`} />
       </div>
 
-      {analyticsData.monthlyBreakdown?.length > 0 && (
+      {(analyticsData.monthlyBreakdown?.length as number) > 0 && (
         <RedditKarmaCharts
-          monthlyBreakdown={analyticsData.monthlyBreakdown}
+          monthlyBreakdown={analyticsData.monthlyBreakdown!}
           mediaTypeData={mediaTypeDataOf(analyticsData.mediaTypeDistribution, MEDIA_TYPE_LABELS)}
         />
       )}
 
       <RedditStatPanels analytics={analyticsData} />
 
-      {analyticsData.postsByDayOfWeek?.length > 0 && <RedditTimingCharts analytics={analyticsData} />}
+      {(analyticsData.postsByDayOfWeek?.length as number) > 0 && <RedditTimingCharts analytics={analyticsData} />}
 
-      {analyticsData.subredditBreakdown?.length > 0 && <RedditSubredditTable subreddits={analyticsData.subredditBreakdown} />}
+      {(analyticsData.subredditBreakdown?.length as number) > 0 && <RedditSubredditTable subreddits={analyticsData.subredditBreakdown!} />}
 
-      {analyticsData.topPosts?.length > 0 && <RedditTopPostsTable posts={analyticsData.topPosts} />}
+      {(analyticsData.topPosts?.length as number) > 0 && <RedditTopPostsTable posts={analyticsData.topPosts!} />}
     </div>
   );
 }

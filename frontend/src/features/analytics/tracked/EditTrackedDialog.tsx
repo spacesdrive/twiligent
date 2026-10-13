@@ -6,8 +6,14 @@ import { FieldRow } from '@/components/DetailPanel';
 import { isRedditItem } from '../../../utils/trackedContent';
 import CategoryPicker from './CategoryPicker';
 import TrackedImageField from './TrackedImageField';
+import type { TrackedEditor } from './useTrackedEditor';
 
-export default function EditTrackedDialog({ editor, categories }) {
+export interface EditTrackedDialogProps {
+  editor: TrackedEditor;
+  categories: string[];
+}
+
+export default function EditTrackedDialog({ editor, categories }: EditTrackedDialogProps) {
   const { editItem, fields, setField, saving } = editor;
   const showRedditFields = editItem && isRedditItem(editItem);
   return (

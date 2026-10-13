@@ -3,8 +3,13 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import SurfaceBox from '@/components/SurfaceBox';
 import { fmtNum } from '../../../utils/formatters';
+import type { InstagramHashtagStats } from '@shared/types/instagram.ts';
 
-export default function InstagramHashtags({ hashtags }) {
+export interface InstagramHashtagsProps {
+  hashtags: InstagramHashtagStats[];
+}
+
+export default function InstagramHashtags({ hashtags }: InstagramHashtagsProps) {
   return (
     <SurfaceBox title="Top hashtags">
       <div className="flex flex-wrap gap-1.5">

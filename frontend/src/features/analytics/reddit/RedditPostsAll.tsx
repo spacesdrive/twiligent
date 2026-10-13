@@ -13,6 +13,7 @@ import { fmtNum } from '../../../utils/formatters';
 import RedditPostFilters from './RedditPostFilters';
 import RedditPostTable from './RedditPostTable';
 import { filterAndSortRedditPosts, subredditsOf } from './redditPostUtils';
+import type { RedditPostRow } from './redditPostUtils';
 import { cn } from '@/lib/utils';
 
 export default function RedditPostsAll() {
@@ -20,7 +21,7 @@ export default function RedditPostsAll() {
   const redditAccounts = useMemo(() => accounts.filter(a => a.platform === 'reddit'), [accounts]);
   const accountsById = useMemo(() => Object.fromEntries(redditAccounts.map(a => [a.id, a])), [redditAccounts]);
 
-  const [posts, setPosts] = useState([]);
+  const [posts, setPosts] = useState<RedditPostRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState('score-desc');
@@ -34,7 +35,7 @@ export default function RedditPostsAll() {
       const results = await Promise.allSettled(
         redditAccounts.map(acc => api.getRedditPosts(acc.id).then(data => ({ acc, posts: Array.isArray(data) ? data : [] }))),
       );
-      const combined = [];
+      const combined: RedditPostRow[] = [];
       results.forEach(r => {
         if (r.status === 'fulfilled') {
           r.value.posts.forEach(post => combined.push({
@@ -64,7 +65,7 @@ export default function RedditPostsAll() {
     score: filtered.reduce((s, p) => s + p.score, 0),
     comments: filtered.reduce((s, p) => s + p.numComments, 0),
   }), [filtered]);
-  const avg = n => filtered.length > 0 ? `${fmtNum(Math.round(n / filtered.length))} per post on average` : '';
+  const avg = (n: number) => filtered.length > 0 ? `${fmtNum(Math.round(n / filtered.length))} per post on average` : '';
 
   if (redditAccounts.length === 0) {
     return (

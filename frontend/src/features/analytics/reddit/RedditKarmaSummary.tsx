@@ -1,8 +1,13 @@
 import SurfaceBox from '@/components/SurfaceBox';
 import { cn } from '@/lib/utils';
 import { karmaSummaryOf } from './redditAnalyticsData.ts';
+import type { RedditProfileFields } from './redditAnalyticsData.ts';
 
-export default function RedditKarmaSummary({ profile }) {
+export interface RedditKarmaSummaryProps {
+  profile: RedditProfileFields;
+}
+
+export default function RedditKarmaSummary({ profile }: RedditKarmaSummaryProps) {
   return (
     <SurfaceBox title="Karma" subheader="Earned across posts and comments">
       <div className="grid grid-cols-2 gap-x-6 gap-y-5 sm:grid-cols-4">

@@ -2,9 +2,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import SurfaceBox from '@/components/SurfaceBox';
 import { fmtNum } from '../../../utils/formatters';
 import { reportedViews } from './instagramAnalyticsData.ts';
+import type { InstagramTypeRow } from './instagramAnalyticsData.ts';
 import TypeBadge from './TypeBadge';
 
-export default function InstagramTypeSummaryTable({ rows }) {
+export interface InstagramTypeSummaryTableProps {
+  rows: InstagramTypeRow[];
+}
+
+export default function InstagramTypeSummaryTable({ rows }: InstagramTypeSummaryTableProps) {
   return (
     <SurfaceBox title="Summary by content type" content={false} className="overflow-hidden">
       <Table>

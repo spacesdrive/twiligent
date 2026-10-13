@@ -5,8 +5,19 @@ import SurfaceBox from '@/components/SurfaceBox';
 import ColumnHint from '@/components/ColumnHint';
 import { EmptyState } from '@/components/StateViews';
 import TrackedRow from './TrackedRow';
+import type { TrackedContentItem } from '@shared/types/domain.ts';
+import type { TrackedSelection } from './useTrackedSelection';
 
-export default function TrackedTable({ filtered, selection, refreshingIds, onRefresh, onEdit, onDelete }) {
+export interface TrackedTableProps {
+  filtered: TrackedContentItem[];
+  selection: TrackedSelection;
+  refreshingIds: Set<string>;
+  onRefresh: (id: string) => void;
+  onEdit: (item: TrackedContentItem) => void;
+  onDelete: (item: TrackedContentItem) => void;
+}
+
+export default function TrackedTable({ filtered, selection, refreshingIds, onRefresh, onEdit, onDelete }: TrackedTableProps) {
   return (
     <SurfaceBox content={false} className="overflow-hidden">
       <Table>

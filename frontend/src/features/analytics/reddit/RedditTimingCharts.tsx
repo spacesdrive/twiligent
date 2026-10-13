@@ -1,21 +1,27 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip } from 'recharts';
+import type { TooltipValueType } from 'recharts';
 import ChartPanel from '@/components/ChartPanel';
 import { SERIES, axisProps, axisTick, gridProps, tooltipCursor, tooltipStyle } from '@/lib/chart';
 import { fmtNum, fmtNumFull } from '../../../utils/formatters';
+import type { RedditAnalytics } from '@shared/types/reddit.ts';
 
-function formatTimingTooltip(value, name) {
-  return [fmtNumFull(value), name === 'avgScore' ? 'Average karma' : 'Posts'];
+function formatTimingTooltip(value: TooltipValueType | undefined, name: string | number | undefined) {
+  return [fmtNumFull(value as number), name === 'avgScore' ? 'Average karma' : 'Posts'];
 }
 
-function formatHour(hour) {
+function formatHour(hour: number) {
   return `${hour}h`;
 }
 
-function bestLabel(prefix, value) {
+function bestLabel(prefix: string, value: string | undefined) {
   return value ? `${prefix}: ${value}` : undefined;
 }
 
-export default function RedditTimingCharts({ analytics }) {
+export interface RedditTimingChartsProps {
+  analytics: Partial<RedditAnalytics>;
+}
+
+export default function RedditTimingCharts({ analytics }: RedditTimingChartsProps) {
   return (
     <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
       <ChartPanel title="Posts by day of week" subheader={bestLabel('Best day', analytics.bestPostingDay)} height={220}>

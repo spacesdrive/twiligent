@@ -9,6 +9,7 @@ import { useAccountAnalytics } from '../../../hooks/use-account-analytics';
 import { api } from '../../../services/api';
 import { timeAgo } from '../../../utils/formatters';
 import { instagramChartsOf } from './instagramAnalyticsData.ts';
+import type { InstagramAnalytics as InstagramAnalyticsData } from '@shared/types/instagram.ts';
 import InstagramHeader from './InstagramHeader';
 import InstagramMetrics from './InstagramMetrics';
 import InstagramInsightChips from './InstagramInsightChips';
@@ -41,7 +42,7 @@ export default function InstagramAnalytics() {
   if (loading) return <PageSkeleton metrics={6} />;
 
   const profileData = profile || account;
-  const analyticsData = analytics || {};
+  const analyticsData: Partial<InstagramAnalyticsData> = analytics || {};
   const charts = instagramChartsOf(analyticsData);
   const hashtags = analyticsData.hashtagAnalysis || [];
   const topPosts = analyticsData.topPosts || [];

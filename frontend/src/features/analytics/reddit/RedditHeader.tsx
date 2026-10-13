@@ -6,8 +6,19 @@ import PageHeader from '@/components/PageHeader';
 import { AccountAvatar } from '@/components/platform';
 import { cn } from '@/lib/utils';
 import { fmtDate, timeAgo } from '../../../utils/formatters';
+import type { AppAccount } from '../../../utils/formatters';
+import type { PageHeaderBack } from '@/components/PageHeader';
+import type { RedditProfileFields } from './redditAnalyticsData.ts';
 
-export default function RedditHeader({ account, profile, back, refreshing, onRefresh }) {
+export interface RedditHeaderProps {
+  account: AppAccount;
+  profile: RedditProfileFields;
+  back: PageHeaderBack;
+  refreshing: boolean;
+  onRefresh: () => void;
+}
+
+export default function RedditHeader({ account, profile, back, refreshing, onRefresh }: RedditHeaderProps) {
   return (
     <PageHeader
       back={back}

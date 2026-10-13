@@ -1,4 +1,9 @@
-export default function CategoryPicker({ categories, onPick }) {
+export interface CategoryPickerProps {
+  categories: string[];
+  onPick: (category: string) => void;
+}
+
+export default function CategoryPicker({ categories, onPick }: CategoryPickerProps) {
   if (categories.length === 0) return null;
   return (
     <div className="flex flex-wrap gap-1.5">

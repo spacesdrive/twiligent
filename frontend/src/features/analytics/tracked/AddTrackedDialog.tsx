@@ -6,8 +6,15 @@ import { Spinner } from '@/components/ui/spinner';
 import { FieldRow } from '@/components/DetailPanel';
 import { PlatformBadge } from '@/components/platform';
 import CategoryPicker from './CategoryPicker';
+import type { AppAccount } from '../../../utils/formatters';
+import type { AddTracked } from './useAddTracked';
 
-function LinkStatus({ url, detectedType }) {
+interface LinkStatusProps {
+  url: string;
+  detectedType: 'reddit' | 'youtube' | null;
+}
+
+function LinkStatus({ url, detectedType }: LinkStatusProps) {
   if (detectedType) {
     return (
       <p className="flex items-center gap-1.5 text-caption text-success">
@@ -20,7 +27,13 @@ function LinkStatus({ url, detectedType }) {
   return <p className="text-caption text-danger">Error: only Reddit posts and YouTube videos can be tracked.</p>;
 }
 
-export default function AddTrackedDialog({ add, redditAccounts, categories }) {
+export interface AddTrackedDialogProps {
+  add: AddTracked;
+  redditAccounts: AppAccount[];
+  categories: string[];
+}
+
+export default function AddTrackedDialog({ add, redditAccounts, categories }: AddTrackedDialogProps) {
   const { draft, detectedType, adding } = add;
   const { url } = draft;
   const accountItems = [
@@ -42,7 +55,7 @@ export default function AddTrackedDialog({ add, redditAccounts, categories }) {
 
           {detectedType === 'reddit' && (
             <FieldRow label="Fetch with account" hint="A session cookie helps Reddit accept requests from the server." htmlFor="track-account">
-              <Select value={add.accountId} onValueChange={add.setAccountId} items={accountItems}>
+              <Select value={add.accountId} onValueChange={add.setAccountId as (value: string | null) => void} items={accountItems}>
                 <SelectTrigger id="track-account" className="w-full"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectGroup>

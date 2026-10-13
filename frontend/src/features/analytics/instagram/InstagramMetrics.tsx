@@ -1,14 +1,24 @@
 import {
   BarChart2, Calendar, Clapperboard, Eye, Film, Flame, Heart, Image, MessageCircle, TrendingUp, Trophy, UserPlus, Users, Zap,
 } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import MetricBox from '@/components/MetricBox';
 import { fmtNum, fmtNumFull } from '../../../utils/formatters';
 import { IG_CONTENT_TYPES, IG_CONTENT_TYPE_META } from '../../../utils/instagramContent';
 import { followerRatio, typeViewsSubtitle } from './instagramAnalyticsData.ts';
+import type { InstagramProfileFields } from './instagramAnalyticsData.ts';
+import type {
+  InstagramAnalytics, InstagramContentType, InstagramContentTypeStats, InstagramContentTypeStatsMap,
+} from '@shared/types/instagram.ts';
 
-const CONTENT_TYPE_ICONS = { reel: Clapperboard, post: Image, video: Film };
+const CONTENT_TYPE_ICONS: Record<InstagramContentType, LucideIcon> = { reel: Clapperboard, post: Image, video: Film };
 
-function ContentTypeMetric({ type, stats }) {
+interface ContentTypeMetricProps {
+  type: InstagramContentType;
+  stats: Partial<InstagramContentTypeStats>;
+}
+
+function ContentTypeMetric({ type, stats }: ContentTypeMetricProps) {
   const Icon = CONTENT_TYPE_ICONS[type];
   return (
     <MetricBox
@@ -21,8 +31,13 @@ function ContentTypeMetric({ type, stats }) {
   );
 }
 
-export default function InstagramMetrics({ profile, analytics }) {
-  const typeStats = analytics.contentTypeStats || {};
+export interface InstagramMetricsProps {
+  profile: InstagramProfileFields;
+  analytics: Partial<InstagramAnalytics>;
+}
+
+export default function InstagramMetrics({ profile, analytics }: InstagramMetricsProps) {
+  const typeStats: Partial<InstagramContentTypeStatsMap> = analytics.contentTypeStats || {};
   return (
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">

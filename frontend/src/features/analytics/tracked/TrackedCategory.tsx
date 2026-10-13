@@ -15,6 +15,7 @@ import CategoryYouTubeSection from './CategoryYouTubeSection';
 import {
   categoryDescription, commentsSubtitle, itemsSubtitle, karmaMetric, redditStatsOf, viewsMetric, youtubeStatsOf,
 } from './trackedCategoryStats.ts';
+import type { TrackedContentItem } from '@shared/types/domain.ts';
 
 const BACK_LINK = { to: '/tracked-content', label: 'Tracked content' };
 
@@ -23,7 +24,7 @@ export default function TrackedCategory() {
   const { showToast } = useAppContext();
   const categoryName = decodeURIComponent(name || '');
 
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState<TrackedContentItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

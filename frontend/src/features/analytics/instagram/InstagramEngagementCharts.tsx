@@ -3,13 +3,19 @@ import {
 } from 'recharts';
 import ChartPanel from '@/components/ChartPanel';
 import { SERIES, axisProps, gridProps, legendStyle, tooltipCursor, tooltipStyle } from '@/lib/chart';
+import type { TooltipValueType } from 'recharts';
 import { fmtNum } from '../../../utils/formatters';
+import type { InstagramCharts } from './instagramAnalyticsData.ts';
 
-function formatItems(value, name) {
+function formatItems(value: TooltipValueType | undefined, name: string | number | undefined) {
   return [`${value} items`, name];
 }
 
-export default function InstagramEngagementCharts({ charts }) {
+export interface InstagramEngagementChartsProps {
+  charts: InstagramCharts;
+}
+
+export default function InstagramEngagementCharts({ charts }: InstagramEngagementChartsProps) {
   const { timeline, contentMix, typeRows, dayOfWeek } = charts;
   return (
     <>

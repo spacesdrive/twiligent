@@ -1,7 +1,15 @@
 import { Clock, Star, TrendingUp, Trophy } from 'lucide-react';
+import type { ReactNode } from 'react';
+import type { LucideIcon } from 'lucide-react';
 import { fmtNum } from '../../../utils/formatters';
+import type { InstagramAnalytics } from '@shared/types/instagram.ts';
 
-function InsightChip({ icon, children }) {
+interface InsightChipProps {
+  icon: LucideIcon;
+  children: ReactNode;
+}
+
+function InsightChip({ icon, children }: InsightChipProps) {
   const Icon = icon;
   return (
     <span className="inline-flex h-8 items-center gap-1.5 rounded-field border border-line bg-surface px-3 text-small font-medium text-ink">
@@ -11,7 +19,11 @@ function InsightChip({ icon, children }) {
   );
 }
 
-export default function InstagramInsightChips({ analytics }) {
+export interface InstagramInsightChipsProps {
+  analytics: Partial<InstagramAnalytics>;
+}
+
+export default function InstagramInsightChips({ analytics }: InstagramInsightChipsProps) {
   return (
     <div className="flex flex-wrap items-center gap-2">
       {analytics.bestPostingDay && <InsightChip icon={Star}>Best day: {analytics.bestPostingDay}</InsightChip>}

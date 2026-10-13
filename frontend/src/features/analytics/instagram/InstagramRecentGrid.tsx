@@ -2,14 +2,20 @@ import { Eye, Heart, Image, MessageCircle } from 'lucide-react';
 import SurfaceBox from '@/components/SurfaceBox';
 import { MediaChip } from '@/components/MediaCard';
 import { EmptyState } from '@/components/StateViews';
+import type { SyntheticEvent } from 'react';
 import { fmtNum } from '../../../utils/formatters';
 import { fmtIGViews, igContentTypeMeta, igThumbnail } from '../../../utils/instagramContent';
+import type { InstagramMedia } from '@shared/types/instagram.ts';
 
-function hideBrokenImage(e) {
+function hideBrokenImage(e: SyntheticEvent<HTMLImageElement>) {
   e.currentTarget.style.display = 'none';
 }
 
-function RecentPost({ post }) {
+interface RecentPostProps {
+  post: InstagramMedia;
+}
+
+function RecentPost({ post }: RecentPostProps) {
   const thumb = igThumbnail(post);
   return (
     <a
@@ -32,7 +38,12 @@ function RecentPost({ post }) {
   );
 }
 
-export default function InstagramRecentGrid({ posts, fetchedPosts }) {
+export interface InstagramRecentGridProps {
+  posts: InstagramMedia[];
+  fetchedPosts: number | undefined;
+}
+
+export default function InstagramRecentGrid({ posts, fetchedPosts }: InstagramRecentGridProps) {
   return (
     <SurfaceBox title="Recent posts" subheader={`${fetchedPosts || 0} loaded`}>
       {posts.length > 0 ? (

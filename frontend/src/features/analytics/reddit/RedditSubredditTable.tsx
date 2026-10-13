@@ -2,8 +2,13 @@ import { ExternalLink } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import SurfaceBox from '@/components/SurfaceBox';
 import { fmtNum } from '../../../utils/formatters';
+import type { RedditSubredditStats } from '@shared/types/reddit.ts';
 
-export default function RedditSubredditTable({ subreddits }) {
+export interface RedditSubredditTableProps {
+  subreddits: RedditSubredditStats[];
+}
+
+export default function RedditSubredditTable({ subreddits }: RedditSubredditTableProps) {
   return (
     <SurfaceBox title="Top subreddits" content={false} className="overflow-hidden">
       <Table>
