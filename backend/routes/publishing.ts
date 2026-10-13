@@ -1,10 +1,8 @@
 import { Hono } from 'hono';
 import { getAccountById } from '../lib/db.ts';
-import { buildMediaParams } from '../services/instagram.ts';
+import { buildMediaParams } from '../services/instagram/instagramPublishing.ts';
 import type { AppEnv } from '../types/app.ts';
-import type {
-    InstagramApiContainerStatus, InstagramApiErrorBody, InstagramApiIdResponse,
-} from '../services/instagram.ts';
+import type { InstagramApiContainerStatus, InstagramApiErrorBody, InstagramApiIdResponse } from '../services/instagram/instagramApi.ts';
 import type {
     CloudinaryConfigResponse, InstagramContainerStatusResponse, InstagramMediaPublishRequest, InstagramMediaPublishResponse,
     InstagramPublishingLimit, InstagramPublishingLimitResponse, InstagramPublishRequest, InstagramPublishResponse,

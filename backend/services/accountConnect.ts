@@ -1,8 +1,8 @@
 import { getAccounts, getAccountById, createAccount, updateAccount } from '../lib/db.ts';
-import { resolveChannelId, fetchChannelData } from './youtubeChannels.ts';
-import { fetchRedditProfile } from './reddit.ts';
-import { fetchInstagramProfile } from './instagramApi.ts';
-import { exchangeForLongLivedToken, refreshLongLivedToken } from './instagramTokens.ts';
+import { resolveChannelId, fetchChannelData } from './youtube/youtubeChannels.ts';
+import { fetchRedditProfile } from './reddit/redditApi.ts';
+import { fetchInstagramProfile } from './instagram/instagramApi.ts';
+import { exchangeForLongLivedToken, refreshLongLivedToken } from './instagram/instagramTokens.ts';
 import { buildYouTubeAccount, buildRedditAccount, buildInstagramAccount } from './accountFactory.ts';
 import type { SupabaseClient } from '../types/app.ts';
 import type { Account, NewAccount } from '../../shared/types/domain.ts';

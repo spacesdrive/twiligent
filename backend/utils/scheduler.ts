@@ -1,8 +1,8 @@
 // fetch is a global in Cloudflare Workers.
 import { getDuePosts, updatePost, getAccountById, claimPost } from '../lib/db.ts';
-import { buildMediaParams } from '../services/instagram.ts';
-import type { InstagramMediaParams } from '../services/instagramPublishing.ts';
-import type { InstagramApiContainerStatus, InstagramApiIdResponse } from '../services/instagramApi.ts';
+import { buildMediaParams } from '../services/instagram/instagramPublishing.ts';
+import type { InstagramMediaParams } from '../services/instagram/instagramPublishing.ts';
+import type { InstagramApiContainerStatus, InstagramApiIdResponse } from '../services/instagram/instagramApi.ts';
 import type { ScheduledPost, ScheduledPublishFailure, ScheduledPublishRun } from '../../shared/types/domain.ts';
 import type { InstagramPublishMediaType } from '../../shared/types/instagram.ts';
 import type { SupabaseClient } from '../types/app.ts';

@@ -1,7 +1,7 @@
 import { getAccounts, getAccountById, updateAccount } from '../lib/db.ts';
-import { fetchChannelData } from './youtubeChannels.ts';
-import { fetchRedditProfile } from './reddit.ts';
-import { fetchInstagramProfile } from './instagramApi.ts';
+import { fetchChannelData } from './youtube/youtubeChannels.ts';
+import { fetchRedditProfile } from './reddit/redditApi.ts';
+import { fetchInstagramProfile } from './instagram/instagramApi.ts';
 import type { SupabaseClient } from '../types/app.ts';
 import type { ServiceFailure } from './accountConnect.ts';
 import type { Account, AccountRefreshResult } from '../../shared/types/domain.ts';

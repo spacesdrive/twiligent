@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { getAccountById } from '../lib/db.ts';
 import { getRedditCache, setRedditCache } from '../lib/cache.ts';
-import { fetchRedditProfile, fetchRedditPosts, computeRedditAnalytics } from '../services/reddit.ts';
+import { fetchRedditProfile, fetchRedditPosts, computeRedditAnalytics } from '../services/reddit/redditApi.ts';
 import type { AppEnv } from '../types/app.ts';
 import type { RedditCacheData } from '../../shared/types/reddit.ts';
 
