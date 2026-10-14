@@ -54,4 +54,7 @@ skills-lock.json
 
 # Third-party interface reference captures (kept local, not redistributed)
 docs/screenshots/reference/
+# local credentials for third-party services and their usage notes
 .gcp-authentication
+.env.dev
+ENV.DEV_USAGE.md
