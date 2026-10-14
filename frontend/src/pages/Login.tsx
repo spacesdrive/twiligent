@@ -13,7 +13,7 @@ import { GOOGLE_CLIENT_ID } from '@/lib/googleIdentity';
 import { emailErrorNotice, isExistingAccount, passwordErrorMessage } from '@/lib/authErrors';
 import { PASSWORD_MIN_LENGTH, newPasswordProblem } from '@/lib/passwords';
 import { FieldRow } from '@/components/DetailPanel';
-import { useCountdown } from '@/hooks/use-countdown';
+import { useCountdown } from './useCountdown';
 import type { AuthErrorLike } from '@/lib/authErrors';
 import LoginBrandPanel from './LoginBrandPanel';
 import LoginForm from './LoginForm';
