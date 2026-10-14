@@ -6,6 +6,7 @@ import { useAppContext } from '../../context/AppContext';
 import { useServerSettings } from './useServerSettings';
 import SettingsSection from './SettingsSection';
 import AppearanceSection from './AppearanceSection';
+import PasswordSection from './PasswordSection';
 import ServerKeysSection from './ServerKeysSection';
 import SchedulingSection from './SchedulingSection';
 import PlatformRequirementsSection from './PlatformRequirementsSection';
@@ -26,7 +27,7 @@ export default function Settings() {
   if (loading) {
     return (
       <div className="flex flex-col gap-8">
-        <PageHeader title="Settings" description="Appearance, connections and setup guides" />
+        <PageHeader title="Settings" description="Appearance, password, connections and setup guides" />
         {[0, 1, 2].map(i => <Skeleton key={i} className="h-40 rounded-card" />)}
       </div>
     );
@@ -34,10 +35,11 @@ export default function Settings() {
 
   return (
     <div className="flex flex-col gap-8">
-      <PageHeader title="Settings" description="Appearance, connections and setup guides" />
+      <PageHeader title="Settings" description="Appearance, password, connections and setup guides" />
 
       <div className="flex flex-col gap-8">
         <AppearanceSection />
+        <PasswordSection />
         <ServerKeysSection serverStatus={serverStatus} refreshAll={refreshAll} refreshingAll={refreshingAll} />
         <SchedulingSection github={github} />
         <PlatformRequirementsSection />
