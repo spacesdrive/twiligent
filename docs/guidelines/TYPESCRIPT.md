@@ -1,5 +1,7 @@
 # TypeScript Standards
 
+Start with `docs/guidelines/CODE_STYLE.md`, which shows how code reads across the repository and ends with the checklist to run before every commit; this page has the detailed rules for its area.
+
 The whole project is TypeScript in `strict` mode: the Worker (`backend/`), the React app (`frontend/`), the shared API types (`shared/types/`), the scheduled publisher (`scripts/`) and every test. These rules apply everywhere.
 
 Nothing compiles TypeScript to JavaScript ahead of time. Wrangler and Vite strip the types while bundling, and Node strips them when it runs the tests and the publisher script. Type checking is a separate step, `npm run typecheck`, which CI runs before every deploy.

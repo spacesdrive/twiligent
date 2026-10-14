@@ -61,10 +61,11 @@ Before implementing any feature or fix, read these documents in this exact order
 3. `docs/WRITING_STANDARDS.md` - typography, icons, writing style, UI copy rules
 4. `docs/architecture/OVERVIEW.md` - system topology and request flow
 5. `docs/guidelines/TYPESCRIPT.md` - code standards and typing rules (always apply)
-6. Relevant architecture doc - backend, frontend, database, or cloudflare
-7. Relevant feature guide - if one exists in `docs/features/`
-8. Relevant engineering guideline - if the task touches a specific layer
-9. `ROADMAP.md` - if the task is a planned item, link its issue there
+6. `docs/guidelines/CODE_STYLE.md` - how code reads here: layer shapes, comments, naming, messages, tests (always apply; its checklist runs before every commit)
+7. Relevant architecture doc - backend, frontend, database, or cloudflare
+8. Relevant feature guide - if one exists in `docs/features/`
+9. Relevant engineering guideline - if the task touches a specific layer
+10. `ROADMAP.md` - if the task is a planned item, link its issue there
 
 For MCP usage, read `docs/mcp/OVERVIEW.md` before using any MCP server.
 
@@ -107,6 +108,7 @@ docs/
       ANALYTICS.md         YouTube and Instagram analytics fetch and compute
       SCHEDULING.md        Scheduled post lifecycle, dual-scheduler design
   guidelines/
+    CODE_STYLE.md          How code reads: the shapes to copy per layer, comments, naming, messages, tests, pre-commit checklist
     TYPESCRIPT.md          Compiler settings, typing rules, where types live, code style, comments policy
     REACT.md               Component rules, hooks, JSX conventions
     HONO.md                Route handlers, middleware, context usage
@@ -180,6 +182,21 @@ Every implementation must be:
 - Production-ready - proper error handling at every boundary, no console.log left in
 
 Never implement the quickest solution when a significantly better architecture exists. Always optimize for long-term maintainability over short-term speed.
+
+---
+
+## Code Style
+
+Read `docs/guidelines/CODE_STYLE.md` before writing code and run its checklist before every commit. The non-negotiable rules:
+
+- Match the nearest existing file of the same kind before inventing a shape: open a sibling and copy its imports, exports, naming and comment density
+- One job per file and per layer: route tables map, controllers translate HTTP, services decide, repositories query, components render, `lib/` helpers compute; services are `createXService(deps)` factories with an `XService` and an `XDeps` interface
+- Comments explain why in one lowercase line above the code; never restate the code, reference a task, or write JSDoc or multi-line blocks; a constant with a number in it gets its reason
+- Backend failures are typed errors from `lib/errors.ts` with a message a person can act on; frontend failures are toasts that start with what failed (`Couldn't save the password.`) and add the reason; success toasts confirm in past tense (`Password saved`)
+- Formatting follows the file: 4 spaces in `backend/`, 2 elsewhere, single quotes, semicolons, trailing commas
+- Pure logic goes in a plain `.ts` helper (`lib/`) so Node can test it; markup used twice becomes a component; copy that changes by mode lives in a typed table
+- Tests use `node:test` with sentence names that describe behaviour, live in `tests/` mirroring the source path, and use the smallest typed fake
+- When the code and `CODE_STYLE.md` disagree, update the guide in the same change
 
 ---
 
@@ -364,6 +381,7 @@ When anything changes, update every relevant docs file from the table below. The
 | Release tagged | `CHANGELOG.md` (convert Unreleased to version number with date) |
 | Any planned feature added or changed | `ROADMAP.md` |
 | Writing or design rule changed | `docs/WRITING_STANDARDS.md`, this file (Writing and Design Standards section) |
+| Code style or a layer's shape changed (a new pattern to copy, a naming, comment or message rule) | `docs/guidelines/CODE_STYLE.md`, the guideline it details (`TYPESCRIPT.md`, `REACT.md`, `HONO.md`, `NAMING.md`), this file (Code Style section) |
 | MCP usage rule changed | `docs/mcp/OVERVIEW.md`, this file (MCP Usage Rules section) |
 | Engineering standard changed | `docs/philosophy/ARCHITECTURE.md`, this file (Engineering Standards section) |
 | Security model changed | `docs/philosophy/SECURITY.md`, `docs/architecture/database/SECURITY.md` |

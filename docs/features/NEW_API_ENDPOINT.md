@@ -1,5 +1,7 @@
 # Guide: Adding a New API Endpoint
 
+Write the code in the style described in `docs/guidelines/CODE_STYLE.md` and run its checklist before each commit.
+
 Follow this guide when adding a route to the Hono backend. Read `docs/architecture/backend/REQUEST_PIPELINE.md` for the layers, then the tracked content feature as a reference implementation: `backend/validators/trackedContentValidators.ts`, `repositories/trackedPostRepository.ts`, `services/trackedContentService.ts`, `controllers/trackedContentController.ts` and `routes/trackedContentRoutes.ts`. `docs/guidelines/TYPESCRIPT.md` has the typing rules.
 
 ## Files to Create or Modify
