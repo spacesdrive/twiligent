@@ -61,7 +61,7 @@ gh api -X POST repos/spacesdrive/twiligent/issues/<parent-number>/sub_issues -F 
 
 ## Pull Requests
 
-A change that goes through a branch (see `docs/workflows/GIT.md`) is opened as a pull request. The body lists `Closes #N` for every issue it finishes, so merging closes them. The template in `.github/pull_request_template.md` has the sections.
+Every change goes through a branch and a pull request, because `main` is protected and refuses direct pushes (see `docs/workflows/GIT.md`). The body lists `Closes #N` for every issue it finishes, so merging closes them. The template in `.github/pull_request_template.md` has the sections.
 
 ---
 
