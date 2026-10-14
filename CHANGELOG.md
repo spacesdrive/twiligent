@@ -38,6 +38,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+**Protected main branch**
+- `main` only accepts pull requests whose CI check passed on an up-to-date branch, merged with rebase; force pushes and deleting the branch are blocked for everyone (ADR-034)
+
 **Backend request pipeline in layers**
 - The Worker is organised as middleware, route tables, controllers, services and repositories (`docs/architecture/backend/REQUEST_PIPELINE.md`); every database query is in a repository and every rule in a service
 - Every failed request answers with one body, `{ success, code, message, requestId }`, and a status that matches the failure: 400 invalid input, 401 sign-in, 404 not found, 409 already added, 429 rate limited, 502 platform error, 503 server not configured, 504 platform timeout, 500 server error. Database and unexpected errors no longer show internal messages; server errors in the app show a request id to quote

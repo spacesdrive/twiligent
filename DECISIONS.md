@@ -699,3 +699,25 @@ Records every significant architectural decision, the alternatives considered, a
 - Without Redis there is no count, and Resend's own daily quota (on the free plan) is the cap. A paid Resend plan has no daily quota, so `EMAIL_DAILY_LIMIT` is then the only one.
 - Supabase calls the hook from its own servers, so the per-IP rate limit cannot tell people apart. The per-address cap, Supabase's email rate limit and optional CAPTCHA protect the daily allowance from one person.
 - Security notices that hit a cap are skipped instead of failing the change they report.
+
+---
+
+## ADR-034: Protect main with a repository ruleset
+
+**Date:** 2026-10-14
+**Status:** Accepted
+
+**Decision:** The ruleset **Protect main** targets the default branch with no bypass actors. It restricts deletion, blocks force pushes, requires linear history, requires a pull request (no approving review, so the owner can merge their own) with rebase or squash merges only, and requires the CI job `Type check, lint, test, build` to pass on a branch that is up to date with `main`.
+
+**Context:** Every push to `main` deploys the Worker and the frontend, but `main` accepted direct pushes, force pushes and deletion, and nothing required CI to pass first. The deploy workflows type-check and test their own app, but not lint, the other app or the Worker bundle.
+
+**Alternatives considered:**
+- Classic branch protection rules. Rulesets do the same, can be viewed by anyone with read access, and stack with future rules.
+- Requiring one approving review. With one maintainer this would block every merge, since GitHub does not let authors approve their own pull requests.
+- An administrator bypass. It would make the rules advisory for the only account that pushes.
+
+**Trade-offs:**
+- Small fixes need a branch and a pull request, and wait for CI (about a minute) before they can merge.
+- "Up to date" means a pull request opened before another one merged must be rebased (`gh pr update-branch --rebase`) and checked again.
+- Rebase merges give commits new hashes, so release tags are created after the merge, on `origin/main`.
+- Renaming the CI job requires updating the ruleset in the same change.

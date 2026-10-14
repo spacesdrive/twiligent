@@ -617,7 +617,7 @@ git commit -m "feat: add your feature description"
 git push origin feature/your-feature-name
 ```
 
-Please keep pull requests focused: one feature or fix per PR. Avoid unrelated refactors in the same change.
+`main` is protected: a pull request merges only after the CI check passes and the branch is up to date, and it is merged with rebase to keep the history linear. Please keep pull requests focused: one feature or fix per PR. Avoid unrelated refactors in the same change.
 
 ---
 

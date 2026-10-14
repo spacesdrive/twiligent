@@ -2,7 +2,7 @@
 
 ## Automatic Deployment (Normal Path)
 
-Push to `main` -> GitHub Actions deploys automatically.
+A pull request merged into `main` -> GitHub Actions deploys automatically. `main` is protected (`docs/workflows/GIT.md`): it only accepts pull requests whose CI check passed, so merging the pull request is the deploy step.
 
 | What changed | Workflow that runs | What it deploys |
 |---|---|---|
