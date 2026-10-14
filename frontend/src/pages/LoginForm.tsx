@@ -1,9 +1,11 @@
 import type { FormEvent } from 'react';
-import { ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { FieldRow } from '@/components/DetailPanel';
+import { PASSWORD_MIN_LENGTH } from '@/lib/passwords';
+import PasswordInput from './PasswordInput';
 import type { LoginCopy } from './loginCopy';
 
 export interface LoginFormProps {
@@ -17,10 +19,12 @@ export interface LoginFormProps {
   onTogglePassword: () => void;
   loading: boolean;
   onSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  // shown on the sign-in form only
+  onForgotPassword?: () => void;
 }
 
 export default function LoginForm({
-  isLogin, copy, email, password, onEmailChange, onPasswordChange, showPassword, onTogglePassword, loading, onSubmit,
+  isLogin, copy, email, password, onEmailChange, onPasswordChange, showPassword, onTogglePassword, loading, onSubmit, onForgotPassword,
 }: LoginFormProps) {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
@@ -37,31 +41,25 @@ export default function LoginForm({
         />
       </FieldRow>
       <FieldRow label="Password" htmlFor="password">
-        <div className="relative">
-          <Input
-            id="password"
-            type={showPassword ? 'text' : 'password'}
-            className="h-(--control-h-lg) pr-11"
-            placeholder={isLogin ? 'Your password' : 'At least 6 characters'}
-            value={password}
-            onChange={e => onPasswordChange(e.target.value)}
-            required
-            minLength={6}
-            autoComplete={isLogin ? 'current-password' : 'new-password'}
-          />
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            className="absolute top-1/2 right-1.5 -translate-y-1/2 text-ink-faint hover:text-ink"
-            onClick={onTogglePassword}
-            aria-label={showPassword ? 'Hide password' : 'Show password'}
-            aria-pressed={showPassword}
-          >
-            {showPassword ? <EyeOff /> : <Eye />}
-          </Button>
-        </div>
+        <PasswordInput
+          id="password"
+          value={password}
+          onChange={onPasswordChange}
+          placeholder={isLogin ? 'Your password' : `At least ${PASSWORD_MIN_LENGTH} characters`}
+          autoComplete={isLogin ? 'current-password' : 'new-password'}
+          showPassword={showPassword}
+          onTogglePassword={onTogglePassword}
+        />
       </FieldRow>
+      {onForgotPassword && (
+        <button
+          type="button"
+          onClick={onForgotPassword}
+          className="-mt-2 self-end rounded-sm text-sm font-medium text-brand-text underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        >
+          Forgot password?
+        </button>
+      )}
       <Button type="submit" size="lg" className="mt-2 w-full" disabled={loading}>
         {loading && <Spinner className="size-4" />}
         {loading ? copy.busy : copy.submit}

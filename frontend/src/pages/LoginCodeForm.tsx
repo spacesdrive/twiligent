@@ -1,4 +1,4 @@
-import type { FormEvent } from 'react';
+import type { FormEvent, ReactNode } from 'react';
 import { ArrowRight, RotateCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -18,10 +18,14 @@ export interface LoginCodeFormProps {
   resendIn: number;
   resending: boolean;
   onResend: () => void;
+  // more fields after the code, such as the new password on the reset step
+  children?: ReactNode;
+  // false while those fields are not ready; the code length is checked here
+  ready?: boolean;
 }
 
 export default function LoginCodeForm({
-  copy, email, code, onCodeChange, loading, onSubmit, resendIn, resending, onResend,
+  copy, email, code, onCodeChange, loading, onSubmit, resendIn, resending, onResend, children, ready = true,
 }: LoginCodeFormProps) {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
@@ -44,7 +48,8 @@ export default function LoginCodeForm({
       <p id="code-help" className="text-sm text-ink-muted">
         Sent to <span className="font-medium text-ink">{email}</span>. If it has not arrived, check your spam folder.
       </p>
-      <Button type="submit" size="lg" className="mt-2 w-full" disabled={loading || code.length !== CODE_LENGTH}>
+      {children}
+      <Button type="submit" size="lg" className="mt-2 w-full" disabled={loading || !ready || code.length !== CODE_LENGTH}>
         {loading && <Spinner className="size-4" />}
         {loading ? copy.busy : copy.submit}
         {!loading && <ArrowRight data-icon="inline-end" />}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import type { FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -10,11 +10,16 @@ import { Logo } from '@/components/brand/Logo';
 import GoogleSignInButton from '@/components/GoogleSignInButton';
 import type { GoogleButtonText } from '@/lib/googleIdentity';
 import { GOOGLE_CLIENT_ID } from '@/lib/googleIdentity';
-import { emailErrorNotice, isExistingAccount } from '@/lib/authErrors';
+import { emailErrorNotice, isExistingAccount, passwordErrorMessage } from '@/lib/authErrors';
+import { PASSWORD_MIN_LENGTH, newPasswordProblem } from '@/lib/passwords';
+import { FieldRow } from '@/components/DetailPanel';
+import { useCountdown } from '@/hooks/use-countdown';
 import type { AuthErrorLike } from '@/lib/authErrors';
 import LoginBrandPanel from './LoginBrandPanel';
 import LoginForm from './LoginForm';
 import LoginCodeForm from './LoginCodeForm';
+import LoginEmailForm from './LoginEmailForm';
+import PasswordInput from './PasswordInput';
 import { LOGIN_COPY, PRIVACY_URL } from './loginCopy';
 import type { LoginMode } from './loginCopy';
 
@@ -40,8 +45,21 @@ function GoogleOption({ text, onCredential }: GoogleOptionProps) {
   );
 }
 
+// Supabase allows one email code a minute per address, so the resend button waits as long after each send
+const RESEND_WAIT_SECONDS = 60;
+
+const FAILURE_PREFIX: Record<LoginMode, string> = {
+  login: "Couldn't sign in.",
+  signup: "Couldn't create the account.",
+  verify: "Couldn't confirm the email.",
+  forgot: "Couldn't send the code.",
+  reset: "Couldn't reset the password.",
+};
+
 export default function Login() {
-  const { signIn, signUp, verifySignUpCode, resendSignUpCode, signInWithGoogle } = useAuth();
+  const {
+    signIn, signUp, verifySignUpCode, resendSignUpCode, sendPasswordReset, verifyPasswordResetCode, updatePassword, signInWithGoogle,
+  } = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState<LoginMode>('login');
   const [email, setEmail] = useState('');
@@ -51,22 +69,15 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
-  const [resendIn, setResendIn] = useState(0);
+  const [resendIn, startResendWait] = useCountdown();
   const [emailLimitMessage, setEmailLimitMessage] = useState<string | null>(null);
   const isLogin = mode === 'login';
   const copy = LOGIN_COPY[mode];
 
-  useEffect(() => {
-    if (resendIn <= 0) return;
-    const timer = setTimeout(() => setResendIn(seconds => seconds - 1), 1000);
-    return () => clearTimeout(timer);
-  }, [resendIn]);
-
-  // Supabase allows one code a minute per address, so the button waits as long after each send
-  function openCodeStep(justSent: boolean) {
+  function openCodeStep(nextMode: 'verify' | 'reset', justSent: boolean) {
     setCode('');
-    setResendIn(justSent ? 60 : 0);
-    setMode('verify');
+    startResendWait(justSent ? RESEND_WAIT_SECONDS : 0);
+    setMode(nextMode);
   }
 
   function showEmailError(prefix: string, err: unknown) {
@@ -79,7 +90,7 @@ export default function Login() {
   async function submitLogin() {
     const { error } = await signIn(email, password);
     if (error?.code === 'email_not_confirmed') {
-      openCodeStep(false);
+      openCodeStep('verify', false);
       toast.info('Confirm your email to sign in. Enter the code from your sign-up email, or send a new one.');
       return;
     }
@@ -100,26 +111,52 @@ export default function Login() {
       setMode('login');
       return;
     }
-    openCodeStep(true);
+    openCodeStep('verify', true);
   }
 
-  async function submitCode() {
+  async function submitSignUpCode() {
     const { error } = await verifySignUpCode(email, code);
     if (error) throw error;
     toast.success('Email confirmed');
     navigate('/');
   }
 
+  // Supabase answers the same whether or not the address has an account, so the message cannot say which
+  async function submitForgot() {
+    const { error } = await sendPasswordReset(email);
+    if (error) throw error;
+    setPassword('');
+    openCodeStep('reset', true);
+    toast.success(`If an account uses ${email}, a code is on its way.`);
+  }
+
+  async function submitReset() {
+    const problem = newPasswordProblem(password, password);
+    if (problem) throw new Error(problem);
+    const { error } = await verifyPasswordResetCode(email, code);
+    if (error) throw error;
+    // the code has signed the user in, so a refused password is fixed from Settings instead of a new code
+    const { error: passwordError } = await updatePassword(password);
+    if (passwordError) {
+      toast.error(`You are signed in, but the new password was not saved. ${passwordErrorMessage(passwordError)} Set it in Settings.`);
+      navigate('/settings');
+      return;
+    }
+    toast.success('Password saved');
+    navigate('/');
+  }
+
+  const SUBMIT: Record<LoginMode, () => Promise<void>> = {
+    login: submitLogin, signup: submitSignUp, verify: submitSignUpCode, forgot: submitForgot, reset: submitReset,
+  };
+
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setLoading(true);
     try {
-      if (mode === 'verify') await submitCode();
-      else if (isLogin) await submitLogin();
-      else await submitSignUp();
+      await SUBMIT[mode]();
     } catch (err) {
-      const prefix = { login: "Couldn't sign in.", signup: "Couldn't create the account.", verify: "Couldn't confirm the email." }[mode];
-      showEmailError(prefix, err);
+      showEmailError(FAILURE_PREFIX[mode], err);
     } finally {
       setLoading(false);
     }
@@ -128,9 +165,9 @@ export default function Login() {
   async function handleResend() {
     setResending(true);
     try {
-      const { error } = await resendSignUpCode(email);
+      const { error } = mode === 'reset' ? await sendPasswordReset(email) : await resendSignUpCode(email);
       if (error) throw error;
-      setResendIn(60);
+      startResendWait(RESEND_WAIT_SECONDS);
       toast.success('New code sent');
     } catch (err) {
       showEmailError("Couldn't send a new code.", err);
@@ -139,8 +176,8 @@ export default function Login() {
     }
   }
 
-  function switchMode() {
-    setMode(mode === 'signup' ? 'login' : 'signup');
+  function switchMode(next: LoginMode) {
+    setMode(next);
     setShowPassword(false);
   }
 
@@ -183,21 +220,9 @@ export default function Login() {
               </Alert>
             )}
 
-            {GOOGLE_CLIENT_ID && (mode !== 'verify' || emailLimitMessage) && <GoogleOption text={copy.google} onCredential={handleGoogleCredential} />}
+            {GOOGLE_CLIENT_ID && (mode === 'login' || mode === 'signup' || emailLimitMessage) && <GoogleOption text={copy.google} onCredential={handleGoogleCredential} />}
 
-            {mode === 'verify' ? (
-              <LoginCodeForm
-                copy={copy}
-                email={email}
-                code={code}
-                onCodeChange={setCode}
-                loading={loading}
-                onSubmit={handleSubmit}
-                resendIn={resendIn}
-                resending={resending}
-                onResend={handleResend}
-              />
-            ) : (
+            {mode === 'login' || mode === 'signup' ? (
               <LoginForm
                 isLogin={isLogin}
                 copy={copy}
@@ -209,14 +234,44 @@ export default function Login() {
                 onTogglePassword={() => setShowPassword(visible => !visible)}
                 loading={loading}
                 onSubmit={handleSubmit}
+                onForgotPassword={isLogin ? () => switchMode('forgot') : undefined}
               />
+            ) : mode === 'forgot' ? (
+              <LoginEmailForm copy={copy} email={email} onEmailChange={setEmail} loading={loading} onSubmit={handleSubmit} />
+            ) : (
+              <LoginCodeForm
+                copy={copy}
+                email={email}
+                code={code}
+                onCodeChange={setCode}
+                loading={loading}
+                onSubmit={handleSubmit}
+                resendIn={resendIn}
+                resending={resending}
+                onResend={handleResend}
+                ready={mode === 'verify' || password.length >= PASSWORD_MIN_LENGTH}
+              >
+                {mode === 'reset' && (
+                  <FieldRow label="New password" htmlFor="password">
+                    <PasswordInput
+                      id="password"
+                      value={password}
+                      onChange={setPassword}
+                      placeholder={`At least ${PASSWORD_MIN_LENGTH} characters`}
+                      autoComplete="new-password"
+                      showPassword={showPassword}
+                      onTogglePassword={() => setShowPassword(visible => !visible)}
+                    />
+                  </FieldRow>
+                )}
+              </LoginCodeForm>
             )}
 
             <p className="text-center text-sm text-ink-muted">
               {copy.switchPrompt}{' '}
               <button
                 type="button"
-                onClick={switchMode}
+                onClick={() => switchMode(copy.switchTo)}
                 className="rounded-sm font-medium text-brand-text underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
               >
                 {copy.switchAction}

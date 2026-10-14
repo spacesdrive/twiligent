@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cleanCode, emailErrorNotice, isExistingAccount } from '../../src/lib/authErrors.ts';
+import { cleanCode, emailErrorNotice, isExistingAccount, passwordErrorMessage } from '../../src/lib/authErrors.ts';
 
 const WORKER_LIMIT = 'Twiligent has sent all the verification emails it can today. Sign in with Google instead, or try again tomorrow.';
 
@@ -49,4 +49,10 @@ test('a pasted code keeps its first six digits only', () => {
   assert.equal(cleanCode(' 123-456 '), '123456');
   assert.equal(cleanCode('12345678'), '123456');
   assert.equal(cleanCode('abc'), '');
+});
+
+test('password errors say what to do, and Supabase\'s weak password reasons pass through', () => {
+  assert.equal(passwordErrorMessage({ message: 'New password should be different', code: 'same_password' }), 'This is already your password. Choose a different one.');
+  assert.equal(passwordErrorMessage({ message: 'reauth', code: 'reauthentication_needed' }), 'For security, sign out and sign in again, then set the password.');
+  assert.equal(passwordErrorMessage({ message: 'Password should contain at least one digit.', code: 'weak_password' }), 'Password should contain at least one digit.');
 });

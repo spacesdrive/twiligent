@@ -12,6 +12,9 @@ export interface AuthContextValue {
     signUp: (email: string, password: string) => ReturnType<Auth['signUp']>;
     verifySignUpCode: (email: string, code: string) => ReturnType<Auth['verifyOtp']>;
     resendSignUpCode: (email: string) => ReturnType<Auth['resend']>;
+    sendPasswordReset: (email: string) => ReturnType<Auth['resetPasswordForEmail']>;
+    verifyPasswordResetCode: (email: string, code: string) => ReturnType<Auth['verifyOtp']>;
+    updatePassword: (password: string) => ReturnType<Auth['updateUser']>;
     signInWithGoogle: (idToken: string, nonce: string) => ReturnType<Auth['signInWithIdToken']>;
     signOut: () => ReturnType<Auth['signOut']>;
 }
@@ -42,6 +45,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const resendSignUpCode = (email: string) =>
         supabase.auth.resend({ type: 'signup', email });
 
+    // the email's link signs the user in on Settings, where the Password section sets the new password
+    const sendPasswordReset = (email: string) =>
+        supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/settings` });
+
+    // a correct code signs the user in, so the new password can be saved straight after
+    const verifyPasswordResetCode = (email: string, code: string) =>
+        supabase.auth.verifyOtp({ email, token: code, type: 'recovery' });
+
+    // also gives an account that only used Google a password for the same user
+    const updatePassword = (password: string) => supabase.auth.updateUser({ password });
+
     // the raw nonce lets supabase confirm the google token came from this sign-in
     const signInWithGoogle = (idToken: string, nonce: string) =>
         supabase.auth.signInWithIdToken({ provider: 'google', token: idToken, nonce });
@@ -49,7 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const signOut = () => supabase.auth.signOut();
 
     return (
-        <AuthContext.Provider value={{ session, user: session?.user ?? null, signIn, signUp, verifySignUpCode, resendSignUpCode, signInWithGoogle, signOut }}>
+        <AuthContext.Provider value={{ session, user: session?.user ?? null, signIn, signUp, verifySignUpCode, resendSignUpCode, sendPasswordReset, verifyPasswordResetCode, updatePassword, signInWithGoogle, signOut }}>
             {children}
         </AuthContext.Provider>
     );

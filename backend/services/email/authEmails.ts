@@ -27,8 +27,9 @@ const CODE_EMAILS: Record<string, CodeEmailCopy> = {
     },
     recovery: {
         subject: 'Reset your Twiligent password',
-        lead: 'Enter this code to choose a new password.',
-        linkLabel: 'Or reset your password with this link',
+        lead: 'Enter this code on the sign-in page, with the new password you want to use.',
+        // the link signs the person in on Settings, where the Password section sets the new password
+        linkLabel: 'Or sign in with this link and set a new password in Settings',
     },
     magiclink: {
         subject: 'Your Twiligent sign-in code',

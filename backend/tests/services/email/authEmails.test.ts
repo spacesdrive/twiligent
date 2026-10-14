@@ -21,6 +21,8 @@ test('a sign-up email carries the code and a link to Supabase Auth\'s verify end
 test('without a redirect the link leaves redirect_to out, and without a hash there is no link', () => {
     const [noRedirect] = composeAuthEmails(hook({ action: 'recovery', redirectTo: '' }), SUPABASE_URL);
     assert.ok(noRedirect.text.includes('verify?token=hash-abc&type=recovery\n'));
+    assert.equal(noRedirect.subject, 'Reset your Twiligent password');
+    assert.ok(noRedirect.text.startsWith('Enter this code on the sign-in page, with the new password you want to use.'));
     const [reauth] = composeAuthEmails(hook({ action: 'reauthentication', tokenHash: '' }), SUPABASE_URL);
     assert.equal(reauth.text.includes('http'), false);
     assert.equal(reauth.subject, 'Your Twiligent confirmation code');
