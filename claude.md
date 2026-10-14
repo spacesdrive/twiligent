@@ -291,6 +291,7 @@ This is not optional for features that touch new UI patterns, new APIs, or new i
 - Author name: spacesdrive
 - Author email: valzorx7@gmail.com
 - Read `docs/workflows/GIT.md` for the full commit format
+- `main` is protected by the ruleset **Protect main**: no direct pushes, force pushes or deletion; every change lands through a pull request whose CI check `Type check, lint, test, build` passed, merged with rebase (linear history). Merging deploys both apps
 
 Commit after every meaningful change. Do not batch unrelated changes into one commit. Use Conventional Commits format:
 
@@ -342,6 +343,7 @@ When anything changes, update every relevant docs file from the table below. The
 | New data flow | `docs/architecture/data-flows/` (add or update relevant file), `docs/architecture/OVERVIEW.md` |
 | New cron trigger | `docs/architecture/cloudflare/WORKERS.md`, `docs/architecture/backend/CRON.md`, `docs/architecture/cloudflare/CI_CD.md` |
 | New GitHub Actions workflow | `docs/architecture/cloudflare/CI_CD.md`, `docs/workflows/DEPLOYMENT.md` |
+| Branch protection ruleset or the CI job name changed | The ruleset **Protect main** (Settings, Rules, Rulesets), `docs/workflows/GIT.md` (Branch Strategy), `docs/architecture/cloudflare/CI_CD.md`, this file (Git and Commit Standards section) |
 | Existing GitHub Actions workflow changed (steps, triggers, Node version) | `docs/architecture/cloudflare/CI_CD.md`, `docs/workflows/DEPLOYMENT.md`, `docs/architecture/cloudflare/PAGES.md` or `WORKERS.md` for the deploy it runs |
 | Test added, moved or test command changed | `docs/workflows/TESTING.md` (layout, commands, coverage list) |
 | New backend service file | `docs/architecture/backend/SERVICES.md`, `backend/container.ts` |
