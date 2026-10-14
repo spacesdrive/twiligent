@@ -73,7 +73,7 @@ Every user-scoped method takes the verified `userId` as its first argument. Meth
 
 `composeAuthEmails(hook, supabaseUrl)` in `email/authEmails.ts` turns one hook call into the emails to send, each with a plain text and an HTML body:
 
-- `signup`, `recovery`, `magiclink`, `email`, `invite`: the 6-digit code and a link to Supabase Auth's `/auth/v1/verify` endpoint, which does the same.
+- `signup`, `recovery`, `magiclink`, `email`, `invite`: the 6-digit code and a link to Supabase Auth's `/auth/v1/verify` endpoint, which does the same. The recovery email asks for the code on the sign-in page with the new password; its link signs the person in on Settings, where the Password section sets one.
 - `reauthentication`: the code only.
 - `email_change`: with Secure Email Change, one code to each address. Supabase names the hashes the other way round: the current address gets `token` with `token_hash_new`, the new one `token_new` with `token_hash`. Without it, one email to the new address.
 - `*_notification`: a notice of a change already made, with no code (`notice: true`).

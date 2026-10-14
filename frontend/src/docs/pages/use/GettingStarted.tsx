@@ -12,7 +12,7 @@ export default function GettingStarted() {
 
       <Steps>
         <Step title="Create your account">
-          <P>Open your instance's link and choose <strong>Continue with Google</strong>, if your instance offers it. Otherwise choose <strong>Create an account</strong> and use your email and a password of at least 6 characters, then sign in. If you sign in with Google using the same email as an existing account, both open the same account.</P>
+          <P>Open your instance's link and choose <strong>Continue with Google</strong>, if your instance offers it. Otherwise choose <strong>Create an account</strong> and use your email and a password of at least 6 characters, then enter the 6-digit code we email you. If you sign in with Google using the same email as an existing account, both open the same account. If you joined with Google and also want a password, set one in <strong>Settings</strong>, <strong>Password</strong>. Forgot it? Choose <strong>Forgot password?</strong> on the sign-in page and enter the 6-digit code we email you with a new password.</P>
         </Step>
         <Step title="Connect an account">
           <P>Open <strong>Accounts</strong> in the sidebar and choose <strong>Add account</strong>. Pick YouTube, Instagram or Reddit. Each one is explained in <A to="/docs/use/connect-accounts">Connect your accounts</A>.</P>

@@ -92,7 +92,7 @@ frontend/src/
 │   │   └── publishHelpers.ts, scheduleHelpers.ts, queueHelpers.ts   <- Pure helpers with *.test.ts
 │   ├── settings/
 │   │   ├── Settings.tsx                    <- Page: loads server settings, then renders each section; keeps the #hash scroll
-│   │   ├── SettingsSection.tsx, AppearanceSection.tsx, ServerKeysSection.tsx, SchedulingSection.tsx
+│   │   ├── SettingsSection.tsx, AppearanceSection.tsx, PasswordSection.tsx, ServerKeysSection.tsx, SchedulingSection.tsx
 │   │   ├── PlatformRequirementsSection.tsx, UsefulLinksSection.tsx
 │   │   ├── SchedulingSetupGuide.tsx        <- Optional GitHub backup scheduler steps for administrators
 │   │   ├── SchedulingSetupSteps.tsx, SetupStep.tsx, GithubRepoForm.tsx, CopyChip.tsx, GuideLinkButton.tsx, RepoLinkButton.tsx

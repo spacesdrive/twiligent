@@ -7,7 +7,10 @@ Wraps Supabase Auth state and exposes it to the entire app.
 ### What it provides
 
 ```ts
-const { session, user, signIn, signUp, verifySignUpCode, resendSignUpCode, signInWithGoogle, signOut } = useAuth();
+const {
+    session, user, signIn, signUp, verifySignUpCode, resendSignUpCode, sendPasswordReset, verifyPasswordResetCode, updatePassword,
+    signInWithGoogle, signOut,
+} = useAuth();
 ```
 
 The value is typed as `AuthContextValue`, exported from `AuthContext.tsx`.
@@ -20,6 +23,9 @@ The value is typed as `AuthContextValue`, exported from `AuthContext.tsx`.
 | `signUp(email, password)` | async function | Calls `supabase.auth.signUp()`. With **Confirm email** on it resolves with a user and no session, and the login page asks for the emailed code |
 | `verifySignUpCode(email, code)` | async function | Calls `supabase.auth.verifyOtp({ email, token: code, type: 'signup' })`; a correct code confirms the address and signs the user in |
 | `resendSignUpCode(email)` | async function | Calls `supabase.auth.resend({ type: 'signup', email })` to email a new code |
+| `sendPasswordReset(email)` | async function | Calls `supabase.auth.resetPasswordForEmail(email, { redirectTo: <origin>/settings })`; the email carries a recovery code and a link |
+| `verifyPasswordResetCode(email, code)` | async function | Calls `supabase.auth.verifyOtp({ email, token: code, type: 'recovery' })`; a correct code signs the user in |
+| `updatePassword(password)` | async function | Calls `supabase.auth.updateUser({ password })`; sets or changes the password, including for an account that only used Google |
 | `signInWithGoogle(idToken, nonce)` | async function | Calls `supabase.auth.signInWithIdToken({ provider: 'google', token, nonce })` with the ID token from Google's button and the raw nonce |
 | `signOut()` | async function | Calls `supabase.auth.signOut()` |
 
@@ -42,7 +48,8 @@ useEffect(() => {
 ### Where to use it
 
 - `ProtectedRoute` - reads `session` to decide whether to redirect to `/login`
-- `Login.tsx` - calls `signIn()`, `signUp()`, `verifySignUpCode()`, `resendSignUpCode()` and `signInWithGoogle()`
+- `Login.tsx` - calls `signIn()`, `signUp()`, `verifySignUpCode()`, `resendSignUpCode()`, `sendPasswordReset()`, `verifyPasswordResetCode()`, `updatePassword()` and `signInWithGoogle()`
+- `features/settings/PasswordSection.tsx` - calls `updatePassword()` and reads `user.email` for password managers
 - `Header.tsx` - calls `signOut()`, shows `user.email`
 - Do **not** use in page/feature components - they should never need auth state directly
 

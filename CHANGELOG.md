@@ -19,6 +19,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Issue templates, a pull request template and `docs/workflows/ISSUES.md` describe the lifecycle, labels and `gh` commands
 - `ROADMAP.md` now starts with the project goals and links in-progress items to their issues
 
+**Passwords for every account**
+- Settings has a Password section to set or change the password; for an account that joined with Google it adds a password to the same account
+- Forgot password on the sign-in page: enter the email, then the 6-digit code from the email and a new password; the reset email goes through the same capped email path as sign-up codes
+
 **Email verification codes**
 - New email accounts are confirmed with a 6-digit code: after sign-up the page asks for the code, with a button to send a new one (once a minute), and signing in with an unconfirmed address opens the same step
 - Supabase Auth hands its emails to the backend through the Send Email hook (`POST /api/auth/email-hook`), which checks Supabase's signature and sends them for free through Resend

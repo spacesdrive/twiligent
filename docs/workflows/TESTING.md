@@ -35,6 +35,7 @@ Tests never sit next to source files. Each workspace has a `tests/` folder that 
 | `backend/routes/authHookRoutes.ts` | `backend/tests/routes/authHookRoutes.test.ts` |
 | `backend/services/authEmailService.ts` | `backend/tests/services/authEmailService.test.ts` |
 | `frontend/src/lib/authErrors.ts` | `frontend/tests/lib/authErrors.test.ts` |
+| `frontend/src/lib/passwords.ts` | `frontend/tests/lib/passwords.test.ts` |
 | `frontend/src/features/analytics/overview/overviewStats.ts` | `frontend/tests/features/analytics/overview/overviewStats.test.ts` |
 | `frontend/src/docs/nav.ts` | `frontend/tests/docs/nav.test.ts` |
 
@@ -130,6 +131,12 @@ Open the app in a browser. For each changed area, test:
 - [ ] An unsigned call, `curl -i -X POST -H "Content-Type: application/json" -d '{}' .../api/auth/email-hook` -> 401 with `{ "error": { "http_code": 401, ... } }` and no email sent
 - [ ] `npx wrangler tail` shows `auth email sent` for each code, and no code in any log line
 - [ ] To check the daily cap without spending the quota, run the Worker locally with `EMAIL_DAILY_LIMIT=1` and no Redis, and send signed requests (see `tests/fixtures/authHook.ts` for the signing) -> the second one answers 429 with the Google message
+
+**Passwords (if the Password section, the reset steps or the recovery email changed):**
+- [ ] Settings, Password: mismatched fields -> "The two passwords do not match"; a valid password -> saved, and signing out and in with it works
+- [ ] An account created with Google sets a password in Settings, then signs in with email and that password and sees the same accounts
+- [ ] Sign-in page, Forgot password? -> the email step -> a recovery code arrives -> a wrong code shows "The code is wrong or has expired" -> the right code and a new password land on Overview
+- [ ] The link in the recovery email opens Settings signed in
 
 **Request pipeline (if middleware, CORS or error handling changed):**
 - [ ] Every response, including errors, has an `X-Request-Id` header and the security headers (`Content-Security-Policy`, `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer`, `X-Content-Type-Options: nosniff`)
