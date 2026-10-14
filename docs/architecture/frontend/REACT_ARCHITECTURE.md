@@ -113,7 +113,10 @@ frontend/src/
   pages/
     Login.tsx             Auth page (not lazy-loaded, always small); owns mode (sign in, sign up, code), fields, the password toggle and the resend wait
     LoginForm.tsx         Email and password form
-    LoginCodeForm.tsx     The 6-digit email code step after sign-up, with Send a new code
+    LoginCodeForm.tsx     The 6-digit email code step (sign-up confirmation, and password reset with a new-password field), with Send a new code
+    LoginEmailForm.tsx    The email-only Forgot password step
+    PasswordInput.tsx     Password field with its show or hide button, used by the sign-in, sign-up and reset forms
+    useCountdown.ts       Seconds until another email code may be sent
     LoginBrandPanel.tsx   Decorative product preview beside the form
     loginCopy.ts          Sign-in and sign-up text, privacy link
   features/

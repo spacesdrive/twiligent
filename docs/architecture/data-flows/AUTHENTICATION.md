@@ -70,6 +70,37 @@ Other cases on the login page:
 
 If the sign-up email cannot be sent, Supabase does not create the user, so the person can try again later or use Google. Password reset, magic link, invite, email change and security notice emails go through the same hook. Notices that hit a cap are skipped instead of failing the change they report. See `docs/architecture/backend/ROUTES.md` (Send Email hook) and `SERVICES.md` (Auth emails).
 
+## Setting a Password from Settings
+
+A signed-in member sets or changes their password in **Settings, Password** (`features/settings/PasswordSection.tsx`). No email is sent.
+
+```
+PasswordSection -> newPasswordProblem(password, confirmation)   lib/passwords.ts: at least 6 characters, both fields match
+    -> AuthContext.updatePassword(password) -> supabase.auth.updateUser({ password })
+    -> "Password saved. You can now sign in with your email and this password."
+```
+
+Supabase keeps one user per email address, so for an account that only used Google this adds a password to the same user: email and password sign-in then opens the same data. `lib/authErrors.ts` (`passwordErrorMessage`) explains `same_password` and `reauthentication_needed`; a `weak_password` message lists what is missing and is shown as it is. Supabase's **Secure password change** (reauthentication) is off on this project; if it is turned on, an old session gets the sign-in-again message.
+
+## Resetting a Forgotten Password
+
+```
+Login.tsx: Forgot password? (sign-in form) -> mode 'forgot' (LoginEmailForm)
+    -> AuthContext.sendPasswordReset(email) -> supabase.auth.resetPasswordForEmail(email, { redirectTo: <origin>/settings })
+    -> Supabase calls the Send Email hook with email_action_type 'recovery'
+         -> the Worker emails the 6-digit code and a link, counted against the daily cap like every auth email
+    -> "If an account uses <email>, a code is on its way."   (Supabase answers the same for unknown addresses)
+    │
+    ▼
+mode 'reset' (LoginCodeForm with a PasswordInput for the new password)
+    -> AuthContext.verifyPasswordResetCode(email, code) -> supabase.auth.verifyOtp({ email, token, type: 'recovery' })
+         the code signs the user in
+    -> AuthContext.updatePassword(password)
+    -> "Password saved" and the Overview; if the password is refused, the user is already signed in and is sent to Settings
+```
+
+The email's link does the same as the code: Supabase verifies it, signs the user in and opens Settings, where the Password section sets the new password. Send a new code, the 60 second wait and the daily-limit warning with the Google button work as on the sign-up code step. A Google-only account can use this flow to get a password.
+
 ## Sign in with Google
 
 Optional; enabled when `VITE_GOOGLE_CLIENT_ID` is set and the Google provider is on in Supabase.
