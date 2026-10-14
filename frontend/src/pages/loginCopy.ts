@@ -2,8 +2,9 @@ import type { GoogleButtonText } from '@/lib/googleIdentity';
 
 export const PRIVACY_URL = 'https://blog.ujjwal.fyi/privacy/';
 
-// verify is the code step after sign-up, or after signing in with an email that is not confirmed yet
-export type LoginMode = 'login' | 'signup' | 'verify';
+// verify is the code step after sign-up, or after signing in with an email that is not confirmed yet;
+// forgot asks for the email of a forgotten password, and reset takes the emailed code and the new password
+export type LoginMode = 'login' | 'signup' | 'verify' | 'forgot' | 'reset';
 
 export interface LoginCopy {
   title: string;
@@ -12,6 +13,8 @@ export interface LoginCopy {
   busy: string;
   switchPrompt: string;
   switchAction: string;
+  // where the link under the form goes
+  switchTo: LoginMode;
   google: GoogleButtonText;
 }
 
@@ -23,6 +26,7 @@ export const LOGIN_COPY: Record<LoginMode, LoginCopy> = {
     busy: 'Signing in',
     switchPrompt: 'New to Twiligent?',
     switchAction: 'Create an account',
+    switchTo: 'signup',
     google: 'continue_with',
   },
   signup: {
@@ -32,6 +36,7 @@ export const LOGIN_COPY: Record<LoginMode, LoginCopy> = {
     busy: 'Creating account',
     switchPrompt: 'Already have an account?',
     switchAction: 'Sign in',
+    switchTo: 'login',
     google: 'signup_with',
   },
   verify: {
@@ -41,6 +46,27 @@ export const LOGIN_COPY: Record<LoginMode, LoginCopy> = {
     busy: 'Confirming',
     switchPrompt: 'Wrong address?',
     switchAction: 'Start again',
+    switchTo: 'signup',
+    google: 'continue_with',
+  },
+  forgot: {
+    title: 'Reset your password',
+    lead: 'Enter the email you sign in with. We will email you a 6-digit code.',
+    submit: 'Send code',
+    busy: 'Sending',
+    switchPrompt: 'Remembered it?',
+    switchAction: 'Back to sign in',
+    switchTo: 'login',
+    google: 'continue_with',
+  },
+  reset: {
+    title: 'Choose a new password',
+    lead: 'Enter the code we emailed you and the password you want to use from now on.',
+    submit: 'Save password and sign in',
+    busy: 'Saving',
+    switchPrompt: 'Remembered it?',
+    switchAction: 'Back to sign in',
+    switchTo: 'login',
     google: 'continue_with',
   },
 };

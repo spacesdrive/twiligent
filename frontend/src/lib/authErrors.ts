@@ -40,3 +40,13 @@ export const CODE_LENGTH = 6;
 export function cleanCode(value: string): string {
   return value.replace(/\D/g, '').slice(0, CODE_LENGTH);
 }
+
+const PASSWORD_MESSAGES: Record<string, string> = {
+  same_password: 'This is already your password. Choose a different one.',
+  reauthentication_needed: 'For security, sign out and sign in again, then set the password.',
+};
+
+// Supabase's weak_password message lists what the password is missing, so it is shown as it is
+export function passwordErrorMessage(error: AuthErrorLike): string {
+  return (error.code && PASSWORD_MESSAGES[error.code]) || error.message;
+}
