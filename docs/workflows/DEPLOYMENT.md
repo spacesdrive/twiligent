@@ -82,7 +82,7 @@ Each command prompts for the value (no echo - the value is not shown).
 
 `FRONTEND_URL` is also the browser origin the API accepts: CORS answers only `FRONTEND_URL` and the origins listed in `ALLOWED_ORIGINS`. Set `ALLOWED_ORIGINS` when the app is served from more than one address (for example a custom domain and the `pages.dev` address), and update `FRONTEND_URL` when the domain changes, or the browser blocks every API call.
 
-The email secrets only matter once Supabase's Send Email hook points at `https://<worker>/api/auth/email-hook`. Set them before turning the hook on: while the hook is on and the secrets are missing, every sign-up and password reset fails with a 503. The full setup (Resend domain, hook, **Confirm email**, rate limit) is in the in-app guide at `/docs/self-host/email-codes`. To check the hook after a deploy, sign up with an address you own and watch `npx wrangler tail` for the `auth email sent` line.
+The email secrets only matter once Supabase's Send Email hook points at `https://<worker>/api/auth/email-hook`. Set them before turning the hook on: while the hook is on and the secrets are missing, every sign-up and password reset fails with a 503. The full setup (Resend domain, hook, **Confirm email**, rate limit) is in the in-app guide at `/docs/self-host/email-codes`. To check the hook after a deploy, sign up with an address you own and watch `npx wrangler tail` for the `auth email sent` line. Keep Resend's click and open tracking off: its tracking record once took the name `twiligent` and replaced the Pages record for `twiligent.ujjwal.fyi`, which took the site offline until the record was pointed back at `twiligent.pages.dev` (proxied) and the Pages custom domain was reactivated (#37).
 
 ## Setting GitHub Actions Secrets
 

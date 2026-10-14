@@ -13,6 +13,7 @@ export default function EmailCodes() {
       <Steps>
         <Step title="Create a Resend account and verify your domain">
           <P>Sign up at <A href="https://resend.com">resend.com</A>. Under <strong>Domains</strong>, add the domain you will send from, such as <Code>example.com</Code>, and add the DNS records Resend shows. Emails from an unverified domain are refused. The free plan allows one domain.</P>
+          <P>Under the domain&apos;s <strong>Configuration</strong>, turn off <strong>Click tracking</strong> and <strong>Open tracking</strong>. Click tracking rewrites the confirmation links, and its tracking record must not reuse a name you already serve, such as the subdomain Twiligent runs on: Resend&apos;s record replaces it and takes the site offline. If Resend lists a <strong>Tracking</strong> record, skip it.</P>
         </Step>
         <Step title="Create an API key">
           <P>Under <strong>API Keys</strong>, create a key with <strong>Sending access</strong> for that domain. Copy it; Resend shows it once.</P>
