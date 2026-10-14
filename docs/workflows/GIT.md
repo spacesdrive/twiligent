@@ -152,43 +152,58 @@ Tag releases after shipping a meaningful set of changes.
 
 ### Release process
 
-1. Update `CHANGELOG.md`: move Unreleased section to the new version number with today's date
-2. Commit: `release: v1.1.0 - short description of release`
-3. Tag: `git tag -a v1.1.0 -m "v1.1.0 - short description"`
-4. Push: `git push origin main --tags`
+`main` only accepts pull requests (see Branch Strategy), so the release commit goes through one too, and the tag is made on `main` after the merge, because a rebase merge gives the commit a new hash.
+
+1. On a branch, update `CHANGELOG.md`: move the Unreleased section to the new version number with today's date
+2. Commit: `release: v1.1.0 - short description of release`, open a pull request and merge it once CI passes
+3. Tag the merged commit and push only the tag (tags are not protected)
 
 ```bash
 # Example release
+git switch -c release/v1.1.0
 git add CHANGELOG.md
 git commit -m "release: v1.1.0 - Reddit analytics integration"
-git tag -a v1.1.0 -m "v1.1.0 - Reddit analytics integration"
-git push origin main --tags
+git push -u origin release/v1.1.0
+gh pr create --fill
+# after the pull request is merged
+git fetch origin
+git tag -a v1.1.0 origin/main -m "v1.1.0 - Reddit analytics integration"
+git push origin v1.1.0
 ```
 
 ---
 
 ## Branch Strategy
 
-All work goes directly to `main` for small changes and fixes. GitHub Actions deploys automatically on push to `main`.
+`main` is protected by the repository ruleset **Protect main** (Settings, Rules, Rulesets). Every change, however small, goes through a branch and a pull request, and GitHub Actions deploys both apps when it lands on `main`.
 
-For larger features that span multiple sessions or commits before they are ready to deploy, use a feature branch:
+| Rule | Effect |
+|---|---|
+| Restrict deletions | `main` cannot be deleted |
+| Block force pushes | History on `main` cannot be rewritten |
+| Require a pull request before merging | Direct pushes to `main` are refused; no approval is required, so the owner can merge their own pull request |
+| Require status checks to pass | The CI job `Type check, lint, test, build` (`.github/workflows/ci.yml`) must pass on the pull request, and the branch must be up to date with `main` |
+| Require linear history | Pull requests merge with **Rebase and merge** (preferred, keeps one commit per change with its `Refs #N`) or **Squash and merge**; merge commits are refused |
+
+Nobody bypasses the ruleset, including administrators. Renaming the CI job breaks the status check rule: update the ruleset in the same pull request (see `docs/architecture/cloudflare/CI_CD.md`).
 
 ```bash
-git checkout -b feat/reddit-integration
-# work, commit incrementally
-git push origin feat/reddit-integration
-# merge to main when ready
-git checkout main
-git merge feat/reddit-integration
-git push origin main
+git switch -c fix/scheduler-timezone
+# work, commit with Refs #N
+git push -u origin fix/scheduler-timezone
+gh pr create --fill                      # body lists Closes #N, following .github/pull_request_template.md
+gh pr checks --watch                     # wait for CI
+gh pr merge --rebase --delete-branch     # once CI passes; this deploys both apps
 ```
 
-A branch can also be merged through a pull request (`gh pr create`); its body lists `Closes #N` for each issue it finishes, following `.github/pull_request_template.md`.
+If `main` moved on since the branch was made, the merge is refused until the branch is updated: `gh pr update-branch --rebase`, then wait for CI again.
 
-Delete the branch after merging:
+A pull request can be stacked on another branch when it depends on unmerged work. Set its base to that branch, merge the lower pull request first, then change the upper one's base to `main` (`gh pr edit <n> --base main`) and rebase it before merging.
+
+Delete the local branch after merging:
 ```bash
-git push origin --delete feat/reddit-integration
-git branch -d feat/reddit-integration
+git switch main && git pull
+git branch -d fix/scheduler-timezone
 ```
 
 ---

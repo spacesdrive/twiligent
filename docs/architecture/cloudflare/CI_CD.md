@@ -27,6 +27,8 @@ Nothing compiles TypeScript ahead of time: Wrangler and Vite strip the types whi
 
 **Required GitHub secrets:** none.
 
+**Required status check.** The repository ruleset **Protect main** requires this job, by its name `Type check, lint, test, build`, to pass on a pull request before it can merge into `main`, with the branch up to date. Renaming the job or the workflow's `name:` breaks that rule, so change the ruleset's required check in the same pull request (Settings, Rules, Rulesets, Protect main). See `docs/workflows/GIT.md` for the other rules.
+
 ---
 
 ### `deploy-backend.yml`

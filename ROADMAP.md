@@ -30,8 +30,7 @@ What Twiligent is for, and what every change should move forward.
 
 ## In Progress
 
-1. **Email verification codes** ([#29](https://github.com/spacesdrive/twiligent/issues/29)) - confirm new email accounts with a 6-digit code sent through Resend from a Supabase Send Email hook on the Worker, capped at 100 emails a day, with Google sign-in offered once the day's emails run out.
-2. **Backend request pipeline in layers** ([#20](https://github.com/spacesdrive/twiligent/issues/20)) - split the Worker into middleware, route tables, controllers, services and repositories, with a request context (request id, user id, cancellation), security headers, input validation and one error handler.
+Nothing at the moment. The next item is picked from Next Up below.
 
 ---
 
@@ -139,4 +138,7 @@ React Native app using the same Cloudflare Worker backend.
 - Saving GitHub settings erased the stored token - only the repository is stored now (#13).
 - Dead code from the migration was removed (#14).
 - Hidden YouTube like and comment counts pulled averages down, and empty analytics had a different shape (#15).
+- Route files mixed HTTP, business rules and queries, errors had three shapes and CORS allowed every origin - the Worker now runs as middleware, route tables, controllers, services and repositories with one error contract (#20).
+- Email sign-ups were never confirmed, because Supabase's built-in email service sends only a few emails an hour - accounts are now confirmed with a code sent through Resend, capped at 100 a day (#29).
+- `main` had no branch protection - a ruleset now blocks force pushes, deletion and unchecked merges (#35).
 - Media overlays used hex colours and an undeclared tabs variant (#16).
