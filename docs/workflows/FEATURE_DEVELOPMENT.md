@@ -1,5 +1,7 @@
 # Feature Development Workflow
 
+Write the code in the style described in `docs/guidelines/CODE_STYLE.md` and run its checklist before each commit.
+
 Every feature - large or small - follows this sequence. Steps that don't apply to a specific feature can be skipped, but must be consciously skipped (not forgotten).
 
 ---

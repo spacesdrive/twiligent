@@ -1,5 +1,7 @@
 # Guide: Adding a New React Page
 
+Write the code in the style described in `docs/guidelines/CODE_STYLE.md` and run its checklist before each commit.
+
 Read `frontend/src/features/analytics/channel/ChannelAnalytics.tsx` as a reference implementation before starting.
 
 ## Files to Create or Modify

@@ -1,5 +1,7 @@
 # Hono Guidelines
 
+Start with `docs/guidelines/CODE_STYLE.md`, which shows how code reads across the repository and ends with the checklist to run before every commit; this page has the detailed rules for its area.
+
 The backend is split into layers: middleware, route tables, controllers, services and repositories. `docs/architecture/backend/REQUEST_PIPELINE.md` describes each layer and the order a request passes through them. These rules cover the Hono-facing parts: route tables, controllers and middleware.
 
 ## Controller Structure

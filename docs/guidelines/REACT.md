@@ -1,5 +1,7 @@
 # React Standards
 
+Start with `docs/guidelines/CODE_STYLE.md`, which shows how code reads across the repository and ends with the checklist to run before every commit; this page has the detailed rules for its area.
+
 ## Component Rules
 
 **Function components only.** No class components.
