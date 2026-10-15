@@ -157,6 +157,7 @@ Tag releases after shipping a meaningful set of changes.
 1. On a branch, update `CHANGELOG.md`: move the Unreleased section to the new version number with today's date
 2. Commit: `release: v1.1.0 - short description of release`, open a pull request and merge it once CI passes
 3. Tag the merged commit and push only the tag (tags are not protected)
+4. Publish a GitHub Release page for the tag, with notes in the format below
 
 ```bash
 # Example release
@@ -169,7 +170,24 @@ gh pr create --fill
 git fetch origin
 git tag -a v1.1.0 origin/main -m "v1.1.0 - Reddit analytics integration"
 git push origin v1.1.0
+gh release create v1.1.0 --verify-tag --title "v1.1.0 - Reddit analytics integration" --notes-file release-notes.md --latest
 ```
+
+Write the notes file outside the repository; it is not committed.
+
+### Release notes
+
+Every tag gets a GitHub Release page at https://github.com/spacesdrive/twiligent/releases. Its notes explain the release in plain words to someone who uses or runs Twiligent; `CHANGELOG.md` keeps the full detail. The notes follow `docs/WRITING_STANDARDS.md`: no emojis, no em or en dashes, no exclamation marks, no marketing words.
+
+| Part | What it holds |
+|---|---|
+| Title | The tag and the release commit's description: `v1.1.1 - Docs home fix and scheduler recovery` |
+| Summary | One or two sentences on what the release changes for the person using it, before any heading |
+| `## Added`, `## Changed`, `## Fixed` | Only the sections that have entries. One short line per change, in the user's words: what now works, not how the code changed. A handful of lines, not every changelog entry |
+| `## Upgrading` | Only when an instance owner must act: SQL to run, a secret or setting to add or change. Give the exact SQL or name, say when to do it (before or after deploying), and link the docs page that has the same steps |
+| Last line | `Full list of changes: [CHANGELOG.md](https://github.com/spacesdrive/twiligent/blob/vX.Y.Z/CHANGELOG.md)`, linked at the tag |
+
+The newest release is marked `--latest`; publishing an older tag later uses `--latest=false`. Fix a mistake in published notes with `gh release edit vX.Y.Z --notes-file release-notes.md`.
 
 ---
 
