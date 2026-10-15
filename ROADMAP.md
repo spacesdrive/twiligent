@@ -12,7 +12,7 @@ What Twiligent is for, and what every change should move forward.
 
 1. **One place for a creator's numbers.** YouTube, Instagram and Reddit analytics on one dashboard, with the same metrics, terms and layout across platforms.
 2. **Publishing that does not miss.** Scheduled Instagram posts go out on time, exactly once, even if one of the two schedulers fails.
-3. **Cheap and simple to self-host.** Runs on the free tiers of Cloudflare, Supabase, Upstash and Cloudinary. Setup is documented step by step at `/docs`, and members of an instance need no setup at all.
+3. **Cheap and simple to self-host.** Runs on the free tiers of Cloudflare, Supabase, Upstash and Cloudinary. Setup is documented step by step in the public docs at `https://twiligent.ujjwal.fyi/docs`, and members of an instance need no setup at all.
 4. **Safe by default.** Secrets stay server-side, every query is scoped to the signed-in user, tokens never reach the browser, and no client can exhaust the shared API quotas.
 5. **Easy to change without breaking.** Typed code, tests that pin behaviour, one shared toolchain, and docs that stay in step with the code.
 

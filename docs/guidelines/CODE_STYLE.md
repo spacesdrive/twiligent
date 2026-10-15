@@ -19,7 +19,7 @@ When this page and the code disagree, the code in the newest reviewed files wins
 
 Prettier settings in `.prettierrc.json` and `.editorconfig` describe the layout; match the file you edit rather than reformatting it.
 
-| | Backend, scripts | Frontend, docs TSX |
+| | Backend, scripts | Frontend, site |
 |---|---|---|
 | Indentation | 4 spaces | 2 spaces |
 | Quotes | single | single (JSX attributes use double) |
@@ -124,6 +124,7 @@ export default function LoginEmailForm({ copy, email, onEmailChange, loading, on
 - Icons are Lucide with `data-icon="inline-start"` or `inline-end` in buttons.
 - When markup repeats in two places, extract it (`PasswordInput.tsx` for the password field with its show button) rather than copying it.
 - Copy that changes by mode lives in a typed table (`loginCopy.ts`, `LOGIN_COPY: Record<LoginMode, LoginCopy>`).
+- The public site (`site/`) follows the same React rules without shadcn: it has its own tokens in `site/src/index.css` and uses the Solar icons from `@/components/icons`, never Lucide. See `docs/architecture/site/SITE.md`.
 
 ## Tests
 
@@ -137,6 +138,7 @@ Rules in `docs/workflows/TESTING.md`.
 ## Docs and Commits
 
 - Docs follow `docs/WRITING_STANDARDS.md`: short declarative sentences, tables for structured facts, code blocks for commands, no marketing words.
+- User and self-hosting docs are MDX pages in `site/content/docs/`; engineering docs stay in `docs/`. Adding or moving a docs page is in `docs/architecture/site/SITE.md`.
 - Commits follow `docs/workflows/GIT.md`: `type(scope): imperative summary`, a body that says why, and `Refs #N` or `Closes #N`. No AI attribution lines.
 - Every change is tracked by an issue (`docs/workflows/ISSUES.md`) and lands on `main` through a pull request that passed CI.
 

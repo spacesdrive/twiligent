@@ -33,6 +33,8 @@ Every analytics product wants a monthly subscription and access to your data. Tw
 
 You deploy one Cloudflare Worker and one Cloudflare Pages site using your own API credentials. Your data is stored in your own Supabase database and cached in your own Upstash Redis instance. No shared infrastructure. No accounts created on third-party services beyond the free tiers you choose. No ongoing cost.
 
+The project's own public site and documentation are at [twiligent.ujjwal.fyi](https://twiligent.ujjwal.fyi), and its own instance of the app runs at [app.twiligent.ujjwal.fyi](https://app.twiligent.ujjwal.fyi). The site is built from the `site/` folder of this repository; you do not need to deploy it to run your own Twiligent.
+
 ---
 
 ## Table of Contents
@@ -128,7 +130,7 @@ You deploy one Cloudflare Worker and one Cloudflare Pages site using your own AP
 
 ## Quick Start
 
-Clone and install dependencies (one install at the root covers the backend and the frontend):
+Clone and install dependencies (one install at the root covers the backend, the frontend and the public site):
 
 ```bash
 git clone https://github.com/spacesdrive/twiligent.git
@@ -146,7 +148,7 @@ This runs the backend Worker on port 8787 and the frontend on port 5173 in one t
 
 Open [http://localhost:5173](http://localhost:5173) and sign up for an account, then go to **Accounts** to add your first YouTube channel or Instagram account.
 
-The full documentation, including a step-by-step self-hosting guide that explains every key, is built into the app at `/docs` (for example [http://localhost:5173/docs](http://localhost:5173/docs)). It is public, so you can share the link with members before they sign in.
+The full documentation, including a step-by-step self-hosting guide that explains every key, is at [twiligent.ujjwal.fyi/docs](https://twiligent.ujjwal.fyi/docs). It is public, so you can share the link with members before they sign in. The pages are MDX files in `site/content/docs/`; run `npm run dev:site` to preview the site and docs locally.
 
 **Using someone else's Twiligent?** You need none of this. Sign in with the link you were given; the server, keys and scheduled publishing are already handled by the administrator.
 
@@ -181,7 +183,7 @@ cd twiligent
 npm install
 ```
 
-The repository is an npm workspaces monorepo: `backend/` and `frontend/` are workspaces, and one install at the root fills a single `node_modules` from the single root `package-lock.json`. Do not run `npm install` inside `backend/` or `frontend/`.
+The repository is an npm workspaces monorepo: `backend/`, `frontend/` and `site/` (the public marketing site and docs) are workspaces, and one install at the root fills a single `node_modules` from the single root `package-lock.json`. Do not run `npm install` inside `backend/`, `frontend/` or `site/`.
 
 **3. Create the Supabase database tables**
 
@@ -236,7 +238,7 @@ alter table scheduled_posts enable row level security;
 alter table tracked_posts enable row level security;
 ```
 
-If you created the tables from an earlier version of this README, run the `tracked_posts` and `alter table` statements above as well. Then, in Supabase Authentication, turn off **Confirm email** unless you have set up email verification codes (`/docs/self-host/email-codes`), and turn off new signups once your team has accounts if the instance is private.
+If you created the tables from an earlier version of this README, run the `tracked_posts` and `alter table` statements above as well. Then, in Supabase Authentication, turn off **Confirm email** unless you have set up email verification codes ([docs](https://twiligent.ujjwal.fyi/docs/self-host/email-codes)), and turn off new signups once your team has accounts if the instance is private.
 
 **4. Configure credentials**
 
@@ -258,20 +260,21 @@ Run every command from the repository root.
 
 | Command | What it does |
 |---|---|
-| `npm install` | Installs both workspaces and the shared tooling |
+| `npm install` | Installs every workspace and the shared tooling |
 | `npm run dev` | Starts the Worker (`wrangler dev`, port 8787) and Vite (port 5173) together |
 | `npm run dev:backend` / `npm run dev:frontend` | Starts one of them |
-| `npm run typecheck` | Type-checks every TypeScript project: backend, backend tests, frontend, frontend tooling and tests, scripts |
-| `npm run build` | Builds the frontend into `frontend/dist/` |
-| `npm test` | Runs the backend tests, then the frontend tests (Node's built-in test runner on `tests/**/*.test.ts`) |
+| `npm run dev:site` | Starts the public site and docs (`site/`) on its own Vite dev server |
+| `npm run typecheck` | Type-checks every TypeScript project: backend, backend tests, frontend, frontend tooling and tests, site, site build files and tests, scripts |
+| `npm run build` | Builds the frontend into `frontend/dist/`, then the site into `site/dist/` |
+| `npm test` | Runs the backend, frontend and site tests (Node's built-in test runner on `tests/**/*.test.ts`) |
 | `npm run lint` | Runs ESLint over the whole repository with the shared `eslint.config.mjs` |
 | `npm run format` | Applies Prettier (`.prettierrc.json`) to the whole repository |
 
-Add a dependency to the app that uses it: `npm install <package> --workspace backend` or `npm install <package> --workspace frontend`. Only shared development tooling goes in the root `package.json`.
+Add a dependency to the workspace that uses it: `npm install <package> --workspace backend`, `--workspace frontend` or `--workspace site`. Only shared development tooling goes in the root `package.json`.
 
 The whole project is TypeScript in `strict` mode. Nothing is compiled ahead of time: Wrangler and Vite strip the types while bundling, and Node strips them when it runs the tests and `scripts/publish-scheduled.ts`. None of them checks types, so run `npm run typecheck` before you commit; CI runs it on every pull request and before every deploy. The API request and response types live once in `shared/types/` and are used by both the backend and the frontend. See `docs/guidelines/TYPESCRIPT.md`.
 
-Tests live outside the source folders, in `backend/tests/` and `frontend/tests/`, and mirror the source tree: the test for `backend/services/youtube/youtubeChannels.ts` is `backend/tests/services/youtube/youtubeChannels.test.ts`, and the test for `frontend/src/lib/accounts.ts` is `frontend/tests/lib/accounts.test.ts`. Backend fixtures and golden snapshots are in `backend/tests/fixtures/`.
+Tests live outside the source folders, in `backend/tests/`, `frontend/tests/` and `site/tests/`, and mirror the source tree: the test for `backend/services/youtube/youtubeChannels.ts` is `backend/tests/services/youtube/youtubeChannels.test.ts`, and the test for `frontend/src/lib/accounts.ts` is `frontend/tests/lib/accounts.test.ts`. Backend fixtures and golden snapshots are in `backend/tests/fixtures/`.
 
 ESLint (with `typescript-eslint`), Prettier and EditorConfig are configured once at the root, and the shared compiler settings are in `tsconfig.base.json`. The existing code has not been reformatted in bulk, so run `npm run format` only when you mean to reformat.
 
@@ -310,7 +313,7 @@ VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 VITE_API_URL=http://localhost:8787/api
 # Optional: who users contact for Instagram tester access and scheduling problems
 VITE_ADMIN_EMAIL=you@example.com
-# Optional: Google web client ID; shows Continue with Google (see /docs/self-host/google-sign-in)
+# Optional: Google web client ID; shows Continue with Google (see https://twiligent.ujjwal.fyi/docs/self-host/google-sign-in)
 VITE_GOOGLE_CLIENT_ID=1234567890-abc.apps.googleusercontent.com
 ```
 
@@ -338,7 +341,7 @@ npx wrangler secret put EMAIL_FROM                  # optional
 npx wrangler secret put EMAIL_DAILY_LIMIT           # optional; defaults to 100
 ```
 
-The four email secrets turn on 6-digit verification codes for email sign-ups, sent free through Resend (100 a day). Supabase Auth hands each email to the Worker through its Send Email hook (`POST /api/auth/email-hook`). Past the daily limit, the sign-up page asks people to sign in with Google instead. Setup steps are in the app at `/docs/self-host/email-codes`.
+The four email secrets turn on 6-digit verification codes for email sign-ups, sent free through Resend (100 a day). Supabase Auth hands each email to the Worker through its Send Email hook (`POST /api/auth/email-hook`). Past the daily limit, the sign-up page asks people to sign in with Google instead. Setup steps are in the [docs](https://twiligent.ujjwal.fyi/docs/self-host/email-codes).
 
 ### Getting API credentials
 
@@ -443,6 +446,7 @@ twiligent/
 │       ├── ci.yml                   # Type check, lint, test, build and Worker dry-run on pull requests and branches
 │       ├── deploy-backend.yml       # Type check, test, then Wrangler deploy on backend, shared or root config changes
 │       ├── deploy-frontend.yml      # Type check, test, then Cloudflare Pages deploy on frontend, shared or root config changes
+│       ├── deploy-site.yml          # Type check, test, then deploy the public site to the twiligent-site Pages project
 │       └── publish-scheduled.yml    # Scheduled post fallback (every 15 minutes, Node 24)
 │
 ├── backend/
@@ -481,7 +485,7 @@ twiligent/
 │   └── package.json                 # Backend workspace: hono, supabase-js, upstash redis, wrangler, workers-types
 │
 ├── frontend/
-│   ├── tests/                       # Node tests (*.test.ts) mirroring src/ (lib, utils, features, docs)
+│   ├── tests/                       # Node tests (*.test.ts) mirroring src/ (lib, utils, features)
 │   ├── index.html                   # Loads /src/main.tsx
 │   ├── vite.config.ts               # Vite config: React and Tailwind plugins, @ alias
 │   ├── tsconfig.json                # Type check for src/ (DOM, JSX, @/ and @shared/ paths)
@@ -510,6 +514,14 @@ twiligent/
 │       └── services/
 │           └── api.ts               # Frontend API client (all fetch calls)
 │
+├── site/                            # Public marketing site and docs (twiligent.ujjwal.fyi); not needed to self-host
+│   ├── content/docs/                # Docs pages in MDX, each starting with export const meta = { title, description }
+│   ├── build/                       # Vite docs plugin (search index, sitemap.xml, llms.txt) and the icon generator
+│   ├── public/                      # Fonts, brand assets, _redirects to the app, robots.txt
+│   ├── src/                         # Pages, sections, mockups, the docs layout and search, nav.ts
+│   ├── tests/                       # Node tests: docs navigation, metadata, links and search helpers
+│   └── package.json                 # Site workspace: React, Vite, Tailwind, MDX, MiniSearch, motion
+│
 ├── shared/
 │   └── types/                       # API contract shared by backend and frontend (types only)
 │
@@ -518,7 +530,7 @@ twiligent/
 │   └── tsconfig.json                # Type check for scripts/ (Node types)
 │
 ├── package.json                     # npm workspaces root: scripts, shared dev tooling, engines (Node 22.18+)
-├── package-lock.json                # The only lockfile, for both workspaces
+├── package-lock.json                # The only lockfile, for every workspace
 ├── tsconfig.base.json               # Shared strict compiler settings
 ├── eslint.config.mjs                # Shared ESLint config
 ├── .prettierrc.json                 # Shared Prettier config
@@ -533,7 +545,7 @@ twiligent/
 
 | Tool | Version | Purpose |
 |---|---|---|
-| TypeScript | 6.0 | Strict type checking across the backend, frontend, shared types, scripts and tests |
+| TypeScript | 6.0 | Strict type checking across the backend, frontend, public site, shared types, scripts and tests |
 | typescript-eslint | 8 | TypeScript lint rules |
 | Node.js | 22.18 or later | Runs the tests and the scheduled publisher by stripping types |
 
@@ -551,6 +563,16 @@ twiligent/
 | Lucide React | 1.17 | Icon library |
 | Sonner | 2 | Toast notifications |
 
+**Public site (`site/`)**
+
+| Library | Version | Purpose |
+|---|---|---|
+| MDX (`@mdx-js/rollup`) | 3 | Docs pages written in Markdown with components |
+| Shiki | 4 | Code highlighting at build time, light and dark |
+| MiniSearch | 7 | Docs search index built at build time |
+| motion | 14 | Page and section animation |
+| Solar icons (`@iconify-json/solar`) | 1 | Site icons, generated into one file (CC BY 4.0) |
+
 **Backend**
 
 | Library | Version | Purpose |
@@ -566,7 +588,7 @@ twiligent/
 | Service | Purpose |
 |---|---|
 | Cloudflare Workers | Backend API and built-in cron scheduler |
-| Cloudflare Pages | Frontend SPA hosting with CI/CD |
+| Cloudflare Pages | Frontend SPA hosting with CI/CD (and the project's public site) |
 | Supabase | PostgreSQL database and authentication (JWT) |
 | Upstash Redis | Analytics caching layer (optional) |
 | YouTube Data API v3 | Channel and video analytics |
@@ -623,7 +645,7 @@ git push origin feature/your-feature-name
 
 ## License
 
-[MIT](LICENSE)
+[MIT](LICENSE). Work by others that the project includes, and the credit its licence asks for, is listed in [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
 
 ---
 

@@ -9,6 +9,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
+**Public website and docs site**
+- A marketing site at `https://twiligent.ujjwal.fyi` that explains what Twiligent does, with product previews, platform and FAQ sections, and Sign in and Get started buttons that open the app
+- The docs now live on the same site at `/docs`, written in MDX: section tabs, a grouped sidebar, an "On this page" outline, previous and next links, highlighted code blocks, and Suggest edits and Raise issue links on every page
+- Full-text docs search with Ctrl K (Cmd K on a Mac); the index is built with the site and opens results at the matching section
+- A light and dark theme toggle that follows the system setting until you choose, and remembers the choice
+- Product previews that play while on screen: a cursor schedules an Instagram Reel step by step, reads a channel's growth chart and opens Shorts and regular, and each feature card shows one live detail (a new account row, the Worker's request log, a GitHub run, a filter click, a tracked link)
+- Smooth area charts drawn at real size, with numbers that count up
+- `sitemap.xml`, `llms.txt` and `robots.txt` for search engines and AI tools
+- A new `site/` workspace with `npm run dev:site`, its own tests, and a deploy workflow for the `twiligent-site` Pages project (ADR-035)
+
 **API rate limiting**
 - Every API request is rate limited: per network before sign-in is checked, per user after it, and tighter on actions that use YouTube, Instagram or Reddit quota (adding accounts, refreshing, the scheduler trigger) and on Instagram publishing
 - Token bucket, leaking bucket, fixed window, sliding window log and sliding window counter algorithms, counted atomically in Redis with Lua scripts and per server instance in memory when Redis is not configured or not reachable
@@ -39,8 +49,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Separate paths for members (sign in, connect accounts, analytics, publishing, tracked content, troubleshooting) and administrators (Supabase, YouTube, Instagram, Cloudinary, Redis, backend and frontend deploys, GitHub automation, launch checklist)
 - Reference pages for every environment variable, how scheduling works, the security model and common questions
 - Links to the docs from the sign-in page, the user menu, the command palette and Settings
+- These docs were first built into the app and then moved, before release, to the public site at `https://twiligent.ujjwal.fyi/docs` (see Public website and docs site above, and Changed)
 
 ### Changed
+
+**Docs and app addresses**
+- The docs moved from the app to the public site; links in the app (sign-in page, user menu, command palette, Settings) open `https://twiligent.ujjwal.fyi/docs`, and old `/docs/...` links in the app redirect to the same page there
+- The app moves to `https://app.twiligent.ujjwal.fyi`. The app's old paths on `twiligent.ujjwal.fyi` (such as `/login` and `/settings`) redirect to the new address. The Worker's `FRONTEND_URL` and `ALLOWED_ORIGINS`, the Supabase Auth URLs and the Google sign-in origins must name the new address
+- The sign-in page opens on the sign-up form when the link ends in `?mode=signup`
+- `npm run build`, `npm test` and `npm run typecheck` at the root now cover the site as well
 
 **Protected main branch**
 - `main` only accepts pull requests whose CI check passed on an up-to-date branch, merged with rebase; force pushes and deleting the branch are blocked for everyone (ADR-034)
@@ -108,6 +125,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Removed
 
+- The in-app documentation under `frontend/src/docs/` and its tests; the app's `/docs/*` route now only redirects to the public docs
 - Dead code found during the TypeScript migration: the unused `backend/lib/crypto.ts`, the empty Reddit session refresh in the daily cron and the unread `REDDIT_ENCRYPTION_KEY` secret (delete it from the Worker if it is set), the `scheduled` post status checks (no post ever has it), and fallbacks for fields the API never sends
 - The unused GitHub personal access token field and its guide in Settings (nothing used the token)
 - Legacy root `public/` dashboard, unmounted `trackedPosts.js` route, unused Redis OAuth helpers, unused shadcn block templates and the unused Geist font package

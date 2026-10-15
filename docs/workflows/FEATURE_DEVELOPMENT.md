@@ -18,6 +18,7 @@ Confirm you have the project context and know which docs to load.
 Based on what the feature touches:
 - Backend change -> read `docs/architecture/backend/`
 - Frontend change -> read `docs/architecture/frontend/`
+- Public site or docs page change -> read `docs/architecture/site/SITE.md` and `docs/brand-notes.md`
 - DB change -> read `docs/architecture/database/SCHEMA.md`
 - New integration -> read `docs/guidelines/API_CONVENTIONS.md`, relevant data flow doc
 
@@ -92,7 +93,7 @@ Before creating new patterns, check:
 10. Frontend: `layout/navigation.ts` (if new page needs a nav entry)
 11. Tests for new pure logic, in the workspace's `tests/` folder at the path that mirrors the source file (`backend/routes/accountRoutes.ts` -> `backend/tests/routes/accountRoutes.test.ts`, `backend/services/youtube/youtubeChannels.ts` -> `backend/tests/services/youtube/youtubeChannels.test.ts`, `frontend/src/lib/accounts.ts` -> `frontend/tests/lib/accounts.test.ts`); see `docs/workflows/TESTING.md`
 
-If the feature needs a new npm package (approval required, see CLAUDE.md), add it to the app that uses it from the repository root: `npm install <pkg> --workspace backend` or `--workspace frontend`. Never run `npm install` inside `backend/` or `frontend/`; the root `package-lock.json` is the only lockfile.
+If the feature needs a new npm package (approval required, see CLAUDE.md), add it to the workspace that uses it from the repository root: `npm install <pkg> --workspace backend`, `--workspace frontend` or `--workspace site`. Never run `npm install` inside `backend/`, `frontend/` or `site/`; the root `package-lock.json` is the only lockfile.
 
 **Step 12 - Eliminate duplication**  
 After implementing, look for logic that duplicates something that already existed. Extract it into the appropriate shared location (`repositories/`, `services/`, `lib/analyticsMath.ts`, `utils/formatters.ts`, shared components).
@@ -105,14 +106,15 @@ After implementing, look for logic that duplicates something that already existe
 Run from the repository root:
 ```bash
 npm run typecheck  # every TypeScript project must type-check
-npm run build  # frontend must build without errors
-npm test       # backend and frontend unit tests must pass
+npm run build  # the app and the public site must build without errors
+npm test       # backend, frontend and site unit tests must pass
 npm run dev    # Worker (8787) and Vite (5173) must both start without errors
+npm run dev:site  # the public site, when the change touches site/
 ```
 
 **Step 14 - Lint**  
 ```bash
-npm run lint   # one ESLint run over backend, frontend, tests and scripts
+npm run lint   # one ESLint run over backend, frontend, site, tests and scripts
 ```
 Lint must report 0 problems; CI fails otherwise.
 

@@ -66,5 +66,5 @@ Shared components live in `frontend/src/components/`. Reach for these before wri
 - Destructive actions go through `ConfirmDialog` with `hold`.
 - Every async action disables its trigger, shows a spinner or progress, and ends in a toast that names what happened.
 - Sentence case in all UI copy. No exclamation marks. Errors say what happened and what to do.
-- Lucide icons at 1.75 stroke. 18px in navigation, 16px in controls.
+- Lucide icons at 1.75 stroke. 18px in navigation, 16px in controls. (The public site in `site/` uses Solar icons instead; see `docs/architecture/site/SITE.md`.)
 - New logic that can be pure goes in `src/lib/`, with its test at the mirrored path in `frontend/tests/` (`src/lib/library.ts` -> `frontend/tests/lib/library.test.ts`; run `npm test`).

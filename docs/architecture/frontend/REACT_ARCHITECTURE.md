@@ -19,6 +19,8 @@
 
 Visual tokens and shared components are described in `DESIGN_SYSTEM.md`.
 
+This page covers the app (`frontend/`). The public marketing site and docs are a separate workspace, `site/`, described in `docs/architecture/site/SITE.md`.
+
 ## TypeScript and Vite
 
 Every file in `frontend/src` is `.ts`, or `.tsx` when it contains JSX. Vite (with `@vitejs/plugin-react` and `@tailwindcss/vite`, configured in `frontend/vite.config.ts`) strips the types while it serves and builds; it does not check them. `npm run typecheck` does:
@@ -59,6 +61,7 @@ ThemeProvider (next-themes)          <- OS/user theme preference
       Suspense (fallback=null)
         RouterProvider
           /login -> Login (no protection)
+          /docs/* -> DocsRedirect      <- leaves the app for the public docs
           /* ->
             ProtectedRoute           <- redirects to /login if no session
               AppProvider            <- accounts[], loading, showToast
@@ -87,6 +90,7 @@ frontend/src/
     library.ts           Filter tiers, paging, duration and engagement helpers
     commandSearch.ts     Command palette ranking
     holdProgress.ts      Hold-to-confirm timing
+    docs.ts              DOCS_URL and docsUrl(path), links to the public docs on the site
   services/
     api.ts               All backend HTTP calls
   context/
@@ -107,6 +111,7 @@ frontend/src/
     Header.tsx            TopBar: breadcrumb, refresh all, theme toggle
   components/
     ProtectedRoute.tsx    Auth guard component
+    DocsRedirect.tsx      /docs/* route: sends old docs links to the same page on the public site
     PageHeader.tsx, SurfaceBox.tsx, MetricBox.tsx, ...   Shared components (see DESIGN_SYSTEM.md)
     brand/                Logo and platform icons
     ui/                   shadcn generated components, restyled onto the tokens

@@ -563,7 +563,7 @@ Records every significant architectural decision, the alternatives considered, a
 ## ADR-026: Public documentation inside the frontend at /docs
 
 **Date:** 2026-10-13
-**Status:** Accepted
+**Status:** Superseded by ADR-035 (2026-10-15)
 
 **Decision:** User and self-hosting documentation lives in the React app under `frontend/src/docs/`, served at the public route `/docs` outside `ProtectedRoute`. Pages are JSX built from a small set of doc components (headings with anchors, callouts, steps, tables, code blocks). The navigation is defined once in `docs/nav.js`; `docs/routes.js` maps each slug to a lazily loaded named export, and a test checks the two stay in sync. Content is split into two audiences: members of an instance, who need nothing beyond signing in, and administrators, who run their own instance.
 
@@ -721,3 +721,27 @@ Records every significant architectural decision, the alternatives considered, a
 - "Up to date" means a pull request opened before another one merged must be rebased (`gh pr update-branch --rebase`) and checked again.
 - Rebase merges give commits new hashes, so release tags are created after the merge, on `origin/main`.
 - Renaming the CI job requires updating the ruleset in the same change.
+
+---
+
+## ADR-035: A separate site workspace for the marketing site and docs, with the app on its own address
+
+**Date:** 2026-10-15
+**Status:** Accepted
+
+**Decision:** The public marketing site and the user and self-hosting documentation move into a third npm workspace, `site/`, deployed to its own Cloudflare Pages project, `twiligent-site`, at `twiligent.ujjwal.fyi`. The app moves to `app.twiligent.ujjwal.fyi` on the existing `twiligent` project. The site is a static React SPA (Vite 7, React 19, Tailwind v4, React Router 7, motion). Docs pages are MDX files in `site/content/docs/`, compiled by `@mdx-js/rollup` with `remark-gfm` and `@shikijs/rehype` (GitHub light and dark themes as CSS variables). Each page starts with `export const meta = { title, description }`; the sidebar is defined once in `site/src/docs/nav.ts`, and a test checks the two match. A Vite plugin (`site/build/docsPlugin.ts`) builds a MiniSearch index at build time, served as the virtual module `virtual:docs-search` and loaded on the first search, and writes `sitemap.xml` and `llms.txt`. The site uses Solar icons (480 Design, CC BY 4.0, credited in `THIRD_PARTY_NOTICES.md` at the repository root), generated into one file by `site/build/genIcons.ts`; the owner chose them on 2026-10-15 to match Activepieces, the structural reference for the site. The app keeps Lucide. Sign-up and sign-in stay in the app: the site's buttons link to `app.twiligent.ujjwal.fyi/login` (with `?mode=signup` for Get started). The app's `/docs/*` route redirects to the same page on the site, and the site's `_redirects` sends the app's old paths to the app address.
+
+**Context:** The project needed a public home page that explains Twiligent to people who have not signed in, next to the docs from ADR-026. Docs written as TSX in the app needed JSX for every paragraph and could only change with an app deploy. The app's address was the only public address, so a home page there would compete with the login screen.
+
+**Alternatives considered:**
+- Keep the docs in the app and add a home page there. The marketing page would ship in the app bundle, and the app's address would stop opening on the login page.
+- A separate repository for the site. It would duplicate the toolchain (TypeScript, ESLint, CI) and split changes that touch the app and its docs into two pull requests.
+- A docs framework (Docusaurus, Mintlify, Starlight). Each brings its own build, theming and component model, and Mintlify is hosted outside the project's control. A Vite and React site keeps one toolchain with the app and full control over the brand.
+
+**Trade-offs:**
+- The site adds dependencies to the root lockfile (`@mdx-js/rollup`, `@mdx-js/react`, `remark-gfm`, `@shikijs/rehype`, `shiki`, `minisearch`, `motion`, `react-router`, `@iconify-json/solar`). None of them reach the Worker or the app bundle.
+- A third deploy workflow (`deploy-site.yml`) and a second Pages project. The site needs no secrets beyond the Cloudflare API token and account id.
+- Moving the app's address means updating `FRONTEND_URL` and `ALLOWED_ORIGINS` on the Worker, the Supabase Auth site URL and redirect allow list, and the Google OAuth JavaScript origins. Old links keep working through the two redirects.
+- The search index is rebuilt on every site build and downloaded only when someone searches, so it adds nothing to the first load.
+- Self-hosters do not need the site: they deploy only the app and the Worker, and read the docs on the project's site.
+- The site follows the brand kit in `frontend/public/` but keeps its own copy of the tokens in `site/src/index.css` (see `docs/brand-notes.md`), so a token change must be made in both places.
