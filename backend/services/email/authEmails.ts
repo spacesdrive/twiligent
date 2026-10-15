@@ -22,7 +22,7 @@ interface CodeEmailCopy {
 const CODE_EMAILS: Record<string, CodeEmailCopy> = {
     signup: {
         subject: 'Your Twiligent verification code',
-        lead: 'Enter this code on the sign-up page to confirm your email and finish creating your account.',
+        lead: 'Enter this code on the Twiligent sign-in page to confirm your email and finish creating your account.',
         linkLabel: 'Or confirm your email with this link',
     },
     recovery: {
