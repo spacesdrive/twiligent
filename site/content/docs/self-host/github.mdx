@@ -20,7 +20,13 @@ Worker secrets stay in Cloudflare; the backend workflow does not need them.
 
 ## Backup scheduler
 
-The Worker already publishes scheduled posts. `publish-scheduled.yml` runs the same job from GitHub every 15 minutes as a safety net, with `node scripts/publish-scheduled.ts` on Node 24. The script needs no packages, so the workflow installs nothing. Each post is claimed before publishing, so it is never posted twice even when both run at once.
+The Worker already publishes scheduled posts. `publish-scheduled.yml` runs the same job from GitHub as a safety net, with `node scripts/publish-scheduled.ts` on Node 24. The script needs no packages, so the workflow installs nothing. Each post is claimed before publishing, so it is never posted twice even when both run at once, and a post whose run stopped halfway is taken over by the next run 20 minutes later.
+
+<Callout type="note" title="GitHub decides when the runs start">
+
+The workflow asks for a run every 15 minutes, at minutes 7, 22, 37 and 52 of each hour, one run at a time with a 14 minute limit. GitHub starts scheduled runs when it has capacity: its documentation says they can be delayed, most of all at the start of every hour, and that some are dropped. Twiligent's own runs have come every 3 to 5 hours. Rely on the Worker to publish within 15 minutes; this backup catches what the Worker missed, later.
+
+</Callout>
 
 <Steps>
 <Step title="Add two secrets">
@@ -42,7 +48,7 @@ Choose **Run workflow**. It worked if the run finishes with a green check and th
 
 <Callout type="tip" title="Private forks">
 
-Public repositories get unlimited Actions minutes. A private fork gets 2,000 free minutes a month; change the schedule in the workflow to every 30 minutes to stay inside it.
+Public repositories get unlimited Actions minutes. A private fork gets 2,000 free minutes a month; change the schedule in `.github/workflows/publish-scheduled.yml` from `'7,22,37,52 * * * *'` to `'7,37 * * * *'`, every 30 minutes, to stay inside it.
 
 </Callout>
 

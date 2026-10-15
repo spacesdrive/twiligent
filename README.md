@@ -213,8 +213,12 @@ create table scheduled_posts (
   account_id text not null references accounts(id) on delete cascade,
   status text not null default 'pending',
   scheduled_at timestamptz not null,
+  claimed_at timestamptz,
+  attempts integer not null default 0,
   data jsonb
 );
+create index scheduled_posts_user_id_idx on scheduled_posts (user_id);
+create index scheduled_posts_due_idx on scheduled_posts (status, scheduled_at);
 
 -- Tracked content table
 create table tracked_posts (
@@ -238,7 +242,7 @@ alter table scheduled_posts enable row level security;
 alter table tracked_posts enable row level security;
 ```
 
-If you created the tables from an earlier version of this README, run the `tracked_posts` and `alter table` statements above as well. Then, in Supabase Authentication, turn off **Confirm email** unless you have set up email verification codes ([docs](https://twiligent.ujjwal.fyi/docs/self-host/email-codes)), and turn off new signups once your team has accounts if the instance is private. The sign-in page's email field sends a sign-in code; without the email codes setup, Supabase sends its own rate-limited Magic Link email, which holds a link (add `{{ .Token }}` to its template in Authentication, Emails to show the code too).
+If you created the tables from an earlier version of this README, run the `tracked_posts` and `alter table` statements above as well. If your `scheduled_posts` table has no `claimed_at` column, run the upgrade SQL in [the Supabase setup docs](https://twiligent.ujjwal.fyi/docs/self-host/supabase) before deploying this version: the schedulers need the `claimed_at` and `attempts` columns. Then, in Supabase Authentication, turn off **Confirm email** unless you have set up email verification codes ([docs](https://twiligent.ujjwal.fyi/docs/self-host/email-codes)), and turn off new signups once your team has accounts if the instance is private. The sign-in page's email field sends a sign-in code; without the email codes setup, Supabase sends its own rate-limited Magic Link email, which holds a link (add `{{ .Token }}` to its template in Authentication, Emails to show the code too).
 
 **4. Configure credentials**
 
@@ -377,17 +381,18 @@ Instagram requires a Business or Creator account linked to a Facebook Page.
 Twiligent uses a dual-scheduler approach to publish Instagram posts reliably:
 
 1. **Primary:** The Cloudflare Worker has a built-in cron trigger that fires every 15 minutes. No setup required - it runs automatically once the Worker is deployed.
-2. **Fallback:** A GitHub Actions workflow (`publish-scheduled.yml`) also runs every 15 minutes. It serves as a backup in case the Worker cron misses a cycle.
+2. **Fallback:** A GitHub Actions workflow (`publish-scheduled.yml`) asks for a run every 15 minutes, at minutes 7, 22, 37 and 52. GitHub starts scheduled runs when it has capacity, often hours late and sometimes not at all, so this catches posts the Worker missed later, not within 15 minutes.
 
-Both schedulers write to the same `scheduled_posts` table in Supabase. A `publishing` status flag acts as a mutex to prevent the same post from being published twice.
+Both schedulers write to the same `scheduled_posts` table in Supabase. A run claims a post before publishing it, so the same post is never published twice, and a claim older than 20 minutes is taken over by the next run, so a run that stopped halfway does not leave the post stuck.
 
 ### How scheduling works
 
 1. You schedule a post through the **Publish** page (photo, reel, or story with caption and optional metadata)
 2. The post is saved to Supabase with `status: 'pending'` and a `scheduled_at` timestamp
 3. The Worker cron fires every 15 minutes, queries for due posts, and publishes them via the Instagram Graph API
-4. Each post is marked `publishing` before the API call and `published` or `failed` after
-5. The GitHub Actions workflow runs the same logic as a redundant fallback
+4. Each post is marked `publishing` before the API call and `published` or `failed` after. The Instagram container id is saved before publishing, so a later run can check whether the post already went out before trying again
+5. A passing problem, such as a timeout or a temporary Instagram error, sends the post back to `pending` for the next run, up to 3 attempts
+6. The GitHub Actions workflow runs the same logic as a redundant fallback
 
 ### Setup (GitHub Actions fallback only)
 
@@ -416,7 +421,7 @@ flowchart TD
     B -->|Upload preset config| H[Cloudinary CDN]
     B -->|Worker cron every 15 min| B
     B -->|Publish scheduled posts| G
-    I[GitHub Actions - every 15 min] -->|Read pending posts| D
+    I[GitHub Actions - best effort] -->|Read pending posts| D
     I -->|Publish fallback| G
 ```
 
@@ -431,8 +436,8 @@ flowchart TD
 **Cron lifecycle:**
 
 1. The Cloudflare scheduler fires the Worker on a `*/15 * * * *` cron
-2. The Worker queries `scheduled_posts` for rows with `status = 'pending'` and `scheduled_at <= now()`
-3. Each due post is set to `publishing` (mutex), published to Instagram, then set to `published` or `failed`
+2. The Worker queries `scheduled_posts` for rows with `status = 'pending'` and `scheduled_at <= now()`, and for `publishing` rows whose claim is older than 20 minutes
+3. Each post is claimed (`publishing`, with `claimed_at` and `attempts`), published to Instagram, then set to `published`, back to `pending` for a retry, or `failed`
 4. A separate `0 0 * * *` cron refreshes expiring Instagram access tokens across all users
 
 ---
@@ -447,7 +452,7 @@ twiligent/
 │       ├── deploy-backend.yml       # Type check, test, then Wrangler deploy on backend, shared or root config changes
 │       ├── deploy-frontend.yml      # Type check, test, then Cloudflare Pages deploy on frontend, shared or root config changes
 │       ├── deploy-site.yml          # Type check, test, then deploy the public site to the twiligent-site Pages project
-│       └── publish-scheduled.yml    # Scheduled post fallback (every 15 minutes, Node 24)
+│       └── publish-scheduled.yml    # Scheduled post fallback (asks for every 15 minutes, Node 24)
 │
 ├── backend/
 │   ├── app.ts                       # createApp(): the ordered middleware pipeline and route groups
@@ -474,6 +479,7 @@ twiligent/
 │   │   ├── safeAccount.ts           # Strips tokens and cookies from accounts in responses
 │   │   ├── oauthState.ts            # HMAC-signed Instagram OAuth state
 │   │   ├── analyticsMath.ts         # Shared analytics formulas
+│   │   ├── scheduledPublishing.ts   # Lease, retry and container rules shared with the GitHub Actions script
 │   │   └── rateLimit/               # Rate limit rules, algorithms and Lua scripts
 │   ├── types/
 │   │   ├── env.ts                   # Env: Worker secrets and bindings

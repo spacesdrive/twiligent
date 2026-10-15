@@ -32,8 +32,11 @@ create table scheduled_posts (
   account_id text not null references accounts(id) on delete cascade,
   status text not null default 'pending',
   scheduled_at timestamptz not null,
+  claimed_at timestamptz,
+  attempts integer not null default 0,
   data jsonb
 );
+create index scheduled_posts_user_id_idx on scheduled_posts(user_id);
 create index scheduled_posts_due_idx on scheduled_posts(status, scheduled_at);
 
 create table tracked_posts (
@@ -101,6 +104,27 @@ alter table settings enable row level security;
 alter table scheduled_posts enable row level security;
 alter table tracked_posts enable row level security;
 ```
+
+## Upgrading an existing instance
+
+Twiligent's schedulers record when a run claimed a post (`claimed_at`) and how many times it tried (`attempts`), so a run that stops halfway is taken over and a passing problem is retried. If your `scheduled_posts` table has no `claimed_at` column, run this in the **SQL Editor** before you deploy the new version of the Worker. It is safe to run more than once:
+
+```sql
+alter table public.scheduled_posts
+  add column if not exists claimed_at timestamptz,
+  add column if not exists attempts integer not null default 0;
+
+-- posts stuck before this change have no saved container, so nothing can tell whether they went out
+update public.scheduled_posts
+set status = 'failed',
+    data = data || jsonb_build_object('error', 'Publishing was interrupted before Twiligent tracked it. Check Instagram before scheduling this post again.')
+where status = 'publishing' and claimed_at is null;
+
+create index if not exists scheduled_posts_user_id_idx on public.scheduled_posts (user_id);
+create index if not exists scheduled_posts_due_idx on public.scheduled_posts (status, scheduled_at);
+```
+
+Posts that were stuck in Publishing are marked failed with a note to check Instagram first, because nothing recorded whether they went out.
 
 ### Why row level security with no policies
 

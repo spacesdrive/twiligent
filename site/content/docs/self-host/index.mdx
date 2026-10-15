@@ -8,7 +8,7 @@ If you signed in to a Twiligent link someone gave you, you do not need any of th
 
 ## How the pieces fit
 
-Twiligent has two parts. The **frontend** is the website people sign in to, hosted on Cloudflare Pages. The **backend** is a Cloudflare Worker that talks to YouTube, Instagram and Reddit, stores data in Supabase, and publishes scheduled posts every 15 minutes. All secrets live in the backend; the frontend only holds values that are safe to be public.
+Twiligent has two parts. The **frontend** is the website people sign in to, hosted on Cloudflare Pages. The **backend** is a Cloudflare Worker that talks to YouTube, Instagram and Reddit, stores data in Supabase, and publishes scheduled posts every 15 minutes, trying again when Instagram has a passing problem. All secrets live in the backend; the frontend only holds values that are safe to be public.
 
 The repository has a third folder, `site`, which is the project's own public website and these docs. You do not need it to run Twiligent.
 

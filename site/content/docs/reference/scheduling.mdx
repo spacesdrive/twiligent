@@ -2,29 +2,53 @@ export const meta = { title: 'How scheduling works', description: 'What happens 
 
 ## For members
 
-Nothing to set up. Pick a time, choose **Schedule post**, and close the browser if you like. The server publishes the post within 15 minutes after the time you picked.
+Nothing to set up. Pick a time, choose **Schedule post**, and close the browser if you like. The server publishes the post within 15 minutes after the time you picked. If Instagram or the network has a passing problem, it tries again on its next two runs.
 
 ## For administrators
 
-Deploying the backend is all that is required. The Worker's cron trigger runs every 15 minutes and publishes every post that is due. The GitHub workflow is an optional second runner for extra reliability.
+Deploying the backend is all that is required. The Worker's cron trigger runs every 15 minutes and publishes every post that is due. The GitHub workflow is an optional second runner that catches posts the Worker missed, but GitHub decides when its runs start, often hours late.
 
 ### The lifecycle of a post
 
 | Step | Status | What happens |
 | --- | --- | --- |
 | 1 | <Badge>pending</Badge> | The file is on Cloudinary and the post is saved with its time. |
-| 2 | <Badge>publishing</Badge> | A scheduler claims the post. Only one scheduler can claim it, so it is published once. |
-| 3 | <Badge>published</Badge> | Instagram accepted it. The Instagram media ID is saved. |
-| 3 | <Badge>failed</Badge> | Instagram rejected it. The reason is saved and shown in the Error column. |
+| 2 | <Badge>publishing</Badge> | A scheduler claims the post for up to 20 minutes. Only one scheduler can hold it, so it is published once. |
+| 3 | <Badge>published</Badge> | Instagram accepted it. The Instagram media ID is saved, unless the post was found already published through its container. |
+| 3 | <Badge>pending</Badge> | A passing problem, such as a timeout or a temporary Instagram error. The reason is saved and the next run tries again, up to 3 attempts in all. |
+| 3 | <Badge>failed</Badge> | Instagram rejected it, the account cannot publish, or the third attempt failed too. The reason is saved and shown in the Error column. |
 
 ### Two schedulers, one post
 
-Both schedulers claim a post by changing it from `pending` to `publishing` in a single database update that only succeeds while it is still pending. Whichever arrives second finds nothing to claim and skips it.
+A scheduler claims a post in a single database update that sets it to `publishing`, records the time of the claim and counts the attempt. The update only succeeds while the post is exactly as the scheduler found it, so whichever arrives second finds nothing to claim and skips it.
+
+Each claim lasts 20 minutes. Both schedulers stop within 14 minutes, so a post still `publishing` after 20 minutes belongs to a run that stopped halfway, and the next run takes it over.
+
+### How a post is never published twice
+
+Before publishing, the scheduler saves the ID of the Instagram media container it created. A run that takes a post over, or that hits an error after the container exists, first asks Instagram for the container's status:
+
+| Container status | What the scheduler does |
+| --- | --- |
+| `PUBLISHED` | Marks the post published. It is already on Instagram. |
+| `FINISHED` | Publishes that same container. |
+| `IN_PROGRESS` | Waits for Instagram to finish processing. |
+| `EXPIRED` | Creates a new container. |
+| `ERROR` | Marks the post failed. |
+
+If Instagram cannot be asked, the post stays `publishing` and a run after the 20 minute claim decides. A post is never marked failed while it might already be live.
+
+### Retries
+
+Timeouts, an unreachable Instagram, database errors and Instagram's temporary error codes send the post back to `pending`, with the reason in the Error column, and the next run tries again. After the third attempt the post fails with the reason and `Publishing stopped after 3 attempts; schedule the post again.` Errors that will not pass on their own, such as Instagram rejecting the media or an account without access, fail the post at once.
 
 ### When posts stay pending
 
 - The Worker was never deployed, or its cron triggers were removed. Check **Triggers** on the Worker in the Cloudflare dashboard.
 - `SUPABASE_SERVICE_KEY` or `SUPABASE_URL` is wrong on the Worker.
+- The database is missing the `claimed_at` and `attempts` columns. Run the upgrade SQL in [Supabase](/docs/self-host/supabase#upgrading-an-existing-instance).
 - The connected Instagram account's access was removed. Reconnect it.
 
-Twiligent warns members when a post is more than 30 minutes overdue and tells them to contact the administrator.
+Twiligent warns members when a post is more than 30 minutes late and not yet published, and tells them to contact the administrator. A retried post counts from its last attempt, and a post counts as stuck in `publishing` 50 minutes after its claim: the 20 minute claim plus 30 minutes in which a run should have taken it over.
+
+Edits and deletes are refused while a post is `publishing`, checked in the same database write, so a post is never changed or removed in the middle of being published.

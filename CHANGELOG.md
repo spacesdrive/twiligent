@@ -10,6 +10,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 - The docs home at `/docs` shows the Introduction page again; before, it showed the docs frame with an empty page
+- A scheduled post no longer stays in Publishing for ever when a publishing run stops halfway; the next run takes it over 20 minutes later (#63)
+- A scheduled post that reached Instagram is no longer marked failed when Instagram's reply is lost; the scheduler saves the Instagram container and checks it before deciding or publishing again, so the post is not published twice (#64)
+- A passing problem, such as a timeout or a temporary Instagram error, no longer fails a scheduled post at once; it goes back to Pending and is tried on the next two runs, and the row shows "Trying again on the next run" (#64)
+- The app and docs no longer promise that the GitHub backup publishes within 15 minutes; GitHub often starts these runs hours late, and the server's own scheduler is the one that publishes within 15 minutes (#65)
+- Deleting or editing a scheduled post at the moment a scheduler claims it can no longer remove or change a post that is being published (#66)
+- The overdue alert in Publish also counts posts stuck in Publishing for more than 50 minutes, and counts a retried post from its last attempt (#63)
+
+### Changed
+
+- `scheduled_posts` has two new columns, `claimed_at` and `attempts`, and the two indexes the schema always listed; existing instances run the upgrade SQL in the Supabase SQL editor before deploying (ADR-037)
+- The GitHub Actions scheduler runs at minutes 7, 22, 37 and 52, one run at a time, with a 14 minute limit; a private copy uses `7,37 * * * *` (#65)
 
 ---
 

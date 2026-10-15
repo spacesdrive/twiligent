@@ -6,8 +6,9 @@ export const meta = { title: 'Troubleshooting', description: 'Common problems fo
 | "This Instagram account is already connected" | It is already in your Accounts list. Refresh it there instead. |
 | Instagram connection says the account type is wrong | Switch the Instagram account to Business or Creator, then connect again. |
 | Reddit says the session cookie is invalid or expired | Remove the Reddit account and add it again with a fresh reddit_session cookie. |
-| A scheduled post stays Pending | Email the administrator. |
-| A scheduled post Failed | Read the Error column. Common causes are a file Instagram does not accept or an account whose access was removed. |
+| A scheduled post shows Trying again on the next run | Nothing to do. The last attempt hit a passing problem, and the server tries again on its next run. |
+| A scheduled post stays Pending more than 30 minutes past its time, or Publishing more than 50 minutes | Email the administrator. |
+| A scheduled post Failed | Read the Error column. Common causes are a file Instagram does not accept, an account whose access was removed, or a problem that lasted three attempts. Schedule it again once the cause is fixed. |
 | Publish says Cloudinary is not set up | Only the administrator can fix this. Let them know. |
 | Analytics will not load | Use Refresh on the account. If it keeps failing, contact the administrator; the platform key may be missing. |
 

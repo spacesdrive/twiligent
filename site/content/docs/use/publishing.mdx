@@ -22,18 +22,18 @@ Under **When**, keep **Publish now**, or pick **Schedule** and set a date and ti
 
 ## What happens after you schedule
 
-The file uploads straight away. The server publishes the post within 15 minutes after the time you picked, even when your browser is closed. There is nothing for a member to set up.
+The file uploads straight away. The server publishes the post within 15 minutes after the time you picked, even when your browser is closed. If Instagram or the network has a passing problem, the server tries again on its next two runs. There is nothing for a member to set up.
 
 | Status | Meaning |
 | --- | --- |
-| **Pending** | Waiting for its time. You can edit the caption and time, or delete it. |
-| **Publishing** | The server is publishing it right now. |
+| **Pending** | Waiting for its time. You can edit the caption and time, or delete it. When it shows **Trying again on the next run**, the last attempt hit a passing problem and the Error column says which. |
+| **Publishing** | The server is publishing it right now. It cannot be edited or deleted until it finishes. |
 | **Published** | Live on Instagram. |
-| **Failed** | Instagram rejected it. The Error column says why. |
+| **Failed** | Instagram rejected it, or three attempts in a row hit a problem. The Error column says why. Schedule the post again once the cause is fixed. |
 
-<Callout type="warning" title="Pending for more than 30 minutes past its time?">
+<Callout type="warning" title="More than 30 minutes late and not yet published?">
 
-The scheduler on the server is not running. Email the administrator with the time of the post. Publish shows the same warning automatically.
+A post still Pending 30 minutes after its time (or after its last attempt), or still Publishing 50 minutes after it started, means the scheduler on the server is not running. Email the administrator with the time of the post. Publish shows the same warning automatically.
 
 </Callout>
 

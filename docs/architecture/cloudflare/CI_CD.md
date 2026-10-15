@@ -8,7 +8,7 @@
 | `deploy-backend.yml` | Pushes to `main` that touch the backend, manual | Type check and test the backend, then deploy the Worker |
 | `deploy-frontend.yml` | Pushes to `main` that touch the frontend, manual | Type check and test the frontend, then build and deploy the app to Pages |
 | `deploy-site.yml` | Pushes to `main` that touch the site, manual | Type check and test the public site, then build and deploy it to Pages |
-| `publish-scheduled.yml` | Every 15 minutes, manual | Publish due Instagram posts (fallback for the Worker cron) |
+| `publish-scheduled.yml` | Minutes 7, 22, 37 and 52 of every hour (when GitHub starts them), manual | Publish due Instagram posts (fallback for the Worker cron) |
 
 Nothing compiles TypeScript ahead of time: Wrangler and Vite strip the types while bundling, and Node strips them when it runs tests and `scripts/publish-scheduled.ts`. None of those steps checks types, so each workflow that ships code runs `tsc` first.
 
@@ -106,8 +106,14 @@ The site needs no other secret: every value it shows is public and lives in the 
 ### `publish-scheduled.yml`
 
 **Trigger:**
-- `schedule: cron('*/15 * * * *')` - every 15 minutes
+- `schedule: cron('7,22,37,52 * * * *')` - every 15 minutes, away from the top of the hour
 - `workflow_dispatch` - manual trigger from GitHub Actions UI
+
+**Run limits:**
+- `concurrency: { group: publish-scheduled, cancel-in-progress: false }` - one run at a time; a run that starts while another is busy waits instead of cancelling it
+- `timeout-minutes: 14` - under the 20 minute claim lease, so a later run never takes over a post this run is still publishing. The script stops its Instagram calls at 12 minutes so every claimed post still gets its outcome saved
+
+**Timing is best effort.** GitHub's documentation says scheduled runs can be delayed under high load, most of all at the start of every hour, and that queued runs can be dropped. Over two days this repository's runs came every 3 to 5 hours. The minutes 7, 22, 37 and 52 follow GitHub's advice to avoid the top of the hour, but the workflow still only catches what the Worker missed when GitHub gets to it.
 
 **What it does:**
 1. Checkout repo
@@ -118,7 +124,9 @@ The site needs no other secret: every value it shows is public and lives in the 
 - `SUPABASE_URL` - the Supabase project URL
 - `SUPABASE_SERVICE_KEY` - service-role key (needed to query all users' posts)
 
-**This is the GitHub Actions fallback for the Worker cron.** Both this workflow and the Worker cron (`*/15`) run the same publishing logic against the same Supabase table. The `publishing` status mutex prevents double-publishing.
+**This is the GitHub Actions fallback for the Worker cron.** Both this workflow and the Worker cron (`*/15`) run the same publishing logic against the same Supabase table. A conditional claim with a 20 minute lease prevents double-publishing and lets a later run take over a post whose run died; see `docs/architecture/data-flows/SCHEDULING.md`.
+
+The script imports the shared rules from `backend/lib/scheduledPublishing.ts` by relative path, and the workflow runs whatever is on the default branch, so a change to that file reaches this workflow on its next run without a deploy.
 
 The script is type-checked by `npm run typecheck` (`scripts/tsconfig.json`) in `ci.yml`, not by this workflow.
 

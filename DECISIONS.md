@@ -768,3 +768,28 @@ Records every significant architectural decision, the alternatives considered, a
 - Google's button is drawn by the app with Google's real button over it at near-zero opacity. Clicks, keyboard focus and the sign-in stay Google's, but the visible label must follow Google's text options (`googleButtonLabel()`), and the button still only works on origins listed in the OAuth client.
 - Self-hosters without the Send Email hook get Supabase's own Magic Link email, which holds a link rather than a code unless they add `{{ .Token }}` to its template, and is limited to a few emails an hour.
 - With signups turned off in Supabase, the code is refused for unknown addresses, which keeps private instances private without a separate setting.
+
+---
+
+## ADR-037: Leases, bounded retries and a container check for scheduled publishing
+
+**Date:** 2026-10-15
+**Status:** Accepted
+
+**Decision:** A scheduler's claim on a post is a lease. One conditional UPDATE sets `status = 'publishing'`, `claimed_at = now()` and `attempts = attempts + 1`, and only matches the post as the run listed it (still `pending`, or `publishing` with the same expired `claimed_at`) with the same `attempts`. Each run lists due `pending` posts and `publishing` posts whose claim is older than 20 minutes, and takes the stale ones over. 20 minutes is above the Worker cron's 14 minute deadline and the GitHub job's new 14 minute `timeout-minutes` (the script also stops Instagram calls at 12 minutes), so a live run is never taken over; this follows pg-boss `expireInSeconds` and Graphile Worker's `locked_at`. The Instagram container id is saved in `data.containerId` right after the container is created. A run that holds a post with a saved container, and every failure after the container exists, first reads the container's `status_code` from the Graph API: `PUBLISHED` marks the post published, `FINISHED` publishes the same container, `IN_PROGRESS` waits, `EXPIRED` creates a new one and `ERROR` fails the post. An unreadable status leaves the post `publishing` for a run after the lease. This follows Postiz, which resolves in-flight posts before publishing them again, and Meta's documented container status `PUBLISHED`. Temporary failures (timeouts, unreachable Instagram, database errors, Graph codes -1, 1, 2, 4, 17, 341 and 9007, a container still processing or expired) go back to `pending` with the reason in `error`, up to 3 attempts, as pg-boss `retryLimit` and BullMQ `maxStalledCount` bound retries and stalls; definite failures fail at once. A post taken over after its third attempt is only checked on Instagram, never started again. Delete only removes a post that is not `publishing`, and edits only apply while it is `pending`, each checked in the same statement as the write. The rules live in `backend/lib/scheduledPublishing.ts`, which imports nothing at runtime, so `scripts/publish-scheduled.ts` imports it by relative path and stays free of npm packages. The GitHub workflow runs at minutes 7, 22, 37 and 52, one run at a time.
+
+**Context:** The atomic claim from `pending` to `publishing` (ADR-007, ADR-025) stopped two schedulers publishing the same post, but left four gaps (#62). A run that died after claiming left the post in `publishing` for ever, with nothing to take it over (#63). A publish whose reply was lost (a timeout after Instagram had published) marked a post `failed` although it was on Instagram, and nothing could tell, because the container id was not kept (#64). The GitHub fallback asked for a run every 15 minutes, but GitHub's documentation says scheduled runs are delayed under load, most of all at the start of every hour, and can be dropped; this repository's runs came every 3 to 5 hours over two days, and the app promised 15 minutes (#65). Delete and edit checked the status, then wrote in a second statement, so a claim in between could delete or change a post that was being published (#66).
+
+**Alternatives considered:**
+- A job queue (pg-boss, Graphile Worker, BullMQ) instead of the table. Each brings these patterns, but needs a long-running worker process or a dependency the Worker and the dependency-free script cannot carry.
+- Retrying a stuck post without checking Instagram first. Simpler, but a post whose publish succeeded and whose reply was lost would be published twice.
+- Marking every stuck post `failed` after the lease. It never double-publishes, but it reports published posts as failed and leaves passing problems to the user.
+- A second copy of the rules inside the script. It keeps the script self-contained, but the two schedulers would drift.
+
+**Trade-offs:**
+- The database gains `claimed_at` and `attempts` and the two `scheduled_posts` indexes, created with SQL the owner runs in the Supabase SQL editor before the code is deployed. Posts stuck in `publishing` before the change have no saved container, so the upgrade marks them `failed` with a message to check Instagram first.
+- A post found published through its container keeps `publishedMediaId` as `null`, because the container status does not carry the media id.
+- A post whose run died waits out the 20 minute lease before the next run takes it over, so it can go out up to about 35 minutes late.
+- Retries add up to two more scheduler runs, about half an hour, before a temporary failure is reported.
+- The GitHub fallback's timing stays best effort. Moving it off the top of the hour follows GitHub's advice, but GitHub still decides when the runs start; the docs and the app now say the Worker publishes within 15 minutes and the fallback catches missed posts later.
+- A file in `backend/lib/` is now part of the script's runtime, so it must stay import-free; `docs/guidelines/TYPESCRIPT.md` records the rule.

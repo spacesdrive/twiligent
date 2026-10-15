@@ -42,6 +42,7 @@ import type { EmailQuotaRepository } from '../repositories/emailQuotaRepository.
 
 - Backend and test imports are relative and end in `.ts`. Frontend imports use `@/` for `src/` (no extension) and `./` for siblings; files that Node tests import use relative `.ts` paths only.
 - Pure logic that can be tested goes in a plain `.ts` file with no JSX (`frontend/src/lib/passwords.ts`, `backend/services/email/authEmails.ts`), so Node can run its test directly.
+- `scripts/` has no dependencies. A rule a script shares with the Worker lives in an import-free `backend/lib/` helper that the script imports by relative path (`scripts/publish-scheduled.ts` imports `../backend/lib/scheduledPublishing.ts`); that helper imports nothing at runtime. See `docs/guidelines/TYPESCRIPT.md`.
 
 ## Comments
 

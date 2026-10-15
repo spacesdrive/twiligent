@@ -43,7 +43,7 @@ A service receives only what it uses: repositories, the cleaned `AppConfig` from
 | `instagramConnect` | `instagramConnectService.ts` | accounts | `authorizationUrl`, `userIdFromState`, `connect`, plus `configured` and `accountsPageUrl` |
 | `authEmail` | `authEmailService.ts` | email quota (Redis, the fail-fast client) | `send(hook, webhookId)` (Supabase Auth's Send Email hook; no user) |
 
-Every user-scoped method takes the verified `userId` as its first argument. Methods that need one of the user's records load it with a `...ForUser` repository method and throw `NotFoundError` when it is missing or on the wrong platform, so another user's record is never found. `scheduledPublisher` and `tokenRefresh` are the only services that use the cross-user repository methods (`listAll`, `findById`, `updateById`, `listDue`, `claim`).
+Every user-scoped method takes the verified `userId` as its first argument. Methods that need one of the user's records load it with a `...ForUser` repository method and throw `NotFoundError` when it is missing or on the wrong platform, so another user's record is never found. `scheduledPublisher` and `tokenRefresh` are the only services that use the cross-user repository methods (`listAll`, `findById`, `updateById`, `listDue`, `listStale`, `claim`).
 
 ### Accounts (`accountService.ts`, `accountFactory.ts`)
 
@@ -93,7 +93,9 @@ A notice that hits a cap is skipped with a warning instead of failing, because t
 
 `publishableAccount(account)` in `publishingService.ts` is the one check both publishers use: the account must be Instagram (`NotFoundError` otherwise) and have an `igUserId` and token (`ValidationError` otherwise). `cloudinaryConfig()` throws `NotConfiguredError` (503) when the Worker has no Cloudinary settings.
 
-`scheduledPublisher.publishDue()` lists due posts, claims each one atomically (`pending` to `publishing`, so the GitHub Actions scheduler and the cron never publish the same post), creates the container, waits for Reels and Stories to finish processing, publishes, and marks the post `published` or `failed`. See `docs/architecture/data-flows/SCHEDULING.md`.
+`scheduledPublisher.publishDue()` lists due posts and posts whose claim is older than the 20 minute lease, and claims each one in a single conditional update (`publishing`, `claimed_at = now`, `attempts + 1`), so the GitHub Actions scheduler and the cron never hold the same post and a run that died is taken over. It saves the container id before publishing, and a post with a saved container is checked on Instagram first, so a post that already went out is never published again. It then waits for Reels and Stories to finish processing, publishes, and marks the post `published`. A temporary failure goes back to `pending` for up to 3 attempts, a definite one or the third attempt marks it `failed`, and an outcome it cannot confirm leaves the post `publishing` for a run after the lease. The rules it shares with `scripts/publish-scheduled.ts` live in `backend/lib/scheduledPublishing.ts`. See `docs/architecture/data-flows/SCHEDULING.md`.
+
+`scheduledPostService.update` and `remove` re-check the status inside the write: `updatePendingForUser` only changes a `pending` post and `deleteForUser` never deletes a `publishing` one, so a scheduler claiming the post in between cannot be overridden. The errors stay `Can only edit pending posts` and `Cannot delete a post that is currently publishing`.
 
 ---
 
