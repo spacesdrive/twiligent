@@ -5,17 +5,19 @@
   "description": "Self-hosted social media analytics and publishing dashboard",
   "workspaces": [
     "backend",
-    "frontend"
+    "frontend",
+    "site"
   ],
   "scripts": {
     "dev": "concurrently --names backend,frontend --prefix-colors blue,magenta \"npm:dev:backend\" \"npm:dev:frontend\"",
     "dev:backend": "npm run dev --workspace backend",
     "dev:frontend": "npm run dev --workspace frontend",
-    "build": "npm run build --workspace frontend",
-    "test": "npm test --workspace backend && npm test --workspace frontend",
+    "build": "npm run build --workspace frontend && npm run build --workspace site",
+    "test": "npm test --workspace backend && npm test --workspace frontend && npm test --workspace site",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "typecheck": "npm run typecheck --workspace backend && npm run typecheck --workspace frontend && tsc -p scripts/tsconfig.json"
+    "typecheck": "npm run typecheck --workspace backend && npm run typecheck --workspace frontend && npm run typecheck --workspace site && tsc -p scripts/tsconfig.json",
+    "dev:site": "npm run dev --workspace site"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

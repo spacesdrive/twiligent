@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Twiligent: every channel, folded into one clear picture</title>
+    <meta name="description" content="Twiligent puts your YouTube, Instagram and Reddit numbers side by side, publishes and schedules your Instagram posts, and runs on accounts you own." />
+    <link rel="icon" href="/brand/twiligent-favicon.svg" type="image/svg+xml" />
+    <link rel="icon" href="/brand/twiligent-favicon-32.png" type="image/png" sizes="32x32" />
+    <link rel="apple-touch-icon" href="/brand/twiligent-app-icon-dusk-180.png" />
+    <meta name="theme-color" content="#140E10" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#F7F3EF" media="(prefers-color-scheme: light)" />
+    <link rel="preload" href="/fonts/sora-latin-600-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/manrope-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <!-- the ribbon crop on the hero panel is the largest thing on a phone screen, so it is fetched before the script asks for it -->
+    <link rel="preload" href="/brand/twiligent-mark-white.svg" as="image" fetchpriority="high" />
+    <script>
+      // the saved choice, or the system setting, before the first paint so the page never flashes the other theme
+      try {
+        var saved = localStorage.getItem('twiligent-theme');
+        var dark = saved ? saved === 'dark' : !window.matchMedia('(prefers-color-scheme: light)').matches;
+        document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+      } catch (e) {
+        document.documentElement.dataset.theme = 'dark';
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

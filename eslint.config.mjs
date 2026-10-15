@@ -30,6 +30,27 @@ export default defineConfig([
     },
   },
   {
+    files: ['site/**/*.{ts,tsx}'],
+    extends: [
+      reactHooks.configs.flat.recommended,
+      reactRefresh.configs.vite,
+    ],
+    languageOptions: {
+      globals: globals.browser,
+    },
+    rules: {
+      // no exception for capitalised names: TypeScript sees JSX use, so an unused component is reported like any variable
+      '@typescript-eslint/no-unused-vars': 'error',
+      'react-refresh/only-export-components': ['error', { allowConstantExport: true }],
+    },
+  },
+  {
+    files: ['site/vite.config.ts', 'site/build/**/*.ts', 'site/tests/**/*.ts'],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
+  {
     // the worker runs on the web platform, so it gets service worker globals, not node
     files: ['backend/**/*.ts'],
     languageOptions: {
