@@ -67,17 +67,19 @@ export function createScheduledPostService({ posts, publisher }: ScheduledPostDe
             return post;
         },
 
-        // only a post that has not started publishing can change
+        // only a post that has not started publishing can change; the repository checks again in the same write
         async update(userId, postId, changes) {
             const post = await findOwned(userId, postId);
             if (post.status !== 'pending') throw new ValidationError('Can only edit pending posts');
             const updates: Partial<ScheduledPost> = { ...changes };
             if (changes.scheduledAt) updates.scheduledAt = new Date(changes.scheduledAt).toISOString();
-            await posts.updateForUser(postId, updates, userId);
+            if (!(await posts.updatePendingForUser(postId, updates, userId))) throw new ValidationError('Can only edit pending posts');
             return posts.findForUser(postId, userId);
         },
 
         async remove(userId, postId) {
+            if (await posts.deleteForUser(postId, userId)) return;
+            // nothing was deleted: the post is gone, or a scheduler is publishing it
             const post = await findOwned(userId, postId);
             if (post.status === 'publishing') throw new ValidationError('Cannot delete a post that is currently publishing');
             await posts.deleteForUser(postId, userId);
