@@ -7,15 +7,15 @@ export interface AuthErrorLike {
 
 export interface EmailErrorNotice {
   message: string;
-  // true when no more codes can be emailed today, so Google sign-in is the way in
+  // true when no more codes can be emailed today, so Google or a password is the way in
   emailLimitReached: boolean;
 }
 
 const WAIT_SECONDS = /\d+\s+seconds?/i;
 
-const LIMIT_WITH_GOOGLE = 'Twiligent has sent all the verification emails it can today. Sign in with Google instead, or try again tomorrow.';
+const LIMIT_WITH_GOOGLE = 'Twiligent has sent all the codes it can email today. Continue with Google or use your password instead, or try again tomorrow.';
 const WRONG_CODE = 'The code is wrong or has expired. Check it, or send a new one.';
-const LIMIT_WITHOUT_GOOGLE = 'Twiligent has sent all the verification emails it can today. Try again tomorrow.';
+const LIMIT_WITHOUT_GOOGLE = 'Twiligent has sent all the codes it can email today. Use your password instead, or try again tomorrow.';
 
 // Supabase's own email limit and the Worker's daily cap both answer 429; the per-address cap and the short wait between codes do too,
 // but those messages already say what to do and Google would not help

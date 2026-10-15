@@ -12,6 +12,8 @@ export interface AuthContextValue {
     signUp: (email: string, password: string) => ReturnType<Auth['signUp']>;
     verifySignUpCode: (email: string, code: string) => ReturnType<Auth['verifyOtp']>;
     resendSignUpCode: (email: string) => ReturnType<Auth['resend']>;
+    sendSignInCode: (email: string) => ReturnType<Auth['signInWithOtp']>;
+    verifySignInCode: (email: string, code: string) => ReturnType<Auth['verifyOtp']>;
     sendPasswordReset: (email: string) => ReturnType<Auth['resetPasswordForEmail']>;
     verifyPasswordResetCode: (email: string, code: string) => ReturnType<Auth['verifyOtp']>;
     updatePassword: (password: string) => ReturnType<Auth['updateUser']>;
@@ -35,15 +37,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const signIn = (email: string, password: string) =>
         supabase.auth.signInWithPassword({ email, password });
 
+    // a password account, for instances that do not email sign-in codes; with Confirm email on, a code confirms it
     const signUp = (email: string, password: string) =>
         supabase.auth.signUp({ email, password });
 
-    // the code from the confirmation email; a correct one confirms the address and signs the user in
     const verifySignUpCode = (email: string, code: string) =>
         supabase.auth.verifyOtp({ email, token: code, type: 'signup' });
 
     const resendSignUpCode = (email: string) =>
         supabase.auth.resend({ type: 'signup', email });
+
+    // emails a 6-digit code that signs the user in, creating the account the first time an address is used
+    const sendSignInCode = (email: string) =>
+        supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true } });
+
+    // a correct code also confirms an address that signed up with a password and never confirmed it
+    const verifySignInCode = (email: string, code: string) =>
+        supabase.auth.verifyOtp({ email, token: code, type: 'email' });
 
     // the email's link signs the user in on Settings, where the Password section sets the new password
     const sendPasswordReset = (email: string) =>
@@ -63,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const signOut = () => supabase.auth.signOut();
 
     return (
-        <AuthContext.Provider value={{ session, user: session?.user ?? null, signIn, signUp, verifySignUpCode, resendSignUpCode, sendPasswordReset, verifyPasswordResetCode, updatePassword, signInWithGoogle, signOut }}>
+        <AuthContext.Provider value={{ session, user: session?.user ?? null, signIn, signUp, verifySignUpCode, resendSignUpCode, sendSignInCode, verifySignInCode, sendPasswordReset, verifyPasswordResetCode, updatePassword, signInWithGoogle, signOut }}>
             {children}
         </AuthContext.Provider>
     );

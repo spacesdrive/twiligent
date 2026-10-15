@@ -14,6 +14,18 @@ export interface GoogleIdConfiguration {
 
 export type GoogleButtonText = 'signin_with' | 'signup_with' | 'continue_with' | 'signin';
 
+const BUTTON_LABELS: Record<GoogleButtonText, string> = {
+  signin_with: 'Sign in with Google',
+  signup_with: 'Sign up with Google',
+  continue_with: 'Continue with Google',
+  signin: 'Sign in',
+};
+
+// the words Google's own button shows for each text option, for the button drawn in the app's style over it
+export function googleButtonLabel(text: GoogleButtonText): string {
+  return BUTTON_LABELS[text];
+}
+
 export interface GoogleButtonConfiguration {
   type?: 'standard' | 'icon';
   theme?: 'outline' | 'filled_blue' | 'filled_black';

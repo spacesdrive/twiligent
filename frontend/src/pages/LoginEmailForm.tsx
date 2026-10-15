@@ -1,5 +1,4 @@
 import type { FormEvent } from 'react';
-import { ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
@@ -33,7 +32,6 @@ export default function LoginEmailForm({ copy, email, onEmailChange, loading, on
       <Button type="submit" size="lg" className="mt-2 w-full" disabled={loading}>
         {loading && <Spinner className="size-4" />}
         {loading ? copy.busy : copy.submit}
-        {!loading && <ArrowRight data-icon="inline-end" />}
       </Button>
     </form>
   );

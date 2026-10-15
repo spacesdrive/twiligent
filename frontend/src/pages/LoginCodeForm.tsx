@@ -1,5 +1,5 @@
 import type { FormEvent, ReactNode } from 'react';
-import { ArrowRight, RotateCw } from 'lucide-react';
+import { RotateCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
@@ -52,7 +52,6 @@ export default function LoginCodeForm({
       <Button type="submit" size="lg" className="mt-2 w-full" disabled={loading || !ready || code.length !== CODE_LENGTH}>
         {loading && <Spinner className="size-4" />}
         {loading ? copy.busy : copy.submit}
-        {!loading && <ArrowRight data-icon="inline-end" />}
       </Button>
       <Button type="button" variant="ghost" size="sm" className="self-center" onClick={onResend} disabled={resending || resendIn > 0}>
         {resending ? <Spinner className="size-4" /> : <RotateCw data-icon="inline-start" />}
