@@ -335,6 +335,8 @@ Tag releases after changes or patches:
 - New features: minor version (v1.1.0)
 - Breaking changes: major version (v2.0.0)
 
+Every tag gets a GitHub Release page with short notes that explain the release in plain words and say what an instance owner must do; the format is in `docs/workflows/GIT.md` (Release notes).
+
 Do not add "Co-Authored-By: Claude" lines to commit messages. Commits should show only the project author.
 
 ---
@@ -392,7 +394,7 @@ When anything changes, update every relevant docs file from the table below. The
 | Third-party work with an attribution licence added (icons, fonts, images) | `THIRD_PARTY_NOTICES.md` (author, source, licence link, changes made) |
 | Architecture decision made | `DECISIONS.md` (append only, never delete) |
 | Any feature shipped | `CHANGELOG.md` (append to Unreleased section) |
-| Release tagged | `CHANGELOG.md` (convert Unreleased to version number with date) |
+| Release tagged | `CHANGELOG.md` (convert Unreleased to version number with date), a GitHub Release page for the tag (`docs/workflows/GIT.md`, Release notes) |
 | Any planned feature added or changed | `ROADMAP.md` |
 | Writing or design rule changed | `docs/WRITING_STANDARDS.md`, this file (Writing and Design Standards section) |
 | Code style or a layer's shape changed (a new pattern to copy, a naming, comment or message rule) | `docs/guidelines/CODE_STYLE.md`, the guideline it details (`TYPESCRIPT.md`, `REACT.md`, `HONO.md`, `NAMING.md`), this file (Code Style section) |
