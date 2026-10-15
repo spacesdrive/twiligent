@@ -1,0 +1,49 @@
+export const meta = { title: 'Deploy the frontend', description: 'Build the website and host it on Cloudflare Pages.' }
+
+<Callout type="note" title="These values are public">
+
+Anything starting with `VITE_` is built into the website and visible to every visitor. Only use the publishable Supabase key here, never the secret one.
+
+</Callout>
+
+<Steps>
+<Step title="Create frontend/.env">
+
+```text
+VITE_SUPABASE_URL=https://abcdefgh.supabase.co
+VITE_SUPABASE_ANON_KEY=sb_publishable_...
+VITE_API_URL=https://twiligent.your-subdomain.workers.dev/api
+VITE_ADMIN_EMAIL=you@example.com
+```
+
+`VITE_API_URL` is your backend URL followed by `/api`. Leaving off `/api` is the most common setup mistake.
+
+</Step>
+<Step title="Build and deploy">
+
+Run these in the top folder of the project. If you have not installed yet, run `npm install` there first; it covers the website too.
+
+```bash
+npm run build --workspace frontend
+cd frontend
+npx wrangler pages deploy dist --project-name=twiligent
+```
+
+`npm run build --workspace frontend` runs Vite with `frontend/vite.config.ts` and writes the site to `frontend/dist`. (A plain `npm run build` also works, but it builds the `site` folder too, which you do not need.) The first time, Wrangler creates the Pages project and prints the address, for example `https://twiligent.pages.dev`.
+
+</Step>
+<Step title="Point the backend at it">
+
+Set `FRONTEND_URL` on the Worker to that address. The backend only answers requests from it, and Instagram sign-in returns members there:
+
+```bash
+cd ../backend
+npx wrangler secret put FRONTEND_URL
+```
+
+</Step>
+</Steps>
+
+The repository also has a `site` folder: the Twiligent project's own public website and these docs. Your instance does not need it, so there is nothing to build or deploy for it.
+
+Open the site, create your account and connect something. For a custom domain, add it under the Pages project's **Custom domains** tab and update `FRONTEND_URL` to match. To keep the `pages.dev` address working too, add it to `ALLOWED_ORIGINS` on the Worker.

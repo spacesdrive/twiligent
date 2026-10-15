@@ -1,0 +1,18 @@
+export const meta = { title: 'Upstash Redis (optional)', description: 'A cache that saves YouTube and Instagram quota, makes pages load faster, and makes rate limits exact.' }
+
+Twiligent works fully without Redis. Every cache read falls back to a live API call, and Redis errors are ignored. If Redis stops answering, the backend gives up on it within a few seconds and stops trying for half a minute, so pages keep loading at the speed of the live APIs. Add it when you have several members or many YouTube channels.
+
+The backend also limits how fast each person and each network can call it, so one client cannot use up the shared YouTube quota. With Redis, those limits are counted once across every Cloudflare location. Without it, each Worker instance counts on its own, so the limits are looser but still apply. There is nothing to configure.
+
+<Steps>
+<Step title="Create a database">
+
+Sign in at [console.upstash.com](https://console.upstash.com), choose **Create database**, and pick the region closest to your Supabase project.
+
+</Step>
+<Step title="Copy the REST values">
+
+On the database page, in the **REST API** section, copy **UPSTASH_REDIS_REST_URL** and **UPSTASH_REDIS_REST_TOKEN**. They are used under exactly those names.
+
+</Step>
+</Steps>

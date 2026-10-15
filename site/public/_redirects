@@ -1,0 +1,16 @@
+# the app moved to app.twiligent.ujjwal.fyi; links to its old pages land there
+/login                      https://app.twiligent.ujjwal.fyi/login 301
+/accounts                   https://app.twiligent.ujjwal.fyi/accounts 301
+/settings                   https://app.twiligent.ujjwal.fyi/settings 301
+/upload                     https://app.twiligent.ujjwal.fyi/upload 301
+/videos                     https://app.twiligent.ujjwal.fyi/videos 301
+/shorts                     https://app.twiligent.ujjwal.fyi/shorts 301
+/reels                      https://app.twiligent.ujjwal.fyi/reels 301
+/tracked-content            https://app.twiligent.ujjwal.fyi/tracked-content 301
+/tracked-content/*          https://app.twiligent.ujjwal.fyi/tracked-content/:splat 301
+/reddit-posts               https://app.twiligent.ujjwal.fyi/reddit-posts 301
+/reddit-posts/*             https://app.twiligent.ujjwal.fyi/reddit-posts/:splat 301
+/reddit-tracked             https://app.twiligent.ujjwal.fyi/tracked-content 301
+/channel/*                  https://app.twiligent.ujjwal.fyi/channel/:splat 301
+/instagram/*                https://app.twiligent.ujjwal.fyi/instagram/:splat 301
+/reddit/*                   https://app.twiligent.ujjwal.fyi/reddit/:splat 301

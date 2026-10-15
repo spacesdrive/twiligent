@@ -1,0 +1,30 @@
+export const meta = { title: 'How scheduling works', description: 'What happens between choosing Schedule post and the post going live.' }
+
+## For members
+
+Nothing to set up. Pick a time, choose **Schedule post**, and close the browser if you like. The server publishes the post within 15 minutes after the time you picked.
+
+## For administrators
+
+Deploying the backend is all that is required. The Worker's cron trigger runs every 15 minutes and publishes every post that is due. The GitHub workflow is an optional second runner for extra reliability.
+
+### The lifecycle of a post
+
+| Step | Status | What happens |
+| --- | --- | --- |
+| 1 | <Badge>pending</Badge> | The file is on Cloudinary and the post is saved with its time. |
+| 2 | <Badge>publishing</Badge> | A scheduler claims the post. Only one scheduler can claim it, so it is published once. |
+| 3 | <Badge>published</Badge> | Instagram accepted it. The Instagram media ID is saved. |
+| 3 | <Badge>failed</Badge> | Instagram rejected it. The reason is saved and shown in the Error column. |
+
+### Two schedulers, one post
+
+Both schedulers claim a post by changing it from `pending` to `publishing` in a single database update that only succeeds while it is still pending. Whichever arrives second finds nothing to claim and skips it.
+
+### When posts stay pending
+
+- The Worker was never deployed, or its cron triggers were removed. Check **Triggers** on the Worker in the Cloudflare dashboard.
+- `SUPABASE_SERVICE_KEY` or `SUPABASE_URL` is wrong on the Worker.
+- The connected Instagram account's access was removed. Reconnect it.
+
+Twiligent warns members when a post is more than 30 minutes overdue and tells them to contact the administrator.

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://twiligent.ujjwal.fyi/sitemap.xml

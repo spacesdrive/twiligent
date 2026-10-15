@@ -1,0 +1,66 @@
+export const meta = { title: 'Deploy the backend', description: 'Put the Worker on Cloudflare and give it every secret.' }
+
+<Steps>
+<Step title="Install and sign in">
+
+Run these in the top folder of your copy of the project. One `npm install` there installs the backend and the website together; do not run it inside `backend`, `frontend` or `site`.
+
+```bash
+npm install
+cd backend
+npx wrangler login
+```
+
+A browser window opens to sign in to Cloudflare. Create a free account if you do not have one. Run the rest of the commands on this page from the `backend` folder.
+
+</Step>
+<Step title="Deploy once to get your URL">
+
+```bash
+npx wrangler deploy
+```
+
+Wrangler builds the Worker from `server.ts`, the entry file named in `wrangler.toml`, and prints the Worker address, for example `https://twiligent.your-subdomain.workers.dev`. This is your **backend URL**.
+
+If you changed the code, run `npm run typecheck` in the top folder first. Wrangler does not check TypeScript types, so this is the step that catches a type error before it reaches Cloudflare.
+
+</Step>
+<Step title="Add the secrets">
+
+Run each command and paste the value when asked. Values are encrypted by Cloudflare and never shown again.
+
+```bash
+npx wrangler secret put SUPABASE_URL
+npx wrangler secret put SUPABASE_SERVICE_KEY
+npx wrangler secret put SUPABASE_ANON_KEY
+npx wrangler secret put YOUTUBE_API_KEY
+npx wrangler secret put INSTAGRAM_APP_ID
+npx wrangler secret put INSTAGRAM_APP_SECRET
+npx wrangler secret put CLOUDINARY_CLOUD_NAME
+npx wrangler secret put CLOUDINARY_UPLOAD_PRESET
+npx wrangler secret put BACKEND_URL
+npx wrangler secret put FRONTEND_URL
+```
+
+If you use Redis, also add `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN`. Skip any platform you do not use. `FRONTEND_URL` is the address of the site from the next page; you can set it after deploying the frontend, but the site cannot reach the backend until you do. If the site is served from more than one address, list the others in `ALLOWED_ORIGINS`, separated by commas. To email verification codes, add the secrets in [Email verification codes](/docs/self-host/email-codes).
+
+</Step>
+<Step title="Check it is running">
+
+Open `https://your-backend-url/api/health`. It should return `{"status":"ok"}` with a timestamp. Every response also carries an `X-Request-Id` header; server error messages in the app show the same id, and you can find its log line with `npx wrangler tail`.
+
+</Step>
+</Steps>
+
+## Scheduled jobs
+
+Deploying also registers two cron triggers from `wrangler.toml`. You do not need to set anything up.
+
+| Schedule | What it does |
+| --- | --- |
+| `*/15 * * * *` | Publishes scheduled Instagram posts that are due. |
+| `0 0 * * *` | Renews Instagram access tokens before they expire. |
+
+## Run it locally
+
+Create `backend/.dev.vars` with the same names and values, one per line as `NAME=value`, with `BACKEND_URL=http://localhost:8787` and `FRONTEND_URL=http://localhost:5173`. Then run `npm run dev` in the top folder of the project to start the backend on port 8787 and the website on port 5173 together, or `npm run dev:backend` for the backend alone. The file is ignored by Git; never commit it.

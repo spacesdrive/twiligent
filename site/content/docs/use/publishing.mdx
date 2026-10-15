@@ -1,0 +1,48 @@
+export const meta = { title: 'Publish and schedule', description: 'Post photos, Reels and Stories to Instagram now or later.' }
+
+## Publish a single post
+
+<Steps>
+<Step title="Choose the type and file">
+
+Open **Publish**, pick **Photo**, **Reel** or **Story**, then choose the file. Photos must be JPEG; Reels must be MP4 or MOV in 9:16; Stories accept either.
+
+</Step>
+<Step title="Write the caption and settings">
+
+Write the caption (up to 2,200 characters). In the panel on the right, pick the account and optionally add alt text, collaborators, tagged people, a location, and for Reels a cover image and audio name.
+
+</Step>
+<Step title="Publish now or schedule">
+
+Under **When**, keep **Publish now**, or pick **Schedule** and set a date and time. Then choose **Publish now** or **Schedule post**.
+
+</Step>
+</Steps>
+
+## What happens after you schedule
+
+The file uploads straight away. The server publishes the post within 15 minutes after the time you picked, even when your browser is closed. There is nothing for a member to set up.
+
+| Status | Meaning |
+| --- | --- |
+| **Pending** | Waiting for its time. You can edit the caption and time, or delete it. |
+| **Publishing** | The server is publishing it right now. |
+| **Published** | Live on Instagram. |
+| **Failed** | Instagram rejected it. The Error column says why. |
+
+<Callout type="warning" title="Pending for more than 30 minutes past its time?">
+
+The scheduler on the server is not running. Email the administrator with the time of the post. Publish shows the same warning automatically.
+
+</Callout>
+
+## Bulk upload
+
+Choose **Bulk upload** to add many files at once. Give each file its own caption or apply one caption to all, then either publish them one after another or **spread them out** from a start time at an interval such as once a day.
+
+## Limits
+
+- Instagram allows 100 posts per account in any 24 hours.
+- Photos up to 8MB; videos up to 300MB and 15 minutes; Stories up to 60 seconds.
+- Publishing needs Cloudinary set up by the administrator. If it is missing, Publish says so.

@@ -1,0 +1,49 @@
+export const meta = { title: 'GitHub automation', description: 'Deploy on every push, and keep a second scheduler running in case the Worker misses a run.' }
+
+Both parts are optional. Fork [spacesdrive/twiligent](https://github.com/spacesdrive/twiligent) to your own GitHub account first. Add secrets in your fork under **Settings**, **Secrets and variables**, **Actions**, **New repository secret**.
+
+## Deploy on push
+
+The workflows `deploy-backend.yml` and `deploy-frontend.yml` deploy whenever `backend/` or `frontend/` changes on `main`. A change to `shared/`, `tsconfig.base.json`, `package.json` or `package-lock.json` in the top folder deploys both, because both parts use those files. Each workflow installs the packages itself, so there is nothing to install on GitHub. Before deploying, each one checks the TypeScript types and runs the tests, and stops if either fails. A third workflow, `ci.yml`, runs the same checks on every pull request and on pushes to other branches.
+
+| Secret | Where to get it |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | Cloudflare dashboard, **My Profile**, **API Tokens**, **Create Token**, template **Edit Cloudflare Workers**. Add the **Cloudflare Pages: Edit** permission. |
+| `CLOUDFLARE_ACCOUNT_ID` | Cloudflare dashboard, Workers and Pages overview, shown on the right as Account ID. |
+| `VITE_SUPABASE_URL` | Same value as in frontend/.env. |
+| `VITE_SUPABASE_ANON_KEY` | Same value as in frontend/.env. |
+| `VITE_API_URL` | Same value as in frontend/.env, ending in /api. |
+| `VITE_ADMIN_EMAIL` | Optional. Your contact address. |
+| `VITE_GOOGLE_CLIENT_ID` | Optional. Shows Continue with Google on the sign-in page. |
+
+Worker secrets stay in Cloudflare; the backend workflow does not need them.
+
+## Backup scheduler
+
+The Worker already publishes scheduled posts. `publish-scheduled.yml` runs the same job from GitHub every 15 minutes as a safety net, with `node scripts/publish-scheduled.ts` on Node 24. The script needs no packages, so the workflow installs nothing. Each post is claimed before publishing, so it is never posted twice even when both run at once.
+
+<Steps>
+<Step title="Add two secrets">
+
+`SUPABASE_URL` and `SUPABASE_SERVICE_KEY`, with the same values the Worker uses.
+
+</Step>
+<Step title="Enable workflows">
+
+Forks start with Actions turned off. Open the **Actions** tab and choose **I understand my workflows, go ahead and enable them**. Then open **Instagram Scheduled Publisher** and choose **Enable workflow**.
+
+</Step>
+<Step title="Run it once">
+
+Choose **Run workflow**. It worked if the run finishes with a green check and the log says `No posts due for publishing` or shows a Results line.
+
+</Step>
+</Steps>
+
+<Callout type="tip" title="Private forks">
+
+Public repositories get unlimited Actions minutes. A private fork gets 2,000 free minutes a month; change the schedule in the workflow to every 30 minutes to stay inside it.
+
+</Callout>
+
+The in-app version of these steps, with links filled in for your GitHub username, is in **Settings**, **Scheduled publishing**.

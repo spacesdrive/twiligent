@@ -1,0 +1,404 @@
+@import 'tailwindcss';
+
+/* the brand faces, self-hosted; all three families are SIL Open Font License 1.1 */
+@font-face {
+  font-family: 'Sora';
+  src: url('/fonts/sora-latin-600-normal.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Sora';
+  src: url('/fonts/sora-latin-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Manrope';
+  src: url('/fonts/manrope-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Manrope';
+  src: url('/fonts/manrope-latin-500-normal.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Manrope';
+  src: url('/fonts/manrope-latin-600-normal.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Manrope';
+  src: url('/fonts/manrope-latin-700-normal.woff2') format('woff2');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/fonts/jetbrains-mono-latin-400-normal.woff2') format('woff2');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  src: url('/fonts/jetbrains-mono-latin-500-normal.woff2') format('woff2');
+  font-weight: 500;
+  font-display: swap;
+}
+
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* the ribbon's palette under its brand names; see docs/brand-notes.md */
+@theme {
+  --color-twiligent-red: #c11f2f;
+  --color-ember: #9a1423;
+  --color-oxblood: #5e0b14;
+  --color-dusk: #140e10;
+  --color-paper: #f7f3ef;
+  --color-afterglow: #e8a33d;
+
+  /* the platforms' own colours, only for their marks */
+  --color-youtube: #ff0000;
+  --color-instagram: #e1306c;
+  --color-reddit: #ff4500;
+
+  --font-display: 'Sora', 'Manrope', system-ui, sans-serif;
+  --font-sans: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-panel: 32px;
+
+  --ease-fold: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-panel: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+:root,
+:root[data-theme='light'] {
+  --surface: var(--color-paper);
+  --surface-raised: #ffffff;
+  --surface-sunken: #efe8e3;
+  --line: #e2d8d3;
+  --line-strong: #8c7e83;
+  --dusk-panel: var(--color-dusk);
+  --ink: var(--color-dusk);
+  --ink-muted: #5f5357;
+  --ink-inverse: #ffffff;
+  --accent: var(--color-twiligent-red);
+  --accent-hover: var(--color-ember);
+  --on-accent: #ffffff;
+  --accent-text: #b01c2b;
+  --accent-soft: #fbe7e8;
+  --afterglow-text: #7f4c00;
+  --afterglow-soft: #fcefd9;
+  --success: #1e7349;
+  --success-soft: #e2f3e9;
+  --info: #2c5a99;
+  --info-soft: #e5edf8;
+  --focus-ring: #c11f2f;
+  --shadow-sm: 0 1px 2px #140e100f, 0 1px 3px #140e1014;
+  --shadow-md: 0 4px 12px #140e1014, 0 1px 3px #140e100f;
+  --shadow-lg: 0 16px 40px #140e101f;
+  --shadow-window: 0 1px 2px #140e100f, 0 24px 48px -24px #140e1040;
+  color-scheme: light;
+}
+
+:root[data-theme='dark'] {
+  --surface: var(--color-dusk);
+  --surface-raised: #1f1719;
+  --surface-sunken: #0c0809;
+  --line: #3a2f33;
+  --line-strong: #86777c;
+  --dusk-panel: #2a1d21;
+  --ink: #f5efeb;
+  --ink-muted: #b8abaf;
+  --ink-inverse: var(--color-dusk);
+  --accent: var(--color-twiligent-red);
+  --accent-hover: #d93444;
+  --on-accent: #ffffff;
+  --accent-text: #ff7a82;
+  --accent-soft: #3a1419;
+  --afterglow-text: #f2b65e;
+  --afterglow-soft: #3a2a12;
+  --success: #5fcb95;
+  --success-soft: #12301f;
+  --info: #8db3ec;
+  --info-soft: #16243a;
+  --focus-ring: #ff7a82;
+  --shadow-sm: 0 1px 2px #00000066;
+  --shadow-md: 0 4px 16px #00000080;
+  --shadow-lg: 0 16px 48px #000000a6;
+  --shadow-window: 0 1px 0 #ffffff0a inset, 0 30px 60px -30px #000000cc;
+  color-scheme: dark;
+}
+
+/* semantic names the components use, mapped onto the theme variables */
+@theme inline {
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-dusk-panel: var(--dusk-panel);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-inverse: var(--ink-inverse);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-on-accent: var(--on-accent);
+  --color-accent-text: var(--accent-text);
+  --color-accent-soft: var(--accent-soft);
+  --color-afterglow-text: var(--afterglow-text);
+  --color-afterglow-soft: var(--afterglow-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-danger: var(--accent-text);
+  --color-ring: var(--focus-ring);
+  --color-background: var(--surface);
+  --color-foreground: var(--ink);
+  --color-card: var(--surface-raised);
+  --color-muted: var(--surface-sunken);
+  --color-muted-foreground: var(--ink-muted);
+  --color-border: var(--line);
+  --color-primary: var(--accent);
+  --color-primary-foreground: var(--on-accent);
+  --color-destructive: var(--accent-text);
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-window: var(--shadow-window);
+}
+
+@layer base {
+  html {
+    background-color: var(--surface);
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    margin: 0;
+    background-color: var(--surface);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  * {
+    border-color: var(--line);
+  }
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
+  }
+  ::selection {
+    background: var(--accent-soft);
+  }
+}
+
+/* headlines: Sora SemiBold, sentence case, the brand's tight tracking */
+@utility display {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+/* the one uppercase style */
+@utility eyebrow {
+  font-family: var(--font-sans);
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* the only gradient: the ribbon turning into shadow; covers and hero bands only */
+@utility bg-fold {
+  background-image: linear-gradient(120deg, #c11f2f 0%, #c11f2f 35%, #9a1423 70%, #5e0b14 100%);
+}
+
+/* the page column, 1280px wide with the Activepieces gutters */
+@utility container-page {
+  width: 100%;
+  max-width: 1280px;
+  margin-inline: auto;
+  padding-inline: 1.25rem;
+  @media (width >= 48rem) {
+    padding-inline: 1.5rem;
+  }
+  @media (width >= 64rem) {
+    padding-inline: 2rem;
+  }
+}
+
+/* the brand's entrance: a short slide along the ribbon's 60 degree diagonal while fading in */
+@keyframes fold-in {
+  from {
+    opacity: 0;
+    transform: translate(-6px, 10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.fold-in {
+  animation: fold-in 220ms var(--ease-fold) both;
+}
+
+/* a menu's contents settling into the navbar panel */
+@keyframes nav-panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.nav-panel-in {
+  animation: nav-panel-in 280ms var(--ease-panel) both;
+}
+
+/* the product pictures: a chart line draws, its fill rises in under it, then the latest point pops in;
+   a parent with chart-play starts them, and --delay staggers one picture's parts */
+@keyframes chart-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes chart-fill {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ping-soft {
+  from {
+    opacity: 0.5;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(2.8);
+  }
+}
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+.grow-x {
+  transform-origin: left;
+  animation: grow-x 1s var(--ease-panel) var(--delay, 0ms) both;
+}
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+.chart-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+}
+.chart-fill,
+.chart-dot {
+  opacity: 0;
+}
+.chart-dot {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+.chart-play .chart-line {
+  animation: chart-draw 1.6s var(--ease-panel) var(--delay, 0ms) forwards;
+}
+.chart-play .chart-fill {
+  animation: chart-fill 1s var(--ease-panel) calc(var(--delay, 0ms) + 300ms) forwards;
+}
+.chart-play .chart-dot {
+  animation: pop-in 420ms var(--ease-panel) calc(var(--delay, 0ms) + 1350ms) forwards;
+}
+.rise-in {
+  animation: rise-in 640ms var(--ease-panel) var(--delay, 0ms) both;
+}
+.ping-soft {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ping-soft 2.2s var(--ease-panel) infinite;
+}
+.caret {
+  animation: caret-blink 1s step-end infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fold-in {
+    animation: fade-in 220ms linear both;
+  }
+  .nav-panel-in,
+  .rise-in,
+  .grow-x,
+  .ping-soft,
+  .caret {
+    animation: none;
+  }
+  .chart-play .chart-line {
+    animation: none;
+    stroke-dashoffset: 0;
+  }
+  .chart-play .chart-fill,
+  .chart-play .chart-dot {
+    animation: none;
+    opacity: 1;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* shiki writes both themes as variables; the page theme picks one */
+.shiki,
+.shiki span {
+  color: var(--shiki-light);
+}
+[data-theme='dark'] .shiki,
+[data-theme='dark'] .shiki span {
+  color: var(--shiki-dark);
+}
