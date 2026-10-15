@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { useTheme } from 'next-themes';
 import { Skeleton } from '@/components/ui/skeleton';
-import { GOOGLE_CLIENT_ID, createNonce, loadGoogleIdentity } from '@/lib/googleIdentity';
+import { GOOGLE_CLIENT_ID, createNonce, googleButtonLabel, loadGoogleIdentity } from '@/lib/googleIdentity';
 import type { GoogleButtonConfiguration } from '@/lib/googleIdentity';
 
 // Google renders its own button inside an iframe; its width is capped at 400px by Google.
@@ -13,10 +12,12 @@ export interface GoogleSignInButtonProps {
   text?: GoogleButtonConfiguration['text'];
 }
 
+// Google's own button cannot take the app's style (in dark mode it puts the G on a white square), so the app draws
+// an outline button and lays Google's real button over it, nearly transparent: clicks, keyboard focus and the
+// sign-in itself stay Google's, and hover and focus show on the button underneath
 export default function GoogleSignInButton({ onCredential, onError, text = 'continue_with' }: GoogleSignInButtonProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const handlers = useRef({ onCredential, onError });
-  const { resolvedTheme } = useTheme();
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -40,7 +41,7 @@ export default function GoogleSignInButton({ onCredential, onError, text = 'cont
         containerRef.current.replaceChildren();
         gsi.renderButton(containerRef.current, {
           type: 'standard',
-          theme: resolvedTheme === 'dark' ? 'filled_black' : 'outline',
+          theme: 'outline',
           size: 'large',
           shape: 'rectangular',
           text,
@@ -54,14 +55,21 @@ export default function GoogleSignInButton({ onCredential, onError, text = 'cont
     })();
 
     return () => { cancelled = true; };
-  }, [resolvedTheme, text]);
+  }, [text]);
 
   if (!GOOGLE_CLIENT_ID) return null;
 
   return (
-    <div className="relative min-h-10 w-full">
-      {!ready && <Skeleton className="absolute inset-0 h-10 rounded-control" />}
-      <div ref={containerRef} className="flex w-full justify-center [color-scheme:normal]" />
+    <div className="group relative h-(--control-h-lg) w-full">
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 flex items-center justify-center gap-2.5 rounded-control border border-line-control bg-surface-raised text-sm font-medium text-ink shadow-sm transition-colors duration-(--duration-base) group-hover:bg-surface-hover group-has-[iframe:focus]:ring-3 group-has-[iframe:focus]:ring-ring/50"
+      >
+        <img src="/icons/google-g.svg" alt="" className="size-4.5" draggable={false} />
+        {googleButtonLabel(text)}
+      </span>
+      {!ready && <Skeleton className="absolute inset-0 rounded-control" />}
+      <div ref={containerRef} className="absolute inset-0 flex justify-center overflow-hidden opacity-[0.01] [color-scheme:normal]" />
     </div>
   );
 }

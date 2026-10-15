@@ -2,19 +2,21 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { cleanCode, emailErrorNotice, isExistingAccount, passwordErrorMessage } from '../../src/lib/authErrors.ts';
 
+// the Worker's daily cap message, which the page replaces with its own
 const WORKER_LIMIT = 'Twiligent has sent all the verification emails it can today. Sign in with Google instead, or try again tomorrow.';
+const WITH_GOOGLE = 'Twiligent has sent all the codes it can email today. Continue with Google or use your password instead, or try again tomorrow.';
 
-test('the daily cap points to Google when the Google button is on the page', () => {
-  assert.deepEqual(emailErrorNotice({ message: WORKER_LIMIT, status: 429 }, true), { message: WORKER_LIMIT, emailLimitReached: true });
+test('the daily cap points to Google and the password when the Google button is on the page', () => {
+  assert.deepEqual(emailErrorNotice({ message: WORKER_LIMIT, status: 429 }, true), { message: WITH_GOOGLE, emailLimitReached: true });
   assert.deepEqual(emailErrorNotice({ message: WORKER_LIMIT, status: 429 }, false), {
-    message: 'Twiligent has sent all the verification emails it can today. Try again tomorrow.',
+    message: 'Twiligent has sent all the codes it can email today. Use your password instead, or try again tomorrow.',
     emailLimitReached: true,
   });
 });
 
 test('Supabase\'s own email limit reads the same way', () => {
   const notice = emailErrorNotice({ message: 'email rate limit exceeded', status: 429, code: 'over_email_send_rate_limit' }, true);
-  assert.deepEqual(notice, { message: WORKER_LIMIT, emailLimitReached: true });
+  assert.deepEqual(notice, { message: WITH_GOOGLE, emailLimitReached: true });
 });
 
 test('a short wait between codes and the per-address cap keep their own messages', () => {
