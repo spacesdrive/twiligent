@@ -61,31 +61,42 @@ User creates a scheduled post
        INSERT INTO scheduled_posts (id, user_id, account_id, status='pending', scheduled_at, data)
         │
         ▼
-2. Every 15 minutes, one of two schedulers fires:
-   A. Cloudflare Worker cron -> runScheduledJob() -> scheduledPublisher.publishDue()
-   B. GitHub Actions -> node scripts/publish-scheduled.ts -> direct Supabase REST calls
+2. A scheduler run starts:
+   A. Cloudflare Worker cron, every 15 minutes -> runScheduledJob() -> scheduledPublisher.publishDue()
+   B. GitHub Actions, asked for at minutes 7, 22, 37 and 52 but often started hours late
+      -> node scripts/publish-scheduled.ts -> direct Supabase REST calls
         │
         ▼
-3. Scheduler queries due posts:
+3. Scheduler queries due posts and stale claims:
    SELECT * FROM scheduled_posts WHERE status='pending' AND scheduled_at <= now()
+   SELECT * FROM scheduled_posts WHERE status='publishing' AND claimed_at < now() - 20 minutes
         │
         ▼
-4. For each due post:
-   a. UPDATE scheduled_posts SET status='publishing' WHERE id=:id AND status='pending'
-      (This is the mutex - prevents double-publish if both schedulers fire simultaneously)
-   
+4. For each candidate:
+   a. UPDATE scheduled_posts SET status='publishing', claimed_at=now(), attempts=attempts+1
+      WHERE id=:id AND attempts=:attempts AND (status='pending' OR claimed_at=:expiredClaim)
+      (Only one run gets the row; a stale claim is taken over by the next run)
+
    b. SELECT account WHERE id=:accountId
       (Gets the accessToken from accounts.data; a missing account, an account on another
       platform or a missing token fails the post with a message that says which)
-   
-   c. Execute the publish pipeline (same as immediate publishing, steps 2-4 above); the
-      schedulers poll a Reel or Story up to 60 times (3 minutes) and fail the post if it
-      is still processing
-   
-   d. On success: UPDATE SET status='published', data.publishedMediaId=:id, data.publishedAt=:ts
-   
-   e. On failure: UPDATE SET status='failed', data.error=:message
+
+   c. If data.containerId is saved, read its status_code first: PUBLISHED marks the post
+      published, FINISHED publishes that container, EXPIRED creates a new one, ERROR fails it
+
+   d. Execute the publish pipeline (same as immediate publishing, steps 2-4 above), saving
+      data.containerId right after the container is created; the schedulers poll a Reel or
+      Story up to 60 times (3 minutes)
+
+   e. On success: UPDATE SET status='published', data.publishedMediaId=:id, data.publishedAt=:ts
+
+   f. On failure: read the container status if there is one. PUBLISHED marks the post
+      published; an unreadable status leaves it publishing for a run after the lease.
+      A temporary failure sets status='pending' with data.error, up to 3 attempts;
+      a definite failure or the third attempt sets status='failed', data.error=:message
 ```
+
+The full failure table is in `docs/architecture/data-flows/SCHEDULING.md`.
 
 ## Media Type Differences
 
@@ -102,5 +113,5 @@ User creates a scheduled post
 | Container `ERROR` | Instagram processing failed (bad codec, too long, etc.) | User must re-upload |
 | Container `EXPIRED` | >24 hours since container was created | User must re-create container |
 | `media_publish` rejected | Usually quota exceeded or invalid containerId; the Worker answers 502 (`UPSTREAM_ERROR`) with Instagram's message | Check publishing limit |
-| Processing timeout | The container was still processing after the last poll | Try again later, or use a shorter or smaller video |
-| `status=failed` in scheduled post | Any of the above, plus `accessToken` expired | Re-connect the account |
+| Processing timeout | The container was still processing after the last poll | A scheduled post is retried on the next run, up to 3 attempts; otherwise try again later, or use a shorter or smaller video |
+| `status=failed` in scheduled post | Any of the above, plus `accessToken` expired, or a temporary failure on the third attempt | Re-connect the account if needed, then schedule the post again |

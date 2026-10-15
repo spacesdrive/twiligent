@@ -106,9 +106,14 @@ Cloudflare scheduler fires cron trigger
           -> createServices(service-role Supabase, Redis, config, cron context)
           -> if cron === '*/15 * * * *':
               scheduledPublisher.publishDue()
-                  -> posts.listDue()            [no userId filter - scans all users]
-                  -> for each post: posts.claim(id), then create, wait for and publish the container
+                  -> posts.listDue(), posts.listStale(cutoff)   [no userId filter - scans all users;
+                                                                 stale = publishing, claim older than 20 minutes]
+                  -> for each post: posts.claim(post)           [publishing, claimed_at = now, attempts + 1;
+                                                                 null when another run won]
+                  -> check a saved container first, else create it and save data.containerId,
+                     then wait for and publish the container
                   -> posts.updateById(id, { status: 'published' })
+                     or back to 'pending' for a temporary failure (up to 3 attempts), or 'failed'
           -> if cron === '0 0 * * *':
               tokenRefresh.refreshExpiringInstagramTokens()
                   -> accounts.listAll()         [all users, Instagram accounts with a token]

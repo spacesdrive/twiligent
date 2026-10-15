@@ -202,6 +202,7 @@ Read `docs/guidelines/CODE_STYLE.md` before writing code and run its checklist b
 - Backend failures are typed errors from `lib/errors.ts` with a message a person can act on; frontend failures are toasts that start with what failed (`Couldn't save the password.`) and add the reason; success toasts confirm in past tense (`Password saved`)
 - Formatting follows the file: 4 spaces in `backend/`, 2 elsewhere, single quotes, semicolons, trailing commas
 - Pure logic goes in a plain `.ts` helper (`lib/`) so Node can test it; markup used twice becomes a component; copy that changes by mode lives in a typed table
+- `scripts/` stays free of npm packages but may import a `backend/lib/` helper that imports nothing at runtime, so both schedulers share one set of rules (`scheduledPublishing.ts`)
 - Tests use `node:test` with sentence names that describe behaviour, live in `tests/` mirroring the source path, and use the smallest typed fake
 - When the code and `CODE_STYLE.md` disagree, update the guide in the same change
 

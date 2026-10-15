@@ -38,20 +38,24 @@ export async function runScheduledJob(cron: string, env: Env): Promise<void> {
 **Function:** `scheduledPublisher.publishDue()` in `backend/services/scheduledPublisher.ts`
 
 **What it does:**
-1. Lists due posts with `scheduledPostRepository.listDue()` (`status = 'pending'` and `scheduled_at <= now()`)
-2. For each due post:
-   - Claims it with `scheduledPostRepository.claim()` (pending to `'publishing'`); a post another scheduler already claimed is skipped
+1. Lists due posts with `scheduledPostRepository.listDue()` (`status = 'pending'` and `scheduled_at <= now()`) and stale posts with `listStale(staleClaimCutoff(now))` (`status = 'publishing'` with a claim older than the 20 minute lease)
+2. For each candidate, until the run's 14 minute deadline has passed (after that it claims nothing more):
+   - Claims it with `scheduledPostRepository.claim(post)`: `'publishing'`, `claimed_at = now` and `attempts + 1`, only if the post is still as it was listed. A post another run claimed first is skipped; a stale post that is claimed is taken over and logged
+   - A post taken over after its third attempt is only checked on Instagram, never started again
    - Loads the account with `accountRepository.findById()`, checks it with `publishableAccount()` and builds the container parameters with `buildMediaParams()`
-   - Creates the Graph API container, waits for it (Reels and Stories poll the status every 3 seconds, up to 60 times; other media wait 2 seconds), then publishes it
+   - If the post has a saved `containerId`, reads its status first: `PUBLISHED` marks it published, `FINISHED` publishes that container, `EXPIRED` creates a new one, `ERROR` fails it
+   - Otherwise creates the Graph API container and saves its id in `data.containerId`, waits for it (Reels and Stories poll the status every 3 seconds, up to 60 times; other media wait 2 seconds), then publishes it
    - On success: sets status to `'published'`, stores `publishedMediaId` and `publishedAt` in `data`
-   - On failure: sets status to `'failed'`, stores `error` message in `data`, and logs the failure with the post id
+   - On failure: reads the container status if there is one; `PUBLISHED` means published, an unreadable status leaves the post `'publishing'` for a run after the lease. A temporary failure goes back to `'pending'` with the reason in `error`, up to 3 attempts; a definite failure or the third attempt sets `'failed'`. If saving the outcome fails, the claim stays for the lease
 3. Returns `{ processed, errors }`; the job logs the totals
 
-`backend/tests/services/scheduledPublisher.test.ts` pins this sequence, the log lines and the stored results against a fake Supabase client and Graph API (fixtures and golden snapshots in `backend/tests/fixtures/`).
+The lease, attempt limit and failure rules live in `backend/lib/scheduledPublishing.ts`, shared with the GitHub Actions script. The full failure table is in `docs/architecture/data-flows/SCHEDULING.md`.
 
-**No userId filter** - the publisher operates across all users through the cron-only repository methods (`listDue`, `claim`, `findById`, `updateById`). It uses the service-role Supabase client. The manual trigger (`GET` or `POST /api/process-scheduled`) runs the same `publishDue()`.
+`backend/tests/services/scheduledPublisher.test.ts` pins this sequence, the log lines and the stored results against a fake Supabase client and Graph API (fixtures and golden snapshots in `backend/tests/fixtures/`), and its recovery tests cover lost replies, takeovers and retries.
 
-**Concurrency safety:** The `'publishing'` status acts as a mutex. If the Worker cron and GitHub Actions cron overlap, the second one to claim a post will find it already in `'publishing'` state and skip it (it won't appear in the `status=pending` query).
+**No userId filter** - the publisher operates across all users through the cron-only repository methods (`listDue`, `listStale`, `claim`, `findById`, `updateById`). It uses the service-role Supabase client. The manual trigger (`GET` or `POST /api/process-scheduled`) runs the same `publishDue()`.
+
+**Concurrency safety:** The claim is one conditional UPDATE, so when the Worker cron and GitHub Actions overlap, the second run to claim a post gets no row back and skips it. The 20 minute lease is longer than the 14 minute deadline of both schedulers, so a run that is still working is never taken over.
 
 ### `0 0 * * *` - Instagram Token Auto-Refresh
 
@@ -87,7 +91,7 @@ async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext) {
 
 ## Dual-Scheduler (GitHub Actions Fallback)
 
-The same `*/15` publishing logic also runs via `scripts/publish-scheduled.ts` in GitHub Actions. See `docs/architecture/data-flows/SCHEDULING.md` for details on how both systems coexist safely.
+The same publishing logic also runs via `scripts/publish-scheduled.ts` in GitHub Actions, at minutes 7, 22, 37 and 52 when GitHub starts the runs, which is often hours late. See `docs/architecture/data-flows/SCHEDULING.md` for details on how both systems coexist safely.
 
 ## Adding a New Cron Trigger
 

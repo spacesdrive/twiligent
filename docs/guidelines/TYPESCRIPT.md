@@ -46,6 +46,8 @@ Because Node runs `.ts` files by removing the types, only syntax that can be era
 
 `shared/types` holds types only. It never imports runtime code, so either app can import it with `import type` and nothing from it reaches a bundle. The backend imports it by relative path (`../../shared/types/domain.ts`), the frontend by alias (`@shared/types/domain.ts`), except files that Node tests import, which use the relative path.
 
+`scripts/` installs no packages, so a script may import only `shared/types` (with `import type`) and import-free helpers from `backend/lib/` by relative path. `scripts/publish-scheduled.ts` imports `../backend/lib/scheduledPublishing.ts` this way, so both schedulers follow one copy of the lease, retry and container rules. Such a helper imports nothing at runtime (only `import type`), uses no Worker or Node API, and says in its first comment that a script imports it. `scripts/tsconfig.json` checks it through the import.
+
 When a route's response changes, change its type in `shared/types` first. The type checker then lists every frontend file that reads the old shape.
 
 ## Typing Rules

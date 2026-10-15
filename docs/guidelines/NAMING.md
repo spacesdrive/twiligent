@@ -35,7 +35,7 @@ Use `.tsx` only for files that contain JSX; everything else is `.ts`.
 - Backend validators: `parse` + noun - `parseScheduledPost`, `parseVideoLibraryQuery`
 - Backend service factories: `create` + service name - `createAccountService`, `createScheduledPublisher`; their methods are short verbs, because the service names the noun - `accounts.list`, `accounts.refresh`, `scheduledPosts.removeAll`
 - Backend platform functions: `camelCase` verb + noun - `fetchChannelData()`, `computeVideoAnalytics()`, `createMediaContainer()`
-- Backend repository methods: verb + `ForUser` when scoped to the verified user - `listForUser()`, `findForUser()`, `updateForUser()`, `deleteForUser()`; the cross-user methods for cron jobs have no suffix - `listAll()`, `findById()`, `updateById()`, `listDue()`, `claim()`
+- Backend repository methods: verb + `ForUser` when scoped to the verified user - `listForUser()`, `findForUser()`, `updateForUser()`, `deleteForUser()`; the cross-user methods for cron jobs have no suffix - `listAll()`, `findById()`, `updateById()`, `listDue()`, `listStale()`, `claim()`
 - Frontend API methods: `camelCase` verb + noun - `getAnalytics()`, `createScheduledPost()`, `deleteAccount()`
 - React event handlers: `handle` + PascalCase noun/event - `handleSubmit()`, `handleDeleteClick()`, `handleInputChange()`
 - React custom hooks: `use` + PascalCase noun - `useAppContext()`, `useIsMobile()`

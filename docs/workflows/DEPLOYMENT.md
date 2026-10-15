@@ -13,7 +13,7 @@ A pull request merged into `main` -> GitHub Actions deploys automatically. `main
 | `shared/**` | Backend and frontend workflows | Worker and app (in parallel) |
 | `tsconfig.base.json` | All three workflows | Worker, app and site (in parallel) |
 | Root `package.json` or `package-lock.json` | All three workflows | Worker, app and site (in parallel) |
-| `docs/`, `scripts/`, root `*.md` | None | Nothing deployed |
+| `docs/`, `scripts/`, root `*.md` | None | Nothing deployed (`publish-scheduled.yml` runs `scripts/publish-scheduled.ts` and `backend/lib/scheduledPublishing.ts` from `main` on its next run) |
 
 Monitor deployment status at:  
 `https://github.com/spacesdrive/twiligent/actions`
@@ -65,6 +65,31 @@ npx wrangler pages deploy dist --project-name=twiligent-site
 ```
 
 The site needs no environment variables or secrets. Self-hosters can skip this step: the site is the project's own marketing site and docs, not part of a running instance. See `docs/architecture/cloudflare/PAGES.md`.
+
+## Database Changes
+
+Supabase is not migrated by any workflow. A change to the database is SQL the owner runs in the Supabase SQL editor, and it goes in before the code that needs it is merged, because merging deploys the Worker at once.
+
+### Claim lease and attempts (`scheduled_posts`)
+
+The scheduler fix that adds the claim lease, retries and the container check reads two new columns. Run this in the Supabase SQL editor before merging it:
+
+```sql
+alter table public.scheduled_posts
+  add column if not exists claimed_at timestamptz,
+  add column if not exists attempts integer not null default 0;
+
+-- posts stuck before this change have no saved container, so nothing can tell whether they went out
+update public.scheduled_posts
+set status = 'failed',
+    data = data || jsonb_build_object('error', 'Publishing was interrupted before Twiligent tracked it. Check Instagram before scheduling this post again.')
+where status = 'publishing' and claimed_at is null;
+
+create index if not exists scheduled_posts_user_id_idx on public.scheduled_posts (user_id);
+create index if not exists scheduled_posts_due_idx on public.scheduled_posts (status, scheduled_at);
+```
+
+The columns are additive and the old code ignores them, so running the SQL first is safe. The two indexes were listed in `SCHEMA.md` before but did not exist in production. Check afterwards with `select status, count(*) from public.scheduled_posts group by status;`: no post should be `publishing` without a recent `claimed_at`. See `docs/architecture/database/SCHEMA.md`.
 
 ## Setting Worker Secrets
 
@@ -146,7 +171,7 @@ Open `https://app.twiligent.ujjwal.fyi` (custom domain on the `twiligent` Pages 
 Open `https://twiligent.ujjwal.fyi` (custom domain on the `twiligent-site` Pages project; `twiligent.spacesdrive.cc` 301-redirects here) -> verify the home page renders in light and dark (the theme toggle in the navbar) -> open `/docs`, press Ctrl K and search for `redis` -> open a result. Check that `/sitemap.xml` and `/llms.txt` load and that `https://twiligent.ujjwal.fyi/settings` redirects to `https://app.twiligent.ujjwal.fyi/settings`.
 
 **Scheduled publisher:**  
-GitHub Actions -> "Instagram Scheduled Publisher" -> "Run workflow" -> check run output.
+GitHub Actions -> "Instagram Scheduled Publisher" -> "Run workflow" -> check run output. A post taken over from an expired claim logs `Taken over: the claim from ... expired`. The workflow asks for runs at minutes 7, 22, 37 and 52, one at a time with a 14 minute limit, but GitHub often starts scheduled runs hours late; the Worker cron (`npx wrangler tail`, `scheduled post published`) is the one that publishes within 15 minutes.
 
 ## Addresses: Site and App
 
@@ -193,8 +218,9 @@ For a fresh deployment from this repo:
 6. Install Node 22.18 or newer, run `npm ci` at the repository root, then `npx wrangler login`
 7. Set all Worker secrets (see above)
 8. Set all GitHub Actions secrets (see above)
-9. `npm run typecheck`, then `cd backend && npx wrangler deploy` (first manual deploy)
-10. Verify health endpoint
-11. `npm run build` at the root, then `cd frontend && npx wrangler pages deploy dist --project-name=twiligent`
-12. Verify frontend loads
-13. Add a YouTube channel via AccountManager to verify the full flow
+9. Run the setup SQL from `README.md` in the Supabase SQL editor (tables, the `scheduled_posts` columns and indexes, RLS)
+10. `npm run typecheck`, then `cd backend && npx wrangler deploy` (first manual deploy)
+11. Verify health endpoint
+12. `npm run build` at the root, then `cd frontend && npx wrangler pages deploy dist --project-name=twiligent`
+13. Verify frontend loads
+14. Add a YouTube channel via AccountManager to verify the full flow

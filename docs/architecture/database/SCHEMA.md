@@ -104,16 +104,22 @@ Stores Instagram posts queued for future publishing.
 | `account_id` | text | NOT NULL | FK -> `accounts.id` |
 | `status` | text | NOT NULL | `'pending'`, `'publishing'`, `'published'`, `'failed'` |
 | `scheduled_at` | timestamptz | NOT NULL | UTC timestamp when the post should be published |
+| `claimed_at` | timestamptz | NULL | When a scheduler last claimed the post. A `publishing` post whose claim is older than 20 minutes is taken over by the next run |
+| `attempts` | integer | NOT NULL DEFAULT 0 | How many times a scheduler has claimed the post. The third failed attempt is final |
 | `data` | jsonb | - | Post content and result data (see below) |
+
+`claimed_at` and `attempts` change only in the claim, never through `updateById` or `updatePendingForUser`. The API returns them as `claimedAt` and `attempts` on `ScheduledPost`.
 
 ### Status lifecycle
 
 ```
 pending -> publishing -> published
-                    ↘ failed
+              │      ↘ failed
+              ├─> pending      a passing failure, while attempts < 3
+              └─> publishing   a takeover after the 20 minute lease
 ```
 
-The `publishing` status is a mutex - it prevents double-publishing when both the Worker cron and GitHub Actions scheduler fire at the same time.
+A claim is one UPDATE that sets `status = 'publishing'`, `claimed_at = now()` and `attempts = attempts + 1`, and only matches the post as the scheduler listed it. Two schedulers never hold the same post, and a run that died leaves a claim the next run can take over. See `docs/architecture/data-flows/SCHEDULING.md`.
 
 ### `data` jsonb shape
 
@@ -130,16 +136,49 @@ The `publishing` status is a mutex - it prevents double-publishing when both the
     "userTags": [{ "username": "...", "x": 0.5, "y": 0.5 }],
     "altText": "...",
     "collaborators": ["username1", "username2"],
+    "containerId": "17900000000000001",
     "publishedMediaId": "17841400000000001",
     "publishedAt": "2025-07-01T10:00:00Z",
     "error": "Error message if failed"
 }
 ```
 
-### Indexes recommended
+- `containerId` is the Instagram media container, saved right after it is created and before the scheduler waits or publishes. A later run reads its `status_code` to find out whether the post already went out. It is cleared when the container expired and a retry needs a new one.
+- `publishedMediaId` is `null` when a run found the post already published through the container status, because that status does not carry the media id.
+- `error` is set on a `failed` post, and also on a `pending` post that is being retried, where it holds the reason the last attempt failed.
 
-- `scheduled_posts(user_id)` - user-scoped queries
-- `scheduled_posts(status, scheduled_at)` - the cron scheduler query: `status=pending AND scheduled_at <= now()`
+### Indexes
+
+```sql
+create index if not exists scheduled_posts_user_id_idx on public.scheduled_posts (user_id);
+create index if not exists scheduled_posts_due_idx on public.scheduled_posts (status, scheduled_at);
+```
+
+- `scheduled_posts_user_id_idx` - user-scoped queries
+- `scheduled_posts_due_idx` - the scheduler queries: due posts (`status = 'pending' AND scheduled_at <= now()`) and stale claims (`status = 'publishing'`)
+
+These were listed as recommended before but did not exist in the production database; the upgrade SQL below creates them.
+
+### Upgrade SQL (claim lease and attempts)
+
+Run once in the Supabase SQL editor on an instance created before the claim lease. Run it before deploying the code that reads `claimed_at` and `attempts`.
+
+```sql
+alter table public.scheduled_posts
+  add column if not exists claimed_at timestamptz,
+  add column if not exists attempts integer not null default 0;
+
+-- posts stuck before this change have no saved container, so nothing can tell whether they went out
+update public.scheduled_posts
+set status = 'failed',
+    data = data || jsonb_build_object('error', 'Publishing was interrupted before Twiligent tracked it. Check Instagram before scheduling this post again.')
+where status = 'publishing' and claimed_at is null;
+
+create index if not exists scheduled_posts_user_id_idx on public.scheduled_posts (user_id);
+create index if not exists scheduled_posts_due_idx on public.scheduled_posts (status, scheduled_at);
+```
+
+A new instance gets the columns and indexes from the setup SQL in `README.md` and `site/content/docs/self-host/supabase.mdx`.
 
 ---
 
@@ -255,7 +294,7 @@ All SQL operations live in `backend/repositories/`, one repository per table. Se
 
 ### Available methods
 
-Each repository is built with `createXRepository(supabase)` and returns types from `shared/types/domain.ts`. Methods named `...ForUser` take the verified `userId` and always filter by it. The methods without a `userId` (`listAll`, `findById`, `updateById`, `listDue`, `claim`) reach every user and are only for the cron jobs.
+Each repository is built with `createXRepository(supabase)` and returns types from `shared/types/domain.ts`. Methods named `...ForUser` take the verified `userId` and always filter by it. The methods without a `userId` (`listAll`, `findById`, `updateById`, `listDue`, `listStale`, `claim`) reach every user and are only for the cron jobs.
 
 ```ts
 // Accounts (accountRepository.ts)
@@ -276,11 +315,12 @@ saveForUser(settings: Settings, userId): Promise<void>
 listForUser(userId): Promise<ScheduledPost[]>
 findForUser(id, userId): Promise<ScheduledPost | null>
 listDue(): Promise<ScheduledPost[]>                                   // cron only - pending and overdue, every user
-claim(id): Promise<boolean>                                           // cron only - pending to publishing; false when another scheduler won
+listStale(claimedBefore): Promise<ScheduledPost[]>                    // cron only - publishing with a claim older than the cutoff
+claim(post): Promise<ScheduledPost | null>                            // cron only - the claimed post; null when another run won
 create(post: ScheduledPost, userId): Promise<void>
-updateForUser(id, updates: Partial<ScheduledPost>, userId): Promise<void>
+updatePendingForUser(id, updates: Partial<ScheduledPost>, userId): Promise<boolean> // false when the post is no longer pending
 updateById(id, updates: Partial<ScheduledPost>): Promise<void>        // cron only
-deleteForUser(id, userId): Promise<void>
+deleteForUser(id, userId): Promise<boolean>                           // never deletes a 'publishing' post; false when nothing was deleted
 deleteAllForUser(userId): Promise<{ deleted: number; kept: number }> // skips 'publishing' status posts
 
 // Tracked Content (trackedPostRepository.ts)

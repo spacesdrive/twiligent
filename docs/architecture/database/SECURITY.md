@@ -8,7 +8,7 @@ The backend uses the **service-role key** for all database operations. This key 
 2. Controllers pass that `userId` to services, and every user-scoped repository method (named `...ForUser`) appends `.eq('user_id', userId)` using this verified value
 3. `userId` is never accepted from request body, query params, or any other user-controlled input
 
-**This means a missing `.eq('user_id', userId)` call is a security bug.** The centralization of all queries in `backend/repositories/` makes this auditable: a method that takes a `userId` ends in `ForUser`, and the few that reach every user (`listAll`, `findById`, `updateById`, `listDue`, `claim`) are used only by the cron services. Because ownership is a query filter, another user's record is simply not found (404).
+**This means a missing `.eq('user_id', userId)` call is a security bug.** The centralization of all queries in `backend/repositories/` makes this auditable: a method that takes a `userId` ends in `ForUser`, and the few that reach every user (`listAll`, `findById`, `updateById`, `listDue`, `listStale`, `claim`) are used only by the cron services. Because ownership is a query filter, another user's record is simply not found (404).
 
 ## Why Not Use RLS?
 

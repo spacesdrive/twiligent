@@ -88,7 +88,7 @@ await execute('accounts.update', () => {
 Every user-scoped repository method takes the verified `userId`, ends in `ForUser`, and includes `.eq('user_id', userId)`. Methods that intentionally omit the filter serve the cron jobs only; they have no `ForUser` suffix and the repository's interface says so in its one comment:
 
 ```ts
-// methods named ...ForUser filter by the verified user id; listDue, claim and updateById serve the schedulers across all users
+// methods named ...ForUser filter by the verified user id; listDue, listStale, claim and updateById serve the schedulers across all users
 export interface ScheduledPostRepository {
     listForUser(userId: string): Promise<ScheduledPost[]>;
     listDue(): Promise<ScheduledPost[]>;
@@ -96,7 +96,7 @@ export interface ScheduledPostRepository {
 }
 ```
 
-Only `scheduledPublisher.ts` and `tokenRefreshService.ts` call the cross-user methods (`listAll`, `findById`, `updateById`, `listDue`, `claim`). See `docs/architecture/database/SECURITY.md`.
+Only `scheduledPublisher.ts` and `tokenRefreshService.ts` call the cross-user methods (`listAll`, `findById`, `updateById`, `listDue`, `listStale`, `claim`). See `docs/architecture/database/SECURITY.md`.
 
 ## Client Lifecycle
 

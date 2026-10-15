@@ -27,6 +27,8 @@ Tests never sit next to source files. Each workspace has a `tests/` folder that 
 | `backend/routes/publishingRoutes.ts` | `backend/tests/routes/publishingRoutes.test.ts` |
 | `backend/routes/settingsRoutes.ts` | `backend/tests/routes/settingsRoutes.test.ts` |
 | `backend/services/scheduledPublisher.ts` | `backend/tests/services/scheduledPublisher.test.ts` |
+| `backend/lib/scheduledPublishing.ts` | `backend/tests/lib/scheduledPublishing.test.ts` |
+| `backend/repositories/scheduledPostRepository.ts` | `backend/tests/repositories/scheduledPostRepository.test.ts` |
 | `backend/services/tokenRefreshService.ts` | `backend/tests/services/tokenRefreshService.test.ts` |
 | `backend/repositories/accountRepository.ts` | `backend/tests/repositories/accountRepository.test.ts` |
 | `backend/middleware/errorHandler.ts` | `backend/tests/middleware/errorHandler.test.ts` |
@@ -40,6 +42,7 @@ Tests never sit next to source files. Each workspace has a `tests/` folder that 
 | `frontend/src/lib/emailAddress.ts` | `frontend/tests/lib/emailAddress.test.ts` |
 | `frontend/src/lib/googleIdentity.ts` | `frontend/tests/lib/googleIdentity.test.ts` |
 | `frontend/src/features/analytics/overview/overviewStats.ts` | `frontend/tests/features/analytics/overview/overviewStats.test.ts` |
+| `frontend/src/features/publishing/scheduleHelpers.ts` | `frontend/tests/features/publishing/scheduleHelpers.test.ts` |
 | `site/src/docs/searchShared.ts` | `site/tests/docs/searchShared.test.ts` |
 | `site/content/docs/**/*.mdx` and `site/src/docs/nav.ts` | `site/tests/docs/content.test.ts` |
 | `site/src/lib/chart.ts` | `site/tests/lib/chart.test.ts` |
@@ -58,6 +61,8 @@ The error contract has its own tests: `tests/middleware/errorHandler.test.ts` (t
 Rate limiting has its own tests: `tests/lib/rateLimit/algorithms.test.ts` (each algorithm's decisions, retry and reset times), `tests/lib/rateLimit/limiter.test.ts` (Redis path, memory fallback, circuit breaker, deny cache, eviction) and `tests/middleware/rateLimit.test.ts` (headers, the 429 body, route filters, IPv6 keys). The Lua scripts in `lib/rateLimit/scripts.ts` cannot run in Node; when you change one, change the twin function in `algorithms.ts` the same way and check both against each other in a Lua VM (see `docs/architecture/backend/RATE_LIMITING.md`).
 
 Backend route and cron service tests (`tests/routes/*Routes.test.ts`, `tests/services/scheduledPublisher.test.ts`, `tests/services/tokenRefreshService.test.ts`) run the real code against `tests/fixtures/fakeSupabase.ts` and a scripted `fetch`, then compare responses, queries and outgoing requests with the `tests/fixtures/*.golden.json` snapshots. Route tests mount a route table with `mountWithContext()` from `tests/fixtures/routeHarness.ts`, which installs the real error handler and not-found handler and sets the request id (`req-test`), the signal and the context values the pipeline would set, so error responses are checked with their real `{ success: false, code, message, requestId }` body and status. Rows tagged with `tableRow(name, row)` are only visible to that table; untagged rows are visible to every table. A refactor must leave the snapshots unchanged. Prettier ignores the snapshots (`.prettierignore`), because the tests compare them byte for byte.
+
+Scheduled publishing recovery has its own tests. `tests/lib/scheduledPublishing.test.ts` covers the shared rules: the 20 minute lease outlasts the 14 minute limit of both schedulers, what a run does for each container status, which Graph API codes count as temporary, when a failure retries or fails, and when the final message says publishing stopped. `tests/repositories/scheduledPostRepository.test.ts` runs the claim against the fake Supabase client: two schedulers claiming the same listed post (only the first gets it, and the claim counts an attempt), which claims are stale and that a takeover must match the expired claim it saw, that a post being published is not deleted, and that an edit only lands while the post is pending. The `scheduled publisher recovery` block in `tests/services/scheduledPublisher.test.ts` runs the whole publisher: a publish reply lost on the way back is checked on Instagram and marked published, an unreadable container status leaves the post claimed, an expired claim is taken over and found published or publishes its ready container, a claim inside its lease is left alone, a passing failure goes back to `pending` and the third fails the post, a run past its deadline claims nothing, and a post taken over after its last attempt is only checked. On the frontend, `tests/features/publishing/scheduleHelpers.test.ts` covers when the overdue alert counts a retried post (from its last claim) and a stuck claim (after the lease and 30 minutes).
 
 The Send Email hook has its own tests: `tests/lib/webhookSignature.test.ts` (valid, tampered, wrong-key, multi-signature and replayed requests), `tests/validators/authHookValidators.test.ts`, `tests/services/email/authEmails.test.ts` (the email for each action, the verify links, HTML escaping and the two Secure Email Change emails), `tests/repositories/emailQuotaRepository.test.ts` (daily and per-address caps, hashed keys, Redis failures), `tests/services/authEmailService.test.ts` (Resend requests, idempotency keys, the caps and Resend's own quota errors, skipped notices) and `tests/routes/authHookRoutes.test.ts` (the hook error shape, and the route answering unsigned calls with 401 in the full app). `tests/fixtures/authHook.ts` signs requests the way Supabase Auth does. The Lua claim script cannot run in Node; the repository test runs the same rules in memory. On the frontend, `tests/lib/authErrors.test.ts` covers when the sign-in page shows the daily cap warning and whether it offers Google, `tests/lib/emailAddress.test.ts` when an address looks complete enough to enable the Continue arrow, and `tests/lib/googleIdentity.test.ts` the label drawn on the Google button for each text option.
 
@@ -192,6 +197,10 @@ Open the app in a browser. For each changed area, test:
 - [ ] Create a scheduled post -> appears in queue
 - [ ] Manual trigger processes due posts correctly
 - [ ] Failed posts show error in UI
+- [ ] A post interrupted mid-publish (status `publishing`, `claimed_at` set more than 20 minutes ago in the SQL editor) is taken over by the next run: it ends `published` if its saved container already went out, without a second post on Instagram
+- [ ] A lost reply cannot leave a published post marked `failed`: when the run cannot confirm the outcome, the post stays `publishing` until a run after the lease checks the container
+- [ ] A pending post with `attempts` above 0 shows "Trying again on the next run" under its status
+- [ ] Deleting or editing a post while it is `publishing` is refused with "Cannot delete a post that is currently publishing" or "Can only edit pending posts"
 
 **Public site and docs (if `site/` or the app's docs links changed):**
 
@@ -246,7 +255,7 @@ Verify:
 
 ### 9. Scheduled Publisher Verification
 
-After any change to `scripts/publish-scheduled.ts` or `publish-scheduled.yml`:
+After any change to `scripts/publish-scheduled.ts`, `backend/lib/scheduledPublishing.ts` or `publish-scheduled.yml`:
 
 1. GitHub Actions -> "Instagram Scheduled Publisher" -> "Run workflow"
 2. Watch the run output
