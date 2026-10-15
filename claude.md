@@ -7,6 +7,7 @@ Twiligent is a self-hosted social media analytics and publishing dashboard for c
 - Primary users: Small creator teams, agencies, individual power users
 - Primary value: Unified analytics and scheduled Instagram publishing across multiple accounts
 - Current platforms: YouTube (analytics only), Instagram (analytics and publishing), Reddit (analytics only)
+- Public site: https://twiligent.ujjwal.fyi is the project's own marketing site and documentation (the `site/` workspace); the app runs at https://app.twiligent.ujjwal.fyi. Self-hosters run only the app and the Worker; the site is not needed to run Twiligent
 - GitHub repository: https://github.com/spacesdrive/twiligent
 - Goals and priorities: `ROADMAP.md`
 
@@ -31,24 +32,26 @@ Every task is tracked by a GitHub issue, no matter how small: features, fixes, r
 The repo is an npm workspaces monorepo. Run every install and script from the root.
 
 ```
-package.json          workspaces ["backend", "frontend"], shared dev tooling, root scripts
+package.json          workspaces ["backend", "frontend", "site"], shared dev tooling, root scripts
 package-lock.json     the only lockfile; one node_modules at the root
 tsconfig.base.json    shared TypeScript settings (strict, erasable syntax only); each project extends it
-eslint.config.mjs     shared ESLint config (typescript-eslint, frontend rules, backend Workers rules, Node rules for tests)
+eslint.config.mjs     shared ESLint config (typescript-eslint, frontend and site rules, backend Workers rules, Node rules for tests and site build files)
 .prettierrc.json      shared Prettier config matching the existing style (not applied in bulk)
 .editorconfig         editor defaults (4 spaces in backend, 2 elsewhere)
 shared/types/         API contract types shared by backend and frontend (types only, no runtime code)
 backend/              Hono Worker in layers: middleware/, routes/, controllers/, services/, repositories/,
                       validators/, database/, jobs/, lib/; app.ts builds the pipeline, container.ts wires services;
                       tests in backend/tests/ mirroring the source folders
-frontend/             React SPA; tests in frontend/tests/ mirroring frontend/src/
+frontend/             React SPA (the app); tests in frontend/tests/ mirroring frontend/src/
+site/                 public marketing site and docs (Vite, React, MDX); docs pages in site/content/docs/,
+                      build plugins in site/build/, tests in site/tests/
 scripts/              publish-scheduled.ts, run by GitHub Actions with no dependencies
 ```
 
-- `npm install` at the root installs both apps. Never run `npm install` inside `backend/` or `frontend/`, and never commit a lockfile there.
-- `npm run dev` starts the Worker (port 8787) and Vite (port 5173) together; `npm run typecheck`, `npm test`, `npm run lint` and `npm run build` cover the whole repo.
-- Add a dependency to the app that uses it: `npm install <pkg> --workspace backend` or `--workspace frontend`. Only shared dev tooling belongs in the root `package.json`.
-- Tests never live next to source files. A test for `backend/services/accountService.ts` is `backend/tests/services/accountService.test.ts`; a test for `frontend/src/lib/accounts.ts` is `frontend/tests/lib/accounts.test.ts`.
+- `npm install` at the root installs every workspace. Never run `npm install` inside `backend/`, `frontend/` or `site/`, and never commit a lockfile there.
+- `npm run dev` starts the Worker (port 8787) and Vite (port 5173) together; `npm run dev:site` starts the public site on its own. `npm run typecheck`, `npm test`, `npm run lint` and `npm run build` cover the whole repo, the site included (`build` builds the app, then the site).
+- Add a dependency to the workspace that uses it: `npm install <pkg> --workspace backend`, `--workspace frontend` or `--workspace site`. Only shared dev tooling belongs in the root `package.json`.
+- Tests never live next to source files. A test for `backend/services/accountService.ts` is `backend/tests/services/accountService.test.ts`; a test for `frontend/src/lib/accounts.ts` is `frontend/tests/lib/accounts.test.ts`; site tests live in `site/tests/`.
 
 ---
 
@@ -62,7 +65,7 @@ Before implementing any feature or fix, read these documents in this exact order
 4. `docs/architecture/OVERVIEW.md` - system topology and request flow
 5. `docs/guidelines/TYPESCRIPT.md` - code standards and typing rules (always apply)
 6. `docs/guidelines/CODE_STYLE.md` - how code reads here: layer shapes, comments, naming, messages, tests (always apply; its checklist runs before every commit)
-7. Relevant architecture doc - backend, frontend, database, or cloudflare
+7. Relevant architecture doc - backend, frontend, site, database, or cloudflare
 8. Relevant feature guide - if one exists in `docs/features/`
 9. Relevant engineering guideline - if the task touches a specific layer
 10. `ROADMAP.md` - if the task is a planned item, link its issue there
@@ -77,6 +80,7 @@ For MCP usage, read `docs/mcp/OVERVIEW.md` before using any MCP server.
 docs/
   WRITING_STANDARDS.md     Typography, icons, writing style, UI copy, commit messages
   design-reference.md      Measured interface reference, brand kit inventory, token sources
+  brand-notes.md           What the public site takes from the brand kit: palette, type, logo, icons, voice
   architecture/
     OVERVIEW.md            System topology, connections, request lifecycle
     backend/
@@ -95,12 +99,14 @@ docs/
       CONTEXTS.md              AuthContext, AppContext, usage rules
       API_LAYER.md             api.ts, request(), auth header injection
       FEATURES.md              Feature module conventions, directory map
+    site/
+      SITE.md              Public site and docs: stack, folders, docs pipeline, theming, icons, deploy
     database/
       SCHEMA.md            All tables, columns, types, constraints
       SECURITY.md          RLS policy, service vs anon key, isolation
     cloudflare/
       WORKERS.md           Worker export, env binding, cron handler
-      PAGES.md             Frontend deployment, build step, env vars
+      PAGES.md             App and site deployment, build step, env vars
       CI_CD.md             GitHub Actions workflows, path filters
     data-flows/
       AUTHENTICATION.md    Login, JWT lifecycle, session management
@@ -145,8 +151,9 @@ docs/
     SECURITY.md            Security model, key handling, isolation
     PERFORMANCE.md         Caching strategy, edge optimization
 
-frontend/src/docs/  Public user and self-hosting docs served at /docs (in-app, TSX)
+site/content/docs/ Public user and self-hosting docs (MDX) served at twiligent.ujjwal.fyi/docs
 DECISIONS.md       Architectural decision log
+THIRD_PARTY_NOTICES.md  Credit for work by others that the project includes (the Solar icons)
 CHANGELOG.md       Version history and feature changes
 ROADMAP.md         Planned features and priorities
 ```
@@ -158,14 +165,14 @@ ROADMAP.md         Planned features and priorities
 Read `docs/WRITING_STANDARDS.md` for the full specification. The non-negotiable rules:
 
 - Never use emojis, em dashes (--), or emoticons anywhere in the project
-- Never use emoji as icons in UI - use Lucide React SVG icons
+- Never use emoji as icons in UI - use Lucide React SVG icons in the app, and the Solar icons generated into `site/src/components/icons.tsx` on the public site
 - Write clear, professional English with no marketing buzzwords or filler text
 - UI copy names things from the user's perspective, not the system's internals
 - Error messages explain what went wrong and what to do - no "Something went wrong"
 - One comment per non-obvious logic block, maximum - never restate what the code does
 - Every page must feel like it belongs to the same application: consistent padding, cards, skeletons, toasts, icons
 - All styling goes through the design tokens in `frontend/src/index.css` and the shared components listed in `docs/architecture/frontend/DESIGN_SYSTEM.md`; no hex or Tailwind palette colours in components
-- Brand assets (logos, fonts, tokens, guidelines) live in `frontend/public/`; sentence case in UI copy, no exclamation marks
+- Brand assets (logos, fonts, tokens, guidelines) live in `frontend/public/` (the public site keeps copies in `site/public/brand/` and `site/public/fonts/`, and `docs/brand-notes.md` records what it takes from the kit); sentence case in UI copy, no exclamation marks
 
 ---
 
@@ -376,6 +383,12 @@ When anything changes, update every relevant docs file from the table below. The
 | api.ts changed | `docs/architecture/frontend/API_LAYER.md` |
 | App.tsx routing changed | `docs/architecture/frontend/ROUTING.md` |
 | Frontend deployment config changed | `docs/architecture/cloudflare/PAGES.md` |
+| Site deployment config changed (`deploy-site.yml`, `site/public/_redirects`, the `twiligent-site` project) | `docs/architecture/cloudflare/PAGES.md`, `docs/architecture/cloudflare/CI_CD.md`, `docs/workflows/DEPLOYMENT.md`, `docs/architecture/site/SITE.md` |
+| Site structure, build plugins, routes or theming changed | `docs/architecture/site/SITE.md`, `docs/brand-notes.md` (if a brand rule changes) |
+| New npm package (site) | `docs/architecture/site/SITE.md`, `DECISIONS.md` |
+| Docs page added, moved or renamed | The `.mdx` file in `site/content/docs/` (starting with `export const meta = { title, description }`), its entry in `site/src/docs/nav.ts`, any `docsUrl()` links in the app, and a 301 line in `site/public/_redirects` for a moved or renamed page |
+| Site icon added | The `ICONS` list in `site/build/genIcons.ts`, then `npm run icons --workspace site` to regenerate `site/src/components/icons.tsx` (never edit that file by hand) |
+| Third-party work with an attribution licence added (icons, fonts, images) | `THIRD_PARTY_NOTICES.md` (author, source, licence link, changes made) |
 | Architecture decision made | `DECISIONS.md` (append only, never delete) |
 | Any feature shipped | `CHANGELOG.md` (append to Unreleased section) |
 | Release tagged | `CHANGELOG.md` (convert Unreleased to version number with date) |
@@ -391,4 +404,4 @@ When anything changes, update every relevant docs file from the table below. The
 | Workflow changed | `docs/workflows/` (relevant file) |
 | Guideline changed | `docs/guidelines/` (relevant file) |
 | Philosophy changed | `docs/philosophy/` (relevant file) |
-| Project setup, features, or deployment instructions change | `README.md`, and the self-hosting pages in `frontend/src/docs/pages/selfHost/` |
+| Project setup, features, or deployment instructions change | `README.md`, and the self-hosting pages in `site/content/docs/self-host/` |

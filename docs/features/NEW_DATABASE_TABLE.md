@@ -50,7 +50,7 @@ The backend uses the service-role key, which bypasses RLS. Every application tab
 ALTER TABLE content_drafts ENABLE ROW LEVEL SECURITY;
 ```
 
-Add the statement to the setup SQL in the README and on the `/docs/self-host/supabase` page (`frontend/src/docs/pages/selfHost/selfHostSql.ts`).
+Add the statement to the setup SQL in the README and in the SQL block of the public docs page `/docs/self-host/supabase` (`site/content/docs/self-host/supabase.mdx`). Add the `CREATE TABLE` there too, so a new instance gets the table.
 
 ### Step 4: Add the Types
 

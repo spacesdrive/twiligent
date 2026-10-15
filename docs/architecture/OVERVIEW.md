@@ -4,9 +4,16 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│  Browser (User)                                                 │
-│  React SPA - Cloudflare Pages                                   │
+│  Public site and docs - Cloudflare Pages "twiligent-site"       │
 │  https://twiligent.ujjwal.fyi                                   │
+│  No API calls; Sign in and Get started link to the app          │
+└────────────────────────┬────────────────────────────────────────┘
+                         │ links
+                         ▼
+┌─────────────────────────────────────────────────────────────────┐
+│  Browser (User)                                                 │
+│  React SPA (the app) - Cloudflare Pages "twiligent"             │
+│  https://app.twiligent.ujjwal.fyi                               │
 └────────────────────────┬────────────────────────────────────────┘
                          │ HTTPS + Bearer JWT
                          ▼
@@ -53,7 +60,8 @@
 | Component | Platform | URL |
 |---|---|---|
 | Backend API | Cloudflare Workers | `twiligent.ujjwalkrai.workers.dev` |
-| Frontend SPA | Cloudflare Pages | `twiligent.ujjwal.fyi` (also `twiligent.pages.dev`; `twiligent.spacesdrive.cc` redirects with a 301 rule on the spacesdrive.cc zone) |
+| Public site and docs | Cloudflare Pages, project `twiligent-site` | `twiligent.ujjwal.fyi` (`twiligent.spacesdrive.cc` redirects here with a 301 rule on the spacesdrive.cc zone) |
+| Frontend SPA (the app) | Cloudflare Pages, project `twiligent` | `app.twiligent.ujjwal.fyi` (also `twiligent.pages.dev`) |
 | Database + Auth | Supabase | `nheuatbcevaxgxyvahtr.supabase.co` |
 | Media cache | Upstash Redis | Configured via `UPSTASH_REDIS_REST_URL` |
 | Media hosting | Cloudinary | `CLOUDINARY_CLOUD_NAME` |
@@ -128,7 +136,7 @@ See `docs/architecture/cloudflare/WORKERS.md` for the full list of required Work
 
 Frontend env vars are documented in `docs/architecture/cloudflare/PAGES.md`.
 
-The SPA also serves public documentation at `/docs` (no sign-in, no API calls). It is static TSX in `frontend/src/docs/`, code-split per section; see `docs/architecture/frontend/FEATURES.md`.
+The public marketing site and the user and self-hosting documentation are a separate static site in the `site/` workspace, deployed to the `twiligent-site` Pages project at `https://twiligent.ujjwal.fyi` (docs under `/docs`). It makes no API calls and needs no secrets; its sign-in and sign-up buttons link to the app. The app keeps a `/docs/*` route that sends old links to the same page on the site. Self-hosters do not need the site to run Twiligent. See `docs/architecture/site/SITE.md`.
 
 ## Key Architectural Invariants
 

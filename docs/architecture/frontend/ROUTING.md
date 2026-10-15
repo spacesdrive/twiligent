@@ -8,8 +8,8 @@ The app uses React Router v6 in `frontend/src/App.tsx`. The router uses `Browser
 
 | Path | Component | Notes |
 |---|---|---|
-| `/login` | `Login.tsx` | Public - redirects to `/` if already authenticated |
-| `/docs`, `/docs/*` | `docs/DocsLayout.tsx` | Public documentation. Child routes come from `docsChildRoutes` in `docs/routes.ts`; unknown paths redirect to `/docs` |
+| `/login` | `Login.tsx` | Public - redirects to `/` if already authenticated. `?mode=signup` opens the sign-up form (the public site's Get started buttons link to `https://app.twiligent.ujjwal.fyi/login?mode=signup`) |
+| `/docs/*` | `components/DocsRedirect.tsx` | Public. The docs live on the public site; this route replaces the location with the same path and hash under `https://twiligent.ujjwal.fyi/docs` (`docsUrl()` in `lib/docs.ts`), so old links keep working |
 | `/` (layout) | `AppLayout` (inline) | Protected - redirects to `/login` if unauthenticated |
 | `/` (index) | `Overview.tsx` | Default page after login |
 | `/accounts` | `AccountManager.tsx` | Connect and remove accounts. `?add=1` opens the add flow; `?ig_connected` and `?ig_error` report the Instagram OAuth result |
@@ -29,7 +29,7 @@ The app uses React Router v6 in `frontend/src/App.tsx`. The router uses `Browser
 
 ## Auth Guard
 
-Auth protection is applied via a `<ProtectedRoute>` component wrapping the layout route in `App.tsx`. All child routes are protected. `/login` and `/docs` are the only public routes.
+Auth protection is applied via a `<ProtectedRoute>` component wrapping the layout route in `App.tsx`. All child routes are protected. `/login` and `/docs/*` (the redirect to the public docs) are the only public routes.
 
 ## Lazy Loading
 

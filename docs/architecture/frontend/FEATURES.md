@@ -8,18 +8,10 @@ frontend/src/
 │   ├── SurfaceBox.tsx, MetricBox.tsx, PageHeader.tsx, ...   <- Shared components, see DESIGN_SYSTEM.md
 │   ├── MetricAreaChart.tsx                 <- Shared Recharts area chart for single-metric comparisons
 │   ├── ChartPanel.tsx                      <- Titled chart container with an empty state
-│   └── ImageLightbox.tsx                   <- Thumbnail that opens the full image in a Dialog
-├── docs/                                   <- Public documentation at /docs (outside the feature tree: no auth, no AppContext)
-│   ├── DocsLayout.tsx                      <- Page frame: theme, search shortcut, copy page, scroll to hash
-│   ├── DocsHeader.tsx, DocsSidebarNav.tsx, DocsMobileNav.tsx, DocsPager.tsx, DocsToc.tsx, DocsSearch.tsx
-│   ├── useTableOfContents.ts               <- Collects page headings and tracks the one in view
-│   ├── components.tsx                      <- DocTitle, H2, H3, Callout, Steps, CodeBlock, Table, PathCards, Badge
-│   ├── nav.ts                              <- Tabs, groups and pages; the single source for navigation; firstPagePath(tab)
-│   ├── routes.ts                           <- Slug to lazy page map; nav.test.ts checks it matches nav.ts
-│   └── pages/                              <- Overview, Use, SelfHost, Reference (one chunk each)
-│       ├── use/                            <- One file per page plus AdminLink.tsx; Use.tsx re-exports them
-│       ├── reference/                      <- One file per page; Reference.tsx re-exports them
-│       └── selfHost/                       <- One file per self-hosting page plus selfHostSql.ts (selfHostSql.test.ts); SelfHost.tsx re-exports them
+│   ├── ImageLightbox.tsx                   <- Thumbnail that opens the full image in a Dialog
+│   └── DocsRedirect.tsx                    <- The /docs/* route: replaces the location with the same page on the public docs
+├── lib/
+│   └── docs.ts                             <- DOCS_URL and docsUrl(path): links from the app to the public docs
 ├── features/
 │   ├── analytics/
 │   │   ├── channel/
@@ -116,7 +108,9 @@ frontend/src/
 │       └── reelsLibrary.ts                 <- Pure merge, filter, sort and totals (reelsLibrary.test.ts)
 ```
 
-Test files are not in this tree. A `(name.test.ts)` or `with *.test.ts` note above means the helper has a test in `frontend/tests/` at the mirrored path: `src/features/analytics/channel/channelChartData.ts` is covered by `frontend/tests/features/analytics/channel/channelChartData.test.ts`, and `src/docs/nav.ts` by `frontend/tests/docs/nav.test.ts`. See `docs/workflows/TESTING.md`.
+Test files are not in this tree. A `(name.test.ts)` or `with *.test.ts` note above means the helper has a test in `frontend/tests/` at the mirrored path: `src/features/analytics/channel/channelChartData.ts` is covered by `frontend/tests/features/analytics/channel/channelChartData.test.ts`. See `docs/workflows/TESTING.md`.
+
+The user and self-hosting documentation is not part of the app. It lives in the `site/` workspace and is served at `https://twiligent.ujjwal.fyi/docs`; see `docs/architecture/site/SITE.md`.
 
 ## Metric Naming
 
@@ -217,7 +211,7 @@ Each page manages its own loading/data/error state. Pages do not write to `AppCo
 | Video Explorer | `/videos/:id` | YouTube video library with search and sort |
 | Publish | `/upload` | Publish or schedule to Instagram, bulk upload, and the scheduled post queue |
 | Settings | `/settings` | Theme, server key status, who sets up scheduling, the optional GitHub backup guide |
-| Documentation | `/docs` | Public guides for members and administrators, and the environment variable reference |
+| Documentation | `/docs/*` | Not a page in the app: `DocsRedirect` sends the visitor to the same path on the public docs at `https://twiligent.ujjwal.fyi/docs`. The Documentation item in the sidebar user menu and Open documentation in the command palette open the docs in a new tab |
 
 ## Adding a New Feature
 

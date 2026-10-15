@@ -37,7 +37,7 @@ alter table scheduled_posts enable row level security;
 alter table tracked_posts enable row level security;
 ```
 
-This denies the anon and authenticated roles everything, while the service-role key used by the Worker and the GitHub Actions scheduler still bypasses RLS. The frontend never queries tables directly (it uses Supabase only for Auth), so no policies are needed. Supabase's Table Editor flags any table with RLS disabled. The setup SQL in the README and on the `/docs/self-host/supabase` page includes these statements.
+This denies the anon and authenticated roles everything, while the service-role key used by the Worker and the GitHub Actions scheduler still bypasses RLS. The frontend never queries tables directly (it uses Supabase only for Auth), so no policies are needed. Supabase's Table Editor flags any table with RLS disabled. The setup SQL in the README and on the public docs page `/docs/self-host/supabase` (`site/content/docs/self-host/supabase.mdx`) includes these statements.
 
 ## Signups
 

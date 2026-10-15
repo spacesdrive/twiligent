@@ -6,7 +6,8 @@
 |---|---|---|
 | `ci.yml` | Pull requests, pushes to any branch except `main`, manual | Type check, lint, test, build and bundle before anything reaches `main` |
 | `deploy-backend.yml` | Pushes to `main` that touch the backend, manual | Type check and test the backend, then deploy the Worker |
-| `deploy-frontend.yml` | Pushes to `main` that touch the frontend, manual | Type check and test the frontend, then build and deploy to Pages |
+| `deploy-frontend.yml` | Pushes to `main` that touch the frontend, manual | Type check and test the frontend, then build and deploy the app to Pages |
+| `deploy-site.yml` | Pushes to `main` that touch the site, manual | Type check and test the public site, then build and deploy it to Pages |
 | `publish-scheduled.yml` | Every 15 minutes, manual | Publish due Instagram posts (fallback for the Worker cron) |
 
 Nothing compiles TypeScript ahead of time: Wrangler and Vite strip the types while bundling, and Node strips them when it runs tests and `scripts/publish-scheduled.ts`. None of those steps checks types, so each workflow that ships code runs `tsc` first.
@@ -19,10 +20,10 @@ Nothing compiles TypeScript ahead of time: Wrangler and Vite strip the types whi
 1. Checkout repo
 2. `actions/setup-node@v4` with Node 24 and the npm cache keyed on the root `package-lock.json`
 3. `npm ci` at the repository root
-4. `npm run typecheck` - every TypeScript project: backend, backend tests, frontend, frontend tooling and tests, scripts
+4. `npm run typecheck` - every TypeScript project: backend, backend tests, frontend, frontend tooling and tests, site, site build files and tests, scripts
 5. `npm run lint` - ESLint over the whole repository
-6. `npm test` - backend then frontend tests
-7. `npm run build` - Vite production build of the frontend (without the `VITE_*` secrets)
+6. `npm test` - backend, frontend, then site tests
+7. `npm run build` - Vite production builds of the frontend (without the `VITE_*` secrets) and then the site
 8. `npx wrangler deploy --dry-run --outdir dist` in `backend/` - bundles the Worker without deploying, which catches import and bundling errors
 
 **Required GitHub secrets:** none.
@@ -81,6 +82,27 @@ The workflow does not set the Worker's own secrets (`SUPABASE_*`, `FRONTEND_URL`
 
 ---
 
+### `deploy-site.yml`
+
+**Trigger:** Push to `main` branch, when files under `site/**`, `tsconfig.base.json`, the root `package.json`, the root `package-lock.json` or `.github/workflows/deploy-site.yml` change; also `workflow_dispatch` for a manual run
+
+**What it does:**
+1. Checkout repo
+2. `actions/setup-node@v4` with Node 24 and the npm cache keyed on the root `package-lock.json`
+3. `npm ci` at the repository root, which installs every workspace, including Wrangler
+4. `npm run typecheck --workspace site` - checks `site/src` (`tsconfig.json`) and `vite.config.ts`, `site/build` and the site tests (`tsconfig.node.json`)
+5. `npm test --workspace site`
+6. `npm run build --workspace site` - Vite builds to `site/dist/`, and the docs plugin adds `sitemap.xml` and `llms.txt`
+7. Deploy `dist/` to the Cloudflare Pages project `twiligent-site` via `wrangler pages deploy dist --project-name=twiligent-site` (`cloudflare/wrangler-action@v4` with `workingDirectory: site`)
+
+**Required GitHub secrets:**
+- `CLOUDFLARE_API_TOKEN`
+- `CLOUDFLARE_ACCOUNT_ID`
+
+The site needs no other secret: every value it shows is public and lives in the source. The `twiligent-site` project must exist before the first run; see `PAGES.md`.
+
+---
+
 ### `publish-scheduled.yml`
 
 **Trigger:**
@@ -106,10 +128,12 @@ The script is type-checked by `npm run typecheck` (`scripts/tsconfig.json`) in `
 
 The deploy workflows use path filters; `ci.yml` does not.
 
-- Editing `frontend/` only -> triggers `deploy-frontend.yml`, not `deploy-backend.yml`
-- Editing `backend/` only -> triggers `deploy-backend.yml`, not `deploy-frontend.yml`
-- Editing `shared/` or `tsconfig.base.json` -> triggers both, because both apps import the shared types and extend the base config
-- Editing the root `package.json` or `package-lock.json` -> triggers both, because the single lockfile pins the dependencies of both apps
+- Editing `frontend/` only -> triggers `deploy-frontend.yml`, not `deploy-backend.yml` or `deploy-site.yml`
+- Editing `backend/` only -> triggers `deploy-backend.yml`, not `deploy-frontend.yml` or `deploy-site.yml`
+- Editing `site/` only (including the docs pages in `site/content/docs/`) -> triggers `deploy-site.yml` only
+- Editing `shared/` -> triggers the backend and frontend deploys, because both apps import the shared types; the site does not use them
+- Editing `tsconfig.base.json` -> triggers all three deploys, because every workspace extends the base config
+- Editing the root `package.json` or `package-lock.json` -> triggers all three deploys, because the single lockfile pins the dependencies of every workspace
 - Editing root tooling config (`eslint.config.mjs`, `.prettierrc.json`, `.editorconfig`) -> triggers no deploy; `ci.yml` checks it on the branch or pull request before it reaches `main`
 - Editing `scripts/` -> triggers neither deploy workflow (only `publish-scheduled.yml` on its cron)
 - Editing `docs/` -> triggers no deploy
@@ -127,8 +151,11 @@ curl https://twiligent.ujjwalkrai.workers.dev/api/health
 # Should return: {"status":"ok","timestamp":"..."}
 ```
 
-**Frontend:**
-Open `https://twiligent.ujjwal.fyi` - verify login page loads, accounts load after auth.
+**Frontend (the app):**
+Open `https://app.twiligent.ujjwal.fyi` - verify login page loads, accounts load after auth. Open `https://app.twiligent.ujjwal.fyi/docs/self-host` - verify it lands on the same page of the public docs.
+
+**Site:**
+Open `https://twiligent.ujjwal.fyi` - verify the home page renders, then open `https://twiligent.ujjwal.fyi/docs` and search for a term such as `redis`. Check that `https://twiligent.ujjwal.fyi/sitemap.xml` and `https://twiligent.ujjwal.fyi/llms.txt` load, and that `https://twiligent.ujjwal.fyi/login` redirects to the app.
 
 **Publisher:**
 Trigger `publish-scheduled.yml` manually via GitHub Actions UI -> Actions -> "Instagram Scheduled Publisher" -> "Run workflow" -> check the run log for expected output.
@@ -137,7 +164,7 @@ Trigger `publish-scheduled.yml` manually via GitHub Actions UI -> Actions -> "In
 
 1. Create `.github/workflows/my-workflow.yml`
 2. Add appropriate path filters to avoid unnecessary runs
-3. If the workflow needs project dependencies, run `actions/setup-node` with Node 24, `cache-dependency-path: package-lock.json` and `npm ci` at the repository root; there are no lockfiles inside `backend/` or `frontend/`
+3. If the workflow needs project dependencies, run `actions/setup-node` with Node 24, `cache-dependency-path: package-lock.json` and `npm ci` at the repository root; there are no lockfiles inside `backend/`, `frontend/` or `site/`
 4. If it ships code, run `npm run typecheck` (or the workspace's `typecheck` script) before the deploy step
 5. Document it in `docs/architecture/cloudflare/CI_CD.md` (this file)
 6. Add any required secrets via GitHub repo -> Settings -> Secrets -> Actions

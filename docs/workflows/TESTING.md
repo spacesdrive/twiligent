@@ -2,18 +2,19 @@
 
 ## Current State
 
-Most testing is manual. Both the backend and the frontend have unit tests for pure logic using Node's built-in test runner (no dependencies). Broader coverage is a known gap - see ROADMAP.md.
+Most testing is manual. The backend, the frontend and the public site each have unit tests for pure logic using Node's built-in test runner (no dependencies). Broader coverage is a known gap - see ROADMAP.md.
 
 Run every test and the type check from the repository root:
 
 ```bash
-npm test                            # backend, then frontend
+npm test                            # backend, frontend, then site
 npm test --workspace backend        # backend only
 npm test --workspace frontend       # frontend only
+npm test --workspace site           # site only
 npm run typecheck                   # every TypeScript project
 ```
 
-Each workspace's `test` script is `node --test "tests/**/*.test.ts"`. The tests are TypeScript: Node strips the types and runs the files directly, which needs Node 22.18 or newer (CI uses Node 24). Node does not check types while it runs them, so a test can pass with a type error; `npm run typecheck` covers the tests too (`backend/tests/tsconfig.json` and `frontend/tsconfig.node.json`).
+Each workspace's `test` script is `node --test "tests/**/*.test.ts"`. The tests are TypeScript: Node strips the types and runs the files directly, which needs Node 22.18 or newer (CI uses Node 24). Node does not check types while it runs them, so a test can pass with a type error; `npm run typecheck` covers the tests too (`backend/tests/tsconfig.json`, `frontend/tsconfig.node.json` and `site/tsconfig.node.json`).
 
 ### Test layout
 
@@ -37,11 +38,16 @@ Tests never sit next to source files. Each workspace has a `tests/` folder that 
 | `frontend/src/lib/authErrors.ts` | `frontend/tests/lib/authErrors.test.ts` |
 | `frontend/src/lib/passwords.ts` | `frontend/tests/lib/passwords.test.ts` |
 | `frontend/src/features/analytics/overview/overviewStats.ts` | `frontend/tests/features/analytics/overview/overviewStats.test.ts` |
-| `frontend/src/docs/nav.ts` | `frontend/tests/docs/nav.test.ts` |
+| `site/src/docs/searchShared.ts` | `site/tests/docs/searchShared.test.ts` |
+| `site/content/docs/**/*.mdx` and `site/src/docs/nav.ts` | `site/tests/docs/content.test.ts` |
+| `site/src/lib/chart.ts` | `site/tests/lib/chart.test.ts` |
+| `site/src/lib/format.ts` | `site/tests/lib/format.test.ts` |
 
 Backend tests are in `backend/tests/lib`, `backend/tests/middleware`, `backend/tests/repositories`, `backend/tests/routes`, `backend/tests/services` (with `youtube/`, `instagram/` and `reddit/` for the platform modules) and `backend/tests/validators`. A route test is named after its route table (`accountRoutes.test.ts`) and exercises the whole stack below it: controller, service and repository. Shared test helpers (`fakeSupabase.ts`, `fakeFetch.ts`, `golden.ts`, `routeHarness.ts`, the per-platform `*Fixtures.ts` data) and the `*.golden.json` snapshots are in `backend/tests/fixtures/`. Wrangler only bundles files reachable from `server.ts`, so nothing in `backend/tests/` ships in the Worker.
 
-Frontend tests cover shared helpers in `src/lib/` and `src/utils/` (hold-to-confirm timing, command palette ranking, library filtering and paging, platform helpers, and a check that every Lucide icon imported in `src` exists) and page helpers in `src/features/**` and `src/docs/**`, such as `features/analytics/overview/overviewStats.ts`. A testable helper is a plain `.ts` file with no JSX and no `@/` or `@shared/` imports, and its imports of project files (including `shared/types`) are relative paths that end in `.ts`, so Node can load it directly. It uses only erasable TypeScript (no `enum`, no parameter properties) and `import type` for types. This rule lives here, so helper files do not repeat it in a header comment.
+Frontend tests cover shared helpers in `src/lib/` and `src/utils/` (hold-to-confirm timing, command palette ranking, library filtering and paging, platform helpers, and a check that every Lucide icon imported in `src` exists) and page helpers in `src/features/**`, such as `features/analytics/overview/overviewStats.ts`. A testable helper is a plain `.ts` file with no JSX and no `@/` or `@shared/` imports, and its imports of project files (including `shared/types`) are relative paths that end in `.ts`, so Node can load it directly. It uses only erasable TypeScript (no `enum`, no parameter properties) and `import type` for types. This rule lives here, so helper files do not repeat it in a header comment.
+
+Site tests are in `site/tests/docs/` and `site/tests/lib/`. `chart.test.ts` checks the chart geometry the product previews draw with (the smooth line passes through every point and never overshoots between two), and `format.test.ts` the number formats they show. `content.test.ts` reads the MDX files in `site/content/docs/` and checks that every page in `site/src/docs/nav.ts` has a content file and every content file is in the navigation, that the navigation slugs are unique, that every page starts with `export const meta = { title, description }`, that every link to another docs page points at a page that exists, and that no page uses an em or en dash. It reads `nav.ts` as text, because that file imports the generated JSX icons, which Node cannot load. `searchShared.test.ts` covers `slugify()`, which makes the heading anchors that search results open.
 
 Test files import the code under test the same way, by relative path with the `.ts` extension (`../../src/lib/accounts.ts`). Type test fakes narrowly: cast a fake once to the interface it stands in for, rather than using `any`, which is a lint error.
 
@@ -63,7 +69,7 @@ The testing workflow documented here describes what should run before shipping a
 # From the repository root: every TypeScript project must type-check
 npm run typecheck
 
-# Frontend must build without errors
+# The app and the public site must build without errors
 npm run build
 
 # Unit tests must pass
@@ -85,7 +91,8 @@ One ESLint run from the root covers the whole repository. The shared config is `
 - Every `.ts` and `.tsx` file: the ESLint recommended rules plus the `typescript-eslint` recommended rules (`@typescript-eslint/no-explicit-any` is an error)
 - `frontend/**`: also React hooks rules (no conditional hooks) and React Refresh rules, with browser globals; unused variables are errors unless they start with a capital letter or underscore
 - `backend/**`: service worker globals, because the Worker runs on the web platform, not Node; unused variables and arguments starting with `_` are allowed, and unused caught errors are not reported
-- `backend/tests/**`, `frontend/tests/**`, `frontend/vite.config.ts` and `scripts/**`: Node globals
+- `site/**`: React hooks and React Refresh rules with browser globals; every unused variable is an error, capitalised names included
+- `backend/tests/**`, `frontend/tests/**`, `frontend/vite.config.ts`, `site/vite.config.ts`, `site/build/**`, `site/tests/**` and `scripts/**`: Node globals
 - Root `*.js` and `*.mjs` config files: the ESLint recommended rules with Node globals
 
 Lint must report 0 problems; the CI workflow fails on any error. The shadcn files that export their cva variants next to the component (`badgeVariants`, `buttonVariants`, `tabsListVariants`, `toggleVariants`, `useSidebar`) and the contexts that export their hooks (`useAppContext`, `useAuth`) are listed in `allowExportNames` for `react-refresh/only-export-components` in `eslint.config.mjs`; editing one of those files reloads the page instead of hot-updating it. Add a name there only for the same pattern.
@@ -175,6 +182,19 @@ Open the app in a browser. For each changed area, test:
 - [ ] Create a scheduled post -> appears in queue
 - [ ] Manual trigger processes due posts correctly
 - [ ] Failed posts show error in UI
+
+**Public site and docs (if `site/` or the app's docs links changed):**
+
+Run `npm run dev:site`, or `npm run build --workspace site` and `npm run preview --workspace site` to check the production build.
+- [ ] The home page renders in both themes: switch with the theme toggle in the navbar, reload, and the choice is kept
+- [ ] `/docs` opens the docs home; the sidebar, the table of contents and the previous and next links work
+- [ ] Ctrl K (Cmd K on a Mac) focuses the docs search; searching for `redis` lists the Redis page and opening a result scrolls to its section
+- [ ] Code blocks are highlighted in both themes
+- [ ] After a build, `site/dist/sitemap.xml` and `site/dist/llms.txt` list every docs page
+- [ ] In the app, `/docs/self-host/github` (or any `/docs/...` path) lands on the same page of the public docs, and the Documentation item in the user menu opens the docs in a new tab
+- [ ] The app's `/login?mode=signup` opens the sign-up form
+- [ ] The product previews play while on screen: the cursor in Publish clicks the upload, caption, time and Schedule post, the Analytics cursor reads the chart and opens Shorts and regular, and each bento card fills its panel down to the lower edge
+- [ ] With reduced motion on (DevTools, Rendering, prefers-reduced-motion), every preview shows its finished state and no cursor appears
 
 ### 5. Error State Testing
 

@@ -1,6 +1,15 @@
-# Cloudflare Pages (Frontend Deployment)
+# Cloudflare Pages (App and Site Deployment)
 
 ## Overview
+
+Two Cloudflare Pages projects serve the browser side:
+
+| Project | Workspace | Address | Build output | Build secrets |
+|---|---|---|---|---|
+| `twiligent` | `frontend/` (the app) | `app.twiligent.ujjwal.fyi` | `frontend/dist` | The `VITE_*` values below |
+| `twiligent-site` | `site/` (marketing site and docs) | `twiligent.ujjwal.fyi` | `site/dist` | None |
+
+Most of this page describes the app. The site is covered in [The Public Site](#the-public-site-twiligent-site) below and in `docs/architecture/site/SITE.md`. Self-hosters only need the app project.
 
 The React frontend is deployed to Cloudflare Pages. It is a static SPA - all routing is client-side (React Router), and the Cloudflare Pages `_redirects` file handles the SPA fallback.
 
@@ -14,7 +23,7 @@ The React frontend is deployed to Cloudflare Pages. It is a static SPA - all rou
 | Root directory | `/` (repo root) |
 | Node.js version | 22.18 or later (the root `package.json` `engines` field; the deploy workflow uses 24) |
 
-These are configured in the Cloudflare Pages project settings, not in a file. The repository is an npm workspaces monorepo: the install runs once at the root against the root `package-lock.json` (there is no lockfile in `frontend/`), and the root `build` script runs `npm run build --workspace frontend`.
+These are configured in the Cloudflare Pages project settings, not in a file. The repository is an npm workspaces monorepo: the install runs once at the root against the root `package-lock.json` (there is no lockfile in `frontend/`), and the root `build` script runs `npm run build --workspace frontend` and then `npm run build --workspace site`. The app's output is still `frontend/dist`; to build only the app, run `npm run build --workspace frontend`.
 
 The build is `vite build` with `frontend/vite.config.ts`, starting from `frontend/index.html`, which loads `/src/main.tsx`. Vite strips the TypeScript types and does not check them, so a Pages build connected directly to the repository does not type-check. The GitHub Actions deploy runs `npm run typecheck --workspace frontend` and the frontend tests before it builds.
 
@@ -66,7 +75,9 @@ npx wrangler pages deploy dist --project-name=twiligent
 
 The app is accessible at both:
 - `twiligent.pages.dev` (Cloudflare Pages default)
-- Custom domain configured in Cloudflare Pages -> Custom domains
+- `app.twiligent.ujjwal.fyi`, the custom domain configured in Cloudflare Pages -> Custom domains
+
+`twiligent.ujjwal.fyi` belongs to the `twiligent-site` project, not the app. When the app moves to `app.twiligent.ujjwal.fyi`, these settings must name the app address: `FRONTEND_URL` and `ALLOWED_ORIGINS` on the Worker, the Supabase Auth site URL and redirect allow list, and the authorised JavaScript origins of the Google OAuth client. See `docs/workflows/DEPLOYMENT.md`.
 
 The Worker's CORS policy only answers the origins it knows: `FRONTEND_URL` and the comma-separated `ALLOWED_ORIGINS` Worker secrets. Set `FRONTEND_URL` to the main address and list any other address the site is served from (such as `pages.dev` next to a custom domain) in `ALLOWED_ORIGINS`, or the browser blocks the API calls from that address. See `WORKERS.md`.
 
@@ -87,3 +98,34 @@ The frontend calls the Worker at `VITE_API_URL`, which defaults to `http://local
 3. Set build command and output directory as above
 4. Add environment variables (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_URL`)
 5. Trigger the first deploy manually or push to `main`
+
+## The Public Site (`twiligent-site`)
+
+The marketing site and the docs are a second static SPA, built from the `site/` workspace and served at `twiligent.ujjwal.fyi`. It is the project's own public site: a self-hosted instance does not need it.
+
+| Setting | Value |
+|---|---|
+| Project name | `twiligent-site` |
+| Custom domain | `twiligent.ujjwal.fyi` |
+| Build command | `npm run build --workspace site` (after `npm ci` at the root) |
+| Build output directory | `site/dist` |
+| Environment variables | None. Every value the site shows is public and written in the source |
+
+`.github/workflows/deploy-site.yml` builds and uploads it with `wrangler pages deploy dist --project-name=twiligent-site` from `site/`; see `CI_CD.md`. Besides the Vite output, the build writes `sitemap.xml` and `llms.txt` into `site/dist`.
+
+**Redirects.** `site/public/_redirects` sends the app's old paths on this domain (`/login`, `/accounts`, `/settings`, `/upload`, `/videos`, `/shorts`, `/reels`, `/tracked-content`, `/reddit-posts`, `/reddit-tracked`, `/channel/*`, `/instagram/*`, `/reddit/*`) to the same path on `https://app.twiligent.ujjwal.fyi` with a 301, so bookmarks from before the move still work. The file has no `/* /index.html 200` line: the build has no top-level `404.html`, so Pages treats the project as a single-page application and serves `index.html` for every other path, where the site's router shows its own not found page.
+
+`site/public/robots.txt` allows every crawler and points at `https://twiligent.ujjwal.fyi/sitemap.xml`.
+
+Manual deployment, from the repository root:
+
+```bash
+npm ci
+npm run typecheck --workspace site
+npm run build --workspace site
+cd site
+npx wrangler pages deploy dist --project-name=twiligent-site
+```
+
+Create the project before the workflow's first run, because the workflow cannot answer Wrangler's prompt to create a missing project: run the manual deployment above once from a terminal, or run `npx wrangler pages project create twiligent-site --production-branch=main`. Then add `twiligent.ujjwal.fyi` in Cloudflare Pages -> `twiligent-site` -> Custom domains (after removing it from the `twiligent` project and adding `app.twiligent.ujjwal.fyi` there).
+

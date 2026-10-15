@@ -2,7 +2,7 @@
 
 Start with `docs/guidelines/CODE_STYLE.md`, which shows how code reads across the repository and ends with the checklist to run before every commit; this page has the detailed rules for its area.
 
-The whole project is TypeScript in `strict` mode: the Worker (`backend/`), the React app (`frontend/`), the shared API types (`shared/types/`), the scheduled publisher (`scripts/`) and every test. These rules apply everywhere.
+The whole project is TypeScript in `strict` mode: the Worker (`backend/`), the React app (`frontend/`), the public site (`site/`), the shared API types (`shared/types/`), the scheduled publisher (`scripts/`) and every test. These rules apply everywhere.
 
 Nothing compiles TypeScript to JavaScript ahead of time. Wrangler and Vite strip the types while bundling, and Node strips them when it runs the tests and the publisher script. Type checking is a separate step, `npm run typecheck`, which CI runs before every deploy.
 
@@ -17,6 +17,8 @@ Shared settings live in `tsconfig.base.json` at the root; each project extends i
 | `backend/tests/tsconfig.json` | Backend tests and the source they import | adds `node` types |
 | `frontend/tsconfig.json` | `frontend/src` | DOM lib, `jsx: react-jsx`, `vite/client` types, `@/*` and `@shared/*` paths |
 | `frontend/tsconfig.node.json` | `vite.config.ts`, `frontend/tests` | `node` types, DOM lib |
+| `site/tsconfig.json` | `site/src` | DOM lib, `jsx: react-jsx`, `vite/client` and `mdx` types, `@/*` path |
+| `site/tsconfig.node.json` | `site/vite.config.ts`, `site/build`, `site/tests` | `node` types |
 | `scripts/tsconfig.json` | `scripts/` | `node` types |
 
 `npm run typecheck` at the root runs all of them. The project uses TypeScript 6.0: TypeScript 7 (the native compiler) is not yet supported by `typescript-eslint`.
@@ -103,7 +105,7 @@ export default function ChannelHeader({ account, onRefresh }: ChannelHeaderProps
 
 ## Module System
 
-ES modules everywhere (`"type": "module"` in both workspaces). Use `import`/`export`, never `require()`.
+ES modules everywhere (`"type": "module"` in every workspace). Use `import`/`export`, never `require()`.
 
 ## File Conventions
 
@@ -192,11 +194,11 @@ Do not leave unused variables, imports, types or commented-out code. Remove them
 
 ## Lint and Format
 
-The tooling config lives once at the repository root and covers both apps:
+The tooling config lives once at the repository root and covers every workspace:
 
 | File | What it sets |
 |---|---|
-| `eslint.config.mjs` | ESLint flat config. Every `.ts`/`.tsx` file: ESLint recommended plus `typescript-eslint` recommended (`no-explicit-any` is an error). Frontend: React hooks and React Refresh rules with browser globals. Backend: service worker globals (the Worker has no Node APIs). Tests, `scripts/` and `vite.config.ts`: Node globals. |
+| `eslint.config.mjs` | ESLint flat config. Every `.ts`/`.tsx` file: ESLint recommended plus `typescript-eslint` recommended (`no-explicit-any` is an error). Frontend and site: React hooks and React Refresh rules with browser globals. Backend: service worker globals (the Worker has no Node APIs). Tests, `scripts/`, `vite.config.ts` and `site/build/`: Node globals. |
 | `tsconfig.base.json` | Shared compiler settings; see Compiler Settings above |
 | `.prettierrc.json` | Single quotes, semicolons, trailing commas, `arrowParens: "avoid"`, 120 columns, 2-space indentation, 4 spaces in `backend/` |
 | `.prettierignore` | Skips `node_modules`, build output, `package-lock.json`, the shadcn files in `frontend/src/components/ui`, the backend golden snapshots and Markdown |

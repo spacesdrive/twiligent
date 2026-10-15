@@ -19,8 +19,9 @@ These rules apply to all generated code, documentation, UI copy, commit messages
 
 - Never use emoji as icons in UI.
 - Use SVG icons only.
-- Prefer Lucide React icons (`lucide-react`) at a 1.75 stroke. Platform logos (YouTube, Instagram, Reddit) come from `components/brand/platform-icons.tsx`.
+- In the app (`frontend/`), prefer Lucide React icons (`lucide-react`) at a 1.75 stroke. Platform logos (YouTube, Instagram, Reddit) come from `components/brand/platform-icons.tsx`.
 - If Lucide does not have an appropriate icon, use another open-source SVG icon library (e.g. Heroicons, Radix Icons).
+- On the public site (`site/`), use the Solar icons (480 Design, CC BY 4.0, credited in `THIRD_PARTY_NOTICES.md`) generated into `site/src/components/icons.tsx`: the bold style for things and places, the linear style for small controls. Add an icon to the list in `site/build/genIcons.ts` and run `npm run icons --workspace site`. Platform logos on the site come from `site/src/components/marks.tsx`. The owner chose Solar for the site on 2026-10-15; the app keeps Lucide.
 - All icons in the same UI context must have consistent size, stroke width, spacing, and visual weight.
 
 ---
