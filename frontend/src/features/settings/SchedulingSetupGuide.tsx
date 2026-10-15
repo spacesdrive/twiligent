@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { BookOpen, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SurfaceBox from '@/components/SurfaceBox';
@@ -9,6 +8,7 @@ import type { SetupProgress } from './schedulingProgress';
 import GithubRepoForm from './GithubRepoForm';
 import SchedulingSetupSteps from './SchedulingSetupSteps';
 import type { GithubRepoFormProps } from './GithubRepoForm';
+import { docsUrl } from '@/lib/docs';
 
 export type SchedulingSetupGuideProps = Omit<GithubRepoFormProps, 'canSave'>;
 
@@ -55,7 +55,7 @@ export default function SchedulingSetupGuide({ owner, repo, onOwnerChange, onRep
           A second copy of the publisher that runs on GitHub every 15 minutes, for free, so posts still go out if the server is ever paused. Step 2 needs the secret key of the Supabase project behind this Twiligent, which only its administrator has. If you only sign in here, skip this: the server already publishes your posts.
         </p>
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" size="sm" render={<Link to="/docs/self-host/github" />}>
+          <Button variant="outline" size="sm" render={<a href={docsUrl('/self-host/github')} target="_blank" rel="noopener noreferrer" />}>
             <BookOpen data-icon="inline-start" />
             Read the full guide
           </Button>
