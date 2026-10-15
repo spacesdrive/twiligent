@@ -1,10 +1,11 @@
 import type {
   GitHubSettingsRequest, GitHubSettingsResponse, HealthResponse, KeysStatusResponse,
 } from '../../../../shared/types/domain.ts';
+import { docsUrl } from '../../lib/docs.ts';
 
 export interface DocLink {
   label: string;
-  to: string;
+  href: string;
 }
 
 export interface ExternalLink {
@@ -31,9 +32,9 @@ export interface HealthCheckResult {
 }
 
 export const DOC_LINKS: DocLink[] = [
-  { label: 'Using Twiligent', to: '/docs/use/getting-started' },
-  { label: 'Run your own Twiligent', to: '/docs/self-host' },
-  { label: 'Environment variables', to: '/docs/reference/environment' },
+  { label: 'Using Twiligent', href: docsUrl('/use/getting-started') },
+  { label: 'Run your own Twiligent', href: docsUrl('/self-host') },
+  { label: 'Environment variables', href: docsUrl('/reference/environment') },
 ];
 
 export const EXTERNAL_LINKS: ExternalLink[] = [

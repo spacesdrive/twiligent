@@ -1,11 +1,11 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 import { ArrowRight, Clock, Server, Users } from 'lucide-react';
 import SurfaceBox from '@/components/SurfaceBox';
 import { ADMIN_EMAIL, adminMailto } from '@/lib/contact';
 import SettingsSection from './SettingsSection';
 import SchedulingSetupGuide from './SchedulingSetupGuide';
 import type { GithubRepoSettings } from './useServerSettings';
+import { docsUrl } from '@/lib/docs';
 
 interface HowItWorksStep {
   title: string;
@@ -65,9 +65,9 @@ export default function SchedulingSection({ github }: SchedulingSectionProps) {
           <div className="flex flex-col gap-2 rounded-field border border-line p-4">
             <p className="flex items-center gap-2 text-sm font-semibold text-ink"><Server className="size-4 stroke-[1.75] text-ink-faint" />You run your own Twiligent</p>
             <p className="text-sm text-ink-muted">Deploying the backend is enough; scheduling starts with it. The GitHub backup below is optional.</p>
-            <Link to="/docs/self-host" className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-brand-text underline-offset-4 hover:underline">
+            <a href={docsUrl('/self-host')} target="_blank" rel="noopener noreferrer" className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-brand-text underline-offset-4 hover:underline">
               Self-hosting guide<ArrowRight className="size-3.5" />
-            </Link>
+            </a>
           </div>
         </div>
       </SurfaceBox>

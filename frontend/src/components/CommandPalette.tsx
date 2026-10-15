@@ -15,6 +15,7 @@ import { accountName, accountPath, PLATFORM_META, platformOf } from '@/lib/accou
 import type { AccountFields } from '@/lib/accounts';
 import type { SearchCommand } from '@/lib/commandSearch';
 import { NAV_GROUPS } from '@/layout/navigation';
+import { docsUrl } from '@/lib/docs';
 
 const PAGE_ICONS: Record<string, LucideIcon> = {
   '/': LayoutDashboard, '/videos': PlaySquare, '/shorts': Scissors, '/reels': Clapperboard,
@@ -65,7 +66,7 @@ export default function CommandPalette({ open, onOpenChange, accounts, categorie
       icon: Tag, run: () => navigate(`/tracked-content/category/${encodeURIComponent(category)}`),
     })),
     { id: 'action:add-account', group: 'Actions', label: 'Add an account', keywords: ['connect', 'youtube', 'instagram', 'reddit'], icon: Plus, run: () => navigate('/accounts?add=1') },
-    { id: 'action:docs', group: 'Actions', label: 'Open documentation', keywords: ['help', 'guide', 'docs', 'setup', 'self-host'], icon: BookOpen, run: () => navigate('/docs') },
+    { id: 'action:docs', group: 'Actions', label: 'Open documentation', keywords: ['help', 'guide', 'docs', 'setup', 'self-host'], icon: BookOpen, run: () => window.open(docsUrl(), '_blank', 'noopener') },
     { id: 'action:refresh', group: 'Actions', label: 'Refresh all accounts', keywords: ['sync', 'update'], icon: RefreshCw, run: onRefreshAll },
     { id: 'action:theme-light', group: 'Theme', label: 'Use light theme', keywords: ['appearance', 'paper'], icon: Sun, run: () => setTheme('light') },
     { id: 'action:theme-dark', group: 'Theme', label: 'Use dark theme', keywords: ['appearance', 'dusk'], icon: Moon, run: () => setTheme('dark') },

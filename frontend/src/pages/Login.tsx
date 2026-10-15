@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { BookOpen, MailWarning } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -22,6 +22,7 @@ import LoginEmailForm from './LoginEmailForm';
 import PasswordInput from './PasswordInput';
 import { LOGIN_COPY, PRIVACY_URL } from './loginCopy';
 import type { LoginMode } from './loginCopy';
+import { docsUrl } from '@/lib/docs';
 
 interface GoogleOptionProps {
   text: GoogleButtonText;
@@ -61,7 +62,9 @@ export default function Login() {
     signIn, signUp, verifySignUpCode, resendSignUpCode, sendPasswordReset, verifyPasswordResetCode, updatePassword, signInWithGoogle,
   } = useAuth();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<LoginMode>('login');
+  // the public site's Get started buttons open /login?mode=signup
+  const [params] = useSearchParams();
+  const [mode, setMode] = useState<LoginMode>(params.get('mode') === 'signup' ? 'signup' : 'login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [code, setCode] = useState('');
@@ -199,7 +202,7 @@ export default function Login() {
       <div className="flex min-h-svh flex-col px-6 py-6 sm:px-10">
         <header className="flex items-center justify-between">
           <Logo className="h-7" />
-          <Button variant="ghost" size="sm" render={<Link to="/docs" />}>
+          <Button variant="ghost" size="sm" render={<a href={docsUrl()} />}>
             <BookOpen data-icon="inline-start" />
             Docs
           </Button>

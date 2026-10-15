@@ -18,6 +18,7 @@ import { accountName, accountPath } from '@/lib/accounts';
 import { NAV_GROUPS, isNavActive } from './navigation';
 import { useAppContext } from '../context/AppContext';
 import { useAuth } from '../context/AuthContext';
+import { docsUrl } from '@/lib/docs';
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.platform);
 
@@ -164,7 +165,7 @@ function UserMenu({ onSignOut }: { onSignOut: () => void }) {
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={() => navigate('/settings')}><Settings />Settings</DropdownMenuItem>
-            <DropdownMenuItem onClick={() => navigate('/docs')}><BookOpen />Documentation</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => window.open(docsUrl(), '_blank', 'noopener')}><BookOpen />Documentation</DropdownMenuItem>
             <DropdownMenuItem onClick={onSignOut}><LogOut />Sign out</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

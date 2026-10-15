@@ -8,7 +8,7 @@ import { AppProvider } from './context/AppContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import MainLayout from './layout/index';
 import Login from './pages/Login';
-import { docsChildRoutes } from './docs/routes';
+import DocsRedirect from './components/DocsRedirect';
 
 const Overview           = lazy(() => import('./features/analytics/overview/Overview'));
 const ChannelAnalytics   = lazy(() => import('./features/analytics/channel/ChannelAnalytics'));
@@ -24,7 +24,6 @@ const RedditPosts        = lazy(() => import('./features/analytics/reddit/Reddit
 const RedditPostsAll     = lazy(() => import('./features/analytics/reddit/RedditPostsAll'));
 const TrackedContent     = lazy(() => import('./features/analytics/tracked/TrackedContent'));
 const TrackedCategory    = lazy(() => import('./features/analytics/tracked/TrackedCategory'));
-const DocsLayout         = lazy(() => import('./docs/DocsLayout'));
 
 const router = createBrowserRouter([
   {
@@ -32,9 +31,8 @@ const router = createBrowserRouter([
     element: <Login />,
   },
   {
-    path: '/docs',
-    element: <DocsLayout />,
-    children: docsChildRoutes,
+    path: '/docs/*',
+    element: <DocsRedirect />,
   },
   {
     path: '/',
