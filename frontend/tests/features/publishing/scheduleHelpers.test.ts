@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  OVERDUE_MS, scheduledStatusChips, filterScheduledPosts, overduePostsOf, isPastDue, overdueLead, deleteAllMessage,
+  OVERDUE_MS, PUBLISH_LEASE_MS, isRetrying, scheduledStatusChips, filterScheduledPosts, overduePostsOf, isPastDue, overdueLead, deleteAllMessage,
   formatScheduleDate, toLocalDateInput, toLocalTimeInput, utcDateInput, defaultBulkStartDate, goesLiveLabel,
 } from '../../../src/features/publishing/scheduleHelpers.ts';
 import type { ScheduleTiming } from '../../../src/features/publishing/scheduleHelpers.ts';
@@ -30,6 +30,17 @@ test('a post is overdue only when more than 30 minutes late', () => {
   const due = new Date('2030-05-01T08:00:00Z').getTime();
   assert.deepEqual(overduePostsOf(posts, due + OVERDUE_MS).map(post => post.id), []);
   assert.deepEqual(overduePostsOf(posts, due + OVERDUE_MS + 1).map(post => post.id), [1]);
+});
+
+test('a retried post is late from its last claim, and a stuck claim only once the lease and the grace have passed', () => {
+  const claimed = new Date('2030-05-01T09:00:00Z').getTime();
+  const retried: ScheduleTiming = { status: 'pending', scheduledAt: '2030-05-01T08:00:00Z', claimedAt: '2030-05-01T09:00:00Z', attempts: 1 };
+  const stuck: ScheduleTiming = { status: 'publishing', scheduledAt: '2030-05-01T08:00:00Z', claimedAt: '2030-05-01T09:00:00Z', attempts: 1 };
+  assert.equal(isRetrying(retried), true);
+  assert.equal(overduePostsOf([retried], claimed + OVERDUE_MS).length, 0);
+  assert.equal(overduePostsOf([retried], claimed + OVERDUE_MS + 1).length, 1);
+  assert.equal(overduePostsOf([stuck], claimed + PUBLISH_LEASE_MS + OVERDUE_MS).length, 0);
+  assert.equal(overduePostsOf([stuck], claimed + PUBLISH_LEASE_MS + OVERDUE_MS + 1).length, 1);
 });
 
 test('only pending posts can be past due', () => {

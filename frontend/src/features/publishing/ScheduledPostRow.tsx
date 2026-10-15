@@ -7,7 +7,7 @@ import { cn } from '@/lib/utils';
 import ScheduledPostEditRow from './ScheduledPostEditRow';
 import StatusBadge from './StatusBadge';
 import { POST_STATUS, contentTypeOf } from './publishConstants';
-import { formatScheduleDate, isPastDue } from './scheduleHelpers.ts';
+import { formatScheduleDate, isPastDue, isRetrying } from './scheduleHelpers.ts';
 import type { ScheduledPost } from '@shared/types/domain.ts';
 import type { AppAccount } from '../../utils/formatters';
 import type { ScheduledPostEditor } from './useScheduledPostEdit';
@@ -88,7 +88,10 @@ export default function ScheduledPostRow({ post, position, account, editor, onDe
             )}
           </span>
         </TableCell>
-        <TableCell><StatusBadge status={post.status} map={POST_STATUS} /></TableCell>
+        <TableCell>
+          <StatusBadge status={post.status} map={POST_STATUS} />
+          {isRetrying(post) && <p className="mt-1 text-caption text-ink-faint">Trying again on the next run</p>}
+        </TableCell>
         <TableCell>
           {post.error ? (
             <Tooltip>
