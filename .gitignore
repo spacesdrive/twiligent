@@ -23,8 +23,9 @@ frontend/.wrangler/
 *.p12
 *.pfx
 
-# Frontend build
+# Frontend and site builds
 frontend/dist/
+site/dist/
 
 # OS files
 .DS_Store
