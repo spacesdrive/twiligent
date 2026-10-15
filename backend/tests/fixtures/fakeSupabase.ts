@@ -3,7 +3,7 @@ import type { SupabaseClient } from '../../types/app.ts';
 
 export type Row = Record<string, unknown>;
 
-type Filter = [column: string, value: unknown, operator?: 'lte' | 'neq'];
+type Filter = [column: string, value: unknown, operator?: 'lte' | 'lt' | 'neq'];
 
 interface Action {
     type: 'select' | 'update' | 'insert' | 'upsert' | 'delete';
@@ -24,6 +24,7 @@ interface FakeQuery {
     select(): FakeQuery;
     eq(column: string, value: unknown): FakeQuery;
     lte(column: string, value: unknown): FakeQuery;
+    lt(column: string, value: unknown): FakeQuery;
     neq(column: string, value: unknown): FakeQuery;
     order(): FakeQuery;
     single(): Promise<QueryResult>;
@@ -42,6 +43,7 @@ function copy<T>(value: T): T {
 
 function matchesFilter(row: Row, [column, value, operator]: Filter) {
     if (operator === 'lte') return (row[column] as string) <= (value as string);
+    if (operator === 'lt') return row[column] != null && (row[column] as string) < (value as string);
     if (operator === 'neq') return row[column] !== value;
     return row[column] === value;
 }
@@ -65,6 +67,10 @@ function queryBuilder(action: Action, run: Run): FakeQuery {
         },
         lte(column: string, value: unknown) {
             filters.push([column, value, 'lte']);
+            return query;
+        },
+        lt(column: string, value: unknown) {
+            filters.push([column, value, 'lt']);
             return query;
         },
         neq(column: string, value: unknown) {

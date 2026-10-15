@@ -118,6 +118,11 @@ export interface ScheduledPost {
     publishedAt?: string;
     publishedMediaId?: string | null;
     error?: string | null;
+    // when a scheduler last claimed the post and how many times one has; a claim older than the lease is taken over
+    claimedAt?: string | null;
+    attempts?: number;
+    // saved before the publish call, so a later run can ask Instagram whether the post went out
+    containerId?: string | null;
 }
 
 export interface ScheduledPublishFailure {

@@ -7,10 +7,6 @@
                 "error": "Processing failed: Bad video"
             },
             {
-                "id": "p-expired",
-                "error": "Container expired"
-            },
-            {
                 "id": "p-missing",
                 "error": "Account not found: gone"
             },
@@ -21,10 +17,6 @@
             {
                 "id": "p-publish",
                 "error": "Publish refused"
-            },
-            {
-                "id": "p-slow",
-                "error": "Instagram did not finish processing the media within 3 minutes"
             }
         ]
     },
@@ -109,27 +101,19 @@
         ],
         [
             "error",
-            "{\"level\":\"error\",\"message\":\"scheduled post failed\",\"requestId\":\"cron-test\",\"postId\":\"p-story\",\"error\":\"Processing failed: Bad video\",\"errorName\":\"UpstreamError\"}"
+            "{\"level\":\"error\",\"message\":\"scheduled post failed\",\"requestId\":\"cron-test\",\"postId\":\"p-story\",\"attempts\":1,\"error\":\"Processing failed: Bad video\",\"errorName\":\"UpstreamError\"}"
         ],
         [
             "error",
-            "{\"level\":\"error\",\"message\":\"scheduled post failed\",\"requestId\":\"cron-test\",\"postId\":\"p-expired\",\"error\":\"Container expired\",\"errorName\":\"UpstreamError\"}"
+            "{\"level\":\"error\",\"message\":\"scheduled post failed\",\"requestId\":\"cron-test\",\"postId\":\"p-missing\",\"attempts\":1,\"error\":\"Account not found: gone\",\"errorName\":\"NotFoundError\"}"
         ],
         [
             "error",
-            "{\"level\":\"error\",\"message\":\"scheduled post failed\",\"requestId\":\"cron-test\",\"postId\":\"p-missing\",\"error\":\"Account not found: gone\",\"errorName\":\"NotFoundError\"}"
+            "{\"level\":\"error\",\"message\":\"scheduled post failed\",\"requestId\":\"cron-test\",\"postId\":\"p-create\",\"attempts\":1,\"error\":\"Invalid image\",\"errorName\":\"UpstreamError\"}"
         ],
         [
             "error",
-            "{\"level\":\"error\",\"message\":\"scheduled post failed\",\"requestId\":\"cron-test\",\"postId\":\"p-create\",\"error\":\"Invalid image\",\"errorName\":\"UpstreamError\"}"
-        ],
-        [
-            "error",
-            "{\"level\":\"error\",\"message\":\"scheduled post failed\",\"requestId\":\"cron-test\",\"postId\":\"p-publish\",\"error\":\"Publish refused\",\"errorName\":\"UpstreamError\"}"
-        ],
-        [
-            "error",
-            "{\"level\":\"error\",\"message\":\"scheduled post failed\",\"requestId\":\"cron-test\",\"postId\":\"p-slow\",\"error\":\"Instagram did not finish processing the media within 3 minutes\",\"errorName\":\"UpstreamError\"}"
+            "{\"level\":\"error\",\"message\":\"scheduled post failed\",\"requestId\":\"cron-test\",\"postId\":\"p-publish\",\"attempts\":1,\"error\":\"Publish refused\",\"errorName\":\"UpstreamError\"}"
         ],
         [
             "log",
@@ -170,8 +154,16 @@
             "method": "GET"
         },
         {
+            "url": "https://graph.instagram.com/v25.0/c-ERR?fields=status_code%2Cstatus&access_token=T2",
+            "method": "GET"
+        },
+        {
             "url": "https://graph.instagram.com/v25.0/EXP/media?access_token=T3&media_type=REELS&video_url=https%3A%2F%2Fcdn%2Fe.mp4",
             "method": "POST"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-EXP?fields=status_code%2Cstatus&access_token=T3",
+            "method": "GET"
         },
         {
             "url": "https://graph.instagram.com/v25.0/c-EXP?fields=status_code%2Cstatus&access_token=T3",
@@ -194,8 +186,16 @@
             "method": "POST"
         },
         {
+            "url": "https://graph.instagram.com/v25.0/c-PUB?fields=status_code%2Cstatus&access_token=T5",
+            "method": "GET"
+        },
+        {
             "url": "https://graph.instagram.com/v25.0/SLOW/media?access_token=T6&media_type=REELS&video_url=https%3A%2F%2Fcdn%2Fslow.mp4",
             "method": "POST"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
+            "method": "GET"
         },
         {
             "url": "https://graph.instagram.com/v25.0/c-SLOW?fields=status_code%2Cstatus&access_token=T6",
@@ -450,7 +450,7 @@
         {
             "type": "select",
             "table": "scheduled_posts",
-            "columns": "id, account_id, status, scheduled_at, data",
+            "columns": "id, account_id, status, scheduled_at, claimed_at, attempts, data",
             "filters": [
                 [
                     "status",
@@ -464,15 +464,37 @@
             ]
         },
         {
+            "type": "select",
+            "table": "scheduled_posts",
+            "columns": "id, account_id, status, scheduled_at, claimed_at, attempts, data",
+            "filters": [
+                [
+                    "status",
+                    "publishing"
+                ],
+                [
+                    "claimed_at",
+                    "2026-09-01T11:40:00.000Z",
+                    "lt"
+                ]
+            ]
+        },
+        {
             "type": "update",
             "table": "scheduled_posts",
             "values": {
-                "status": "publishing"
+                "status": "publishing",
+                "claimed_at": "2026-09-01T12:00:00.000Z",
+                "attempts": 1
             },
             "filters": [
                 [
                     "id",
                     "p-image"
+                ],
+                [
+                    "attempts",
+                    0
                 ],
                 [
                     "status",
@@ -488,6 +510,35 @@
                 [
                     "id",
                     "ig1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "scheduled_posts",
+            "columns": "data",
+            "filters": [
+                [
+                    "id",
+                    "p-image"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
+                "data": {
+                    "mediaType": "IMAGE",
+                    "mediaUrl": "https://cdn/a.jpg",
+                    "caption": "Hello",
+                    "containerId": "c-IG1"
+                }
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-image"
                 ]
             ]
         },
@@ -511,8 +562,10 @@
                     "mediaType": "IMAGE",
                     "mediaUrl": "https://cdn/a.jpg",
                     "caption": "Hello",
+                    "containerId": "c-IG1",
                     "publishedMediaId": "m-c-IG1",
-                    "publishedAt": "2026-09-01T12:00:00.000Z"
+                    "publishedAt": "2026-09-01T12:00:00.000Z",
+                    "error": null
                 }
             },
             "filters": [
@@ -526,12 +579,18 @@
             "type": "update",
             "table": "scheduled_posts",
             "values": {
-                "status": "publishing"
+                "status": "publishing",
+                "claimed_at": "2026-09-01T12:00:00.000Z",
+                "attempts": 1
             },
             "filters": [
                 [
                     "id",
                     "p-reel"
+                ],
+                [
+                    "attempts",
+                    0
                 ],
                 [
                     "status",
@@ -565,13 +624,44 @@
             "type": "update",
             "table": "scheduled_posts",
             "values": {
+                "data": {
+                    "mediaType": "REELS",
+                    "mediaUrl": "https://cdn/r.mp4",
+                    "shareToFeed": true,
+                    "containerId": "c-IG1"
+                }
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-reel"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "scheduled_posts",
+            "columns": "data",
+            "filters": [
+                [
+                    "id",
+                    "p-reel"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
                 "status": "published",
                 "data": {
                     "mediaType": "REELS",
                     "mediaUrl": "https://cdn/r.mp4",
                     "shareToFeed": true,
+                    "containerId": "c-IG1",
                     "publishedMediaId": "m-c-IG1",
-                    "publishedAt": "2026-09-01T12:00:00.000Z"
+                    "publishedAt": "2026-09-01T12:00:00.000Z",
+                    "error": null
                 }
             },
             "filters": [
@@ -585,12 +675,18 @@
             "type": "update",
             "table": "scheduled_posts",
             "values": {
-                "status": "publishing"
+                "status": "publishing",
+                "claimed_at": "2026-09-01T12:00:00.000Z",
+                "attempts": 1
             },
             "filters": [
                 [
                     "id",
                     "p-story"
+                ],
+                [
+                    "attempts",
+                    0
                 ],
                 [
                     "status",
@@ -624,10 +720,39 @@
             "type": "update",
             "table": "scheduled_posts",
             "values": {
+                "data": {
+                    "mediaType": "STORIES",
+                    "mediaUrl": "https://cdn/s.mp4",
+                    "containerId": "c-ERR"
+                }
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-story"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "scheduled_posts",
+            "columns": "data",
+            "filters": [
+                [
+                    "id",
+                    "p-story"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
                 "status": "failed",
                 "data": {
                     "mediaType": "STORIES",
                     "mediaUrl": "https://cdn/s.mp4",
+                    "containerId": "c-ERR",
                     "error": "Processing failed: Bad video"
                 }
             },
@@ -642,12 +767,18 @@
             "type": "update",
             "table": "scheduled_posts",
             "values": {
-                "status": "publishing"
+                "status": "publishing",
+                "claimed_at": "2026-09-01T12:00:00.000Z",
+                "attempts": 1
             },
             "filters": [
                 [
                     "id",
                     "p-expired"
+                ],
+                [
+                    "attempts",
+                    0
                 ],
                 [
                     "status",
@@ -681,10 +812,39 @@
             "type": "update",
             "table": "scheduled_posts",
             "values": {
-                "status": "failed",
                 "data": {
                     "mediaType": "REELS",
                     "mediaUrl": "https://cdn/e.mp4",
+                    "containerId": "c-EXP"
+                }
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-expired"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "scheduled_posts",
+            "columns": "data",
+            "filters": [
+                [
+                    "id",
+                    "p-expired"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
+                "status": "pending",
+                "data": {
+                    "mediaType": "REELS",
+                    "mediaUrl": "https://cdn/e.mp4",
+                    "containerId": null,
                     "error": "Container expired"
                 }
             },
@@ -699,12 +859,18 @@
             "type": "update",
             "table": "scheduled_posts",
             "values": {
-                "status": "publishing"
+                "status": "publishing",
+                "claimed_at": "2026-09-01T12:00:00.000Z",
+                "attempts": 1
             },
             "filters": [
                 [
                     "id",
                     "p-missing"
+                ],
+                [
+                    "attempts",
+                    0
                 ],
                 [
                     "status",
@@ -756,12 +922,18 @@
             "type": "update",
             "table": "scheduled_posts",
             "values": {
-                "status": "publishing"
+                "status": "publishing",
+                "claimed_at": "2026-09-01T12:00:00.000Z",
+                "attempts": 1
             },
             "filters": [
                 [
                     "id",
                     "p-create"
+                ],
+                [
+                    "attempts",
+                    0
                 ],
                 [
                     "status",
@@ -813,12 +985,18 @@
             "type": "update",
             "table": "scheduled_posts",
             "values": {
-                "status": "publishing"
+                "status": "publishing",
+                "claimed_at": "2026-09-01T12:00:00.000Z",
+                "attempts": 1
             },
             "filters": [
                 [
                     "id",
                     "p-publish"
+                ],
+                [
+                    "attempts",
+                    0
                 ],
                 [
                     "status",
@@ -852,10 +1030,39 @@
             "type": "update",
             "table": "scheduled_posts",
             "values": {
+                "data": {
+                    "mediaType": "IMAGE",
+                    "mediaUrl": "https://cdn/p.jpg",
+                    "containerId": "c-PUB"
+                }
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-publish"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "scheduled_posts",
+            "columns": "data",
+            "filters": [
+                [
+                    "id",
+                    "p-publish"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
                 "status": "failed",
                 "data": {
                     "mediaType": "IMAGE",
                     "mediaUrl": "https://cdn/p.jpg",
+                    "containerId": "c-PUB",
                     "error": "Publish refused"
                 }
             },
@@ -870,12 +1077,18 @@
             "type": "update",
             "table": "scheduled_posts",
             "values": {
-                "status": "publishing"
+                "status": "publishing",
+                "claimed_at": "2026-09-01T12:00:00.000Z",
+                "attempts": 1
             },
             "filters": [
                 [
                     "id",
                     "p-slow"
+                ],
+                [
+                    "attempts",
+                    0
                 ],
                 [
                     "status",
@@ -909,10 +1122,39 @@
             "type": "update",
             "table": "scheduled_posts",
             "values": {
-                "status": "failed",
                 "data": {
                     "mediaType": "REELS",
                     "mediaUrl": "https://cdn/slow.mp4",
+                    "containerId": "c-SLOW"
+                }
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-slow"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "scheduled_posts",
+            "columns": "data",
+            "filters": [
+                [
+                    "id",
+                    "p-slow"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
+                "status": "pending",
+                "data": {
+                    "mediaType": "REELS",
+                    "mediaUrl": "https://cdn/slow.mp4",
+                    "containerId": "c-SLOW",
                     "error": "Instagram did not finish processing the media within 3 minutes"
                 }
             },
@@ -927,12 +1169,18 @@
             "type": "update",
             "table": "scheduled_posts",
             "values": {
-                "status": "publishing"
+                "status": "publishing",
+                "claimed_at": "2026-09-01T12:00:00.000Z",
+                "attempts": 1
             },
             "filters": [
                 [
                     "id",
                     "p-dup"
+                ],
+                [
+                    "attempts",
+                    0
                 ],
                 [
                     "status",
@@ -966,12 +1214,42 @@
             "type": "update",
             "table": "scheduled_posts",
             "values": {
+                "data": {
+                    "mediaType": "IMAGE",
+                    "mediaUrl": "https://cdn/d.jpg",
+                    "containerId": "c-IG1"
+                }
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-dup"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "scheduled_posts",
+            "columns": "data",
+            "filters": [
+                [
+                    "id",
+                    "p-dup"
+                ]
+            ]
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
                 "status": "published",
                 "data": {
                     "mediaType": "IMAGE",
                     "mediaUrl": "https://cdn/d.jpg",
+                    "containerId": "c-IG1",
                     "publishedMediaId": "m-c-IG1",
-                    "publishedAt": "2026-09-01T12:00:00.000Z"
+                    "publishedAt": "2026-09-01T12:00:00.000Z",
+                    "error": null
                 }
             },
             "filters": [
@@ -985,12 +1263,18 @@
             "type": "update",
             "table": "scheduled_posts",
             "values": {
-                "status": "publishing"
+                "status": "publishing",
+                "claimed_at": "2026-09-01T12:00:00.000Z",
+                "attempts": 1
             },
             "filters": [
                 [
                     "id",
                     "p-dup"
+                ],
+                [
+                    "attempts",
+                    0
                 ],
                 [
                     "status",
@@ -1067,12 +1351,16 @@
             "account_id": "ig1",
             "status": "published",
             "scheduled_at": "2026-09-01T11:00:00.000Z",
+            "claimed_at": "2026-09-01T12:00:00.000Z",
+            "attempts": 1,
             "data": {
                 "mediaType": "IMAGE",
                 "mediaUrl": "https://cdn/a.jpg",
                 "caption": "Hello",
+                "containerId": "c-IG1",
                 "publishedMediaId": "m-c-IG1",
-                "publishedAt": "2026-09-01T12:00:00.000Z"
+                "publishedAt": "2026-09-01T12:00:00.000Z",
+                "error": null
             }
         },
         {
@@ -1082,12 +1370,16 @@
             "account_id": "ig1",
             "status": "published",
             "scheduled_at": "2026-09-01T11:00:00.000Z",
+            "claimed_at": "2026-09-01T12:00:00.000Z",
+            "attempts": 1,
             "data": {
                 "mediaType": "REELS",
                 "mediaUrl": "https://cdn/r.mp4",
                 "shareToFeed": true,
+                "containerId": "c-IG1",
                 "publishedMediaId": "m-c-IG1",
-                "publishedAt": "2026-09-01T12:00:00.000Z"
+                "publishedAt": "2026-09-01T12:00:00.000Z",
+                "error": null
             }
         },
         {
@@ -1097,9 +1389,12 @@
             "account_id": "igErr",
             "status": "failed",
             "scheduled_at": "2026-09-01T11:00:00.000Z",
+            "claimed_at": "2026-09-01T12:00:00.000Z",
+            "attempts": 1,
             "data": {
                 "mediaType": "STORIES",
                 "mediaUrl": "https://cdn/s.mp4",
+                "containerId": "c-ERR",
                 "error": "Processing failed: Bad video"
             }
         },
@@ -1108,11 +1403,14 @@
             "id": "p-expired",
             "user_id": "user-1",
             "account_id": "igExp",
-            "status": "failed",
+            "status": "pending",
             "scheduled_at": "2026-09-01T11:00:00.000Z",
+            "claimed_at": "2026-09-01T12:00:00.000Z",
+            "attempts": 1,
             "data": {
                 "mediaType": "REELS",
                 "mediaUrl": "https://cdn/e.mp4",
+                "containerId": null,
                 "error": "Container expired"
             }
         },
@@ -1123,6 +1421,8 @@
             "account_id": "gone",
             "status": "failed",
             "scheduled_at": "2026-09-01T11:00:00.000Z",
+            "claimed_at": "2026-09-01T12:00:00.000Z",
+            "attempts": 1,
             "data": {
                 "mediaType": "IMAGE",
                 "mediaUrl": "https://cdn/m.jpg",
@@ -1136,6 +1436,8 @@
             "account_id": "igBad",
             "status": "failed",
             "scheduled_at": "2026-09-01T11:00:00.000Z",
+            "claimed_at": "2026-09-01T12:00:00.000Z",
+            "attempts": 1,
             "data": {
                 "mediaType": "IMAGE",
                 "mediaUrl": "https://cdn/b.jpg",
@@ -1149,9 +1451,12 @@
             "account_id": "igPub",
             "status": "failed",
             "scheduled_at": "2026-09-01T11:00:00.000Z",
+            "claimed_at": "2026-09-01T12:00:00.000Z",
+            "attempts": 1,
             "data": {
                 "mediaType": "IMAGE",
                 "mediaUrl": "https://cdn/p.jpg",
+                "containerId": "c-PUB",
                 "error": "Publish refused"
             }
         },
@@ -1160,11 +1465,14 @@
             "id": "p-slow",
             "user_id": "user-1",
             "account_id": "igSlow",
-            "status": "failed",
+            "status": "pending",
             "scheduled_at": "2026-09-01T11:00:00.000Z",
+            "claimed_at": "2026-09-01T12:00:00.000Z",
+            "attempts": 1,
             "data": {
                 "mediaType": "REELS",
                 "mediaUrl": "https://cdn/slow.mp4",
+                "containerId": "c-SLOW",
                 "error": "Instagram did not finish processing the media within 3 minutes"
             }
         },
@@ -1175,11 +1483,15 @@
             "account_id": "ig1",
             "status": "published",
             "scheduled_at": "2026-09-01T11:00:00.000Z",
+            "claimed_at": "2026-09-01T12:00:00.000Z",
+            "attempts": 1,
             "data": {
                 "mediaType": "IMAGE",
                 "mediaUrl": "https://cdn/d.jpg",
+                "containerId": "c-IG1",
                 "publishedMediaId": "m-c-IG1",
-                "publishedAt": "2026-09-01T12:00:00.000Z"
+                "publishedAt": "2026-09-01T12:00:00.000Z",
+                "error": null
             }
         },
         {
@@ -1189,11 +1501,15 @@
             "account_id": "ig1",
             "status": "published",
             "scheduled_at": "2026-09-01T11:00:00.000Z",
+            "claimed_at": "2026-09-01T12:00:00.000Z",
+            "attempts": 1,
             "data": {
                 "mediaType": "IMAGE",
                 "mediaUrl": "https://cdn/d.jpg",
+                "containerId": "c-IG1",
                 "publishedMediaId": "m-c-IG1",
-                "publishedAt": "2026-09-01T12:00:00.000Z"
+                "publishedAt": "2026-09-01T12:00:00.000Z",
+                "error": null
             }
         },
         {
@@ -1203,6 +1519,8 @@
             "account_id": "ig1",
             "status": "publishing",
             "scheduled_at": "2026-09-01T11:00:00.000Z",
+            "claimed_at": null,
+            "attempts": 0,
             "data": {
                 "mediaType": "IMAGE"
             }
@@ -1214,6 +1532,8 @@
             "account_id": "ig1",
             "status": "pending",
             "scheduled_at": "2026-09-02T00:00:00.000Z",
+            "claimed_at": null,
+            "attempts": 0,
             "data": {
                 "mediaType": "IMAGE"
             }

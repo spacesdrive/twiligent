@@ -71,7 +71,7 @@ export function readGraphResponse<T>(data: T & InstagramApiErrorBody): T {
 }
 
 function unreachable(err: unknown): Error {
-    return new UpstreamError(`Instagram API unreachable (${(err as Error).message})`, { cause: err });
+    return new UpstreamError(`Instagram API unreachable (${(err as Error).message})`, { reason: 'unreachable', cause: err });
 }
 
 // GET with a 15 second timeout and one retry on a network blip; a cancelled request is never retried
