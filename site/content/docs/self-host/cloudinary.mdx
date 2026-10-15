@@ -1,0 +1,22 @@
+export const meta = { title: 'Cloudinary', description: 'Instagram publishes from a public URL, so files are uploaded to Cloudinary first.' }
+
+<Steps>
+<Step title="Create an account">
+
+Sign up at [cloudinary.com](https://cloudinary.com/users/register_free). On the dashboard, copy the **Cloud name**. This is `CLOUDINARY_CLOUD_NAME`.
+
+</Step>
+<Step title="Create an unsigned upload preset">
+
+Open **Settings**, then **Upload**, then **Upload presets**, and choose **Add upload preset**. Set **Signing mode** to **Unsigned** and save. Copy the preset name. This is `CLOUDINARY_UPLOAD_PRESET`.
+
+</Step>
+</Steps>
+
+<Callout type="note" title="Why unsigned">
+
+Browsers upload large videos straight to Cloudinary so they never pass through the Worker. Unsigned presets allow this without exposing your Cloudinary API secret. Both values are only handed to signed-in members.
+
+</Callout>
+
+Without Cloudinary, everything works except publishing and uploading screenshots for tracked Reddit posts.

@@ -1,0 +1,63 @@
+export const meta = { title: 'Instagram app', description: 'A Meta app lets members sign in with Instagram so Twiligent can read insights and publish.' }
+
+<Callout type="note" title="Before you start">
+
+You need a Meta developer account (free, at [developers.facebook.com](https://developers.facebook.com)) and an Instagram Business or Creator account to test with. You need your backend URL for the redirect; if you have not deployed yet, use `http://localhost:8787` now and add the real one later.
+
+</Callout>
+
+<Steps>
+<Step title="Create the app">
+
+In [My Apps](https://developers.facebook.com/apps) choose **Create app**. When asked for a use case, pick **Other**, then app type **Business**. Give it a name your members will recognise; Instagram shows it on the sign-in screen.
+
+</Step>
+<Step title="Add Instagram">
+
+On the app dashboard, add the **Instagram** product and choose **API setup with Instagram business login**. Do not use the Facebook login variant.
+
+</Step>
+<Step title="Copy the Instagram app ID and secret">
+
+On the Instagram API setup page, copy the **Instagram app ID** and **Instagram app secret**. These are `INSTAGRAM_APP_ID` and `INSTAGRAM_APP_SECRET`.
+
+<Callout type="warning" title="Use the Instagram values, not the Facebook ones">
+
+The app dashboard also shows a Facebook App ID under Settings, Basic. That one does not work here and produces an "Invalid platform app" error.
+
+</Callout>
+
+</Step>
+<Step title="Set the redirect URL">
+
+In **Set up Instagram business login**, open **Business login settings** and add this OAuth redirect URI, replacing the address with your backend URL:
+
+```text
+https://twiligent.your-subdomain.workers.dev/api/auth/instagram/callback
+```
+
+For local development, add `http://localhost:8787/api/auth/instagram/callback` as well. It must match `BACKEND_URL` exactly, with no trailing slash.
+
+</Step>
+<Step title="Add testers">
+
+While the app is in development mode, only Instagram accounts with a tester role can connect. Open **App roles**, then **Roles**, choose **Add people**, pick **Instagram Tester** and enter the Instagram username.
+
+The person then accepts the invite in Instagram under [Apps and websites](https://www.instagram.com/accounts/manage_access/), **Tester invites**. Members are told to email you for this; set your address with `VITE_ADMIN_EMAIL`.
+
+</Step>
+</Steps>
+
+## Permissions Twiligent asks for
+
+| Permission | Why |
+| --- | --- |
+| `instagram_business_basic` | Read the profile, follower count and media list. |
+| `instagram_business_manage_insights` | Read views, reach and other insights. |
+| `instagram_business_content_publish` | Publish photos, Reels and Stories. |
+| `instagram_business_manage_comments` | Read comment counts and comments. |
+| `instagram_business_manage_messages` | Requested with the business login set; not used to send messages. |
+
+## Going live for everyone
+
+To let any Instagram account connect without a tester role, submit the app for **App Review** with the permissions above, then switch it to **Live**. Meta asks for a privacy policy URL, a screencast of each permission in use, and business verification. For a private team, tester roles are usually simpler.

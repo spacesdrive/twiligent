@@ -1,0 +1,66 @@
+export const meta = { title: 'Email verification codes (optional)', description: 'Confirm each new email account with a 6-digit code, sent free through Resend, with a daily cap.' }
+
+<Callout type="note" title="How it works">
+
+Supabase Auth hands every sign-up, password reset and sign-in email to your backend instead of sending it. The backend checks that the request came from your Supabase project, counts the day's emails, and sends the code through Resend. Resend's free plan sends 100 emails a day, so the backend stops at 100. After that, the sign-up page tells people to sign in with Google instead, and email codes start again at midnight UTC.
+
+</Callout>
+
+<Steps>
+<Step title="Create a Resend account and verify your domain">
+
+Sign up at [resend.com](https://resend.com). Under **Domains**, add the domain you will send from, such as `example.com`, and add the DNS records Resend shows. Emails from an unverified domain are refused. The free plan allows one domain.
+
+Under the domain's **Configuration**, turn off **Click tracking** and **Open tracking**. Click tracking rewrites the confirmation links, and its tracking record must not reuse a name you already serve, such as the subdomain Twiligent runs on: Resend's record replaces it and takes the site offline. If Resend lists a **Tracking** record, skip it.
+
+</Step>
+<Step title="Create an API key">
+
+Under **API Keys**, create a key with **Sending access** for that domain. Copy it; Resend shows it once.
+
+</Step>
+<Step title="Add the email secrets to the backend">
+
+In `backend/`, run:
+
+```bash
+npx wrangler secret put RESEND_API_KEY
+npx wrangler secret put EMAIL_FROM
+```
+
+`EMAIL_FROM` is the sender people see, on your verified domain, for example `Twiligent <no-reply@example.com>`. If you pay for a Resend plan without a daily quota, also set `EMAIL_DAILY_LIMIT` to the number of emails a day you allow.
+
+</Step>
+<Step title="Point Supabase at the backend">
+
+In Supabase, open **Authentication**, **Auth Hooks**, and add a **Send Email** hook of type **HTTPS**. The URL is your backend address followed by `/api/auth/email-hook`, for example `https://twiligent-api.example.workers.dev/api/auth/email-hook`. Generate a secret, copy it, and save the hook.
+
+```bash
+npx wrangler secret put SEND_EMAIL_HOOK_SECRET
+```
+
+Paste the secret exactly as Supabase shows it, starting with `v1,whsec_`.
+
+</Step>
+<Step title="Turn on email confirmation">
+
+Open **Sign In / Providers**, **Email**. Turn on **Confirm email** and keep the email OTP length at 6. New members then enter the code on the sign-up page before they can sign in.
+
+</Step>
+<Step title="Slow down bursts">
+
+Open **Rate Limits** and set **Rate limit for sending emails** to about 30 an hour, so a burst of sign-ups cannot use the whole day at once. The backend also allows at most 5 emails a day to any one address. To stop automated sign-ups, turn on CAPTCHA under **Attack Protection**.
+
+</Step>
+<Step title="Test it">
+
+Create an account with an address you own. The code should arrive within a minute, from your `EMAIL_FROM` address. If it does not, run `npx wrangler tail` in `backend/` while you sign up: a `request failed` line explains why, for example an unverified domain.
+
+</Step>
+</Steps>
+
+<Callout type="warning" title="Every email counts">
+
+Password resets, email changes and security notices go through the same hook and count towards the 100. When the cap is reached, notices are skipped rather than blocking the change they report. Without Redis, the backend cannot count, and Resend's own daily quota is the only limit; the message people see is the same.
+
+</Callout>

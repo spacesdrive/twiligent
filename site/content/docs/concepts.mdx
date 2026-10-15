@@ -1,0 +1,34 @@
+export const meta = { title: 'Members and administrators', description: 'Who sets up what, and what each person can and cannot change.' }
+
+## Two roles
+
+### Member
+
+A member signs in to an existing instance with an email and password. Members connect their own YouTube, Instagram and Reddit accounts, read their analytics, publish and schedule posts, and track content. A member never needs a server, a database, API keys or GitHub.
+
+### Administrator
+
+The administrator runs the instance. They create the Supabase project, get the platform keys (YouTube, Instagram, Cloudinary), deploy the backend and frontend to Cloudflare, and keep them running. The administrator is also the person members contact for Instagram tester access or when something is not working.
+
+## Who does what
+
+| Task | Member | Administrator |
+| --- | --- | --- |
+| Sign in and add accounts | Yes | Yes |
+| Read analytics, publish and schedule | Yes | Yes |
+| Request Instagram tester access | Yes, by email | Adds the tester in the Meta app |
+| Set up scheduling | Nothing to do. The server publishes scheduled posts. | Deploys the backend once; optionally adds the GitHub backup |
+| Create and own the Supabase project | No | Yes |
+| Hold API keys and secrets | Never | Yes, as server secrets only |
+| Deploy updates | No | Yes |
+
+## What is shared and what is yours
+
+- **Shared by everyone on the instance:** the YouTube API key, the Instagram (Meta) app, the Cloudinary account and the server itself. These are set once by the administrator.
+- **Yours alone:** the accounts you connect, their access tokens and cookies, your scheduled posts and your tracked content. Other members cannot see them, and the server never sends tokens or cookies back to any browser.
+
+<Callout type="tip" title="Running Twiligent just for yourself?">
+
+Then you are both. Follow [Run your own](/docs/self-host) once, then use the app like any member.
+
+</Callout>

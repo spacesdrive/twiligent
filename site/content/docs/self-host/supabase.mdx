@@ -1,0 +1,105 @@
+export const meta = { title: 'Supabase', description: 'Supabase handles sign-in and stores every account, scheduled post and tracked item.' }
+
+<Steps>
+<Step title="Create a project">
+
+Sign in at [supabase.com/dashboard](https://supabase.com/dashboard) and choose **New project**. Pick a name, a strong database password and the region closest to you. Wait about two minutes for it to start.
+
+</Step>
+<Step title="Create the tables">
+
+Open **SQL Editor**, choose **New query**, paste the SQL below and choose **Run**. It creates the four tables Twiligent uses and turns on row level security for each.
+
+```sql
+create table accounts (
+  id text primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  platform text not null,
+  data jsonb not null
+);
+create index accounts_user_id_idx on accounts(user_id);
+
+create table settings (
+  user_id uuid not null references auth.users(id) on delete cascade,
+  key text not null,
+  value jsonb,
+  primary key (user_id, key)
+);
+
+create table scheduled_posts (
+  id text primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  account_id text not null references accounts(id) on delete cascade,
+  status text not null default 'pending',
+  scheduled_at timestamptz not null,
+  data jsonb
+);
+create index scheduled_posts_due_idx on scheduled_posts(status, scheduled_at);
+
+create table tracked_posts (
+  id text primary key,
+  user_id uuid not null references auth.users(id) on delete cascade,
+  account_id text references accounts(id) on delete set null,
+  url text not null,
+  label text not null default '',
+  category text not null default '',
+  content_type text not null default 'reddit',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  data jsonb
+);
+create index tracked_posts_user_id_idx on tracked_posts(user_id);
+
+alter table accounts enable row level security;
+alter table settings enable row level security;
+alter table scheduled_posts enable row level security;
+alter table tracked_posts enable row level security;
+```
+
+</Step>
+<Step title="Configure sign-in">
+
+Open **Authentication**, then **Sign In / Providers**, then **Email**.
+
+- Turn off **Confirm email** unless you set up [email verification codes](/docs/self-host/email-codes). Otherwise new members never receive a code and cannot sign in.
+- To keep the instance private, turn off **Allow new users to sign up** after you and your team have created accounts. You can also add members yourself under **Authentication**, **Users**, **Add user**.
+
+</Step>
+<Step title="Copy the project URL">
+
+Open **Project Settings**, then **Data API** (or **Integrations**, **Data API**). Copy the **Project URL**, which looks like `https://abcdefgh.supabase.co`. It is used as `SUPABASE_URL` and `VITE_SUPABASE_URL`.
+
+</Step>
+<Step title="Copy the two keys">
+
+Open **Project Settings**, then **API Keys**. Supabase shows either the new key format or the legacy one; both work.
+
+| Key | Looks like | Used as | Safety |
+| --- | --- | --- | --- |
+| Publishable key (legacy: anon) | `sb_publishable_...` | `SUPABASE_ANON_KEY` and `VITE_SUPABASE_ANON_KEY` | <Badge>Safe in the browser</Badge> |
+| Secret key (legacy: service_role) | `sb_secret_...` | `SUPABASE_SERVICE_KEY` | <Badge tone="secret">Server only</Badge> |
+
+<Callout type="danger" title="Never put the secret key in the frontend">
+
+The secret key can read and change every row in the database. It belongs only in the Worker's secrets and, if you use the backup scheduler, in GitHub Actions secrets.
+
+</Callout>
+
+</Step>
+</Steps>
+
+## Already have the tables?
+
+If you created the tables from an older README, make sure `tracked_posts` exists and has the `content_type` column, and that row level security is on. This is safe to run more than once:
+
+```sql
+alter table tracked_posts add column if not exists content_type text not null default 'reddit';
+alter table accounts enable row level security;
+alter table settings enable row level security;
+alter table scheduled_posts enable row level security;
+alter table tracked_posts enable row level security;
+```
+
+### Why row level security with no policies
+
+The backend uses the secret key, which bypasses row level security, and limits every query to the signed-in user itself. Turning security on with no policies means the public publishable key, which ships in the frontend, cannot read or change any table directly. Without it, anyone holding that public key could read other members' data.

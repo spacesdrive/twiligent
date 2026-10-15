@@ -1,0 +1,62 @@
+export const meta = { title: 'Environment variables', description: 'Every value Twiligent reads, where it comes from, and where it goes.' }
+
+<Callout type="note" title="Members can skip this page">
+
+Only the administrator of an instance sets these. If you sign in to someone else's Twiligent, nothing here applies to you.
+
+</Callout>
+
+## Backend (Cloudflare Worker)
+
+Set each one with `npx wrangler secret put NAME` in `backend/`. For local development, put them in `backend/.dev.vars`, which Git ignores. See [Deploy the backend](/docs/self-host/deploy-backend).
+
+The backend only answers browsers on `FRONTEND_URL` and the addresses in `ALLOWED_ORIGINS`. If the site loads but every page fails to load data, check that `FRONTEND_URL` matches the address in the browser exactly, including `https://`. A backend running on your own computer also accepts the local website on port 5173.
+
+| Name | Needed | Where to get it | Used for |
+| --- | --- | --- | --- |
+| `SUPABASE_URL` | <Badge tone="required">Required</Badge> | Supabase, Project Settings, Data API | Which database the Worker talks to. |
+| `SUPABASE_SERVICE_KEY` <Badge tone="secret">Secret</Badge> | <Badge tone="required">Required</Badge> | Supabase, Project Settings, API Keys, secret key (legacy: service_role) | Reads and writes all tables on behalf of members. |
+| `SUPABASE_ANON_KEY` | <Badge tone="required">Required</Badge> | Supabase, Project Settings, API Keys, publishable key (legacy: anon) | Checks that a sign-in token is genuine. |
+| `YOUTUBE_API_KEY` <Badge tone="secret">Secret</Badge> | <Badge tone="optional">For YouTube</Badge> | Google Cloud, APIs and Services, Credentials | Every YouTube read. |
+| `INSTAGRAM_APP_ID` | <Badge tone="optional">For Instagram</Badge> | Meta app, Instagram, API setup with Instagram business login | Starts Instagram sign-in. |
+| `INSTAGRAM_APP_SECRET` <Badge tone="secret">Secret</Badge> | <Badge tone="optional">For Instagram</Badge> | Same page as the app ID | Exchanges and renews Instagram access tokens. |
+| `CLOUDINARY_CLOUD_NAME` | <Badge tone="optional">For publishing</Badge> | Cloudinary dashboard | Where uploaded media goes. |
+| `CLOUDINARY_UPLOAD_PRESET` | <Badge tone="optional">For publishing</Badge> | Cloudinary, Settings, Upload, Upload presets (unsigned) | Lets browsers upload without the Cloudinary API secret. |
+| `BACKEND_URL` | <Badge tone="optional">For Instagram</Badge> | Your Worker address, no trailing slash | Builds the Instagram redirect URI. |
+| `FRONTEND_URL` | <Badge tone="required">Required</Badge> | Your Pages address | The only site the backend accepts requests from, and where members land after Instagram sign-in. |
+| `ALLOWED_ORIGINS` | <Badge tone="optional">Optional</Badge> | Other addresses the site is served from, comma-separated, for example {'https://twiligent.pages.dev'} | Lets the site call the backend from more than one address. |
+| `UPSTASH_REDIS_REST_URL` | <Badge tone="optional">Optional</Badge> | Upstash database, REST API | Cache address. |
+| `UPSTASH_REDIS_REST_TOKEN` <Badge tone="secret">Secret</Badge> | <Badge tone="optional">Optional</Badge> | Upstash database, REST API | Cache password. |
+| `SEND_EMAIL_HOOK_SECRET` <Badge tone="secret">Secret</Badge> | <Badge tone="optional">Optional</Badge> | Supabase, Authentication, Auth Hooks, Send Email hook | Proves an email request came from your Supabase project. |
+| `RESEND_API_KEY` <Badge tone="secret">Secret</Badge> | <Badge tone="optional">Optional</Badge> | Resend, API Keys (sending access) | Sends verification codes and other sign-in emails. |
+| `EMAIL_FROM` | <Badge tone="optional">Optional</Badge> | A sender on a domain verified in Resend, for example {'Twiligent <no-reply@example.com>'} | The sender of those emails. |
+| `EMAIL_DAILY_LIMIT` | <Badge tone="optional">Optional</Badge> | A whole number; 100 when not set | Emails a day before sign-up points people to Google. |
+
+Platform keys are shared by every member of the instance. Missing ones only switch off that platform: Settings shows which are set, and members see a clear message instead of an error.
+
+## Frontend (Cloudflare Pages)
+
+Set these in `frontend/.env` before running `npm run build` in the top folder of the project, or as GitHub secrets when the deploy workflow builds for you. They are built into the site and are public.
+
+| Name | Needed | Value |
+| --- | --- | --- |
+| `VITE_SUPABASE_URL` | <Badge tone="required">Required</Badge> | Same as SUPABASE_URL. |
+| `VITE_SUPABASE_ANON_KEY` | <Badge tone="required">Required</Badge> | The publishable key. Never the secret key. |
+| `VITE_API_URL` | <Badge tone="required">Required</Badge> | Backend URL plus /api, for example {'https://twiligent.you.workers.dev/api'}. Defaults to {'http://localhost:8787/api'} in development. |
+| `VITE_ADMIN_EMAIL` | <Badge tone="optional">Optional</Badge> | Where members are told to write for Instagram tester access or help. |
+| `VITE_GOOGLE_CLIENT_ID` | <Badge tone="optional">Optional</Badge> | Web client ID from Google Auth Platform. Shows the Sign in with Google button; leave unset to hide it. |
+
+## GitHub Actions secrets
+
+| Name | Used by |
+| --- | --- |
+| `CLOUDFLARE_API_TOKEN` | Both deploy workflows |
+| `CLOUDFLARE_ACCOUNT_ID` | Both deploy workflows |
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`, `VITE_API_URL`, `VITE_ADMIN_EMAIL`, `VITE_GOOGLE_CLIENT_ID` | Frontend deploy workflow |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` | Backup scheduler (publish-scheduled.yml) |
+
+## Not needed
+
+- `REDDIT_ENCRYPTION_KEY` appears in older notes but is no longer read. Reddit cookies are stored server-side and never returned to the browser.
+- A GitHub personal access token. Earlier versions asked for one in Settings; it was never used and has been removed.
+- A Reddit API key. Members use their own session cookie.

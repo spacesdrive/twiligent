@@ -1,0 +1,52 @@
+export const meta = { title: 'Connect your accounts', description: 'How to add YouTube channels, Instagram professional accounts and Reddit profiles.' }
+
+## YouTube
+
+Open **Accounts**, choose **Add account**, then **YouTube channel**. Paste a channel link, an `@handle` or a channel ID starting with `UC`, choose **Find** to check it, then **Add channel**. Any public channel works; you do not need to own it.
+
+## Instagram
+
+Instagram only connects **Business** or **Creator** accounts. You can switch a personal account to a professional one for free in the Instagram app under Settings, Account type and tools.
+
+### Get tester access first
+
+Most instances run their Meta app in development mode. In that mode Instagram only lets accounts added as **testers** sign in. Without tester access, Instagram shows an error or a blank page.
+
+<Steps>
+<Step title="Ask the administrator">
+
+Email your administrator with your Instagram username. The administrator adds you in the Meta app dashboard.
+
+</Step>
+<Step title="Accept the invite">
+
+Sign in to Instagram on the web and open [Apps and websites](https://www.instagram.com/accounts/manage_access/), then the **Tester invites** tab, and accept the invite. In the Instagram app it is under Settings and privacy, Website permissions, Apps and websites, Tester invites.
+
+</Step>
+<Step title="Connect">
+
+In Twiligent, open **Accounts**, choose **Add account**, then **Instagram account**, then **Continue to Instagram**. Approve every requested permission. Instagram sends you back and the account appears in the list.
+
+</Step>
+</Steps>
+
+<Callout type="note" title="Access lasts 60 days and renews itself">
+
+Instagram access tokens last 60 days. Twiligent renews them automatically every night, so you only reconnect if you remove access in Instagram or change your password.
+
+</Callout>
+
+## Reddit
+
+Reddit blocks most requests from servers, so Twiligent uses your browser session cookie to read your profile and posts.
+
+1. Sign in to reddit.com in your browser.
+2. Open the browser's developer tools (F12), then **Application**, then **Cookies**, then `https://www.reddit.com`.
+3. Find the cookie named `reddit_session` and copy its value.
+4. In Twiligent choose **Add account**, **Reddit account**, enter your username and paste the cookie.
+
+<Callout type="warning" title="Treat the cookie like a password">
+
+It signs in as you. Twiligent stores it on the server and never shows it again. If Reddit signs you out, the cookie stops working: remove the account and add it again with a fresh cookie.
+
+</Callout>
