@@ -8,7 +8,7 @@ export interface StatusChip {
   count: number;
 }
 
-export type ScheduleTiming = Pick<ScheduledPost, 'status' | 'scheduledAt'>;
+export type ScheduleTiming = Pick<ScheduledPost, 'status' | 'scheduledAt' | 'claimedAt' | 'attempts'>;
 
 export interface ScheduleFieldValues {
   scheduleMode: boolean;
@@ -17,6 +17,9 @@ export interface ScheduleFieldValues {
 }
 
 export const OVERDUE_MS = 30 * 60 * 1000;
+
+// the schedulers' claim lease (backend/lib/scheduledPublishing.ts): a claim this old is taken over by the next run
+export const PUBLISH_LEASE_MS = 20 * 60 * 1000;
 
 function pad(value: number): string {
   return String(value).padStart(2, '0');
@@ -39,8 +42,22 @@ export function filterScheduledPosts<T extends ScheduleTiming>(posts: T[], statu
     .sort((first, second) => new Date(second.scheduledAt).getTime() - new Date(first.scheduledAt).getTime());
 }
 
+export function isRetrying(post: ScheduleTiming): boolean {
+  return post.status === 'pending' && (post.attempts ?? 0) > 0;
+}
+
+// a retried post waits from its last claim, and a claim no run took over in time means no scheduler is running
 export function overduePostsOf<T extends ScheduleTiming>(posts: T[], now: number = Date.now()): T[] {
-  return posts.filter(post => post.status === 'pending' && now - new Date(post.scheduledAt).getTime() > OVERDUE_MS);
+  return posts.filter(post => {
+    if (post.status === 'pending') {
+      const waitingSince = isRetrying(post) && post.claimedAt ? post.claimedAt : post.scheduledAt;
+      return now - new Date(waitingSince).getTime() > OVERDUE_MS;
+    }
+    if (post.status === 'publishing' && post.claimedAt) {
+      return now - new Date(post.claimedAt).getTime() > PUBLISH_LEASE_MS + OVERDUE_MS;
+    }
+    return false;
+  });
 }
 
 export function isPastDue(post: ScheduleTiming, now: Date = new Date()): boolean {
