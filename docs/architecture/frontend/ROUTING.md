@@ -8,7 +8,7 @@ The app uses React Router v6 in `frontend/src/App.tsx`. The router uses `Browser
 
 | Path | Component | Notes |
 |---|---|---|
-| `/login` | `Login.tsx` | Public - redirects to `/` if already authenticated. `?mode=signup` opens the sign-up form (the public site's Get started buttons link to `https://app.twiligent.ujjwal.fyi/login?mode=signup`) |
+| `/login` | `Login.tsx` | Public - redirects to `/` if already authenticated. Opens on the start view: Continue with Google, an email field that sends a sign-in code, and a Use password link. `?mode=signup` keeps the same view with the headline "Create your Twiligent account" and Google's "Sign up with Google"; the emailed code creates the account the first time an address is used (the public site's Get started buttons link to `https://app.twiligent.ujjwal.fyi/login?mode=signup`) |
 | `/docs/*` | `components/DocsRedirect.tsx` | Public. The docs live on the public site; this route replaces the location with the same path and hash under `https://twiligent.ujjwal.fyi/docs` (`docsUrl()` in `lib/docs.ts`), so old links keep working |
 | `/` (layout) | `AppLayout` (inline) | Protected - redirects to `/login` if unauthenticated |
 | `/` (index) | `Overview.tsx` | Default page after login |

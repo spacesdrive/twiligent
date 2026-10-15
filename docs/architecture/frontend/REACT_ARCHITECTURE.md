@@ -48,7 +48,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 
 Defines the router, provider tree, and lazy-loaded page imports.
 
-**Lazy loading:** All pages except `Login` are wrapped in `React.lazy()`. This means pages are code-split into separate chunks and loaded on first navigation. The `<Suspense fallback={null}>` wrapper renders nothing while the chunk loads.
+**Lazy loading:** All pages except `Login` are wrapped in `React.lazy()`. This means pages are code-split into separate chunks and loaded on first navigation. The `<Suspense fallback={null}>` wrapper renders nothing while the chunk loads. `Login` lazy-loads only its decorative `LoginBackdrop`, so the sign-in card never waits for it.
 
 **Router:** Uses `createBrowserRouter` (React Router v7 data router). This enables nested layouts via `<Outlet />` in `MainLayout`.
 
@@ -94,7 +94,7 @@ frontend/src/
   services/
     api.ts               All backend HTTP calls
   context/
-    AuthContext.tsx       Session, signIn, signUp, signOut
+    AuthContext.tsx       Session, sign-in code, password sign-in and sign-up, Google, reset, signOut
     AppContext.tsx        Accounts list, loading, showToast
   utils/
     formatters.ts         fmtNum, fmtDate, fmtDuration, normalizeAccount, etc.
@@ -116,14 +116,17 @@ frontend/src/
     brand/                Logo and platform icons
     ui/                   shadcn generated components, restyled onto the tokens
   pages/
-    Login.tsx             Auth page (not lazy-loaded, always small); owns mode (sign in, sign up, code), fields, the password toggle and the resend wait
-    LoginForm.tsx         Email and password form
-    LoginCodeForm.tsx     The 6-digit email code step (sign-up confirmation, and password reset with a new-password field), with Send a new code
+    Login.tsx             Auth page (not lazy-loaded, always small): one card over the dashboard picture; owns the view
+                          (start, code, password, signup, verify, forgot, reset), fields, the password toggle and the resend wait
+    LoginBackdrop.tsx     Blurred picture of the dashboard behind the card, built from the shared components with sample
+                          figures; aria-hidden and loaded with React.lazy so it never delays the card
+    LoginEmailStart.tsx   The first view's email field, with a mail icon and the Continue arrow inside it
+    LoginPasswordForm.tsx Email and password form, for signing in and for creating a password account
+    LoginCodeForm.tsx     The 6-digit email code step (code sign-in, sign-up confirmation, and password reset with a new-password field), with Send a new code
     LoginEmailForm.tsx    The email-only Forgot password step
     PasswordInput.tsx     Password field with its show or hide button, used by the sign-in, sign-up and reset forms
     useCountdown.ts       Seconds until another email code may be sent
-    LoginBrandPanel.tsx   Decorative product preview beside the form
-    loginCopy.ts          Sign-in and sign-up text, privacy link
+    loginCopy.ts          LoginView, the title and button text for each view, the sign-up title, privacy link
   features/
     analytics/
       overview/           Overview.tsx - all-accounts dashboard (page; tabs, hooks and helpers beside it)

@@ -8,8 +8,8 @@ Wraps Supabase Auth state and exposes it to the entire app.
 
 ```ts
 const {
-    session, user, signIn, signUp, verifySignUpCode, resendSignUpCode, sendPasswordReset, verifyPasswordResetCode, updatePassword,
-    signInWithGoogle, signOut,
+    session, user, signIn, signUp, verifySignUpCode, resendSignUpCode, sendSignInCode, verifySignInCode, sendPasswordReset,
+    verifyPasswordResetCode, updatePassword, signInWithGoogle, signOut,
 } = useAuth();
 ```
 
@@ -20,9 +20,11 @@ The value is typed as `AuthContextValue`, exported from `AuthContext.tsx`.
 | `session` | `Session \| null \| undefined` | Current Supabase session; `undefined` until the first `getSession()` resolves, `null` if not logged in |
 | `user` | `User \| null` | `session.user` shorthand |
 | `signIn(email, password)` | async function | Calls `supabase.auth.signInWithPassword()` |
-| `signUp(email, password)` | async function | Calls `supabase.auth.signUp()`. With **Confirm email** on it resolves with a user and no session, and the login page asks for the emailed code |
+| `signUp(email, password)` | async function | Calls `supabase.auth.signUp()` to create a password account, for instances that do not email sign-in codes. With **Confirm email** on it resolves with a user and no session, and the login page asks for the emailed code |
 | `verifySignUpCode(email, code)` | async function | Calls `supabase.auth.verifyOtp({ email, token: code, type: 'signup' })`; a correct code confirms the address and signs the user in |
 | `resendSignUpCode(email)` | async function | Calls `supabase.auth.resend({ type: 'signup', email })` to email a new code |
+| `sendSignInCode(email)` | async function | Calls `supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true } })`; emails a 6-digit code that signs the user in, creating the account the first time an address is used |
+| `verifySignInCode(email, code)` | async function | Calls `supabase.auth.verifyOtp({ email, token: code, type: 'email' })`; a correct code signs the user in, and also confirms an address that signed up with a password and never confirmed it |
 | `sendPasswordReset(email)` | async function | Calls `supabase.auth.resetPasswordForEmail(email, { redirectTo: <origin>/settings })`; the email carries a recovery code and a link |
 | `verifyPasswordResetCode(email, code)` | async function | Calls `supabase.auth.verifyOtp({ email, token: code, type: 'recovery' })`; a correct code signs the user in |
 | `updatePassword(password)` | async function | Calls `supabase.auth.updateUser({ password })`; sets or changes the password, including for an account that only used Google |
@@ -48,7 +50,7 @@ useEffect(() => {
 ### Where to use it
 
 - `ProtectedRoute` - reads `session` to decide whether to redirect to `/login`
-- `Login.tsx` - calls `signIn()`, `signUp()`, `verifySignUpCode()`, `resendSignUpCode()`, `sendPasswordReset()`, `verifyPasswordResetCode()`, `updatePassword()` and `signInWithGoogle()`
+- `Login.tsx` - calls `sendSignInCode()` and `verifySignInCode()` (the default email sign-in), `signIn()`, `signUp()`, `verifySignUpCode()`, `resendSignUpCode()`, `sendPasswordReset()`, `verifyPasswordResetCode()`, `updatePassword()` and `signInWithGoogle()`
 - `features/settings/PasswordSection.tsx` - calls `updatePassword()` and reads `user.email` for password managers
 - `Header.tsx` - calls `signOut()`, shows `user.email`
 - Do **not** use in page/feature components - they should never need auth state directly
