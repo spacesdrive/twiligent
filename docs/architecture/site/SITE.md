@@ -85,7 +85,7 @@ site/
 |---|---|---|
 | `/` | `MarketingLayout` > `Home` | The home page ships with the first load |
 | `*` | `MarketingLayout` > `NotFound` | Lazy |
-| `/docs`, `/docs/*` | `DocsLayout` > `DocPage` | Both lazy; `DocPage` reads the slug from the path |
+| `/docs`, `/docs/*` | `DocsLayout` > `DocPage` | Both lazy; `DocPage` reads the slug from the path. `/docs` itself needs the index child, because React Router 7 does not match an empty remainder to the `*` child |
 
 Fallback: the build has no top-level `404.html`, so Cloudflare Pages serves `index.html` for any path that is not a file, and the router decides. A docs path with no content file shows a docs 404 inside the docs frame.
 
