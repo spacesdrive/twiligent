@@ -1,7 +1,8 @@
 name: Instagram Scheduled Publisher
 
-# Automatically publishes scheduled Instagram posts via GitHub Actions.
-# Runs every 15 minutes - posts publish within ~15 min of their scheduled time.
+# Backup publisher for scheduled Instagram posts; the Worker's cron is the main one.
+# Asks for a run every 15 minutes, off the top of the hour as GitHub advises, but GitHub
+# starts scheduled runs late when it is busy (often by hours) and sometimes skips them.
 #
 # FREE TIER USAGE:
 #   Public repos  - unlimited minutes (recommended)
@@ -16,12 +17,19 @@ name: Instagram Scheduled Publisher
 
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
+
+# one run at a time; a run that starts while another is busy waits instead of cancelling it
+concurrency:
+  group: publish-scheduled
+  cancel-in-progress: false
 
 jobs:
   publish:
     runs-on: ubuntu-latest
+    # under the 20 minute claim lease, so a later run never takes over a post this run is still publishing
+    timeout-minutes: 14
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
