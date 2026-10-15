@@ -1,8 +1,8 @@
-export const meta = { title: 'Email verification codes (optional)', description: 'Confirm each new email account with a 6-digit code, sent free through Resend, with a daily cap.' }
+export const meta = { title: 'Email verification codes (optional)', description: 'Email the 6-digit codes that sign members in and confirm new accounts, sent free through Resend, with a daily cap.' }
 
 <Callout type="note" title="How it works">
 
-Supabase Auth hands every sign-up, password reset and sign-in email to your backend instead of sending it. The backend checks that the request came from your Supabase project, counts the day's emails, and sends the code through Resend. Resend's free plan sends 100 emails a day, so the backend stops at 100. After that, the sign-up page tells people to sign in with Google instead, and email codes start again at midnight UTC.
+The sign-in page's email field signs people in with a 6-digit code, and creates their account the first time an address is used. Supabase Auth hands that email, and every sign-up, password reset and other auth email, to your backend instead of sending it. The backend checks that the request came from your Supabase project, counts the day's emails, and sends the code through Resend. Every code sign-in is one email. Resend's free plan sends 100 emails a day, so the backend stops at 100. After that, the sign-in page shows that email codes are paused until tomorrow and points people to Google or their password, and email codes start again at midnight UTC.
 
 </Callout>
 
@@ -44,7 +44,7 @@ Paste the secret exactly as Supabase shows it, starting with `v1,whsec_`.
 </Step>
 <Step title="Turn on email confirmation">
 
-Open **Sign In / Providers**, **Email**. Turn on **Confirm email** and keep the email OTP length at 6. New members then enter the code on the sign-up page before they can sign in.
+Open **Sign In / Providers**, **Email**. Turn on **Confirm email** and keep the email OTP length at 6. Members who create an account with a password then enter a code before they can sign in. Code sign-in confirms the address by itself, so it works either way.
 
 </Step>
 <Step title="Slow down bursts">
@@ -54,13 +54,13 @@ Open **Rate Limits** and set **Rate limit for sending emails** to about 30 an ho
 </Step>
 <Step title="Test it">
 
-Create an account with an address you own. The code should arrive within a minute, from your `EMAIL_FROM` address. If it does not, run `npx wrangler tail` in `backend/` while you sign up: a `request failed` line explains why, for example an unverified domain.
+On the sign-in page, type an address you own and press the arrow. The code should arrive within a minute, from your `EMAIL_FROM` address, and entering it signs you in. If it does not arrive, run `npx wrangler tail` in `backend/` while you try again: a `request failed` line explains why, for example an unverified domain.
 
 </Step>
 </Steps>
 
 <Callout type="warning" title="Every email counts">
 
-Password resets, email changes and security notices go through the same hook and count towards the 100. When the cap is reached, notices are skipped rather than blocking the change they report. Without Redis, the backend cannot count, and Resend's own daily quota is the only limit; the message people see is the same.
+Code sign-ins, password resets, email changes and security notices go through the same hook and count towards the 100. If many members sign in with a code each day, ask them to use Google or add a password in Settings. When the cap is reached, notices are skipped rather than blocking the change they report. Without Redis, the backend cannot count, and Resend's own daily quota is the only limit; the message people see is the same.
 
 </Callout>

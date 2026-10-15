@@ -114,8 +114,11 @@ export function getSupabase(env: Env): SupabaseClient {
 ## Frontend - No DB Access
 
 The frontend's Supabase client (`frontend/src/lib/supabase.ts`) is used only for:
+- `supabase.auth.signInWithOtp()` and `supabase.auth.verifyOtp()` (the emailed sign-in code, sign-up confirmation and password reset codes)
 - `supabase.auth.signInWithPassword()`
-- `supabase.auth.signUp()`
+- `supabase.auth.signUp()` and `supabase.auth.resend()`
+- `supabase.auth.resetPasswordForEmail()` and `supabase.auth.updateUser()`
+- `supabase.auth.signInWithIdToken()` (Google)
 - `supabase.auth.signOut()`
 - `supabase.auth.getSession()`
 - `supabase.auth.onAuthStateChange()`

@@ -89,7 +89,7 @@ site/
 
 Fallback: the build has no top-level `404.html`, so Cloudflare Pages serves `index.html` for any path that is not a file, and the router decides. A docs path with no content file shows a docs 404 inside the docs frame.
 
-Links to the app use the constants in `src/lib/links.ts`: `SIGN_IN_URL` (`https://app.twiligent.ujjwal.fyi/login`) and `SIGN_UP_URL` (the same with `?mode=signup`, which opens the app's sign-up form). Sign-up and sign-in only exist in the app.
+Links to the app use the constants in `src/lib/links.ts`: `SIGN_IN_URL` (`https://app.twiligent.ujjwal.fyi/login`) and `SIGN_UP_URL` (the same with `?mode=signup`, which shows the app's sign-up headline and Sign up with Google; an emailed code creates the account). Sign-up and sign-in only exist in the app.
 
 ## Docs Pipeline
 

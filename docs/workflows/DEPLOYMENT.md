@@ -140,7 +140,7 @@ curl -i -H "Origin: https://app.twiligent.ujjwal.fyi" https://twiligent.ujjwalkr
 A request with any other `Origin` gets no `Access-Control-Allow-Origin` header. The Worker writes one JSON log line per request with its request id; use `npx wrangler tail` from `backend/` to watch them, and search for the id a user quotes from an error message.
 
 **Frontend (the app):**  
-Open `https://app.twiligent.ujjwal.fyi` (custom domain on the `twiligent` Pages project) -> verify login page loads -> sign in -> verify accounts load. Open `https://app.twiligent.ujjwal.fyi/login?mode=signup` -> verify the sign-up form opens. Open `https://app.twiligent.ujjwal.fyi/docs/use/publishing` -> verify it lands on the same page of the public docs.
+Open `https://app.twiligent.ujjwal.fyi` (custom domain on the `twiligent` Pages project) -> verify login page loads -> sign in -> verify accounts load. Open `https://app.twiligent.ujjwal.fyi/login?mode=signup` -> verify the headline reads "Create your Twiligent account". Open `https://app.twiligent.ujjwal.fyi/docs/use/publishing` -> verify it lands on the same page of the public docs.
 
 **Public site:**  
 Open `https://twiligent.ujjwal.fyi` (custom domain on the `twiligent-site` Pages project; `twiligent.spacesdrive.cc` 301-redirects here) -> verify the home page renders in light and dark (the theme toggle in the navbar) -> open `/docs`, press Ctrl K and search for `redis` -> open a result. Check that `/sitemap.xml` and `/llms.txt` load and that `https://twiligent.ujjwal.fyi/settings` redirects to `https://app.twiligent.ujjwal.fyi/settings`.

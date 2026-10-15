@@ -48,6 +48,7 @@ Shared components live in `frontend/src/components/`. Reach for these before wri
 | `EmptyState`, `ErrorState`, `LoadingState`, `PageSkeleton` | Every data view needs all of these |
 | `AccountAvatar`, `PlatformBadge`, `PlatformIcon` | Account and platform identity, never by colour alone |
 | `brand/Logo` | The theme-aware lockup, or the mark when the sidebar is collapsed |
+| `GoogleSignInButton` | Continue with Google. Google's own button cannot be styled (in dark mode it puts the G on a white square), so this draws an outline button with the coloured G (`public/icons/google-g.svg`) and lays Google's real button over it, nearly transparent; clicks, keyboard focus and the sign-in stay Google's |
 
 ## Page patterns
 
@@ -59,6 +60,7 @@ Shared components live in `frontend/src/components/`. Reach for these before wri
 | Create | Accounts (add flow) | Choice cards, then a form step, then review before commit |
 | Working surface | Publish | Main editor on the left, sticky `DetailPanel` with settings and the primary action on the right |
 | Settings | Settings | Sections with a label column and content column |
+| Sign-in | Login | One centred card in the dialog styling (`rounded-dialog`, `border-line`, `bg-popover`, `shadow-lg`) over a blurred picture of the dashboard (`LoginBackdrop`, the shared components with sample figures under a `bg-surface/70` blur); logo, Back link when not on the first view, one headline, then the view's form |
 
 ## Rules
 

@@ -28,9 +28,9 @@ The backend only answers browsers on `FRONTEND_URL` and the addresses in `ALLOWE
 | `UPSTASH_REDIS_REST_URL` | <Badge tone="optional">Optional</Badge> | Upstash database, REST API | Cache address. |
 | `UPSTASH_REDIS_REST_TOKEN` <Badge tone="secret">Secret</Badge> | <Badge tone="optional">Optional</Badge> | Upstash database, REST API | Cache password. |
 | `SEND_EMAIL_HOOK_SECRET` <Badge tone="secret">Secret</Badge> | <Badge tone="optional">Optional</Badge> | Supabase, Authentication, Auth Hooks, Send Email hook | Proves an email request came from your Supabase project. |
-| `RESEND_API_KEY` <Badge tone="secret">Secret</Badge> | <Badge tone="optional">Optional</Badge> | Resend, API Keys (sending access) | Sends verification codes and other sign-in emails. |
+| `RESEND_API_KEY` <Badge tone="secret">Secret</Badge> | <Badge tone="optional">Optional</Badge> | Resend, API Keys (sending access) | Sends sign-in and verification codes and other auth emails. |
 | `EMAIL_FROM` | <Badge tone="optional">Optional</Badge> | A sender on a domain verified in Resend, for example {'Twiligent <no-reply@example.com>'} | The sender of those emails. |
-| `EMAIL_DAILY_LIMIT` | <Badge tone="optional">Optional</Badge> | A whole number; 100 when not set | Emails a day before sign-up points people to Google. |
+| `EMAIL_DAILY_LIMIT` | <Badge tone="optional">Optional</Badge> | A whole number; 100 when not set | Emails a day before the sign-in page pauses email codes and points people to Google or a password. |
 
 Platform keys are shared by every member of the instance. Missing ones only switch off that platform: Settings shows which are set, and members see a clear message instead of an error.
 

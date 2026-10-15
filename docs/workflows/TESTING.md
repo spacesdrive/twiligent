@@ -37,6 +37,8 @@ Tests never sit next to source files. Each workspace has a `tests/` folder that 
 | `backend/services/authEmailService.ts` | `backend/tests/services/authEmailService.test.ts` |
 | `frontend/src/lib/authErrors.ts` | `frontend/tests/lib/authErrors.test.ts` |
 | `frontend/src/lib/passwords.ts` | `frontend/tests/lib/passwords.test.ts` |
+| `frontend/src/lib/emailAddress.ts` | `frontend/tests/lib/emailAddress.test.ts` |
+| `frontend/src/lib/googleIdentity.ts` | `frontend/tests/lib/googleIdentity.test.ts` |
 | `frontend/src/features/analytics/overview/overviewStats.ts` | `frontend/tests/features/analytics/overview/overviewStats.test.ts` |
 | `site/src/docs/searchShared.ts` | `site/tests/docs/searchShared.test.ts` |
 | `site/content/docs/**/*.mdx` and `site/src/docs/nav.ts` | `site/tests/docs/content.test.ts` |
@@ -57,7 +59,7 @@ Rate limiting has its own tests: `tests/lib/rateLimit/algorithms.test.ts` (each 
 
 Backend route and cron service tests (`tests/routes/*Routes.test.ts`, `tests/services/scheduledPublisher.test.ts`, `tests/services/tokenRefreshService.test.ts`) run the real code against `tests/fixtures/fakeSupabase.ts` and a scripted `fetch`, then compare responses, queries and outgoing requests with the `tests/fixtures/*.golden.json` snapshots. Route tests mount a route table with `mountWithContext()` from `tests/fixtures/routeHarness.ts`, which installs the real error handler and not-found handler and sets the request id (`req-test`), the signal and the context values the pipeline would set, so error responses are checked with their real `{ success: false, code, message, requestId }` body and status. Rows tagged with `tableRow(name, row)` are only visible to that table; untagged rows are visible to every table. A refactor must leave the snapshots unchanged. Prettier ignores the snapshots (`.prettierignore`), because the tests compare them byte for byte.
 
-The Send Email hook has its own tests: `tests/lib/webhookSignature.test.ts` (valid, tampered, wrong-key, multi-signature and replayed requests), `tests/validators/authHookValidators.test.ts`, `tests/services/email/authEmails.test.ts` (the email for each action, the verify links, HTML escaping and the two Secure Email Change emails), `tests/repositories/emailQuotaRepository.test.ts` (daily and per-address caps, hashed keys, Redis failures), `tests/services/authEmailService.test.ts` (Resend requests, idempotency keys, the caps and Resend's own quota errors, skipped notices) and `tests/routes/authHookRoutes.test.ts` (the hook error shape, and the route answering unsigned calls with 401 in the full app). `tests/fixtures/authHook.ts` signs requests the way Supabase Auth does. The Lua claim script cannot run in Node; the repository test runs the same rules in memory. On the frontend, `tests/lib/authErrors.test.ts` covers when the login page points to Google.
+The Send Email hook has its own tests: `tests/lib/webhookSignature.test.ts` (valid, tampered, wrong-key, multi-signature and replayed requests), `tests/validators/authHookValidators.test.ts`, `tests/services/email/authEmails.test.ts` (the email for each action, the verify links, HTML escaping and the two Secure Email Change emails), `tests/repositories/emailQuotaRepository.test.ts` (daily and per-address caps, hashed keys, Redis failures), `tests/services/authEmailService.test.ts` (Resend requests, idempotency keys, the caps and Resend's own quota errors, skipped notices) and `tests/routes/authHookRoutes.test.ts` (the hook error shape, and the route answering unsigned calls with 401 in the full app). `tests/fixtures/authHook.ts` signs requests the way Supabase Auth does. The Lua claim script cannot run in Node; the repository test runs the same rules in memory. On the frontend, `tests/lib/authErrors.test.ts` covers when the sign-in page shows the daily cap warning and whether it offers Google, `tests/lib/emailAddress.test.ts` when an address looks complete enough to enable the Continue arrow, and `tests/lib/googleIdentity.test.ts` the label drawn on the Google button for each text option.
 
 The testing workflow documented here describes what should run before shipping any change.
 
@@ -126,23 +128,31 @@ npm run dev:backend   # from the repository root; wrangler dev on port 8787
 
 Open the app in a browser. For each changed area, test:
 
-**Authentication:**
-- [ ] Login with valid credentials -> lands on Overview
-- [ ] Login with invalid credentials -> error message shown
+**Authentication (if the sign-in page, AuthContext or the Google button changed):**
+- [ ] `/login` shows one card over a blurred dashboard picture, in light and dark mode, and the card appears before the picture
+- [ ] Code sign-in: type an address you own -> the Continue arrow enables once it looks complete -> "Check your email" -> the 6-digit code lands on Overview; an address with no account gets one the same way
+- [ ] Use password -> Email and Password with Forgot your password? -> valid credentials land on Overview; wrong ones show an error toast
+- [ ] No account yet? Create one with a password -> with Confirm email on, the code step opens and the code lands on Overview; with it off, the account opens at once
+- [ ] A password sign-in for an address that never confirmed -> a sign-in code is sent and the code view opens
+- [ ] Back returns to the first view, and from Reset your password to the password view
+- [ ] Continue with Google signs in (only on an origin listed in the OAuth client's Authorized JavaScript origins); in dark mode the button is the app's outline button with no white square behind the G, and Tab focus shows its ring
+- [ ] `/login?mode=signup` shows "Create your Twiligent account" and "Sign up with Google"
+- [ ] With the daily cap reached, Continue shows the warning "Email codes are paused until tomorrow" above Google, offering Google or the password
 - [ ] Sign out -> redirects to login
 
 **Email verification codes (if the hook, its secrets or the login page changed):**
-- [ ] Create an account with an address you own -> the code arrives from `EMAIL_FROM`, the page shows the code step, and entering the code lands on Overview
+- [ ] Code sign-in with an address you own -> the code arrives from `EMAIL_FROM` ("Your Twiligent sign-in code" for an existing account, the verification code email for a new one), and entering it lands on Overview
 - [ ] A wrong code -> "The code is wrong or has expired"; Send a new code -> a new email, then a 60 second wait
-- [ ] Sign in with an unconfirmed address -> the code step opens
+- [ ] Create an account with a password (Use password, Create one with a password) -> the confirmation code arrives and entering it lands on Overview
+- [ ] Sign in with a password for an unconfirmed address -> a sign-in code is sent and the code step opens
 - [ ] An unsigned call, `curl -i -X POST -H "Content-Type: application/json" -d '{}' .../api/auth/email-hook` -> 401 with `{ "error": { "http_code": 401, ... } }` and no email sent
 - [ ] `npx wrangler tail` shows `auth email sent` for each code, and no code in any log line
-- [ ] To check the daily cap without spending the quota, run the Worker locally with `EMAIL_DAILY_LIMIT=1` and no Redis, and send signed requests (see `tests/fixtures/authHook.ts` for the signing) -> the second one answers 429 with the Google message
+- [ ] To check the daily cap without spending the quota, run the Worker locally with `EMAIL_DAILY_LIMIT=1` and no Redis, and send signed requests (see `tests/fixtures/authHook.ts` for the signing) -> the second one answers 429 with the Google message, which the sign-in page shows as the daily cap warning
 
 **Passwords (if the Password section, the reset steps or the recovery email changed):**
 - [ ] Settings, Password: mismatched fields -> "The two passwords do not match"; a valid password -> saved, and signing out and in with it works
 - [ ] An account created with Google sets a password in Settings, then signs in with email and that password and sees the same accounts
-- [ ] Sign-in page, Forgot password? -> the email step -> a recovery code arrives -> a wrong code shows "The code is wrong or has expired" -> the right code and a new password land on Overview
+- [ ] Sign-in page, Use password, Forgot your password? -> the email step -> a recovery code arrives -> a wrong code shows "The code is wrong or has expired" -> the right code and a new password land on Overview
 - [ ] The link in the recovery email opens Settings signed in
 
 **Request pipeline (if middleware, CORS or error handling changed):**
@@ -192,7 +202,7 @@ Run `npm run dev:site`, or `npm run build --workspace site` and `npm run preview
 - [ ] Code blocks are highlighted in both themes
 - [ ] After a build, `site/dist/sitemap.xml` and `site/dist/llms.txt` list every docs page
 - [ ] In the app, `/docs/self-host/github` (or any `/docs/...` path) lands on the same page of the public docs, and the Documentation item in the user menu opens the docs in a new tab
-- [ ] The app's `/login?mode=signup` opens the sign-up form
+- [ ] The app's `/login?mode=signup` shows "Create your Twiligent account"
 - [ ] The product previews play while on screen: the cursor in Publish clicks the upload, caption, time and Schedule post, the Analytics cursor reads the chart and opens Shorts and regular, and each bento card fills its panel down to the lower edge
 - [ ] With reduced motion on (DevTools, Rendering, prefers-reduced-motion), every preview shows its finished state and no cursor appears
 

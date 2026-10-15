@@ -105,7 +105,7 @@ Registered with `app.onError(errorHandler)` and `app.notFound(notFoundHandler)`.
 
 It also maps Hono's own `HTTPException` (such as a malformed JSON body) by status, and answers anything else with `INTERNAL_ERROR` and a message asking the user to quote the request id. The rate limiter builds its 429 body with the same `errorBody()` helper, plus `retryAfter`.
 
-`authHookErrorHandler`, in the same file, is used only by `routes/authHookRoutes.ts` (`router.onError`). It logs and maps statuses exactly like `errorHandler`, but writes the body Supabase Auth reads from a hook, `{ "error": { "http_code": 429, "message": "..." } }`; Supabase passes the message to the sign-up form, so it is written for the person signing up.
+`authHookErrorHandler`, in the same file, is used only by `routes/authHookRoutes.ts` (`router.onError`). It logs and maps statuses exactly like `errorHandler`, but writes the body Supabase Auth reads from a hook, `{ "error": { "http_code": 429, "message": "..." } }`; Supabase passes the message to the sign-in page, so it is written for the person signing in or up; for the daily cap the page shows its own wording (`emailErrorNotice` in `frontend/src/lib/authErrors.ts`).
 
 ### Frontend API Calls
 

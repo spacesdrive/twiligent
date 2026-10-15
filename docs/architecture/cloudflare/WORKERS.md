@@ -55,7 +55,7 @@ All secrets are set via `npx wrangler secret put <NAME>`, run from `backend/`. T
 | `SEND_EMAIL_HOOK_SECRET` | Optional | The Send Email hook secret from Supabase (`v1,whsec_...`); verifies that `POST /api/auth/email-hook` was called by your Supabase Auth. Without it the hook answers 503 |
 | `RESEND_API_KEY` | Optional | Resend API key with sending access; sends the auth emails (verification codes) |
 | `EMAIL_FROM` | Optional | Sender of the auth emails on a domain verified in Resend, such as `Twiligent <no-reply@example.com>` |
-| `EMAIL_DAILY_LIMIT` | Optional | Auth emails a day across all users before sign-up points to Google; defaults to `100`, Resend's free daily quota |
+| `EMAIL_DAILY_LIMIT` | Optional | Auth emails a day across all users (each code sign-in is one) before the sign-in page pauses email codes and points to Google or a password; defaults to `100`, Resend's free daily quota |
 
 ### Setting secrets
 

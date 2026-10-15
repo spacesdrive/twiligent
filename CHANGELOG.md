@@ -56,8 +56,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 **Docs and app addresses**
 - The docs moved from the app to the public site; links in the app (sign-in page, user menu, command palette, Settings) open `https://twiligent.ujjwal.fyi/docs`, and old `/docs/...` links in the app redirect to the same page there
 - The app moves to `https://app.twiligent.ujjwal.fyi`. The app's old paths on `twiligent.ujjwal.fyi` (such as `/login` and `/settings`) redirect to the new address. The Worker's `FRONTEND_URL` and `ALLOWED_ORIGINS`, the Supabase Auth URLs and the Google sign-in origins must name the new address
-- The sign-in page opens on the sign-up form when the link ends in `?mode=signup`
+- The sign-in page shows the sign-up headline and Sign up with Google when the link ends in `?mode=signup`
 - `npm run build`, `npm test` and `npm run typecheck` at the root now cover the site as well
+
+**Sign-in page**
+- The sign-in page follows the Activepieces layout in the Twiligent brand: one centred card, styled like the app's dialogs, over a blurred picture of the dashboard. The split layout and its brand panel are gone (ADR-036)
+- Signing in starts with Continue with Google or an email address: Twiligent emails a 6-digit code that signs you in, and creates the account the first time an address is used. Use password opens email and password sign-in, Forgot your password? and Create one with a password
+- A password sign-in for an address that was never confirmed sends a sign-in code instead of failing
+- Each code sign-in is one email against the daily cap; when the cap is reached, the sign-in page shows that email codes are paused until tomorrow and points to Google or the password
+- Without the Send Email hook, Supabase's own Magic Link email signs people in with a link; the self-hosting docs explain how to add the code to it
 
 **Protected main branch**
 - `main` only accepts pull requests whose CI check passed on an up-to-date branch, merged with rebase; force pushes and deleting the branch are blocked for everyone (ADR-034)
@@ -122,6 +129,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - The Reddit "Upvoted" column is now "Upvote rate", with an explanation of what it measures and why some rows show a dash
 - README: `VITE_API_URL` example now ends in `/api`; the setup SQL now creates `tracked_posts` and turns on row level security for all four tables
 - Buttons rendered as links no longer log a Base UI native-button warning
+- In dark mode, Continue with Google showed the G on a white square; the app now draws the button in its own outline style, with Google's button over it handling the sign-in
 
 ### Removed
 

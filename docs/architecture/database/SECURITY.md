@@ -41,9 +41,9 @@ This denies the anon and authenticated roles everything, while the service-role 
 
 ## Signups
 
-Supabase Auth accepts signups from anyone who knows the project URL and anon key. Private instances should turn off new signups in Supabase Authentication settings once their members have accounts.
+Supabase Auth accepts signups from anyone who knows the project URL and anon key. The sign-in page creates an account the first time an address enters a correct emailed sign-in code (`signInWithOtp` with `shouldCreateUser: true`), as well as through Google and the password sign-up form. Private instances should turn off new signups in Supabase Authentication settings once their members have accounts; a sign-in code is then refused for an address with no account.
 
-With **Confirm email** on and the Send Email hook set up, an email account cannot sign in until its owner enters the 6-digit code sent to the address. The Worker sends those emails through Resend and caps them at `EMAIL_DAILY_LIMIT` a day (100 by default) and 5 a day per address; see `docs/architecture/data-flows/AUTHENTICATION.md`.
+A code sign-in proves the person owns the address. With **Confirm email** on, a password account cannot sign in until its owner enters a 6-digit code sent to the address. With the Send Email hook set up, the Worker sends every auth email through Resend and caps them at `EMAIL_DAILY_LIMIT` a day (100 by default) and 5 a day per address, so each code sign-in counts against the cap; see `docs/architecture/data-flows/AUTHENTICATION.md`.
 
 **The service-role key must never appear in:**
 - Frontend code

@@ -73,7 +73,7 @@ Every user-scoped method takes the verified `userId` as its first argument. Meth
 
 `composeAuthEmails(hook, supabaseUrl)` in `email/authEmails.ts` turns one hook call into the emails to send, each with a plain text and an HTML body:
 
-- `signup`, `recovery`, `magiclink`, `email`, `invite`: the 6-digit code and a link to Supabase Auth's `/auth/v1/verify` endpoint, which does the same. The recovery email asks for the code on the sign-in page with the new password; its link signs the person in on Settings, where the Password section sets one.
+- `signup`, `recovery`, `magiclink`, `email`, `invite`: the 6-digit code and a link to Supabase Auth's `/auth/v1/verify` endpoint, which does the same. The recovery email asks for the code on the sign-in page with the new password; its link signs the person in on Settings, where the Password section sets one. A code sign-in sends `magiclink` for an existing user and `signup` for a new one.
 - `reauthentication`: the code only.
 - `email_change`: with Secure Email Change, one code to each address. Supabase names the hashes the other way round: the current address gets `token` with `token_hash_new`, the new one `token_new` with `token_hash`. Without it, one email to the new address.
 - `*_notification`: a notice of a change already made, with no code (`notice: true`).
@@ -83,7 +83,7 @@ Values from the payload are HTML-escaped.
 
 `AuthEmailService.send` throws `NotConfiguredError` (503) without `RESEND_API_KEY` and `EMAIL_FROM`. For each email it:
 
-1. Claims a send from `emailQuotaRepository` for the UTC day: at most `EMAIL_DAILY_LIMIT` (100 by default) in total, and `RECIPIENT_DAILY_LIMIT` (5) to one address. Past either cap it throws `RateLimitedError` (429). The daily cap's message tells the person to sign in with Google.
+1. Claims a send from `emailQuotaRepository` for the UTC day: at most `EMAIL_DAILY_LIMIT` (100 by default) in total, and `RECIPIENT_DAILY_LIMIT` (5) to one address. Past either cap it throws `RateLimitedError` (429). The daily cap's message tells the person to sign in with Google; the sign-in page recognises it (`emailErrorNotice` in `frontend/src/lib/authErrors.ts`) and shows its own wording, which also offers the password.
 2. Sends it with `email/resendApi.ts` `sendEmail()`. The idempotency key is `<webhook-id>-<index>`. The call is abandoned after 4 seconds, inside Supabase's 5 second budget for the whole hook call.
 3. Treats Resend's `daily_quota_exceeded` and `monthly_quota_exceeded` answers like the daily cap. Other Resend errors are `UpstreamError` (502), and a timeout is `UpstreamTimeoutError` (504).
 

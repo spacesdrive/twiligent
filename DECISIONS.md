@@ -745,3 +745,26 @@ Records every significant architectural decision, the alternatives considered, a
 - The search index is rebuilt on every site build and downloaded only when someone searches, so it adds nothing to the first load.
 - Self-hosters do not need the site: they deploy only the app and the Worker, and read the docs on the project's site.
 - The site follows the brand kit in `frontend/public/` but keeps its own copy of the tokens in `site/src/index.css` (see `docs/brand-notes.md`), so a token change must be made in both places.
+
+---
+
+## ADR-036: Sign in with an emailed code first, in the Activepieces layout
+
+**Date:** 2026-10-15
+**Status:** Accepted
+
+**Decision:** The app's sign-in page follows the Activepieces sign-in layout in Twiligent's brand and the dashboard's style: one centred card in the app's dialog styling (`rounded-dialog`, `border-line`, `bg-popover`, `shadow-lg`) over a blurred picture of the dashboard (`pages/LoginBackdrop.tsx`, built from the shared components with sample figures, `aria-hidden`, loaded with `React.lazy`). The first view offers Continue with Google, then one email field that sends a 6-digit sign-in code (`supabase.auth.signInWithOtp` with `shouldCreateUser: true`, checked with `verifyOtp` type `email`), then a quiet Use password link. The code signs the person in and creates the account the first time an address is used, so Google and an emailed code are the default ways to join. Password sign-in, password sign-up (with its confirmation code when **Confirm email** is on) and the reset-by-code flow stay behind the password view. A password sign-in that fails with `email_not_confirmed` sends a sign-in code instead. `GoogleSignInButton` draws an outline button in the app's style and lays Google's real button over it, nearly transparent. The split layout with its brand panel (`LoginForm.tsx`, `LoginBrandPanel.tsx`) is removed.
+
+**Context:** The owner asked for the Activepieces sign-in exactly, in the Twiligent brand and the dashboard's style. The previous page put a password form first in a split layout beside a brand panel. Google's own button cannot be styled and in dark mode shows the G on a white square.
+
+**Alternatives considered:**
+- Password first with the same look. It matches the old behaviour, but Activepieces asks for the email first, and a code needs no password to remember or reset.
+- Keeping the split layout with the brand panel. It does not match the requested reference, and the panel duplicated a picture of the app in a second style.
+- Rendering Google's button alone. It keeps the white square in dark mode and a different shape and type from the rest of the card.
+
+**Trade-offs:**
+- Every code sign-in is one email (`magiclink` for an existing user, `signup` for a new one) and counts against `EMAIL_DAILY_LIMIT` (100 a day by default). When the cap is reached, the first view shows a warning and points to Google or the password; members who sign in often should use one of those.
+- Password sign-up stays for instances that do not email codes, so the page keeps seven views instead of three.
+- Google's button is drawn by the app with Google's real button over it at near-zero opacity. Clicks, keyboard focus and the sign-in stay Google's, but the visible label must follow Google's text options (`googleButtonLabel()`), and the button still only works on origins listed in the OAuth client.
+- Self-hosters without the Send Email hook get Supabase's own Magic Link email, which holds a link rather than a code unless they add `{{ .Token }}` to its template, and is limited to a few emails an hour.
+- With signups turned off in Supabase, the code is refused for unknown addresses, which keeps private instances private without a separate setting.

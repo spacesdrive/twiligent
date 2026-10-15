@@ -1,6 +1,21 @@
 # Data Flow - Authentication
 
-## Login Flow
+## The Sign-in Page
+
+`/login` (`pages/Login.tsx`) is one card over a blurred picture of the dashboard (`LoginBackdrop.tsx`, lazy-loaded so it never delays the card). The card shows one view at a time (`LoginView` in `pages/loginCopy.ts`):
+
+| View | Shows | Back goes to |
+|---|---|---|
+| `start` | Continue with Google, "or", one email field with the Continue arrow inside it (`LoginEmailStart.tsx`), a Use password link and the privacy note | - |
+| `code` | "Check your email": the 6-digit sign-in code (`LoginCodeForm.tsx`), Send a new code after 60 seconds | `start` |
+| `password` | Email, Password with Forgot your password?, Sign in, and No account yet? Create one with a password (`LoginPasswordForm.tsx`) | `start` |
+| `signup` | The same form, creating a password account | `start` |
+| `verify` | The code that confirms a password sign-up when **Confirm email** is on | `start` |
+| `forgot`, `reset` | The reset-by-code flow below | `password` |
+
+`?mode=signup` (the public site's Get started buttons) keeps the `start` view but shows the headline "Create your Twiligent account" and Google's "Sign up with Google". The default ways to join are Google and an emailed code, both of which create the account on first use; the password sign-up stays behind the password view for instances that do not email codes.
+
+## Login Flow (Emailed Code, the Default)
 
 ```
 User visits the app
@@ -9,12 +24,19 @@ User visits the app
 React Router: no session -> ProtectedRoute redirects to /login
     │
     ▼
-Login.tsx renders email/password form
+Login.tsx start view: the user types an address (looksLikeEmail() in lib/emailAddress.ts enables the arrow)
     │
     ▼
-User submits -> AuthContext.signIn(email, password)
-    -> supabase.auth.signInWithPassword({ email, password })
-    -> Supabase validates credentials
+AuthContext.sendSignInCode(email)
+    -> supabase.auth.signInWithOtp({ email, options: { shouldCreateUser: true } })
+    -> Supabase creates the user if the address is new, makes a 6-digit code and calls the Send Email hook
+         email_action_type 'magiclink' for an existing user, 'signup' for a new one; both emails carry the code
+         -> the Worker sends it through Resend, counted against the daily cap (see the sign-up section below)
+    │
+    ▼
+Login.tsx code view ("Check your email", LoginCodeForm)
+    -> the user types or pastes the code (non-digits are dropped)
+    -> AuthContext.verifySignInCode(email, code) -> supabase.auth.verifyOtp({ email, token, type: 'email' })
     -> Returns { session: { access_token, user: { id, email } } }
     -> AuthProvider.setSession(session)
     -> onAuthStateChange fires, React re-renders
@@ -31,12 +53,28 @@ AppProvider mounts -> loadAccounts() fires
 User sees Overview dashboard
 ```
 
-## Sign-up with an Email Code
+Send a new code calls `sendSignInCode` again and then waits 60 seconds. Each code sign-in is one email, so it counts against `EMAIL_DAILY_LIMIT`; when the cap is reached the start view shows the warning described below and Google and the password remain. With **Allow new users to sign up** off in Supabase, a code is refused for an address with no account.
 
-Used when **Confirm email** is on in Supabase and the Send Email hook points at the Worker. With **Confirm email** off, `signUp` returns a session and the page signs the user straight in.
+### Without the Send Email Hook
+
+Self-hosters who skip the email codes setup get Supabase's own **Magic Link** email for a code sign-in. By default it holds a link rather than a code; the link still signs the person in. Adding `{{ .Token }}` to the Magic Link template (Supabase, Authentication, Emails) shows the code too. Supabase's built-in email sends only a few messages an hour, so those instances should set up the hook or rely on Google and password accounts.
+
+## Password Sign-in
 
 ```
-Login.tsx (sign-up mode) -> AuthContext.signUp(email, password)
+Login.tsx: Use password -> password view (LoginPasswordForm)
+    -> AuthContext.signIn(email, password) -> supabase.auth.signInWithPassword({ email, password })
+    -> session issued; same lifecycle as the code sign-in above
+    -> email_not_confirmed (a password account that never confirmed):
+         AuthContext.sendSignInCode(email), then the code view; the sign-in code also confirms the address
+```
+
+## Password Sign-up with a Confirmation Code
+
+The password view's Create one with a password link opens the `signup` view. A confirmation code is used when **Confirm email** is on in Supabase and the Send Email hook points at the Worker. With **Confirm email** off, `signUp` returns a session and the page signs the user straight in.
+
+```
+Login.tsx (signup view) -> AuthContext.signUp(email, password)
     -> supabase.auth.signUp({ email, password })
     -> Supabase Auth creates the unconfirmed user and a 6-digit code, then calls the Send Email hook:
          POST https://<worker>/api/auth/email-hook   (webhook-id, webhook-timestamp, webhook-signature headers)
@@ -51,24 +89,24 @@ Login.tsx (sign-up mode) -> AuthContext.signUp(email, password)
     -> signUp resolves with a user and no session
     │
     ▼
-Login.tsx opens the code step (LoginCodeForm)
+Login.tsx opens the verify view (LoginCodeForm)
     -> the user types or pastes the code (non-digits are dropped)
     -> AuthContext.verifySignUpCode(email, code) -> supabase.auth.verifyOtp({ email, token, type: 'signup' })
-    -> session issued; same lifecycle as password sign-in below
+    -> session issued; same lifecycle as the code sign-in above
 ```
 
-Other cases on the login page:
+The same hook, caps and errors apply to the sign-in code. Other cases on the sign-in page:
 
 | Case | What happens |
 |---|---|
-| The hook answers 429 for the daily cap, or Supabase's own email limit (`over_email_send_rate_limit`) is hit | `signUp` or `resend` fails with status 429. `lib/authErrors.ts` (`emailErrorNotice`) recognises it, and the page shows a warning above the Google button instead of a toast. On the code step the Google button appears too. |
+| The hook answers 429 for the daily cap, or Supabase's own email limit (`over_email_send_rate_limit`) is hit | `signInWithOtp`, `signUp`, `resend` or `resetPasswordForEmail` fails with status 429. `lib/authErrors.ts` (`emailErrorNotice`) recognises it, and the page returns to the start view with the warning "Email codes are paused until tomorrow" above the Google button instead of a toast: "Twiligent has sent all the codes it can email today. Continue with Google or use your password instead, or try again tomorrow." (without Google: "Use your password instead, or try again tomorrow.") |
 | The per-address cap (5 a day) or Supabase's one-code-a-minute wait | Status 429, but the message already says what to do, so it is shown as a toast and Google is not suggested |
 | Wrong or expired code (`otp_expired`) | "The code is wrong or has expired. Check it, or send a new one." |
-| Send a new code | `AuthContext.resendSignUpCode(email)` -> `supabase.auth.resend({ type: 'signup', email })`; the button then waits 60 seconds |
-| Signing in before confirming (`email_not_confirmed`) | The page opens the code step with the resend button ready |
+| Send a new code | On the verify view, `AuthContext.resendSignUpCode(email)` -> `supabase.auth.resend({ type: 'signup', email })`; on the code view, `sendSignInCode(email)` again; the button then waits 60 seconds |
+| Signing in with a password before confirming (`email_not_confirmed`) | The page sends a sign-in code and opens the code view; the code signs the person in and confirms the address |
 | Sign-up for an address that already has an account | Supabase returns a user with no identities and sends nothing; the page says to sign in instead |
 
-If the sign-up email cannot be sent, Supabase does not create the user, so the person can try again later or use Google. Password reset, magic link, invite, email change and security notice emails go through the same hook. Notices that hit a cap are skipped instead of failing the change they report. See `docs/architecture/backend/ROUTES.md` (Send Email hook) and `SERVICES.md` (Auth emails).
+If the sign-up email cannot be sent, Supabase does not create the user, so the person can try again later or use Google. Sign-in code (magic link), password reset, invite, email change and security notice emails go through the same hook. Notices that hit a cap are skipped instead of failing the change they report. See `docs/architecture/backend/ROUTES.md` (Send Email hook) and `SERVICES.md` (Auth emails).
 
 ## Setting a Password from Settings
 
@@ -85,45 +123,49 @@ Supabase keeps one user per email address, so for an account that only used Goog
 ## Resetting a Forgotten Password
 
 ```
-Login.tsx: Forgot password? (sign-in form) -> mode 'forgot' (LoginEmailForm)
+Login.tsx: Forgot your password? (password view) -> view 'forgot' (LoginEmailForm)
     -> AuthContext.sendPasswordReset(email) -> supabase.auth.resetPasswordForEmail(email, { redirectTo: <origin>/settings })
     -> Supabase calls the Send Email hook with email_action_type 'recovery'
          -> the Worker emails the 6-digit code and a link, counted against the daily cap like every auth email
     -> "If an account uses <email>, a code is on its way."   (Supabase answers the same for unknown addresses)
     │
     ▼
-mode 'reset' (LoginCodeForm with a PasswordInput for the new password)
+view 'reset' (LoginCodeForm with a PasswordInput for the new password)
     -> AuthContext.verifyPasswordResetCode(email, code) -> supabase.auth.verifyOtp({ email, token, type: 'recovery' })
          the code signs the user in
     -> AuthContext.updatePassword(password)
     -> "Password saved" and the Overview; if the password is refused, the user is already signed in and is sent to Settings
 ```
 
-The email's link does the same as the code: Supabase verifies it, signs the user in and opens Settings, where the Password section sets the new password. Send a new code, the 60 second wait and the daily-limit warning with the Google button work as on the sign-up code step. A Google-only account can use this flow to get a password.
+The email's link does the same as the code: Supabase verifies it, signs the user in and opens Settings, where the Password section sets the new password. Send a new code, the 60 second wait and the daily-limit warning work as on the other code views. Back from `forgot` and `reset` returns to the password view. A Google-only account can use this flow to get a password.
 
 ## Sign in with Google
 
 Optional; enabled when `VITE_GOOGLE_CLIENT_ID` is set and the Google provider is on in Supabase.
 
 ```
-Login.tsx renders GoogleSignInButton
+Login.tsx start view renders GoogleSignInButton (text 'continue_with', or 'signup_with' for ?mode=signup)
     -> lib/googleIdentity.ts loads https://accounts.google.com/gsi/client once
     -> createNonce(): raw random nonce + its SHA-256 hex
     -> google.accounts.id.initialize({ client_id, nonce: hashed, callback })
     -> google.accounts.id.renderButton(...)          (Google's own button, popup or FedCM)
+         laid nearly transparent over an outline button the app draws (the G from public/icons/google-g.svg,
+         the label from googleButtonLabel()), so clicks and keyboard focus still reach Google's button
 User picks a Google account
     -> callback receives an ID token (JWT signed by Google, contains the hashed nonce)
     -> supabase.auth.signInWithIdToken({ provider: 'google', token, nonce: raw })
     -> Supabase checks the signature, audience (client ID) and sha256(raw) == token nonce
-    -> session issued; same lifecycle as password sign-in below
+    -> session issued; same lifecycle as the code sign-in above
 ```
+
+Google's button is an iframe that cannot be styled, and in dark mode it puts the G on a white square; drawing the app's own button underneath keeps it in the outline style in both themes while the sign-in stays Google's. Google only renders the button on origins listed in the OAuth client's **Authorized JavaScript origins**, so on an unlisted origin (such as a local dev server that was not added) the button does nothing.
 
 No OAuth redirect is involved, so the Google client has JavaScript origins only and no redirect URI on `supabase.co`. Every domain Google sees is the frontend's own domain, which is what allows brand verification (name and logo on the consent screen). A Google sign-in with the same verified email as an existing password account opens that account.
 
 ## Session Lifecycle
 
 ```
-Session created (on signIn)
+Session created (on any sign-in)
     │
     ▼
 Supabase JWT stored in browser (localStorage by default)
