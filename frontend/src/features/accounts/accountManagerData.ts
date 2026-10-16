@@ -27,6 +27,8 @@ export interface AccountSectionInfo {
 
 export interface OAuthReturn {
   connected: boolean;
+  // the account was already connected, and connecting it again renewed its token
+  reconnected: boolean;
   errorMessage: string | null;
   openAdd: boolean;
 }
@@ -55,7 +57,7 @@ export function instagramErrorMessage(code: string): string {
   return IG_ERRORS[code] || `Instagram connection failed: ${code}. ${TESTER_HINT}`;
 }
 
-// oauth returns ?ig_connected=true or ?ig_error=...; ?add=1 opens the add flow
+// oauth returns ?ig_connected=true, ?ig_connected=reconnected or ?ig_error=...; ?add=1 opens the add flow
 export function readOAuthReturn(searchParams: URLSearchParams): OAuthReturn | null {
   const connected = searchParams.get('ig_connected');
   const igError = searchParams.get('ig_error');
@@ -63,7 +65,8 @@ export function readOAuthReturn(searchParams: URLSearchParams): OAuthReturn | nu
   if (!connected && !igError && !add) return null;
 
   return {
-    connected: connected === 'true',
+    connected: connected === 'true' || connected === 'reconnected',
+    reconnected: connected === 'reconnected',
     errorMessage: igError ? instagramErrorMessage(igError) : null,
     openAdd: Boolean(add),
   };

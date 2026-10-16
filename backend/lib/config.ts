@@ -1,4 +1,5 @@
 import type { Env } from '../types/env.ts';
+import type { AutomationLimits } from '../../shared/types/automation.ts';
 
 const DEFAULT_BACKEND_URL = 'http://localhost:8787';
 const DEFAULT_FRONTEND_URL = 'http://localhost:5173';
@@ -7,6 +8,12 @@ const LOCAL_HOSTNAMES = ['localhost', '127.0.0.1'];
 const CALLBACK_PATH = '/api/auth/instagram/callback';
 // Resend's free plan sends 100 emails a day
 const DEFAULT_EMAIL_DAILY_LIMIT = 100;
+// Instagram allows 750 private replies an hour per account for posts and reels; the default keeps well under it
+const DEFAULT_AUTOMATION_LIMITS: AutomationLimits = { accountHourly: 200, userHourly: 500, globalHourly: 1000, recipientDaily: 3 };
+const INSTAGRAM_ACCOUNT_HOURLY_MAX = 750;
+// each reply costs three subrequests and a run gets 50 on the Workers Free plan, so 15 leaves room for the claim
+const DEFAULT_AUTOMATION_BATCH_SIZE = 10;
+const MAX_AUTOMATION_BATCH_SIZE = 15;
 
 export interface CloudinaryConfig {
     cloudName: string;
@@ -31,12 +38,23 @@ export interface AuthEmailConfig {
     supabaseUrl: string;
 }
 
+// comment-to-DM automation: the webhook's secrets and the sending limits
+export interface AutomationConfig {
+    verifyToken: string | undefined;
+    // the secrets a webhook signature may be made with, the Instagram app secret first
+    appSecrets: string[];
+    paused: boolean;
+    limits: AutomationLimits;
+    batchSize: number;
+}
+
 export interface AppConfig {
     youtubeApiKey: string | undefined;
     instagram: InstagramOAuthConfig;
     cloudinary: CloudinaryConfig | null;
     allowedOrigins: string[];
     authEmail: AuthEmailConfig;
+    automation: AutomationConfig;
 }
 
 // pasted secrets can carry a byte order mark or stray whitespace
@@ -100,6 +118,28 @@ export function readAuthEmailConfig(env: Env): AuthEmailConfig {
     };
 }
 
+// a missing, malformed or out of range value falls back to the default instead of stopping replies
+function positiveIntegerOf(value: string | undefined, fallback: number, max = Number.MAX_SAFE_INTEGER): number {
+    const number = Number(cleanSecret(value));
+    return Number.isInteger(number) && number > 0 && number <= max ? number : fallback;
+}
+
+export function readAutomationConfig(env: Env): AutomationConfig {
+    const defaults = DEFAULT_AUTOMATION_LIMITS;
+    return {
+        verifyToken: cleanSecret(env.INSTAGRAM_WEBHOOK_VERIFY_TOKEN),
+        appSecrets: [cleanSecret(env.INSTAGRAM_APP_SECRET), cleanSecret(env.META_APP_SECRET)].filter((secret): secret is string => !!secret),
+        paused: cleanSecret(env.AUTOMATION_PAUSED)?.toLowerCase() === 'true',
+        limits: {
+            accountHourly: positiveIntegerOf(env.AUTOMATION_ACCOUNT_HOURLY_LIMIT, defaults.accountHourly, INSTAGRAM_ACCOUNT_HOURLY_MAX),
+            userHourly: positiveIntegerOf(env.AUTOMATION_USER_HOURLY_LIMIT, defaults.userHourly),
+            globalHourly: positiveIntegerOf(env.AUTOMATION_GLOBAL_HOURLY_LIMIT, defaults.globalHourly),
+            recipientDaily: positiveIntegerOf(env.AUTOMATION_RECIPIENT_DAILY_LIMIT, defaults.recipientDaily),
+        },
+        batchSize: positiveIntegerOf(env.AUTOMATION_BATCH_SIZE, DEFAULT_AUTOMATION_BATCH_SIZE, MAX_AUTOMATION_BATCH_SIZE),
+    };
+}
+
 export function readConfig(env: Env): AppConfig {
     const cloudName = cleanSecret(env.CLOUDINARY_CLOUD_NAME);
     const uploadPreset = cleanSecret(env.CLOUDINARY_UPLOAD_PRESET);
@@ -109,5 +149,6 @@ export function readConfig(env: Env): AppConfig {
         cloudinary: cloudName && uploadPreset ? { cloudName, uploadPreset } : null,
         allowedOrigins: allowedOrigins(env),
         authEmail: readAuthEmailConfig(env),
+        automation: readAutomationConfig(env),
     };
 }

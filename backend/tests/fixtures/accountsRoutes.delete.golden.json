@@ -79,6 +79,21 @@
             ]
         },
         {
+            "type": "insert",
+            "table": "audit_events",
+            "values": {
+                "id": "00000000-0000-4000-8000-000000000001",
+                "user_id": "user-1",
+                "action": "account.removed",
+                "subject_type": "account",
+                "subject_id": "rd2",
+                "details": {
+                    "platform": "reddit"
+                }
+            },
+            "filters": []
+        },
+        {
             "type": "select",
             "table": "accounts",
             "columns": "id, platform, data",

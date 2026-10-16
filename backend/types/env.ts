@@ -21,4 +21,17 @@ export interface Env {
     EMAIL_FROM?: string;
     // emails a day across all users; defaults to 100, Resend's free daily quota
     EMAIL_DAILY_LIMIT?: string;
+    // the Verify Token typed into the Meta dashboard's webhook settings
+    INSTAGRAM_WEBHOOK_VERIFY_TOKEN?: string;
+    // the Meta app secret (App settings, Basic); webhooks are checked against it as well as INSTAGRAM_APP_SECRET
+    META_APP_SECRET?: string;
+    // "true" holds every comment-to-DM reply on this instance; comments are still recorded
+    AUTOMATION_PAUSED?: string;
+    // private replies per hour and per day; each falls back to its default when missing or invalid
+    AUTOMATION_ACCOUNT_HOURLY_LIMIT?: string;
+    AUTOMATION_USER_HOURLY_LIMIT?: string;
+    AUTOMATION_GLOBAL_HOURLY_LIMIT?: string;
+    AUTOMATION_RECIPIENT_DAILY_LIMIT?: string;
+    // replies sent by one webhook request or one sweep
+    AUTOMATION_BATCH_SIZE?: string;
 }

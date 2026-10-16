@@ -48,7 +48,7 @@ interface InstagramApiProfile {
     website?: string;
 }
 
-function buildGraphUrl(endpoint: string, params: GraphParams): URL {
+export function buildGraphUrl(endpoint: string, params: GraphParams = {}): URL {
     const needsVersion = !UNVERSIONED_PREFIXES.some(prefix => endpoint.startsWith(prefix));
     const base = needsVersion ? `${IG_GRAPH_URL}/${IG_API_VERSION}` : IG_GRAPH_URL;
     const url = new URL(`${base}${endpoint}`);

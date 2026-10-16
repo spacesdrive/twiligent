@@ -3,14 +3,15 @@ import type { SupabaseClient } from '../../types/app.ts';
 
 export type Row = Record<string, unknown>;
 
-type Filter = [column: string, value: unknown, operator?: 'lte' | 'lt' | 'neq'];
+type Filter = [column: string, value: unknown, operator?: 'lte' | 'lt' | 'neq' | 'gte' | 'gt' | 'in'];
 
 interface Action {
     type: 'select' | 'update' | 'insert' | 'upsert' | 'delete' | 'rpc';
     table: string;
     columns?: string;
-    values?: Row;
+    values?: Row | Row[];
     onConflict?: string;
+    ignoreDuplicates?: boolean;
 }
 
 export type SupabaseCall = Action & { filters: Filter[] };
@@ -26,13 +27,20 @@ interface FakeQuery {
     lte(column: string, value: unknown): FakeQuery;
     lt(column: string, value: unknown): FakeQuery;
     neq(column: string, value: unknown): FakeQuery;
+    gte(column: string, value: unknown): FakeQuery;
+    gt(column: string, value: unknown): FakeQuery;
+    in(column: string, values: unknown[]): FakeQuery;
     order(): FakeQuery;
+    limit(count: number): FakeQuery;
     single(): Promise<QueryResult>;
     maybeSingle(): Promise<QueryResult>;
     then(resolve: (result: QueryResult) => unknown, reject?: (reason: unknown) => unknown): Promise<unknown>;
 }
 
-type Run = (action: Action, filters: Filter[]) => Row[];
+type Run = (action: Action, filters: Filter[], limit?: number) => Row[];
+
+// a database function the code calls with rpc(), run on the in-memory rows; the merge functions are built in
+export type RpcHandler = (args: Row, table: Row[]) => unknown;
 
 // passed straight to code that expects a supabase client; calls and table expose what the fake recorded
 export type FakeSupabase = SupabaseClient & { calls: SupabaseCall[]; table: Row[] };
@@ -45,6 +53,9 @@ function matchesFilter(row: Row, [column, value, operator]: Filter) {
     if (operator === 'lte') return (row[column] as string) <= (value as string);
     if (operator === 'lt') return row[column] != null && (row[column] as string) < (value as string);
     if (operator === 'neq') return row[column] !== value;
+    if (operator === 'gte') return row[column] != null && (row[column] as string) >= (value as string);
+    if (operator === 'gt') return row[column] != null && (row[column] as string) > (value as string);
+    if (operator === 'in') return (value as unknown[]).includes(row[column]);
     return row[column] === value;
 }
 
@@ -88,6 +99,7 @@ function touch(row: Row): void {
 
 function queryBuilder(action: Action, run: Run): FakeQuery {
     const filters: Filter[] = [];
+    let limit: number | undefined;
     const query: FakeQuery = {
         select() { return query; },
         eq(column: string, value: unknown) {
@@ -106,38 +118,73 @@ function queryBuilder(action: Action, run: Run): FakeQuery {
             filters.push([column, value, 'neq']);
             return query;
         },
+        gte(column: string, value: unknown) {
+            filters.push([column, value, 'gte']);
+            return query;
+        },
+        gt(column: string, value: unknown) {
+            filters.push([column, value, 'gt']);
+            return query;
+        },
+        in(column: string, values: unknown[]) {
+            filters.push([column, values, 'in']);
+            return query;
+        },
+        // rows come back in the order they were stored; tests that page seed rows newest first
         order() { return query; },
+        limit(count: number) {
+            limit = count;
+            return query;
+        },
         maybeSingle() {
-            const found = run(action, filters);
+            const found = run(action, filters, limit);
             return Promise.resolve({ data: found[0] ?? null, error: null });
         },
         single() {
-            const found = run(action, filters);
+            const found = run(action, filters, limit);
             if (found.length === 0) return Promise.resolve({ data: null, error: { message: 'no rows' } });
             return Promise.resolve({ data: found[0], error: null });
         },
         then(resolve: (result: QueryResult) => unknown, reject?: (reason: unknown) => unknown) {
-            return Promise.resolve({ data: run(action, filters), error: null }).then(resolve, reject);
+            return Promise.resolve({ data: run(action, filters, limit), error: null }).then(resolve, reject);
         },
     };
     return query;
 }
 
-export function fakeSupabase(rows: Row[] = []): FakeSupabase {
+function asRows(values: Row | Row[] | undefined): Row[] {
+    return Array.isArray(values) ? values : [values!];
+}
+
+export function fakeSupabase(rows: Row[] = [], rpcHandlers: Record<string, RpcHandler> = {}): FakeSupabase {
     const table = rows.map(copy);
     const calls: SupabaseCall[] = [];
 
-    function run(action: Action, filters: Filter[]) {
+    function run(action: Action, filters: Filter[], limit?: number) {
         calls.push({ ...copy(action), filters: copy(filters) });
-        const found = table.filter(row => inTable(row, action.table) && matchesFilters(row, filters));
+        const found = table.filter(row => inTable(row, action.table) && matchesFilters(row, filters)).slice(0, limit);
         if (action.type === 'update') found.forEach(row => touch(Object.assign(row, copy(action.values))));
-        if (action.type === 'insert') table.push({ _table: action.table, ...copy(action.values!) });
+        if (action.type === 'insert') {
+            const added = asRows(action.values).map(values => ({ _table: action.table, ...copy(values) }));
+            table.push(...added);
+            // insert().select() returns the inserted rows, as PostgREST does
+            return added.map(copy);
+        }
         if (action.type === 'upsert') {
-            const values = action.values!;
             const keys = (action.onConflict ?? 'id').split(',');
-            const existing = table.find(row => inTable(row, action.table) && keys.every(key => row[key] === values[key]));
-            if (existing) touch(Object.assign(existing, copy(values)));
-            else table.push({ _table: action.table, ...copy(values) });
+            const added: Row[] = [];
+            const written: Row[] = [];
+            for (const values of asRows(action.values)) {
+                const existing = table.find(row => inTable(row, action.table) && keys.every(key => row[key] === values[key]));
+                if (existing && !action.ignoreDuplicates) {
+                    touch(Object.assign(existing, copy(values)));
+                    written.push(existing);
+                }
+                if (!existing) added.push({ _table: action.table, ...copy(values) });
+            }
+            table.push(...added);
+            // upsert().select() returns the rows it wrote; with ignoreDuplicates that is only the inserted ones
+            return [...written, ...added].map(copy);
         }
         if (action.type === 'delete') {
             found.forEach(row => table.splice(table.indexOf(row), 1));
@@ -150,14 +197,23 @@ export function fakeSupabase(rows: Row[] = []): FakeSupabase {
         table,
         rpc(name: string, args: Row) {
             calls.push({ type: 'rpc', table: name, values: copy(args), filters: [] });
+            const handler = rpcHandlers[name];
+            if (handler) {
+                try {
+                    return Promise.resolve({ data: copy(handler(args, table)), error: null });
+                } catch (err) {
+                    return Promise.resolve({ data: null, error: { message: (err as Error).message } });
+                }
+            }
             return Promise.resolve({ data: mergeInto(table, name, args), error: null });
         },
         from(name: string) {
             return {
                 select: (columns: string) => queryBuilder({ type: 'select', table: name, columns }, run),
                 update: (values: Row) => queryBuilder({ type: 'update', table: name, values }, run),
-                insert: (values: Row) => queryBuilder({ type: 'insert', table: name, values }, run),
-                upsert: (values: Row, options: { onConflict?: string } = {}) => queryBuilder({ type: 'upsert', table: name, values, onConflict: options.onConflict }, run),
+                insert: (values: Row | Row[]) => queryBuilder({ type: 'insert', table: name, values }, run),
+                upsert: (values: Row | Row[], options: { onConflict?: string; ignoreDuplicates?: boolean } = {}) =>
+                    queryBuilder({ type: 'upsert', table: name, values, onConflict: options.onConflict, ignoreDuplicates: options.ignoreDuplicates }, run),
                 delete: () => queryBuilder({ type: 'delete', table: name }, run),
             };
         },

@@ -7,6 +7,8 @@ export interface CallOptions {
     json?: unknown;
     headers?: Record<string, string>;
     env?: Partial<Env>;
+    // collects waitUntil work, for routes that answer first and work after
+    executionCtx?: ExecutionContext;
 }
 
 export type RouteStep = [method: string, path: string, json?: unknown, env?: Partial<Env>];
@@ -43,7 +45,7 @@ export async function callRoute(app: Hono<AppEnv>, method: string, path: string,
         init.headers = { 'Content-Type': 'application/json' };
     }
     if (options.headers) init.headers = { ...init.headers, ...options.headers };
-    const response = await app.request(path, init, options.env ?? {});
+    const response = await app.request(path, init, options.env ?? {}, options.executionCtx);
     const result: RouteResult = { status: response.status, body: await response.text() };
     const location = response.headers.get('location');
     if (location !== null) result.location = location;
@@ -56,4 +58,17 @@ export function fakeRedis(): FakeRedis {
         deleted,
         async del(key: string) { deleted.push(key); },
     } as unknown as FakeRedis;
+}
+
+export type BackgroundWork = ExecutionContext & { settle(): Promise<void> };
+
+// an execution context whose waitUntil work a test can wait for after the response
+export function backgroundWork(): BackgroundWork {
+    const pending: Promise<unknown>[] = [];
+    return {
+        waitUntil(promise: Promise<unknown>) { pending.push(promise); },
+        passThroughOnException() {},
+        props: {},
+        async settle() { await Promise.all(pending); },
+    } as unknown as BackgroundWork;
 }
