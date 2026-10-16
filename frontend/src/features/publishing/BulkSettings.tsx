@@ -4,7 +4,7 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import DetailPanel, { FieldRow } from '@/components/DetailPanel';
-import AccountSelect from './AccountSelect';
+import AccountSelect from '@/components/AccountSelect';
 import BulkScheduleFields from './BulkScheduleFields';
 import IconInput from './IconInput';
 import TypePicker from './TypePicker';
