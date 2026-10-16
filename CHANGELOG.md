@@ -25,6 +25,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 - The sign-in page opens the dashboard when you are already signed in, so the public site's Sign in and Get started buttons no longer ask you to sign in again (#94)
+- The public site's home page opens the dashboard when you are signed in to the app; the docs stay readable (#96)
 
 ---
 
