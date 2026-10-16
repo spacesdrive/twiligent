@@ -29,7 +29,7 @@ export default function Automations() {
   const header = (
     <PageHeader
       title="Automations"
-      description="Send a private reply on Instagram when someone comments a keyword on your posts and reels."
+      description="Answer comments on your posts and reels with a private reply, a public reply under the comment, or both."
       actions={overview && overview.accounts.length > 0 && (
         <Button onClick={() => rule.openNew(overview.accounts[0].accountId)}><Plus data-icon="inline-start" />New rule</Button>
       )}

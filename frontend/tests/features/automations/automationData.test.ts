@@ -1,9 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  ACTIVITY_FILTERS, DEFAULT_FOLLOW_PROMPT, DEFAULT_NOT_FOLLOWING, MAX_MESSAGE_BYTES, accountStatus, canRetry, composeReply, emptyRuleForm,
-  formToRequest, gateDetail, matchModeLabel, messageBytes, needsMessageEvents, parseKeywords, periodStart, ruleFormProblem, ruleScopeLabel,
-  ruleToForm, statusDisplay, summarizeStats,
+  ACTIVITY_FILTERS, DEFAULT_FOLLOW_PROMPT, DEFAULT_NOT_FOLLOWING, DEFAULT_PUBLIC_REPLY, MAX_MESSAGE_BYTES, accountStatus, canRetry, canRetryPublic,
+  composeReply, emptyRuleForm, formToRequest, gateDetail, matchModeLabel, messageBytes, needsMessageEvents, parseKeywords, periodStart,
+  publicReplyTexts, publicStatusDisplay, ruleFormProblem, ruleScopeLabel, ruleToForm, statusDisplay, summarizeStats,
 } from '../../../src/features/automations/automationData.ts';
 import type { RuleForm } from '../../../src/features/automations/automationData.ts';
 import type { AutomationAccountState, AutomationRule } from '../../../../shared/types/automation.ts';
@@ -16,7 +16,7 @@ function form(overrides: Partial<RuleForm> = {}): RuleForm {
 
 const rule: AutomationRule = {
   id: 'r1', accountId: 'ig1', name: 'Guide', keywords: ['GUIDE', 'LINK'], matchMode: 'exact', caseSensitive: true, mediaIds: ['1', '2'],
-  replyText: 'Here it is', linkUrl: 'https://example.com', enabled: false, hourlyLimit: 30, requireFollow: true, followPromptText: 'Follow and reply',
+  privateReplyEnabled: true, replyText: 'Here it is', linkUrl: 'https://example.com', publicReplyEnabled: true, publicReplyTexts: ['Thanks', 'Thank you'], enabled: false, hourlyLimit: 30, requireFollow: true, followPromptText: 'Follow and reply',
   notFollowingText: 'Follow first', createdAt: 'c', updatedAt: 'u',
 };
 
@@ -48,9 +48,12 @@ test('the status filters cover every status exactly once, apart from All', () =>
 test('stats become received, matched, accepted, waiting, attention and rate limited counts', () => {
   assert.deepEqual(summarizeStats({
     comments: { ignored: 5, accepted: 3, queued: 1, retry_wait: 1, failed: 2, needs_review: 1, skipped: 1 },
+    publicReplies: { accepted: 4, failed: 1, queued: 2 },
     attempts: { rate_limited: 4, accepted: 3 },
-  }), { received: 14, matched: 9, accepted: 3, waiting: 2, attention: 3, rateLimited: 4 });
-  assert.deepEqual(summarizeStats({ comments: {}, attempts: {} }), { received: 0, matched: 0, accepted: 0, waiting: 0, attention: 0, rateLimited: 0 });
+  }), { received: 14, matched: 9, accepted: 3, publicPosted: 4, waiting: 4, attention: 4, rateLimited: 4 });
+  assert.deepEqual(summarizeStats({ comments: {}, publicReplies: {}, attempts: {} }), {
+    received: 0, matched: 0, accepted: 0, publicPosted: 0, waiting: 0, attention: 0, rateLimited: 0,
+  });
 });
 
 test('a period starts the right length of time before now', () => {
@@ -98,12 +101,16 @@ test('a rule turns into its form and back without losing a field', () => {
   const editing = ruleToForm(rule);
   assert.deepEqual(editing, {
     accountId: 'ig1', name: 'Guide', keywordsText: 'GUIDE, LINK', matchMode: 'exact', caseSensitive: true, scope: 'selected', mediaIds: ['1', '2'],
-    replyText: 'Here it is', linkUrl: 'https://example.com', hourlyLimit: '30', enabled: false,
-    requireFollow: true, followPromptText: 'Follow and reply', notFollowingText: 'Follow first',
+    privateReplyEnabled: true, replyText: 'Here it is', linkUrl: 'https://example.com', publicReplyEnabled: true, publicReplyTexts: ['Thanks', 'Thank you'],
+    hourlyLimit: '30', enabled: false, requireFollow: true, followPromptText: 'Follow and reply', notFollowingText: 'Follow first',
   });
-  const { accountId, name, keywords, matchMode, caseSensitive, mediaIds, replyText, linkUrl, enabled, hourlyLimit, requireFollow, followPromptText, notFollowingText } = rule;
+  const {
+    accountId, name, keywords, matchMode, caseSensitive, mediaIds, privateReplyEnabled, replyText, linkUrl, publicReplyEnabled, publicReplyTexts: texts,
+    enabled, hourlyLimit, requireFollow, followPromptText, notFollowingText,
+  } = rule;
   assert.deepEqual(formToRequest(editing), {
-    accountId, name, keywords, matchMode, caseSensitive, mediaIds, replyText, linkUrl, enabled, hourlyLimit, requireFollow, followPromptText, notFollowingText,
+    accountId, name, keywords, matchMode, caseSensitive, mediaIds, privateReplyEnabled, replyText, linkUrl, publicReplyEnabled, publicReplyTexts: texts,
+    enabled, hourlyLimit, requireFollow, followPromptText, notFollowingText,
   });
 });
 
@@ -145,7 +152,7 @@ test('the form names the first thing to fix, in the order of the fields', () => 
 test('an account shows held, paused, cooling down, at its limit, not receiving, follow checks off or receiving, in that order', () => {
   const base: AutomationAccountState = {
     accountId: 'ig1', username: 'me', profilePictureUrl: '', paused: false, cooldownUntil: null, cooldownReason: null, subscribedAt: 'x',
-    limitedUntil: null, messagesSubscribed: false,
+    limitedUntil: null, messagesSubscribed: false, publicCooldownUntil: null, publicCooldownReason: null, publicLimitedUntil: null,
   };
   assert.equal(accountStatus({ ...base, paused: true, cooldownReason: 'Reconnect it' }, NOW).label, 'Held');
   assert.equal(accountStatus({ ...base, paused: true }, NOW).label, 'Paused');
@@ -155,6 +162,38 @@ test('an account shows held, paused, cooling down, at its limit, not receiving, 
   assert.equal(accountStatus({ ...base, subscribedAt: null }, NOW).label, 'Not receiving comments');
   assert.equal(accountStatus(base, NOW, true).label, 'Follow checks off');
   assert.equal(accountStatus({ ...base, messagesSubscribed: true }, NOW, true).label, 'Receiving comments');
+  assert.equal(accountStatus({ ...base, publicCooldownUntil: new Date(NOW + 1000).toISOString() }, NOW).label, 'Public replies cooling down');
+  assert.equal(accountStatus({ ...base, publicLimitedUntil: new Date(NOW + 1000).toISOString() }, NOW).label, 'Public replies at their hourly limit');
+});
+
+test('a rule answers in private, in public or both, and each one it uses must be complete', () => {
+  assert.deepEqual([emptyRuleForm('ig1').publicReplyEnabled, emptyRuleForm('ig1').publicReplyTexts], [false, [DEFAULT_PUBLIC_REPLY]]);
+  assert.equal(ruleFormProblem(form({ privateReplyEnabled: false, publicReplyEnabled: false })), 'Turn on the private reply, the public reply, or both');
+  assert.equal(ruleFormProblem(form({ privateReplyEnabled: false, replyText: '', publicReplyEnabled: true })), null);
+  assert.equal(ruleFormProblem(form({ publicReplyEnabled: true, publicReplyTexts: [' ', ''] })), 'Write at least one public reply');
+  assert.equal(ruleFormProblem(form({ publicReplyEnabled: true, publicReplyTexts: ['x'.repeat(301)] })), 'A public reply can be at most 300 characters');
+  assert.equal(ruleFormProblem(form({ publicReplyEnabled: true, publicReplyTexts: ['#a #b #c #d #e'] })), 'A public reply can have at most 4 hashtags');
+  assert.match(ruleFormProblem(form({ privateReplyEnabled: false, publicReplyEnabled: true, requireFollow: true }))!, /needs the private reply/);
+  assert.equal(ruleFormProblem(form({ privateReplyEnabled: false, replyText: 'é'.repeat(600), publicReplyEnabled: true })), null);
+  assert.deepEqual(publicReplyTexts([' Thanks ', '', 'Thanks', 'Thank you']), ['Thanks', 'Thank you']);
+  assert.deepEqual(formToRequest(form({ publicReplyTexts: ['Thanks', ' '] })).publicReplyTexts, ['Thanks']);
+});
+
+test('a public reply shows as posted only once Instagram gave it an id, and is retried apart from the private reply', () => {
+  assert.deepEqual(publicStatusDisplay({ status: 'accepted', statusReason: null }), { label: 'Posted', tone: 'success' });
+  assert.deepEqual(publicStatusDisplay({ status: 'needs_review', statusReason: 'no_answer' }), { label: 'Checking', tone: 'warning' });
+  assert.deepEqual(publicStatusDisplay({ status: 'queued', statusReason: 'paused' }), { label: 'Held', tone: 'warning' });
+  assert.deepEqual(statusDisplay({ status: 'skipped', statusReason: 'private_reply_off' }), { label: 'Off', tone: 'secondary' });
+  const future = new Date(NOW + 1000).toISOString();
+  const reply = (status: 'failed' | 'accepted') => ({
+    status, statusReason: null, errorMessage: null, text: 'Thanks', attempts: 1, replyId: null, nextAttemptAt: null, acceptedAt: null,
+  });
+  assert.equal(canRetryPublic({ publicReply: reply('failed'), expiresAt: future }, NOW), true);
+  assert.equal(canRetryPublic({ publicReply: reply('accepted'), expiresAt: future }, NOW), false);
+  assert.equal(canRetryPublic({ publicReply: reply('failed'), expiresAt: new Date(NOW).toISOString() }, NOW), false);
+  assert.equal(canRetryPublic({ publicReply: null, expiresAt: future }, NOW), false);
+  assert.equal(canRetry({ status: 'skipped', statusReason: 'private_reply_off', expiresAt: future }, NOW), false);
+  assert.equal(canRetry({ status: 'skipped', statusReason: 'recipient_limit', expiresAt: future }, NOW), true);
 });
 
 test('an account needs message events only while one of its followers-only rules is on', () => {

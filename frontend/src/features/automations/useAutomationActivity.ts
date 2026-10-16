@@ -7,6 +7,8 @@ import type { AutomationActivityItem } from '@shared/types/automation.ts';
 
 const PAGE_SIZE = 50;
 
+export type RetryAction = 'private' | 'public';
+
 export interface ActivityFilters {
   filter: ActivityFilter;
   period: StatsPeriod;
@@ -33,7 +35,7 @@ export function useAutomationActivity() {
   const [summary, setSummary] = useState<AutomationSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
-  const [retryingId, setRetryingId] = useState<string | null>(null);
+  const [retrying, setRetrying] = useState<{ id: string; action: RetryAction } | null>(null);
   // the time the list was read, so which items can be retried is decided against a fixed moment during render
   const [checkedAt, setCheckedAt] = useState(() => Date.now());
   // each load for new filters gets a number; an answer for an older one arrives too late and is dropped
@@ -81,24 +83,28 @@ export function useAutomationActivity() {
     }
   }, [filters, nextBefore, showToast]);
 
-  const retry = useCallback(async (item: AutomationActivityItem) => {
-    setRetryingId(item.id);
+  // the private reply (or its follow-up) and the public reply are retried apart; one never resends the other
+  const retryAction = useCallback(async (item: AutomationActivityItem, action: RetryAction) => {
+    setRetrying({ id: item.id, action });
     try {
-      const { item: queued } = await api.retryAutomationActivity(item.id);
+      const { item: queued } = action === 'public' ? await api.retryAutomationPublicReply(item.id) : await api.retryAutomationActivity(item.id);
       setItems(current => current.map(entry => (entry.id === queued.id ? queued : entry)));
-      showToast('Reply queued to send again');
+      showToast(action === 'public' ? 'Public reply queued to post again' : 'Reply queued to send again');
     } catch (err) {
-      showToast(`Couldn't retry the reply. ${(err as Error).message}`, 'error');
+      showToast(`Couldn't retry the ${action === 'public' ? 'public reply' : 'reply'}. ${(err as Error).message}`, 'error');
     } finally {
-      setRetryingId(null);
+      setRetrying(null);
     }
   }, [showToast]);
+
+  const retry = useCallback((item: AutomationActivityItem) => retryAction(item, 'private'), [retryAction]);
+  const retryPublic = useCallback((item: AutomationActivityItem) => retryAction(item, 'public'), [retryAction]);
 
   const setFilter = useCallback(<K extends keyof ActivityFilters>(key: K, value: ActivityFilters[K]) => {
     setFilters(current => ({ ...current, [key]: value }));
   }, []);
 
-  return { filters, setFilter, items, nextBefore, summary, loading, loadingMore, retryingId, checkedAt, load, loadMore, retry };
+  return { filters, setFilter, items, nextBefore, summary, loading, loadingMore, retrying, checkedAt, load, loadMore, retry, retryPublic };
 }
 
 export type AutomationActivityState = ReturnType<typeof useAutomationActivity>;
