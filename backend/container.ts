@@ -71,7 +71,7 @@ export function createServices(clients: Clients, config: AppConfig, context: Req
         instagramAnalytics: createInstagramAnalyticsService({ accounts, cache, context }),
         redditAnalytics: createRedditAnalyticsService({ accounts, cache, context }),
         publishing: createPublishingService({ accounts, config, context }),
-        scheduledPosts: createScheduledPostService({ posts, publisher: scheduledPublisher }),
+        scheduledPosts: createScheduledPostService({ accounts, posts, publisher: scheduledPublisher }),
         scheduledPublisher,
         tokenRefresh: createTokenRefreshService({ accounts, context }),
         trackedContent: createTrackedContentService({ accounts, tracked, config, context }),

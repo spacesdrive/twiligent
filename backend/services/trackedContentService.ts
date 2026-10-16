@@ -2,6 +2,7 @@ import { fetchTrackedPostData } from './reddit/redditApi.ts';
 import { fetchTrackedYouTubeData } from './youtube/youtubeTracked.ts';
 import { detectContentType, manualViewsPatch, imageUrlPatch } from './trackedContentRules.ts';
 import { NotConfiguredError, NotFoundError, ValidationError } from '../lib/errors.ts';
+import { newRowId } from '../lib/ids.ts';
 import type { PatchResult, TrackedContentType } from './trackedContentRules.ts';
 import type { AccountRepository } from '../repositories/accountRepository.ts';
 import type { TrackedPostRepository, TrackedPostUpdates } from '../repositories/trackedPostRepository.ts';
@@ -44,10 +45,6 @@ export interface TrackedContentService {
 
 type TrackedData = YouTubeTrackedVideoData | RedditTrackedPostData;
 
-function newTrackedId(): string {
-    return Date.now().toString(36) + Math.random().toString(36).slice(2);
-}
-
 function patchOrThrow<P>(result: PatchResult<P>): P {
     if (result.error !== undefined) throw new ValidationError(result.error);
     return result.patch;
@@ -75,6 +72,14 @@ export function createTrackedContentService({ accounts, tracked, config, context
         return account?.cookie || null;
     }
 
+    // only Reddit items read through an account, and it must be one of the user's own Reddit accounts
+    async function checkedAccountId(userId: string, accountId: string | null, isYouTube: boolean): Promise<string | null> {
+        if (!accountId) return null;
+        if (isYouTube) throw new ValidationError('YouTube videos are read without an account; remove the account from this item.');
+        await redditCookie(userId, accountId, true);
+        return accountId;
+    }
+
     async function fetchData(userId: string, contentType: TrackedContentType, url: string, accountId: string | null | undefined, strict: boolean): Promise<TrackedData> {
         if (contentType === 'youtube') return fetchTrackedYouTubeData(url, youtubeKey(), signal);
         return fetchTrackedPostData(url, await redditCookie(userId, accountId, strict), signal);
@@ -88,9 +93,9 @@ export function createTrackedContentService({ accounts, tracked, config, context
             if (!contentType) throw new ValidationError('Only Reddit and YouTube URLs are supported');
             const data = await fetchData(userId, contentType, url, accountId, true);
 
-            const id = newTrackedId();
-            await tracked.create({ id, accountId: contentType === 'youtube' ? null : (accountId || null), url, label, category, contentType }, userId);
-            await tracked.updateForUser(id, { data: data as unknown as Record<string, unknown> }, userId);
+            const id = newRowId();
+            const fetched = data as unknown as Record<string, unknown>;
+            await tracked.create({ id, accountId: contentType === 'youtube' ? null : (accountId || null), url, label, category, contentType, data: fetched }, userId);
             return tracked.findForUser(id, userId);
         },
 
@@ -104,7 +109,7 @@ export function createTrackedContentService({ accounts, tracked, config, context
             const updates: TrackedPostUpdates = {};
             if (label !== undefined) updates.label = label;
             if (category !== undefined) updates.category = category;
-            if (accountId !== undefined) updates.accountId = accountId;
+            if (accountId !== undefined) updates.accountId = await checkedAccountId(userId, accountId, isYouTube);
             if (Object.keys(updates).length > 0) await tracked.updateForUser(id, updates, userId);
 
             return tracked.findForUser(id, userId);

@@ -1,4 +1,5 @@
 import { test, describe, before, after, afterEach, mock } from 'node:test';
+import assert from 'node:assert/strict';
 import type { Mock } from 'node:test';
 import trackedContentRouter from '../../routes/trackedContentRoutes.ts';
 import { assertGolden } from '../fixtures/golden.ts';
@@ -7,6 +8,7 @@ import type { FetchMock } from '../fixtures/fakeFetch.ts';
 import { fakeSupabase, accountRow, tableRow } from '../fixtures/fakeSupabase.ts';
 import type { Row } from '../fixtures/fakeSupabase.ts';
 import { mountWithContext, callRoute } from '../fixtures/routeHarness.ts';
+import { mockRowIds } from '../fixtures/rowIds.ts';
 import type { RouteStep } from '../fixtures/routeHarness.ts';
 import type { Env } from '../../types/env.ts';
 
@@ -24,6 +26,7 @@ function seedRows() {
     return [
         tableRow('accounts', accountRow({ id: 'rd1', platform: 'reddit', username: 'ribbon', cookie: 'COOKIE' })),
         tableRow('accounts', accountRow({ id: 'yt1', platform: 'youtube', channelId: 'UC1' })),
+        tableRow('accounts', accountRow({ id: 'rd-theirs', platform: 'reddit', username: 'other', cookie: 'THEIRS' }, 'user-2')),
         trackedRow('t-reddit', 'reddit', { accountId: 'rd1', url: 'https://www.reddit.com/r/webdev/comments/p1/tracked/', data: { title: 'Old', manualViews: 5 } }),
         trackedRow('t-youtube', 'youtube', { url: 'https://www.youtube.com/watch?v=abc', data: { title: 'Video' } }),
         trackedRow('t-orphan', 'reddit', { accountId: 'gone', url: 'https://www.reddit.com/r/webdev/comments/p1/tracked/' }),
@@ -50,6 +53,7 @@ async function runCalls(calls: RouteStep[], env: Partial<Env> = ENV) {
 describe('tracked content routes golden output', () => {
     before(() => {
         mock.timers.enable({ apis: ['Date'], now: FIXED_NOW });
+        mockRowIds();
         let seed = 0;
         mock.method(Math, 'random', () => {
             seed += 0.125;
@@ -92,6 +96,22 @@ describe('tracked content routes golden output', () => {
             ['PUT', '/tracked-content/t-youtube', { label: 'Only label' }],
         ]);
         assertGolden(result, 'trackedContentRoutes.update');
+    });
+
+    test('an item can only move to a Reddit account the user owns, and a YouTube item to no account', async () => {
+        const { responses } = await runCalls([
+            ['PUT', '/tracked-content/t-reddit', { accountId: 'rd-theirs' }],
+            ['PUT', '/tracked-content/t-reddit', { accountId: 'yt1' }],
+            ['PUT', '/tracked-content/t-youtube', { accountId: 'rd1' }],
+            ['PUT', '/tracked-content/t-reddit', { accountId: 'rd1' }],
+        ]);
+        const outcome = responses.map(response => [response.status, (JSON.parse(response.body) as { message?: string }).message ?? 'saved']);
+        assert.deepEqual(outcome, [
+            [404, 'Reddit account not found'],
+            [404, 'Reddit account not found'],
+            [400, 'YouTube videos are read without an account; remove the account from this item.'],
+            [200, 'saved'],
+        ]);
     });
 
     test('list, refresh and delete', async () => {

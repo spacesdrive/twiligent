@@ -1,9 +1,10 @@
 import { test, describe, before, after, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import scheduledPostRoutes from '../../routes/scheduledPostRoutes.ts';
-import { fakeSupabase, tableRow } from '../fixtures/fakeSupabase.ts';
+import { accountRow, fakeSupabase, tableRow } from '../fixtures/fakeSupabase.ts';
 import type { FakeSupabase } from '../fixtures/fakeSupabase.ts';
 import { mountWithContext, callRoute } from '../fixtures/routeHarness.ts';
+import { mockRowIds } from '../fixtures/rowIds.ts';
 
 const FIXED_NOW = Date.parse('2026-09-01T12:00:00Z');
 
@@ -13,14 +14,22 @@ function postRow(id: string, status: string, userId = 'user-1') {
     });
 }
 
+const ACCOUNTS = [
+    tableRow('accounts', accountRow({ id: 'ig1', platform: 'instagram', igUserId: 'IG1', accessToken: 'T1' })),
+    tableRow('accounts', accountRow({ id: 'ig-theirs', platform: 'instagram', igUserId: 'IG2', accessToken: 'T2' }, 'user-2')),
+    tableRow('accounts', accountRow({ id: 'yt1', platform: 'youtube', channelId: 'UC1' })),
+    tableRow('accounts', accountRow({ id: 'ig-notoken', platform: 'instagram', igUserId: 'IG3' })),
+];
+
 before(() => mock.timers.enable({ apis: ['Date'], now: FIXED_NOW }));
 after(() => mock.timers.reset());
 afterEach(() => mock.restoreAll());
 
 function setup(rows = [postRow('pending1', 'pending'), postRow('busy', 'publishing'), postRow('done', 'published'), postRow('theirs', 'pending', 'user-2')]) {
     mock.method(Math, 'random', () => 0.5);
+    mockRowIds();
     mock.method(console, 'warn', () => undefined);
-    const supabase = fakeSupabase(rows);
+    const supabase = fakeSupabase([...ACCOUNTS, ...rows]);
     const app = mountWithContext(app => app.route('/', scheduledPostRoutes), { supabase, userId: 'user-1' });
     const call = async (method: string, path: string, json?: unknown) => {
         const response = await callRoute(app, method, path, { json });
@@ -58,7 +67,18 @@ describe('scheduled post routes', () => {
             shareToFeed: true, collaborators: [], audioName: '', thumbOffset: null, locationId: '', userTags: [], altText: '',
             scheduledAt: '2026-09-03T06:00:00.000Z', status: 'pending', createdAt: '2026-09-01T12:00:00.000Z', publishedMediaId: null, error: null,
         });
-        assert.equal(supabase.table[0].user_id, 'user-1');
+        assert.equal(supabase.table.find(row => row._table === 'scheduled_posts')?.user_id, 'user-1');
+    });
+
+    test('a post can only be scheduled to an Instagram account the user owns and has a token for', async () => {
+        const { supabase, call } = setup([]);
+        const post = { mediaUrl: 'https://cdn/b.jpg', scheduledAt: '2026-09-03T08:00:00Z' };
+        assert.deepEqual(await call('POST', '/scheduled-posts', { ...post, accountId: 'ig-theirs' }), failure(404, 'NOT_FOUND', 'Instagram account not found'));
+        assert.deepEqual(await call('POST', '/scheduled-posts', { ...post, accountId: 'yt1' }), failure(404, 'NOT_FOUND', 'Instagram account not found'));
+        assert.deepEqual(await call('POST', '/scheduled-posts', { ...post, accountId: 'gone' }), failure(404, 'NOT_FOUND', 'Instagram account not found'));
+        assert.deepEqual(await call('POST', '/scheduled-posts', { ...post, accountId: 'ig-notoken' }),
+            failure(400, 'VALIDATION_ERROR', 'No Instagram access token stored - reconnect this account'));
+        assert.equal(supabase.table.filter(row => row._table === 'scheduled_posts').length, 0);
     });
 
     test('only pending posts of the user can be edited, and only the editable fields change', async () => {
@@ -77,6 +97,6 @@ describe('scheduled post routes', () => {
         assert.deepEqual(await call('DELETE', '/scheduled-posts/pending1'), { status: 200, body: { success: true, message: 'Scheduled post deleted' } });
         const all = await call('DELETE', '/scheduled-posts');
         assert.equal(all.status, 200);
-        assert.deepEqual(supabase.table.map(row => row.id).sort(), ['busy', 'theirs']);
+        assert.deepEqual(supabase.table.filter(row => row._table === 'scheduled_posts').map(row => row.id).sort(), ['busy', 'theirs']);
     });
 });
