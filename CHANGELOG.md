@@ -15,6 +15,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - The Automations page shows each account's state with pause and resume, counts for the period, and the activity of every comment with its status and a retry (#90)
 - New tables `automation_accounts`, `automation_rules`, `automation_comments`, `automation_attempts` and `audit_events`, and their functions; existing instances run `npm run db:push` before deploying (#88)
 - An audit record of connecting, reconnecting and removing accounts and of every automation change, kept a year (#89)
+- Every migration now holds one database entity (a table, its access, a trigger, an index or a function) with a rollback of the same size, and the migration test enforces it for new migrations (#93, ADR-041)
 
 ### Changed
 

@@ -81,7 +81,7 @@ Before creating new patterns, check:
 ## Phase 4: Implement
 
 **Step 11 - Implement in this order:**  
-1. DB schema changes (if any): a migration from `npm run db:new <verb>_<object>` and its rollback in `supabase/rollbacks/`, one table or one function per file - see `docs/features/NEW_DATABASE_TABLE.md`
+1. DB schema changes (if any): a migration from `npm run db:new <verb>_<object>` and its rollback in `supabase/rollbacks/`, one entity per file (a table, its access, a trigger, an index or a function) - see `docs/features/NEW_DATABASE_TABLE.md`
 2. Types: request, response and entity shapes in `shared/types/` (types only, no runtime code); see `docs/guidelines/TYPESCRIPT.md`
 3. Backend: `validators/` parsers for new request bodies and query strings
 4. Backend: `repositories/` additions (new query methods; user-scoped ones end in `ForUser`)

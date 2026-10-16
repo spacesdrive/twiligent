@@ -878,3 +878,20 @@ New row ids come from `crypto.randomUUID()` (`newRowId()` in `backend/lib/ids.ts
 - `expires_at` is measured from Meta's notification time, which can be later than the comment on a redelivery; a late reply is refused by Instagram and recorded as failed.
 - Reconnecting renews the token in place, so the "already connected" refusal is gone; the audit table records each reconnect.
 - A burst over `AUTOMATION_BATCH_SIZE` in one notification waits for the sweep; the cap of 15 follows the free plan's subrequests and can be raised in the code on Workers Paid.
+
+## ADR-041: One database entity per migration file
+
+**Date:** 2026-10-16
+**Status:** Accepted
+
+**Decision:** Every migration and its rollback is as small as possible: one database entity per file. A table file holds the table with its columns, keys and checks; its browser access (row level security and the revokes), each trigger, each index and each function have files of their own. A new table is therefore at least four migrations. `backend/tests/database/migrations.test.ts` refuses a migration from version 20261016100000 on that creates more than one entity, or has an empty rollback.
+
+**Context:** The owner asked for migrations divided into the smallest queries possible, at entity level (#93). ADR-038 already split the first migrations per table or function, but the comment automation migrations in #92 put a table, its access, its trigger and up to six indexes in one file. They were not yet applied, so they were split into 36 files before reaching production.
+
+**Alternatives considered:**
+- One file per table with everything that belongs to it. Fewer files, but a failed index takes the table's whole file with it, and a rollback cannot remove one index alone.
+- One file per SQL statement. A table's access is two statements (enable row level security, revoke) that only make sense together, and a function's grants belong with the function, which the migration test already requires.
+
+**Trade-offs:**
+- Many more files per feature; the version numbers order them, and the names say what each holds.
+- Migrations before the cut-over version stay as production recorded them; rewriting applied migrations would break the history in `supabase_migrations.schema_migrations`.

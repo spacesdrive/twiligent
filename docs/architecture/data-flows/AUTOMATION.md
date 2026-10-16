@@ -189,5 +189,5 @@ Everything runs on the existing Worker, Supabase project and Workers Free plan; 
 | Platform | `services/instagram/instagramMessaging.ts` |
 | Rules | `lib/automationMatching.ts`, `lib/automationDelivery.ts`, `lib/metaWebhookSignature.ts` |
 | Repositories | `repositories/automationRuleRepository.ts`, `automationCommentRepository.ts`, `automationAccountRepository.ts`, `auditRepository.ts` |
-| Database | `supabase/migrations/20261016100000` to `20261016101000` |
+| Database | `supabase/migrations/20261016100000` to `20261016103500`, one entity per file |
 | App | `frontend/src/features/automations/` |

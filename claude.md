@@ -47,7 +47,7 @@ site/                 public marketing site and docs (Vite, React, MDX); docs pa
                       build plugins in site/build/, tests in site/tests/
 scripts/              publish-scheduled.ts, run by GitHub Actions with no dependencies; check-platform-packages.ts,
                       run after npm ci in every workflow
-supabase/             the database schema: migrations/ (versioned SQL, one table or function per file, applied
+supabase/             the database schema: migrations/ (versioned SQL, one table, access, trigger, index or function per file, applied
                       with the Supabase CLI), rollbacks/ (the reverse of each migration, same file name),
                       config.toml (CLI config, Postgres 17)
 ```
@@ -209,7 +209,8 @@ Read `docs/guidelines/CODE_STYLE.md` before writing code and run its checklist b
 - Formatting follows the file: 4 spaces in `backend/`, 2 elsewhere, single quotes, semicolons, trailing commas
 - Pure logic goes in a plain `.ts` helper (`lib/`) so Node can test it; markup used twice becomes a component; copy that changes by mode lives in a typed table
 - `scripts/` stays free of npm packages but may import a `backend/lib/` helper that imports nothing at runtime, so both schedulers share one set of rules (`scheduledPublishing.ts`)
-- The schema changes only through a migration in `supabase/migrations/` plus its rollback in `supabase/rollbacks/`, one table or one function per file; repositories update `data` through the merge functions, never by reading it and writing it back
+- The schema changes only through a migration in `supabase/migrations/` plus its rollback in `supabase/rollbacks/`; repositories update `data` through the merge functions, never by reading it and writing it back
+- Every migration and its rollback is as small as possible, one database entity per file: a table (with its columns, keys and checks), its browser access, one trigger, one index or one function. A new table is at least four migrations (the table, its access, its `updated_at` trigger, each index). Split any large query into one file per entity before it is applied; never edit a migration production already recorded. `backend/tests/database/migrations.test.ts` enforces it
 - New row ids come from `newRowId()` in `backend/lib/ids.ts` (`crypto.randomUUID()`)
 - Tests use `node:test` with sentence names that describe behaviour, live in `tests/` mirroring the source path, and use the smallest typed fake
 - When the code and `CODE_STYLE.md` disagree, update the guide in the same change
