@@ -10,8 +10,35 @@ const valid = { accountId: 'ig1', name: 'Guide', keywords: ['GUIDE'], replyText:
 test('a new rule gets its defaults: contains, ignoring case, every post, off, no link and no own limit', () => {
     assert.deepEqual(parseAutomationRule(valid), {
         accountId: 'ig1', name: 'Guide', keywords: ['GUIDE'], matchMode: 'contains', caseSensitive: false, mediaIds: [],
-        replyText: 'Here it is', linkUrl: null, enabled: false, hourlyLimit: null,
+        privateReplyEnabled: true, replyText: 'Here it is', linkUrl: null, publicReplyEnabled: false, publicReplyTexts: [], enabled: false, hourlyLimit: null,
         requireFollow: false, followPromptText: null, notFollowingText: null,
+    });
+});
+
+test('a rule answers with a private reply, a public reply or both, and each one it uses needs its text', () => {
+    const both = parseAutomationRule({ ...valid, publicReplyEnabled: true, publicReplyTexts: [' Sent you a message ', '', 'Sent you a message', 'Check your inbox'] });
+    assert.deepEqual([both.privateReplyEnabled, both.publicReplyEnabled, both.publicReplyTexts], [true, true, ['Sent you a message', 'Check your inbox']]);
+    const publicOnly = parseAutomationRule({ ...valid, replyText: undefined, privateReplyEnabled: false, publicReplyEnabled: true, publicReplyTexts: ['Thanks'] });
+    assert.deepEqual([publicOnly.privateReplyEnabled, publicOnly.replyText], [false, '']);
+    assert.throws(() => parseAutomationRule({ ...valid, privateReplyEnabled: false }), /private reply, the public reply, or both/);
+    assert.throws(() => parseAutomationRule({ ...valid, replyText: '' }), /Write the reply to send/);
+    assert.throws(() => parseAutomationRule({ ...valid, publicReplyEnabled: true }), /at least one public reply/);
+    assert.throws(() => parseAutomationRule({ ...valid, privateReplyEnabled: false, publicReplyEnabled: true, publicReplyTexts: ['x'], requireFollow: true, followPromptText: 'f', notFollowingText: 'n' }), /needs the private reply/);
+});
+
+test('public replies stay short, with few hashtags and links, and at most five of them', () => {
+    const rule = (texts: string[]) => parseAutomationRule({ ...valid, publicReplyEnabled: true, publicReplyTexts: texts });
+    assert.throws(() => rule(['x'.repeat(301)]), /at most 300 characters/);
+    assert.throws(() => rule(['#a #b #c #d #e']), /at most 4 hashtags/);
+    assert.throws(() => rule(['https://a.example and https://b.example']), /at most 1 link/);
+    assert.throws(() => rule(['1', '2', '3', '4', '5', '6']), /at most 5 public replies/);
+    assert.deepEqual(rule(['#a #b #c #d https://a.example']).publicReplyTexts, ['#a #b #c #d https://a.example']);
+    assert.throws(() => parseAutomationRule({ ...valid, publicReplyTexts: 'one' }), /publicReplyTexts must be a list of texts/);
+});
+
+test('an update may turn either reply on or off; the rule as a whole is checked by the service', () => {
+    assert.deepEqual(parseAutomationRuleUpdate({ privateReplyEnabled: false, replyText: '', publicReplyEnabled: true, publicReplyTexts: ['Thanks'] }), {
+        privateReplyEnabled: false, replyText: '', publicReplyEnabled: true, publicReplyTexts: ['Thanks'],
     });
 });
 

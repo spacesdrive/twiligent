@@ -15,8 +15,45 @@ const SENT_AT = Math.floor(Date.now() / 1000);
 
 const inTable = (row: Row, name: string) => row._table === name;
 
-// the queue functions, reduced to what one webhook request does: look up rules, claim its comments, reserve, finish
+// the queue functions, reduced to what one webhook request does: look up rules, store, claim its comments, reserve, finish
 const RPC: Record<string, RpcHandler> = {
+    store_automation_comments: (args, table) => {
+        const comments: Row[] = [];
+        const publicReplies: string[] = [];
+        for (const comment of args.p_comments as Row[]) {
+            const { public_reply_id: publicReplyId, public_reply_text: publicReplyText, ...fields } = comment;
+            let stored = table.find(row => inTable(row, 'automation_comments') && row.ig_user_id === fields.ig_user_id && row.comment_id === fields.comment_id);
+            if (!stored) {
+                stored = tableRow('automation_comments', fields);
+                table.push(stored);
+                comments.push({ id: fields.id, status: fields.status });
+            }
+            const answered = table.some(row => inTable(row, 'automation_public_replies') && row.automation_comment_id === stored.id);
+            if (publicReplyId && stored.rule_id === fields.rule_id && !answered) {
+                table.push(tableRow('automation_public_replies', { id: publicReplyId, automation_comment_id: stored.id, account_id: stored.account_id, comment_id: stored.comment_id, rule_id: stored.rule_id, reply_text: publicReplyText, status: 'queued' }));
+                publicReplies.push(publicReplyId as string);
+            }
+        }
+        return { comments, public_replies: publicReplies };
+    },
+    claim_automation_public_replies: (args, table) => table
+        .filter(row => inTable(row, 'automation_public_replies') && row.status === 'queued' && (args.p_ids as string[]).includes(row.id as string))
+        .map(row => {
+            row.status = 'processing';
+            return { ...row, ig_user_id: '1784', attempts: 0, expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(), rule_enabled: true, access_token: 'TOKEN-1' };
+        }),
+    reserve_automation_public_reply: (args, table) => {
+        const row = table.find(candidate => inTable(candidate, 'automation_public_replies') && candidate.id === args.p_id && candidate.status === 'processing');
+        if (!row) return [{ outcome: 'gone', retry_at: null }];
+        row.status = 'sending';
+        return [{ outcome: 'ok', retry_at: null }];
+    },
+    finish_automation_public_reply: (args, table) => {
+        const row = table.find(candidate => inTable(candidate, 'automation_public_replies') && candidate.id === args.p_id && candidate.status === 'sending');
+        if (!row) return false;
+        Object.assign(row, { status: args.p_status, reply_id: args.p_reply_id });
+        return true;
+    },
     automation_rules_for_ig_user: (args, table) => table
         .filter(row => inTable(row, 'automation_rules') && row.enabled)
         .filter(row => table.some(account => inTable(account, 'accounts') && account.id === row.account_id && (account.data as Row).igUserId === args.p_ig_user_id)),
@@ -150,6 +187,30 @@ describe('instagram webhook routes', () => {
         const followup = target.supabase.table.find(row => inTable(row, 'automation_followups'))!;
         assert.deepEqual([followup.status, followup.kind], ['accepted', 'link']);
         assert.equal(target.supabase.table.find(row => row.id === 'gated')!.gate_status, 'completed');
+    });
+
+    test('a rule with both replies posts the public reply even when the private reply fails, and a redelivery sends neither again', async () => {
+        fetchMock?.restore();
+        const posted: { path: string; body: Row }[] = [];
+        fetchMock = installFetch(request => {
+            const path = new URL(request.url).pathname;
+            posted.push({ path, body: JSON.parse(request.body ?? '{}') as Row });
+            if (path.endsWith('/messages')) return reply({ error: { message: 'Not allowed', code: 10, error_subcode: 2534022 } }, 400);
+            return reply({ id: 'reply-1' });
+        });
+        const target = app(fakeSupabase(seed().map(row => (row.id === 'rule-1'
+            ? { ...row, public_reply_enabled: true, public_reply_texts: ['Sent you a message'] }
+            : row)), RPC));
+        const body = JSON.stringify(commentNotification('1784', SENT_AT, [{ id: '555', text: 'GUIDE', mediaId: '9001' }]));
+        const signature = await metaSignature('IGSECRET', body);
+        assert.equal((await post(target, body, signature)).status, 200);
+        assert.deepEqual(posted.map(request => request.path.replace(/^\/v[\d.]+/, '')), ['/1784/messages', '/555/replies']);
+        assert.deepEqual(posted[1].body, { message: 'Sent you a message' });
+        const comment = target.supabase.table.find(row => inTable(row, 'automation_comments'))!;
+        const publicReply = target.supabase.table.find(row => inTable(row, 'automation_public_replies'))!;
+        assert.deepEqual([comment.status, publicReply.status, publicReply.reply_id], ['failed', 'accepted', 'reply-1']);
+        assert.equal((await post(target, body, signature)).status, 200);
+        assert.equal(posted.length, 2);
     });
 
     test('the same notification delivered twice sends one reply', async () => {

@@ -4,7 +4,10 @@ import { healthWarning } from '../../lib/automationHealth.ts';
 import type { QueueHealth } from '../../lib/automationHealth.ts';
 
 const NOW = Date.parse('2026-10-16T12:00:00Z');
-const HEALTHY: QueueHealth = { due: 0, oldestDueAt: null, waiting: 3, stale: 0, needsReview: 1, followupsDue: 0, pausedAccounts: 1, limitedAccounts: 0 };
+const HEALTHY: QueueHealth = {
+    due: 0, oldestDueAt: null, waiting: 3, stale: 0, needsReview: 1, followupsDue: 0, publicDue: 0, publicOldestDueAt: null, publicStale: 0, publicNeedsReview: 0,
+    pausedAccounts: 1, limitedAccounts: 0,
+};
 
 test('a queue that keeps up gives no warning, whatever waits for later', () => {
     assert.equal(healthWarning(HEALTHY, NOW), null);

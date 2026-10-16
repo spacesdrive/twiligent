@@ -36,16 +36,17 @@ interface ConversationBody {
     messages?: { data?: { id?: string; created_time?: string; from?: { id?: string }; message?: string }[] };
 }
 
-// answers instead of throwing, because each failure needs its code to decide between retrying, waiting and stopping;
-// the request is never repeated here, since a repeat after a lost answer could message the person twice. Only its own
-// timeout can cut it off: the caller starts a send only with that much time left, so a run's deadline never makes one ambiguous
-export async function sendMessage(igUserId: string, accessToken: string, recipient: MessageRecipient, text: string): Promise<SendResult> {
+// one POST to Instagram that answers instead of throwing, because each failure needs its code to decide between
+// retrying, waiting and stopping; the request is never repeated here, since a repeat after a lost answer could post
+// twice. Only its own timeout can cut it off: the caller starts a send only with that much time left, so a run's
+// deadline never makes one ambiguous. read turns a successful answer into the result
+export async function postOnce<T extends InstagramApiErrorBody>(endpoint: string, accessToken: string, payload: unknown, read: (body: T) => SendResult): Promise<SendResult> {
     let response: Response;
     try {
-        response = await fetch(buildGraphUrl(`/${igUserId}/messages`).toString(), {
+        response = await fetch(buildGraphUrl(endpoint).toString(), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-            body: JSON.stringify({ recipient, message: { text } }),
+            body: JSON.stringify(payload),
             signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
         });
     } catch (err) {
@@ -54,16 +55,16 @@ export async function sendMessage(igUserId: string, accessToken: string, recipie
     }
 
     const usageHeader = response.headers.get('x-business-use-case-usage');
-    let body: SendBody;
+    let body: T;
     try {
-        body = await response.json() as SendBody;
+        body = await response.json() as T;
     } catch {
-        // an accepted request whose answer cannot be read may still have delivered the message
+        // an accepted request whose answer cannot be read may still have gone through
         if (response.ok) return { kind: 'ambiguous', message: 'its answer could not be read' };
         return { kind: 'error', httpStatus: response.status, message: `HTTP ${response.status}`, usageHeader };
     }
 
-    if (response.ok && !body.error) return { kind: 'accepted', messageId: body.message_id ?? null, recipientId: body.recipient_id ?? null };
+    if (response.ok && !body.error) return read(body);
     const error = body.error ?? {};
     return {
         kind: 'error',
@@ -73,6 +74,13 @@ export async function sendMessage(igUserId: string, accessToken: string, recipie
         message: redactUrls(error.message || body.error_message || `HTTP ${response.status}`),
         usageHeader,
     };
+}
+
+// a message to one person or a private reply to a comment
+export function sendMessage(igUserId: string, accessToken: string, recipient: MessageRecipient, text: string): Promise<SendResult> {
+    return postOnce<SendBody>(`/${igUserId}/messages`, accessToken, { recipient, message: { text } }, body => ({
+        kind: 'accepted', messageId: body.message_id ?? null, recipientId: body.recipient_id ?? null,
+    }));
 }
 
 // one private reply to a comment; Instagram allows one per comment, within 7 days of it

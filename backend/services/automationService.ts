@@ -1,6 +1,6 @@
 import { subscribeToWebhooks } from './instagram/instagramMessaging.ts';
 import { coversMedia, ruleMatch } from '../lib/automationMatching.ts';
-import { followTextsProblem, keywordsProblem } from '../lib/automationRules.ts';
+import { followTextsProblem, keywordsProblem, replyActionsProblem } from '../lib/automationRules.ts';
 import { MAX_MESSAGE_BYTES, composeReply, messageBytes, replyMessage } from '../lib/automationDelivery.ts';
 import { ConflictError, NotFoundError, UpstreamError, ValidationError } from '../lib/errors.ts';
 import { newRowId } from '../lib/ids.ts';
@@ -10,6 +10,7 @@ import type { AccountRepository } from '../repositories/accountRepository.ts';
 import type { AutomationAccountControls, AutomationAccountRepository } from '../repositories/automationAccountRepository.ts';
 import type { AutomationCommentRepository } from '../repositories/automationCommentRepository.ts';
 import type { AutomationFollowupRepository } from '../repositories/automationFollowupRepository.ts';
+import type { AutomationPublicReplyRepository } from '../repositories/automationPublicReplyRepository.ts';
 import type { AutomationRuleRepository } from '../repositories/automationRuleRepository.ts';
 import type { AuditRepository } from '../repositories/auditRepository.ts';
 import type { WebhookField } from './instagram/instagramMessaging.ts';
@@ -27,6 +28,7 @@ export interface AutomationServiceDeps {
     rules: AutomationRuleRepository;
     comments: AutomationCommentRepository;
     followups: AutomationFollowupRepository;
+    publicReplies: AutomationPublicReplyRepository;
     automationAccounts: AutomationAccountRepository;
     audit: AuditRepository;
     automation: AutomationConfig;
@@ -58,6 +60,12 @@ export interface RetryResult {
     followupId: string | null;
 }
 
+// a retried public reply, to send right away
+export interface PublicRetryResult {
+    item: AutomationActivityItem;
+    publicReplyId: string;
+}
+
 export interface AutomationService {
     overview(userId: string): Promise<AutomationOverview>;
     createRule(userId: string, input: AutomationRuleRequest): Promise<AutomationRule>;
@@ -68,6 +76,7 @@ export interface AutomationService {
     activity(userId: string, query: ActivityQuery): Promise<ActivityPage>;
     stats(userId: string, query: StatsQuery): Promise<StatsPeriod>;
     retry(userId: string, commentRowId: string): Promise<RetryResult>;
+    retryPublicReply(userId: string, commentRowId: string): Promise<PublicRetryResult>;
     setPaused(userId: string, accountId: string, paused: boolean): Promise<AutomationAccountState>;
     subscribe(userId: string, accountId: string): Promise<AutomationAccountState>;
 }
@@ -97,6 +106,9 @@ function toState(account: Account, controls: AutomationAccountControls): Automat
         subscribedAt: controls.subscribedAt,
         limitedUntil: future(controls.limitedUntil),
         messagesSubscribed: subscribedFieldsOf(controls).includes('messages'),
+        publicCooldownUntil: future(controls.publicCooldownUntil),
+        publicCooldownReason: future(controls.publicCooldownUntil) ? controls.publicCooldownReason : null,
+        publicLimitedUntil: future(controls.publicLimitedUntil),
     };
 }
 
@@ -115,8 +127,18 @@ function checkFollowTexts(rule: { followPromptText: string | null; notFollowingT
     }
 }
 
-// what a rule will look like once saved, checked across fields: keywords against the match mode, and the
-// followers-only messages; switching to any comment clears the keywords, since such a rule takes none
+// the private reply goes out as one Instagram message, so it is measured only when the rule sends it
+function checkPrivateReply(rule: { privateReplyEnabled: boolean; replyText: string; linkUrl: string | null }): void {
+    if (rule.privateReplyEnabled) checkMessageSize(rule.replyText, rule.linkUrl);
+}
+
+function checkActions(rule: Parameters<typeof replyActionsProblem>[0]): void {
+    const problem = replyActionsProblem(rule);
+    if (problem) throw new ValidationError(problem);
+}
+
+// what a rule will look like once saved, checked across fields: keywords against the match mode, the reply actions
+// and the followers-only messages; switching to any comment clears the keywords, since such a rule takes none
 function resolveChanges(current: AutomationRule, changes: AutomationRuleUpdateRequest): AutomationRuleUpdateRequest {
     const matchMode = changes.matchMode ?? current.matchMode;
     const resolved = { ...changes };
@@ -129,6 +151,16 @@ function resolveChanges(current: AutomationRule, changes: AutomationRuleUpdateRe
         followPromptText: resolved.followPromptText === undefined ? current.followPromptText : resolved.followPromptText,
         notFollowingText: resolved.notFollowingText === undefined ? current.notFollowingText : resolved.notFollowingText,
     };
+    const actions = {
+        privateReplyEnabled: resolved.privateReplyEnabled ?? current.privateReplyEnabled,
+        replyText: resolved.replyText ?? current.replyText,
+        linkUrl: resolved.linkUrl === undefined ? current.linkUrl : resolved.linkUrl,
+        publicReplyEnabled: resolved.publicReplyEnabled ?? current.publicReplyEnabled,
+        publicReplyTexts: resolved.publicReplyTexts ?? current.publicReplyTexts,
+        requireFollow: merged.requireFollow,
+    };
+    checkActions(actions);
+    checkPrivateReply(actions);
     const followProblem = followTextsProblem(merged);
     if (followProblem) throw new ValidationError(followProblem);
     checkFollowTexts(merged);
@@ -143,7 +175,7 @@ function fieldsFor(accountRules: AutomationRule[]): WebhookField[] {
 
 // the user's rules, the controls of their Instagram accounts, and the API that lists, tests and retries replies
 export function createAutomationService(deps: AutomationServiceDeps): AutomationService {
-    const { accounts, rules, comments, followups, automationAccounts, audit, automation, context } = deps;
+    const { accounts, rules, comments, followups, publicReplies, automationAccounts, audit, automation, context } = deps;
 
     async function instagramAccount(userId: string, accountId: string): Promise<Account> {
         const account = await accounts.findForUser(accountId, userId);
@@ -224,7 +256,15 @@ export function createAutomationService(deps: AutomationServiceDeps): Automation
 
         async createRule(userId, input) {
             const account = await instagramAccount(userId, input.accountId);
-            checkMessageSize(input.replyText, input.linkUrl ?? null);
+            const actions = {
+                privateReplyEnabled: input.privateReplyEnabled ?? true,
+                replyText: input.replyText,
+                linkUrl: input.linkUrl ?? null,
+                publicReplyEnabled: input.publicReplyEnabled ?? false,
+                publicReplyTexts: input.publicReplyTexts ?? [],
+            };
+            checkActions({ ...actions, requireFollow: input.requireFollow ?? false });
+            checkPrivateReply(actions);
             const follow = {
                 requireFollow: input.requireFollow ?? false,
                 followPromptText: input.followPromptText ?? null,
@@ -240,8 +280,7 @@ export function createAutomationService(deps: AutomationServiceDeps): Automation
                 matchMode: input.matchMode ?? 'contains',
                 caseSensitive: input.caseSensitive ?? false,
                 mediaIds: input.mediaIds ?? [],
-                replyText: input.replyText,
-                linkUrl: input.linkUrl ?? null,
+                ...actions,
                 enabled: input.enabled ?? false,
                 hourlyLimit: input.hourlyLimit ?? null,
                 ...follow,
@@ -250,7 +289,10 @@ export function createAutomationService(deps: AutomationServiceDeps): Automation
             }, userId);
             await audit.recordForUser(userId, {
                 action: 'automation_rule.created', subjectType: 'automation_rule', subjectId: rule.id,
-                details: { accountId: account.id, enabled: rule.enabled, matchMode: rule.matchMode, requireFollow: rule.requireFollow },
+                details: {
+                    accountId: account.id, enabled: rule.enabled, matchMode: rule.matchMode, requireFollow: rule.requireFollow,
+                    privateReply: rule.privateReplyEnabled, publicReply: rule.publicReplyEnabled,
+                },
             });
             if (rule.enabled) await ensureSubscribed(userId, account);
             return rule;
@@ -258,7 +300,6 @@ export function createAutomationService(deps: AutomationServiceDeps): Automation
 
         async updateRule(userId, id, changes) {
             const current = await ownedRule(userId, id);
-            checkMessageSize(changes.replyText ?? current.replyText, changes.linkUrl === undefined ? current.linkUrl : changes.linkUrl);
             const resolved = resolveChanges(current, changes);
             const rule = await rules.updateForUser(id, resolved, userId);
             if (!rule) throw new NotFoundError('Automation rule not found');
@@ -303,7 +344,8 @@ export function createAutomationService(deps: AutomationServiceDeps): Automation
                 caseSensitive: input.caseSensitive ?? false,
                 mediaIds: input.mediaIds ?? [],
             };
-            const message = replyMessage({
+            // a rule with no private reply sends no message, so there is nothing to measure
+            const message = input.privateReplyEnabled === false ? '' : replyMessage({
                 requireFollow: input.requireFollow ?? false,
                 followPromptText: input.followPromptText ?? null,
                 replyText: input.replyText,
@@ -347,11 +389,30 @@ export function createAutomationService(deps: AutomationServiceDeps): Automation
             return { item: await comments.findForUser(commentRowId, userId) ?? existing, followupId };
         },
 
+        // only the public reply goes back in the queue; the private reply keeps whatever state it has
+        async retryPublicReply(userId, commentRowId) {
+            const publicReplyId = await publicReplies.requeueForUser(commentRowId, userId);
+            const item = await comments.findForUser(commentRowId, userId);
+            if (!item) throw new NotFoundError('Activity item not found');
+            if (!publicReplyId) {
+                throw new ConflictError(item.publicReply
+                    ? 'Only a failed, skipped or review public reply inside its 7 days can be retried'
+                    : 'This comment has no public reply to retry');
+            }
+            await audit.recordForUser(userId, {
+                action: 'automation_public_reply.retried', subjectType: 'automation_comment', subjectId: commentRowId, details: { publicReplyId },
+            });
+            return { item, publicReplyId };
+        },
+
         async setPaused(userId, accountId, paused) {
             const account = await instagramAccount(userId, accountId);
             const controls = await automationAccounts.setPausedForUser(account.id, userId, paused);
             // held replies go out on the next run instead of waiting for their next check
-            if (!paused) await comments.releaseHeldForAccount(account.id, userId);
+            if (!paused) {
+                await comments.releaseHeldForAccount(account.id, userId);
+                await publicReplies.releaseHeldForAccount(account.id, userId);
+            }
             await audit.recordForUser(userId, {
                 action: paused ? 'automation_account.paused' : 'automation_account.resumed', subjectType: 'automation_account', subjectId: account.id,
             });

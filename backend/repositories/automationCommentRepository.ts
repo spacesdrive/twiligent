@@ -5,7 +5,7 @@ import type { QueueHealth } from '../lib/automationHealth.ts';
 import type { SupabaseClient } from '../types/app.ts';
 import type {
     AutomationActivityItem, AutomationCommentStatus, AutomationFollowupKind, AutomationFollowupStatus, AutomationGateStatus, AutomationLimits,
-    AutomationStats,
+    AutomationPublicReplyStatus, AutomationStats,
 } from '../../shared/types/automation.ts';
 
 interface AutomationCommentRow {
@@ -25,8 +25,21 @@ interface AutomationCommentRow {
     expires_at: string;
     created_at: string;
     gate_status: AutomationGateStatus | null;
-    // PostgREST embeds the comment's follow-ups through their foreign key
+    // PostgREST embeds the comment's follow-ups and its public reply through their foreign keys; the public reply is
+    // unique per comment, so it comes as one object
     automation_followups?: FollowupRow[] | null;
+    automation_public_replies?: PublicReplyRow | PublicReplyRow[] | null;
+}
+
+interface PublicReplyRow {
+    status: AutomationPublicReplyStatus;
+    status_reason: string | null;
+    error_message: string | null;
+    reply_text: string;
+    attempts: number;
+    reply_id: string | null;
+    next_attempt_at: string | null;
+    accepted_at: string | null;
 }
 
 interface FollowupRow {
@@ -71,11 +84,15 @@ interface QueueHealthRow {
     stale?: number;
     needs_review?: number;
     followups_due?: number;
+    public_due?: number;
+    public_oldest_due_at?: string | null;
+    public_stale?: number;
+    public_needs_review?: number;
     paused_accounts?: number;
     limited_accounts?: number;
 }
 
-// a comment as the webhook stores it
+// a comment as the webhook stores it, with the public reply its rule asks for
 export interface NewAutomationComment {
     id: string;
     userId: string;
@@ -87,11 +104,19 @@ export interface NewAutomationComment {
     fromId: string | null;
     fromUsername: string | null;
     text: string | null;
-    status: 'ignored' | 'queued';
+    // skipped when the rule answers with a public reply only
+    status: 'ignored' | 'queued' | 'skipped';
     statusReason: string | null;
     nextAttemptAt: string | null;
     notifiedAt: string;
     expiresAt: string;
+    publicReply: { id: string; text: string } | null;
+}
+
+// what one store call added: the new comments, and the public replies queued for new or earlier copies of them
+export interface StoredComments {
+    inserted: NewAutomationComment[];
+    publicReplyIds: string[];
 }
 
 // a job one run holds, with what it needs to send: the rule's reply and the account's token
@@ -167,6 +192,12 @@ export interface ActivityFilter {
     limit: number;
 }
 
+export interface ExpiredCounts {
+    comments: number;
+    followups: number;
+    publicReplies: number;
+}
+
 export interface StatsFilter {
     from: string;
     to: string;
@@ -177,12 +208,27 @@ export interface StatsFilter {
 // a person may ask for these to be tried again; an expired one can never be sent
 const RETRYABLE: AutomationCommentStatus[] = ['failed', 'needs_review', 'skipped'];
 
-const COLUMNS = 'id, account_id, rule_id, comment_id, media_id, from_username, text, status, status_reason, error_message, attempts, next_attempt_at, accepted_at, expires_at, created_at, gate_status, automation_followups(status, kind, error_message, created_at)';
+const COLUMNS = 'id, account_id, rule_id, comment_id, media_id, from_username, text, status, status_reason, error_message, attempts, next_attempt_at, accepted_at, expires_at, created_at, gate_status, automation_followups(status, kind, error_message, created_at), automation_public_replies(status, status_reason, error_message, reply_text, attempts, reply_id, next_attempt_at, accepted_at)';
 
 // the latest follow-up, so the list shows where a followers-only reply stands
 function latestFollowup(rows: FollowupRow[] | null | undefined): AutomationActivityItem['followup'] {
     const latest = [...(rows ?? [])].sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
     return latest ? { status: latest.status, kind: latest.kind, errorMessage: latest.error_message, createdAt: latest.created_at } : null;
+}
+
+function publicReplyOf(embedded: AutomationCommentRow['automation_public_replies']): AutomationActivityItem['publicReply'] {
+    const row = Array.isArray(embedded) ? embedded[0] : embedded;
+    if (!row) return null;
+    return {
+        status: row.status,
+        statusReason: row.status_reason,
+        errorMessage: row.error_message,
+        text: row.reply_text,
+        attempts: row.attempts,
+        replyId: row.reply_id,
+        nextAttemptAt: row.next_attempt_at,
+        acceptedAt: row.accepted_at,
+    };
 }
 
 function toItem(row: AutomationCommentRow): AutomationActivityItem {
@@ -204,6 +250,7 @@ function toItem(row: AutomationCommentRow): AutomationActivityItem {
         createdAt: row.created_at,
         gateStatus: row.gate_status ?? null,
         followup: latestFollowup(row.automation_followups),
+        publicReply: publicReplyOf(row.automation_public_replies),
     };
 }
 
@@ -235,6 +282,10 @@ function toHealth(row: QueueHealthRow): QueueHealth {
         stale: row.stale ?? 0,
         needsReview: row.needs_review ?? 0,
         followupsDue: row.followups_due ?? 0,
+        publicDue: row.public_due ?? 0,
+        publicOldestDueAt: row.public_oldest_due_at ?? null,
+        publicStale: row.public_stale ?? 0,
+        publicNeedsReview: row.public_needs_review ?? 0,
         pausedAccounts: row.paused_accounts ?? 0,
         limitedAccounts: row.limited_accounts ?? 0,
     };
@@ -242,7 +293,7 @@ function toHealth(row: QueueHealthRow): QueueHealth {
 
 // methods named ...ForUser filter by the verified user id; the others serve the webhook and the cron jobs across all users
 export interface AutomationCommentRepository {
-    insertMany(comments: NewAutomationComment[]): Promise<NewAutomationComment[]>;
+    store(comments: NewAutomationComment[]): Promise<StoredComments>;
     claim(options: ClaimOptions): Promise<ClaimedComment[]>;
     reserve(id: string, attemptId: string, limits: AutomationLimits, messageDigest?: string): Promise<Reservation>;
     finish(id: string, attemptId: string, plan: FinishPlan): Promise<boolean>;
@@ -253,7 +304,7 @@ export interface AutomationCommentRepository {
     requeueForUser(id: string, userId: string): Promise<AutomationActivityItem | null>;
     releaseHeldForAccount(accountId: string, userId: string): Promise<void>;
     statsForUser(userId: string, filter: StatsFilter): Promise<AutomationStats>;
-    expireDue(limit: number): Promise<{ comments: number; followups: number }>;
+    expireDue(limit: number): Promise<ExpiredCounts>;
     reviewCandidates(options: ReviewCandidateOptions): Promise<ReviewCandidate[]>;
     recordReview(id: string, result: ReviewResult): Promise<boolean>;
     health(leaseSeconds: number): Promise<QueueHealth>;
@@ -262,12 +313,12 @@ export interface AutomationCommentRepository {
 
 export function createAutomationCommentRepository(db: SupabaseClient): AutomationCommentRepository {
     return {
-        // the unique (ig_user_id, comment_id) drops a notification Meta delivered again; only new rows come back
-        async insertMany(comments) {
-            if (comments.length === 0) return [];
-            const inserted = await rows<{ id: string }>('automationComments.insertMany', () => db
-                .from('automation_comments')
-                .upsert(comments.map(comment => ({
+        // one transaction for the comments and their public replies; the unique (ig_user_id, comment_id) drops a
+        // notification Meta delivered again, so only new comments come back
+        async store(comments) {
+            if (comments.length === 0) return { inserted: [], publicReplyIds: [] };
+            const { data } = await execute('automationComments.store', () => db.rpc('store_automation_comments', {
+                p_comments: comments.map(comment => ({
                     id: comment.id,
                     user_id: comment.userId,
                     account_id: comment.accountId,
@@ -283,10 +334,13 @@ export function createAutomationCommentRepository(db: SupabaseClient): Automatio
                     next_attempt_at: comment.nextAttemptAt,
                     notified_at: comment.notifiedAt,
                     expires_at: comment.expiresAt,
-                })), { onConflict: 'ig_user_id,comment_id', ignoreDuplicates: true })
-                .select('id'));
-            const insertedIds = new Set(inserted.map(row => row.id));
-            return comments.filter(comment => insertedIds.has(comment.id));
+                    public_reply_id: comment.publicReply?.id ?? null,
+                    public_reply_text: comment.publicReply?.text ?? null,
+                })),
+            }));
+            const result = (data ?? {}) as { comments?: { id: string }[]; public_replies?: string[] };
+            const insertedIds = new Set((result.comments ?? []).map(row => row.id));
+            return { inserted: comments.filter(comment => insertedIds.has(comment.id)), publicReplyIds: result.public_replies ?? [] };
         },
 
         async claim({ limit, perAccount, leaseSeconds, ids }) {
@@ -419,14 +473,14 @@ export function createAutomationCommentRepository(db: SupabaseClient): Automatio
                 p_account_id: accountId ?? null,
                 p_rule_id: ruleId ?? null,
             }));
-            const stats = (data ?? {}) as Partial<AutomationStats>;
-            return { comments: stats.comments ?? {}, attempts: stats.attempts ?? {} };
+            const stats = (data ?? {}) as Partial<AutomationStats> & { public_replies?: AutomationStats['publicReplies'] };
+            return { comments: stats.comments ?? {}, publicReplies: stats.public_replies ?? {}, attempts: stats.attempts ?? {} };
         },
 
         async expireDue(limit) {
             const { data } = await execute('automationComments.expireDue', () => db.rpc('expire_automation_jobs', { p_limit: limit }));
-            const counts = (data ?? {}) as { comments?: number; followups?: number };
-            return { comments: counts.comments ?? 0, followups: counts.followups ?? 0 };
+            const counts = (data ?? {}) as { comments?: number; followups?: number; public_replies?: number };
+            return { comments: counts.comments ?? 0, followups: counts.followups ?? 0, publicReplies: counts.public_replies ?? 0 };
         },
 
         async reviewCandidates({ limit, settleSeconds, maxChecks, recheckSeconds }) {

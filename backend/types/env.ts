@@ -32,6 +32,8 @@ export interface Env {
     AUTOMATION_USER_HOURLY_LIMIT?: string;
     AUTOMATION_GLOBAL_HOURLY_LIMIT?: string;
     AUTOMATION_RECIPIENT_DAILY_LIMIT?: string;
+    // public replies under comments per hour and account, 60 when missing, at most 200
+    AUTOMATION_PUBLIC_ACCOUNT_HOURLY_LIMIT?: string;
     // replies sent by one webhook request or one sweep
     AUTOMATION_BATCH_SIZE?: string;
 }

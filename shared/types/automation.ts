@@ -19,6 +19,9 @@ export type AutomationFollowupKind = 'link' | 'reminder';
 // a follow-up message moves through the same states as a reply, except ignored
 export type AutomationFollowupStatus = Exclude<AutomationCommentStatus, 'ignored'>;
 
+// a public reply under the comment moves through the same states, apart from the private reply
+export type AutomationPublicReplyStatus = Exclude<AutomationCommentStatus, 'ignored'>;
+
 export interface AutomationRule {
     id: string;
     accountId: string;
@@ -28,10 +31,15 @@ export interface AutomationRule {
     caseSensitive: boolean;
     // empty means every post and reel of the account
     mediaIds: string[];
+    // the private reply; empty when the rule only replies publicly
+    privateReplyEnabled: boolean;
     replyText: string;
     linkUrl: string | null;
+    // a public reply under the comment, one of these texts picked per comment
+    publicReplyEnabled: boolean;
+    publicReplyTexts: string[];
     enabled: boolean;
-    // null uses only the account's limit
+    // null uses only the account's limit; it counts private replies
     hourlyLimit: number | null;
     // the private reply asks the person to follow and answer; the reply and link go out once Instagram says they follow
     requireFollow: boolean;
@@ -49,8 +57,12 @@ export interface AutomationRuleRequest {
     matchMode?: AutomationMatchMode;
     caseSensitive?: boolean;
     mediaIds?: string[];
+    privateReplyEnabled?: boolean;
+    // may be empty when privateReplyEnabled is false
     replyText: string;
     linkUrl?: string | null;
+    publicReplyEnabled?: boolean;
+    publicReplyTexts?: string[];
     enabled?: boolean;
     hourlyLimit?: number | null;
     requireFollow?: boolean;
@@ -75,6 +87,10 @@ export interface AutomationAccountState {
     limitedUntil: string | null;
     // Instagram also sends this account's messages, which followers-only rules need
     messagesSubscribed: boolean;
+    // public replies cool down and fill up apart from private replies
+    publicCooldownUntil: string | null;
+    publicCooldownReason: string | null;
+    publicLimitedUntil: string | null;
 }
 
 export interface AutomationLimits {
@@ -82,6 +98,8 @@ export interface AutomationLimits {
     userHourly: number;
     globalHourly: number;
     recipientDaily: number;
+    // public replies an hour per account; Instagram publishes no number for them, so Twiligent keeps a human pace
+    publicAccountHourly: number;
 }
 
 export interface AutomationSettings {
@@ -111,6 +129,20 @@ export interface AutomationActivityItem {
     // followers-only rules: where the wait for the person's answer stands, and the latest message sent after it
     gateStatus: AutomationGateStatus | null;
     followup: AutomationFollowupState | null;
+    // the public reply under the comment, when the rule asked for one
+    publicReply: AutomationPublicReplyState | null;
+}
+
+export interface AutomationPublicReplyState {
+    status: AutomationPublicReplyStatus;
+    statusReason: string | null;
+    errorMessage: string | null;
+    text: string;
+    attempts: number;
+    // the id Instagram gave the reply, once it is known to be there
+    replyId: string | null;
+    nextAttemptAt: string | null;
+    acceptedAt: string | null;
 }
 
 export interface AutomationFollowupState {
@@ -122,6 +154,7 @@ export interface AutomationFollowupState {
 
 export interface AutomationStats {
     comments: Partial<Record<AutomationCommentStatus, number>>;
+    publicReplies: Partial<Record<AutomationPublicReplyStatus, number>>;
     attempts: Partial<Record<AutomationAttemptOutcome, number>>;
 }
 
@@ -145,6 +178,7 @@ export interface AutomationTestRequest {
     matchMode?: AutomationMatchMode;
     caseSensitive?: boolean;
     mediaIds?: string[];
+    privateReplyEnabled?: boolean;
     replyText: string;
     linkUrl?: string | null;
     requireFollow?: boolean;
@@ -171,7 +205,8 @@ export interface AutomationActivityResponse {
     nextBefore: string | null;
 }
 
-// POST /api/automations/activity/:id/retry
+// POST /api/automations/activity/:id/retry (the private reply or its follow-up) and
+// POST /api/automations/activity/:id/public-reply/retry (the public reply alone)
 export interface AutomationActivityItemResponse {
     success: true;
     item: AutomationActivityItem;

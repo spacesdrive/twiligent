@@ -85,9 +85,9 @@ describe('automation routes', () => {
         assert.deepEqual(body.rules.map((rule: { id: string }) => rule.id), ['rule-mine']);
         assert.deepEqual(body.accounts, [{
             accountId: 'ig1', username: 'mine', profilePictureUrl: '', paused: false, cooldownUntil: null, cooldownReason: null, subscribedAt: null,
-            limitedUntil: null, messagesSubscribed: false,
+            limitedUntil: null, messagesSubscribed: false, publicCooldownUntil: null, publicCooldownReason: null, publicLimitedUntil: null,
         }]);
-        assert.deepEqual(body.settings, { webhookConfigured: true, paused: false, limits: { accountHourly: 200, userHourly: 500, globalHourly: 1000, recipientDaily: 3 } });
+        assert.deepEqual(body.settings, { webhookConfigured: true, paused: false, limits: { accountHourly: 200, userHourly: 500, globalHourly: 1000, recipientDaily: 3, publicAccountHourly: 60 } });
     });
 
     test('creating an enabled rule saves it, asks Instagram for the account\'s comments and records both', async () => {
@@ -245,10 +245,41 @@ describe('automation routes', () => {
         assert.equal((await call(target, 'POST', '/automations/activity/gated/retry')).status, 409);
     });
 
+    test('a public reply is retried on its own, leaving the private reply as it is', async () => {
+        const target = server(fakeSupabase([
+            ...seed(),
+            tableRow('automation_public_replies', { id: 'pub-1', user_id: 'user-1', automation_comment_id: 'accepted-mine', status: 'failed', expires_at: FUTURE, reply_text: 'Sent you a message', attempts: 5 }),
+            tableRow('automation_public_replies', { id: 'pub-2', user_id: 'user-2', automation_comment_id: 'failed-theirs', status: 'failed', expires_at: FUTURE, reply_text: 'x', attempts: 1 }),
+        ], { claim_automation_public_replies: () => [] }));
+        const retried = await call(target, 'POST', '/automations/activity/accepted-mine/public-reply/retry');
+        assert.equal(retried.status, 200);
+        assert.equal(target.supabase.table.find(row => row.id === 'pub-1')!.status, 'queued');
+        assert.equal(target.supabase.table.find(row => row.id === 'accepted-mine')!.status, 'accepted');
+        assert.ok(target.supabase.calls.some(call => call.type === 'rpc' && call.table === 'claim_automation_public_replies'));
+        assert.ok(audits(target.supabase).includes('automation_public_reply.retried'));
+        assert.equal((await call(target, 'POST', '/automations/activity/accepted-mine/public-reply/retry')).status, 409);
+        assert.equal((await call(target, 'POST', '/automations/activity/failed-mine/public-reply/retry')).body.message, 'This comment has no public reply to retry');
+        assert.equal((await call(target, 'POST', '/automations/activity/failed-theirs/public-reply/retry')).status, 404);
+        assert.equal(target.supabase.table.find(row => row.id === 'pub-2')!.status, 'failed');
+    });
+
+    test('a rule may reply only in public, and a rule that turns its private reply off must keep a public one', async () => {
+        const target = server();
+        const created = await call(target, 'POST', '/automations/rules', {
+            accountId: 'ig1', name: 'Thanks', matchMode: 'any', keywords: [], privateReplyEnabled: false, publicReplyEnabled: true, publicReplyTexts: ['Thank you'],
+        });
+        assert.equal(created.status, 200);
+        assert.deepEqual([created.body.rule.privateReplyEnabled, created.body.rule.replyText, created.body.rule.publicReplyTexts], [false, '', ['Thank you']]);
+        const off = await call(target, 'PUT', '/automations/rules/rule-mine', { privateReplyEnabled: false });
+        assert.deepEqual([off.status, off.body.message], [400, 'Turn on the private reply, the public reply, or both']);
+        const swapped = await call(target, 'PUT', '/automations/rules/rule-mine', { privateReplyEnabled: false, publicReplyEnabled: true, publicReplyTexts: ['Sent'] });
+        assert.deepEqual([swapped.status, swapped.body.rule.privateReplyEnabled, swapped.body.rule.replyText], [200, false, 'Here it is']);
+    });
+
     test('stats default to the last 7 days and pass the filters on', async () => {
         const target = server();
         const { body } = await call(target, 'GET', '/automations/stats?accountId=ig1');
-        assert.deepEqual(body.stats, { comments: { accepted: 1, failed: 0 }, attempts: { accepted: 1 } });
+        assert.deepEqual(body.stats, { comments: { accepted: 1, failed: 0 }, publicReplies: {}, attempts: { accepted: 1 } });
         assert.equal(Date.parse(body.to) - Date.parse(body.from), 7 * 24 * 60 * 60 * 1000);
         const sent = target.supabase.calls.find(call => call.table === 'automation_stats')!.values as Row;
         assert.deepEqual([sent.p_user_id, sent.p_account_id, sent.p_rule_id], ['user-1', 'ig1', null]);

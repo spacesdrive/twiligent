@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import {
     getAutomations, createAutomationRule, updateAutomationRule, duplicateAutomationRule, deleteAutomationRule, testAutomationRule,
-    listAutomationActivity, getAutomationStats, retryAutomationActivity, updateAutomationAccount, subscribeAutomationAccount,
+    listAutomationActivity, getAutomationStats, retryAutomationActivity, retryAutomationPublicReply, updateAutomationAccount, subscribeAutomationAccount,
 } from '../controllers/automationController.ts';
 import type { AppEnv } from '../types/app.ts';
 
@@ -15,6 +15,7 @@ router.post('/automations/rules/:id/duplicate', ...duplicateAutomationRule);
 router.post('/automations/test', ...testAutomationRule);
 router.get('/automations/activity', ...listAutomationActivity);
 router.post('/automations/activity/:id/retry', ...retryAutomationActivity);
+router.post('/automations/activity/:id/public-reply/retry', ...retryAutomationPublicReply);
 router.get('/automations/stats', ...getAutomationStats);
 router.put('/automations/accounts/:accountId', ...updateAutomationAccount);
 router.post('/automations/accounts/:accountId/subscribe', ...subscribeAutomationAccount);

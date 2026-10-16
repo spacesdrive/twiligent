@@ -61,6 +61,14 @@ export const retryAutomationActivity = controller.createHandlers(async c => {
     return c.json({ success: true, item } satisfies AutomationActivityItemResponse);
 });
 
+// only the public reply goes back in the queue, and this request starts posting it
+export const retryAutomationPublicReply = controller.createHandlers(async c => {
+    const { item, publicReplyId } = await servicesFor(c).automations.retryPublicReply(c.get('userId'), pathParam(c, 'id'));
+    const subrequests = FREE_PLAN_SUBREQUESTS - REQUEST_SUBREQUESTS;
+    inBackground(c, 'automation public reply retry', services => services.automationPublicReplies.run({ ids: [publicReplyId], subrequests }));
+    return c.json({ success: true, item } satisfies AutomationActivityItemResponse);
+});
+
 export const updateAutomationAccount = controller.createHandlers(jsonBody(parseAutomationAccount), async c => {
     const account = await servicesFor(c).automations.setPaused(c.get('userId'), pathParam(c, 'accountId'), c.req.valid('json').paused);
     return c.json({ success: true, account } satisfies AutomationAccountResponse);

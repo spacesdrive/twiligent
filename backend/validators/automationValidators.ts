@@ -1,5 +1,6 @@
 import { ValidationError } from '../lib/errors.ts';
-import { followTextsProblem, keywordsProblem } from '../lib/automationRules.ts';
+import { followTextsProblem, keywordsProblem, replyActionsProblem } from '../lib/automationRules.ts';
+import { MAX_PUBLIC_REPLY_TEXTS, publicReplyTextProblem } from '../lib/automationPublicReply.ts';
 import { isString, optionalArray, optionalBoolean, optionalNumber, optionalString, presentField, requiredString } from './fields.ts';
 import type { Fields } from './fields.ts';
 import type { ActivityCursor } from '../repositories/automationCommentRepository.ts';
@@ -104,10 +105,24 @@ function mediaIds(body: Fields): string[] | undefined {
     return ids;
 }
 
+// may be empty when the rule has no private reply; whether it is needed is checked with replyActionsProblem
 function replyText(body: Fields): string {
-    const value = requiredString(body, 'replyText', 'Write the reply to send');
+    const value = optionalString(body, 'replyText') ?? '';
     if (value.length > MAX_REPLY) throw new ValidationError(`The reply can be at most ${MAX_REPLY} characters`);
     return value;
+}
+
+// trimmed, without blanks or repeats; each text must be one Instagram takes as a comment
+function publicReplyTexts(body: Fields): string[] | undefined {
+    const list = optionalArray(body, 'publicReplyTexts', isString, 'texts');
+    if (!list) return undefined;
+    const texts = [...new Set(list.map(item => item.trim()).filter(Boolean))];
+    if (texts.length > MAX_PUBLIC_REPLY_TEXTS) throw new ValidationError(`A rule can have at most ${MAX_PUBLIC_REPLY_TEXTS} public replies`);
+    for (const text of texts) {
+        const problem = publicReplyTextProblem(text);
+        if (problem) throw new ValidationError(problem);
+    }
+    return texts;
 }
 
 // only https links without a user name or password, since the link goes to strangers in a private message
@@ -174,15 +189,18 @@ export function parseAutomationRule(body: Fields): AutomationRuleRequest {
         matchMode: mode,
         caseSensitive,
         mediaIds: mediaIds(body) ?? [],
+        privateReplyEnabled: optionalBoolean(body, 'privateReplyEnabled') ?? true,
         replyText: replyText(body),
         linkUrl: linkUrl(body) ?? null,
+        publicReplyEnabled: optionalBoolean(body, 'publicReplyEnabled') ?? false,
+        publicReplyTexts: publicReplyTexts(body) ?? [],
         enabled: optionalBoolean(body, 'enabled') ?? false,
         hourlyLimit: hourlyLimit(body) ?? null,
         requireFollow: optionalBoolean(body, 'requireFollow') ?? false,
         followPromptText: followText(body, 'followPromptText', FOLLOW_PROMPT_LABEL) ?? null,
         notFollowingText: followText(body, 'notFollowingText', NOT_FOLLOWING_LABEL) ?? null,
     };
-    const problem = followTextsProblem(rule);
+    const problem = replyActionsProblem(rule) ?? followTextsProblem(rule);
     if (problem) throw new ValidationError(problem);
     return rule;
 }
@@ -197,8 +215,11 @@ export function parseAutomationRuleUpdate(body: Fields): AutomationRuleUpdateReq
     if (presentField(body, 'matchMode')) changes.matchMode = matchMode(body);
     if (caseSensitive !== undefined) changes.caseSensitive = caseSensitive;
     if (presentField(body, 'mediaIds')) changes.mediaIds = mediaIds(body);
+    if (presentField(body, 'privateReplyEnabled')) changes.privateReplyEnabled = optionalBoolean(body, 'privateReplyEnabled');
     if (presentField(body, 'replyText')) changes.replyText = replyText(body);
     if (presentField(body, 'linkUrl')) changes.linkUrl = linkUrl(body);
+    if (presentField(body, 'publicReplyEnabled')) changes.publicReplyEnabled = optionalBoolean(body, 'publicReplyEnabled');
+    if (presentField(body, 'publicReplyTexts')) changes.publicReplyTexts = publicReplyTexts(body);
     if (presentField(body, 'enabled')) changes.enabled = optionalBoolean(body, 'enabled');
     if (presentField(body, 'hourlyLimit')) changes.hourlyLimit = hourlyLimit(body);
     if (presentField(body, 'requireFollow')) changes.requireFollow = optionalBoolean(body, 'requireFollow');
@@ -213,12 +234,16 @@ export function parseAutomationTest(body: Fields): AutomationTestRequest {
     const comment = requiredString(body, 'comment', 'Type a sample comment to test');
     if (comment.length > MAX_TEST_COMMENT) throw new ValidationError(`A comment can be at most ${MAX_TEST_COMMENT} characters`);
     const mode = matchMode(body) ?? 'contains';
+    const privateReplyEnabled = optionalBoolean(body, 'privateReplyEnabled') ?? true;
+    const text = replyText(body);
+    if (privateReplyEnabled && !text) throw new ValidationError('Write the reply to send');
     return {
         keywords: keywordsFor(mode, keywords(body, caseSensitive)),
         matchMode: mode,
         caseSensitive,
         mediaIds: mediaIds(body) ?? [],
-        replyText: replyText(body),
+        privateReplyEnabled,
+        replyText: text,
         linkUrl: linkUrl(body) ?? null,
         requireFollow: optionalBoolean(body, 'requireFollow') ?? false,
         followPromptText: followText(body, 'followPromptText', FOLLOW_PROMPT_LABEL) ?? null,

@@ -18,6 +18,9 @@ const PUBLISH_EVERY_MINUTES = 15;
 // a dispatch stops starting sends well before the next minute's run, so runs rarely overlap; when they do, the claim's
 // row locks keep them apart
 const DISPATCH_TIME_MS = 50 * 1000;
+// public replies always keep room for three a run, 180 an hour, above their default limit of 60, so private replies
+// and follow-ups can never crowd them out
+const PUBLIC_REPLY_SUBREQUESTS = 11;
 // the daily run refreshes tokens first; retention gets this many batches of the run's subrequests
 const RETENTION_BATCHES = 20;
 
@@ -29,7 +32,7 @@ function cronContext(cron: string): RequestContext {
     return { requestId, signal: AbortSignal.timeout(CRON_DEADLINE_MS), log: createLogger({ requestId, cron }) };
 }
 
-// dispatch sends due replies and follow-ups; publish sends due posts; reconcile expires, checks lost replies and reports
+// dispatch sends due replies, follow-ups and public replies; publish sends due posts; reconcile expires, checks lost replies and reports
 // the queue's health; daily refreshes tokens and removes old data
 export type CronPlan = 'dispatch' | 'publish' | 'reconcile' | 'daily' | 'none';
 
@@ -41,12 +44,20 @@ export function cronPlan(cron: string, scheduledTime: number): CronPlan {
     return new Date(scheduledTime).getUTCMinutes() % PUBLISH_EVERY_MINUTES === 0 ? 'publish' : 'reconcile';
 }
 
-// private replies first, then follow-ups with what is left of the run's 50 subrequests
+// private replies first, since Instagram allows them only for 7 days and a public reply often points to them, then
+// follow-ups, then public replies with what is left of the run's 50 subrequests and time
 async function dispatch(services: Services, context: RequestContext): Promise<void> {
-    const replies = await services.automationProcessor.run({ subrequests: FREE_PLAN_SUBREQUESTS, timeBudgetMs: DISPATCH_TIME_MS });
-    const followups = await services.automationFollowups.run({ subrequests: FREE_PLAN_SUBREQUESTS - replies.subrequests, timeBudgetMs: DISPATCH_TIME_MS });
-    if (replies.claimed > 0 || followups.claimed > 0) {
-        context.log.info('automation dispatch', { replies: { claimed: replies.claimed, ...replies.outcomes }, followups: { claimed: followups.claimed, ...followups.outcomes } });
+    const started = Date.now();
+    const timeLeft = () => DISPATCH_TIME_MS - (Date.now() - started);
+    const replies = await services.automationProcessor.run({ subrequests: FREE_PLAN_SUBREQUESTS - PUBLIC_REPLY_SUBREQUESTS, timeBudgetMs: timeLeft() });
+    const followups = await services.automationFollowups.run({ subrequests: FREE_PLAN_SUBREQUESTS - PUBLIC_REPLY_SUBREQUESTS - replies.subrequests, timeBudgetMs: timeLeft() });
+    const publicReplies = await services.automationPublicReplies.run({ subrequests: FREE_PLAN_SUBREQUESTS - replies.subrequests - followups.subrequests, timeBudgetMs: timeLeft() });
+    if (replies.claimed > 0 || followups.claimed > 0 || publicReplies.claimed > 0) {
+        context.log.info('automation dispatch', {
+            replies: { claimed: replies.claimed, ...replies.outcomes },
+            followups: { claimed: followups.claimed, ...followups.outcomes },
+            publicReplies: { claimed: publicReplies.claimed, ...publicReplies.outcomes },
+        });
     }
 }
 

@@ -14,11 +14,18 @@ import type { Env } from '../../types/env.ts';
 
 const SENT_AT = 1792152000;
 
+const DM_ONLY = { privateReplyEnabled: true, publicReplyEnabled: false, publicReplyTexts: [] };
+
 const RULES: Record<string, WebhookRule[]> = {
     '1784': [
-        { id: 'reel-a', userId: 'user-1', accountId: 'ig1', keywords: ['GUIDE'], matchMode: 'contains', caseSensitive: false, mediaIds: ['A'] },
-        { id: 'reel-b', userId: 'user-1', accountId: 'ig1', keywords: ['COURSE'], matchMode: 'contains', caseSensitive: false, mediaIds: ['B'] },
-        { id: 'any', userId: 'user-1', accountId: 'ig1', keywords: ['SOURCE'], matchMode: 'contains', caseSensitive: false, mediaIds: [] },
+        { id: 'reel-a', userId: 'user-1', accountId: 'ig1', keywords: ['GUIDE'], matchMode: 'contains', caseSensitive: false, mediaIds: ['A'], ...DM_ONLY },
+        { id: 'reel-b', userId: 'user-1', accountId: 'ig1', keywords: ['COURSE'], matchMode: 'contains', caseSensitive: false, mediaIds: ['B'], ...DM_ONLY },
+        { id: 'any', userId: 'user-1', accountId: 'ig1', keywords: ['SOURCE'], matchMode: 'contains', caseSensitive: false, mediaIds: [], ...DM_ONLY },
+    ],
+    // one rule answers in both places, one only in public
+    '2000': [
+        { id: 'both', userId: 'user-1', accountId: 'ig2', keywords: ['GUIDE'], matchMode: 'contains', caseSensitive: false, mediaIds: [], privateReplyEnabled: true, publicReplyEnabled: true, publicReplyTexts: ['Sent you a message', 'Check your messages'] },
+        { id: 'thanks', userId: 'user-1', accountId: 'ig2', keywords: [], matchMode: 'any', caseSensitive: false, mediaIds: [], privateReplyEnabled: false, publicReplyEnabled: true, publicReplyTexts: ['Thank you'] },
     ],
 };
 
@@ -29,7 +36,7 @@ function rulesRepository(): AutomationRuleRepository {
 let inserted: NewAutomationComment[][] = [];
 
 function service(queue: FakeQueue, env: Partial<Env> = {}) {
-    const comments = { ...queue, insertMany: async (rows: NewAutomationComment[]) => { inserted.push(rows); return queue.insertMany(rows); } };
+    const comments = { ...queue, store: async (rows: NewAutomationComment[]) => { inserted.push(rows); return queue.store(rows); } };
     return createAutomationWebhookService({
         rules: rulesRepository(),
         comments,
@@ -88,7 +95,7 @@ describe('instagram webhook intake', () => {
         const body = commentNotification('1784', SENT_AT, [{ id: '1', text: 'GUIDE', mediaId: 'A' }, { id: '2', text: 'GUIDE', mediaId: 'A' }]);
         await ingest(queue, body);
         const again = await ingest(queue, body);
-        assert.deepEqual(again, { stored: 0, duplicates: 2, queuedIds: [], followupIds: [], subrequests: 2 });
+        assert.deepEqual(again, { stored: 0, duplicates: 2, queuedIds: [], publicReplyIds: [], followupIds: [], subrequests: 2 });
         assert.equal(queue.rows.length, 2);
     });
 
@@ -130,13 +137,13 @@ describe('instagram webhook intake', () => {
     test('comments for an account with no enabled rule are not kept at all', async () => {
         const queue = fakeAutomationQueue();
         const result = await ingest(queue, commentNotification('5555', SENT_AT, [{ id: '1', text: 'GUIDE' }]));
-        assert.deepEqual(result, { stored: 0, duplicates: 0, queuedIds: [], followupIds: [], subrequests: 1 });
+        assert.deepEqual(result, { stored: 0, duplicates: 0, queuedIds: [], publicReplyIds: [], followupIds: [], subrequests: 1 });
         assert.deepEqual(inserted, [[]]);
     });
 
     test('a failed insert fails the intake, so the webhook answers with an error and Meta sends it again', async () => {
         const queue = fakeAutomationQueue();
-        const broken = { ...queue, insertMany: async () => { throw new Error('database unavailable'); } };
+        const broken = { ...queue, store: async () => { throw new Error('database unavailable'); } };
         const intake = createAutomationWebhookService({
             rules: rulesRepository(), comments: broken, followups: queue.followups, automation: readAutomationConfig({} as Env),
             context: { requestId: 'req-test', signal: new AbortController().signal, log: createLogger() },
@@ -151,5 +158,33 @@ describe('instagram webhook intake', () => {
         await assert.rejects(intake.challengeAnswer({ mode: 'unsubscribe', verifyToken: 'tok', challenge: '42' }), /verify token does not match/);
         await assert.rejects(intake.challengeAnswer({ mode: 'subscribe', verifyToken: 'tok' }), /verify token does not match/);
         await assert.rejects(service(fakeAutomationQueue()).challengeAnswer({ mode: 'subscribe', verifyToken: 'tok', challenge: '1' }), /INSTAGRAM_WEBHOOK_VERIFY_TOKEN/);
+    });
+
+    test('a rule with both replies queues the private reply and one public reply with a text picked for the comment', async () => {
+        const queue = fakeAutomationQueue();
+        const result = await ingest(queue, commentNotification('2000', SENT_AT, [{ id: '77', text: 'guide please', mediaId: 'A' }]));
+        assert.deepEqual([result.queuedIds.length, result.publicReplyIds.length], [1, 1]);
+        assert.deepEqual([queue.rows[0].status, queue.publicRows[0].commentRowId], ['queued', queue.rows[0].id]);
+        assert.ok(['Sent you a message', 'Check your messages'].includes(queue.publicRows[0].replyText));
+        assert.equal(inserted[0][0].publicReply!.text, queue.publicRows[0].replyText);
+    });
+
+    test('a public-only rule keeps the comment, skips the private reply and queues the public one', async () => {
+        const queue = fakeAutomationQueue();
+        const result = await ingest(queue, commentNotification('2000', SENT_AT, [{ id: '78', text: 'love this', mediaId: 'A' }]));
+        assert.deepEqual([result.queuedIds, result.publicReplyIds.length], [[], 1]);
+        assert.deepEqual([queue.rows[0].status, queue.rows[0].statusReason, queue.publicRows[0].replyText], ['skipped', 'private_reply_off', 'Thank you']);
+        assert.deepEqual([inserted[0][0].text, inserted[0][0].fromUsername], ['love this', 'fan_78']);
+    });
+
+    test('a public reply delivered back as the account\'s own comment is never answered, and a redelivery queues no second public reply', async () => {
+        const queue = fakeAutomationQueue();
+        const body = commentNotification('2000', SENT_AT, [{ id: '79', text: 'guide', mediaId: 'A' }]);
+        await ingest(queue, body);
+        const again = await ingest(queue, body);
+        assert.deepEqual([again.stored, again.publicReplyIds], [0, []]);
+        const own = await ingest(queue, commentNotification('2000', SENT_AT, [{ id: '80', text: 'Thank you', mediaId: 'A', fromId: '2000' }]));
+        assert.deepEqual([own.queuedIds, own.publicReplyIds], [[], []]);
+        assert.equal(queue.publicRows.length, 1);
     });
 });
