@@ -70,7 +70,7 @@ export default function Automations() {
       {header}
       <AutomationNotices settings={overview.settings} />
       <AutomationMetrics summary={activity.summary} loading={activity.loading && !activity.summary} />
-      <AutomationAccounts accounts={overview.accounts} appAccounts={igAccounts} automations={automations} />
+      <AutomationAccounts accounts={overview.accounts} rules={overview.rules} appAccounts={igAccounts} automations={automations} />
       <AutomationRules
         rules={overview.rules}
         accounts={overview.accounts}

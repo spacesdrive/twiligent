@@ -49,6 +49,12 @@ export const STATS_PERIODS: Record<StatsPeriod, { label: string; ms: number }> =
 export const MAX_MESSAGE_BYTES = 1000;
 const MAX_KEYWORDS = 10;
 const MAX_HOURLY_LIMIT = 750;
+// Instagram allows a message for 24 hours after the person's reply, so a follow-up can be retried only inside it
+const FOLLOWUP_WINDOW_MS = 24 * HOUR_MS;
+
+// where a followers-only rule starts; the owner edits both before saving
+export const DEFAULT_FOLLOW_PROMPT = 'Thanks for your comment. Follow this account, then reply to this message and the link is on its way.';
+export const DEFAULT_NOT_FOLLOWING = 'It looks like you do not follow this account yet. Follow it, then reply here again and the link is on its way.';
 
 export interface AutomationSummary {
   received: number;
@@ -74,15 +80,36 @@ export interface RuleForm {
   linkUrl: string;
   hourlyLimit: string;
   enabled: boolean;
+  requireFollow: boolean;
+  followPromptText: string;
+  notFollowingText: string;
 }
 
 export function periodStart(period: StatsPeriod, now: number): string {
   return new Date(now - STATS_PERIODS[period].ms).toISOString();
 }
 
-export function statusDisplay(item: Pick<AutomationActivityItem, 'status' | 'statusReason'>): StatusDisplay {
+type ActivityStatus = Pick<AutomationActivityItem, 'status' | 'statusReason'> & Partial<Pick<AutomationActivityItem, 'gateStatus' | 'followup'>>;
+
+// a followers-only reply that Instagram accepted shows where the wait for the person stands, not just the first message
+export function statusDisplay(item: ActivityStatus): StatusDisplay {
   if (item.status === 'queued' && item.statusReason === 'paused') return { label: 'Held', tone: 'warning' };
-  return STATUS_DISPLAY[item.status];
+  if (item.status !== 'accepted' || !item.gateStatus) return STATUS_DISPLAY[item.status];
+  if (item.gateStatus === 'completed') return { label: 'Link sent', tone: 'success' };
+  if (item.gateStatus === 'closed') return { label: 'Not following', tone: 'secondary' };
+  if (item.followup?.status === 'needs_review') return { label: 'Needs review', tone: 'warning' };
+  if (item.followup?.status === 'failed') return { label: 'Follow-up failed', tone: 'destructive' };
+  return { label: 'Asked to follow', tone: 'info' };
+}
+
+// the sentence under a followers-only reply; null for any other item
+export function gateDetail(item: Pick<AutomationActivityItem, 'status' | 'gateStatus' | 'followup'>): string | null {
+  if (item.status !== 'accepted' || !item.gateStatus) return null;
+  if (item.gateStatus === 'completed') return 'Instagram confirmed they follow the account, and accepted the reply with the link.';
+  if (item.gateStatus === 'closed') return 'They did not follow after the reminders, so the link was not sent.';
+  if (item.followup?.errorMessage) return item.followup.errorMessage;
+  if (item.followup?.kind === 'reminder') return 'Reminded them to follow. Their next reply is checked again.';
+  return 'Asked them to follow and reply. When they reply, Instagram says whether they follow, and the link goes out if they do.';
 }
 
 function count(stats: AutomationStats, statuses: AutomationCommentStatus[]): number {
@@ -108,13 +135,19 @@ export function ruleScopeLabel(rule: Pick<AutomationRule, 'mediaIds'>): string {
 }
 
 export function matchModeLabel(rule: Pick<AutomationRule, 'matchMode' | 'caseSensitive'>): string {
+  if (rule.matchMode === 'any') return 'Any comment';
   const mode = rule.matchMode === 'exact' ? 'Whole comment' : 'Anywhere in the comment';
   return rule.caseSensitive ? `${mode}, same letter case` : mode;
 }
 
-// failed, skipped and review items can be tried again until Instagram's 7 days run out
-export function canRetry(item: Pick<AutomationActivityItem, 'status' | 'expiresAt'>, now: number): boolean {
-  return ['failed', 'needs_review', 'skipped'].includes(item.status) && Date.parse(item.expiresAt) > now;
+const RETRYABLE = ['failed', 'needs_review', 'skipped'];
+
+// failed, skipped and review items can be tried again until Instagram's 7 days run out; on an accepted followers-only
+// reply, a failed follow-up can be tried again inside the 24 hours after the person's answer
+export function canRetry(item: Pick<AutomationActivityItem, 'status' | 'expiresAt'> & Partial<Pick<AutomationActivityItem, 'followup'>>, now: number): boolean {
+  if (RETRYABLE.includes(item.status)) return Date.parse(item.expiresAt) > now;
+  const followup = item.followup;
+  return item.status === 'accepted' && !!followup && RETRYABLE.includes(followup.status) && Date.parse(followup.createdAt) + FOLLOWUP_WINDOW_MS > now;
 }
 
 // comma or line separated, trimmed, without blanks or repeats
@@ -143,6 +176,7 @@ export function emptyRuleForm(accountId: string): RuleForm {
   return {
     accountId, name: '', keywordsText: '', matchMode: 'contains', caseSensitive: false, scope: 'all', mediaIds: [],
     replyText: '', linkUrl: '', hourlyLimit: '', enabled: true,
+    requireFollow: false, followPromptText: DEFAULT_FOLLOW_PROMPT, notFollowingText: DEFAULT_NOT_FOLLOWING,
   };
 }
 
@@ -159,6 +193,9 @@ export function ruleToForm(rule: AutomationRule): RuleForm {
     linkUrl: rule.linkUrl ?? '',
     hourlyLimit: rule.hourlyLimit === null ? '' : String(rule.hourlyLimit),
     enabled: rule.enabled,
+    requireFollow: rule.requireFollow,
+    followPromptText: rule.followPromptText ?? DEFAULT_FOLLOW_PROMPT,
+    notFollowingText: rule.notFollowingText ?? DEFAULT_NOT_FOLLOWING,
   };
 }
 
@@ -166,7 +203,8 @@ export function formToRequest(form: RuleForm): AutomationRuleRequest {
   return {
     accountId: form.accountId,
     name: form.name.trim(),
-    keywords: parseKeywords(form.keywordsText, form.caseSensitive),
+    // an any-comment rule takes no keywords, so ones typed before switching to it are not sent
+    keywords: form.matchMode === 'any' ? [] : parseKeywords(form.keywordsText, form.caseSensitive),
     matchMode: form.matchMode,
     caseSensitive: form.caseSensitive,
     mediaIds: form.scope === 'selected' ? form.mediaIds : [],
@@ -174,6 +212,9 @@ export function formToRequest(form: RuleForm): AutomationRuleRequest {
     linkUrl: form.linkUrl.trim() || null,
     enabled: form.enabled,
     hourlyLimit: form.hourlyLimit.trim() ? Number(form.hourlyLimit) : null,
+    requireFollow: form.requireFollow,
+    followPromptText: form.followPromptText.trim() || null,
+    notFollowingText: form.notFollowingText.trim() || null,
   };
 }
 
@@ -194,9 +235,11 @@ function linkProblem(linkUrl: string): string | null {
 export function ruleFormProblem(form: RuleForm): string | null {
   if (!form.accountId) return 'Choose the Instagram account';
   if (!form.name.trim()) return 'Give the rule a name';
-  const keywords = parseKeywords(form.keywordsText, form.caseSensitive);
-  if (keywords.length === 0) return 'Add at least one keyword';
-  if (keywords.length > MAX_KEYWORDS) return `A rule can have at most ${MAX_KEYWORDS} keywords`;
+  if (form.matchMode !== 'any') {
+    const keywords = parseKeywords(form.keywordsText, form.caseSensitive);
+    if (keywords.length === 0) return 'Add at least one keyword';
+    if (keywords.length > MAX_KEYWORDS) return `A rule can have at most ${MAX_KEYWORDS} keywords`;
+  }
   if (form.scope === 'selected' && form.mediaIds.length === 0) return 'Choose at least one post, or answer comments on every post';
   if (!form.replyText.trim()) return 'Write the reply to send';
   const link = linkProblem(form.linkUrl);
@@ -207,7 +250,18 @@ export function ruleFormProblem(form: RuleForm): string | null {
   }
   const bytes = messageBytes(composeReply(form.replyText, form.linkUrl));
   if (bytes > MAX_MESSAGE_BYTES) return `The reply with its link is ${bytes} bytes; Instagram accepts at most ${MAX_MESSAGE_BYTES}`;
+  if (form.requireFollow) {
+    if (!form.followPromptText.trim()) return 'Write the message that asks people to follow you and reply';
+    if (!form.notFollowingText.trim()) return 'Write the reminder for people who do not follow you yet';
+    const longest = Math.max(messageBytes(form.followPromptText.trim()), messageBytes(form.notFollowingText.trim()));
+    if (longest > MAX_MESSAGE_BYTES) return `A followers-only message is ${longest} bytes; Instagram accepts at most ${MAX_MESSAGE_BYTES}`;
+  }
   return null;
+}
+
+// a followers-only rule that is on needs Instagram to send the account's messages as well as its comments
+export function needsMessageEvents(rules: Pick<AutomationRule, 'accountId' | 'enabled' | 'requireFollow'>[], accountId: string): boolean {
+  return rules.some(rule => rule.accountId === accountId && rule.enabled && rule.requireFollow);
 }
 
 export interface AccountStatus {
@@ -216,13 +270,23 @@ export interface AccountStatus {
   detail: string;
 }
 
-// what an account's automation is doing right now, from its controls
-export function accountStatus(account: AutomationAccountState, now: number): AccountStatus {
+// what an account's automation is doing right now, from its controls; needsMessages when a followers-only rule is on
+export function accountStatus(account: AutomationAccountState, now: number, needsMessages = false): AccountStatus {
   if (account.paused && account.cooldownReason) return { label: 'Held', tone: 'destructive', detail: account.cooldownReason };
   if (account.paused) return { label: 'Paused', tone: 'secondary', detail: 'Comments are still recorded; replies wait until you resume, within Instagram\'s 7 days.' };
   if (account.cooldownUntil && Date.parse(account.cooldownUntil) > now) {
     return { label: 'Cooling down', tone: 'warning', detail: account.cooldownReason ?? 'Instagram is limiting replies from this account for now.' };
   }
+  if (account.limitedUntil && Date.parse(account.limitedUntil) > now) {
+    return { label: 'At its hourly limit', tone: 'warning', detail: 'This account sent its hourly number of replies. The rest go out as the hour frees up, within Instagram\'s 7 days.' };
+  }
   if (!account.subscribedAt) return { label: 'Not receiving comments', tone: 'warning', detail: 'Turn on comment events so Instagram sends this account\'s comments to Twiligent.' };
+  if (needsMessages && !account.messagesSubscribed) {
+    return {
+      label: 'Follow checks off',
+      tone: 'warning',
+      detail: 'A followers-only rule needs this account\'s messages. Select messages in the Meta dashboard webhook settings, then turn on message events. Until then, people who reply never get the link.',
+    };
+  }
   return { label: 'Receiving comments', tone: 'success', detail: 'New comments that match an active rule get a reply.' };
 }
