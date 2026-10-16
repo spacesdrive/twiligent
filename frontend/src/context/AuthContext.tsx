@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { signedInCookie } from '../lib/signedInCookie';
 
 type Auth = typeof supabase.auth;
 
@@ -33,6 +34,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         return () => subscription.unsubscribe();
     }, []);
+
+    // tells the public site whether to open the dashboard; written only on the project's own domain
+    useEffect(() => {
+        if (session === undefined) return;
+        const cookie = signedInCookie(window.location.hostname, !!session);
+        if (cookie) document.cookie = cookie;
+    }, [session]);
 
     const signIn = (email: string, password: string) =>
         supabase.auth.signInWithPassword({ email, password });
