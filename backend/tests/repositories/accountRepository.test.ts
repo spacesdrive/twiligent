@@ -14,17 +14,26 @@ describe('account repository', () => {
     test('user methods only see the user\'s rows; system methods see every row', async () => {
         const accounts = createAccountRepository(fakeSupabase(ROWS));
         assert.deepEqual((await accounts.listForUser('user-1')).map(account => account.id), ['a1']);
-        assert.deepEqual((await accounts.listAll()).map(account => account.id), ['a1', 'a2']);
+        assert.deepEqual((await accounts.listByPlatform('reddit')).map(account => account.id), ['a2']);
         assert.equal(await accounts.findForUser('a2', 'user-1'), null);
         assert.deepEqual(await accounts.findById('a2'), { id: 'a2', platform: 'reddit', username: 'theirs' });
     });
 
-    test('an update merges into data and keeps the platform', async () => {
+    test('an update is one merge in the database that keeps the platform and the fields it does not name', async () => {
         const db = fakeSupabase(ROWS);
         const accounts = createAccountRepository(db);
-        await accounts.updateForUser('a1', { subscriberCount: 5 }, 'user-1');
+        await accounts.updateForUser('a1', { subscriberCount: 5, platform: 'reddit', title: undefined }, 'user-1');
         assert.deepEqual(await accounts.findForUser('a1', 'user-1'), { id: 'a1', platform: 'youtube', title: 'Mine', subscriberCount: 5 });
-        assert.deepEqual(db.calls.at(-2)?.filters, [['id', 'a1'], ['user_id', 'user-1']]);
+        assert.deepEqual(db.calls[0], {
+            type: 'rpc', table: 'merge_account_data', filters: [],
+            values: { p_id: 'a1', p_user_id: 'user-1', p_patch: { subscriberCount: 5, title: undefined } },
+        });
+    });
+
+    test('the cron form of an update reaches any user\'s account', async () => {
+        const db = fakeSupabase(ROWS);
+        await createAccountRepository(db).updateById('a2', { cookie: 'new' });
+        assert.equal((await createAccountRepository(db).findById('a2'))?.cookie, 'new');
     });
 
     test('updating an account the user does not own is not found', async () => {

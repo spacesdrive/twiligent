@@ -22,6 +22,7 @@ export interface NewTrackedPost {
     label?: string;
     category?: string;
     contentType?: string;
+    data?: Record<string, unknown>;
 }
 
 export interface TrackedPostUpdates {
@@ -32,7 +33,6 @@ export interface TrackedPostUpdates {
 }
 
 interface TrackedPostColumnUpdates {
-    updated_at: string;
     label?: string;
     category?: string;
     account_id?: string | null;
@@ -87,7 +87,7 @@ export function createTrackedPostRepository(db: SupabaseClient): TrackedPostRepo
         },
 
         async create(post, userId) {
-            const { id, accountId, url, label, category, contentType } = post;
+            const { id, accountId, url, label, category, contentType, data } = post;
             await execute('trackedPosts.create', () => db.from('tracked_posts').insert({
                 id,
                 user_id: userId,
@@ -96,11 +96,13 @@ export function createTrackedPostRepository(db: SupabaseClient): TrackedPostRepo
                 label: label || '',
                 category: category || '',
                 content_type: contentType || 'reddit',
+                data: data ?? null,
             }));
         },
 
+        // the database trigger keeps updated_at
         async updateForUser(id, updates, userId) {
-            const columns: TrackedPostColumnUpdates = { updated_at: new Date().toISOString() };
+            const columns: TrackedPostColumnUpdates = {};
             if (updates.label     !== undefined) columns.label      = updates.label;
             if (updates.category  !== undefined) columns.category   = updates.category;
             if (updates.accountId !== undefined) columns.account_id = updates.accountId || null;
@@ -108,20 +110,10 @@ export function createTrackedPostRepository(db: SupabaseClient): TrackedPostRepo
             await execute('trackedPosts.update', () => db.from('tracked_posts').update(columns).eq('id', id).eq('user_id', userId));
         },
 
-        // merges into data so manual fields and live refresh fields survive each other
+        // one atomic merge, so a manual view count and a refresh that lands at the same moment both survive
         async patchDataForUser(id, patch, userId) {
-            const row = await maybeRow<Pick<TrackedPostRow, 'data'>>('trackedPosts.readData', () => db
-                .from('tracked_posts')
-                .select('data')
-                .eq('id', id)
-                .eq('user_id', userId)
-                .maybeSingle());
-            if (!row) throw new NotFoundError('Tracked content not found');
-            await execute('trackedPosts.patchData', () => db
-                .from('tracked_posts')
-                .update({ data: { ...(row.data || {}), ...patch }, updated_at: new Date().toISOString() })
-                .eq('id', id)
-                .eq('user_id', userId));
+            const { data } = await execute('trackedPosts.patchData', () => db.rpc('merge_tracked_post_data', { p_id: id, p_user_id: userId, p_patch: patch }));
+            if (!data) throw new NotFoundError('Tracked content not found');
         },
 
         async deleteForUser(id, userId) {

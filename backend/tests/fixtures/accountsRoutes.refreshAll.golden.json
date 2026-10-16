@@ -83,62 +83,17 @@
             ]
         },
         {
-            "type": "select",
-            "table": "accounts",
-            "columns": "id, platform, data",
-            "filters": [
-                [
-                    "id",
-                    "yt1"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "select",
-            "table": "accounts",
-            "columns": "id, platform, data",
-            "filters": [
-                [
-                    "id",
-                    "ig1"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "select",
-            "table": "accounts",
-            "columns": "id, platform, data",
-            "filters": [
-                [
-                    "id",
-                    "rd1"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "update",
-            "table": "accounts",
+            "type": "rpc",
+            "table": "merge_account_data",
             "values": {
-                "platform": "youtube",
-                "data": {
-                    "channelId": "UCaaaaaaaaaaaaaaaaaaaaaa",
-                    "title": "Channel UCaa",
-                    "subscriberCount": 500,
+                "p_id": "yt1",
+                "p_user_id": "user-1",
+                "p_patch": {
                     "lastUpdated": "2026-09-01T12:00:00.000Z",
+                    "subscriberCount": 500,
                     "viewCount": 9000,
                     "videoCount": 12,
+                    "title": "Channel UCaa",
                     "thumbnails": {
                         "default": "d",
                         "medium": "m",
@@ -146,71 +101,41 @@
                     }
                 }
             },
-            "filters": [
-                [
-                    "id",
-                    "yt1"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
+            "filters": []
         },
         {
-            "type": "update",
-            "table": "accounts",
+            "type": "rpc",
+            "table": "merge_account_data",
             "values": {
-                "platform": "instagram",
-                "data": {
-                    "igUserId": "1789",
-                    "username": "ribbon",
-                    "accessToken": "IGTOKEN",
-                    "tokenExpiresAt": "2026-09-05T00:00:00.000Z",
-                    "followersCount": 2500,
+                "p_id": "ig1",
+                "p_user_id": "user-1",
+                "p_patch": {
                     "lastUpdated": "2026-09-01T12:00:00.000Z",
+                    "followersCount": 2500,
                     "followsCount": 10,
                     "mediaCount": 140,
                     "title": "Ribbon",
+                    "username": "ribbon",
                     "profilePictureUrl": "https://p"
                 }
             },
-            "filters": [
-                [
-                    "id",
-                    "ig1"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
+            "filters": []
         },
         {
-            "type": "update",
-            "table": "accounts",
+            "type": "rpc",
+            "table": "merge_account_data",
             "values": {
-                "platform": "reddit",
-                "data": {
-                    "username": "ribbon_r",
-                    "cookie": "COOKIE",
-                    "totalKarma": 70,
+                "p_id": "rd1",
+                "p_user_id": "user-1",
+                "p_patch": {
                     "lastUpdated": "2026-09-01T12:00:00.000Z",
+                    "totalKarma": 70,
                     "postKarma": 50,
                     "commentKarma": 20,
                     "iconUrl": "https://i?a=1&b=2"
                 }
             },
-            "filters": [
-                [
-                    "id",
-                    "rd1"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
+            "filters": []
         },
         {
             "type": "select",
@@ -235,89 +160,38 @@
             ]
         },
         {
-            "type": "select",
-            "table": "accounts",
-            "columns": "id, platform, data",
-            "filters": [
-                [
-                    "id",
-                    "ig1"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "select",
-            "table": "accounts",
-            "columns": "id, platform, data",
-            "filters": [
-                [
-                    "id",
-                    "rd1"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "update",
-            "table": "accounts",
+            "type": "rpc",
+            "table": "merge_account_data",
             "values": {
-                "platform": "instagram",
-                "data": {
-                    "igUserId": "1789",
-                    "username": "ribbon",
-                    "accessToken": "IGTOKEN",
-                    "tokenExpiresAt": "2026-09-05T00:00:00.000Z",
-                    "followersCount": 2500,
+                "p_id": "ig1",
+                "p_user_id": "user-1",
+                "p_patch": {
                     "lastUpdated": "2026-09-01T12:00:00.000Z",
+                    "followersCount": 2500,
                     "followsCount": 10,
                     "mediaCount": 140,
                     "title": "Ribbon",
+                    "username": "ribbon",
                     "profilePictureUrl": "https://p"
                 }
             },
-            "filters": [
-                [
-                    "id",
-                    "ig1"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
+            "filters": []
         },
         {
-            "type": "update",
-            "table": "accounts",
+            "type": "rpc",
+            "table": "merge_account_data",
             "values": {
-                "platform": "reddit",
-                "data": {
-                    "username": "ribbon_r",
-                    "cookie": "COOKIE",
-                    "totalKarma": 70,
+                "p_id": "rd1",
+                "p_user_id": "user-1",
+                "p_patch": {
                     "lastUpdated": "2026-09-01T12:00:00.000Z",
+                    "totalKarma": 70,
                     "postKarma": 50,
                     "commentKarma": 20,
                     "iconUrl": "https://i?a=1&b=2"
                 }
             },
-            "filters": [
-                [
-                    "id",
-                    "rd1"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
+            "filters": []
         },
         {
             "type": "select",
@@ -342,62 +216,17 @@
             ]
         },
         {
-            "type": "select",
-            "table": "accounts",
-            "columns": "id, platform, data",
-            "filters": [
-                [
-                    "id",
-                    "yt1"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "select",
-            "table": "accounts",
-            "columns": "id, platform, data",
-            "filters": [
-                [
-                    "id",
-                    "ig1"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "select",
-            "table": "accounts",
-            "columns": "id, platform, data",
-            "filters": [
-                [
-                    "id",
-                    "rd1"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "update",
-            "table": "accounts",
+            "type": "rpc",
+            "table": "merge_account_data",
             "values": {
-                "platform": "youtube",
-                "data": {
-                    "channelId": "UCaaaaaaaaaaaaaaaaaaaaaa",
-                    "title": "Channel UCaa",
+                "p_id": "yt1",
+                "p_user_id": "user-1",
+                "p_patch": {
+                    "lastUpdated": "2026-09-01T12:00:00.000Z",
                     "subscriberCount": 500,
-                    "lastUpdated": "2026-09-01T12:00:00.000Z",
                     "viewCount": 9000,
                     "videoCount": 12,
+                    "title": "Channel UCaa",
                     "thumbnails": {
                         "default": "d",
                         "medium": "m",
@@ -405,71 +234,41 @@
                     }
                 }
             },
-            "filters": [
-                [
-                    "id",
-                    "yt1"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
+            "filters": []
         },
         {
-            "type": "update",
-            "table": "accounts",
+            "type": "rpc",
+            "table": "merge_account_data",
             "values": {
-                "platform": "instagram",
-                "data": {
-                    "igUserId": "1789",
-                    "username": "ribbon",
-                    "accessToken": "IGTOKEN",
-                    "tokenExpiresAt": "2026-09-05T00:00:00.000Z",
-                    "followersCount": 2500,
+                "p_id": "ig1",
+                "p_user_id": "user-1",
+                "p_patch": {
                     "lastUpdated": "2026-09-01T12:00:00.000Z",
+                    "followersCount": 2500,
                     "followsCount": 10,
                     "mediaCount": 140,
                     "title": "Ribbon",
+                    "username": "ribbon",
                     "profilePictureUrl": "https://p"
                 }
             },
-            "filters": [
-                [
-                    "id",
-                    "ig1"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
+            "filters": []
         },
         {
-            "type": "update",
-            "table": "accounts",
+            "type": "rpc",
+            "table": "merge_account_data",
             "values": {
-                "platform": "reddit",
-                "data": {
-                    "username": "ribbon_r",
-                    "cookie": "COOKIE",
-                    "totalKarma": 70,
+                "p_id": "rd1",
+                "p_user_id": "user-1",
+                "p_patch": {
                     "lastUpdated": "2026-09-01T12:00:00.000Z",
+                    "totalKarma": 70,
                     "postKarma": 50,
                     "commentKarma": 20,
                     "iconUrl": "https://i?a=1&b=2"
                 }
             },
-            "filters": [
-                [
-                    "id",
-                    "rd1"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
+            "filters": []
         },
         {
             "type": "select",

@@ -10,7 +10,7 @@
         },
         {
             "status": 200,
-            "body": "{\"success\":true,\"account\":{\"id\":\"17882640000004fzz\",\"platform\":\"reddit\",\"username\":\"NewUser\",\"title\":\"u/NewUser\",\"totalKarma\":70,\"postKarma\":50,\"commentKarma\":20,\"iconUrl\":\"https://i?a=1&b=2\",\"createdAt\":\"2020-09-13T12:26:40.000Z\",\"addedAt\":\"2026-09-01T12:00:00.000Z\",\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"hasCookie\":true}}"
+            "body": "{\"success\":true,\"account\":{\"id\":\"00000000-0000-4000-8000-000000000001\",\"platform\":\"reddit\",\"username\":\"NewUser\",\"title\":\"u/NewUser\",\"totalKarma\":70,\"postKarma\":50,\"commentKarma\":20,\"iconUrl\":\"https://i?a=1&b=2\",\"createdAt\":\"2020-09-13T12:26:40.000Z\",\"addedAt\":\"2026-09-01T12:00:00.000Z\",\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"hasCookie\":true}}"
         },
         {
             "status": 409,
@@ -66,7 +66,7 @@
             "type": "insert",
             "table": "accounts",
             "values": {
-                "id": "17882640000004fzz",
+                "id": "00000000-0000-4000-8000-000000000001",
                 "user_id": "user-1",
                 "platform": "reddit",
                 "data": {

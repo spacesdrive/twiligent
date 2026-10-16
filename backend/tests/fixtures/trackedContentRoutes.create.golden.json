@@ -14,7 +14,7 @@
             {
                 "call": "POST /tracked-content",
                 "status": 201,
-                "body": "{\"id\":\"mtim7pc04i\",\"accountId\":null,\"url\":\"https://www.youtube.com/watch?v=abc\",\"label\":\"Video\",\"category\":\"Music\",\"contentType\":\"youtube\",\"updatedAt\":\"2026-09-01T12:00:00.000Z\",\"title\":\"Watch\",\"channelTitle\":\"Ribbon\",\"channelId\":\"UC1\",\"thumbnail\":\"m\",\"publishedAt\":\"2026-08-01T10:00:00Z\",\"viewCount\":1500,\"likeCount\":40,\"commentCount\":3,\"isShort\":false,\"permalink\":\"https://www.youtube.com/watch?v=abc\",\"lastFetchedAt\":\"2026-09-01T12:00:00.000Z\"}"
+                "body": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"accountId\":null,\"url\":\"https://www.youtube.com/watch?v=abc\",\"label\":\"Video\",\"category\":\"Music\",\"contentType\":\"youtube\",\"title\":\"Watch\",\"channelTitle\":\"Ribbon\",\"channelId\":\"UC1\",\"thumbnail\":\"m\",\"publishedAt\":\"2026-08-01T10:00:00Z\",\"viewCount\":1500,\"likeCount\":40,\"commentCount\":3,\"isShort\":false,\"permalink\":\"https://www.youtube.com/watch?v=abc\",\"lastFetchedAt\":\"2026-09-01T12:00:00.000Z\"}"
             },
             {
                 "call": "POST /tracked-content",
@@ -29,12 +29,12 @@
             {
                 "call": "POST /tracked-content",
                 "status": 201,
-                "body": "{\"id\":\"mtim7pc09\",\"accountId\":\"rd1\",\"url\":\"https://www.reddit.com/r/webdev/comments/p1/tracked/\",\"label\":\"Mine\",\"category\":\"\",\"contentType\":\"reddit\",\"createdAt\":\"2026-07-25T17:20:00.000Z\",\"updatedAt\":\"2026-09-01T12:00:00.000Z\",\"postId\":\"p1\",\"title\":\"Tracked\",\"subreddit\":\"webdev\",\"subredditPrefixed\":\"r/webdev\",\"author\":\"[deleted]\",\"score\":77,\"upvoteRatio\":0.93,\"numComments\":8,\"permalink\":\"https://reddit.com/r/webdev/comments/p1/tracked/\",\"isNsfw\":false,\"lastFetchedAt\":\"2026-09-01T12:00:00.000Z\"}"
+                "body": "{\"id\":\"00000000-0000-4000-8000-000000000002\",\"accountId\":\"rd1\",\"url\":\"https://www.reddit.com/r/webdev/comments/p1/tracked/\",\"label\":\"Mine\",\"category\":\"\",\"contentType\":\"reddit\",\"createdAt\":\"2026-07-25T17:20:00.000Z\",\"postId\":\"p1\",\"title\":\"Tracked\",\"subreddit\":\"webdev\",\"subredditPrefixed\":\"r/webdev\",\"author\":\"[deleted]\",\"score\":77,\"upvoteRatio\":0.93,\"numComments\":8,\"permalink\":\"https://reddit.com/r/webdev/comments/p1/tracked/\",\"isNsfw\":false,\"lastFetchedAt\":\"2026-09-01T12:00:00.000Z\"}"
             },
             {
                 "call": "POST /tracked-content",
                 "status": 201,
-                "body": "{\"id\":\"mtim7pc0di\",\"accountId\":null,\"url\":\"https://www.reddit.com/r/webdev/comments/p1/tracked/\",\"label\":\"\",\"category\":\"\",\"contentType\":\"reddit\",\"createdAt\":\"2026-07-25T17:20:00.000Z\",\"updatedAt\":\"2026-09-01T12:00:00.000Z\",\"postId\":\"p1\",\"title\":\"Tracked\",\"subreddit\":\"webdev\",\"subredditPrefixed\":\"r/webdev\",\"author\":\"[deleted]\",\"score\":77,\"upvoteRatio\":0.93,\"numComments\":8,\"permalink\":\"https://reddit.com/r/webdev/comments/p1/tracked/\",\"isNsfw\":false,\"lastFetchedAt\":\"2026-09-01T12:00:00.000Z\"}"
+                "body": "{\"id\":\"00000000-0000-4000-8000-000000000003\",\"accountId\":null,\"url\":\"https://www.reddit.com/r/webdev/comments/p1/tracked/\",\"label\":\"\",\"category\":\"\",\"contentType\":\"reddit\",\"createdAt\":\"2026-07-25T17:20:00.000Z\",\"postId\":\"p1\",\"title\":\"Tracked\",\"subreddit\":\"webdev\",\"subredditPrefixed\":\"r/webdev\",\"author\":\"[deleted]\",\"score\":77,\"upvoteRatio\":0.93,\"numComments\":8,\"permalink\":\"https://reddit.com/r/webdev/comments/p1/tracked/\",\"isNsfw\":false,\"lastFetchedAt\":\"2026-09-01T12:00:00.000Z\"}"
             }
         ],
         "queries": [
@@ -42,21 +42,13 @@
                 "type": "insert",
                 "table": "tracked_posts",
                 "values": {
-                    "id": "mtim7pc04i",
+                    "id": "00000000-0000-4000-8000-000000000001",
                     "user_id": "user-1",
                     "account_id": null,
                     "url": "https://www.youtube.com/watch?v=abc",
                     "label": "Video",
                     "category": "Music",
-                    "content_type": "youtube"
-                },
-                "filters": []
-            },
-            {
-                "type": "update",
-                "table": "tracked_posts",
-                "values": {
-                    "updated_at": "2026-09-01T12:00:00.000Z",
+                    "content_type": "youtube",
                     "data": {
                         "contentType": "youtube",
                         "title": "Watch",
@@ -72,16 +64,7 @@
                         "lastFetchedAt": "2026-09-01T12:00:00.000Z"
                     }
                 },
-                "filters": [
-                    [
-                        "id",
-                        "mtim7pc04i"
-                    ],
-                    [
-                        "user_id",
-                        "user-1"
-                    ]
-                ]
+                "filters": []
             },
             {
                 "type": "select",
@@ -90,7 +73,7 @@
                 "filters": [
                     [
                         "id",
-                        "mtim7pc04i"
+                        "00000000-0000-4000-8000-000000000001"
                     ],
                     [
                         "user_id",
@@ -147,21 +130,13 @@
                 "type": "insert",
                 "table": "tracked_posts",
                 "values": {
-                    "id": "mtim7pc09",
+                    "id": "00000000-0000-4000-8000-000000000002",
                     "user_id": "user-1",
                     "account_id": "rd1",
                     "url": "https://www.reddit.com/r/webdev/comments/p1/tracked/",
                     "label": "Mine",
                     "category": "",
-                    "content_type": "reddit"
-                },
-                "filters": []
-            },
-            {
-                "type": "update",
-                "table": "tracked_posts",
-                "values": {
-                    "updated_at": "2026-09-01T12:00:00.000Z",
+                    "content_type": "reddit",
                     "data": {
                         "postId": "p1",
                         "title": "Tracked",
@@ -177,16 +152,7 @@
                         "lastFetchedAt": "2026-09-01T12:00:00.000Z"
                     }
                 },
-                "filters": [
-                    [
-                        "id",
-                        "mtim7pc09"
-                    ],
-                    [
-                        "user_id",
-                        "user-1"
-                    ]
-                ]
+                "filters": []
             },
             {
                 "type": "select",
@@ -195,7 +161,7 @@
                 "filters": [
                     [
                         "id",
-                        "mtim7pc09"
+                        "00000000-0000-4000-8000-000000000002"
                     ],
                     [
                         "user_id",
@@ -207,21 +173,13 @@
                 "type": "insert",
                 "table": "tracked_posts",
                 "values": {
-                    "id": "mtim7pc0di",
+                    "id": "00000000-0000-4000-8000-000000000003",
                     "user_id": "user-1",
                     "account_id": null,
                     "url": "https://www.reddit.com/r/webdev/comments/p1/tracked/",
                     "label": "",
                     "category": "",
-                    "content_type": "reddit"
-                },
-                "filters": []
-            },
-            {
-                "type": "update",
-                "table": "tracked_posts",
-                "values": {
-                    "updated_at": "2026-09-01T12:00:00.000Z",
+                    "content_type": "reddit",
                     "data": {
                         "postId": "p1",
                         "title": "Tracked",
@@ -237,16 +195,7 @@
                         "lastFetchedAt": "2026-09-01T12:00:00.000Z"
                     }
                 },
-                "filters": [
-                    [
-                        "id",
-                        "mtim7pc0di"
-                    ],
-                    [
-                        "user_id",
-                        "user-1"
-                    ]
-                ]
+                "filters": []
             },
             {
                 "type": "select",
@@ -255,7 +204,7 @@
                 "filters": [
                     [
                         "id",
-                        "mtim7pc0di"
+                        "00000000-0000-4000-8000-000000000003"
                     ],
                     [
                         "user_id",

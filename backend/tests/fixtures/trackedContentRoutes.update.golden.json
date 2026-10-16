@@ -128,40 +128,16 @@
             ]
         },
         {
-            "type": "select",
-            "table": "tracked_posts",
-            "columns": "data",
-            "filters": [
-                [
-                    "id",
-                    "t-reddit"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "update",
-            "table": "tracked_posts",
+            "type": "rpc",
+            "table": "merge_tracked_post_data",
             "values": {
-                "data": {
-                    "title": "Old",
+                "p_id": "t-reddit",
+                "p_user_id": "user-1",
+                "p_patch": {
                     "manualViews": null
-                },
-                "updated_at": "2026-09-01T12:00:00.000Z"
+                }
             },
-            "filters": [
-                [
-                    "id",
-                    "t-reddit"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
+            "filters": []
         },
         {
             "type": "select",
@@ -194,40 +170,16 @@
             ]
         },
         {
-            "type": "select",
-            "table": "tracked_posts",
-            "columns": "data",
-            "filters": [
-                [
-                    "id",
-                    "t-reddit"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "update",
-            "table": "tracked_posts",
+            "type": "rpc",
+            "table": "merge_tracked_post_data",
             "values": {
-                "data": {
-                    "title": "Old",
+                "p_id": "t-reddit",
+                "p_user_id": "user-1",
+                "p_patch": {
                     "manualViews": 12
-                },
-                "updated_at": "2026-09-01T12:00:00.000Z"
+                }
             },
-            "filters": [
-                [
-                    "id",
-                    "t-reddit"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
+            "filters": []
         },
         {
             "type": "select",
@@ -290,41 +242,16 @@
             ]
         },
         {
-            "type": "select",
-            "table": "tracked_posts",
-            "columns": "data",
-            "filters": [
-                [
-                    "id",
-                    "t-reddit"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "update",
-            "table": "tracked_posts",
+            "type": "rpc",
+            "table": "merge_tracked_post_data",
             "values": {
-                "data": {
-                    "title": "Old",
-                    "manualViews": 12,
+                "p_id": "t-reddit",
+                "p_user_id": "user-1",
+                "p_patch": {
                     "imageUrl": "https://img/a%20b.png"
-                },
-                "updated_at": "2026-09-01T12:00:00.000Z"
+                }
             },
-            "filters": [
-                [
-                    "id",
-                    "t-reddit"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
+            "filters": []
         },
         {
             "type": "select",
@@ -357,41 +284,16 @@
             ]
         },
         {
-            "type": "select",
-            "table": "tracked_posts",
-            "columns": "data",
-            "filters": [
-                [
-                    "id",
-                    "t-reddit"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "update",
-            "table": "tracked_posts",
+            "type": "rpc",
+            "table": "merge_tracked_post_data",
             "values": {
-                "data": {
-                    "title": "Old",
-                    "manualViews": 12,
+                "p_id": "t-reddit",
+                "p_user_id": "user-1",
+                "p_patch": {
                     "imageUrl": null
-                },
-                "updated_at": "2026-09-01T12:00:00.000Z"
+                }
             },
-            "filters": [
-                [
-                    "id",
-                    "t-reddit"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
+            "filters": []
         },
         {
             "type": "select",
@@ -439,41 +341,16 @@
             ]
         },
         {
-            "type": "select",
-            "table": "tracked_posts",
-            "columns": "data",
-            "filters": [
-                [
-                    "id",
-                    "t-reddit"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "update",
-            "table": "tracked_posts",
+            "type": "rpc",
+            "table": "merge_tracked_post_data",
             "values": {
-                "data": {
-                    "title": "Old",
-                    "manualViews": 7,
-                    "imageUrl": null
-                },
-                "updated_at": "2026-09-01T12:00:00.000Z"
+                "p_id": "t-reddit",
+                "p_user_id": "user-1",
+                "p_patch": {
+                    "manualViews": 7
+                }
             },
-            "filters": [
-                [
-                    "id",
-                    "t-reddit"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
+            "filters": []
         },
         {
             "type": "select",
@@ -494,7 +371,6 @@
             "type": "update",
             "table": "tracked_posts",
             "values": {
-                "updated_at": "2026-09-01T12:00:00.000Z",
                 "label": "New",
                 "category": "Cat",
                 "account_id": null
@@ -544,7 +420,6 @@
             "type": "update",
             "table": "tracked_posts",
             "values": {
-                "updated_at": "2026-09-01T12:00:00.000Z",
                 "label": "Only label"
             },
             "filters": [

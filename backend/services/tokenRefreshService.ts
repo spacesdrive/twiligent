@@ -42,7 +42,7 @@ export function createTokenRefreshService({ accounts, context }: TokenRefreshDep
         async refreshExpiringInstagramTokens() {
             let listed: Account[];
             try {
-                listed = await accounts.listAll();
+                listed = await accounts.listByPlatform('instagram');
             } catch (err) {
                 log.error('token refresh could not load accounts', errorFields(err));
                 return;

@@ -32,65 +32,38 @@
             "type": "select",
             "table": "accounts",
             "columns": "id, platform, data",
-            "filters": []
-        },
-        {
-            "type": "select",
-            "table": "accounts",
-            "columns": "id, platform, data",
             "filters": [
                 [
-                    "id",
-                    "a1"
+                    "platform",
+                    "instagram"
                 ]
             ]
         },
         {
-            "type": "update",
-            "table": "accounts",
+            "type": "rpc",
+            "table": "merge_account_data",
             "values": {
-                "platform": "instagram",
-                "data": {
-                    "username": "soon",
+                "p_id": "a1",
+                "p_user_id": null,
+                "p_patch": {
                     "accessToken": "N1",
                     "tokenExpiresAt": "2026-10-31T12:00:00.000Z"
                 }
             },
-            "filters": [
-                [
-                    "id",
-                    "a1"
-                ]
-            ]
+            "filters": []
         },
         {
-            "type": "select",
-            "table": "accounts",
-            "columns": "id, platform, data",
-            "filters": [
-                [
-                    "id",
-                    "a7"
-                ]
-            ]
-        },
-        {
-            "type": "update",
-            "table": "accounts",
+            "type": "rpc",
+            "table": "merge_account_data",
             "values": {
-                "platform": "instagram",
-                "data": {
-                    "username": "expired",
+                "p_id": "a7",
+                "p_user_id": null,
+                "p_patch": {
                     "accessToken": "N7",
                     "tokenExpiresAt": "2026-10-31T12:00:00.000Z"
                 }
             },
-            "filters": [
-                [
-                    "id",
-                    "a7"
-                ]
-            ]
+            "filters": []
         }
     ],
     "table": [
@@ -102,7 +75,8 @@
                 "username": "soon",
                 "accessToken": "N1",
                 "tokenExpiresAt": "2026-10-31T12:00:00.000Z"
-            }
+            },
+            "updated_at": "2026-09-01T12:00:00.000Z"
         },
         {
             "id": "a2",
@@ -160,7 +134,8 @@
                 "username": "expired",
                 "accessToken": "N7",
                 "tokenExpiresAt": "2026-10-31T12:00:00.000Z"
-            }
+            },
+            "updated_at": "2026-09-01T12:00:00.000Z"
         }
     ]
 }

@@ -177,7 +177,7 @@
             "type": "insert",
             "table": "accounts",
             "values": {
-                "id": "1788264000000zk00",
+                "id": "00000000-0000-4000-8000-000000000001",
                 "user_id": "user-1",
                 "platform": "instagram",
                 "data": {
@@ -213,7 +213,7 @@
             "type": "insert",
             "table": "accounts",
             "values": {
-                "id": "1788264000000zk00",
+                "id": "00000000-0000-4000-8000-000000000002",
                 "user_id": "user-1",
                 "platform": "instagram",
                 "data": {

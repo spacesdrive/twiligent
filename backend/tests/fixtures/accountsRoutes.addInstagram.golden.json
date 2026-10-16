@@ -6,11 +6,11 @@
         },
         {
             "status": 200,
-            "body": "{\"success\":true,\"account\":{\"id\":\"17882640000004fzz\",\"platform\":\"instagram\",\"igUserId\":\"3000\",\"username\":\"fresh\",\"title\":\"fresh\",\"biography\":\"\",\"website\":\"\",\"profilePictureUrl\":\"\",\"followersCount\":5,\"followsCount\":0,\"mediaCount\":1,\"tokenExpiresAt\":\"2026-09-01T13:23:20.000Z\",\"addedAt\":\"2026-09-01T12:00:00.000Z\",\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"hasCookie\":false}}"
+            "body": "{\"success\":true,\"account\":{\"id\":\"00000000-0000-4000-8000-000000000001\",\"platform\":\"instagram\",\"igUserId\":\"3000\",\"username\":\"fresh\",\"title\":\"fresh\",\"biography\":\"\",\"website\":\"\",\"profilePictureUrl\":\"\",\"followersCount\":5,\"followsCount\":0,\"mediaCount\":1,\"tokenExpiresAt\":\"2026-09-01T13:23:20.000Z\",\"addedAt\":\"2026-09-01T12:00:00.000Z\",\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"hasCookie\":false}}"
         },
         {
             "status": 200,
-            "body": "{\"success\":true,\"account\":{\"id\":\"17882640000004fzz\",\"platform\":\"instagram\",\"igUserId\":\"3001\",\"username\":\"shorty\",\"title\":\"Shorty\",\"biography\":\"\",\"website\":\"\",\"profilePictureUrl\":\"\",\"followersCount\":0,\"followsCount\":0,\"mediaCount\":0,\"tokenExpiresAt\":null,\"addedAt\":\"2026-09-01T12:00:00.000Z\",\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"hasCookie\":false}}"
+            "body": "{\"success\":true,\"account\":{\"id\":\"00000000-0000-4000-8000-000000000002\",\"platform\":\"instagram\",\"igUserId\":\"3001\",\"username\":\"shorty\",\"title\":\"Shorty\",\"biography\":\"\",\"website\":\"\",\"profilePictureUrl\":\"\",\"followersCount\":0,\"followsCount\":0,\"mediaCount\":0,\"tokenExpiresAt\":null,\"addedAt\":\"2026-09-01T12:00:00.000Z\",\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"hasCookie\":false}}"
         },
         {
             "status": 409,
@@ -79,7 +79,7 @@
             "type": "insert",
             "table": "accounts",
             "values": {
-                "id": "17882640000004fzz",
+                "id": "00000000-0000-4000-8000-000000000001",
                 "user_id": "user-1",
                 "platform": "instagram",
                 "data": {
@@ -115,7 +115,7 @@
             "type": "insert",
             "table": "accounts",
             "values": {
-                "id": "17882640000004fzz",
+                "id": "00000000-0000-4000-8000-000000000002",
                 "user_id": "user-1",
                 "platform": "instagram",
                 "data": {
