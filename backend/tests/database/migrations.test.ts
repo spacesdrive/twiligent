@@ -8,6 +8,8 @@ const migrations = readdirSync(`${supabase}migrations`).sort();
 const rollbacks = readdirSync(`${supabase}rollbacks`).sort();
 const read = (folder: string, name: string) => readFileSync(`${supabase}${folder}/${name}`, 'utf8');
 const isBaseline = (name: string) => /^\d{14}_baseline_/.test(name);
+// migrations before this version were applied to production before the rule and stay as recorded
+const ONE_ENTITY_FROM = '20261016100000';
 
 describe('database migrations', () => {
     test('every migration is named <14 digit version>_<lowercase name>.sql with a unique version', () => {
@@ -42,6 +44,16 @@ describe('database migrations', () => {
             for (const [, fn] of sql.matchAll(/create or replace function (public\.\w+)/gi)) {
                 assert.match(sql, new RegExp(`revoke execute on function ${fn.replace('.', '\\.')}\\(.*\\) from public, anon, authenticated`), `${name}: ${fn}`);
             }
+        }
+    });
+
+    test('every migration from the one-entity rule on creates one entity: a table, its access, a trigger, an index or a function', () => {
+        for (const name of migrations.filter(file => file.slice(0, 14) >= ONE_ENTITY_FROM)) {
+            const sql = read('migrations', name);
+            const creates = sql.match(/create (?:table|(?:unique )?index|trigger|or replace function|function|policy|view)/gi) ?? [];
+            const access = /enable row level security|revoke all on table/i.test(sql) ? 1 : 0;
+            assert.ok(creates.length + access <= 1, `${name} creates ${creates.length + access} entities; split it into one file each`);
+            assert.ok(read('rollbacks', name).trim().length > 0, `${name} has an empty rollback`);
         }
     });
 

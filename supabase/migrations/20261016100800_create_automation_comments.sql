@@ -38,21 +38,3 @@ create table public.automation_comments (
     constraint automation_comments_text_check check (text is null or char_length(text) <= 2200),
     constraint automation_comments_error_message_check check (error_message is null or char_length(error_message) <= 500)
 );
-
--- only the Worker's service role reads the table; the anon key ships in every browser
-alter table public.automation_comments enable row level security;
-revoke all on table public.automation_comments from anon, authenticated;
-
-create trigger automation_comments_set_updated_at before update on public.automation_comments
-    for each row execute function public.set_updated_at();
-
--- claim_automation_comments: jobs that are due, oldest first
-create index automation_comments_due_idx on public.automation_comments (next_attempt_at) where status in ('queued', 'retry_wait');
--- claim_automation_comments: jobs whose run stopped holding them
-create index automation_comments_claimed_idx on public.automation_comments (claimed_at) where status in ('processing', 'sending');
--- automationComments.listForUser and automation_stats: where user_id = $1 order by created_at desc
-create index automation_comments_user_id_created_at_idx on public.automation_comments (user_id, created_at desc);
--- removing a rule clears rule_id on its comments
-create index automation_comments_rule_id_idx on public.automation_comments (rule_id) where rule_id is not null;
--- the daily retention delete across all users
-create index automation_comments_created_at_idx on public.automation_comments (created_at);

@@ -1,0 +1,1 @@
+drop trigger if exists automation_accounts_set_updated_at on public.automation_accounts;
