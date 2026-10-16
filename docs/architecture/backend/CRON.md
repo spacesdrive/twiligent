@@ -4,27 +4,35 @@
 
 ```toml
 [triggers]
-crons = ["*/15 * * * *", "0 0 * * *"]
+crons = ["*/5 * * * *", "0 0 * * *"]
 ```
 
-Both cron triggers invoke the `scheduled` export from `backend/server.ts`, which hands the cron expression to `runScheduledJob(cron, env)` in `backend/jobs/scheduled.ts`. The expressions are constants there (`PUBLISH_DUE_POSTS_CRON`, `REFRESH_TOKENS_CRON`) and must match `wrangler.toml` character for character.
+Both cron triggers invoke the `scheduled` export from `backend/server.ts`, which hands the cron expression and the run's scheduled time to `runScheduledJob(cron, env, scheduledTime)` in `backend/jobs/scheduled.ts`. The expressions are constants there (`EVERY_FIVE_MINUTES_CRON`, `DAILY_CRON`) and must match `wrangler.toml` character for character; `backend/tests/jobs/scheduled.test.ts` checks both.
+
+The Cloudflare account has used all five cron triggers the Workers Free plan allows (two here, three on other Workers), so the Worker cannot add a trigger. One five minute trigger carries two jobs instead: `cronPlan(cron, scheduledTime)` sends the runs at minutes 0, 15, 30 and 45 to scheduled publishing, as before, and every other run to the comment reply queue. Each run is its own invocation with its own 50 subrequests, so the jobs never share a budget except on the quarter-hour runs (see ADR-040).
 
 ## The Cron Entry Point (`backend/jobs/scheduled.ts`)
 
 A cron run uses the same services as the API, built from the Worker env instead of a request:
 
 ```ts
-export async function runScheduledJob(cron: string, env: Env): Promise<void> {
-    const context = cronContext(cron);
-    const services = createServices({ supabase: getSupabase(env), redis: getRedis(env) }, readConfig(env), context);
+export function cronPlan(cron: string, scheduledTime: number): CronPlan {
+    if (cron === DAILY_CRON) return 'daily';
+    if (cron !== EVERY_FIVE_MINUTES_CRON) return 'none';
+    return new Date(scheduledTime).getUTCMinutes() % PUBLISH_EVERY_MINUTES === 0 ? 'publish_then_sweep' : 'sweep';
+}
 
-    if (cron === PUBLISH_DUE_POSTS_CRON) {
+export async function runScheduledJob(cron: string, env: Env, scheduledTime = Date.now()): Promise<void> {
+    // ...
+    const plan = cronPlan(cron, scheduledTime);
+    if (plan === 'sweep') {
+        await sweepReplies(services, context);
+    } else if (plan === 'publish_then_sweep') {
         const run = await services.scheduledPublisher.publishDue();
-        context.log.info('scheduled publish run', { processed: run.processed, failed: run.errors.length });
-    } else if (cron === REFRESH_TOKENS_CRON) {
+        if (run.processed === 0) await sweepReplies(services, context, SWEEP_AFTER_QUIET_PUBLISH);
+    } else if (plan === 'daily') {
         await services.tokenRefresh.refreshExpiringInstagramTokens();
-    } else {
-        context.log.warn('no job for this cron', { cron });
+        await services.retention.purge();
     }
 }
 ```
@@ -33,7 +41,7 @@ export async function runScheduledJob(cron: string, env: Env): Promise<void> {
 
 ## Cron Handlers
 
-### `*/15 * * * *` - Instagram Scheduled Post Publisher
+### `*/5 * * * *` on the quarter hour - Instagram Scheduled Post Publisher
 
 **Function:** `scheduledPublisher.publishDue()` in `backend/services/scheduledPublisher.ts`
 
@@ -57,7 +65,15 @@ The lease, attempt limit and failure rules live in `backend/lib/scheduledPublish
 
 **Concurrency safety:** The claim is one conditional UPDATE, so when the Worker cron and GitHub Actions overlap, the second run to claim a post gets no row back and skips it. The 20 minute lease is longer than the 14 minute deadline of both schedulers, so a run that is still working is never taken over.
 
-### `0 0 * * *` - Instagram Token Auto-Refresh
+### `*/5 * * * *` - Comment Reply Sweep
+
+**Function:** `automationProcessor.run()` in `backend/services/automationProcessor.ts`
+
+Most private replies go out within seconds, from the webhook request itself (`docs/architecture/data-flows/AUTOMATION.md`). The sweep sends the rest: replies waiting for a retry, a cooldown or an hourly limit, replies a webhook could not finish, and jobs whose run stopped. It claims up to `AUTOMATION_BATCH_SIZE` due comments (10 by default), at most half of them from one account, and settles each one before the next. On the quarter-hour runs it sweeps only when publishing had nothing to do, and then only 3, because publishing spends part of the run's 50 subrequests. With nothing due, a sweep is one database call.
+
+A run that stops is recovered by the next one: a comment left `processing` for more than 20 minutes is claimed again, and one left `sending` becomes `needs_review`, because its reply may have reached Instagram. `AUTOMATION_PAUSED=true` makes every sweep return without claiming anything.
+
+### `0 0 * * *` - Instagram Token Auto-Refresh and Retention
 
 **Function:** `tokenRefresh.refreshExpiringInstagramTokens()` in `backend/services/tokenRefreshService.ts`
 
@@ -68,6 +84,8 @@ The lease, attempt limit and failure rules live in `backend/lib/scheduledPublish
 4. Updates the account's `accessToken` and `tokenExpiresAt` with `accountRepository.updateById()`, which merges them into `data` in one statement (`merge_account_data`), so an analytics refresh at the same moment cannot put the old token back
 
 One failed account is logged and skipped; it never stops the others. `backend/tests/services/tokenRefreshService.test.ts` covers the selection and the updates.
+
+After the refresh, `retention.purge()` in `backend/services/retentionService.ts` deletes received comments older than 90 days (their reply attempts go with them) and audit events older than a year, across all users.
 
 **Token lifecycle:**
 - Instagram issues long-lived tokens valid for 60 days
@@ -83,7 +101,7 @@ The `scheduled` handler passes the job to `ctx.waitUntil()`:
 
 ```ts
 async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext) {
-    ctx.waitUntil(runScheduledJob(event.cron, env));
+    ctx.waitUntil(runScheduledJob(event.cron, env, event.scheduledTime));
 },
 ```
 
@@ -93,21 +111,16 @@ async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext) {
 
 The same publishing logic also runs via `scripts/publish-scheduled.ts` in GitHub Actions, at minutes 7, 22, 37 and 52 when GitHub starts the runs, which is often hours late. See `docs/architecture/data-flows/SCHEDULING.md` for details on how both systems coexist safely.
 
-## Adding a New Cron Trigger
+## Adding a New Cron Job
 
-1. Add the cron expression to `wrangler.toml`:
-   ```toml
-   crons = ["*/15 * * * *", "0 0 * * *", "0 12 * * 1"]
-   ```
+The account has no cron trigger to spare on the Workers Free plan, so a new job is a new plan in `cronPlan()` on one of the existing triggers, chosen by the scheduled time, rather than a new trigger. Check the account's count first (Workers and Pages, each Worker's Triggers) if you run your own instance on a paid plan or an account with free slots.
 
-2. Add a constant and a branch in `backend/jobs/scheduled.ts`:
+1. Add a plan and its time rule to `cronPlan()` in `backend/jobs/scheduled.ts`, for example a weekly report on the daily trigger:
    ```ts
-   export const WEEKLY_REPORT_CRON = '0 12 * * 1';
-   // ...
-   } else if (cron === WEEKLY_REPORT_CRON) {
-       await services.weeklyReport.run();
-   }
+   if (cron === DAILY_CRON) return new Date(scheduledTime).getUTCDay() === 1 ? 'daily_and_weekly' : 'daily';
    ```
+
+2. Run the job in that branch of `runScheduledJob()`, and add the case to `backend/tests/jobs/scheduled.test.ts`. A new trigger, when there is a slot, also needs its expression in `wrangler.toml` and a constant in `scheduled.ts`.
 
 3. Implement the job as a service method (a new service is wired in `backend/container.ts`). It receives repositories and the cron's `RequestContext`, logs through `context.log`, and catches per-item failures so one bad record does not stop the run. Add a test in `backend/tests/services/` and run `npm run typecheck`
 

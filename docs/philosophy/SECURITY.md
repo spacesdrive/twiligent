@@ -7,7 +7,9 @@
 | Supabase anon key | `VITE_SUPABASE_ANON_KEY` (env var in frontend build) | Frontend (Supabase JS auth) | **Yes - intentionally public**, which is why every application table and function is closed to the browser roles: RLS on with no policies, and no grants (see `docs/architecture/database/SECURITY.md`) |
 | Supabase service role key | Worker secret | Worker only | **Never** |
 | Instagram App ID | Worker secret | Worker only | **Never** |
-| Instagram App Secret | Worker secret | Worker only | **Never** |
+| Instagram App Secret | Worker secret | Worker only (OAuth, state signing, and verifying Instagram webhooks) | **Never** |
+| Instagram webhook verify token (`INSTAGRAM_WEBHOOK_VERIFY_TOKEN`) | Worker secret, and the Meta dashboard's webhook settings | Worker (compares) and Meta (sends once) | **Never** |
+| Meta app secret (`META_APP_SECRET`, optional) | Worker secret | Worker (a second key for webhook signatures) | **Never** |
 | YouTube API key | Worker secret | Worker only | **Never** |
 | Cloudinary credentials | Worker secrets | Worker only | **Never** |
 | Send Email hook secret (`SEND_EMAIL_HOOK_SECRET`) | Worker secret, and Supabase's hook settings | Worker (verifies) and Supabase Auth (signs) | **Never** |
@@ -94,6 +96,18 @@ Without a valid signature nobody can make the Worker send email or read the code
 
 The caps also protect the free email quota. There are 100 emails a day by default and 5 a day to one address, and a refused send counts nothing, so repeated requests for one address cannot use up the day. Supabase's own email rate limit and CAPTCHA add protection against many addresses at once (see the self-hosting page `self-host/email-codes`).
 
+## Instagram Webhook
+
+`POST /api/webhooks/instagram` is public because Meta, not a browser, calls it. Its only proof of origin is `X-Hub-Signature-256`, HMAC-SHA256 over the raw body with the Instagram app secret (or `META_APP_SECRET`):
+
+1. A body over 1 MB is refused before the signature is computed.
+2. The Worker recomputes the signature over the exact bytes it received and compares it in constant time (`crypto.subtle.verify`); without a secret the route answers 503.
+3. A comment is attached only to the accounts whose Instagram id the signed payload names, and only when such an account has an enabled rule; nothing in the payload can point a reply at another member's account.
+
+Meta's notifications carry no timestamp, so a captured notification could be sent again; that is harmless, because each comment is stored once and Instagram allows one private reply per comment. The verification `GET` compares the Verify Token in constant time. Comment text is kept only for comments a rule answers, for 90 days, and never logged.
+
+The replies themselves are limited in the database per instance, member, account, rule and recipient, so a flood of comments, a bug or a misconfigured rule cannot turn into a stream of messages (`docs/architecture/data-flows/AUTOMATION.md`). A reply whose outcome is unknown is never sent again without a person's decision.
+
 ## Rate Limiting
 
 Every `/api` request is rate limited per client IP before authentication, so a flood of invalid tokens never reaches Supabase Auth. Protected requests are also limited per user, and routes that spend the shared YouTube quota or the Instagram and Reddit limits have a tighter per-user rule. Limits are counted atomically in Redis (one Lua script per check) and fall back to per-isolate memory when Redis is absent or failing, so they never fail open entirely and never fail a request. See `docs/architecture/backend/RATE_LIMITING.md`.
@@ -130,6 +144,7 @@ If a credential is compromised:
 3. Instagram App Secret: rotate in Meta Developer dashboard, then update Worker secret
 4. Supabase service role key: rotate in Supabase project Settings -> API
 5. Send Email hook secret: generate a new one in Supabase Authentication -> Auth Hooks, then `wrangler secret put SEND_EMAIL_HOOK_SECRET`; Resend API key: create a new key in Resend, update the Worker secret, then delete the old key
-6. User Instagram tokens: user must reconnect their account via the OAuth flow
+6. User Instagram tokens: the user connects the account again through the OAuth flow, which renews the stored token in place
+7. Instagram webhook verify token: `wrangler secret put INSTAGRAM_WEBHOOK_VERIFY_TOKEN` with a new value, then enter the same value in the Meta dashboard's webhook settings and verify again
 
 There is no automated secrets rotation. This is a known gap.

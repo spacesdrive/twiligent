@@ -8,7 +8,7 @@ The backend uses the **service-role key** for all database operations. This key 
 2. Controllers pass that `userId` to services, and every user-scoped repository method (named `...ForUser`) appends `.eq('user_id', userId)` using this verified value
 3. `userId` is never accepted from request body, query params, or any other user-controlled input
 
-**This means a missing `.eq('user_id', userId)` call is a security bug.** The centralization of all queries in `backend/repositories/` makes this auditable: a method that takes a `userId` ends in `ForUser`, and the few that reach every user (`listByPlatform`, `findById`, `updateById`, `listDue`, `listStale`, `claim`) are used only by the cron services. Because ownership is a query filter, another user's record is simply not found (404).
+**This means a missing `.eq('user_id', userId)` call is a security bug.** The centralization of all queries in `backend/repositories/` makes this auditable: a method that takes a `userId` ends in `ForUser`, and the few that reach every user (`listByPlatform`, `findById`, `updateById`, `listDue`, `listStale`, `claim`, and for comment automation `listEnabledForInstagramUser`, `insertMany`, the queue methods `claim`, `reserve`, `finish` and `release`, and the retention `deleteCreatedBefore`) are used only by the cron services, the Instagram webhook and the reply processor. Because ownership is a query filter, another user's record is simply not found (404).
 
 The merge functions follow the same rule: the `...ForUser` repository methods pass the verified `userId` as `p_user_id`, and only `updateById` passes `null`, the cron form that reaches any user's row.
 
@@ -17,7 +17,9 @@ The merge functions follow the same rule: the `...ForUser` repository methods pa
 A scheduled post names the account it publishes to, and a tracked Reddit item names the account whose cookie reads it. Both are checked twice:
 
 1. **In the service.** `scheduledPostService.create` loads the account with `accounts.findForUser(accountId, userId)` and passes it to `publishableAccount()`: another user's account, a missing one or one that is not Instagram answers 404 `Instagram account not found`, and one with no token answers 400 `No Instagram access token stored - reconnect this account`. `trackedContentService.update` refuses an account on a YouTube item (400) and answers 404 `Reddit account not found` for an account that is not one of the user's Reddit accounts.
-2. **In the database.** `scheduled_posts` and `tracked_posts` reference `accounts (id, user_id)` with a composite foreign key, so a row whose `account_id` belongs to another user cannot be written, whatever the code does.
+2. **In the database.** `scheduled_posts`, `tracked_posts` and the four automation tables reference `accounts (id, user_id)` with a composite foreign key, so a row whose `account_id` belongs to another user cannot be written, whatever the code does.
+
+An automation rule is created only after `accounts.findForUser(accountId, userId)` returns one of the user's Instagram accounts (404 otherwise), and a rule never moves to another account. Pausing, subscribing and retrying load the account or the item with the user's id first.
 
 Row ids are UUIDs from `crypto.randomUUID()` (`newRowId()` in `backend/lib/ids.ts`). Before, they were built from the time and `Math.random`, which is predictable; an id is still never trusted on its own, but it can no longer be worked out from another.
 
@@ -44,14 +46,14 @@ The migrations in `supabase/migrations/` enforce this on every instance:
 
 | Rule | Migration | Effect |
 |---|---|---|
-| Row level security on, with no policies | `baseline_<table>` (four files) | The `anon` and `authenticated` roles match no row |
-| No grants to the browser roles | `revoke_browser_access_<table>` (four files) | `revoke all on table ... from anon, authenticated`; the Data API answers 401 permission denied |
+| Row level security on, with no policies | `baseline_<table>` (four files) and each `create_<table>` file | The `anon` and `authenticated` roles match no row |
+| No grants to the browser roles | `revoke_browser_access_<table>` (four files) and each `create_<table>` file | `revoke all on table ... from anon, authenticated`; the Data API answers 401 permission denied |
 | No grants on future objects | `revoke_browser_default_privileges` | `alter default privileges for role postgres in schema public revoke all on tables` and `on functions from anon, authenticated` |
-| Functions closed | each `create_*_function` file | `revoke execute ... from public, anon, authenticated`; the merge functions are granted only to `service_role` |
+| Functions closed | each `create_*_function` file | `revoke execute ... from public, anon, authenticated`; the merge and automation functions are granted only to `service_role` |
 
 The service-role key used by the Worker and the GitHub Actions scheduler bypasses row level security and keeps its grants. The frontend never queries tables directly (it uses Supabase only for Auth). `backend/tests/database/migrations.test.ts` fails if a migration creates a function without the revoke.
 
-To check a live instance, call the Data API with the anon key (`GET <SUPABASE_URL>/rest/v1/accounts` with the `apikey` header): it must answer 401 for all four tables and for `POST /rest/v1/rpc/merge_account_data`. The manual check is in `docs/workflows/TESTING.md`.
+To check a live instance, call the Data API with the anon key (`GET <SUPABASE_URL>/rest/v1/accounts` with the `apikey` header): it must answer 401 for all nine tables and for `POST /rest/v1/rpc/merge_account_data` and `POST /rest/v1/rpc/claim_automation_comments`. The manual check is in `docs/workflows/TESTING.md`.
 
 ### What was wrong before
 
@@ -80,10 +82,19 @@ The Instagram `accessToken` stored in `accounts.data.accessToken` is a long-live
 3. Only used server-side, by these modules:
    - Graph API calls: `services/instagram/instagramApi.ts`, `instagramMedia.ts` and `instagramPublishing.ts` (the token is passed in as `access_token`)
    - Obtaining and storing tokens: `services/instagram/instagramTokens.ts` (long-lived exchange and refresh), `services/instagram/instagramOAuth.ts` (OAuth code exchange), `services/instagramConnectService.ts` (OAuth connect), `services/accountService.ts` and `services/accountFactory.ts` (pasted tokens and new account rows)
-   - Reading the stored token: `services/publishingService.ts` and `services/scheduledPublisher.ts` (publishing), `services/instagramAnalyticsService.ts` (Instagram analytics and media), `services/accountService.ts` (profile and token refresh), `services/tokenRefreshService.ts` (daily refresh) and `services/overviewService.ts` (overview cache warm-up)
+   - Reading the stored token: `services/publishingService.ts` and `services/scheduledPublisher.ts` (publishing), `services/instagramAnalyticsService.ts` (Instagram analytics and media), `services/accountService.ts` (profile and token refresh), `services/tokenRefreshService.ts` (daily refresh), `services/overviewService.ts` (overview cache warm-up), `services/automationService.ts` (webhook subscription) and `services/automationProcessor.ts` (private replies, through `services/instagram/instagramMessaging.ts`, which sends it as a Bearer header)
+   - `claim_automation_comments` returns the token to the Worker with each claimed job; the function is granted only to the service role
 4. The `GET /api/accounts` endpoint passes all accounts through `safeAccount()` before returning
 
 **If you add a route that returns account data, you must call `safeAccount()`.** Repositories return full accounts and there is no automatic stripping - it is an explicit step in controllers (and in the services that embed an account in a larger result).
+
+## Instagram Webhook
+
+`POST /api/webhooks/instagram` is public: Meta calls it without a user. `middleware/metaWebhook.ts` refuses a body over 1 MB and checks `X-Hub-Signature-256`, an HMAC-SHA256 of the raw body with the Instagram app secret (or `META_APP_SECRET`), in constant time before anything is parsed or stored. The verification `GET` compares the Verify Token in constant time. A comment is attached to an account only through the Instagram account id Meta signed, and only accounts with an enabled rule store anything. Comments that no rule answers keep neither their text nor their author; matched ones are kept 90 days. Logs carry ids and error codes, never tokens or comment text.
+
+## Audit Events
+
+`audit_events` records connecting, reconnecting and removing accounts, rule changes, pausing and subscribing an account, and retries, with the user, the subject and small details (never tokens or comment text). Rows reference the user only, so they stay after the account is removed, and are deleted after a year or with the user.
 
 ## GitHub Settings
 
@@ -93,8 +104,9 @@ The Instagram `accessToken` stored in `accounts.data.accessToken` is a long-live
 
 When reviewing security, check these files:
 - `backend/middleware/auth.ts` - JWT verification
-- `backend/repositories/` - every user-scoped method ends in `ForUser` and filters by `user_id` (or passes it as `p_user_id` to a merge function); the methods without a `userId` are used only by `scheduledPublisher.ts` and `tokenRefreshService.ts`. `emailQuotaRepository.ts` is not user-scoped: it keeps instance-wide Redis counters for the Send Email hook, keyed by a hash of the address
+- `backend/repositories/` - every user-scoped method ends in `ForUser` and filters by `user_id` (or passes it as `p_user_id` to a merge function); the methods without a `userId` are used only by `scheduledPublisher.ts`, `tokenRefreshService.ts`, `automationWebhookService.ts`, `automationProcessor.ts` and `retentionService.ts`. `emailQuotaRepository.ts` is not user-scoped: it keeps instance-wide Redis counters for the Send Email hook, keyed by a hash of the address
 - `backend/middleware/authHook.ts` and `backend/lib/webhookSignature.ts` - the only thing that authenticates the public Send Email hook
+- `backend/middleware/metaWebhook.ts` and `backend/lib/metaWebhookSignature.ts` - the only thing that authenticates the public Instagram webhook
 - `backend/controllers/` and `backend/services/` - the `userId` passed to a repository always comes from `c.get('userId')`, never from the body or query
 - `backend/lib/safeAccount.ts` - `safeAccount()` definition; it strips every stored credential for all platforms
 - `supabase/migrations/` - no migration grants anything to `anon` or `authenticated`, and every function revokes execute from them

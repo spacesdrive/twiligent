@@ -121,6 +121,24 @@ Returns `OverviewResponse` from `shared/types/domain.ts`: `{ tracked: TrackedPos
 
 The `analyticsCache` is populated from Redis on the backend; no live API calls are made. Data is only present for accounts whose analytics pages have been previously visited (which populates the Redis cache). The Overview dashboard uses this to compute Total Content, Total Comments, and Total Likes across all platforms without expensive per-account API calls on load.
 
+## Automation Methods
+
+```ts
+getAutomations: () => request<AutomationOverviewResponse>('/automations'),
+createAutomationRule: (data: AutomationRuleRequest) => request<AutomationRuleResponse>('/automations/rules', { method: 'POST', body: JSON.stringify(data) }),
+updateAutomationRule: (id: string, data: AutomationRuleUpdateRequest) => request<AutomationRuleResponse>(`/automations/rules/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+duplicateAutomationRule: (id: string) => request<AutomationRuleResponse>(`/automations/rules/${id}/duplicate`, { method: 'POST' }),
+deleteAutomationRule: (id: string) => request<SuccessMessageResponse>(`/automations/rules/${id}`, { method: 'DELETE' }),
+testAutomationRule: (data: AutomationTestRequest) => request<AutomationTestResponse>('/automations/test', { method: 'POST', body: JSON.stringify(data) }),
+getAutomationActivity: (query: URLSearchParams) => request<AutomationActivityResponse>(`/automations/activity?${query}`),
+retryAutomationActivity: (id: string) => request<AutomationActivityItemResponse>(`/automations/activity/${id}/retry`, { method: 'POST' }),
+getAutomationStats: (query: URLSearchParams) => request<AutomationStatsResponse>(`/automations/stats?${query}`),
+setAutomationAccountPaused: (accountId: string, paused: boolean) => request<AutomationAccountResponse>(`/automations/accounts/${accountId}`, { method: 'PUT', body: JSON.stringify({ paused }) }),
+subscribeAutomationAccount: (accountId: string) => request<AutomationAccountResponse>(`/automations/accounts/${accountId}/subscribe`, { method: 'POST' }),
+```
+
+The types are in `shared/types/automation.ts`. Activity and stats take their filters as `URLSearchParams` (`accountId`, `ruleId`, `status` as a comma-separated list, `from`, `to`, `before`, `limit`), built in `features/automations/useAutomationActivity.ts`. An accepted reply means Instagram took the request; the API reports nothing about delivery or reading.
+
 ## Tracked Content Methods
 
 Added to the `api` object in `api.ts`. Handles both Reddit posts and YouTube videos:

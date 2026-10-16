@@ -1,0 +1,88 @@
+export const meta = { title: 'Comment automation (optional)', description: 'Let Instagram send comments to your backend so automation rules can answer them with a private reply.' }
+
+<Callout type="note" title="How it works">
+
+When someone comments on a post or reel of a connected Instagram account, Meta sends the comment to your backend's webhook. The backend checks Meta's signature, stores the comment, and if a rule's keyword matches, sends the commenter one private reply through Instagram's official messaging API. Instagram allows one private reply per comment, within 7 days of it, and up to 750 an hour per account. Nothing else is needed on Cloudflare: the webhook and the reply queue run on the Worker and the Supabase database you already have.
+
+</Callout>
+
+<Callout type="warning" title="Meta approval comes first">
+
+Comments reach your backend only while the Meta app is **Live** and has **Advanced Access** for the comments webhook field. Advanced Access needs App Review and business verification. Until then, only Instagram accounts with a role on the app (Settings, Roles) get comment events, which is enough to test with your own account.
+
+</Callout>
+
+<Steps>
+<Step title="Finish the Instagram app">
+
+Follow [Instagram app](/docs/self-host/instagram) first. Twiligent's sign-in already asks for the permissions comment automation needs: `instagram_business_basic`, `instagram_business_manage_comments` and `instagram_business_manage_messages`. Accounts connected before you set this up do not need to connect again.
+
+</Step>
+<Step title="Apply the database migrations">
+
+From the repository root, run `npm run db:check` and then `npm run db:push`. They add the automation tables and functions. See [Supabase](/docs/self-host/supabase) if your CLI is not linked yet.
+
+</Step>
+<Step title="Choose a verify token">
+
+The verify token is any long random string you make up; Meta sends it back once to prove it reached your backend. In `backend/`, run:
+
+```bash
+npx wrangler secret put INSTAGRAM_WEBHOOK_VERIFY_TOKEN
+```
+
+Webhooks are signed with your Instagram app secret, which is already set as `INSTAGRAM_APP_SECRET`. If signatures fail in the logs, also set the Meta app's own secret (Settings, Basic) with `npx wrangler secret put META_APP_SECRET`; the backend accepts either.
+
+</Step>
+<Step title="Add the webhook in the Meta dashboard">
+
+Open the app, **Instagram**, **API setup with Instagram business login**, **Configure webhooks**. Set:
+
+| Field | Value |
+| --- | --- |
+| Callback URL | Your backend address followed by `/api/webhooks/instagram`, for example `https://twiligent-api.example.workers.dev/api/webhooks/instagram` |
+| Verify token | The token from the step before |
+
+Choose **Verify and save**. Meta calls the URL once; if it fails, check that the backend is deployed and the secret is set. Then subscribe to the **comments** field.
+
+</Step>
+<Step title="Turn on comment events for each account">
+
+In Twiligent, open **Automations**, create a rule and turn it on. The first rule turned on for an account asks Instagram to send that account's comments to your backend. If the account shows **Not receiving comments**, choose **Turn on comment events**. The account must be public: Instagram sends no comment events for private accounts.
+
+</Step>
+<Step title="Test it">
+
+From another Instagram account, comment a rule's keyword on one of the account's posts. The private reply should arrive within a few seconds. To follow it, run `npx wrangler tail` in `backend/` and look for `instagram webhook stored` and `automation reply settled`. The comment and its status also appear under **Activity** on the Automations page.
+
+</Step>
+</Steps>
+
+## Limits and controls
+
+These Worker settings are optional; each falls back to its default when unset or invalid. Set them with `npx wrangler secret put` so deploys keep them.
+
+| Setting | Default | What it limits |
+| --- | --- | --- |
+| `AUTOMATION_ACCOUNT_HOURLY_LIMIT` | 200 | Replies an hour from one Instagram account; at most 750, Instagram's limit |
+| `AUTOMATION_USER_HOURLY_LIMIT` | 500 | Replies an hour across one member's accounts |
+| `AUTOMATION_GLOBAL_HOURLY_LIMIT` | 1000 | Replies an hour across your whole instance |
+| `AUTOMATION_RECIPIENT_DAILY_LIMIT` | 3 | Replies a day one person can get from one account |
+| `AUTOMATION_BATCH_SIZE` | 10 | Replies sent by one webhook request or one sweep; at most 15 on the Workers Free plan |
+| `AUTOMATION_PAUSED` | not set | `true` holds every reply; comments are still recorded and go out when you remove it, within the 7 days |
+
+A reply that misses its first chance waits for the backend's 5 minute schedule, which also retries temporary Instagram errors and waits out Instagram's rate limits. A reply whose outcome is unknown, for example after a timeout, is never sent again on its own; it shows as **Needs review** so you can check Instagram first.
+
+## Costs
+
+Everything runs on the services you already use, and nothing new is billed on Cloudflare's or Supabase's free plans. Each comment is one Worker request, and a matched one adds a few database calls and one Instagram call. Comments and reply history are deleted after 90 days.
+
+## Troubleshooting
+
+| What you see | What to do |
+| --- | --- |
+| Meta says the callback could not be verified | Check the URL ends in `/api/webhooks/instagram` and that `INSTAGRAM_WEBHOOK_VERIFY_TOKEN` matches exactly |
+| `wrangler tail` shows 401 for webhook calls | The signature does not match: set `META_APP_SECRET` as well, then check that `INSTAGRAM_APP_SECRET` is the Instagram app secret |
+| No webhook calls at all | The app is not Live, the account has no role on the app during testing, the account is private, or comment events are not turned on for it |
+| A reply failed with "does not allow a private reply" | The comment was deleted, is older than 7 days, or its author does not accept messages |
+| An account shows **Held** | Instagram refused its token. Connect the account again on the Accounts page, check that the account allows access to messages in the Instagram app, then turn its replies back on |

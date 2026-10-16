@@ -7,6 +7,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- Automations: a private reply on Instagram to anyone who comments a keyword on your posts or reels, from rules with keywords, a reply and a link, aimed at every post or chosen ones, with a preview and a test that sends nothing (#87, #90)
+- A signed Instagram comments webhook that stores every comment before answering Meta, sends matched replies within seconds and retries, waits out limits and recovers stopped runs without sending a reply twice (#89, ADR-040)
+- Reply limits per hour for the instance, each member, each Instagram account and each rule, and per day for each person, with a cooldown when Instagram limits the account; `AUTOMATION_PAUSED` holds every reply (#89)
+- The Automations page shows each account's state with pause and resume, counts for the period, and the activity of every comment with its status and a retry (#90)
+- New tables `automation_accounts`, `automation_rules`, `automation_comments`, `automation_attempts` and `audit_events`, and their functions; existing instances run `npm run db:push` before deploying (#88)
+- An audit record of connecting, reconnecting and removing accounts and of every automation change, kept a year (#89)
+
+### Changed
+
+- Connecting an Instagram account that is already connected renews its token instead of answering that it is already added, so a revoked token can be fixed without removing the account (#89)
+- The Worker's publishing cron runs every 5 minutes instead of 15; posts still publish on the quarter hour, and the other runs send waiting comment replies (#89)
+
 ---
 
 ## [1.2.0] - 2026-10-16

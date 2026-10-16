@@ -25,7 +25,7 @@ The backend is split into layers, each with one job. `REQUEST_PIPELINE.md` is th
 | `app.ts` | `createApp()`: the ordered middleware pipeline and the two route groups |
 | `server.ts` | The Worker export: `fetch` and `scheduled` |
 | `container.ts` | The composition root: `createServices(clients, config, context)` wires repositories into services |
-| `middleware/` | `cors.ts`, `requestContext.ts`, `securityHeaders.ts`, `clients.ts`, `rateLimit.ts`, `auth.ts`, `authHook.ts`, `validate.ts`, `errorHandler.ts` (see `MIDDLEWARE.md`) |
+| `middleware/` | `cors.ts`, `requestContext.ts`, `securityHeaders.ts`, `clients.ts`, `rateLimit.ts`, `auth.ts`, `authHook.ts`, `metaWebhook.ts`, `validate.ts`, `errorHandler.ts` (see `MIDDLEWARE.md`) |
 | `routes/` | One route table per feature (`<feature>Routes.ts`) and `index.ts`, which groups them into `publicRoutes` and `protectedRoutes` |
 | `controllers/` | One controller file per feature (`<feature>Controller.ts`) and `http.ts` with `controller`, `servicesFor(c)` and `pathParam(c, name)` |
 | `validators/` | Request body and query parsers (`<feature>Validators.ts`) and the field helpers in `fields.ts` |
@@ -66,7 +66,7 @@ export function createApp(): Hono<AppEnv> {
 }
 ```
 
-`routes/index.ts` registers the public routes on `publicRoutes` (`GET /health`, `GET /auth/instagram/callback` with the `oauth` rate limit, and the `routes/authHookRoutes.ts` table with `POST /auth/email-hook` behind `verifyAuthHook`) and mounts every feature route table on `protectedRoutes`. The public group is registered before the protected one, so those paths answer without a token.
+`routes/index.ts` registers the public routes on `publicRoutes` (`GET /health`, `GET /auth/instagram/callback` with the `oauth` rate limit, the `routes/authHookRoutes.ts` table with `POST /auth/email-hook` behind `verifyAuthHook`, and the `routes/instagramWebhookRoutes.ts` table with `GET /webhooks/instagram` and `POST /webhooks/instagram` behind `verifyMetaWebhook`) and mounts every feature route table on `protectedRoutes`. The public group is registered before the protected one, so those paths answer without a token.
 
 See `REQUEST_PIPELINE.md` for what each step does and `RATE_LIMITING.md` for the rate limit rules.
 

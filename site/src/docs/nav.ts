@@ -73,6 +73,7 @@ export const DOC_TABS: DocTab[] = [
         pages: [
           { slug: 'use/analytics', title: 'Read your analytics', icon: Chart },
           { slug: 'use/publishing', title: 'Publish and schedule', icon: Plane },
+          { slug: 'use/automations', title: 'Reply to comments automatically', icon: ChatDots },
           { slug: 'use/tracked-content', title: 'Track content', icon: Bookmark },
         ],
       },
@@ -100,6 +101,7 @@ export const DOC_TABS: DocTab[] = [
           { slug: 'self-host/instagram', title: 'Instagram app', icon: InstagramIcon },
           { slug: 'self-host/cloudinary', title: 'Cloudinary', icon: Gallery },
           { slug: 'self-host/redis', title: 'Upstash Redis (optional)', icon: ServerSquare },
+          { slug: 'self-host/comment-automation', title: 'Comment automation (optional)', icon: Plug },
         ],
       },
       {

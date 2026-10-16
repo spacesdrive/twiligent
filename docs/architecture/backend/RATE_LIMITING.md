@@ -33,9 +33,11 @@ Defined in `backend/lib/rateLimit/rules.ts`.
 |---|---|---|---|---|
 | `ip` | Every `/api` request | Client IP; IPv6 by /64 | Sliding window counter | 300 per minute |
 | `user` | Every protected request | User id from the verified JWT | Token bucket | Bursts of 120, refills 2 per second |
-| `quota` | `POST /accounts`, `/accounts/reddit`, `/accounts/instagram`, `/accounts/refresh-all`, `/accounts/:id/refresh`, `/accounts/:id/refresh-ig-token`, `/resolve-channel`, `/tracked-content`, `/tracked-content/:id/refresh`, `GET` or `POST /process-scheduled` | User id | Sliding window log | 30 per 10 minutes |
+| `quota` | `POST /accounts`, `/accounts/reddit`, `/accounts/instagram`, `/accounts/refresh-all`, `/accounts/:id/refresh`, `/accounts/:id/refresh-ig-token`, `/resolve-channel`, `/tracked-content`, `/tracked-content/:id/refresh`, `GET` or `POST /process-scheduled`, `POST /automations/accounts/:accountId/subscribe` | User id | Sliding window log | 30 per 10 minutes |
 | `publish` | `POST /accounts/:id/ig-media-publish`, `/accounts/:id/ig-publish` | User id | Leaking bucket | 50 deep, drains 1 every 15 seconds |
 | `oauth` | `GET /auth/instagram/callback` | Client IP | Fixed window counter | 10 per 10 minutes |
+
+The Instagram webhook (`POST /api/webhooks/instagram`) has only the `ip` rule. Meta sends from its own servers, so a burst past 300 a minute from one of them gets 429, and Meta delivers those notifications again later; nothing is lost. Private replies have their own limits, which are not rate limit rules: hourly counts per instance, user, account and rule and a daily count per person, kept in the database by `reserve_automation_send` so every Worker sees them (`docs/architecture/data-flows/AUTOMATION.md`).
 
 Auth emails have their own daily caps, which are not rate limit rules: the Send Email hook allows `EMAIL_DAILY_LIMIT` emails a day in total (100 by default) and 5 a day to one address, counted per UTC day by `repositories/emailQuotaRepository.ts`. See `docs/architecture/backend/CACHING.md` for the counters and `SERVICES.md` for the rules. Supabase calls the hook from its own servers, so the `ip` rule above counts Supabase, not the person signing up; the per-address cap and Supabase's own email rate limit are what slow down one person.
 

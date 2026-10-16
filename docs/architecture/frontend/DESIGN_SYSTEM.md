@@ -35,6 +35,8 @@ Shared components live in `frontend/src/components/`. Reach for these before wri
 | `MetricBox` | A single metric: icon, label, tabular value, one line of context. `highlight` marks the page's lead metric |
 | `SectionHeader` | A heading between groups of boxes |
 | `ListRow`, `RankNumber` | Dense clickable rows and mono rank numbers |
+| `RowAction` | An icon button with a tooltip at the end of a table or list row; `danger` for removal |
+| `AccountSelect` | Choosing one Instagram account, with its avatar and handle |
 | `SearchField`, `FilterChips` | Library search and single-select filters |
 | `Pager` | Previous and next with a count |
 | `MediaCard`, `MediaChip` | Thumbnail cards for videos, Shorts and Instagram media |

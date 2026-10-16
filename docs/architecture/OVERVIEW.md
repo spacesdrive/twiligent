@@ -25,14 +25,16 @@
 │  ├── Middleware: CORS, request id, security headers, clients,   │
 │  │   per-IP rate limit                                          │
 │  ├── Public: GET /api/health, GET /api/auth/instagram/callback, │
-│  │   POST /api/auth/email-hook (signed by Supabase Auth)        │
+│  │   POST /api/auth/email-hook (signed by Supabase Auth),       │
+│  │   GET/POST /api/webhooks/instagram (signed by Meta)          │
 │  ├── Protected (/api/*): requireAuth -> rate limits             │
 │  │   -> route table -> controller -> service -> repository      │
 │  └── Errors: errorHandler -> { success, code, message, ... }    │
 │                                                                 │
 │  Cron handlers (wrangler.toml triggers, jobs/scheduled.ts):     │
-│  ├── */15 * * * *  -> scheduledPublisher.publishDue()           │
-│  └── 0 0 * * *     -> tokenRefresh.refreshExpiringInstagram...  │
+│  ├── */5 * * * *   -> on :00 :15 :30 :45 publishDue(), then     │
+│  │                    automationProcessor.run() (reply sweep)   │
+│  └── 0 0 * * *     -> token refresh, retention purge            │
 └──────┬──────────┬──────────────┬────────────────────────────────┘
        │          │              │
        ▼          ▼              ▼
@@ -49,6 +51,10 @@
 │ posts    │ │ videos: │
 │ tracked_ │ │ ig:     │
 │ posts    │ │ reddit: │
+│ automa-  │ │         │
+│ tion_*   │ │         │
+│ audit_   │ │         │
+│ events   │ │         │
 │          │ │         │
 │ auth:    │ │         │
 │ users    │ │ optional│
@@ -102,9 +108,14 @@ Cloudflare Worker edge node (nearest to user)
 ```
 Cloudflare scheduler fires cron trigger
   -> Worker.scheduled(event, env, ctx)
-      -> ctx.waitUntil(runScheduledJob(event.cron, env))   [jobs/scheduled.ts]
+      -> ctx.waitUntil(runScheduledJob(event.cron, env, event.scheduledTime))   [jobs/scheduled.ts]
           -> createServices(service-role Supabase, Redis, config, cron context)
-          -> if cron === '*/15 * * * *':
+          -> cronPlan(cron, scheduledTime)
+          -> '*/5 * * * *' at minutes 0, 15, 30, 45: publish, then sweep 3 replies if nothing was due
+          -> '*/5 * * * *' at the other minutes: automationProcessor.run()
+                  -> claim due reply jobs (at most half the batch per account), reserve within limits,
+                     send the private reply, record the outcome   [see data-flows/AUTOMATION.md]
+          -> publishing:
               scheduledPublisher.publishDue()
                   -> posts.listDue(), posts.listStale(cutoff)   [no userId filter - scans all users;
                                                                  stale = publishing, claim older than 20 minutes]
@@ -114,12 +125,27 @@ Cloudflare scheduler fires cron trigger
                      then wait for and publish the container
                   -> posts.updateById(id, { status: 'published' })
                      or back to 'pending' for a temporary failure (up to 3 attempts), or 'failed'
-          -> if cron === '0 0 * * *':
+          -> '0 0 * * *':
               tokenRefresh.refreshExpiringInstagramTokens()
                   -> accounts.listByPlatform('instagram')   [all users, filtered in SQL]
                   -> for each expiring token: refreshLongLivedToken()
                   -> accounts.updateById(id, { accessToken, tokenExpiresAt })
+              retention.purge()
+                  -> delete automation comments older than 90 days, audit events older than a year
 ```
+
+## Webhook Lifecycle (Instagram Comments)
+
+```
+Meta -> POST /api/webhooks/instagram
+  -> CORS, request id, security headers, clients, per-IP rate limit (no requireAuth)
+  -> verifyMetaWebhook: 1 MB limit, X-Hub-Signature-256 over the raw body   [401 when wrong]
+  -> automationWebhook.ingest(): rules for the Instagram account, match, store every comment once
+  -> 200 { success: true }                                                   [5xx when storing fails; Meta retries]
+  -> ctx.waitUntil(automationProcessor.run({ ids }))   the new matched comments, after the response
+```
+
+The full flow, limits and failure handling are in `docs/architecture/data-flows/AUTOMATION.md`.
 
 ## Data Storage Strategy
 
@@ -129,6 +155,8 @@ Cloudflare scheduler fires cron trigger
 | YouTube/Instagram accounts | `accounts` table, `data` jsonb | Flexible schema across platforms |
 | User settings (GitHub repository) | `settings` table, `value` jsonb | Generic key-value per user |
 | Scheduled posts | `scheduled_posts` table | Queryable by status + scheduled_at |
+| Comment automation rules, received comments, reply attempts, account controls | `automation_rules`, `automation_comments`, `automation_attempts`, `automation_accounts` tables | The comment rows are also the reply queue, so dedupe, claims and limits are enforced in one database |
+| Audit events | `audit_events` table | Who connected, removed or changed what; kept a year |
 | Video/media analytics | Upstash Redis (`videos:` / `ig:` keys) | Avoids repeated heavy API calls |
 | Auth email counts | Upstash Redis (`email:day:` / `email:to:` keys, addresses hashed) | Caps verification emails at the provider's free daily quota |
 | Media files (for publishing) | Cloudinary CDN | Instagram requires public URL |

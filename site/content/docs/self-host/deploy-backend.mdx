@@ -58,8 +58,8 @@ Deploying also registers two cron triggers from `wrangler.toml`. You do not need
 
 | Schedule | What it does |
 | --- | --- |
-| `*/15 * * * *` | Publishes scheduled Instagram posts that are due. |
-| `0 0 * * *` | Renews Instagram access tokens before they expire. |
+| `*/5 * * * *` | At minutes 0, 15, 30 and 45, publishes scheduled Instagram posts that are due. On every run, sends comment replies that are waiting. |
+| `0 0 * * *` | Renews Instagram access tokens before they expire, and deletes comment automation records older than 90 days. |
 
 ## Run it locally
 

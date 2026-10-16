@@ -14,6 +14,7 @@ Request arrives
   5. rateLimit(ip)        app.use('/api/*', rateLimit(RATE_LIMIT_RULES.ip, clientIp)) middleware/rateLimit.ts
      public routes        app.route('/api', publicRoutes)                           health check, OAuth callback (+ rateLimit(oauth)),
                                                                                     email hook (+ verifyAuthHook)   middleware/authHook.ts
+                                                                                    Instagram webhook POST (+ verifyMetaWebhook)   middleware/metaWebhook.ts
   6. requireAuth          api.use('*', requireAuth)                                 middleware/auth.ts      <- protected routes only
   7. rateLimit(user, quota, publish)                                                middleware/rateLimit.ts <- protected routes only
   8. route table          api.route('/', protectedRoutes)
@@ -176,6 +177,20 @@ The hook route is public, so the signature is the only proof that a request came
 4. Rejects a timestamp more than five minutes from now, so a captured request cannot be replayed later.
 
 A failure throws `UnauthorizedError` (401).
+
+## Meta Webhook Signature
+
+**Source:** `backend/middleware/metaWebhook.ts` (`verifyMetaWebhook`), with `lib/metaWebhookSignature.ts`
+**Applied to:** `POST /api/webhooks/instagram` only, before its validator
+
+The webhook route is public, so the signature is the only proof that a notification came from Meta. `verifyMetaWebhook`:
+
+1. Throws `NotConfiguredError` (503) when neither `INSTAGRAM_APP_SECRET` nor `META_APP_SECRET` is set.
+2. Refuses a body over 1 MB with `ValidationError` (400), by its `Content-Length` header and again by its size once read.
+3. Reads the raw body with `c.req.arrayBuffer()`. Hono caches it, so the JSON validator after it parses the same bytes.
+4. Checks `X-Hub-Signature-256` (`sha256=<hex>`): HMAC-SHA256 over the raw body with each configured secret, compared with `crypto.subtle.verify` (constant time).
+
+A failure throws `UnauthorizedError` (401). Meta's notifications carry no timestamp to check; a replayed notification is harmless, because each comment is stored once.
 
 ---
 

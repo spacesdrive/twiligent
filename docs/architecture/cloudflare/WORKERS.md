@@ -8,13 +8,13 @@ main = "server.ts"
 compatibility_date = "2025-01-01"
 
 [triggers]
-crons = ["*/15 * * * *", "0 0 * * *"]
+crons = ["*/5 * * * *", "0 0 * * *"]
 ```
 
 - `name` - the Worker name as deployed on Cloudflare; also determines the default URL
 - `main` - entry point file (`backend/server.ts`). Wrangler bundles it with esbuild, which strips the TypeScript types without checking them; `npm run typecheck` is the check
 - `compatibility_date` - pins the Workers runtime API version
-- `crons` - cron trigger schedules (see `docs/architecture/backend/CRON.md`)
+- `crons` - cron trigger schedules (see `docs/architecture/backend/CRON.md`). The five minute trigger carries both scheduled publishing (on the quarter hour) and the comment reply sweep, because the account already uses the five cron triggers the Workers Free plan allows
 
 ## Worker Export Format
 
@@ -24,12 +24,12 @@ The Worker exports two handlers:
 export default {
     fetch: app.fetch,            // handles HTTP requests (the Hono app from backend/app.ts)
     async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext) {   // handles cron triggers
-        ctx.waitUntil(runScheduledJob(event.cron, env));
+        ctx.waitUntil(runScheduledJob(event.cron, env, event.scheduledTime));
     },
 } satisfies ExportedHandler<Env>;
 ```
 
-`event.cron` is the cron expression that fired, `env` holds the Worker secrets and variables, and `ctx.waitUntil(promise)` keeps the Worker alive for the job. `runScheduledJob()` in `backend/jobs/scheduled.ts` picks the job for the expression; see `docs/architecture/backend/CRON.md`.
+`event.cron` is the cron expression that fired, `event.scheduledTime` the minute it was due for, `env` holds the Worker secrets and variables, and `ctx.waitUntil(promise)` keeps the Worker alive for the job. `runScheduledJob()` in `backend/jobs/scheduled.ts` picks the job for the expression; see `docs/architecture/backend/CRON.md`.
 
 `ScheduledController`, `ExecutionContext` and `ExportedHandler` come from `@cloudflare/workers-types`, which `backend/tsconfig.json` loads as its only ambient types.
 
@@ -56,6 +56,16 @@ All secrets are set via `npx wrangler secret put <NAME>`, run from `backend/`. T
 | `RESEND_API_KEY` | Optional | Resend API key with sending access; sends the auth emails (verification codes) |
 | `EMAIL_FROM` | Optional | Sender of the auth emails on a domain verified in Resend, such as `Twiligent <no-reply@example.com>` |
 | `EMAIL_DAILY_LIMIT` | Optional | Auth emails a day across all users (each code sign-in is one) before the sign-in page pauses email codes and points to Google or a password; defaults to `100`, Resend's free daily quota |
+| `INSTAGRAM_WEBHOOK_VERIFY_TOKEN` | Optional | The Verify Token typed into the Meta dashboard's Instagram webhook settings; `GET /api/webhooks/instagram` answers Meta's check only with it. Without it, and `INSTAGRAM_APP_SECRET`, no comment reaches the Worker and the Automations page says so |
+| `META_APP_SECRET` | Optional | The Meta app's own secret (App settings, Basic). Webhook signatures are checked against `INSTAGRAM_APP_SECRET` and, when this is set, against it too |
+| `AUTOMATION_PAUSED` | Optional | `true` holds every comment-to-DM reply on the instance; comments are still stored and matched |
+| `AUTOMATION_ACCOUNT_HOURLY_LIMIT` | Optional | Private replies an hour per Instagram account; default `200`, at most `750` (Instagram's limit) |
+| `AUTOMATION_USER_HOURLY_LIMIT` | Optional | Private replies an hour across one member's accounts; default `500` |
+| `AUTOMATION_GLOBAL_HOURLY_LIMIT` | Optional | Private replies an hour across the instance; default `1000` |
+| `AUTOMATION_RECIPIENT_DAILY_LIMIT` | Optional | Private replies a day one person can get from one account; default `3` |
+| `AUTOMATION_BATCH_SIZE` | Optional | Replies sent by one webhook request or one sweep; default `10`, at most `15` (each costs three of the free plan's 50 subrequests) |
+
+The automation values are plain settings, not secrets, but setting them with `wrangler secret put` keeps them across deploys like the rest. A missing or invalid value falls back to its default.
 
 ### Setting secrets
 
@@ -88,6 +98,9 @@ UPSTASH_REDIS_REST_TOKEN=...
 # SEND_EMAIL_HOOK_SECRET=v1,whsec_...
 # RESEND_API_KEY=re_...
 # EMAIL_FROM=Twiligent <no-reply@example.com>
+# only to test the Instagram webhook locally; Meta cannot reach localhost, so sign request bodies yourself
+# INSTAGRAM_WEBHOOK_VERIFY_TOKEN=a-long-random-string
+# AUTOMATION_PAUSED=true
 ```
 
 Run locally from the repository root: `npm run dev:backend` (Worker only, port 8787) or `npm run dev` (Worker and Vite together). Both run `wrangler dev` in `backend/`, which reloads on save.
@@ -106,11 +119,13 @@ These are hard constraints imposed by the Cloudflare Workers runtime. Violating 
 
 3. **No persistent state between requests.** The Worker isolate may be a fresh instance on every request. Do not rely on module-level variables to persist state across requests. All state must come from Supabase, Redis, or Worker KV. (The cache cooldown and the rate limiter's memory fallback keep per-isolate state on purpose, as a best-effort optimization that is safe to lose.)
 
-4. **CPU time limit.** Workers have a CPU time limit per request (typically 50ms on free tier, up to 30s on paid). Long-running synchronous operations will be killed. Use async/await for all I/O.
+4. **CPU time limit.** On the Workers Free plan each invocation gets 10 ms of CPU time (Workers Paid: 30 seconds by default, up to 5 minutes). Time waiting on `fetch` does not count, so I/O-bound work fits; long synchronous work is killed. Use async/await for all I/O.
 
-5. **`ctx.waitUntil()` in cron handlers.** Cron handlers must use `ctx.waitUntil(promise)` for async work. Without it, the Worker may terminate before the work completes.
+5. **Subrequests.** On the Workers Free plan an invocation can make 50 subrequests (each `fetch`, including Supabase and Redis calls); Workers Paid allows 10,000. A webhook request, a sweep and a publishing run each count separately. `AUTOMATION_BATCH_SIZE` is capped at 15 for this reason, and a fetch the runtime refuses at the cap is recorded as not sent rather than as an unknown outcome.
 
-6. **Bundle size.** The Worker bundle must be a single ESM file (Wrangler handles bundling). Avoid large dependencies. Type-only imports, including everything in `shared/types/`, add nothing to the bundle.
+6. **`ctx.waitUntil()` in cron handlers and after responses.** Cron handlers must use `ctx.waitUntil(promise)` for async work. Without it, the Worker may terminate before the work completes. After an HTTP response, `waitUntil` keeps the Worker running for at most 30 seconds; `inBackground()` in `controllers/http.ts` gives such work its own 25 second deadline.
+
+7. **Bundle size.** The Worker bundle must be a single ESM file (Wrangler handles bundling). Avoid large dependencies. Type-only imports, including everything in `shared/types/`, add nothing to the bundle.
 
 ## Adding a New Worker Secret
 
