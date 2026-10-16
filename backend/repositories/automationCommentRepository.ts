@@ -89,7 +89,7 @@ export interface Reservation {
 export interface ActivityFilter {
     accountId?: string;
     ruleId?: string;
-    status?: AutomationCommentStatus;
+    statuses?: AutomationCommentStatus[];
     from?: string;
     to?: string;
     // created_at of the last item on the previous page
@@ -253,12 +253,12 @@ export function createAutomationCommentRepository(db: SupabaseClient): Automatio
         },
 
         // newest first; a full page may have more after it, and the next page asks for rows before the last one's time
-        async listForUser(userId, { accountId, ruleId, status, from, to, before, limit }) {
+        async listForUser(userId, { accountId, ruleId, statuses, from, to, before, limit }) {
             const found = await rows<AutomationCommentRow>('automationComments.listForUser', () => {
                 let query = db.from('automation_comments').select(COLUMNS).eq('user_id', userId);
                 if (accountId) query = query.eq('account_id', accountId);
                 if (ruleId) query = query.eq('rule_id', ruleId);
-                if (status) query = query.eq('status', status);
+                if (statuses?.length) query = query.in('status', statuses);
                 if (from) query = query.gte('created_at', from);
                 if (to) query = query.lt('created_at', to);
                 if (before) query = query.lt('created_at', before);

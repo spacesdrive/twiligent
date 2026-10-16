@@ -92,8 +92,10 @@ describe('automation comment repository', () => {
 
     test('activity filters by user first, then by every filter given', async () => {
         const supabase = fakeSupabase([]);
-        await createAutomationCommentRepository(supabase).listForUser('user-1', { accountId: 'ig1', status: 'failed', before: 'B', from: 'F', limit: 20 });
-        assert.deepEqual(supabase.calls[0].filters, [['user_id', 'user-1'], ['account_id', 'ig1'], ['status', 'failed'], ['created_at', 'F', 'gte'], ['created_at', 'B', 'lt']]);
+        await createAutomationCommentRepository(supabase).listForUser('user-1', { accountId: 'ig1', statuses: ['failed', 'needs_review'], before: 'B', from: 'F', limit: 20 });
+        assert.deepEqual(supabase.calls[0].filters, [
+            ['user_id', 'user-1'], ['account_id', 'ig1'], ['status', ['failed', 'needs_review'], 'in'], ['created_at', 'F', 'gte'], ['created_at', 'B', 'lt'],
+        ]);
     });
 
     test('stats come from the database function, with empty groups when nothing happened', async () => {
