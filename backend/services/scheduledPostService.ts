@@ -1,4 +1,7 @@
 import { NotFoundError, ValidationError } from '../lib/errors.ts';
+import { newRowId } from '../lib/ids.ts';
+import { publishableAccount } from './publishingService.ts';
+import type { AccountRepository } from '../repositories/accountRepository.ts';
 import type { ScheduledPostRepository, DeleteAllResult } from '../repositories/scheduledPostRepository.ts';
 import type { ScheduledPublisher } from './scheduledPublisher.ts';
 import type {
@@ -6,6 +9,7 @@ import type {
 } from '../../shared/types/domain.ts';
 
 export interface ScheduledPostDeps {
+    accounts: AccountRepository;
     posts: ScheduledPostRepository;
     publisher: ScheduledPublisher;
 }
@@ -19,10 +23,6 @@ export interface ScheduledPostService {
     publishDueNow(): Promise<ScheduledPublishRun>;
 }
 
-export function generateId(): string {
-    return Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
-}
-
 function futureDate(value: string): string {
     const date = new Date(value);
     if (Number.isNaN(date.getTime()) || date.getTime() <= Date.now()) {
@@ -31,7 +31,7 @@ function futureDate(value: string): string {
     return date.toISOString();
 }
 
-export function createScheduledPostService({ posts, publisher }: ScheduledPostDeps): ScheduledPostService {
+export function createScheduledPostService({ accounts, posts, publisher }: ScheduledPostDeps): ScheduledPostService {
     async function findOwned(userId: string, postId: string): Promise<ScheduledPost> {
         const post = await posts.findForUser(postId, userId);
         if (!post) throw new NotFoundError('Scheduled post not found');
@@ -41,9 +41,12 @@ export function createScheduledPostService({ posts, publisher }: ScheduledPostDe
     return {
         list: userId => posts.listForUser(userId),
 
+        // the post may only name one of the user's own Instagram accounts, since the scheduler publishes to it later
         async create(userId, request) {
+            const scheduledAt = futureDate(request.scheduledAt);
+            publishableAccount(await accounts.findForUser(request.accountId, userId));
             const post: ScheduledPost = {
-                id: generateId(),
+                id: newRowId(),
                 accountId: request.accountId,
                 platform: request.platform || 'instagram',
                 mediaType: request.mediaType || 'IMAGE',
@@ -57,7 +60,7 @@ export function createScheduledPostService({ posts, publisher }: ScheduledPostDe
                 locationId: request.locationId || '',
                 userTags: request.userTags || [],
                 altText: request.altText || '',
-                scheduledAt: futureDate(request.scheduledAt),
+                scheduledAt,
                 status: 'pending',
                 createdAt: new Date().toISOString(),
                 publishedMediaId: null,
