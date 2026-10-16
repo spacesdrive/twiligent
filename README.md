@@ -65,7 +65,7 @@ The project's own public site and documentation are at [twiligent.ujjwal.fyi](ht
 | **Unified overview** | Cross-platform totals, audience comparison chart, audience share pie, leaderboards |
 | **Content explorers** | Sortable and filterable grids for all YouTube Videos, all YouTube Shorts, and all Instagram Reels and posts |
 | **Scheduled publishing** | Schedule Instagram photos, Reels, and Stories; a Cloudflare Worker cron publishes them every 15 minutes automatically |
-| **Comment-to-DM automation** | When someone comments a keyword such as GUIDE, or any comment at all, on your Instagram posts or Reels, Twiligent sends them your private reply and link within seconds, through Meta's comments webhook and official private replies; optional followers-only rules send the link only after Instagram confirms the person follows you; per-account, per-rule and per-person limits, retries, a queue that sends waiting replies every minute and an activity log |
+| **Comment automation** | When someone comments a keyword such as GUIDE, or any comment at all, on your Instagram posts or Reels, Twiligent sends them your private reply and link within seconds, posts a public reply under their comment, or both, through Meta's comments webhook, official private replies and comment replies; each reply has its own status and retry; optional followers-only rules send the link only after Instagram confirms the person follows you; per-account, per-rule and per-person limits, retries, a queue that sends waiting replies every minute and an activity log |
 | **Bulk upload** | Upload multiple files at once, assign captions individually or apply a shared caption, schedule them with configurable intervals |
 | **Cloudinary CDN** | Upload media directly from the dashboard; Instagram requires public URLs before publishing |
 | **Token auto-refresh** | Instagram long-lived tokens renew automatically every 24 hours via a daily Worker cron so analytics never break |
@@ -438,6 +438,7 @@ twiligent/
 │   │   ├── scheduledPublisher.ts    # Publishes due scheduled posts (cron and manual trigger)
 │   │   ├── automationProcessor.ts   # Sends comment-to-DM replies within limits (webhook, retry and every minute cron)
 │   │   ├── automationFollowupProcessor.ts # Checks the follow for followers-only replies and sends the link or a reminder
+│   │   ├── automationPublicReplyProcessor.ts # Posts public replies under matched comments within their own limits
 │   │   ├── automationReconciler.ts  # Expires overdue replies, checks lost replies on Instagram, logs queue health
 │   │   ├── youtube/                 # YouTube Data API v3 client and analytics
 │   │   ├── instagram/               # Instagram Graph API client, OAuth, publishing and analytics

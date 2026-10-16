@@ -88,7 +88,7 @@ frontend/src/
 │   │   ├── Automations.tsx                 <- Page: server notices, counts, account controls, rules, activity, the rule dialog
 │   │   ├── AutomationNotices.tsx           <- Webhook not set up, or replies paused on the server
 │   │   ├── AutomationMetrics.tsx, AutomationAccounts.tsx, AutomationRules.tsx, AutomationActivity.tsx
-│   │   ├── RuleDialog.tsx, RuleMediaPicker.tsx, RulePreview.tsx   <- Rule form, post picker, reply preview and keyword test
+│   │   ├── RuleDialog.tsx, RuleMediaPicker.tsx, RulePublicReplies.tsx, RulePreview.tsx   <- Rule form (private and public reply sections), post picker, public wordings, thread and message preview, keyword test
 │   │   ├── useAutomations.ts               <- Overview and every rule and account action, with toasts
 │   │   ├── useAutomationActivity.ts        <- Filters, counts, activity pages and retry
 │   │   ├── useRuleForm.ts                  <- Rule dialog state, the account's posts, the test call
@@ -221,7 +221,7 @@ Each page manages its own loading/data/error state. Pages do not write to `AppCo
 | Tracked Category | `/tracked-content/category/:name` | Detailed per-category analytics; YouTube section (views, likes, comments, bar chart, table) and Reddit section (score, ratio, comments, bar chart, table) rendered separately |
 | Video Explorer | `/videos/:id` | YouTube video library with search and sort |
 | Publish | `/upload` | Publish or schedule to Instagram, bulk upload, and the scheduled post queue |
-| Automations | `/automations` | Keyword rules that answer Instagram comments with a private reply, account pause and comment events, counts and the reply activity with retry (`docs/architecture/data-flows/AUTOMATION.md`) |
+| Automations | `/automations` | Keyword rules that answer Instagram comments with a private reply, a public reply under the comment or both, account pause and comment events, counts and the activity of both replies with separate retries (`docs/architecture/data-flows/AUTOMATION.md`) |
 | Settings | `/settings` | Theme, server key status, who sets up scheduling, the optional GitHub backup guide |
 | Documentation | `/docs/*` | Not a page in the app: `DocsRedirect` sends the visitor to the same path on the public docs at `https://twiligent.ujjwal.fyi/docs`. The Documentation item in the sidebar user menu and Open documentation in the command palette open the docs in a new tab |
 

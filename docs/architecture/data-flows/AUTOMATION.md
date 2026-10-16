@@ -1,25 +1,29 @@
-# Data Flow - Comment-to-DM Automation
+# Data Flow - Comment Automation: Private and Public Replies
 
 ## Overview
 
-An account owner writes a rule: keywords or any comment, which posts it covers, and a reply with an optional link. When someone comments on a post or reel of a connected Instagram professional account and a rule answers the comment, Meta sends the comment to the Worker's webhook, and the Worker sends the commenter a private reply through Instagram's messages endpoint. A followers-only rule first asks the person to follow and reply, and sends the link once Instagram confirms the follow.
+An account owner writes a rule: keywords or any comment, which posts it covers, and how to answer. A rule can send the commenter a private reply (a direct message, with an optional link), post a public reply under the comment, or both; each is switched on and off on its own. When someone comments on a post or reel of a connected Instagram professional account and a rule answers the comment, Meta sends the comment to the Worker's webhook, and the Worker sends the private reply through Instagram's messages endpoint and posts the public reply through the comment's replies endpoint. A followers-only rule first asks the person to follow and reply, and sends the link once Instagram confirms the follow.
+
+The two replies are separate jobs with separate statuses, retries, limits, cooldowns and reviews (ADR-044). A failure of one never repeats the other.
 
 ```
 Instagram comment                      Instagram message (followers-only rules only)
   -> Meta webhook                      POST /api/webhooks/instagram (signed with X-Hub-Signature-256)
   -> verifyMetaWebhook                 1 MB limit, HMAC-SHA256 over the raw body with the app secret
   -> parseInstagramWebhook             comments changes and messaging events; anything else is counted and dropped
-  -> automationWebhook.ingest          rules for the account -> match -> store every comment (dedupe);
-                                       messages from people a followers-only reply waits for -> follow-up jobs
+  -> automationWebhook.ingest          rules for the account -> match -> store every comment with its public reply job
+                                       in one transaction (dedupe); messages from people a followers-only reply waits
+                                       for -> follow-up jobs
   -> 200 {"success":true}              only after both are stored; a failure answers 5xx and Meta retries for 36 hours
-  -> waitUntil: send the new replies, then the new follow-ups, after the response
-       claim -> check -> reserve within limits -> POST /<ig-id>/messages -> finish
-  -> every minute (* * * * *):         dispatch: due replies and follow-ups, recovery of stopped runs
-  -> every 5 minutes, off the quarter: reconcile: expire overdue jobs, look for lost replies, report queue health
+  -> waitUntil: send the new private replies, then the new follow-ups, then the new public replies
+       claim -> check -> reserve within limits -> POST /<ig-id>/messages or /<comment-id>/replies -> finish
+  -> every minute (* * * * *):         dispatch: due private replies, follow-ups and public replies, recovery of stopped runs
+  -> every 5 minutes, off the quarter: reconcile: expire overdue jobs, look for lost replies (conversations for private
+                                       ones, the comment's replies for public ones), report queue health
   -> daily (0 0 * * *):                token refresh, then retention in batches
 ```
 
-The database is the queue: a matched comment's row in `automation_comments` is the job that sends its private reply, and a row in `automation_followups` is the job that answers a person's reply to a followers-only message. There is no Cloudflare Queue (ADR-040, ADR-043).
+The database is the queue: a matched comment's row in `automation_comments` is the job that sends its private reply, a row in `automation_public_replies` is the job that posts its public reply, and a row in `automation_followups` is the job that answers a person's reply to a followers-only message. There is no Cloudflare Queue (ADR-040, ADR-043, ADR-044).
 
 ## What Instagram Allows
 
@@ -28,20 +32,23 @@ Checked against Meta's documentation on 2026-10-16:
 | Rule | Value | Source |
 |---|---|---|
 | API setup | Instagram API with Instagram Login (`graph.instagram.com`), the setup Twiligent already connects with | Instagram Platform overview |
-| Permissions | `instagram_business_basic`, `instagram_business_manage_comments` (comments webhook and private replies), `instagram_business_manage_messages` (messages webhook, follow-ups, follow checks, conversations); Twiligent's OAuth already asks for all three | Private replies, webhook fields, User Profile API |
+| Permissions | `instagram_business_basic`, `instagram_business_manage_comments` (comments webhook, private replies, public replies and reading a comment's replies), `instagram_business_manage_messages` (messages webhook, follow-ups, follow checks, conversations); Twiligent's OAuth already asks for all three | Private replies, webhook fields, User Profile API |
 | Access level | Advanced Access for the `comments` and `messages` webhook fields; Business verification for production; the app must be Live | Webhooks setup |
 | Accounts | Professional (Business or Creator) accounts only; the account must be public, since private accounts get no comment notifications | Webhooks setup |
 | Replies per comment | One private reply, text only in the documented request; a follow-up only after the person replies, within 24 hours | Private replies |
 | Reply window | 7 days after the comment (Live comments: only during the broadcast, not supported here) | Private replies |
 | Follow status | `is_user_follow_business` from the User Profile API, only after the person has sent the account a message (or tapped an icebreaker or persistent menu); before that Instagram answers "User consent is required to access user profile" | User Profile API |
 | Private reply rate | 750 an hour per professional account for posts and reels | Messenger Platform rate limits |
+| Public replies | `POST /<comment-id>/replies` with `message` answers the new reply's `id`. Only top-level comments take replies; a reply to a reply lands in the top-level thread. Hidden comments and comments on live video cannot be replied to | IG Comment Replies, Comment Moderation |
+| Reading replies | `GET /<comment-id>/replies` lists a comment's replies; a deleted comment's cannot be read | IG Comment Replies |
+| Public reply rate | No separate number: comment calls count against the Business Use Case limit of 4,800 calls times the account's impressions in 24 hours, shared with insights. Instagram blocks accounts that comment like a bot (code 368) without publishing a threshold | Instagram Platform overview |
 | Send API rate | 300 calls a second per account for text and links (follow-ups) | Messenger Platform rate limits |
 | Conversations API rate | 2 calls a second per account | Messenger Platform rate limits |
 | Message size | Text up to 1,000 bytes | Messaging API |
 | Webhook retries | Retried with decreasing frequency for 36 hours until a 200; duplicates must be handled | Webhooks setup |
 | Webhook fields | Every field selected for the app reaches every connected account; fields cannot be chosen per account | Webhooks setup |
 
-The general Instagram Platform call quota is a different limit from the 750 private replies an hour, and neither is a daily DM allowance. Twiligent's own limits stay below them and are configurable.
+The general Instagram Platform call quota is a different limit from the 750 private replies an hour, and neither is a daily DM allowance. Twiligent's own limits stay below them and are configurable. Because Meta publishes no safe pace for public replies, Twiligent keeps its own: 60 an hour per account by default, rotating wordings, and one public reply per person and post a day.
 
 ## Setup: Getting Comments and Messages to the Worker
 
@@ -61,13 +68,13 @@ Signatures: Instagram Login apps sign with the Instagram app secret (`INSTAGRAM_
    - other fields and malformed entries are counted as unsupported and dropped.
 3. `automationWebhook.ingest()` groups the comments by Instagram account id and calls `automation_rules_for_ig_user` once per account: the enabled rules of every connected Twiligent account with that `igUserId`, oldest account first. An account with no enabled rule stores nothing.
 4. Each comment is classified:
-   - the account's own comment: `ignored`, reason `own_comment`
+   - the account's own comment: `ignored`, reason `own_comment`. This also keeps the account's public replies, which Meta delivers back as comments, from being answered
    - no text: `ignored`, `no_text`
    - no rule answers it: `ignored`, `no_match`, stored without its text or author
-   - a rule answers it: `queued`, with the rule, the author and the text (at most 2,200 characters)
-5. `insertMany()` upserts all of them with `ignoreDuplicates` on the unique `(ig_user_id, comment_id)`, so a notification Meta delivers again inserts nothing; only the new rows come back.
+   - a rule answers it: `queued` (or `skipped` with reason `private_reply_off` when the rule sends no private reply), with the rule, the author and the text (at most 2,200 characters). When the rule posts a public reply, one of its texts is picked by a hash of the comment id, so every copy of the notification and every check agree on the words
+5. `store()` calls `store_automation_comments` once: in one transaction it inserts the comments with `on conflict do nothing` on the unique `(ig_user_id, comment_id)`, then a public reply job for each comment whose rule asks for one, joined to the comment as stored and only while the same rule answers it, with `on conflict do nothing` on the unique `automation_comment_id`. A notification Meta delivers again inserts nothing; only the new comment ids and public reply ids come back.
 6. Message events are grouped by account, and `automation_followups_for_messages` runs once per account. It makes a follow-up for a sender whose followers-only reply was accepted in the last 7 days and still waits for them (`gate_status = 'awaiting_reply'`, a minute of slack for the two clocks). A message Meta delivers again inserts nothing (`unique (ig_user_id, trigger_message_id)`), and a second message while a follow-up is open inserts nothing (one open follow-up per comment). Messages from anyone else are not kept.
-7. The controller answers `200 {"success":true}` and hands the new reply ids, then the new follow-up ids, to `inBackground()`, which builds services with their own 25 second deadline (the request's signal ends with the response).
+7. The controller answers `200 {"success":true}` and hands the new private reply ids, the new follow-up ids and the new public reply ids, in that order, to `inBackground()`, which builds services with their own 25 second deadline (the request's signal ends with the response). The three runs share the background work's subrequests and its 20 seconds.
 
 If storing fails, the request fails with 5xx, and Meta delivers the notification again later. Nothing is acknowledged that is not stored.
 
@@ -81,7 +88,8 @@ If storing fails, the request fails with 5xx, and Meta delivers the notification
 - `any`: every comment with text answers, emoji included. Such a rule has no keywords (`keywordsProblem` in `lib/automationRules.ts`, and a check constraint).
 - A rule covers every post when `media_ids` is empty, or only the listed posts. A comment never triggers a rule meant for another post.
 - When several rules could answer, the most specific one does: rules for this post before rules for every post, and in each group keyword rules before any-comment rules; then the oldest. One rule answers a comment, and a comment is one row, so a comment never gets two private replies.
-- `POST /api/automations/test` runs the same matching on a sample comment and returns the composed first message; it stores and sends nothing.
+- One rule answers a comment, with its private reply, its public reply or both; a comment never gets two public replies.
+- `POST /api/automations/test` runs the same matching on a sample comment and returns the composed first private message; it stores and sends nothing.
 
 ## Delivery of Private Replies (`backend/services/automationProcessor.ts`)
 
@@ -105,8 +113,8 @@ A database error on one job is logged and the run moves on; that job's claim or 
 | Run | Subrequests | Time to start sends |
 |---|---|---|
 | Webhook, after the response | 50, less 10 for the request's own middleware, less the intake's queries | 20 seconds |
-| Dispatch, every minute | 50 for replies; follow-ups get what replies did not use | 50 seconds |
-| Retry from the activity list | 40 | 20 seconds |
+| Dispatch, every minute | 39 for private replies, keeping 11 for public replies; follow-ups get what private replies did not use, public replies the rest | 50 seconds, shared in that order |
+| Retry from the activity list (private or public) | 40 | 20 seconds |
 
 The claim takes only as many jobs as the budget pays for (one for the claim, one spare, three per reply). When time runs short or the run is cancelled, it hands every job it has not started back in one update (`returnUnstarted`: `processing` to `queued`, due at once), so they go out on the next run instead of waiting for the 20 minute lease.
 
@@ -128,6 +136,33 @@ The claim takes only as many jobs as the budget pays for (one for the claim, one
 | The Worker refused the request (subrequest limit) | `retry_wait`, 5 minutes | `rejected` | |
 
 A wait that would end after the 7 day window makes the comment `expired` instead.
+
+## Public Replies (`backend/services/automationPublicReplyProcessor.ts`)
+
+A public reply is its own job in `automation_public_replies`, created with its comment at intake. It follows the same claim, check, reserve, send and finish steps as a private reply, and never reads or changes the comment's private reply.
+
+1. **Claim** (`claim_automation_public_replies`): the same loose index scan, turns between accounts and `FOR UPDATE SKIP LOCKED` as private replies. Accounts that are paused, or whose public replies are cooling down (`public_cooldown_until`) or at their hourly limit (`public_limited_until`), are left out; a private reply cooldown does not hold public replies. A `sending` reply older than 20 minutes becomes `needs_review` with reason `interrupted`.
+2. **Check** (`publicReadinessPlan`): expired after the comment's 7 days, the rule or its public reply turned off (`skipped`), no token (`failed`).
+3. **Reserve** (`reserve_automation_public_reply`): one transaction under its own advisory lock, so public and private reservations never wait on each other. A paused account holds it; a public cooldown waits for it; the same person already got a public reply on the same post in the last day (a reply sending, posted or for review) skips it with `recipient_limit`, which also ends a loop with another account's automation; then the account's hourly limit, counting public reply attempts only (`AUTOMATION_PUBLIC_ACCOUNT_HOURLY_LIMIT`, default 60, at most 200). The attempt is recorded with kind `public_reply` and the digest of the text before the request leaves.
+4. **Send** (`replyToComment`): `POST https://graph.instagram.com/v25.0/<comment-id>/replies` with `{ message }` and the token as a Bearer header, 10 second timeout, never repeated inside the call. It counts as posted only when Instagram answers with the new reply's `id`.
+5. **Finish** (`finish_automation_public_reply`): the outcome on the attempt and the reply in one transaction, the reply's id, and a cooldown on the account's public replies, or a hold on the whole account when Instagram refused its token.
+
+| Instagram's answer | Public reply | Attempt | Account |
+|---|---|---|---|
+| 200 with `id` | `accepted` (Posted), `reply_id` kept | `accepted` | |
+| 200 without `id`, timeout, connection lost, unreadable 200 | `needs_review`, reason `no_answer` | `ambiguous` | |
+| Code 100 with subcode 33 (the comment is deleted or cannot be seen) | `skipped` | `rejected` | |
+| Rate limit codes or HTTP 429 | `retry_wait` until the cooldown ends | `rate_limited` | public cooldown from `X-Business-Use-Case-Usage`, else 15 minutes |
+| Code 368 (temporarily blocked) | `retry_wait` | `rejected` | 24 hour public cooldown; private replies go on |
+| Codes 1, 2 or HTTP 5xx | `retry_wait` with the same backoff; `failed` after 5 tries | `rejected` | |
+| Token or permission refused | back to `queued`, held | `rejected` | paused with the reason |
+| Any other error | `failed`, with Instagram's message | `rejected` | |
+
+**Lost answers.** Unlike a private reply, a public reply can be looked for reliably: `GET /<comment-id>/replies?fields=id,text,timestamp,from`, up to two pages of 50. The reconcile runs check up to five a run, 5 minutes after the attempt and then every 5 minutes, three times at most:
+
+- A reply from the account with the same sha-256 digest, at or after the attempt, marks it `accepted` with reason `confirmed` and its id.
+- Missing on two checks, with every reply read each time: it goes back in the queue once (`resend_after_check`), and the dispatch posts it again. The reconciler itself never posts.
+- A second lost answer, a page left unread, or a read Instagram refuses: it stays `needs_review` with a note, and a person decides.
 
 ## Followers-Only Replies (`backend/services/automationFollowupProcessor.ts`)
 
@@ -158,11 +193,12 @@ Nothing about the follow is stored except the follow-up's outcome; the person's 
 
 ## Duplicates, Ambiguity and Reconciliation
 
-- A notification Meta delivers twice is stored once: `unique (ig_user_id, comment_id)` for comments, `unique (ig_user_id, trigger_message_id)` for messages.
+- A notification Meta delivers twice is stored once: `unique (ig_user_id, comment_id)` for comments, `unique (automation_comment_id)` for public replies, `unique (ig_user_id, trigger_message_id)` for messages.
+- A private reply and a public reply are separate rows with separate attempts. Retrying one requeues only that row; a failure, cooldown or review of one never sends the other again.
 - A comment repeated inside one notification is stored once, and several messages from one person make one open follow-up.
 - Two runs never send the same job: the claim locks rows, and the reservation only moves a job this run holds. The every-minute dispatch, the webhook's own runs and a retry can overlap safely.
 - A job a run claimed but did not start is handed back at once; one whose run died before the request left is claimed again after its 20 minute lease.
-- A send that may have reached Instagram (timeout, lost connection, a run that stopped while `sending`) is never retried on its own. It shows as Needs review.
+- A private send that may have reached Instagram (timeout, lost connection, a run that stopped while `sending`) is never retried on its own. It shows as Needs review. A public reply in the same state is retried only after the comment's replies were read twice and it was in neither (see Public Replies).
 - **Reconciliation.** The five minute runs that do not publish look for up to four Needs review replies in the conversation on Instagram (`automationReconciler`, Conversations API: the conversation with the commenter, then its latest messages). A message from the account with exactly the text that was sent (the same sha-256 digest), at or after the attempt (2 minutes of slack for the clocks), marks the reply `accepted` with reason `confirmed`, and a followers-only rule then starts waiting for the person. A reply not found stays Needs review with a note. Each is checked at most three times, 30 minutes apart, starting 5 minutes after the attempt. A conversation Instagram will not show counts as a check with its reason. Replies sent before digests were kept are not guessed at. The reconciler only reads from Instagram; it never sends.
 - A person decides the rest after checking the conversation. If they retry and the first reply did arrive, Instagram refuses a second private reply to the same comment (10900), and the comment is marked skipped.
 - Delivery is at least once into the queue and at most once to Instagram without a person's decision. Instagram reports acceptance, not delivery or reading, so the dashboard says "Accepted by Instagram" and never "Delivered".
@@ -198,7 +234,17 @@ queued | retry_wait -> expired (the five minute expiry, without a claim)
 | `skipped` | Skipped | Rule off, recipient limit, or already answered |
 | `expired` | Expired | The 7 days ran out first |
 
-Follow-ups use the same statuses, without `ignored`. Retry on an accepted followers-only reply requeues its latest failed, skipped or review follow-up inside its 24 hours.
+Follow-ups and public replies use the same statuses, without `ignored`. Retry on an accepted followers-only reply requeues its latest failed, skipped or review follow-up inside its 24 hours. A comment whose rule sends no private reply is `skipped` with reason `private_reply_off`, shown as Off, and its private reply cannot be retried.
+
+| Public reply status | Shown as | Meaning |
+|---|---|---|
+| `queued`, `retry_wait` | Waiting, Held, Trying again | Waiting to post |
+| `processing`, `sending` | Posting | A run holds it |
+| `accepted` | Posted | Instagram answered with the reply's id |
+| `needs_review` | Checking | It may have been posted; the reconcile runs look for it |
+| `failed`, `skipped`, `expired` | Failed, Skipped, Expired | As for private replies; skipped also covers a deleted comment and the one-per-post limit |
+
+`POST /api/automations/activity/:id/public-reply/retry` requeues a failed, skipped or review public reply inside the comment's 7 days and starts it at once; the private reply is untouched.
 
 ## Limits and Controls
 
@@ -209,16 +255,20 @@ Follow-ups use the same statuses, without `ignored`. Retry on an accepted follow
 | Instagram account, per hour | 200 private replies (Instagram allows 750) | `AUTOMATION_ACCOUNT_HOURLY_LIMIT`, at most 750 |
 | Rule, per hour | none | the rule's hourly limit, 1 to 750 |
 | Person, per day per account | 3 replies | `AUTOMATION_RECIPIENT_DAILY_LIMIT` |
+| Instagram account, public replies per hour | 60 | `AUTOMATION_PUBLIC_ACCOUNT_HOURLY_LIMIT`, at most 200 |
+| Person, public replies per post per day | 1 | fixed, in `reserve_automation_public_reply` |
+| Public reply wordings per rule | 5, each at most 300 characters, 4 hashtags and 1 link | `lib/automationPublicReply.ts` |
 | Replies per webhook request or dispatch | 10 | `AUTOMATION_BATCH_SIZE`, at most 15 |
 | Reminders per followers-only reply | 2 | `MAX_FOLLOW_REMINDERS` in `lib/automationDelivery.ts` |
 
-Follow-ups count toward none of the hourly reply limits; they respect account pauses and cooldowns.
+Follow-ups count toward none of the hourly reply limits; they respect account pauses and cooldowns. Public replies count only toward their own hourly limit, and private replies never count toward it. The 300 character, 4 hashtag and 1 link bounds are Twiligent's own: Instagram's older API refused comments past them, and short, varied replies are less likely to look like spam.
 
 | Control | Effect |
 |---|---|
 | `AUTOMATION_PAUSED=true` | Nothing is sent on the instance; comments and answers are still stored and matched |
 | Pause an account (Replies switch) | Its replies and follow-ups wait in place and go out when resumed, within Instagram's windows |
-| Turn a rule off | New comments stop matching it; its waiting replies and follow-ups are skipped |
+| Turn a rule off | New comments stop matching it; its waiting replies, follow-ups and public replies are skipped |
+| Turn a rule's private or public reply off | That reply's waiting jobs are skipped; the other one goes on |
 | Retry an item | Puts a failed, skipped or review item, or its failed follow-up, back in the queue and starts it at once |
 
 The batch cap of 15 comes from the Workers Free plan's 50 subrequests per invocation: each reply costs three (reserve, send, finish) and each follow-up four (the follow check too), plus the claim and the intake queries.
@@ -229,12 +279,12 @@ The batch cap of 15 comes from the Workers Free plan's 50 subrequests per invoca
 
 | Signal | Where |
 |---|---|
-| Each reply and follow-up settled: ids, status, outcome, error codes | `automation reply settled`, `automation follow-up settled` log lines |
+| Each reply, follow-up and public reply settled: ids, status, outcome, error codes | `automation reply settled`, `automation follow-up settled`, `automation public reply settled` log lines |
 | A dispatch that claimed something: counts by outcome | `automation dispatch` |
-| Each reconcile run: expired counts, review results, queue health (due, oldest due, waiting, stale, needs review, follow-ups due, paused and limited accounts) | `automation reconcile` |
-| The queue falling behind: the oldest due reply waited over 10 minutes, or jobs are held by stopped runs | one `automation queue behind: ...` warning per run, so an incident does not flood the logs |
+| Each reconcile run: expired counts, review results for both kinds (public: found, not found, failed, sent again), queue health (due, oldest due, waiting, stale, needs review, follow-ups due, public replies due, stale and checking, paused and limited accounts) | `automation reconcile` |
+| The queue falling behind: the oldest due reply or public reply waited over 10 minutes, or jobs are held by stopped runs | one `automation queue behind: ...` warning per run, so an incident does not flood the logs |
 | Every non-dispatch cron run and its duration | `cron run finished` |
-| Accounts at their limit, cooling down, held, or without message events | the Instagram accounts card on the Automations page |
+| Accounts at their limit, cooling down, held, or without message events, and public replies cooling down or at their limit | the Instagram accounts card on the Automations page |
 
 Logs carry ids, statuses and error codes, never tokens, secrets, comment text or message text.
 
@@ -252,12 +302,13 @@ Logs carry ids, statuses and error codes, never tokens, secrets, comment text or
 | Unmatched comments | 90 days, without text or author | Same |
 | Reply attempts, with the digest of the text sent | With their comment | With their comment |
 | Follow-ups: sender id, message id, outcome; never the message text | With their comment | With their comment |
+| Public replies: the text posted, status, reply id, attempts | With their comment | With their comment |
 | Rules, account controls | Until deleted | With the account |
 | Audit events | 1 year | Daily retention; with the user |
 
 ## Costs
 
-Everything runs on the existing Worker, Supabase project and Workers Free plan; nothing new is billed. Each comment costs one webhook request and, when matched, about four database calls and one Instagram request. Each follow-up costs one more Instagram call for the follow check. The Workers Free plan allows 100,000 requests a day, and cron runs count as requests: the every-minute dispatch is 1,440 a day, the five minute trigger 288 and the daily one 1, about 1.7% together. With the `messages` field selected, every direct message to a connected account is also a request. Past the daily allowance the free plan refuses requests rather than billing them, and Meta retries a refused webhook for 36 hours. Cloudflare Queues, KV and D1 are not used. Recheck Cloudflare's and Supabase's pricing pages before relying on these numbers.
+Everything runs on the existing Worker, Supabase project and Workers Free plan; nothing new is billed. Each comment costs one webhook request and, when matched, about four database calls and one Instagram request, plus three database calls and one Instagram request for a public reply. Each follow-up costs one more Instagram call for the follow check. The Workers Free plan allows 100,000 requests a day, and cron runs count as requests: the every-minute dispatch is 1,440 a day, the five minute trigger 288 and the daily one 1, about 1.7% together. With the `messages` field selected, every direct message to a connected account is also a request. Past the daily allowance the free plan refuses requests rather than billing them, and Meta retries a refused webhook for 36 hours. Cloudflare Queues, KV and D1 are not used. Recheck Cloudflare's and Supabase's pricing pages before relying on these numbers.
 
 ## Files
 
@@ -267,10 +318,10 @@ Everything runs on the existing Worker, Supabase project and Workers Free plan; 
 | Middleware | `middleware/metaWebhook.ts` |
 | Controllers | `controllers/instagramWebhookController.ts`, `controllers/automationController.ts`, `inBackground()` in `controllers/http.ts` |
 | Validators | `validators/instagramWebhookValidators.ts`, `validators/automationValidators.ts` |
-| Services | `services/automationWebhookService.ts`, `services/automationProcessor.ts`, `services/automationFollowupProcessor.ts`, `services/automationReconciler.ts`, `services/automationService.ts`, `services/retentionService.ts` |
+| Services | `services/automationWebhookService.ts`, `services/automationProcessor.ts`, `services/automationFollowupProcessor.ts`, `services/automationPublicReplyProcessor.ts`, `services/automationReconciler.ts`, `services/automationService.ts`, `services/retentionService.ts` |
 | Cron | `jobs/scheduled.ts` |
-| Platform | `services/instagram/instagramMessaging.ts` |
-| Rules | `lib/automationMatching.ts`, `lib/automationRules.ts`, `lib/automationDelivery.ts`, `lib/automationReview.ts`, `lib/automationHealth.ts`, `lib/metaWebhookSignature.ts` |
-| Repositories | `repositories/automationRuleRepository.ts`, `automationCommentRepository.ts`, `automationFollowupRepository.ts`, `automationAccountRepository.ts`, `auditRepository.ts` |
-| Database | `supabase/migrations/20261016100000` to `20261016103500` and `20261016120000` to `20261016122500`, one entity per file |
+| Platform | `services/instagram/instagramMessaging.ts`, `services/instagram/instagramComments.ts` |
+| Rules | `lib/automationMatching.ts`, `lib/automationRules.ts`, `lib/automationDelivery.ts`, `lib/automationPublicReply.ts`, `lib/automationReview.ts`, `lib/automationHealth.ts`, `lib/metaWebhookSignature.ts` |
+| Repositories | `repositories/automationRuleRepository.ts`, `automationCommentRepository.ts`, `automationFollowupRepository.ts`, `automationPublicReplyRepository.ts`, `automationAccountRepository.ts`, `auditRepository.ts` |
+| Database | `supabase/migrations/20261016100000` to `20261016103500`, `20261016120000` to `20261016122500` and `20261016130000` to `20261016132100`, one entity per file |
 | App | `frontend/src/features/automations/` |

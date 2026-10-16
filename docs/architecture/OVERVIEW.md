@@ -33,7 +33,8 @@
 │                                                                 │
 │  Cron handlers (wrangler.toml triggers, jobs/scheduled.ts):     │
 │  ├── * * * * *     -> automationProcessor.run(), then           │
-│  │                    automationFollowups.run() (dispatch)      │
+│  │                    automationFollowups.run(), then           │
+│  │                    automationPublicReplies.run() (dispatch)  │
 │  ├── */5 * * * *   -> on :00 :15 :30 :45 publishDue(); on the   │
 │  │                    other minutes automationReconciler.run()  │
 │  └── 0 0 * * *     -> token refresh, retention purge            │
@@ -118,13 +119,19 @@ Cloudflare scheduler fires cron trigger
                   -> claim due reply jobs (accounts take turns; paused, cooling down or limited
                      accounts are left out), reserve within limits, send the private reply,
                      record the outcome   [see data-flows/AUTOMATION.md]
-              automationFollowups.run()   [the subrequests the replies did not use]
+              automationFollowups.run()   [the subrequests the replies did not use, keeping 11]
                   -> claim due follow-ups, check the follow, send the link or a reminder
+              automationPublicReplies.run()   [the rest, at least 11 subrequests]
+                  -> claim due public replies (accounts take turns; paused accounts and public
+                     cooldowns or limits are left out), reserve within limits, post the reply
+                     under the comment, record the outcome
           -> '*/5 * * * *' at the other minutes: reconcile
               automationReconciler.run()
-                  -> expire overdue replies (7 days) and follow-ups (24 hours)
+                  -> expire overdue replies (7 days), follow-ups (24 hours) and public replies (7 days)
                   -> look for up to 4 Needs review replies in the Instagram conversation;
                      a match is marked accepted, nothing is ever sent
+                  -> look for up to 5 public replies of unknown outcome among the comment's replies;
+                     found: accepted; missing on two full reads: back in the queue once for the dispatch
                   -> log the queue's health, and a warning when replies wait too long
           -> '*/5 * * * *' at minutes 0, 15, 30, 45: publish
               scheduledPublisher.publishDue()

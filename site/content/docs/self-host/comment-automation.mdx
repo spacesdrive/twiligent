@@ -1,8 +1,8 @@
-export const meta = { title: 'Comment automation (optional)', description: 'Let Instagram send comments to your backend so automation rules can answer them with a private reply.' }
+export const meta = { title: 'Comment automation (optional)', description: 'Let Instagram send comments to your backend so automation rules can answer them with a private reply, a public reply, or both.' }
 
 <Callout type="note" title="How it works">
 
-When someone comments on a post or reel of a connected Instagram account, Meta sends the comment to your backend's webhook. The backend checks Meta's signature, stores the comment, and if a rule answers it, sends the commenter one private reply through Instagram's official messaging API. Instagram allows one private reply per comment, within 7 days of it, and up to 750 an hour per account. Nothing else is needed on Cloudflare: the webhook and the reply queue run on the Worker and the Supabase database you already have, and the Worker's cron triggers send what waits.
+When someone comments on a post or reel of a connected Instagram account, Meta sends the comment to your backend's webhook. The backend checks Meta's signature, stores the comment, and if a rule answers it, sends the commenter one private reply through Instagram's official messaging API, posts a public reply under the comment through the official comment replies API, or both. Instagram allows one private reply per comment, within 7 days of it, and up to 750 an hour per account; public replies need the same `instagram_business_manage_comments` permission and no other webhook field. Nothing else is needed on Cloudflare: the webhook and the reply queue run on the Worker and the Supabase database you already have, and the Worker's cron triggers send what waits.
 
 </Callout>
 
@@ -55,7 +55,7 @@ In Twiligent, open **Automations**, create a rule and turn it on. The first rule
 </Step>
 <Step title="Test it">
 
-From another Instagram account, comment a rule's keyword on one of the account's posts. The private reply should arrive within a few seconds. To follow it, run `npx wrangler tail` in `backend/` and look for `instagram webhook stored` and `automation reply settled`. The comment and its status also appear under **Activity** on the Automations page.
+From another Instagram account, comment a rule's keyword on one of the account's posts. The private reply should arrive within a few seconds, and a public reply appear under the comment if the rule has one. To follow it, run `npx wrangler tail` in `backend/` and look for `instagram webhook stored`, `automation reply settled` and `automation public reply settled`. Meta also sends the account's own public reply back as a comment; it is recorded as the account's own and never answered. The comment and its status also appear under **Activity** on the Automations page.
 
 For a followers-only rule, reply to the first message from the commenting account. If that account follows yours, the reply and link arrive; if not, the reminder does. Look for `automation follow-up settled` in the log.
 
@@ -72,14 +72,15 @@ These Worker settings are optional; each falls back to its default when unset or
 | `AUTOMATION_USER_HOURLY_LIMIT` | 500 | Replies an hour across one member's accounts |
 | `AUTOMATION_GLOBAL_HOURLY_LIMIT` | 1000 | Replies an hour across your whole instance |
 | `AUTOMATION_RECIPIENT_DAILY_LIMIT` | 3 | Replies a day one person can get from one account |
+| `AUTOMATION_PUBLIC_ACCOUNT_HOURLY_LIMIT` | 60 | Public replies an hour from one Instagram account; at most 200. Meta publishes no limit for comment replies but blocks accounts that comment like a bot |
 | `AUTOMATION_BATCH_SIZE` | 10 | Replies sent by one webhook request or one run of the every-minute schedule; at most 15 on the Workers Free plan |
 | `AUTOMATION_PAUSED` | not set | `true` holds every reply; comments are still recorded and go out when you remove it, within the 7 days |
 
-A reply that misses its first chance goes out on the backend's every-minute schedule, which also retries temporary Instagram errors and waits out Instagram's rate limits. Accounts take turns, so one busy reel cannot hold back another account's replies. A reply whose outcome is unknown, for example after a timeout, is never sent again on its own; it shows as **Needs review**. Every five minutes the backend looks for such replies in the conversation on Instagram and marks the ones it finds as accepted. It never sends from that check, so check the rest on Instagram before you retry.
+A reply that misses its first chance goes out on the backend's every-minute schedule, which also retries temporary Instagram errors and waits out Instagram's rate limits. Accounts take turns, so one busy reel cannot hold back another account's replies. A reply whose outcome is unknown, for example after a timeout, is never sent again on its own; it shows as **Needs review**. Every five minutes the backend looks for such replies in the conversation on Instagram and marks the ones it finds as accepted. It never sends from that check, so check the rest on Instagram before you retry. A public reply whose outcome is unknown is looked for among the comment's replies instead; when every reply was read twice, minutes apart, and it is not there, it is posted again once.
 
 ## Cron triggers
 
-Deploying the backend registers three cron triggers: every minute (replies and follow-ups that wait), every five minutes (scheduled posts on the quarter hour, the reply queue checks otherwise) and daily (token refresh and retention). The Workers Free plan allows five cron triggers per Cloudflare account, across all your Workers. If the deploy fails because the account has no trigger left, remove a trigger you do not need from another Worker. Each cron run counts as one Worker request: about 1,700 a day of the free plan's 100,000.
+Deploying the backend registers three cron triggers: every minute (private replies, follow-ups and public replies that wait), every five minutes (scheduled posts on the quarter hour, the reply queue checks otherwise) and daily (token refresh and retention). The Workers Free plan allows five cron triggers per Cloudflare account, across all your Workers. If the deploy fails because the account has no trigger left, remove a trigger you do not need from another Worker. Each cron run counts as one Worker request: about 1,700 a day of the free plan's 100,000.
 
 ## Costs
 
@@ -93,6 +94,8 @@ Everything runs on the services you already use, and nothing new is billed on Cl
 | `wrangler tail` shows 401 for webhook calls | The signature does not match: set `META_APP_SECRET` as well, then check that `INSTAGRAM_APP_SECRET` is the Instagram app secret |
 | No webhook calls at all | The app is not Live, the account has no role on the app during testing, the account is private, or comment events are not turned on for it |
 | A reply failed with "does not allow a private reply" | The comment was deleted, is older than 7 days, or its author does not accept messages |
+| An account shows **Public replies cooling down** | Instagram limited or blocked comments from the account. Public replies wait (a day after a block) while private replies continue. Lower `AUTOMATION_PUBLIC_ACCOUNT_HOURLY_LIMIT`, add more wordings, and check the account in the Instagram app |
+| A public reply was skipped as deleted or hidden | Instagram cannot reply under a deleted or hidden comment, or a comment on a live video |
 | An account shows **Held** | Instagram refused its token. Connect the account again on the Accounts page, check that the account allows access to messages in the Instagram app, then turn its replies back on |
 | An account shows **Follow checks off** | A followers-only rule is on, but Instagram does not send the account's messages. Select the messages field in the Meta dashboard webhook settings, check the app has Advanced Access for `instagram_business_manage_messages`, then choose **Turn on message events** |
 | A follow-up failed with "Instagram did not say whether this person follows" | Instagram refused the follow check, so the link was not sent. Check the reason in the details; a later reply from the person is checked again |

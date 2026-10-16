@@ -63,7 +63,8 @@ All secrets are set via `npx wrangler secret put <NAME>`, run from `backend/`. T
 | `AUTOMATION_USER_HOURLY_LIMIT` | Optional | Private replies an hour across one member's accounts; default `500` |
 | `AUTOMATION_GLOBAL_HOURLY_LIMIT` | Optional | Private replies an hour across the instance; default `1000` |
 | `AUTOMATION_RECIPIENT_DAILY_LIMIT` | Optional | Private replies a day one person can get from one account; default `3` |
-| `AUTOMATION_BATCH_SIZE` | Optional | Replies sent by one webhook request or one dispatch run; default `10`, at most `15` (each costs three of the free plan's 50 subrequests) |
+| `AUTOMATION_PUBLIC_ACCOUNT_HOURLY_LIMIT` | Optional | Public replies under comments an hour per Instagram account; default `60`, at most `200`. Meta publishes no limit for comment replies but blocks accounts that comment like a bot, so the pace stays human |
+| `AUTOMATION_BATCH_SIZE` | Optional | Replies sent by one webhook request or one dispatch run, for each kind of reply; default `10`, at most `15` (each costs three of the free plan's 50 subrequests) |
 
 The automation values are plain settings, not secrets, but setting them with `wrangler secret put` keeps them across deploys like the rest. A missing or invalid value falls back to its default.
 

@@ -13,7 +13,7 @@ The Workers Free plan allows five cron triggers per Cloudflare account. This Wor
 
 | Trigger | Plan (`cronPlan`) | Job | Responsibility |
 |---|---|---|---|
-| `* * * * *` | `dispatch` | `automationProcessor.run()`, then `automationFollowups.run()` | Queue dispatch and recovery: due replies and follow-ups, jobs whose run stopped |
+| `* * * * *` | `dispatch` | `automationProcessor.run()`, then `automationFollowups.run()`, then `automationPublicReplies.run()` | Queue dispatch and recovery: due private replies, follow-ups and public replies, jobs whose run stopped |
 | `*/5 * * * *` at minutes 0, 15, 30, 45 | `publish` | `scheduledPublisher.publishDue()` | Scheduled processing: due Instagram posts |
 | `*/5 * * * *` at the other minutes | `reconcile` | `automationReconciler.run()` | Reconciliation: overdue jobs, replies whose answer was lost, queue health |
 | `0 0 * * *` | `daily` | `tokenRefresh.refreshExpiringInstagramTokens()`, then `retention.purge()` | Maintenance: tokens and retention |
@@ -78,14 +78,14 @@ The lease, attempt limit and failure rules live in `backend/lib/scheduledPublish
 
 ### `* * * * *` - Reply Dispatch
 
-**Functions:** `automationProcessor.run()` in `backend/services/automationProcessor.ts`, then `automationFollowups.run()` in `backend/services/automationFollowupProcessor.ts`
+**Functions:** `automationProcessor.run()` in `backend/services/automationProcessor.ts`, then `automationFollowups.run()` in `backend/services/automationFollowupProcessor.ts`, then `automationPublicReplies.run()` in `backend/services/automationPublicReplyProcessor.ts`
 
-Most private replies go out within seconds, from the webhook request itself (`docs/architecture/data-flows/AUTOMATION.md`). The dispatch sends the rest: replies waiting for a retry, a cooldown or an hourly limit, replies a webhook could not finish, follow-ups to people who answered a followers-only reply, and jobs whose run stopped.
+Most private replies go out within seconds, from the webhook request itself (`docs/architecture/data-flows/AUTOMATION.md`). The dispatch sends the rest: replies waiting for a retry, a cooldown or an hourly limit, replies a webhook could not finish, follow-ups to people who answered a followers-only reply, public replies, and jobs whose run stopped.
 
 - It claims up to `AUTOMATION_BATCH_SIZE` due comments (10 by default, at most 15), with accounts taking turns, and settles each one before the next. Paused, cooling and limited accounts are not claimed at all.
-- Private replies get the run's 50 subrequests; follow-ups get what the replies did not use (four each).
+- Private replies go first, since Instagram allows them only for 7 days and a public reply often points to them; they get the run's 50 subrequests less 11 kept for public replies. Follow-ups get what the private replies did not use (four each), and public replies the rest, at least 11: three a run, 180 an hour, above their default limit of 60. The three share the run's 50 seconds in that order.
 - It stops starting sends after 50 seconds, handing any unstarted job back to the queue, so one minute's run rarely overlaps the next. When they do overlap, the claim's row locks keep them apart.
-- With nothing due, a dispatch is two database calls (the two claims) and writes nothing.
+- With nothing due, a dispatch is three database calls (the three claims) and writes nothing.
 
 A run that stops is recovered by a later one: a job left `processing` for more than 20 minutes is claimed again, and one left `sending` becomes `needs_review`, because its message may have reached Instagram. `AUTOMATION_PAUSED=true` makes every dispatch return without claiming anything.
 
