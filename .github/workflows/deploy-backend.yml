@@ -27,7 +27,14 @@ jobs:
 
       # one install at the root covers every workspace, including wrangler
       - name: Install dependencies
-        run: npm ci
+        # npm skips an optional package it fails to download, so a missing platform binary gets one more install
+        run: |
+          npm ci
+          if ! node scripts/check-platform-packages.ts; then
+            echo "::warning::npm skipped a platform package; installing again"
+            npm ci
+            node scripts/check-platform-packages.ts
+          fi
 
       # deploy only code that type-checks; Wrangler and Vite strip types without checking them
       - name: Type check

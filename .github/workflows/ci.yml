@@ -21,7 +21,14 @@ jobs:
           cache-dependency-path: package-lock.json
 
       - name: Install dependencies
-        run: npm ci
+        # npm skips an optional package it fails to download, so a missing platform binary gets one more install
+        run: |
+          npm ci
+          if ! node scripts/check-platform-packages.ts; then
+            echo "::warning::npm skipped a platform package; installing again"
+            npm ci
+            node scripts/check-platform-packages.ts
+          fi
 
       - name: Type check
         run: npm run typecheck
