@@ -75,7 +75,7 @@ Use `.tsx` only for files that contain JSX; everything else is `.ts`.
 
 | Object | Convention | Examples |
 |---|---|---|
-| Migration name | verb first, then the object; one table or one function per file | `baseline_accounts`, `add_accounts_updated_at`, `create_merge_account_data_function`, `revoke_browser_access_settings` |
+| Migration name | verb first, then the object; one entity per file | `create_automation_rules`, `revoke_browser_access_automation_rules`, `add_automation_rules_updated_at_trigger`, `index_automation_rules_enabled_account`, `create_merge_account_data_function` |
 | Value checks migration | `check_<table>_values` | `check_scheduled_posts_values` |
 | Index migration | `index_<table>_<query>`, named for the query the index serves | `index_accounts_list`, `index_scheduled_posts_schedulers` |
 | Index | `<table>_<columns>_idx`, or the purpose for a partial index | `accounts_user_id_created_at_idx`, `scheduled_posts_due_idx`, `scheduled_posts_claimed_idx` |

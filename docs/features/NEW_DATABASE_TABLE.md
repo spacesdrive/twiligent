@@ -23,13 +23,27 @@ Decide the column structure. Follow the existing conventions:
 
 ### Step 2: Write the Migration
 
-The schema is versioned in `supabase/migrations/` and applied with the Supabase CLI. Never create or change a table in the SQL editor or the Table Editor. One file holds one change to one table or one function.
+The schema is versioned in `supabase/migrations/` and applied with the Supabase CLI. Never create or change a table in the SQL editor or the Table Editor.
+
+**Keep every migration as small as possible: one database entity per file.** A table file holds the table with its columns, keys and checks. Its browser access, each trigger, each index and each function get files of their own, and every file gets a rollback of the same size under the same name. A small file is easy to review, fails alone when it fails, and rolls back one thing. `backend/tests/database/migrations.test.ts` refuses a migration that creates more than one entity. Never split or edit a migration production has already recorded; write a new one instead.
+
+A new table is therefore four or more migrations, run in this order:
+
+| File | Holds | Rollback |
+|---|---|---|
+| `create_content_drafts` | `create table` with columns, keys and checks | `drop table if exists` |
+| `revoke_browser_access_content_drafts` | `enable row level security` and `revoke all ... from anon, authenticated` | `disable row level security` (new tables start without browser grants) |
+| `add_content_drafts_updated_at_trigger` | The `set_updated_at()` trigger | `drop trigger if exists` |
+| `index_content_drafts_<purpose>` | One index, named for the query it serves | `drop index if exists` |
 
 ```bash
 npm run db:new create_content_drafts
+npm run db:new revoke_browser_access_content_drafts
+npm run db:new add_content_drafts_updated_at_trigger
+npm run db:new index_content_drafts_user_id_created_at
 ```
 
-This creates `supabase/migrations/<timestamp>_create_content_drafts.sql`. Write the table with its constraints, row level security, trigger and index:
+`create_content_drafts`:
 
 ```sql
 -- drafts a user prepares before scheduling them
@@ -47,24 +61,39 @@ create table public.content_drafts (
     constraint content_drafts_status_check check (status in ('draft', 'ready', 'archived')),
     constraint content_drafts_data_check check (jsonb_typeof(data) = 'object')
 );
+```
 
--- only the Worker's service role reads the table; the anon key ships in every browser
+`revoke_browser_access_content_drafts`:
+
+```sql
+-- only the Worker's service role reads content_drafts; the anon key ships in every browser
 alter table public.content_drafts enable row level security;
 revoke all on table public.content_drafts from anon, authenticated;
+```
 
+`add_content_drafts_updated_at_trigger`:
+
+```sql
+-- set_updated_at() keeps updated_at, so no query has to set it
 create trigger content_drafts_set_updated_at before update on public.content_drafts
     for each row execute function public.set_updated_at();
+```
 
+`index_content_drafts_user_id_created_at`:
+
+```sql
 -- contentDrafts.listForUser: where user_id = $1 order by created_at desc
 create index content_drafts_user_id_created_at_idx on public.content_drafts (user_id, created_at desc);
 ```
 
-Write the reverse in `supabase/rollbacks/` with the same file name. `backend/tests/database/migrations.test.ts` fails when a migration has no rollback:
+Write the reverse of each in `supabase/rollbacks/` with the same file name. `backend/tests/database/migrations.test.ts` fails when a migration has no rollback or an empty one. The table's rollback:
 
 ```sql
 -- removes the table and every draft in it
 drop table if exists public.content_drafts;
 ```
+
+The others are one line each: `alter table public.content_drafts disable row level security;`, `drop trigger if exists content_drafts_set_updated_at on public.content_drafts;` and `drop index if exists public.content_drafts_user_id_created_at_idx;`. Roll them back newest first, so the table goes last.
 
 If the repository updates `data`, add a merge function in its own migration (`npm run db:new create_merge_content_draft_function`), so an update is one statement and two writers never undo each other. Copy `create_merge_scheduled_post_function.sql`. A function in `public` is exposed through the Data API, so it always revokes execute from the browser roles and grants it only to the service role; the migration test enforces the revoke:
 

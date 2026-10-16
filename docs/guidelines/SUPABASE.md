@@ -90,7 +90,7 @@ Each function returns `true` when a row matched and `null` when none did, so the
 
 ## Schema Changes
 
-The schema is versioned in `supabase/migrations/` and applied with the Supabase CLI (`npm run db:check`, then `npm run db:push`). Never change a table, index or function in the SQL editor. Each change is one file for one table or one function, with its reverse in `supabase/rollbacks/` under the same name. A new function in `public` revokes execute from `public, anon, authenticated` and grants it only to `service_role`. The workflow is in `docs/features/NEW_DATABASE_TABLE.md`.
+The schema is versioned in `supabase/migrations/` and applied with the Supabase CLI (`npm run db:check`, then `npm run db:push`). Never change a table, index or function in the SQL editor. Each migration is as small as possible, one database entity per file: a table (with its columns, keys and checks), its browser access, one trigger, one index or one function, with its reverse in `supabase/rollbacks/` under the same name. A new function in `public` revokes execute from `public, anon, authenticated` and grants it only to `service_role`. The workflow is in `docs/features/NEW_DATABASE_TABLE.md`.
 
 New row ids come from `newRowId()` in `backend/lib/ids.ts` (`crypto.randomUUID()`), never from the time or `Math.random`.
 

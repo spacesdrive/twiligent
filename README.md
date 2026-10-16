@@ -509,7 +509,7 @@ twiligent/
 │   └── types/                       # API contract shared by backend and frontend (types only)
 │
 ├── supabase/
-│   ├── migrations/                  # Versioned schema changes, one table or function per file, applied with npm run db:push
+│   ├── migrations/                  # Versioned schema changes, one table, access, trigger, index or function per file, applied with npm run db:push
 │   ├── rollbacks/                   # The reverse of each migration, same file name, run by hand
 │   └── config.toml                  # Supabase CLI config (Postgres 17)
 │

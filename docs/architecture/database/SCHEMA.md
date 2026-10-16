@@ -18,7 +18,7 @@ The schema lives in versioned migrations in `supabase/migrations/`, applied with
 
 | Path | Holds |
 |---|---|
-| `supabase/migrations/<version>_<name>.sql` | One change to one table or one function. The 14 digit version orders the files |
+| `supabase/migrations/<version>_<name>.sql` | One database entity: a table, its browser access, one trigger, one index or one function. The 14 digit version orders the files |
 | `supabase/rollbacks/<version>_<name>.sql` | The reverse of the migration with the same file name. The CLI has no down migrations, so these are run by hand |
 | `supabase/config.toml` | The CLI's default config, with `major_version = 17` to match the hosted database |
 | `supabase/.gitignore` | Keeps the CLI's `.temp` and `.branches` folders and local env files out of git |
@@ -36,9 +36,11 @@ The first four files are baselines. Each recreates one table as it stood before 
 | 7 | `create_set_updated_at_function`, `add_<table>_updated_at` (three files), `add_tracked_posts_updated_at_trigger` | The `updated_at` column and its trigger on every table |
 | 8 | `create_merge_account_data_function`, `create_merge_scheduled_post_function`, `create_merge_tracked_post_data_function` | The merge functions below |
 | 9 | `index_accounts_list`, `index_scheduled_posts_list`, `index_scheduled_posts_schedulers`, `index_tracked_posts_list` | The indexes below |
-| 10 | `create_automation_accounts`, `create_automation_rules`, `create_automation_comments`, `create_automation_attempts`, `create_audit_events` | The automation and audit tables, each with its constraints, row level security, trigger and indexes |
+| 10 | For each of `automation_accounts`, `automation_rules`, `automation_comments`, `automation_attempts` and `audit_events`: `create_<table>`, `revoke_browser_access_<table>`, `add_<table>_updated_at_trigger`, then one `index_<table>_<purpose>` per index | The automation and audit tables, one entity per file (29 files) |
 | 11 | `index_accounts_instagram_user` | The webhook's lookup of an account by its Instagram id |
 | 12 | `create_automation_rules_for_ig_user_function`, `create_claim_automation_comments_function`, `create_reserve_automation_send_function`, `create_finish_automation_send_function`, `create_automation_stats_function` | The automation functions below |
+
+From order 10 on, every migration creates at most one entity, and the migration test enforces it. The files before it were applied to production first and stay as recorded.
 
 To change the schema, follow `docs/features/NEW_DATABASE_TABLE.md` (Write the Migration). The commands are in `docs/workflows/DEPLOYMENT.md`.
 
