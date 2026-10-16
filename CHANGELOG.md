@@ -7,6 +7,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+---
+
+## [1.2.0] - 2026-10-16
+
 ### Added
 
 - The database layout is kept as versioned migrations in `supabase/migrations/`, applied with the Supabase CLI, with the reverse of each change in `supabase/rollbacks/`; existing instances run `npm run db:push` before deploying this version, and the setup SQL in the README and docs is replaced by the same command (#74, ADR-038)
