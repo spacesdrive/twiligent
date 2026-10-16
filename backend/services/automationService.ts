@@ -372,6 +372,11 @@ export function createAutomationService(deps: AutomationServiceDeps): Automation
         // a failed reply is retried itself; on an accepted followers-only reply, the retry is for the message after the
         // person's answer
         async retry(userId, commentRowId) {
+            // a rule without a private reply skipped it on purpose, so a retry must never send one
+            const current = await comments.findForUser(commentRowId, userId);
+            if (current?.status === 'skipped' && current.statusReason === 'private_reply_off') {
+                throw new ConflictError('This rule does not send a private reply, so there is nothing to retry. Retry the public reply instead.');
+            }
             const item = await comments.requeueForUser(commentRowId, userId);
             if (item) {
                 await audit.recordForUser(userId, { action: 'automation_comment.retried', subjectType: 'automation_comment', subjectId: commentRowId });

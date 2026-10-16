@@ -260,6 +260,10 @@ describe('automation routes', () => {
         assert.equal((await call(target, 'POST', '/automations/activity/accepted-mine/public-reply/retry')).status, 409);
         assert.equal((await call(target, 'POST', '/automations/activity/failed-mine/public-reply/retry')).body.message, 'This comment has no public reply to retry');
         assert.equal((await call(target, 'POST', '/automations/activity/failed-theirs/public-reply/retry')).status, 404);
+        target.supabase.table.find(row => row.id === 'failed-mine')!.status = 'skipped';
+        target.supabase.table.find(row => row.id === 'failed-mine')!.status_reason = 'private_reply_off';
+        const privateOff = await call(target, 'POST', '/automations/activity/failed-mine/retry');
+        assert.deepEqual([privateOff.status, target.supabase.table.find(row => row.id === 'failed-mine')!.status], [409, 'skipped']);
         assert.equal(target.supabase.table.find(row => row.id === 'pub-2')!.status, 'failed');
     });
 
