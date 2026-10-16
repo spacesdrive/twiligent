@@ -1,11 +1,8 @@
+import { newRowId } from '../lib/ids.ts';
 import type { Account, NewAccount } from '../../shared/types/domain.ts';
 import type { YouTubeChannelData } from '../../shared/types/youtube.ts';
 import type { RedditProfile } from '../../shared/types/reddit.ts';
 import type { InstagramProfile } from '../../shared/types/instagram.ts';
-
-export function newAccountId(): string {
-    return Date.now().toString() + Math.random().toString(36).substring(2, 6);
-}
 
 // a token without a known lifetime is stored with no expiry
 export function tokenExpiryIso(expiresIn: number): string | null {
@@ -16,7 +13,7 @@ export function tokenExpiryIso(expiresIn: number): string | null {
 
 export function buildYouTubeAccount(channelData: YouTubeChannelData): NewAccount {
     return {
-        id: newAccountId(),
+        id: newRowId(),
         channelId: channelData.channelId,
         title: channelData.title,
         description: channelData.description,
@@ -39,7 +36,7 @@ export function buildYouTubeAccount(channelData: YouTubeChannelData): NewAccount
 
 export function buildRedditAccount(profile: RedditProfile, cookie: string): Account {
     return {
-        id: newAccountId(),
+        id: newRowId(),
         platform: 'reddit',
         username: profile.username,
         title: `u/${profile.username}`,
@@ -56,7 +53,7 @@ export function buildRedditAccount(profile: RedditProfile, cookie: string): Acco
 
 export function buildInstagramAccount(profile: InstagramProfile, accessToken: string, expiresIn: number): Account {
     return {
-        id: newAccountId(),
+        id: newRowId(),
         platform: 'instagram',
         igUserId: profile.igUserId,
         username: profile.username,

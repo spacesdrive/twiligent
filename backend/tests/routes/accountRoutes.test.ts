@@ -10,6 +10,7 @@ import type { FetchMock, RecordedRequest } from '../fixtures/fakeFetch.ts';
 import { fakeSupabase, accountRow } from '../fixtures/fakeSupabase.ts';
 import type { SupabaseCall } from '../fixtures/fakeSupabase.ts';
 import { mountWithContext, callRoute, fakeRedis } from '../fixtures/routeHarness.ts';
+import { mockRowIds } from '../fixtures/rowIds.ts';
 import type { RouteStep } from '../fixtures/routeHarness.ts';
 
 // a byte order mark that pasted secrets sometimes start with
@@ -87,6 +88,7 @@ before(() => mock.timers.enable({ apis: ['Date'], now: FIXED_NOW }));
 after(() => mock.timers.reset());
 beforeEach(() => {
     mock.method(Math, 'random', () => 0.123456789);
+    mockRowIds();
     logLines = [];
     mock.method(console, 'log', (...args: unknown[]) => logLines.push(['log', ...args]));
     mock.method(console, 'error', (...args: unknown[]) => logLines.push(['error', ...args]));

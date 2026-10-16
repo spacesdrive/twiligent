@@ -1,24 +1,20 @@
 import { test, describe, before, after, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-    newAccountId, tokenExpiryIso, buildYouTubeAccount, buildRedditAccount, buildInstagramAccount,
+    tokenExpiryIso, buildYouTubeAccount, buildRedditAccount, buildInstagramAccount,
 } from '../../services/accountFactory.ts';
 import type { YouTubeChannelData } from '../../../shared/types/youtube.ts';
 import type { RedditProfile } from '../../../shared/types/reddit.ts';
 
 const FIXED_NOW = Date.parse('2026-09-01T12:00:00Z');
 const NOW_ISO = '2026-09-01T12:00:00.000Z';
-const ACCOUNT_ID = '17882640000004fzz';
+const ACCOUNT_ID = '00000000-0000-4000-8000-00000000a001';
 
 describe('accountFactory', () => {
     before(() => mock.timers.enable({ apis: ['Date'], now: FIXED_NOW }));
     after(() => mock.timers.reset());
-    beforeEach(() => mock.method(Math, 'random', () => 0.123456789));
+    beforeEach(() => mock.method(crypto, 'randomUUID', () => ACCOUNT_ID));
     afterEach(() => mock.restoreAll());
-
-    test('newAccountId joins the time and four random base 36 characters', () => {
-        assert.equal(newAccountId(), ACCOUNT_ID);
-    });
 
     test('tokenExpiryIso adds seconds to now, or returns null without a lifetime', () => {
         assert.equal(tokenExpiryIso(3600), '2026-09-01T13:00:00.000Z');

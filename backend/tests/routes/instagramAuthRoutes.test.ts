@@ -10,6 +10,7 @@ import type { FetchMock, RecordedRequest } from '../fixtures/fakeFetch.ts';
 import { fakeSupabase, accountRow } from '../fixtures/fakeSupabase.ts';
 import type { FakeSupabase } from '../fixtures/fakeSupabase.ts';
 import { mountWithContext, callRoute } from '../fixtures/routeHarness.ts';
+import { mockRowIds } from '../fixtures/rowIds.ts';
 
 // a byte order mark that pasted secrets sometimes start with
 const BOM = String.fromCharCode(0xfeff);
@@ -55,6 +56,7 @@ before(() => mock.timers.enable({ apis: ['Date'], now: FIXED_NOW }));
 after(() => mock.timers.reset());
 beforeEach(() => {
     mock.method(Math, 'random', () => 0.987654321);
+    mockRowIds();
     logLines = [];
     mock.method(console, 'error', (...args: unknown[]) => logLines.push(['error', ...args]));
     fetchMock = installFetch(instagramServer);
