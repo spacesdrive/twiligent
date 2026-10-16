@@ -10,7 +10,8 @@ function rule(overrides: Partial<MatchableRule> = {}): MatchableRule {
 test('an any-comment rule answers every comment with something in it, emoji included, and names no keyword', () => {
     const any = rule({ matchMode: 'any', keywords: [] });
     assert.deepEqual(ruleMatch('love this', any), { rule: any, keyword: null });
-    assert.deepEqual(ruleMatch('🔥', any), { rule: any, keyword: null });
+    // a comment of one emoji, written as its code point
+    assert.deepEqual(ruleMatch('\u{1F525}', any), { rule: any, keyword: null });
     assert.equal(ruleMatch('   ', any), null);
 });
 

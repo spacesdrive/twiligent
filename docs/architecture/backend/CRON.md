@@ -4,12 +4,21 @@
 
 ```toml
 [triggers]
-crons = ["*/5 * * * *", "0 0 * * *"]
+crons = ["* * * * *", "*/5 * * * *", "0 0 * * *"]
 ```
 
-Both cron triggers invoke the `scheduled` export from `backend/server.ts`, which hands the cron expression and the run's scheduled time to `runScheduledJob(cron, env, scheduledTime)` in `backend/jobs/scheduled.ts`. The expressions are constants there (`EVERY_FIVE_MINUTES_CRON`, `DAILY_CRON`) and must match `wrangler.toml` character for character; `backend/tests/jobs/scheduled.test.ts` checks both.
+Every cron trigger invokes the `scheduled` export from `backend/server.ts`, which hands the cron expression and the run's scheduled time to `runScheduledJob(cron, env, scheduledTime)` in `backend/jobs/scheduled.ts`. The expressions are constants there (`EVERY_MINUTE_CRON`, `EVERY_FIVE_MINUTES_CRON`, `DAILY_CRON`) and must match `wrangler.toml` character for character; `backend/tests/jobs/scheduled.test.ts` checks all three. Cron Triggers run on UTC.
 
-The Cloudflare account has used all five cron triggers the Workers Free plan allows (two here, three on other Workers), so the Worker cannot add a trigger. One five minute trigger carries two jobs instead: `cronPlan(cron, scheduledTime)` sends the runs at minutes 0, 15, 30 and 45 to scheduled publishing, as before, and every other run to the comment reply queue. Each run is its own invocation with its own 50 subrequests, so the jobs never share a budget except on the quarter-hour runs (see ADR-040).
+The Workers Free plan allows five cron triggers per Cloudflare account. This Worker uses three; on 2026-10-16 the project's account had one more on another Worker, which leaves one free (ADR-043). Each trigger firing is its own invocation with its own 50 subrequests and counts as one Worker request: 1,440 a day for the dispatch, 288 for the five minute trigger and 1 for the daily one.
+
+| Trigger | Plan (`cronPlan`) | Job | Responsibility |
+|---|---|---|---|
+| `* * * * *` | `dispatch` | `automationProcessor.run()`, then `automationFollowups.run()` | Queue dispatch and recovery: due replies and follow-ups, jobs whose run stopped |
+| `*/5 * * * *` at minutes 0, 15, 30, 45 | `publish` | `scheduledPublisher.publishDue()` | Scheduled processing: due Instagram posts |
+| `*/5 * * * *` at the other minutes | `reconcile` | `automationReconciler.run()` | Reconciliation: overdue jobs, replies whose answer was lost, queue health |
+| `0 0 * * *` | `daily` | `tokenRefresh.refreshExpiringInstagramTokens()`, then `retention.purge()` | Maintenance: tokens and retention |
+
+Cron jobs coordinate and recover; they are not a second delivery pipeline. The dispatch sends through the same claim, reservation and finish as the webhook, so its runs, the webhook's runs and a retry can overlap without sending anything twice, and the reconciler only reads from Instagram.
 
 ## The Cron Entry Point (`backend/jobs/scheduled.ts`)
 
@@ -17,27 +26,29 @@ A cron run uses the same services as the API, built from the Worker env instead 
 
 ```ts
 export function cronPlan(cron: string, scheduledTime: number): CronPlan {
+    if (cron === EVERY_MINUTE_CRON) return 'dispatch';
     if (cron === DAILY_CRON) return 'daily';
     if (cron !== EVERY_FIVE_MINUTES_CRON) return 'none';
-    return new Date(scheduledTime).getUTCMinutes() % PUBLISH_EVERY_MINUTES === 0 ? 'publish_then_sweep' : 'sweep';
+    return new Date(scheduledTime).getUTCMinutes() % PUBLISH_EVERY_MINUTES === 0 ? 'publish' : 'reconcile';
 }
 
 export async function runScheduledJob(cron: string, env: Env, scheduledTime = Date.now()): Promise<void> {
     // ...
     const plan = cronPlan(cron, scheduledTime);
-    if (plan === 'sweep') {
-        await sweepReplies(services, context);
-    } else if (plan === 'publish_then_sweep') {
-        const run = await services.scheduledPublisher.publishDue();
-        if (run.processed === 0) await sweepReplies(services, context, SWEEP_AFTER_QUIET_PUBLISH);
+    if (plan === 'dispatch') {
+        await dispatch(services, context);
+    } else if (plan === 'publish') {
+        await services.scheduledPublisher.publishDue();
+    } else if (plan === 'reconcile') {
+        await services.automationReconciler.run();
     } else if (plan === 'daily') {
         await services.tokenRefresh.refreshExpiringInstagramTokens();
-        await services.retention.purge();
+        await services.retention.purge(Date.now(), { commentBatches: RETENTION_BATCHES });
     }
 }
 ```
 
-`cronContext(cron)` builds the `RequestContext` a request would have: a `cron-<uuid>` request id, a 14 minute deadline signal (under the Worker's 15 minute limit for scheduled events) and a logger bound to the request id and the cron expression. Every log line of the run carries that id.
+`cronContext(cron)` builds the `RequestContext` a request would have: a `cron-<uuid>` request id, a 14 minute deadline signal (under the Worker's 15 minute limit for scheduled events) and a logger bound to the request id and the cron expression. Every log line of the run carries that id, and every run but the dispatch ends with `cron run finished` and its duration.
 
 ## Cron Handlers
 
@@ -65,13 +76,26 @@ The lease, attempt limit and failure rules live in `backend/lib/scheduledPublish
 
 **Concurrency safety:** The claim is one conditional UPDATE, so when the Worker cron and GitHub Actions overlap, the second run to claim a post gets no row back and skips it. The 20 minute lease is longer than the 14 minute deadline of both schedulers, so a run that is still working is never taken over.
 
-### `*/5 * * * *` - Comment Reply Sweep
+### `* * * * *` - Reply Dispatch
 
-**Function:** `automationProcessor.run()` in `backend/services/automationProcessor.ts`
+**Functions:** `automationProcessor.run()` in `backend/services/automationProcessor.ts`, then `automationFollowups.run()` in `backend/services/automationFollowupProcessor.ts`
 
-Most private replies go out within seconds, from the webhook request itself (`docs/architecture/data-flows/AUTOMATION.md`). The sweep sends the rest: replies waiting for a retry, a cooldown or an hourly limit, replies a webhook could not finish, and jobs whose run stopped. It claims up to `AUTOMATION_BATCH_SIZE` due comments (10 by default), at most half of them from one account, and settles each one before the next. It has the run's 50 subrequests (48 after a publishing run with nothing due) and stops starting sends after 10 minutes, handing any unstarted job back to the queue. On the quarter-hour runs it sweeps only when publishing had nothing to do, and then only 3, because publishing spends part of the run's 50 subrequests. With nothing due, a sweep is one database call.
+Most private replies go out within seconds, from the webhook request itself (`docs/architecture/data-flows/AUTOMATION.md`). The dispatch sends the rest: replies waiting for a retry, a cooldown or an hourly limit, replies a webhook could not finish, follow-ups to people who answered a followers-only reply, and jobs whose run stopped.
 
-A run that stops is recovered by the next one: a comment left `processing` for more than 20 minutes is claimed again, and one left `sending` becomes `needs_review`, because its reply may have reached Instagram. `AUTOMATION_PAUSED=true` makes every sweep return without claiming anything.
+- It claims up to `AUTOMATION_BATCH_SIZE` due comments (10 by default, at most 15), with accounts taking turns, and settles each one before the next. Paused, cooling and limited accounts are not claimed at all.
+- Private replies get the run's 50 subrequests; follow-ups get what the replies did not use (four each).
+- It stops starting sends after 50 seconds, handing any unstarted job back to the queue, so one minute's run rarely overlaps the next. When they do overlap, the claim's row locks keep them apart.
+- With nothing due, a dispatch is two database calls (the two claims) and writes nothing.
+
+A run that stops is recovered by a later one: a job left `processing` for more than 20 minutes is claimed again, and one left `sending` becomes `needs_review`, because its message may have reached Instagram. `AUTOMATION_PAUSED=true` makes every dispatch return without claiming anything.
+
+### `*/5 * * * *` off the quarter hour - Reply Queue Reconciliation
+
+**Function:** `automationReconciler.run()` in `backend/services/automationReconciler.ts`
+
+1. `expire_automation_jobs(500)`: replies whose 7 days ran out and follow-ups whose 24 hours ran out become `expired` in one call, without a run claiming each one. Rows a run holds are skipped and settled by that run.
+2. Looks for up to four Needs review replies in their conversation on Instagram (three subrequests each) and marks the ones found as accepted; the rest keep a note for the person. It never sends. The rules are in `docs/architecture/data-flows/AUTOMATION.md` (Duplicates, Ambiguity and Reconciliation).
+3. `automation_queue_health()` reads the queue through its partial indexes and the run logs it as `automation reconcile`. When the oldest due reply has waited over 10 minutes, or jobs are held by stopped runs, it logs one `automation queue behind` warning.
 
 ### `0 0 * * *` - Instagram Token Auto-Refresh and Retention
 
@@ -85,7 +109,7 @@ A run that stops is recovered by the next one: a comment left `processing` for m
 
 One failed account is logged and skipped; it never stops the others. `backend/tests/services/tokenRefreshService.test.ts` covers the selection and the updates.
 
-After the refresh, `retention.purge()` in `backend/services/retentionService.ts` deletes received comments older than 90 days (their reply attempts go with them) and audit events older than a year, across all users.
+After the refresh, `retention.purge()` in `backend/services/retentionService.ts` deletes received comments older than 90 days (their reply attempts and follow-ups go with them) and audit events older than a year, across all users. Comments are deleted by `purge_automation_comments` in batches of 1,000, oldest first, at most 20 batches a run; a larger backlog is left for the next day and the log says so (`commentsLeft`).
 
 **Token lifecycle:**
 - Instagram issues long-lived tokens valid for 60 days
@@ -113,7 +137,7 @@ The same publishing logic also runs via `scripts/publish-scheduled.ts` in GitHub
 
 ## Adding a New Cron Job
 
-The account has no cron trigger to spare on the Workers Free plan, so a new job is a new plan in `cronPlan()` on one of the existing triggers, chosen by the scheduled time, rather than a new trigger. Check the account's count first (Workers and Pages, each Worker's Triggers) if you run your own instance on a paid plan or an account with free slots.
+The Workers Free plan allows five cron triggers per account, and this Worker uses three. A new job is usually a new plan in `cronPlan()` on one of the existing triggers, chosen by the scheduled time, rather than a new trigger. Count the triggers on the account first (each Worker's Triggers in the Cloudflare dashboard, or the Workers schedules API); deploying a Worker with more triggers than the account has left fails.
 
 1. Add a plan and its time rule to `cronPlan()` in `backend/jobs/scheduled.ts`, for example a weekly report on the daily trigger:
    ```ts

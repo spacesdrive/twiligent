@@ -106,7 +106,9 @@ The caps also protect the free email quota. There are 100 emails a day by defaul
 
 Meta's notifications carry no timestamp, so a captured notification could be sent again; that is harmless, because each comment is stored once and Instagram allows one private reply per comment. The verification `GET` compares the Verify Token in constant time. Comment text is kept only for comments a rule answers, for 90 days, and never logged.
 
-The replies themselves are limited in the database per instance, member, account, rule and recipient, so a flood of comments, a bug or a misconfigured rule cannot turn into a stream of messages (`docs/architecture/data-flows/AUTOMATION.md`). A reply whose outcome is unknown is never sent again without a person's decision.
+A message event (followers-only rules) is read for its sender and message id only; its text is never read, stored or logged. It becomes a follow-up only when the signed payload's account has a followers-only reply waiting for that sender, and the follow-up takes its member and account from that waiting comment, never from the message. A message delivered again is refused by `unique (ig_user_id, trigger_message_id)`. The link of a followers-only rule goes out only when Instagram's own profile read says the person follows the account; when Instagram cannot say, nothing is sent.
+
+The replies themselves are limited in the database per instance, member, account, rule and recipient, so a flood of comments, a bug or a misconfigured rule cannot turn into a stream of messages (`docs/architecture/data-flows/AUTOMATION.md`). A reply whose outcome is unknown is never sent again without a person's decision; the five minute reconciliation only reads the conversation on Instagram and marks a reply accepted when it finds the exact text, by its sha-256 digest.
 
 ## Rate Limiting
 

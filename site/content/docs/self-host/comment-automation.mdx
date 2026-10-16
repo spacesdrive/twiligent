@@ -2,13 +2,13 @@ export const meta = { title: 'Comment automation (optional)', description: 'Let 
 
 <Callout type="note" title="How it works">
 
-When someone comments on a post or reel of a connected Instagram account, Meta sends the comment to your backend's webhook. The backend checks Meta's signature, stores the comment, and if a rule's keyword matches, sends the commenter one private reply through Instagram's official messaging API. Instagram allows one private reply per comment, within 7 days of it, and up to 750 an hour per account. Nothing else is needed on Cloudflare: the webhook and the reply queue run on the Worker and the Supabase database you already have.
+When someone comments on a post or reel of a connected Instagram account, Meta sends the comment to your backend's webhook. The backend checks Meta's signature, stores the comment, and if a rule answers it, sends the commenter one private reply through Instagram's official messaging API. Instagram allows one private reply per comment, within 7 days of it, and up to 750 an hour per account. Nothing else is needed on Cloudflare: the webhook and the reply queue run on the Worker and the Supabase database you already have, and the Worker's cron triggers send what waits.
 
 </Callout>
 
 <Callout type="warning" title="Meta approval comes first">
 
-Comments reach your backend only while the Meta app is **Live** and has **Advanced Access** for the comments webhook field. Advanced Access needs App Review and business verification. Until then, only Instagram accounts with a role on the app (Settings, Roles) get comment events, which is enough to test with your own account.
+Comments reach your backend only while the Meta app is **Live** and has **Advanced Access** for the comments webhook field, and the messages field if you use followers-only rules. Advanced Access needs App Review and business verification. Until then, only Instagram accounts with a role on the app (Settings, Roles) get events, which is enough to test with your own account.
 
 </Callout>
 
@@ -20,7 +20,7 @@ Follow [Instagram app](/docs/self-host/instagram) first. Twiligent's sign-in alr
 </Step>
 <Step title="Apply the database migrations">
 
-From the repository root, run `npm run db:check` and then `npm run db:push`. They add the automation tables and functions. See [Supabase](/docs/self-host/supabase) if your CLI is not linked yet.
+From the repository root, run `npm run db:check` and then `npm run db:push`. They add the automation tables and functions. Apply them before you deploy a backend version that uses them. See [Supabase](/docs/self-host/supabase) if your CLI is not linked yet.
 
 </Step>
 <Step title="Choose a verify token">
@@ -45,15 +45,19 @@ Open the app, **Instagram**, **API setup with Instagram business login**, **Conf
 
 Choose **Verify and save**. Meta calls the URL once; if it fails, check that the backend is deployed and the secret is set. Then subscribe to the **comments** field.
 
+Subscribe to the **messages** field too only if you will use followers-only rules. Meta then sends every direct message to your connected accounts to the backend, each one a Worker request. Twiligent reads only who sent it, never the text, and answers only people a followers-only reply is waiting for.
+
 </Step>
 <Step title="Turn on comment events for each account">
 
-In Twiligent, open **Automations**, create a rule and turn it on. The first rule turned on for an account asks Instagram to send that account's comments to your backend. If the account shows **Not receiving comments**, choose **Turn on comment events**. The account must be public: Instagram sends no comment events for private accounts.
+In Twiligent, open **Automations**, create a rule and turn it on. The first rule turned on for an account asks Instagram to send that account's comments to your backend, and a followers-only rule asks for its messages as well. If the account shows **Not receiving comments**, choose **Turn on comment events**; if it shows **Follow checks off**, select the messages field in the Meta dashboard and choose **Turn on message events**. The account must be public: Instagram sends no comment events for private accounts.
 
 </Step>
 <Step title="Test it">
 
 From another Instagram account, comment a rule's keyword on one of the account's posts. The private reply should arrive within a few seconds. To follow it, run `npx wrangler tail` in `backend/` and look for `instagram webhook stored` and `automation reply settled`. The comment and its status also appear under **Activity** on the Automations page.
+
+For a followers-only rule, reply to the first message from the commenting account. If that account follows yours, the reply and link arrive; if not, the reminder does. Look for `automation follow-up settled` in the log.
 
 </Step>
 </Steps>
@@ -68,14 +72,18 @@ These Worker settings are optional; each falls back to its default when unset or
 | `AUTOMATION_USER_HOURLY_LIMIT` | 500 | Replies an hour across one member's accounts |
 | `AUTOMATION_GLOBAL_HOURLY_LIMIT` | 1000 | Replies an hour across your whole instance |
 | `AUTOMATION_RECIPIENT_DAILY_LIMIT` | 3 | Replies a day one person can get from one account |
-| `AUTOMATION_BATCH_SIZE` | 10 | Replies sent by one webhook request or one sweep; at most 15 on the Workers Free plan |
+| `AUTOMATION_BATCH_SIZE` | 10 | Replies sent by one webhook request or one run of the every-minute schedule; at most 15 on the Workers Free plan |
 | `AUTOMATION_PAUSED` | not set | `true` holds every reply; comments are still recorded and go out when you remove it, within the 7 days |
 
-A reply that misses its first chance waits for the backend's 5 minute schedule, which also retries temporary Instagram errors and waits out Instagram's rate limits. A reply whose outcome is unknown, for example after a timeout, is never sent again on its own; it shows as **Needs review** so you can check Instagram first.
+A reply that misses its first chance goes out on the backend's every-minute schedule, which also retries temporary Instagram errors and waits out Instagram's rate limits. Accounts take turns, so one busy reel cannot hold back another account's replies. A reply whose outcome is unknown, for example after a timeout, is never sent again on its own; it shows as **Needs review**. Every five minutes the backend looks for such replies in the conversation on Instagram and marks the ones it finds as accepted. It never sends from that check, so check the rest on Instagram before you retry.
+
+## Cron triggers
+
+Deploying the backend registers three cron triggers: every minute (replies and follow-ups that wait), every five minutes (scheduled posts on the quarter hour, the reply queue checks otherwise) and daily (token refresh and retention). The Workers Free plan allows five cron triggers per Cloudflare account, across all your Workers. If the deploy fails because the account has no trigger left, remove a trigger you do not need from another Worker. Each cron run counts as one Worker request: about 1,700 a day of the free plan's 100,000.
 
 ## Costs
 
-Everything runs on the services you already use, and nothing new is billed on Cloudflare's or Supabase's free plans. Each comment is one Worker request, and a matched one adds a few database calls and one Instagram call. Comments and reply history are deleted after 90 days.
+Everything runs on the services you already use, and nothing new is billed on Cloudflare's or Supabase's free plans. Each comment is one Worker request, and a matched one adds a few database calls and one Instagram call. With the messages field on, each direct message to a connected account is one more request. Comments and reply history are deleted after 90 days.
 
 ## Troubleshooting
 
@@ -86,3 +94,5 @@ Everything runs on the services you already use, and nothing new is billed on Cl
 | No webhook calls at all | The app is not Live, the account has no role on the app during testing, the account is private, or comment events are not turned on for it |
 | A reply failed with "does not allow a private reply" | The comment was deleted, is older than 7 days, or its author does not accept messages |
 | An account shows **Held** | Instagram refused its token. Connect the account again on the Accounts page, check that the account allows access to messages in the Instagram app, then turn its replies back on |
+| An account shows **Follow checks off** | A followers-only rule is on, but Instagram does not send the account's messages. Select the messages field in the Meta dashboard webhook settings, check the app has Advanced Access for `instagram_business_manage_messages`, then choose **Turn on message events** |
+| A follow-up failed with "Instagram did not say whether this person follows" | Instagram refused the follow check, so the link was not sent. Check the reason in the details; a later reply from the person is checked again |

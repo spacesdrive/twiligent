@@ -914,3 +914,32 @@ New row ids come from `crypto.randomUUID()` (`newRowId()` in `backend/lib/ids.ts
 - The cookie is a hint, not proof: after a session ends in a way the app has not yet seen (a refresh token revoked elsewhere), the home page sends the visitor to the app once, which finds no session, clears the cookie and shows the sign-in page.
 - A signed-in visitor cannot see the marketing home page without signing out; the docs and other site pages are not redirected.
 - Self-hosted instances on other domains write no cookie, so their behaviour is unchanged; the domain is a constant, like the docs address in `frontend/src/lib/docs.ts`.
+
+## ADR-043: An every-minute reply dispatch, reconciliation without resending, and followers-only replies through the person's answer
+
+**Date:** 2026-10-16
+**Status:** Accepted
+
+**Decision:** The Worker gets a third cron trigger, `* * * * *`, that dispatches waiting private replies and follow-ups. The five minute trigger keeps publishing on the quarter hour and reconciles the reply queue on its other runs: it expires overdue jobs in one call, looks for replies whose answer was lost in the conversation on Instagram, and logs the queue's health. The daily trigger keeps the token refresh and deletes old comments in batches of 1,000. The reply claim finds accounts with a loose index scan, locks each account's oldest due jobs with `FOR UPDATE SKIP LOCKED` as it reads them, lets accounts take turns, and leaves out paused, cooling and limited accounts. Rules gain an any-comment mode and a followers-only option: the private reply asks the person to follow and reply, their reply arrives through the `messages` webhook, and only then does Twiligent read `is_user_follow_business` and send the link to a follower or a reminder to anyone else. The database stays the queue (ADR-040).
+
+**Context:** The owner asked for a production-grade review of the comment-to-DM automation: high volume, fairness across accounts, rate limits, no duplicate or missing messages, the remaining cron capacity, any-comment rules and a "followers only" option (#98). Measured on 2026-10-16 with the Cloudflare API, the account used three of the five cron triggers the Workers Free plan allows (one on another Worker, two here), not five as ADR-040 recorded. The old design drained leftovers at 10 replies every five minutes (120 an hour), at most 5 per account; its claim looked only at the oldest 100 due rows, so one busy account hid the others; held and limited accounts were claimed and put back on every run; and eight claims at the same moment on a local Postgres left three of them with nothing while 9,925 jobs waited. Meta's User Profile API (checked 2026-10-16) returns the follow status only after the person has messaged the account, and private replies are documented with a text message only.
+
+**Why one new trigger and not three:** Each responsibility (dispatch and recovery, reconciliation, maintenance) maps to a trigger, but reconciliation fits the five minute runs that do not publish, each its own invocation with its own 50 subrequests, so it needs no trigger of its own. One trigger raises the drain rate to 600 to 900 replies an hour and the wait for a leftover reply to a minute, and leaves one of the account's five slots free.
+
+**Why not Cloudflare Queues now:** ADR-040's reasons hold. The free plan's 10,000 operations a day (a write, a read and an ack per message) cover about 3,300 messages, fewer than one viral reel can produce; its 24 hour retention is shorter than the 7 day reply window; the comment row is needed anyway for deduplication, limits and history; and a queue would still need the database sweep for publishes that failed. With the row as the job, acceptance is one insert and there is no dual write to reconcile.
+
+**Followers-only:** Inferring a follow from anything else (likes, usernames, earlier comments) or from undocumented endpoints was ruled out, and so was claiming a check that cannot happen. The person's reply is what gives Instagram's consent and opens the 24 hour window in which Twiligent may message them again, so the follow check waits for it. Only a confirmed follow sends the link; an answer Instagram cannot give sends nothing and says why. Subscribing to the `messages` field sends every direct message of the connected accounts to the Worker, so the account-level subscription asks for it only while an enabled followers-only rule needs it, and the person's message text is never read or stored.
+
+**Reconciliation:** Each attempt stores the sha-256 digest of the text sent. A reply whose answer was lost is marked accepted only when the conversation shows a message from the account with that exact digest after the attempt started; otherwise it stays for a person with a note. The reconciler only reads from Instagram, so the rule that an unknown outcome is never resent without a person's decision still holds.
+
+**Alternatives considered:**
+- Using all free cron slots, one per responsibility. Rejected as above; it would leave the account with none.
+- Automatic resending of ambiguous replies, relying on Instagram refusing a second private reply (10900). Rejected: the project rule is that a person decides, and a quick resend could race the first request on Meta's side.
+- A quick reply or button in the private reply to collect the person's answer. Not documented for private replies; a plain reply works the same and is documented.
+- Counting follow-ups against the private reply limits. They use the Send API (300 calls a second per account), so counting them would only slow private replies.
+
+**Trade-offs:**
+- 1,440 more Worker requests a day for the dispatch, about 1.4% of the free plan's 100,000, and two database calls a minute with nothing due.
+- Followers-only rules need the `messages` field selected in the Meta dashboard, which Meta applies to every connected account, and Advanced Access for `instagram_business_manage_messages`.
+- Any-comment rules message people who did not ask for it; the form warns, and the per-person daily limit still applies.
+- The changed SQL functions keep their old parameters with defaults so the deployed Worker keeps working once the migrations are applied, but the migrations must be applied before the new Worker is deployed.
