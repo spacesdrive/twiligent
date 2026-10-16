@@ -2,7 +2,7 @@ import { AtSign, Calendar, Image as ImageIcon, MapPin, Send, UserPlus } from 'lu
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import DetailPanel, { FieldRow } from '@/components/DetailPanel';
-import AccountSelect from './AccountSelect';
+import AccountSelect from '@/components/AccountSelect';
 import IconInput from './IconInput';
 import PostSummary from './PostSummary';
 import ReelOptions from './ReelOptions';

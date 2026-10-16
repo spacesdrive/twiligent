@@ -8,7 +8,7 @@ import { PlatformBadge } from '@/components/platform';
 import { cn } from '@/lib/utils';
 import { fmtDate, fmtNum } from '../../../utils/formatters';
 import { hasTrackedViews, trackedViews } from '../../../utils/trackedContent';
-import RowAction from './RowAction';
+import RowAction from '@/components/RowAction';
 import TrackedThumbnail from './TrackedThumbnail';
 import type { TrackedContentItem } from '@shared/types/domain.ts';
 

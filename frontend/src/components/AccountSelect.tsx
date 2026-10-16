@@ -1,6 +1,6 @@
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AccountAvatar } from '@/components/platform';
-import type { AppAccount } from '../../utils/formatters';
+import type { AppAccount } from '../utils/formatters';
 
 interface AccountSelectProps {
   accounts: AppAccount[];
