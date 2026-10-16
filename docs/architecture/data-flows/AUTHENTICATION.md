@@ -15,6 +15,8 @@
 
 When the browser already holds a session, `/login` opens the dashboard (`/`) instead of the form, so the public site's Sign in and Get started buttons take a signed-in person straight in. `signInPageOutcome()` in `lib/signInPage.ts` decides it: the page renders nothing while the stored session loads, and a session created by a sign-in started on the page is left to that sign-in, so the password reset saves the new password before it navigates.
 
+The public site's home page (`https://twiligent.ujjwal.fyi/`) opens the dashboard too. The site is another origin and cannot read the session, so `AuthProvider` writes the cookie `twiligent_signed_in=1` on the shared domain whenever a session is present and clears it whenever it is not (`signedInCookie()` in `lib/signedInCookie.ts`: `Domain=twiligent.ujjwal.fyi`, 30 days renewed on every load, `SameSite=Lax`, `Secure`). The cookie says only that someone is signed in and carries no token; the API never reads it. It is written only when the app runs under `twiligent.ujjwal.fyi`, so self-hosted and local apps write nothing. See `docs/architecture/site/SITE.md` and ADR-042.
+
 `?mode=signup` (the public site's Get started buttons) keeps the `start` view but shows the headline "Create your Twiligent account" and Google's "Sign up with Google". The default ways to join are Google and an emailed code, both of which create the account on first use; the password sign-up stays behind the password view for instances that do not email codes.
 
 ## Login Flow (Emailed Code, the Default)

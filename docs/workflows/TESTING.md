@@ -54,6 +54,8 @@ Tests never sit next to source files. Each workspace has a `tests/` folder that 
 | `frontend/src/lib/emailAddress.ts` | `frontend/tests/lib/emailAddress.test.ts` |
 | `frontend/src/lib/googleIdentity.ts` | `frontend/tests/lib/googleIdentity.test.ts` |
 | `frontend/src/lib/signInPage.ts` | `frontend/tests/lib/signInPage.test.ts` |
+| `frontend/src/lib/signedInCookie.ts` | `frontend/tests/lib/signedInCookie.test.ts` |
+| `site/index.html` (the signed-in redirect script) | `site/tests/homeRedirect.test.ts` |
 | `frontend/src/features/analytics/overview/overviewStats.ts` | `frontend/tests/features/analytics/overview/overviewStats.test.ts` |
 | `frontend/src/features/publishing/scheduleHelpers.ts` | `frontend/tests/features/publishing/scheduleHelpers.test.ts` |
 | `site/src/docs/searchShared.ts` | `site/tests/docs/searchShared.test.ts` |
@@ -160,6 +162,7 @@ Open the app in a browser. For each changed area, test:
 - [ ] Continue with Google signs in (only on an origin listed in the OAuth client's Authorized JavaScript origins); in dark mode the button is the app's outline button with no white square behind the G, and Tab focus shows its ring
 - [ ] `/login?mode=signup` shows "Create your Twiligent account" and "Sign up with Google"
 - [ ] Signed in, open `/login` or `/login?mode=signup` (or the public site's Sign in) -> Overview opens without the form; signed out, the form shows
+- [ ] Signed in, open `https://twiligent.ujjwal.fyi/` -> the app's Overview opens with no flash of the home page, while `/docs` still shows the docs; sign out, open it again -> the home page shows
 - [ ] With the daily cap reached, Continue shows the warning "Email codes are paused until tomorrow" above Google, offering Google or the password
 - [ ] Sign out -> redirects to login
 

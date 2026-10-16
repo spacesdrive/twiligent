@@ -26,7 +26,8 @@ The site does not use shadcn/ui, next-themes or Lucide; those belong to the app.
 
 ```
 site/
-  index.html             Meta tags, favicons, font preloads, and the inline script that sets data-theme before paint
+  index.html             Meta tags, favicons, font preloads, the inline script that opens the app for a signed-in visitor
+                         on the home page, and the inline script that sets data-theme before paint
   vite.config.ts         MDX (before the React plugin), React, Tailwind, docsPlugin; @ alias to src/
   build/
     docsPlugin.ts        Vite plugin: search index as virtual:docs-search, sitemap.xml and llms.txt in closeBundle
@@ -90,6 +91,8 @@ site/
 Fallback: the build has no top-level `404.html`, so Cloudflare Pages serves `index.html` for any path that is not a file, and the router decides. A docs path with no content file shows a docs 404 inside the docs frame.
 
 Links to the app use the constants in `src/lib/links.ts`: `SIGN_IN_URL` (`https://app.twiligent.ujjwal.fyi/login`) and `SIGN_UP_URL` (the same with `?mode=signup`, which shows the app's sign-up headline and Sign up with Google; an emailed code creates the account). Sign-up and sign-in only exist in the app.
+
+A visitor already signed in to the app skips the home page. The app's session lives in its own origin's storage, so the app also sets the cookie `twiligent_signed_in=1` on `twiligent.ujjwal.fyi` while a session exists and clears it when the session ends (`frontend/src/lib/signedInCookie.ts`; it holds no token). The first script in `index.html` sends `/` to `https://app.twiligent.ujjwal.fyi/` with `location.replace()` before the page paints when the cookie is there. Docs and every other path stay readable, and a stale cookie is cleared by the app the moment it finds no session (ADR-042).
 
 ## Docs Pipeline
 
@@ -196,6 +199,7 @@ The product previews are React components drawn with the site's tokens, never sc
 | `tests/docs/searchShared.test.ts` | `slugify()` turns headings into anchor ids |
 | `tests/lib/chart.test.ts` | The value range is padded; points spread across the box; the smooth path passes through every point and never overshoots between two; the area closes to the baseline |
 | `tests/lib/format.test.ts` | Full numbers get separators, short numbers use K and M and drop a zero decimal, rates keep one decimal |
+| `tests/homeRedirect.test.ts` | Runs the signed-in script from `index.html`: the home page opens the app only with `twiligent_signed_in=1`, and docs and other paths never redirect |
 
 `content.test.ts` reads `nav.ts` as text, because `nav.ts` imports the generated JSX icons, which Node cannot load. The root `npm test`, `npm run typecheck` and `npm run build` include the site, so `ci.yml` checks it on every pull request.
 

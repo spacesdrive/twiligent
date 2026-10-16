@@ -895,3 +895,22 @@ New row ids come from `crypto.randomUUID()` (`newRowId()` in `backend/lib/ids.ts
 **Trade-offs:**
 - Many more files per feature; the version numbers order them, and the names say what each holds.
 - Migrations before the cut-over version stay as production recorded them; rewriting applied migrations would break the history in `supabase_migrations.schema_migrations`.
+
+## ADR-042: A signed-in cookie on the shared domain sends the public home page to the app
+
+**Date:** 2026-10-16
+**Status:** Accepted
+
+**Decision:** While a session exists, the app sets the cookie `twiligent_signed_in=1` on `twiligent.ujjwal.fyi` (`Path=/`, `SameSite=Lax`, `Secure`, 30 days, renewed on every load) and clears it as soon as the session ends. The first inline script in `site/index.html` sends the home page, and only the home page, to `https://app.twiligent.ujjwal.fyi/` before it paints when the cookie is present. The app writes the cookie only when it runs under `twiligent.ujjwal.fyi`.
+
+**Context:** A signed-in owner opening `https://twiligent.ujjwal.fyi/` saw the marketing page and had to choose Sign in to reach the dashboard (#96). The site and the app are separate origins (ADR-035), and the Supabase session lives in the app's localStorage, which the site cannot read.
+
+**Alternatives considered:**
+- Moving the Supabase session into a cookie on the shared domain. The site could then read the session itself, but the access and refresh tokens would be sent with every request to the site and readable by its scripts, for no gain beyond a redirect.
+- An iframe or `postMessage` probe of the app from the site. It loads the app on every visit to the home page and depends on third-party storage rules that browsers are tightening.
+- Changing only the site's buttons to Open dashboard. Still a click, which is what the owner asked to remove.
+
+**Trade-offs:**
+- The cookie is a hint, not proof: after a session ends in a way the app has not yet seen (a refresh token revoked elsewhere), the home page sends the visitor to the app once, which finds no session, clears the cookie and shows the sign-in page.
+- A signed-in visitor cannot see the marketing home page without signing out; the docs and other site pages are not redirected.
+- Self-hosted instances on other domains write no cookie, so their behaviour is unchanged; the domain is a constant, like the docs address in `frontend/src/lib/docs.ts`.
