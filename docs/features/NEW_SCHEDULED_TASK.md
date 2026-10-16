@@ -175,7 +175,9 @@ jobs:
                   cache: 'npm'
                   cache-dependency-path: package-lock.json
             # one install at the root; @supabase/supabase-js is already in the root lockfile
-            - run: npm ci
+            - run: |
+                  npm ci
+                  node scripts/check-platform-packages.ts || (npm ci && node scripts/check-platform-packages.ts)
             - name: Run task
               env:
                   SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -183,7 +185,7 @@ jobs:
               run: node scripts/my-task.ts
 ```
 
-Install from the root lockfile with `npm ci`, as the deploy workflows do. Do not run `npm install <pkg>` in the workflow: at the root it would add the package to the root `package.json`, and there is no lockfile inside `backend/` or `frontend/` to install from. If the script needs a package that is not in the lockfile yet, add it to the workspace that owns it (with approval) and commit the root lockfile. `scripts/publish-scheduled.ts` is the exception by design: it has no dependencies, so its workflow skips the install.
+Install from the root lockfile with `npm ci` and check the platform packages, as the deploy workflows do. Do not run `npm install <pkg>` in the workflow: at the root it would add the package to the root `package.json`, and there is no lockfile inside `backend/` or `frontend/` to install from. If the script needs a package that is not in the lockfile yet, add it to the workspace that owns it (with approval) and commit the root lockfile. `scripts/publish-scheduled.ts` is the exception by design: it has no dependencies, so its workflow skips the install.
 
 ### Step 3: Add Required Secrets
 

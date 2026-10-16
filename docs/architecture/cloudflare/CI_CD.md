@@ -21,7 +21,7 @@ Nothing compiles TypeScript ahead of time: Wrangler and Vite strip the types whi
 **What it does (one job, "Type check, lint, test, build"):**
 1. Checkout repo
 2. `actions/setup-node@v4` with Node 24 and the npm cache keyed on the root `package-lock.json`
-3. `npm ci` at the repository root
+3. `npm ci` at the repository root, then `node scripts/check-platform-packages.ts`, which installs once more when npm skipped a platform package
 4. `npm run typecheck` - every TypeScript project: backend, backend tests, frontend, frontend tooling and tests, site, site build files and tests, scripts
 5. `npm run lint` - ESLint over the whole repository
 6. `npm test` - backend, frontend, then site tests
@@ -41,7 +41,7 @@ Nothing compiles TypeScript ahead of time: Wrangler and Vite strip the types whi
 **What it does:**
 1. Checkout repo
 2. `actions/setup-node@v4` with Node 24 and the npm cache keyed on the root `package-lock.json`
-3. `npm ci` at the repository root, which installs every workspace, including Wrangler
+3. `npm ci` at the repository root, which installs every workspace, including Wrangler, then `node scripts/check-platform-packages.ts`, which installs once more when npm skipped a platform package
 4. `npm run typecheck --workspace backend` - checks the Worker source and the backend tests
 5. `npm test --workspace backend`
 6. Run `wrangler deploy` via `cloudflare/wrangler-action@v4` with `workingDirectory: backend`. The action finds the Wrangler installed from the lockfile (3.114.17) and uses it instead of installing its own default version.
@@ -65,7 +65,7 @@ The workflow does not set the Worker's own secrets (`SUPABASE_*`, `FRONTEND_URL`
 **What it does:**
 1. Checkout repo
 2. `actions/setup-node@v4` with Node 24 and the npm cache keyed on the root `package-lock.json`
-3. `npm ci` at the repository root, which installs every workspace
+3. `npm ci` at the repository root, which installs every workspace, then `node scripts/check-platform-packages.ts`, which installs once more when npm skipped a platform package
 4. `npm run typecheck --workspace frontend` - checks `frontend/src` (`tsconfig.json`) and `vite.config.ts` plus the frontend tests (`tsconfig.node.json`)
 5. `npm test --workspace frontend`
 6. `npm run build --workspace frontend` - Vite builds to `frontend/dist/`
@@ -91,7 +91,7 @@ The workflow does not set the Worker's own secrets (`SUPABASE_*`, `FRONTEND_URL`
 **What it does:**
 1. Checkout repo
 2. `actions/setup-node@v4` with Node 24 and the npm cache keyed on the root `package-lock.json`
-3. `npm ci` at the repository root, which installs every workspace, including Wrangler
+3. `npm ci` at the repository root, which installs every workspace, including Wrangler, then `node scripts/check-platform-packages.ts`, which installs once more when npm skipped a platform package
 4. `npm run typecheck --workspace site` - checks `site/src` (`tsconfig.json`) and `vite.config.ts`, `site/build` and the site tests (`tsconfig.node.json`)
 5. `npm test --workspace site`
 6. `npm run build --workspace site` - Vite builds to `site/dist/`, and the docs plugin adds `sitemap.xml` and `llms.txt`
@@ -170,11 +170,15 @@ Open `https://twiligent.ujjwal.fyi` - verify the home page renders, then open `h
 **Publisher:**
 Trigger `publish-scheduled.yml` manually via GitHub Actions UI -> Actions -> "Instagram Scheduled Publisher" -> "Run workflow" -> check the run log for expected output.
 
+## Platform Packages After Install
+
+Native binaries such as workerd, esbuild, rollup, lightningcss and Tailwind's oxide are optional dependencies, one package per platform. npm skips an optional package it fails to download and still reports a successful install, so a run could reach the Worker bundle without `@cloudflare/workerd-linux-64` (this happened once, on PR #81). `scripts/check-platform-packages.ts` reads the root `package-lock.json`, keeps the optional packages whose `os`, `cpu` and libc match the machine (the glibc and musl builds are told apart by name when the lockfile has no `libc` field), and exits 1 naming any that are missing. Every workflow runs it after `npm ci` and, if it fails, runs `npm ci` and the check once more; a second failure stops the job. Run it locally with `node scripts/check-platform-packages.ts`.
+
 ## Adding a New Workflow
 
 1. Create `.github/workflows/my-workflow.yml`
 2. Add appropriate path filters to avoid unnecessary runs
-3. If the workflow needs project dependencies, run `actions/setup-node` with Node 24, `cache-dependency-path: package-lock.json` and `npm ci` at the repository root; there are no lockfiles inside `backend/`, `frontend/` or `site/`
+3. If the workflow needs project dependencies, run `actions/setup-node` with Node 24, `cache-dependency-path: package-lock.json` and the install step the other workflows use (`npm ci` at the repository root, then `node scripts/check-platform-packages.ts`, installing again once if it fails); there are no lockfiles inside `backend/`, `frontend/` or `site/`
 4. If it ships code, run `npm run typecheck` (or the workspace's `typecheck` script) before the deploy step
 5. Document it in `docs/architecture/cloudflare/CI_CD.md` (this file)
 6. Add any required secrets via GitHub repo -> Settings -> Secrets -> Actions
