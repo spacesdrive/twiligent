@@ -2,7 +2,7 @@
     "responses": [
         {
             "status": 200,
-            "body": "{\"success\":true,\"account\":{\"id\":\"17882640000004fzz\",\"channelId\":\"UCnnnnnnnnnnnnnnnnnnnnnn\",\"title\":\"Channel UCnn\",\"description\":\"Desc\",\"customUrl\":\"@chan\",\"publishedAt\":\"2020-01-01T00:00:00Z\",\"country\":\"GB\",\"thumbnails\":{\"default\":\"d\",\"medium\":\"m\",\"high\":\"h\"},\"subscriberCount\":500,\"viewCount\":9000,\"videoCount\":12,\"hiddenSubscriberCount\":false,\"uploadsPlaylistId\":\"UUnnnnnnnnnnnnnnnnnnnnnn\",\"keywords\":\"k\",\"topicCategories\":[\"t\"],\"madeForKids\":false,\"addedAt\":\"2026-09-01T12:00:00.000Z\",\"lastUpdated\":\"2026-09-01T12:00:00.000Z\"}}"
+            "body": "{\"success\":true,\"account\":{\"id\":\"00000000-0000-4000-8000-000000000001\",\"channelId\":\"UCnnnnnnnnnnnnnnnnnnnnnn\",\"title\":\"Channel UCnn\",\"description\":\"Desc\",\"customUrl\":\"@chan\",\"publishedAt\":\"2020-01-01T00:00:00Z\",\"country\":\"GB\",\"thumbnails\":{\"default\":\"d\",\"medium\":\"m\",\"high\":\"h\"},\"subscriberCount\":500,\"viewCount\":9000,\"videoCount\":12,\"hiddenSubscriberCount\":false,\"uploadsPlaylistId\":\"UUnnnnnnnnnnnnnnnnnnnnnn\",\"keywords\":\"k\",\"topicCategories\":[\"t\"],\"madeForKids\":false,\"addedAt\":\"2026-09-01T12:00:00.000Z\",\"lastUpdated\":\"2026-09-01T12:00:00.000Z\"}}"
         },
         {
             "status": 409,
@@ -63,7 +63,7 @@
             "type": "insert",
             "table": "accounts",
             "values": {
-                "id": "17882640000004fzz",
+                "id": "00000000-0000-4000-8000-000000000001",
                 "user_id": "user-1",
                 "platform": "youtube",
                 "data": {

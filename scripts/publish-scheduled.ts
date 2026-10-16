@@ -82,6 +82,17 @@ async function sbGet<T>(path: string): Promise<T> {
     return res.json() as Promise<T>;
 }
 
+async function sbRpc(fn: string, args: Record<string, unknown>): Promise<unknown> {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/${fn}`, {
+        method: 'POST',
+        headers: sbHeaders,
+        body: JSON.stringify(args),
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+    if (!res.ok) throw new Error(`Supabase RPC ${fn}: ${await res.text()}`);
+    return res.json();
+}
+
 async function sbPatch<T>(path: string, body: unknown): Promise<T[]> {
     const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, {
         method: 'PATCH',
@@ -121,22 +132,15 @@ async function getStalePosts(): Promise<ScheduledPost[]> {
 }
 
 async function getAccount(accountId: string): Promise<Account | null> {
-    const rows = await sbGet<AccountRow[]>(`/accounts?id=eq.${accountId}&select=id,platform,data`);
+    const rows = await sbGet<AccountRow[]>(`/accounts?id=eq.${encodeURIComponent(accountId)}&select=id,platform,data`);
     if (!rows || rows.length === 0) return null;
     return { id: rows[0].id, platform: rows[0].platform, ...(rows[0].data || {}) };
 }
 
+// one atomic merge in the database (supabase/migrations), the same function the Worker calls
 async function updatePost(id: string, updates: Partial<ScheduledPost>): Promise<void> {
-    const { status, ...dataUpdates } = updates;
-    const patch: { status?: PostStatus; data?: Partial<ScheduledPost> } = {};
-    if (status) patch.status = status;
-
-    if (Object.keys(dataUpdates).length > 0) {
-        const rows = await sbGet<Pick<ScheduledPostRow, 'data'>[]>(`/scheduled_posts?id=eq.${id}&select=data`);
-        patch.data = { ...(rows?.[0]?.data || {}), ...dataUpdates };
-    }
-
-    await sbPatch(`/scheduled_posts?id=eq.${id}&select=id`, patch);
+    const { status, ...patch } = updates;
+    await sbRpc('merge_scheduled_post', { p_id: id, p_user_id: null, p_patch: patch, p_status: status ?? null });
 }
 
 // matches only the post as it was listed (pending, or the same expired claim) with the same attempts, as the Worker does
@@ -146,7 +150,7 @@ async function claimPost(post: ScheduledPost): Promise<ScheduledPost | null> {
         ? `status=eq.publishing&claimed_at=eq.${encodeURIComponent(post.claimedAt ?? '')}`
         : 'status=eq.pending';
     const rows = await sbPatch<ScheduledPostRow>(
-        `/scheduled_posts?id=eq.${post.id}&attempts=eq.${attempts}&${unchanged}&select=${POST_COLUMNS}`,
+        `/scheduled_posts?id=eq.${encodeURIComponent(post.id)}&attempts=eq.${attempts}&${unchanged}&select=${POST_COLUMNS}`,
         { status: 'publishing', claimed_at: new Date().toISOString(), attempts: attempts + 1 },
     );
     return rows[0] ? toPost(rows[0]) : null;

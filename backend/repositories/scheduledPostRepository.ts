@@ -12,12 +12,6 @@ interface ScheduledPostRow {
     data: Partial<ScheduledPost> | null;
 }
 
-interface PostColumnUpdates {
-    status?: PostStatus;
-    scheduled_at?: string;
-    data?: Partial<ScheduledPost>;
-}
-
 export interface DeleteAllResult {
     deleted: number;
     kept: number;
@@ -52,35 +46,18 @@ export interface ScheduledPostRepository {
 }
 
 export function createScheduledPostRepository(db: SupabaseClient): ScheduledPostRepository {
-    // status and scheduledAt are columns; every other field is merged into data; claimedAt and attempts change only in claim
+    // one atomic statement that merges the rest into data; claim alone sets claimedAt and attempts, and onlyStatus guards edits
     async function update(id: string, updates: Partial<ScheduledPost>, userId: string | null, onlyStatus?: PostStatus): Promise<boolean> {
-        const { status, scheduledAt, accountId: _accountId, claimedAt: _claimedAt, attempts: _attempts, ...dataUpdates } = updates;
-        const columns: PostColumnUpdates = {};
-        if (status !== undefined) columns.status = status;
-        if (scheduledAt !== undefined) columns.scheduled_at = scheduledAt;
-
-        if (Object.keys(dataUpdates).length > 0) {
-            const current = await rows<Pick<ScheduledPostRow, 'data'>>('scheduledPosts.readData', () => {
-                const query = db.from('scheduled_posts').select('data').eq('id', id);
-                return userId ? query.eq('user_id', userId) : query;
-            });
-            columns.data = { ...(current[0]?.data || {}), ...dataUpdates };
-        }
-
-        if (!onlyStatus) {
-            await execute('scheduledPosts.update', () => {
-                const query = db.from('scheduled_posts').update(columns).eq('id', id);
-                return userId ? query.eq('user_id', userId) : query;
-            });
-            return true;
-        }
-
-        // the status check sits in the same statement, so a scheduler claiming the post in between makes this change nothing
-        const changed = await rows<{ id: string }>('scheduledPosts.updateIfStatus', () => {
-            const query = db.from('scheduled_posts').update(columns).eq('id', id).eq('status', onlyStatus);
-            return (userId ? query.eq('user_id', userId) : query).select('id');
-        });
-        return changed.length > 0;
+        const { status, scheduledAt, id: _id, accountId: _accountId, claimedAt: _claimedAt, attempts: _attempts, ...patch } = updates;
+        const { data } = await execute('scheduledPosts.update', () => db.rpc('merge_scheduled_post', {
+            p_id: id,
+            p_user_id: userId,
+            p_patch: patch,
+            p_status: status ?? null,
+            p_scheduled_at: scheduledAt ?? null,
+            p_only_status: onlyStatus ?? null,
+        }));
+        return data === true;
     }
 
     return {

@@ -18,7 +18,7 @@ function toAccount(row: AccountRow): Account {
 // methods named ...ForUser filter by the verified user id; the others reach every user and are only for cron jobs
 export interface AccountRepository {
     listForUser(userId: string): Promise<Account[]>;
-    listAll(): Promise<Account[]>;
+    listByPlatform(platform: Platform): Promise<Account[]>;
     findForUser(id: string, userId: string): Promise<Account | null>;
     findById(id: string): Promise<Account | null>;
     create(account: NewAccount, userId: string): Promise<void>;
@@ -36,29 +36,27 @@ export function createAccountRepository(db: SupabaseClient): AccountRepository {
         return row ? toAccount(row) : null;
     }
 
-    // merges into data, so fields the update does not name are kept
+    // one atomic merge in the database, so two refreshes never undo each other; an undefined field keeps its stored value
     async function update(id: string, updates: Partial<Account>, userId: string | null): Promise<void> {
-        const current = await find(id, userId);
-        if (!current) throw new NotFoundError('Account not found');
-        const { id: _id, platform: currentPlatform, ...currentData } = current;
-        const { platform: newPlatform, ...dataUpdates } = updates;
-        await execute('accounts.update', () => {
-            const query = db.from('accounts').update({
-                platform: newPlatform || currentPlatform,
-                data: { ...currentData, ...dataUpdates },
-            }).eq('id', id);
-            return userId ? query.eq('user_id', userId) : query;
-        });
+        const { id: _id, platform: _platform, ...patch } = updates;
+        const { data } = await execute('accounts.update', () => db.rpc('merge_account_data', { p_id: id, p_user_id: userId, p_patch: patch }));
+        if (!data) throw new NotFoundError('Account not found');
     }
 
     return {
+        // id breaks ties between accounts added in the same instant, so the order never changes between requests
         async listForUser(userId) {
-            const found = await rows<AccountRow>('accounts.listForUser', () => db.from('accounts').select(COLUMNS).eq('user_id', userId));
+            const found = await rows<AccountRow>('accounts.listForUser', () => db
+                .from('accounts')
+                .select(COLUMNS)
+                .eq('user_id', userId)
+                .order('created_at', { ascending: true })
+                .order('id', { ascending: true }));
             return found.map(toAccount);
         },
 
-        async listAll() {
-            const found = await rows<AccountRow>('accounts.listAll', () => db.from('accounts').select(COLUMNS));
+        async listByPlatform(platform) {
+            const found = await rows<AccountRow>('accounts.listByPlatform', () => db.from('accounts').select(COLUMNS).eq('platform', platform));
             return found.map(toAccount);
         },
 

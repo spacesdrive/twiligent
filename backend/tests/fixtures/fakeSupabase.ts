@@ -6,7 +6,7 @@ export type Row = Record<string, unknown>;
 type Filter = [column: string, value: unknown, operator?: 'lte' | 'lt' | 'neq'];
 
 interface Action {
-    type: 'select' | 'update' | 'insert' | 'upsert' | 'delete';
+    type: 'select' | 'update' | 'insert' | 'upsert' | 'delete' | 'rpc';
     table: string;
     columns?: string;
     values?: Row;
@@ -57,6 +57,35 @@ function inTable(row: Row, name: string) {
     return row._table === undefined || row._table === name;
 }
 
+// the merge functions in supabase/migrations, run on the in-memory rows: one table, a patch merged into data
+const MERGE_FUNCTIONS: Record<string, { table: string; userOptional: boolean }> = {
+    merge_account_data: { table: 'accounts', userOptional: true },
+    merge_scheduled_post: { table: 'scheduled_posts', userOptional: true },
+    merge_tracked_post_data: { table: 'tracked_posts', userOptional: false },
+};
+
+function mergeInto(table: Row[], name: string, args: Row): boolean | null {
+    const fn = MERGE_FUNCTIONS[name];
+    if (!fn) throw new Error(`fakeSupabase has no function ${name}`);
+    const found = table.filter(candidate => inTable(candidate, fn.table)
+        && candidate.id === args.p_id
+        && ((fn.userOptional && args.p_user_id === null) || candidate.user_id === args.p_user_id)
+        && (args.p_only_status == null || candidate.status === args.p_only_status));
+    for (const row of found) {
+        // JSON drops undefined keys, as the request to the database does
+        row.data = { ...(row.data as Row | null ?? {}), ...JSON.parse(JSON.stringify(args.p_patch)) };
+        if (args.p_status != null) row.status = args.p_status;
+        if (args.p_scheduled_at != null) row.scheduled_at = args.p_scheduled_at;
+        touch(row);
+    }
+    return found.length > 0 ? true : null;
+}
+
+// every table's updated_at trigger (supabase/migrations) sets it on each update
+function touch(row: Row): void {
+    row.updated_at = new Date().toISOString();
+}
+
 function queryBuilder(action: Action, run: Run): FakeQuery {
     const filters: Filter[] = [];
     const query: FakeQuery = {
@@ -101,13 +130,13 @@ export function fakeSupabase(rows: Row[] = []): FakeSupabase {
     function run(action: Action, filters: Filter[]) {
         calls.push({ ...copy(action), filters: copy(filters) });
         const found = table.filter(row => inTable(row, action.table) && matchesFilters(row, filters));
-        if (action.type === 'update') found.forEach(row => Object.assign(row, copy(action.values)));
-        if (action.type === 'insert') table.push(copy(action.values!));
+        if (action.type === 'update') found.forEach(row => touch(Object.assign(row, copy(action.values))));
+        if (action.type === 'insert') table.push({ _table: action.table, ...copy(action.values!) });
         if (action.type === 'upsert') {
             const values = action.values!;
             const keys = (action.onConflict ?? 'id').split(',');
             const existing = table.find(row => inTable(row, action.table) && keys.every(key => row[key] === values[key]));
-            if (existing) Object.assign(existing, copy(values));
+            if (existing) touch(Object.assign(existing, copy(values)));
             else table.push({ _table: action.table, ...copy(values) });
         }
         if (action.type === 'delete') {
@@ -119,6 +148,10 @@ export function fakeSupabase(rows: Row[] = []): FakeSupabase {
     return {
         calls,
         table,
+        rpc(name: string, args: Row) {
+            calls.push({ type: 'rpc', table: name, values: copy(args), filters: [] });
+            return Promise.resolve({ data: mergeInto(table, name, args), error: null });
+        },
         from(name: string) {
             return {
                 select: (columns: string) => queryBuilder({ type: 'select', table: name, columns }, run),

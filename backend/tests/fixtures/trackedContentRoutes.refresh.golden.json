@@ -80,28 +80,14 @@
                 ]
             },
             {
-                "type": "select",
-                "table": "tracked_posts",
-                "columns": "data",
-                "filters": [
-                    [
-                        "id",
-                        "t-reddit"
-                    ],
-                    [
-                        "user_id",
-                        "user-1"
-                    ]
-                ]
-            },
-            {
-                "type": "update",
-                "table": "tracked_posts",
+                "type": "rpc",
+                "table": "merge_tracked_post_data",
                 "values": {
-                    "data": {
-                        "title": "Tracked",
-                        "manualViews": 5,
+                    "p_id": "t-reddit",
+                    "p_user_id": "user-1",
+                    "p_patch": {
                         "postId": "p1",
+                        "title": "Tracked",
                         "subreddit": "webdev",
                         "subredditPrefixed": "r/webdev",
                         "author": "[deleted]",
@@ -112,19 +98,9 @@
                         "isNsfw": false,
                         "createdAt": "2026-07-25T17:20:00.000Z",
                         "lastFetchedAt": "2026-09-01T12:00:00.000Z"
-                    },
-                    "updated_at": "2026-09-01T12:00:00.000Z"
+                    }
                 },
-                "filters": [
-                    [
-                        "id",
-                        "t-reddit"
-                    ],
-                    [
-                        "user_id",
-                        "user-1"
-                    ]
-                ]
+                "filters": []
             },
             {
                 "type": "select",
@@ -172,25 +148,12 @@
                 ]
             },
             {
-                "type": "select",
-                "table": "tracked_posts",
-                "columns": "data",
-                "filters": [
-                    [
-                        "id",
-                        "t-orphan"
-                    ],
-                    [
-                        "user_id",
-                        "user-1"
-                    ]
-                ]
-            },
-            {
-                "type": "update",
-                "table": "tracked_posts",
+                "type": "rpc",
+                "table": "merge_tracked_post_data",
                 "values": {
-                    "data": {
+                    "p_id": "t-orphan",
+                    "p_user_id": "user-1",
+                    "p_patch": {
                         "postId": "p1",
                         "title": "Tracked",
                         "subreddit": "webdev",
@@ -203,19 +166,9 @@
                         "isNsfw": false,
                         "createdAt": "2026-07-25T17:20:00.000Z",
                         "lastFetchedAt": "2026-09-01T12:00:00.000Z"
-                    },
-                    "updated_at": "2026-09-01T12:00:00.000Z"
+                    }
                 },
-                "filters": [
-                    [
-                        "id",
-                        "t-orphan"
-                    ],
-                    [
-                        "user_id",
-                        "user-1"
-                    ]
-                ]
+                "filters": []
             },
             {
                 "type": "select",
@@ -248,27 +201,14 @@
                 ]
             },
             {
-                "type": "select",
-                "table": "tracked_posts",
-                "columns": "data",
-                "filters": [
-                    [
-                        "id",
-                        "t-youtube"
-                    ],
-                    [
-                        "user_id",
-                        "user-1"
-                    ]
-                ]
-            },
-            {
-                "type": "update",
-                "table": "tracked_posts",
+                "type": "rpc",
+                "table": "merge_tracked_post_data",
                 "values": {
-                    "data": {
-                        "title": "Watch",
+                    "p_id": "t-youtube",
+                    "p_user_id": "user-1",
+                    "p_patch": {
                         "contentType": "youtube",
+                        "title": "Watch",
                         "channelTitle": "Ribbon",
                         "channelId": "UC1",
                         "thumbnail": "m",
@@ -279,19 +219,9 @@
                         "isShort": false,
                         "permalink": "https://www.youtube.com/watch?v=abc",
                         "lastFetchedAt": "2026-09-01T12:00:00.000Z"
-                    },
-                    "updated_at": "2026-09-01T12:00:00.000Z"
+                    }
                 },
-                "filters": [
-                    [
-                        "id",
-                        "t-youtube"
-                    ],
-                    [
-                        "user_id",
-                        "user-1"
-                    ]
-                ]
+                "filters": []
             },
             {
                 "type": "select",

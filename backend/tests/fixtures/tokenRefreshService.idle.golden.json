@@ -11,7 +11,12 @@
             "type": "select",
             "table": "accounts",
             "columns": "id, platform, data",
-            "filters": []
+            "filters": [
+                [
+                    "platform",
+                    "instagram"
+                ]
+            ]
         }
     ]
 }

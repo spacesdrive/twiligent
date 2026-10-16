@@ -514,66 +514,36 @@
             ]
         },
         {
-            "type": "select",
-            "table": "scheduled_posts",
-            "columns": "data",
-            "filters": [
-                [
-                    "id",
-                    "p-image"
-                ]
-            ]
-        },
-        {
-            "type": "update",
-            "table": "scheduled_posts",
+            "type": "rpc",
+            "table": "merge_scheduled_post",
             "values": {
-                "data": {
-                    "mediaType": "IMAGE",
-                    "mediaUrl": "https://cdn/a.jpg",
-                    "caption": "Hello",
+                "p_id": "p-image",
+                "p_user_id": null,
+                "p_patch": {
                     "containerId": "c-IG1"
-                }
+                },
+                "p_status": null,
+                "p_scheduled_at": null,
+                "p_only_status": null
             },
-            "filters": [
-                [
-                    "id",
-                    "p-image"
-                ]
-            ]
+            "filters": []
         },
         {
-            "type": "select",
-            "table": "scheduled_posts",
-            "columns": "data",
-            "filters": [
-                [
-                    "id",
-                    "p-image"
-                ]
-            ]
-        },
-        {
-            "type": "update",
-            "table": "scheduled_posts",
+            "type": "rpc",
+            "table": "merge_scheduled_post",
             "values": {
-                "status": "published",
-                "data": {
-                    "mediaType": "IMAGE",
-                    "mediaUrl": "https://cdn/a.jpg",
-                    "caption": "Hello",
-                    "containerId": "c-IG1",
+                "p_id": "p-image",
+                "p_user_id": null,
+                "p_patch": {
                     "publishedMediaId": "m-c-IG1",
                     "publishedAt": "2026-09-01T12:00:00.000Z",
                     "error": null
-                }
+                },
+                "p_status": "published",
+                "p_scheduled_at": null,
+                "p_only_status": null
             },
-            "filters": [
-                [
-                    "id",
-                    "p-image"
-                ]
-            ]
+            "filters": []
         },
         {
             "type": "update",
@@ -610,66 +580,36 @@
             ]
         },
         {
-            "type": "select",
-            "table": "scheduled_posts",
-            "columns": "data",
-            "filters": [
-                [
-                    "id",
-                    "p-reel"
-                ]
-            ]
-        },
-        {
-            "type": "update",
-            "table": "scheduled_posts",
+            "type": "rpc",
+            "table": "merge_scheduled_post",
             "values": {
-                "data": {
-                    "mediaType": "REELS",
-                    "mediaUrl": "https://cdn/r.mp4",
-                    "shareToFeed": true,
+                "p_id": "p-reel",
+                "p_user_id": null,
+                "p_patch": {
                     "containerId": "c-IG1"
-                }
+                },
+                "p_status": null,
+                "p_scheduled_at": null,
+                "p_only_status": null
             },
-            "filters": [
-                [
-                    "id",
-                    "p-reel"
-                ]
-            ]
+            "filters": []
         },
         {
-            "type": "select",
-            "table": "scheduled_posts",
-            "columns": "data",
-            "filters": [
-                [
-                    "id",
-                    "p-reel"
-                ]
-            ]
-        },
-        {
-            "type": "update",
-            "table": "scheduled_posts",
+            "type": "rpc",
+            "table": "merge_scheduled_post",
             "values": {
-                "status": "published",
-                "data": {
-                    "mediaType": "REELS",
-                    "mediaUrl": "https://cdn/r.mp4",
-                    "shareToFeed": true,
-                    "containerId": "c-IG1",
+                "p_id": "p-reel",
+                "p_user_id": null,
+                "p_patch": {
                     "publishedMediaId": "m-c-IG1",
                     "publishedAt": "2026-09-01T12:00:00.000Z",
                     "error": null
-                }
+                },
+                "p_status": "published",
+                "p_scheduled_at": null,
+                "p_only_status": null
             },
-            "filters": [
-                [
-                    "id",
-                    "p-reel"
-                ]
-            ]
+            "filters": []
         },
         {
             "type": "update",
@@ -706,62 +646,34 @@
             ]
         },
         {
-            "type": "select",
-            "table": "scheduled_posts",
-            "columns": "data",
-            "filters": [
-                [
-                    "id",
-                    "p-story"
-                ]
-            ]
-        },
-        {
-            "type": "update",
-            "table": "scheduled_posts",
+            "type": "rpc",
+            "table": "merge_scheduled_post",
             "values": {
-                "data": {
-                    "mediaType": "STORIES",
-                    "mediaUrl": "https://cdn/s.mp4",
+                "p_id": "p-story",
+                "p_user_id": null,
+                "p_patch": {
                     "containerId": "c-ERR"
-                }
+                },
+                "p_status": null,
+                "p_scheduled_at": null,
+                "p_only_status": null
             },
-            "filters": [
-                [
-                    "id",
-                    "p-story"
-                ]
-            ]
+            "filters": []
         },
         {
-            "type": "select",
-            "table": "scheduled_posts",
-            "columns": "data",
-            "filters": [
-                [
-                    "id",
-                    "p-story"
-                ]
-            ]
-        },
-        {
-            "type": "update",
-            "table": "scheduled_posts",
+            "type": "rpc",
+            "table": "merge_scheduled_post",
             "values": {
-                "status": "failed",
-                "data": {
-                    "mediaType": "STORIES",
-                    "mediaUrl": "https://cdn/s.mp4",
-                    "containerId": "c-ERR",
+                "p_id": "p-story",
+                "p_user_id": null,
+                "p_patch": {
                     "error": "Processing failed: Bad video"
-                }
+                },
+                "p_status": "failed",
+                "p_scheduled_at": null,
+                "p_only_status": null
             },
-            "filters": [
-                [
-                    "id",
-                    "p-story"
-                ]
-            ]
+            "filters": []
         },
         {
             "type": "update",
@@ -798,62 +710,35 @@
             ]
         },
         {
-            "type": "select",
-            "table": "scheduled_posts",
-            "columns": "data",
-            "filters": [
-                [
-                    "id",
-                    "p-expired"
-                ]
-            ]
-        },
-        {
-            "type": "update",
-            "table": "scheduled_posts",
+            "type": "rpc",
+            "table": "merge_scheduled_post",
             "values": {
-                "data": {
-                    "mediaType": "REELS",
-                    "mediaUrl": "https://cdn/e.mp4",
+                "p_id": "p-expired",
+                "p_user_id": null,
+                "p_patch": {
                     "containerId": "c-EXP"
-                }
+                },
+                "p_status": null,
+                "p_scheduled_at": null,
+                "p_only_status": null
             },
-            "filters": [
-                [
-                    "id",
-                    "p-expired"
-                ]
-            ]
+            "filters": []
         },
         {
-            "type": "select",
-            "table": "scheduled_posts",
-            "columns": "data",
-            "filters": [
-                [
-                    "id",
-                    "p-expired"
-                ]
-            ]
-        },
-        {
-            "type": "update",
-            "table": "scheduled_posts",
+            "type": "rpc",
+            "table": "merge_scheduled_post",
             "values": {
-                "status": "pending",
-                "data": {
-                    "mediaType": "REELS",
-                    "mediaUrl": "https://cdn/e.mp4",
-                    "containerId": null,
-                    "error": "Container expired"
-                }
+                "p_id": "p-expired",
+                "p_user_id": null,
+                "p_patch": {
+                    "error": "Container expired",
+                    "containerId": null
+                },
+                "p_status": "pending",
+                "p_scheduled_at": null,
+                "p_only_status": null
             },
-            "filters": [
-                [
-                    "id",
-                    "p-expired"
-                ]
-            ]
+            "filters": []
         },
         {
             "type": "update",
@@ -890,33 +775,19 @@
             ]
         },
         {
-            "type": "select",
-            "table": "scheduled_posts",
-            "columns": "data",
-            "filters": [
-                [
-                    "id",
-                    "p-missing"
-                ]
-            ]
-        },
-        {
-            "type": "update",
-            "table": "scheduled_posts",
+            "type": "rpc",
+            "table": "merge_scheduled_post",
             "values": {
-                "status": "failed",
-                "data": {
-                    "mediaType": "IMAGE",
-                    "mediaUrl": "https://cdn/m.jpg",
+                "p_id": "p-missing",
+                "p_user_id": null,
+                "p_patch": {
                     "error": "Account not found: gone"
-                }
+                },
+                "p_status": "failed",
+                "p_scheduled_at": null,
+                "p_only_status": null
             },
-            "filters": [
-                [
-                    "id",
-                    "p-missing"
-                ]
-            ]
+            "filters": []
         },
         {
             "type": "update",
@@ -953,33 +824,19 @@
             ]
         },
         {
-            "type": "select",
-            "table": "scheduled_posts",
-            "columns": "data",
-            "filters": [
-                [
-                    "id",
-                    "p-create"
-                ]
-            ]
-        },
-        {
-            "type": "update",
-            "table": "scheduled_posts",
+            "type": "rpc",
+            "table": "merge_scheduled_post",
             "values": {
-                "status": "failed",
-                "data": {
-                    "mediaType": "IMAGE",
-                    "mediaUrl": "https://cdn/b.jpg",
+                "p_id": "p-create",
+                "p_user_id": null,
+                "p_patch": {
                     "error": "Invalid image"
-                }
+                },
+                "p_status": "failed",
+                "p_scheduled_at": null,
+                "p_only_status": null
             },
-            "filters": [
-                [
-                    "id",
-                    "p-create"
-                ]
-            ]
+            "filters": []
         },
         {
             "type": "update",
@@ -1016,62 +873,34 @@
             ]
         },
         {
-            "type": "select",
-            "table": "scheduled_posts",
-            "columns": "data",
-            "filters": [
-                [
-                    "id",
-                    "p-publish"
-                ]
-            ]
-        },
-        {
-            "type": "update",
-            "table": "scheduled_posts",
+            "type": "rpc",
+            "table": "merge_scheduled_post",
             "values": {
-                "data": {
-                    "mediaType": "IMAGE",
-                    "mediaUrl": "https://cdn/p.jpg",
+                "p_id": "p-publish",
+                "p_user_id": null,
+                "p_patch": {
                     "containerId": "c-PUB"
-                }
+                },
+                "p_status": null,
+                "p_scheduled_at": null,
+                "p_only_status": null
             },
-            "filters": [
-                [
-                    "id",
-                    "p-publish"
-                ]
-            ]
+            "filters": []
         },
         {
-            "type": "select",
-            "table": "scheduled_posts",
-            "columns": "data",
-            "filters": [
-                [
-                    "id",
-                    "p-publish"
-                ]
-            ]
-        },
-        {
-            "type": "update",
-            "table": "scheduled_posts",
+            "type": "rpc",
+            "table": "merge_scheduled_post",
             "values": {
-                "status": "failed",
-                "data": {
-                    "mediaType": "IMAGE",
-                    "mediaUrl": "https://cdn/p.jpg",
-                    "containerId": "c-PUB",
+                "p_id": "p-publish",
+                "p_user_id": null,
+                "p_patch": {
                     "error": "Publish refused"
-                }
+                },
+                "p_status": "failed",
+                "p_scheduled_at": null,
+                "p_only_status": null
             },
-            "filters": [
-                [
-                    "id",
-                    "p-publish"
-                ]
-            ]
+            "filters": []
         },
         {
             "type": "update",
@@ -1108,62 +937,34 @@
             ]
         },
         {
-            "type": "select",
-            "table": "scheduled_posts",
-            "columns": "data",
-            "filters": [
-                [
-                    "id",
-                    "p-slow"
-                ]
-            ]
-        },
-        {
-            "type": "update",
-            "table": "scheduled_posts",
+            "type": "rpc",
+            "table": "merge_scheduled_post",
             "values": {
-                "data": {
-                    "mediaType": "REELS",
-                    "mediaUrl": "https://cdn/slow.mp4",
+                "p_id": "p-slow",
+                "p_user_id": null,
+                "p_patch": {
                     "containerId": "c-SLOW"
-                }
+                },
+                "p_status": null,
+                "p_scheduled_at": null,
+                "p_only_status": null
             },
-            "filters": [
-                [
-                    "id",
-                    "p-slow"
-                ]
-            ]
+            "filters": []
         },
         {
-            "type": "select",
-            "table": "scheduled_posts",
-            "columns": "data",
-            "filters": [
-                [
-                    "id",
-                    "p-slow"
-                ]
-            ]
-        },
-        {
-            "type": "update",
-            "table": "scheduled_posts",
+            "type": "rpc",
+            "table": "merge_scheduled_post",
             "values": {
-                "status": "pending",
-                "data": {
-                    "mediaType": "REELS",
-                    "mediaUrl": "https://cdn/slow.mp4",
-                    "containerId": "c-SLOW",
+                "p_id": "p-slow",
+                "p_user_id": null,
+                "p_patch": {
                     "error": "Instagram did not finish processing the media within 3 minutes"
-                }
+                },
+                "p_status": "pending",
+                "p_scheduled_at": null,
+                "p_only_status": null
             },
-            "filters": [
-                [
-                    "id",
-                    "p-slow"
-                ]
-            ]
+            "filters": []
         },
         {
             "type": "update",
@@ -1200,64 +1001,36 @@
             ]
         },
         {
-            "type": "select",
-            "table": "scheduled_posts",
-            "columns": "data",
-            "filters": [
-                [
-                    "id",
-                    "p-dup"
-                ]
-            ]
-        },
-        {
-            "type": "update",
-            "table": "scheduled_posts",
+            "type": "rpc",
+            "table": "merge_scheduled_post",
             "values": {
-                "data": {
-                    "mediaType": "IMAGE",
-                    "mediaUrl": "https://cdn/d.jpg",
+                "p_id": "p-dup",
+                "p_user_id": null,
+                "p_patch": {
                     "containerId": "c-IG1"
-                }
+                },
+                "p_status": null,
+                "p_scheduled_at": null,
+                "p_only_status": null
             },
-            "filters": [
-                [
-                    "id",
-                    "p-dup"
-                ]
-            ]
+            "filters": []
         },
         {
-            "type": "select",
-            "table": "scheduled_posts",
-            "columns": "data",
-            "filters": [
-                [
-                    "id",
-                    "p-dup"
-                ]
-            ]
-        },
-        {
-            "type": "update",
-            "table": "scheduled_posts",
+            "type": "rpc",
+            "table": "merge_scheduled_post",
             "values": {
-                "status": "published",
-                "data": {
-                    "mediaType": "IMAGE",
-                    "mediaUrl": "https://cdn/d.jpg",
-                    "containerId": "c-IG1",
+                "p_id": "p-dup",
+                "p_user_id": null,
+                "p_patch": {
                     "publishedMediaId": "m-c-IG1",
                     "publishedAt": "2026-09-01T12:00:00.000Z",
                     "error": null
-                }
+                },
+                "p_status": "published",
+                "p_scheduled_at": null,
+                "p_only_status": null
             },
-            "filters": [
-                [
-                    "id",
-                    "p-dup"
-                ]
-            ]
+            "filters": []
         },
         {
             "type": "update",
@@ -1361,7 +1134,8 @@
                 "publishedMediaId": "m-c-IG1",
                 "publishedAt": "2026-09-01T12:00:00.000Z",
                 "error": null
-            }
+            },
+            "updated_at": "2026-09-01T12:00:00.000Z"
         },
         {
             "_table": "scheduled_posts",
@@ -1380,7 +1154,8 @@
                 "publishedMediaId": "m-c-IG1",
                 "publishedAt": "2026-09-01T12:00:00.000Z",
                 "error": null
-            }
+            },
+            "updated_at": "2026-09-01T12:00:00.000Z"
         },
         {
             "_table": "scheduled_posts",
@@ -1396,7 +1171,8 @@
                 "mediaUrl": "https://cdn/s.mp4",
                 "containerId": "c-ERR",
                 "error": "Processing failed: Bad video"
-            }
+            },
+            "updated_at": "2026-09-01T12:00:00.000Z"
         },
         {
             "_table": "scheduled_posts",
@@ -1412,7 +1188,8 @@
                 "mediaUrl": "https://cdn/e.mp4",
                 "containerId": null,
                 "error": "Container expired"
-            }
+            },
+            "updated_at": "2026-09-01T12:00:00.000Z"
         },
         {
             "_table": "scheduled_posts",
@@ -1427,7 +1204,8 @@
                 "mediaType": "IMAGE",
                 "mediaUrl": "https://cdn/m.jpg",
                 "error": "Account not found: gone"
-            }
+            },
+            "updated_at": "2026-09-01T12:00:00.000Z"
         },
         {
             "_table": "scheduled_posts",
@@ -1442,7 +1220,8 @@
                 "mediaType": "IMAGE",
                 "mediaUrl": "https://cdn/b.jpg",
                 "error": "Invalid image"
-            }
+            },
+            "updated_at": "2026-09-01T12:00:00.000Z"
         },
         {
             "_table": "scheduled_posts",
@@ -1458,7 +1237,8 @@
                 "mediaUrl": "https://cdn/p.jpg",
                 "containerId": "c-PUB",
                 "error": "Publish refused"
-            }
+            },
+            "updated_at": "2026-09-01T12:00:00.000Z"
         },
         {
             "_table": "scheduled_posts",
@@ -1474,7 +1254,8 @@
                 "mediaUrl": "https://cdn/slow.mp4",
                 "containerId": "c-SLOW",
                 "error": "Instagram did not finish processing the media within 3 minutes"
-            }
+            },
+            "updated_at": "2026-09-01T12:00:00.000Z"
         },
         {
             "_table": "scheduled_posts",
@@ -1492,7 +1273,8 @@
                 "publishedMediaId": "m-c-IG1",
                 "publishedAt": "2026-09-01T12:00:00.000Z",
                 "error": null
-            }
+            },
+            "updated_at": "2026-09-01T12:00:00.000Z"
         },
         {
             "_table": "scheduled_posts",
@@ -1510,7 +1292,8 @@
                 "publishedMediaId": "m-c-IG1",
                 "publishedAt": "2026-09-01T12:00:00.000Z",
                 "error": null
-            }
+            },
+            "updated_at": "2026-09-01T12:00:00.000Z"
         },
         {
             "_table": "scheduled_posts",
