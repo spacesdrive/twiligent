@@ -266,13 +266,34 @@ describe('automation processor', () => {
         assert.equal(sent.length, 0);
     });
 
-    test('a run whose deadline passed stops before the next job, leaving it for later', async () => {
+    test('a run whose deadline passed hands its jobs back unstarted, due again at once', async () => {
         instagram();
         const queue = fakeAutomationQueue([queueRow('a')]);
         const controller = new AbortController();
         controller.abort();
         const run = await processor(queue, automation(), controller.signal).run();
-        assert.equal(run.claimed, 1);
+        assert.deepEqual(run, { claimed: 1, outcomes: { returned: 1 } });
         assert.equal(sent.length, 0);
+        assert.equal(statuses(queue).a, 'queued');
+    });
+
+    test('a send starts only with its whole timeout left, so the run deadline never makes one ambiguous', async () => {
+        instagram();
+        const queue = fakeAutomationQueue([queueRow('a'), queueRow('b')]);
+        const run = await processor(queue).run({ timeBudgetMs: 11_000 });
+        assert.deepEqual(run.outcomes, { returned: 2 });
+        assert.equal(sent.length, 0);
+        assert.deepEqual(Object.values(statuses(queue)), ['queued', 'queued']);
+    });
+
+    test('a run claims only as many replies as its subrequests can pay for, and none when they are spent', async () => {
+        instagram();
+        const queue = fakeAutomationQueue(Array.from({ length: 6 }, (_, i) => queueRow(`s${i}`)));
+        // the claim and a hand-back take two, each reply three: 11 subrequests pay for 3 replies
+        const run = await processor(queue).run({ ids: queue.rows.map(row => row.id), subrequests: 11 });
+        assert.equal(run.claimed, 3);
+        assert.equal(sent.length, 3);
+        assert.deepEqual(await processor(queue).run({ subrequests: 4 }), { claimed: 0, outcomes: {} });
+        assert.equal(queue.rows.filter(row => row.status === 'queued').length, 3);
     });
 });

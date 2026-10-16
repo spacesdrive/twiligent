@@ -3,6 +3,7 @@ import { jsonBody, queryParams } from '../middleware/validate.ts';
 import {
     parseActivityQuery, parseAutomationAccount, parseAutomationRule, parseAutomationRuleUpdate, parseAutomationTest, parseStatsQuery,
 } from '../validators/automationValidators.ts';
+import { FREE_PLAN_SUBREQUESTS, REQUEST_SUBREQUESTS } from '../lib/automationDelivery.ts';
 import type { SuccessMessageResponse } from '../../shared/types/domain.ts';
 import type {
     AutomationAccountResponse, AutomationActivityItemResponse, AutomationActivityResponse, AutomationOverviewResponse,
@@ -53,7 +54,7 @@ export const getAutomationStats = controller.createHandlers(queryParams(parseSta
 // the item goes back in the queue and this request starts sending it, instead of waiting for the next sweep
 export const retryAutomationActivity = controller.createHandlers(async c => {
     const item = await servicesFor(c).automations.retry(c.get('userId'), pathParam(c, 'id'));
-    inBackground(c, 'automation retry', services => services.automationProcessor.run({ ids: [item.id] }));
+    inBackground(c, 'automation retry', services => services.automationProcessor.run({ ids: [item.id], subrequests: FREE_PLAN_SUBREQUESTS - REQUEST_SUBREQUESTS }));
     return c.json({ success: true, item } satisfies AutomationActivityItemResponse);
 });
 

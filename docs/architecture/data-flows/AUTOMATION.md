@@ -75,10 +75,14 @@ If storing fails, the request fails with 5xx, and Meta delivers the notification
 1. **Claim** (`claim_automation_comments`): due jobs (`queued` or `retry_wait` with `next_attempt_at <= now`) and jobs whose run stopped (`processing` for more than 20 minutes), oldest first, at most `perAccount` per account, locked with `FOR UPDATE SKIP LOCKED` so two runs never take the same job. The same call turns any `sending` job older than 20 minutes into `needs_review`. It returns the rule's reply and the account's token with each job.
 2. **Check** (`readinessPlan`): an expired comment becomes `expired`, a rule that was turned off or removed `skipped`, an account without a token `failed`. No limit is spent on these.
 3. **Reserve** (`reserve_automation_send`): one transaction under an advisory lock, so every Worker sees the same counts and two jobs cannot both take the last free send. In order: a paused account holds the job; an account cooldown waits for it; the commenter already got the daily number of replies from this account (counting other comments, not retries of this one) skips it; then the rule's, account's, user's and instance's hourly limits. When a scope is full, the job waits until the oldest send in that hour is an hour old. On success the job becomes `sending`, its attempts count goes up, and an `automation_attempts` row records the request before it leaves.
-4. **Send** (`sendPrivateReply`): `POST https://graph.instagram.com/v25.0/<ig-id>/messages` with `{ recipient: { comment_id }, message: { text } }` and the account's token as a Bearer header, 10 second timeout, never repeated inside the call.
+4. **Send** (`sendPrivateReply`): `POST https://graph.instagram.com/v25.0/<ig-id>/messages` with `{ recipient: { comment_id }, message: { text } }` and the account's token as a Bearer header, 10 second timeout, never repeated inside the call. Only that timeout can cut it off: a run starts a send only with the whole timeout and 2 seconds to spare, so the run's own deadline never turns a send into an unknown outcome.
 5. **Finish** (`finish_automation_send`): records the outcome on the attempt and the comment in one transaction, and sets a cooldown or a hold on the account when the answer calls for one.
 
 A database error on one job is logged and the run moves on; that job's claim or reservation expires and the recovery above picks it up.
+
+**Budgets.** Each run knows how many subrequests it may still make (the Workers Free plan allows 50 per invocation) and how long it may keep starting sends: a webhook's run gets what the request did not use (50, less 10 for the request's own middleware, less the intake's queries) and 20 seconds; a sweep gets 50 and 10 minutes. The claim takes only as many jobs as the budget pays for (one for the claim, one spare, three per reply). When time runs short or the run is cancelled, it hands every job it has not started back in one update (`returnUnstarted`: `processing` to `queued`, due at once), so they go out on the next run instead of waiting for the 20 minute lease.
+
+**Clocks.** New and retried jobs are due 30 seconds in the past, so a database clock slightly behind the Worker's still finds them due on the immediate run.
 
 ### What each answer does
 
@@ -102,7 +106,7 @@ A wait that would end after the 7 day window makes the comment `expired` instead
 - A notification Meta delivers twice is stored once: `unique (ig_user_id, comment_id)`.
 - A comment repeated inside one notification is stored once.
 - Two runs never send the same job: the claim locks rows, and the reservation only moves a job this run holds.
-- A job whose run stopped before the request left is claimed again after its 20 minute lease.
+- A job a run claimed but did not start is handed back at once; one whose run died before the request left is claimed again after its 20 minute lease.
 - A send that may have reached Instagram (timeout, lost connection, a run that stopped while `sending`) is never retried on its own. It shows as Needs review, and the owner decides after checking the conversation on Instagram. If they retry and the first reply did arrive, Instagram refuses a second private reply to the same comment (10900), and the comment is marked skipped.
 - Delivery is at least once into the queue and at most once to Instagram without a person's decision. Instagram reports acceptance, not delivery or reading, so the dashboard says "Accepted by Instagram" and never "Delivered".
 

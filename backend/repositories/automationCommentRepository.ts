@@ -1,4 +1,5 @@
 import { execute, maybeRow, rows } from './query.ts';
+import { DUE_NOW_SKEW_MS } from '../lib/automationDelivery.ts';
 import type { FinishPlan, ReleasePlan, ReserveOutcome } from '../lib/automationDelivery.ts';
 import type { SupabaseClient } from '../types/app.ts';
 import type { AutomationActivityItem, AutomationCommentStatus, AutomationLimits, AutomationStats } from '../../shared/types/automation.ts';
@@ -86,14 +87,19 @@ export interface Reservation {
     retryAt: string | null;
 }
 
+// where the previous page ended; rows stored together share created_at, so the id breaks the tie
+export interface ActivityCursor {
+    createdAt: string;
+    id: string;
+}
+
 export interface ActivityFilter {
     accountId?: string;
     ruleId?: string;
     statuses?: AutomationCommentStatus[];
     from?: string;
     to?: string;
-    // created_at of the last item on the previous page
-    before?: string;
+    before?: ActivityCursor;
     limit: number;
 }
 
@@ -155,6 +161,7 @@ export interface AutomationCommentRepository {
     reserve(id: string, attemptId: string, limits: AutomationLimits): Promise<Reservation>;
     finish(id: string, attemptId: string, plan: FinishPlan): Promise<boolean>;
     release(id: string, plan: ReleasePlan): Promise<boolean>;
+    returnUnstarted(ids: string[]): Promise<void>;
     listForUser(userId: string, filter: ActivityFilter): Promise<AutomationActivityItem[]>;
     findForUser(id: string, userId: string): Promise<AutomationActivityItem | null>;
     requeueForUser(id: string, userId: string): Promise<AutomationActivityItem | null>;
@@ -252,7 +259,16 @@ export function createAutomationCommentRepository(db: SupabaseClient): Automatio
             return released.length > 0;
         },
 
-        // newest first; a full page may have more after it, and the next page asks for rows before the last one's time
+        // a run that stops early gives back the jobs it claimed but never started, due again at once
+        async returnUnstarted(ids) {
+            await execute('automationComments.returnUnstarted', () => db
+                .from('automation_comments')
+                .update({ status: 'queued', claimed_at: null, next_attempt_at: new Date(Date.now() - DUE_NOW_SKEW_MS).toISOString() })
+                .in('id', ids)
+                .eq('status', 'processing'));
+        },
+
+        // newest first, then by id; a full page may have more after it, and the next one starts after its last row
         async listForUser(userId, { accountId, ruleId, statuses, from, to, before, limit }) {
             const found = await rows<AutomationCommentRow>('automationComments.listForUser', () => {
                 let query = db.from('automation_comments').select(COLUMNS).eq('user_id', userId);
@@ -261,8 +277,8 @@ export function createAutomationCommentRepository(db: SupabaseClient): Automatio
                 if (statuses?.length) query = query.in('status', statuses);
                 if (from) query = query.gte('created_at', from);
                 if (to) query = query.lt('created_at', to);
-                if (before) query = query.lt('created_at', before);
-                return query.order('created_at', { ascending: false }).limit(limit);
+                if (before) query = query.or(`created_at.lt."${before.createdAt}",and(created_at.eq."${before.createdAt}",id.lt."${before.id}")`);
+                return query.order('created_at', { ascending: false }).order('id', { ascending: false }).limit(limit);
             });
             return found.map(toItem);
         },
@@ -280,9 +296,10 @@ export function createAutomationCommentRepository(db: SupabaseClient): Automatio
         // checked in the update itself, so a job a sweep picked up in between is never sent twice
         async requeueForUser(id, userId) {
             const now = new Date().toISOString();
+            const due = new Date(Date.now() - DUE_NOW_SKEW_MS).toISOString();
             const requeued = await rows<AutomationCommentRow>('automationComments.requeue', () => db
                 .from('automation_comments')
-                .update({ status: 'queued', status_reason: 'retry', error_message: null, next_attempt_at: now, claimed_at: null })
+                .update({ status: 'queued', status_reason: 'retry', error_message: null, next_attempt_at: due, claimed_at: null })
                 .eq('id', id)
                 .eq('user_id', userId)
                 .in('status', RETRYABLE)

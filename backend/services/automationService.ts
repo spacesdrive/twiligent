@@ -228,7 +228,8 @@ export function createAutomationService(deps: AutomationServiceDeps): Automation
 
         async activity(userId, query) {
             const items = await comments.listForUser(userId, query);
-            return { items, nextBefore: items.length === query.limit ? items[items.length - 1].createdAt : null };
+            const last = items[items.length - 1];
+            return { items, nextBefore: items.length === query.limit ? `${last.createdAt}|${last.id}` : null };
         },
 
         async stats(userId, query) {

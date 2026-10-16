@@ -92,10 +92,42 @@ describe('automation comment repository', () => {
 
     test('activity filters by user first, then by every filter given', async () => {
         const supabase = fakeSupabase([]);
-        await createAutomationCommentRepository(supabase).listForUser('user-1', { accountId: 'ig1', statuses: ['failed', 'needs_review'], before: 'B', from: 'F', limit: 20 });
+        const before = { createdAt: '2026-10-16T10:00:00.123456+00:00', id: 'b' };
+        await createAutomationCommentRepository(supabase).listForUser('user-1', { accountId: 'ig1', statuses: ['failed', 'needs_review'], before, from: 'F', limit: 20 });
         assert.deepEqual(supabase.calls[0].filters, [
-            ['user_id', 'user-1'], ['account_id', 'ig1'], ['status', ['failed', 'needs_review'], 'in'], ['created_at', 'F', 'gte'], ['created_at', 'B', 'lt'],
+            ['user_id', 'user-1'], ['account_id', 'ig1'], ['status', ['failed', 'needs_review'], 'in'], ['created_at', 'F', 'gte'],
+            ['', 'created_at.lt."2026-10-16T10:00:00.123456+00:00",and(created_at.eq."2026-10-16T10:00:00.123456+00:00",id.lt."b")', 'or'],
         ]);
+    });
+
+    test('paging walks through comments stored in the same instant, without skipping or repeating any', async () => {
+        const same = '2026-10-16T10:00:00.123456+00:00';
+        // stored newest first, as the order by created_at desc, id desc returns them
+        const ids = ['e', 'd', 'c', 'b', 'a'];
+        const supabase = fakeSupabase([
+            ...ids.map(id => tableRow('automation_comments', { id, user_id: 'user-1', created_at: same })),
+            tableRow('automation_comments', { id: 'z', user_id: 'user-1', created_at: '2026-10-16T09:00:00+00:00' }),
+        ]);
+        const repo = createAutomationCommentRepository(supabase);
+        const seen: string[] = [];
+        let before: { createdAt: string; id: string } | undefined;
+        for (let page = 0; page < 4; page++) {
+            const items = await repo.listForUser('user-1', { before, limit: 2 });
+            seen.push(...items.map(item => item.id));
+            if (items.length < 2) break;
+            before = { createdAt: items[1].createdAt, id: items[1].id };
+        }
+        assert.deepEqual(seen, ['e', 'd', 'c', 'b', 'a', 'z']);
+    });
+
+    test('a run gives back only the jobs it still holds, due again at once', async () => {
+        const supabase = fakeSupabase([
+            tableRow('automation_comments', { id: 'held', status: 'processing', claimed_at: 'x' }),
+            tableRow('automation_comments', { id: 'sent', status: 'sending', claimed_at: 'x' }),
+        ]);
+        await createAutomationCommentRepository(supabase).returnUnstarted(['held', 'sent']);
+        assert.deepEqual(supabase.table.map(row => [row.id, row.status, row.claimed_at]), [['held', 'queued', null], ['sent', 'sending', 'x']]);
+        assert.ok(Date.parse(supabase.table[0].next_attempt_at as string) < Date.now());
     });
 
     test('stats come from the database function, with empty groups when nothing happened', async () => {

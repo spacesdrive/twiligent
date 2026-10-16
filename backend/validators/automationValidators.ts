@@ -1,6 +1,7 @@
 import { ValidationError } from '../lib/errors.ts';
 import { isString, optionalArray, optionalBoolean, optionalNumber, optionalString, presentField, requiredString } from './fields.ts';
 import type { Fields } from './fields.ts';
+import type { ActivityCursor } from '../repositories/automationCommentRepository.ts';
 import type {
     AutomationAccountRequest, AutomationCommentStatus, AutomationMatchMode, AutomationRuleRequest, AutomationRuleUpdateRequest,
     AutomationTestRequest,
@@ -27,7 +28,7 @@ export interface ActivityQuery {
     statuses?: AutomationCommentStatus[];
     from?: string;
     to?: string;
-    before?: string;
+    before?: ActivityCursor;
     limit: number;
 }
 
@@ -124,6 +125,17 @@ function isoDate(query: Fields, field: string): string | undefined {
     return new Date(time).toISOString();
 }
 
+// the cursor is "<created_at as the API sent it>|<id>"; both go back into a filter, so only their own characters are allowed
+const CURSOR = /^(\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}(?:\.\d{1,6})?(?:Z|[+-]\d{2}(?::?\d{2})?))\|([0-9A-Za-z_-]{1,64})$/;
+
+function cursor(query: Fields): ActivityCursor | undefined {
+    const value = optionalString(query, 'before');
+    if (!value) return undefined;
+    const match = CURSOR.exec(value);
+    if (!match) throw new ValidationError('before must be the nextBefore value of the previous page');
+    return { createdAt: match[1], id: match[2] };
+}
+
 function statuses(query: Fields): AutomationCommentStatus[] | undefined {
     const value = optionalString(query, 'status');
     if (!value) return undefined;
@@ -191,7 +203,7 @@ export function parseActivityQuery(query: Fields): ActivityQuery {
         statuses: statuses(query),
         from: isoDate(query, 'from'),
         to: isoDate(query, 'to'),
-        before: isoDate(query, 'before'),
+        before: cursor(query),
         limit,
     };
 }

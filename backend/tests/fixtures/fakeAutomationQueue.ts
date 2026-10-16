@@ -194,6 +194,12 @@ export function fakeAutomationQueue(rows: QueueRow[] = []): FakeQueue {
             return true;
         },
 
+        async returnUnstarted(ids) {
+            for (const row of rows) {
+                if (ids.includes(row.id) && row.status === 'processing') Object.assign(row, { status: 'queued', claimedAt: null, nextAttemptAt: iso(now() - 30_000) });
+            }
+        },
+
         async listForUser() { return []; },
         async findForUser() { return null; },
         async requeueForUser() { return null; },

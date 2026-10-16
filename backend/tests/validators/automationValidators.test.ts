@@ -69,10 +69,12 @@ test('a test needs a sample comment besides the rule draft', () => {
 });
 
 test('activity filters are checked and dates normalised; the page size defaults to 50 and stops at 100', () => {
-    assert.deepEqual(parseActivityQuery({ status: 'failed, needs_review,failed', from: '2026-10-01', before: '2026-10-10T00:00:00Z' }), {
+    assert.deepEqual(parseActivityQuery({ status: 'failed, needs_review,failed', from: '2026-10-01', before: '2026-10-10T00:00:00.123456+00:00|abc-1' }), {
         accountId: undefined, ruleId: undefined, statuses: ['failed', 'needs_review'], from: '2026-10-01T00:00:00.000Z', to: undefined,
-        before: '2026-10-10T00:00:00.000Z', limit: 50,
+        before: { createdAt: '2026-10-10T00:00:00.123456+00:00', id: 'abc-1' }, limit: 50,
     });
+    assert.throws(() => parseActivityQuery({ before: '2026-10-10T00:00:00Z' }), /nextBefore value of the previous page/);
+    assert.throws(() => parseActivityQuery({ before: '2026-10-10T00:00:00Z|a",id.gt."0' }), /nextBefore value of the previous page/);
     assert.equal(parseActivityQuery({ limit: '100' }).limit, 100);
     assert.throws(() => parseActivityQuery({ limit: '101' }), /from 1 to 100/);
     assert.throws(() => parseActivityQuery({ status: 'failed,lost' }), /status must be one of/);
