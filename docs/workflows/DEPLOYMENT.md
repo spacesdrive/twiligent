@@ -19,7 +19,7 @@ A pull request merged into `main` -> GitHub Actions deploys automatically. `main
 Monitor deployment status at:  
 `https://github.com/spacesdrive/twiligent/actions`
 
-Each deploy workflow sets up Node 24, runs `npm ci` once at the repository root (the root `package-lock.json` is the only lockfile), type-checks and tests its workspace (`npm run typecheck --workspace <name>`, `npm test --workspace <name>`), and only then deploys with the Wrangler version pinned in that lockfile. A type error or failing test stops the deploy. Before code reaches `main`, `ci.yml` runs the full type check, lint, tests, the frontend and site builds and a Worker dry-run bundle on every pull request and branch push. See `docs/architecture/cloudflare/CI_CD.md`.
+Each deploy workflow sets up Node 24, runs `npm ci` once at the repository root (the root `package-lock.json` is the only lockfile) and checks that every platform package arrived (`scripts/check-platform-packages.ts`, installing once more if one is missing), type-checks and tests its workspace (`npm run typecheck --workspace <name>`, `npm test --workspace <name>`), and only then deploys with the Wrangler version pinned in that lockfile. A type error or failing test stops the deploy. Before code reaches `main`, `ci.yml` runs the full type check, lint, tests, the frontend and site builds and a Worker dry-run bundle on every pull request and branch push. See `docs/architecture/cloudflare/CI_CD.md`.
 
 ## Manual Deployment (Local)
 

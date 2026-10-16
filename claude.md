@@ -45,7 +45,8 @@ backend/              Hono Worker in layers: middleware/, routes/, controllers/,
 frontend/             React SPA (the app); tests in frontend/tests/ mirroring frontend/src/
 site/                 public marketing site and docs (Vite, React, MDX); docs pages in site/content/docs/,
                       build plugins in site/build/, tests in site/tests/
-scripts/              publish-scheduled.ts, run by GitHub Actions with no dependencies
+scripts/              publish-scheduled.ts, run by GitHub Actions with no dependencies; check-platform-packages.ts,
+                      run after npm ci in every workflow
 supabase/             the database schema: migrations/ (versioned SQL, one table or function per file, applied
                       with the Supabase CLI), rollbacks/ (the reverse of each migration, same file name),
                       config.toml (CLI config, Postgres 17)

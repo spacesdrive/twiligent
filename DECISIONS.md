@@ -827,3 +827,25 @@ New row ids come from `crypto.randomUUID()` (`newRowId()` in `backend/lib/ids.ts
 - A field passed as `undefined` in an update is dropped from the JSON, so it keeps its stored value instead of being removed. Clearing a field takes an explicit `null`.
 - Rolling back is manual: run the rollback file, then repair the migration history. The baselines cannot be rolled back.
 - The PGlite harness that ran the migrations lived in a scratchpad and is not in the repository. Running the SQL in CI would need the `@electric-sql/pglite` dev dependency, which was not approved; `migrations.test.ts` checks names, order, rollback pairs, repeatable baselines and closed functions without running the SQL. Adding the harness is a possible follow-up.
+
+## ADR-039: Wrangler 4, a platform package check after every install, and audit findings without a fix
+
+**Date:** 2026-10-16
+**Status:** Accepted
+
+**Decision:** Wrangler moves from 3 to 4 (4.151.0), hono and react-router move to patched versions within their majors, and the shadcn CLI to 4.21.5, which clears every `npm audit` finding that has a fix. Every workflow runs `scripts/check-platform-packages.ts` after `npm ci` and installs once more when it names a missing platform package. The seven findings left are one chain inside the shadcn CLI (`fast-glob`, `micromatch`, `braces`, GHSA-vfj7-8cjw-p6xm) and are accepted until `braces` publishes a fixed release.
+
+**Context:** `npm audit` reported 18 findings (#83). Two were in shipped code: hono in the Worker (a ReDoS in the CORS middleware, among others) and react-router in the app and the site. The rest came from developer and deploy tooling, most of them from Wrangler 3's esbuild, miniflare, undici, ws and sharp. Separately, a CI run failed because `npm ci` skipped workerd's Linux binary: npm treats a failed download of an optional dependency as success, and platform binaries are optional dependencies (#82).
+
+**Wrangler 4:** its breaking changes are Node 22 or newer (the project already needs Node 22.18), esbuild 0.24 for bundling (it changes wildcard dynamic imports, which the Worker does not use), local mode by default for KV, R2 and D1 commands (not used), and the removal of legacy assets, `node_compat` and commands deprecated in v3 (not used). The Worker bundles to 1160.83 KiB (1149.84 KiB with Wrangler 3; the difference is the newer hono) and starts under `wrangler dev`.
+
+**The accepted chain:** `braces` 3.0.3 is its latest release and the advisory covers every version up to it, so no update or override can fix it. The chain runs only inside the shadcn CLI on a developer's machine: the app imports `shadcn/tailwind.css` and no JavaScript from the package, and the denial of service needs an attacker to pass deeply nested glob patterns to that CLI. `npm audit fix --force` would install shadcn 1.0.0, a downgrade that breaks the CSS import.
+
+**Alternatives considered:**
+- Retrying `npm ci` blindly on any failure. It would not help: the install that skips a package reports success.
+- `npm install --include=optional` or pinning each binary as a direct dependency. The first changes nothing for a failed download, and the second ties the root `package.json` to every tool's binary versions.
+- Overriding `braces` to a fork. It would trade an advisory in a dev-only CLI for an unreviewed package.
+
+**Trade-offs:**
+- A skipped platform package now costs one extra `npm ci` (about 20 seconds) instead of a failed run.
+- The audit is not clean while the shadcn chain waits for upstream; check it again when `braces` or `fast-glob` releases a fix.

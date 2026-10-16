@@ -27,6 +27,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Changing a tracked item's account now only accepts one of your own Reddit accounts, and refuses an account on a YouTube item (#76)
 - A token refresh and an analytics refresh on the same account at the same moment no longer put the old access token back, and a manual view count no longer disappears when a refresh lands at the same time (#79)
 - Accounts are listed in the order they were added, the same on every load (#78)
+- CI and the deploys no longer fail when npm skips a platform binary during the install; every workflow checks the platform packages after `npm ci` and installs once more if one is missing (#82)
+- Security: hono in the Worker and react-router in the app and the site are updated to versions without known vulnerabilities; Wrangler moves to 4 and the shadcn CLI to 4.21.5, which clears every audit finding that has a fix (#83, ADR-039)
 
 ---
 

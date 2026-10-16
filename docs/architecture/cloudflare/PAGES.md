@@ -59,7 +59,7 @@ Vite exposes them at runtime as `import.meta.env.VITE_*`.
 
 ## Deployment
 
-Cloudflare Pages deploys automatically on every push to `main` that changes files in `frontend/` or `shared/`, `tsconfig.base.json`, the root `package.json` or the root `package-lock.json`. This is configured in `.github/workflows/deploy-frontend.yml`, which runs `npm ci` at the root, type-checks and tests the frontend, builds with `npm run build --workspace frontend` and uploads `frontend/dist` with the Wrangler version from the lockfile.
+Cloudflare Pages deploys automatically on every push to `main` that changes files in `frontend/` or `shared/`, `tsconfig.base.json`, the root `package.json` or the root `package-lock.json`. This is configured in `.github/workflows/deploy-frontend.yml`, which runs `npm ci` at the root and checks the platform packages (`scripts/check-platform-packages.ts`, installing once more if one is missing), type-checks and tests the frontend, builds with `npm run build --workspace frontend` and uploads `frontend/dist` with the Wrangler version from the lockfile.
 
 Manual deployment (emergency or first setup), from the repository root:
 
