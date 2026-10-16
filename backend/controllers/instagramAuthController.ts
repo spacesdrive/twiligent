@@ -24,7 +24,7 @@ export const handleInstagramCallback = controller.createHandlers(queryParams(par
         const userId = await connect.userIdFromState(state);
         if (!userId) return backToAccounts('ig_error=invalid_state');
         const outcome = await connect.connect(userId, code);
-        return backToAccounts(outcome === 'already_added' ? 'ig_error=already_added' : 'ig_connected=true');
+        return backToAccounts(outcome === 'reconnected' ? 'ig_connected=reconnected' : 'ig_connected=true');
     } catch (err) {
         requestLogger(c).error('instagram connection failed', errorFields(err));
         return backToAccounts(`ig_error=${encodeURIComponent((err as Error).message.substring(0, 100))}`);

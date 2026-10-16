@@ -43,7 +43,7 @@
         {
             "status": 302,
             "body": "",
-            "location": "https://app.example.com/accounts?ig_error=already_added"
+            "location": "https://app.example.com/accounts?ig_connected=reconnected"
         },
         {
             "status": 302,
@@ -199,6 +199,21 @@
             "filters": []
         },
         {
+            "type": "insert",
+            "table": "audit_events",
+            "values": {
+                "id": "00000000-0000-4000-8000-000000000002",
+                "user_id": "user-1",
+                "action": "account.connected",
+                "subject_type": "account",
+                "subject_id": "00000000-0000-4000-8000-000000000001",
+                "details": {
+                    "platform": "instagram"
+                }
+            },
+            "filters": []
+        },
+        {
             "type": "select",
             "table": "accounts",
             "columns": "id, platform, data",
@@ -213,7 +228,7 @@
             "type": "insert",
             "table": "accounts",
             "values": {
-                "id": "00000000-0000-4000-8000-000000000002",
+                "id": "00000000-0000-4000-8000-000000000003",
                 "user_id": "user-1",
                 "platform": "instagram",
                 "data": {
@@ -235,6 +250,21 @@
             "filters": []
         },
         {
+            "type": "insert",
+            "table": "audit_events",
+            "values": {
+                "id": "00000000-0000-4000-8000-000000000004",
+                "user_id": "user-1",
+                "action": "account.connected",
+                "subject_type": "account",
+                "subject_id": "00000000-0000-4000-8000-000000000003",
+                "details": {
+                    "platform": "instagram"
+                }
+            },
+            "filters": []
+        },
+        {
             "type": "select",
             "table": "accounts",
             "columns": "id, platform, data",
@@ -244,6 +274,35 @@
                     "user-1"
                 ]
             ]
+        },
+        {
+            "type": "rpc",
+            "table": "merge_account_data",
+            "values": {
+                "p_id": "ig1",
+                "p_user_id": "user-1",
+                "p_patch": {
+                    "accessToken": "SHORT_DUP",
+                    "tokenExpiresAt": null,
+                    "lastUpdated": "2026-09-01T12:00:00.000Z"
+                }
+            },
+            "filters": []
+        },
+        {
+            "type": "insert",
+            "table": "audit_events",
+            "values": {
+                "id": "00000000-0000-4000-8000-000000000005",
+                "user_id": "user-1",
+                "action": "account.reconnected",
+                "subject_type": "account",
+                "subject_id": "ig1",
+                "details": {
+                    "platform": "instagram"
+                }
+            },
+            "filters": []
         }
     ],
     "logs": [

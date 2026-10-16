@@ -40,3 +40,34 @@ test('the local Vite server is allowed only when the Worker itself runs on local
     assert.deepEqual(corsOrigins(settings, 'https://api.example.workers.dev/api/health'), ['https://app.example.com']);
     assert.deepEqual(corsOrigins(settings, 'http://localhost:8787/api/health'), ['https://app.example.com', 'http://localhost:5173', 'http://127.0.0.1:5173']);
 });
+
+test('automation limits fall back to their defaults when missing, malformed or out of range', () => {
+    assert.deepEqual(config({}).automation, {
+        verifyToken: undefined,
+        appSecrets: [],
+        paused: false,
+        limits: { accountHourly: 200, userHourly: 500, globalHourly: 1000, recipientDaily: 3 },
+        batchSize: 10,
+    });
+    const set = config({
+        AUTOMATION_ACCOUNT_HOURLY_LIMIT: ' 50 ', AUTOMATION_USER_HOURLY_LIMIT: 'lots', AUTOMATION_GLOBAL_HOURLY_LIMIT: '-1',
+        AUTOMATION_RECIPIENT_DAILY_LIMIT: '1.5', AUTOMATION_BATCH_SIZE: '4',
+    }).automation;
+    assert.deepEqual(set.limits, { accountHourly: 50, userHourly: 500, globalHourly: 1000, recipientDaily: 3 });
+    assert.equal(set.batchSize, 4);
+});
+
+test('the account limit and the batch never exceed what Instagram and the free Workers plan allow', () => {
+    const capped = config({ AUTOMATION_ACCOUNT_HOURLY_LIMIT: '751', AUTOMATION_BATCH_SIZE: '16' }).automation;
+    assert.equal(capped.limits.accountHourly, 200);
+    assert.equal(capped.batchSize, 10);
+    assert.equal(config({ AUTOMATION_ACCOUNT_HOURLY_LIMIT: '750', AUTOMATION_BATCH_SIZE: '15' }).automation.batchSize, 15);
+});
+
+test('webhooks are signed with the Instagram app secret first and the Meta app secret second; only "true" pauses', () => {
+    const automation = config({ INSTAGRAM_APP_SECRET: ' IG ', META_APP_SECRET: `${BOM}META`, INSTAGRAM_WEBHOOK_VERIFY_TOKEN: ' tok ', AUTOMATION_PAUSED: 'TRUE' }).automation;
+    assert.deepEqual(automation.appSecrets, ['IG', 'META']);
+    assert.equal(automation.verifyToken, 'tok');
+    assert.equal(automation.paused, true);
+    assert.equal(config({ AUTOMATION_PAUSED: 'yes' }).automation.paused, false);
+});

@@ -21,11 +21,15 @@ test('a return without OAuth or add parameters does nothing', () => {
 });
 
 test('a successful connection is reported without an error', () => {
-  assert.deepEqual(readOAuthReturn(params('ig_connected=true')), { connected: true, errorMessage: null, openAdd: false });
+  assert.deepEqual(readOAuthReturn(params('ig_connected=true')), { connected: true, reconnected: false, errorMessage: null, openAdd: false });
+});
+
+test('connecting an account that was already there is reported as a reconnection', () => {
+  assert.deepEqual(readOAuthReturn(params('ig_connected=reconnected')), { connected: true, reconnected: true, errorMessage: null, openAdd: false });
 });
 
 test('connected values other than true are dropped silently', () => {
-  assert.deepEqual(readOAuthReturn(params('ig_connected=false')), { connected: false, errorMessage: null, openAdd: false });
+  assert.deepEqual(readOAuthReturn(params('ig_connected=false')), { connected: false, reconnected: false, errorMessage: null, openAdd: false });
 });
 
 test('errors and the add flag are read together', () => {

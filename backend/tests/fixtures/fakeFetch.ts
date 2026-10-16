@@ -9,6 +9,7 @@ export interface FakeReply {
     body: unknown;
     status: number;
     statusText: string;
+    headers?: Record<string, string>;
 }
 
 export type Responder = (request: RecordedRequest, count: number) => FakeReply | Error | Promise<FakeReply | Error>;
@@ -19,8 +20,8 @@ export interface FetchMock {
 }
 
 // replaces global fetch with a scripted responder and records each request
-export function reply(body: unknown, status = 200, statusText = 'OK'): FakeReply {
-    return { body, status, statusText };
+export function reply(body: unknown, status = 200, statusText = 'OK', headers?: Record<string, string>): FakeReply {
+    return headers ? { body, status, statusText, headers } : { body, status, statusText };
 }
 
 export function installFetch(respond: Responder): FetchMock {
@@ -39,6 +40,7 @@ export function installFetch(respond: Responder): FetchMock {
             status: outcome.status,
             statusText: outcome.statusText,
             ok: outcome.status >= 200 && outcome.status < 300,
+            headers: new Headers(outcome.headers ?? {}),
             json: async () => outcome.body,
         } as unknown as Response;
     };

@@ -51,6 +51,7 @@ export const QUOTA_ROUTES: readonly RouteMatcher[] = [
     { methods: ['POST'], path: /^\/api\/tracked-content$/ },
     { methods: ['POST'], path: /^\/api\/tracked-content\/[^/]+\/refresh$/ },
     { methods: ['GET', 'POST'], path: /^\/api\/process-scheduled$/ },
+    { methods: ['POST'], path: /^\/api\/automations\/accounts\/[^/]+\/subscribe$/ },
 ];
 
 export const PUBLISH_ROUTES: readonly RouteMatcher[] = [

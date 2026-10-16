@@ -15,7 +15,7 @@ export function useInstagramOAuthReturn({ showToast, loadAccounts, setDialogOpen
     if (!result) return;
 
     if (result.connected) {
-      showToast('Instagram account connected');
+      showToast(result.reconnected ? 'Instagram account reconnected' : 'Instagram account connected');
       loadAccounts();
     } else if (result.errorMessage) {
       showToast(result.errorMessage, 'error');

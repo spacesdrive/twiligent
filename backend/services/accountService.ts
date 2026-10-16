@@ -6,6 +6,7 @@ import { buildYouTubeAccount, buildRedditAccount, buildInstagramAccount } from '
 import { ConflictError, NotConfiguredError, NotFoundError, ValidationError } from '../lib/errors.ts';
 import type { AccountRepository } from '../repositories/accountRepository.ts';
 import type { AnalyticsCacheRepository } from '../repositories/analyticsCacheRepository.ts';
+import type { AuditRepository } from '../repositories/auditRepository.ts';
 import type { AppConfig } from '../lib/config.ts';
 import type { RequestContext } from '../types/context.ts';
 import type { Account, AccountRefreshResult, NewAccount } from '../../shared/types/domain.ts';
@@ -16,6 +17,7 @@ import type { InstagramProfile } from '../../shared/types/instagram.ts';
 export interface AccountServiceDeps {
     accounts: AccountRepository;
     cache: AnalyticsCacheRepository;
+    audit: AuditRepository;
     config: AppConfig;
     context: RequestContext;
 }
@@ -91,7 +93,7 @@ function youtubeUpdates(channelData: YouTubeChannelData, full: boolean): Partial
     };
 }
 
-export function createAccountService({ accounts, cache, config, context }: AccountServiceDeps): AccountService {
+export function createAccountService({ accounts, cache, audit, config, context }: AccountServiceDeps): AccountService {
     const { signal, log } = context;
 
     function youtubeKey(): string {
@@ -216,12 +218,14 @@ export function createAccountService({ accounts, cache, config, context }: Accou
             return tokenExpiresAt;
         },
 
+        // removing an account also removes its automation rules, received comments and reply history (foreign keys)
         async remove(userId, accountId) {
-            await findOwned(userId, accountId);
+            const account = await findOwned(userId, accountId);
             await Promise.all([
                 accounts.deleteForUser(accountId, userId),
                 cache.deleteAllForAccount(userId, accountId),
             ]);
+            await audit.recordForUser(userId, { action: 'account.removed', subjectType: 'account', subjectId: accountId, details: { platform: account.platform } });
         },
     };
 }
