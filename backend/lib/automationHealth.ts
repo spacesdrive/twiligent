@@ -10,6 +10,11 @@ export interface QueueHealth {
     stale: number;
     needsReview: number;
     followupsDue: number;
+    // public replies under comments: due now, the oldest due, held by runs that stopped, and of unknown outcome
+    publicDue: number;
+    publicOldestDueAt: string | null;
+    publicStale: number;
+    publicNeedsReview: number;
     pausedAccounts: number;
     limitedAccounts: number;
 }
@@ -20,5 +25,8 @@ export function healthWarning(health: QueueHealth, now: number): string | null {
     const behindMs = health.oldestDueAt ? now - Date.parse(health.oldestDueAt) : 0;
     if (behindMs > BEHIND_AFTER_MS) problems.push(`the oldest due reply has waited ${Math.round(behindMs / 60_000)} minutes`);
     if (health.stale > 0) problems.push(`${health.stale} replies are held by runs that stopped`);
+    const publicBehindMs = health.publicOldestDueAt ? now - Date.parse(health.publicOldestDueAt) : 0;
+    if (publicBehindMs > BEHIND_AFTER_MS) problems.push(`the oldest due public reply has waited ${Math.round(publicBehindMs / 60_000)} minutes`);
+    if (health.publicStale > 0) problems.push(`${health.publicStale} public replies are held by runs that stopped`);
     return problems.length > 0 ? `automation queue behind: ${problems.join('; ')}` : null;
 }

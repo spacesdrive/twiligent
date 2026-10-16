@@ -9,6 +9,7 @@ import { createAutomationRuleRepository } from './repositories/automationRuleRep
 import { createAutomationCommentRepository } from './repositories/automationCommentRepository.ts';
 import { createAutomationAccountRepository } from './repositories/automationAccountRepository.ts';
 import { createAutomationFollowupRepository } from './repositories/automationFollowupRepository.ts';
+import { createAutomationPublicReplyRepository } from './repositories/automationPublicReplyRepository.ts';
 import { createAccountService } from './services/accountService.ts';
 import { createYouTubeAnalyticsService } from './services/youtubeAnalyticsService.ts';
 import { createInstagramAnalyticsService } from './services/instagramAnalyticsService.ts';
@@ -26,6 +27,7 @@ import { createAutomationService } from './services/automationService.ts';
 import { createAutomationWebhookService } from './services/automationWebhookService.ts';
 import { createAutomationProcessor } from './services/automationProcessor.ts';
 import { createAutomationFollowupProcessor } from './services/automationFollowupProcessor.ts';
+import { createAutomationPublicReplyProcessor } from './services/automationPublicReplyProcessor.ts';
 import { createAutomationReconciler } from './services/automationReconciler.ts';
 import { createRetentionService } from './services/retentionService.ts';
 import type { AccountService } from './services/accountService.ts';
@@ -45,6 +47,7 @@ import type { AutomationService } from './services/automationService.ts';
 import type { AutomationWebhookService } from './services/automationWebhookService.ts';
 import type { AutomationProcessor } from './services/automationProcessor.ts';
 import type { AutomationFollowupProcessor } from './services/automationFollowupProcessor.ts';
+import type { AutomationPublicReplyProcessor } from './services/automationPublicReplyProcessor.ts';
 import type { AutomationReconciler } from './services/automationReconciler.ts';
 import type { RetentionService } from './services/retentionService.ts';
 import type { AppConfig } from './lib/config.ts';
@@ -76,6 +79,7 @@ export interface Services {
     automationWebhook: AutomationWebhookService;
     automationProcessor: AutomationProcessor;
     automationFollowups: AutomationFollowupProcessor;
+    automationPublicReplies: AutomationPublicReplyProcessor;
     automationReconciler: AutomationReconciler;
     retention: RetentionService;
 }
@@ -92,6 +96,7 @@ export function createServices(clients: Clients, config: AppConfig, context: Req
     const comments = createAutomationCommentRepository(clients.supabase);
     const automationAccounts = createAutomationAccountRepository(clients.supabase);
     const followups = createAutomationFollowupRepository(clients.supabase);
+    const publicReplies = createAutomationPublicReplyRepository(clients.supabase);
     const { automation } = config;
     const scheduledPublisher = createScheduledPublisher({ accounts, posts, context });
     return {
@@ -108,11 +113,12 @@ export function createServices(clients: Clients, config: AppConfig, context: Req
         settings: createSettingsService({ settings, config }),
         instagramConnect: createInstagramConnectService({ accounts, audit, config, context }),
         authEmail: createAuthEmailService({ quota: createEmailQuotaRepository(clients.rateLimitRedis), config, context }),
-        automations: createAutomationService({ accounts, rules, comments, followups, automationAccounts, audit, automation, context }),
+        automations: createAutomationService({ accounts, rules, comments, followups, publicReplies, automationAccounts, audit, automation, context }),
         automationWebhook: createAutomationWebhookService({ rules, comments, followups, automation, context }),
         automationProcessor: createAutomationProcessor({ comments, automation, context }),
         automationFollowups: createAutomationFollowupProcessor({ followups, automation, context }),
-        automationReconciler: createAutomationReconciler({ comments, context }),
+        automationPublicReplies: createAutomationPublicReplyProcessor({ publicReplies, automation, context }),
+        automationReconciler: createAutomationReconciler({ comments, publicReplies, context }),
         retention: createRetentionService({ comments, audit, context }),
     };
 }

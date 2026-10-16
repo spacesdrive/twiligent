@@ -9,8 +9,10 @@ const CALLBACK_PATH = '/api/auth/instagram/callback';
 // Resend's free plan sends 100 emails a day
 const DEFAULT_EMAIL_DAILY_LIMIT = 100;
 // Instagram allows 750 private replies an hour per account for posts and reels; the default keeps well under it
-const DEFAULT_AUTOMATION_LIMITS: AutomationLimits = { accountHourly: 200, userHourly: 500, globalHourly: 1000, recipientDaily: 3 };
+const DEFAULT_AUTOMATION_LIMITS: AutomationLimits = { accountHourly: 200, userHourly: 500, globalHourly: 1000, recipientDaily: 3, publicAccountHourly: 60 };
 const INSTAGRAM_ACCOUNT_HOURLY_MAX = 750;
+// Meta publishes no limit for comment replies but blocks accounts that comment like a bot, so the pace stays human
+const PUBLIC_ACCOUNT_HOURLY_MAX = 200;
 // each reply costs three subrequests and a run gets 50 on the Workers Free plan, so 15 leaves room for the claim
 const DEFAULT_AUTOMATION_BATCH_SIZE = 10;
 const MAX_AUTOMATION_BATCH_SIZE = 15;
@@ -135,6 +137,7 @@ export function readAutomationConfig(env: Env): AutomationConfig {
             userHourly: positiveIntegerOf(env.AUTOMATION_USER_HOURLY_LIMIT, defaults.userHourly),
             globalHourly: positiveIntegerOf(env.AUTOMATION_GLOBAL_HOURLY_LIMIT, defaults.globalHourly),
             recipientDaily: positiveIntegerOf(env.AUTOMATION_RECIPIENT_DAILY_LIMIT, defaults.recipientDaily),
+            publicAccountHourly: positiveIntegerOf(env.AUTOMATION_PUBLIC_ACCOUNT_HOURLY_LIMIT, defaults.publicAccountHourly, PUBLIC_ACCOUNT_HOURLY_MAX),
         },
         batchSize: positiveIntegerOf(env.AUTOMATION_BATCH_SIZE, DEFAULT_AUTOMATION_BATCH_SIZE, MAX_AUTOMATION_BATCH_SIZE),
     };

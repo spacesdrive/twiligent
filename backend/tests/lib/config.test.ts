@@ -46,14 +46,16 @@ test('automation limits fall back to their defaults when missing, malformed or o
         verifyToken: undefined,
         appSecrets: [],
         paused: false,
-        limits: { accountHourly: 200, userHourly: 500, globalHourly: 1000, recipientDaily: 3 },
+        limits: { accountHourly: 200, userHourly: 500, globalHourly: 1000, recipientDaily: 3, publicAccountHourly: 60 },
         batchSize: 10,
     });
     const set = config({
         AUTOMATION_ACCOUNT_HOURLY_LIMIT: ' 50 ', AUTOMATION_USER_HOURLY_LIMIT: 'lots', AUTOMATION_GLOBAL_HOURLY_LIMIT: '-1',
-        AUTOMATION_RECIPIENT_DAILY_LIMIT: '1.5', AUTOMATION_BATCH_SIZE: '4',
+        AUTOMATION_RECIPIENT_DAILY_LIMIT: '1.5', AUTOMATION_BATCH_SIZE: '4', AUTOMATION_PUBLIC_ACCOUNT_HOURLY_LIMIT: '500',
     }).automation;
-    assert.deepEqual(set.limits, { accountHourly: 50, userHourly: 500, globalHourly: 1000, recipientDaily: 3 });
+    // public replies stay at a human pace: 500 is over their cap of 200, so the default applies
+    assert.deepEqual(set.limits, { accountHourly: 50, userHourly: 500, globalHourly: 1000, recipientDaily: 3, publicAccountHourly: 60 });
+    assert.equal(config({ AUTOMATION_PUBLIC_ACCOUNT_HOURLY_LIMIT: '30' }).automation.limits.publicAccountHourly, 30);
     assert.equal(set.batchSize, 4);
 });
 

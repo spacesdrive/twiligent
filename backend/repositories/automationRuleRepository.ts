@@ -10,8 +10,11 @@ interface AutomationRuleRow {
     match_mode: AutomationMatchMode;
     case_sensitive: boolean;
     media_ids: string[];
+    private_reply_enabled: boolean;
     reply_text: string;
     link_url: string | null;
+    public_reply_enabled: boolean;
+    public_reply_texts: string[];
     enabled: boolean;
     hourly_limit: number | null;
     require_follow: boolean;
@@ -21,7 +24,7 @@ interface AutomationRuleRow {
     updated_at: string;
 }
 
-// a rule as the webhook needs it to match a comment, with the member and account it belongs to
+// a rule as the webhook needs it to match a comment and queue its replies, with the member and account it belongs to
 export interface WebhookRule {
     id: string;
     userId: string;
@@ -30,6 +33,9 @@ export interface WebhookRule {
     matchMode: AutomationMatchMode;
     caseSensitive: boolean;
     mediaIds: string[];
+    privateReplyEnabled: boolean;
+    publicReplyEnabled: boolean;
+    publicReplyTexts: string[];
 }
 
 interface WebhookRuleRow {
@@ -40,11 +46,15 @@ interface WebhookRuleRow {
     match_mode: AutomationMatchMode;
     case_sensitive: boolean;
     media_ids: string[];
+    // absent while the database still has the function from before public replies
+    private_reply_enabled?: boolean;
+    public_reply_enabled?: boolean;
+    public_reply_texts?: string[];
 }
 
 export type AutomationRuleChanges = Partial<Omit<AutomationRule, 'id' | 'accountId' | 'createdAt' | 'updatedAt'>>;
 
-const COLUMNS = 'id, account_id, name, keywords, match_mode, case_sensitive, media_ids, reply_text, link_url, enabled, hourly_limit, require_follow, follow_prompt_text, not_following_text, created_at, updated_at';
+const COLUMNS = 'id, account_id, name, keywords, match_mode, case_sensitive, media_ids, private_reply_enabled, reply_text, link_url, public_reply_enabled, public_reply_texts, enabled, hourly_limit, require_follow, follow_prompt_text, not_following_text, created_at, updated_at';
 
 function toRule(row: AutomationRuleRow): AutomationRule {
     return {
@@ -55,8 +65,11 @@ function toRule(row: AutomationRuleRow): AutomationRule {
         matchMode: row.match_mode,
         caseSensitive: row.case_sensitive,
         mediaIds: row.media_ids,
+        privateReplyEnabled: row.private_reply_enabled ?? true,
         replyText: row.reply_text,
         linkUrl: row.link_url,
+        publicReplyEnabled: row.public_reply_enabled ?? false,
+        publicReplyTexts: row.public_reply_texts ?? [],
         enabled: row.enabled,
         hourlyLimit: row.hourly_limit,
         requireFollow: row.require_follow ?? false,
@@ -75,8 +88,11 @@ function toColumns(changes: AutomationRuleChanges): Record<string, unknown> {
         match_mode: changes.matchMode,
         case_sensitive: changes.caseSensitive,
         media_ids: changes.mediaIds,
+        private_reply_enabled: changes.privateReplyEnabled,
         reply_text: changes.replyText,
         link_url: changes.linkUrl,
+        public_reply_enabled: changes.publicReplyEnabled,
+        public_reply_texts: changes.publicReplyTexts,
         enabled: changes.enabled,
         hourly_limit: changes.hourlyLimit,
         require_follow: changes.requireFollow,
@@ -156,6 +172,9 @@ export function createAutomationRuleRepository(db: SupabaseClient): AutomationRu
                 matchMode: row.match_mode,
                 caseSensitive: row.case_sensitive,
                 mediaIds: row.media_ids,
+                privateReplyEnabled: row.private_reply_enabled ?? true,
+                publicReplyEnabled: row.public_reply_enabled ?? false,
+                publicReplyTexts: row.public_reply_texts ?? [],
             }));
         },
     };

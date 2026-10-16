@@ -6,26 +6,29 @@ import type { Row } from '../fixtures/fakeSupabase.ts';
 import type { FinishPlan } from '../../lib/automationDelivery.ts';
 import type { NewAutomationComment } from '../../repositories/automationCommentRepository.ts';
 
-const LIMITS = { accountHourly: 200, userHourly: 500, globalHourly: 1000, recipientDaily: 3 };
+const LIMITS = { accountHourly: 200, userHourly: 500, globalHourly: 1000, recipientDaily: 3, publicAccountHourly: 60 };
 
 function newComment(id: string, commentId: string): NewAutomationComment {
     return {
         id, userId: 'user-1', accountId: 'ig1', ruleId: 'rule-1', igUserId: '1784', commentId, mediaId: '9', fromId: 'f', fromUsername: 'fan',
         text: 'GUIDE', status: 'queued', statusReason: null, nextAttemptAt: '2026-10-16T00:00:00Z', notifiedAt: '2026-10-16T00:00:00Z', expiresAt: '2026-10-23T00:00:00Z',
+        publicReply: null,
     };
 }
 
 const rpcArgs = (supabase: ReturnType<typeof fakeSupabase>, name: string) => supabase.calls.find(call => call.type === 'rpc' && call.table === name)!.values as Row;
 
 describe('automation comment repository', () => {
-    test('storing comments ignores ones already stored for the same Instagram account and returns only the new ones', async () => {
-        const supabase = fakeSupabase([tableRow('automation_comments', { id: 'old', ig_user_id: '1784', comment_id: 'c1' })]);
+    test('storing comments sends them with their public replies in one call and returns only what is new', async () => {
+        const supabase = fakeSupabase([], {
+            store_automation_comments: () => ({ comments: [{ id: 'b', status: 'queued' }], public_replies: ['pb'] }),
+        });
         const repo = createAutomationCommentRepository(supabase);
-        const inserted = await repo.insertMany([newComment('a', 'c1'), newComment('b', 'c2')]);
-        assert.deepEqual(inserted.map(comment => comment.id), ['b']);
-        const call = supabase.calls[0];
-        assert.deepEqual([call.type, call.onConflict, call.ignoreDuplicates], ['upsert', 'ig_user_id,comment_id', true]);
-        assert.deepEqual(await repo.insertMany([]), []);
+        const stored = await repo.store([newComment('a', 'c1'), { ...newComment('b', 'c2'), publicReply: { id: 'pb', text: 'Sent you a message' } }]);
+        assert.deepEqual([stored.inserted.map(comment => comment.id), stored.publicReplyIds], [['b'], ['pb']]);
+        const sent = (rpcArgs(supabase, 'store_automation_comments').p_comments as Row[]);
+        assert.deepEqual(sent.map(row => [row.comment_id, row.public_reply_id, row.public_reply_text]), [['c1', null, null], ['c2', 'pb', 'Sent you a message']]);
+        assert.deepEqual(await repo.store([]), { inserted: [], publicReplyIds: [] });
         assert.equal(supabase.calls.length, 1);
     });
 
@@ -63,14 +66,14 @@ describe('automation comment repository', () => {
 
     test('expiry, review, health and purge pass their bounds to the database functions and read the answers', async () => {
         const supabase = fakeSupabase([], {
-            expire_automation_jobs: () => ({ comments: 3, followups: 1 }),
+            expire_automation_jobs: () => ({ comments: 3, followups: 1, public_replies: 2 }),
             automation_review_candidates: () => [{ id: 'a', ig_user_id: '1784', from_id: 'f', started_at: 'S', message_digest: 'd', access_token: 'TOK', review_checks: 1 }],
             record_automation_review: () => true,
             automation_queue_health: () => ({ due: 4, oldest_due_at: 'O', needs_review: 2 }),
             purge_automation_comments: () => 1000,
         });
         const repo = createAutomationCommentRepository(supabase);
-        assert.deepEqual(await repo.expireDue(500), { comments: 3, followups: 1 });
+        assert.deepEqual(await repo.expireDue(500), { comments: 3, followups: 1, publicReplies: 2 });
         assert.deepEqual(rpcArgs(supabase, 'expire_automation_jobs'), { p_limit: 500 });
         assert.deepEqual(await repo.reviewCandidates({ limit: 4, settleSeconds: 300, maxChecks: 3, recheckSeconds: 1800 }), [
             { id: 'a', igUserId: '1784', fromId: 'f', startedAt: 'S', messageDigest: 'd', accessToken: 'TOK', reviewChecks: 1 },
@@ -79,7 +82,8 @@ describe('automation comment repository', () => {
         assert.equal(await repo.recordReview('a', { found: true, messageId: 'm', sentAt: 'T' }), true);
         assert.deepEqual(rpcArgs(supabase, 'record_automation_review'), { p_id: 'a', p_found: true, p_message_id: 'm', p_sent_at: 'T', p_note: null });
         assert.deepEqual(await repo.health(1200), {
-            due: 4, oldestDueAt: 'O', waiting: 0, stale: 0, needsReview: 2, followupsDue: 0, pausedAccounts: 0, limitedAccounts: 0,
+            due: 4, oldestDueAt: 'O', waiting: 0, stale: 0, needsReview: 2, followupsDue: 0, publicDue: 0, publicOldestDueAt: null, publicStale: 0, publicNeedsReview: 0,
+            pausedAccounts: 0, limitedAccounts: 0,
         });
         assert.equal(await repo.purgeCreatedBefore('2026-07-01T00:00:00Z', 1000), 1000);
         assert.deepEqual(rpcArgs(supabase, 'purge_automation_comments'), { p_before: '2026-07-01T00:00:00Z', p_limit: 1000 });
@@ -155,8 +159,8 @@ describe('automation comment repository', () => {
     });
 
     test('stats come from the database function, with empty groups when nothing happened', async () => {
-        const repo = createAutomationCommentRepository(fakeSupabase([], { automation_stats: () => ({ comments: { accepted: 2 } }) }));
-        assert.deepEqual(await repo.statsForUser('user-1', { from: 'F', to: 'T' }), { comments: { accepted: 2 }, attempts: {} });
+        const repo = createAutomationCommentRepository(fakeSupabase([], { automation_stats: () => ({ comments: { accepted: 2 }, public_replies: { failed: 1 } }) }));
+        assert.deepEqual(await repo.statsForUser('user-1', { from: 'F', to: 'T' }), { comments: { accepted: 2 }, publicReplies: { failed: 1 }, attempts: {} });
     });
 
     test('an activity item shows its followers-only wait and its latest follow-up', async () => {
@@ -170,6 +174,23 @@ describe('automation comment repository', () => {
         const [item] = await createAutomationCommentRepository(supabase).listForUser('user-1', { limit: 10 });
         assert.equal(item.gateStatus, 'awaiting_reply');
         assert.deepEqual(item.followup, { status: 'failed', kind: null, errorMessage: 'not sent', createdAt: '2026-10-16T11:00:00Z' });
+        assert.equal(item.publicReply, null);
+    });
+
+    test('an activity item shows its public reply apart from the private one', async () => {
+        const supabase = fakeSupabase([tableRow('automation_comments', {
+            id: 'a', user_id: 'user-1', status: 'failed', error_message: 'private failed',
+            automation_public_replies: {
+                status: 'accepted', status_reason: null, error_message: null, reply_text: 'Sent you a message', attempts: 1, reply_id: 'r1',
+                next_attempt_at: null, accepted_at: '2026-10-16T10:00:00Z',
+            },
+        })]);
+        const [item] = await createAutomationCommentRepository(supabase).listForUser('user-1', { limit: 10 });
+        assert.deepEqual([item.status, item.errorMessage], ['failed', 'private failed']);
+        assert.deepEqual(item.publicReply, {
+            status: 'accepted', statusReason: null, errorMessage: null, text: 'Sent you a message', attempts: 1, replyId: 'r1',
+            nextAttemptAt: null, acceptedAt: '2026-10-16T10:00:00Z',
+        });
     });
 
     test('a failed query becomes a DatabaseError', async () => {

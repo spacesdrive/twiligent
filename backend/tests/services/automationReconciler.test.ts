@@ -4,7 +4,7 @@ import { createAutomationReconciler } from '../../services/automationReconciler.
 import { messageDigest } from '../../lib/automationDelivery.ts';
 import { installFetch, reply } from '../fixtures/fakeFetch.ts';
 import type { FetchMock, RecordedRequest } from '../fixtures/fakeFetch.ts';
-import { fakeAutomationQueue, followupRow, queueRow } from '../fixtures/fakeAutomationQueue.ts';
+import { fakeAutomationQueue, followupRow, publicRow, queueRow } from '../fixtures/fakeAutomationQueue.ts';
 import type { FakeQueue } from '../fixtures/fakeAutomationQueue.ts';
 import type { Logger } from '../../lib/logger.ts';
 
@@ -43,7 +43,34 @@ async function lost(id: string): Promise<FakeQueue> {
     return queue;
 }
 
-const reconciler = (queue: FakeQueue) => createAutomationReconciler({ comments: queue, context: { requestId: 'cron-test', signal: new AbortController().signal, log: logger() } });
+const PUBLIC_TEXT = 'Sent you a message';
+
+// the replies under a comment, one page or two, as Instagram lists them
+function commentReplies(pages: { id: string; from: string; text: string }[][] | Error) {
+    fetchMock = installFetch(request => {
+        requests.push(request);
+        if (pages instanceof Error) return pages;
+        const after = new URL(request.url).searchParams.get('after');
+        const index = after ? Number(after) : 0;
+        const data = pages[index].map(item => ({ id: item.id, text: item.text, timestamp: new Date().toISOString(), from: { id: item.from } }));
+        const next = index + 1 < pages.length ? { next: 'https://graph.instagram.com/next', cursors: { after: String(index + 1) } } : undefined;
+        return reply({ data, paging: next });
+    });
+}
+
+// a public reply whose answer was lost, after this many checks and lost answers
+async function lostPublic(checks = 0, lostAnswers = 1): Promise<FakeQueue> {
+    const queue = fakeAutomationQueue([queueRow('a', { status: 'accepted' })], [], [publicRow('pub-a', 'a', { status: 'needs_review', statusReason: 'no_answer', nextAttemptAt: null, reviewChecks: checks })]);
+    for (let index = 0; index < lostAnswers; index++) {
+        queue.attempts.push({
+            id: `att-${index}`, commentRowId: 'a', publicReplyId: 'pub-a', kind: 'public_reply', userId: 'user-1', accountId: 'ig1', ruleId: 'rule-guide',
+            recipientId: 'fan-a', outcome: 'ambiguous', digest: await messageDigest(PUBLIC_TEXT), startedAt: Date.now() - 10 * 60_000,
+        });
+    }
+    return queue;
+}
+
+const reconciler = (queue: FakeQueue) => createAutomationReconciler({ comments: queue, publicReplies: queue.publicReplies, context: { requestId: 'cron-test', signal: new AbortController().signal, log: logger() } });
 
 beforeEach(() => {
     requests = [];
@@ -105,8 +132,53 @@ describe('automation reconciler', () => {
             [followupRow('fu-late', 'gated', { windowExpiresAt: new Date(Date.now() - 1000).toISOString() })],
         );
         const run = await reconciler(queue).run();
-        assert.deepEqual(run.expired, { comments: 1, followups: 1 });
+        assert.deepEqual(run.expired, { comments: 1, followups: 1, publicReplies: 0 });
         assert.equal(queue.rows[0].status, 'expired');
         assert.deepEqual(lines.filter(line => line.level === 'warn').map(line => line.message), ['automation queue behind: the oldest due reply has waited 30 minutes']);
+    });
+
+    test('a lost public reply found among the comment\'s replies becomes accepted with its id, on the second page too', async () => {
+        commentReplies([[{ id: 'other', from: 'fan', text: PUBLIC_TEXT }], [{ id: 'reply-found', from: '1784', text: PUBLIC_TEXT }]]);
+        const queue = await lostPublic();
+        const run = await reconciler(queue).run();
+        assert.deepEqual(run.reviewedPublic, { found: 1, notFound: 0, failed: 0, resent: 0 });
+        assert.deepEqual([queue.publicRows[0].status, queue.publicRows[0].replyId, queue.attempts[0].outcome], ['accepted', 'reply-found', 'accepted']);
+        assert.ok(requests.every(request => request.method === 'GET'));
+        assert.equal(new URL(requests[0].url).pathname.replace(/^\/v[\d.]+/, ''), '/c-a/replies');
+    });
+
+    test('a public reply missing on two checks of every reply goes back in the queue once; nothing is posted from here', async () => {
+        commentReplies([[{ id: 'other', from: '1784', text: 'Something else' }]]);
+        const first = await lostPublic(0);
+        await reconciler(first).run();
+        assert.deepEqual([first.publicRows[0].status, first.publicRows[0].reviewChecks], ['needs_review', 1]);
+        assert.match(first.publicRows[0].errorMessage!, /looks again in a few minutes/);
+        const second = await lostPublic(1);
+        const run = await reconciler(second).run();
+        assert.deepEqual(run.reviewedPublic, { found: 0, notFound: 0, failed: 0, resent: 1 });
+        assert.deepEqual([second.publicRows[0].status, second.publicRows[0].statusReason], ['queued', 'resend_after_check']);
+        assert.ok(requests.every(request => request.method === 'GET'));
+    });
+
+    test('a public reply is not sent again when a page of replies was left unread or it was already sent again once', async () => {
+        commentReplies([[{ id: 'x1', from: 'fan', text: 'hi' }], [{ id: 'x2', from: 'fan', text: 'hi' }], [{ id: 'x3', from: 'fan', text: 'hi' }]]);
+        const unread = await lostPublic(1);
+        await reconciler(unread).run();
+        assert.equal(unread.publicRows[0].status, 'needs_review');
+        assert.match(unread.publicRows[0].errorMessage!, /could not read every reply/);
+        fetchMock?.restore();
+        commentReplies([[]]);
+        const again = await lostPublic(1, 2);
+        await reconciler(again).run();
+        assert.equal(again.publicRows[0].status, 'needs_review');
+    });
+
+    test('replies Instagram will not show count as a check that could not be made, and nothing is sent', async () => {
+        commentReplies(new Error('connection reset'));
+        const queue = await lostPublic();
+        const run = await reconciler(queue).run();
+        assert.deepEqual(run.reviewedPublic, { found: 0, notFound: 0, failed: 1, resent: 0 });
+        assert.deepEqual([queue.publicRows[0].status, queue.publicRows[0].reviewChecks], ['needs_review', 1]);
+        assert.match(queue.publicRows[0].errorMessage!, /could not read the comment's replies/);
     });
 });

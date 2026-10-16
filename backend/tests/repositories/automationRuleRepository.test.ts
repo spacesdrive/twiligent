@@ -22,7 +22,7 @@ test('the webhook lookup maps the database function\'s rows to rules with their 
         automation_rules_for_ig_user: () => [{ id: 'r', user_id: 'u', account_id: 'a', keywords: ['K'], match_mode: 'exact', case_sensitive: true, media_ids: ['1'] }],
     });
     assert.deepEqual(await createAutomationRuleRepository(supabase).listEnabledForInstagramUser('1784'), [
-        { id: 'r', userId: 'u', accountId: 'a', keywords: ['K'], matchMode: 'exact', caseSensitive: true, mediaIds: ['1'] },
+        { id: 'r', userId: 'u', accountId: 'a', keywords: ['K'], matchMode: 'exact', caseSensitive: true, mediaIds: ['1'], privateReplyEnabled: true, publicReplyEnabled: false, publicReplyTexts: [] },
     ]);
     assert.deepEqual(supabase.calls[0].values, { p_ig_user_id: '1784' });
 });

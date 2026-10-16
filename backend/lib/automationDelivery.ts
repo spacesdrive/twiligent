@@ -41,7 +41,7 @@ export const MAX_FOLLOW_REMINDERS = 2;
 const FOLLOW_CHECK_RETRY_MS = 5 * 60 * 1000;
 
 // a reply held by a pause is looked at again on a later sweep, not every five minutes for a week
-const HOLD_RECHECK_MS = 15 * 60 * 1000;
+export const HOLD_RECHECK_MS = 15 * 60 * 1000;
 
 // backoff: 1, 2, 4, 8 minutes, then at most an hour, plus up to 30 seconds so retries of one burst spread out
 const BACKOFF_BASE_MS = 60 * 1000;
@@ -49,11 +49,11 @@ const BACKOFF_MAX_MS = 60 * 60 * 1000;
 const BACKOFF_JITTER_MS = 30 * 1000;
 
 // the next sweep, when a run could not start the request
-const NOT_SENT_RETRY_MS = 5 * 60 * 1000;
+export const NOT_SENT_RETRY_MS = 5 * 60 * 1000;
 // used when Instagram limits the account without saying for how long
-const DEFAULT_COOLDOWN_MS = 15 * 60 * 1000;
+export const DEFAULT_COOLDOWN_MS = 15 * 60 * 1000;
 // code 368 is a temporary block for activity Instagram considers abusive, so the account rests for a day
-const BLOCKED_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+export const BLOCKED_COOLDOWN_MS = 24 * 60 * 60 * 1000;
 
 // Graph API codes Meta documents for throttling: app, user, page and business use case limits
 const RATE_LIMIT_CODES = new Set([4, 17, 32, 613, 80002, 80006]);
