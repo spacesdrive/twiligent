@@ -14,6 +14,11 @@ import type {
 } from '@shared/types/instagram.ts';
 import type { RedditCacheData, RedditPost } from '@shared/types/reddit.ts';
 import type {
+    AutomationAccountResponse, AutomationActivityItemResponse, AutomationActivityResponse, AutomationOverviewResponse,
+    AutomationRuleRequest, AutomationRuleResponse, AutomationRuleUpdateRequest, AutomationStatsResponse, AutomationTestRequest,
+    AutomationTestResponse,
+} from '@shared/types/automation.ts';
+import type {
     ResolveChannelResponse, YouTubeAnalyticsPayload, YouTubeComparisonResponse, YouTubeVideosResponse,
 } from '@shared/types/youtube.ts';
 
@@ -182,4 +187,17 @@ export const api = {
     deleteScheduledPost: (id: string) => request<SuccessMessageResponse>(`/scheduled-posts/${id}`, { method: 'DELETE' }),
     deleteAllScheduledPosts: () => request<ScheduledPostDeleteAllResponse>('/scheduled-posts', { method: 'DELETE' }),
     processScheduled: () => request<ScheduledPublishRunResponse>('/process-scheduled'),
+
+    // Comment-to-DM automation; activity and stats take filters as query parameters
+    getAutomations: () => request<AutomationOverviewResponse>('/automations'),
+    createAutomationRule: (data: AutomationRuleRequest) => request<AutomationRuleResponse>('/automations/rules', { method: 'POST', body: JSON.stringify(data) }),
+    updateAutomationRule: (id: string, data: AutomationRuleUpdateRequest) => request<AutomationRuleResponse>(`/automations/rules/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    duplicateAutomationRule: (id: string) => request<AutomationRuleResponse>(`/automations/rules/${id}/duplicate`, { method: 'POST' }),
+    deleteAutomationRule: (id: string) => request<SuccessMessageResponse>(`/automations/rules/${id}`, { method: 'DELETE' }),
+    testAutomationRule: (data: AutomationTestRequest) => request<AutomationTestResponse>('/automations/test', { method: 'POST', body: JSON.stringify(data) }),
+    getAutomationActivity: (query: URLSearchParams) => request<AutomationActivityResponse>(`/automations/activity?${query}`),
+    retryAutomationActivity: (id: string) => request<AutomationActivityItemResponse>(`/automations/activity/${id}/retry`, { method: 'POST' }),
+    getAutomationStats: (query: URLSearchParams) => request<AutomationStatsResponse>(`/automations/stats?${query}`),
+    setAutomationAccountPaused: (accountId: string, paused: boolean) => request<AutomationAccountResponse>(`/automations/accounts/${accountId}`, { method: 'PUT', body: JSON.stringify({ paused }) }),
+    subscribeAutomationAccount: (accountId: string) => request<AutomationAccountResponse>(`/automations/accounts/${accountId}/subscribe`, { method: 'POST' }),
 };
