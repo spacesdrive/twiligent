@@ -39,10 +39,12 @@ begin
         return;
     end if;
 
-    -- a person who comments again and again gets a few replies a day, never a stream of them
+    -- a person who comments again and again gets a few replies a day, never a stream of them; retries of this
+    -- comment are one reply, so only other comments count
     if job.from_id is not null and (
-        select count(*) from public.automation_attempts t
-        where t.account_id = job.account_id and t.recipient_id = job.from_id and t.started_at > now() - interval '1 day'
+        select count(distinct t.automation_comment_id) from public.automation_attempts t
+        where t.account_id = job.account_id and t.recipient_id = job.from_id
+            and t.started_at > now() - interval '1 day' and t.automation_comment_id <> job.id
     ) >= p_recipient_limit then
         return query select 'recipient_limit'::text, null::timestamptz;
         return;
