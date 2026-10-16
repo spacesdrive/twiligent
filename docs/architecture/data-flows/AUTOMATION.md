@@ -131,6 +131,8 @@ A wait that would end after the 7 day window makes the comment `expired` instead
 
 ## Followers-Only Replies (`backend/services/automationFollowupProcessor.ts`)
 
+**Status: in testing.** The flow is covered by tests with fakes and a local database, but it has not been tried with a real account. It depends on Meta sending the account's `messages` events, which may need Advanced Access for `instagram_business_manage_messages`; this instance runs on Standard Access. The app and the docs label it as testing, and it may or may not work.
+
 Instagram does not let an app check whether a commenter follows the account until that person messages it, so the check cannot happen before the first private reply. A followers-only rule therefore works in two steps, and Twiligent never says a follow was checked when it was not.
 
 1. **The private reply** sends the rule's first message (`follow_prompt_text`), with no link: for example "Follow this account, then reply to this message and the link is on its way." Once Instagram accepts it, the comment waits for the person's answer.

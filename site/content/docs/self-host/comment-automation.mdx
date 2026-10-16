@@ -45,7 +45,7 @@ Open the app, **Instagram**, **API setup with Instagram business login**, **Conf
 
 Choose **Verify and save**. Meta calls the URL once; if it fails, check that the backend is deployed and the secret is set. Then subscribe to the **comments** field.
 
-Subscribe to the **messages** field too only if you will use followers-only rules. Meta then sends every direct message to your connected accounts to the backend, each one a Worker request. Twiligent reads only who sent it, never the text, and answers only people a followers-only reply is waiting for.
+Subscribe to the **messages** field too only if you will use followers-only rules. That option is still in testing and may or may not work: without Advanced Access for `instagram_business_manage_messages`, Meta may not send the messages. Meta then sends every direct message to your connected accounts to the backend, each one a Worker request. Twiligent reads only who sent it, never the text, and answers only people a followers-only reply is waiting for.
 
 </Step>
 <Step title="Turn on comment events for each account">

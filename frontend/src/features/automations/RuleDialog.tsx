@@ -1,5 +1,6 @@
 import { Megaphone, UserCheck } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -93,13 +94,20 @@ export default function RuleDialog({ rule, igAccounts }: RuleDialogProps) {
             </FieldRow>
             <div className="flex flex-col gap-3 rounded-card border border-line p-4">
               <label htmlFor="rule-follow" className="flex items-center justify-between gap-3 text-sm font-medium text-ink">
-                <span className="flex items-center gap-2"><UserCheck className="size-4 text-ink-muted" />Send the link only to followers</span>
+                <span className="flex items-center gap-2">
+                  <UserCheck className="size-4 text-ink-muted" />Send the link only to followers
+                  <Badge variant="warning">Testing</Badge>
+                </span>
                 <Switch id="rule-follow" checked={form.requireFollow} onCheckedChange={checked => setField('requireFollow', checked)} />
               </label>
               <p className="text-small text-ink-muted">
                 Instagram tells Twiligent whether someone follows you only after they message you. With this on, the first reply asks them
                 to follow and reply. When they reply, Twiligent asks Instagram, then sends the reply and link to followers and a reminder to
                 everyone else, twice at most. If Instagram cannot say, nothing is sent.
+              </p>
+              <p className="text-small text-warning">
+                This option is still being tested and may or may not work. It needs Instagram to send your account&apos;s messages to
+                Twiligent, which Meta may not allow without extra app approval. Use a keyword rule when the link must arrive.
               </p>
               {form.requireFollow && (
                 <>
