@@ -8,56 +8,26 @@ Sign in at [supabase.com/dashboard](https://supabase.com/dashboard) and choose *
 </Step>
 <Step title="Create the tables">
 
-Open **SQL Editor**, choose **New query**, paste the SQL below and choose **Run**. It creates the four tables Twiligent uses and turns on row level security for each.
+Twiligent keeps its database layout as migration files in `supabase/migrations/`, and the Supabase CLI applies them. The CLI came with `npm install` in the cloned `twiligent` folder (see [What you need on your computer](/docs/self-host#what-you-need-on-your-computer)). Run these from that folder:
 
-```sql
-create table accounts (
-  id text primary key,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  platform text not null,
-  data jsonb not null
-);
-create index accounts_user_id_idx on accounts(user_id);
-
-create table settings (
-  user_id uuid not null references auth.users(id) on delete cascade,
-  key text not null,
-  value jsonb,
-  primary key (user_id, key)
-);
-
-create table scheduled_posts (
-  id text primary key,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  account_id text not null references accounts(id) on delete cascade,
-  status text not null default 'pending',
-  scheduled_at timestamptz not null,
-  claimed_at timestamptz,
-  attempts integer not null default 0,
-  data jsonb
-);
-create index scheduled_posts_user_id_idx on scheduled_posts(user_id);
-create index scheduled_posts_due_idx on scheduled_posts(status, scheduled_at);
-
-create table tracked_posts (
-  id text primary key,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  account_id text references accounts(id) on delete set null,
-  url text not null,
-  label text not null default '',
-  category text not null default '',
-  content_type text not null default 'reddit',
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  data jsonb
-);
-create index tracked_posts_user_id_idx on tracked_posts(user_id);
-
-alter table accounts enable row level security;
-alter table settings enable row level security;
-alter table scheduled_posts enable row level security;
-alter table tracked_posts enable row level security;
+```bash
+npx supabase login
+npx supabase link --project-ref <project-id>
+npm run db:check
+npm run db:push
 ```
+
+- `npx supabase login` opens the browser to sign in to Supabase. On a machine without a browser, set `SUPABASE_ACCESS_TOKEN` to an access token from **Account**, **Access Tokens** instead.
+- The project ID is in **Project Settings**, **General**. It is also the part before `.supabase.co` in the project URL. No database password is needed.
+- `npm run db:check` lists the migrations it will apply, and `npm run db:push` applies them.
+
+This creates the four tables Twiligent uses and closes them to the browser. It also adds the checks that keep stored values valid, the keys that tie each post to its owner's accounts, and the indexes the app's lists use. `npm run db:status` shows each migration and whether it is applied.
+
+<Callout type="note" title="Without the CLI">
+
+Open **SQL Editor**, then run each file from `supabase/migrations/` in file name order, one at a time. Apply later files the same way when you update Twiligent, because the CLI does not know about migrations run in the editor.
+
+</Callout>
 
 </Step>
 <Step title="Configure sign-in">
@@ -93,39 +63,16 @@ The secret key can read and change every row in the database. It belongs only in
 </Step>
 </Steps>
 
-## Already have the tables?
-
-If you created the tables from an older README, make sure `tracked_posts` exists and has the `content_type` column, and that row level security is on. This is safe to run more than once:
-
-```sql
-alter table tracked_posts add column if not exists content_type text not null default 'reddit';
-alter table accounts enable row level security;
-alter table settings enable row level security;
-alter table scheduled_posts enable row level security;
-alter table tracked_posts enable row level security;
-```
-
 ## Upgrading an existing instance
 
-Twiligent's schedulers record when a run claimed a post (`claimed_at`) and how many times it tried (`attempts`), so a run that stops halfway is taken over and a passing problem is retried. If your `scheduled_posts` table has no `claimed_at` column, run this in the **SQL Editor** before you deploy the new version of the Worker. It is safe to run more than once:
+If you set up the tables with SQL from an older version of these docs or the README, including the `claimed_at` and `attempts` upgrade, link the CLI as above and run `npm run db:check`, then `npm run db:push`, before you deploy the new version of the Worker.
 
-```sql
-alter table public.scheduled_posts
-  add column if not exists claimed_at timestamptz,
-  add column if not exists attempts integer not null default 0;
+The first four migrations describe the tables as they were before migrations existed. They are safe to run on tables that already exist, and they bring every earlier setup to the same starting point: they add any missing columns and mark posts stuck in Publishing with no claim as failed, with a note to check Instagram first, because nothing recorded whether they went out. The migrations after them change the tables in small steps.
 
--- posts stuck before this change have no saved container, so nothing can tell whether they went out
-update public.scheduled_posts
-set status = 'failed',
-    data = data || jsonb_build_object('error', 'Publishing was interrupted before Twiligent tracked it. Check Instagram before scheduling this post again.')
-where status = 'publishing' and claimed_at is null;
-
-create index if not exists scheduled_posts_user_id_idx on public.scheduled_posts (user_id);
-create index if not exists scheduled_posts_due_idx on public.scheduled_posts (status, scheduled_at);
-```
-
-Posts that were stuck in Publishing are marked failed with a note to check Instagram first, because nothing recorded whether they went out.
+If a check stops the push because of an old row, the error names the rule. Fix that row in the **Table Editor** and run `npm run db:push` again.
 
 ### Why row level security with no policies
 
-The backend uses the secret key, which bypasses row level security, and limits every query to the signed-in user itself. Turning security on with no policies means the public publishable key, which ships in the frontend, cannot read or change any table directly. Without it, anyone holding that public key could read other members' data.
+The backend uses the secret key, which bypasses row level security, and limits every query to the signed-in user itself. The browser never reads the tables; it only signs in with Supabase. So the migrations turn security on with no policies and also remove every permission the publishable key's roles had on the tables and on Twiligent's database functions. The public publishable key, which ships in the frontend, cannot read or change any table directly, and neither can a signed-in member's own token.
+
+A policy that let members reach their own rows would still expose their raw Instagram tokens and Reddit cookies to the browser, and would let them write rows the backend refuses, such as a post on another member's account. Older setups had such policies; the migrations remove them.

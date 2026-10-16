@@ -46,7 +46,7 @@ Timeouts, an unreachable Instagram, database errors and Instagram's temporary er
 
 - The Worker was never deployed, or its cron triggers were removed. Check **Triggers** on the Worker in the Cloudflare dashboard.
 - `SUPABASE_SERVICE_KEY` or `SUPABASE_URL` is wrong on the Worker.
-- The database is missing the `claimed_at` and `attempts` columns. Run the upgrade SQL in [Supabase](/docs/self-host/supabase#upgrading-an-existing-instance).
+- The database has not had the latest migrations applied. Run `npm run db:push` as described in [Supabase](/docs/self-host/supabase#upgrading-an-existing-instance).
 - The connected Instagram account's access was removed. Reconnect it.
 
 Twiligent warns members when a post is more than 30 minutes late and not yet published, and tells them to contact the administrator. A retried post counts from its last attempt, and a post counts as stuck in `publishing` 50 minutes after its claim: the 20 minute claim plus 30 minutes in which a run should have taken it over.

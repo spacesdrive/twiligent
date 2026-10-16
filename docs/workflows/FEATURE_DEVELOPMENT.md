@@ -81,7 +81,7 @@ Before creating new patterns, check:
 ## Phase 4: Implement
 
 **Step 11 - Implement in this order:**  
-1. DB schema changes (if any) - see `docs/features/NEW_DATABASE_TABLE.md`
+1. DB schema changes (if any): a migration from `npm run db:new <verb>_<object>` and its rollback in `supabase/rollbacks/`, one table or one function per file - see `docs/features/NEW_DATABASE_TABLE.md`
 2. Types: request, response and entity shapes in `shared/types/` (types only, no runtime code); see `docs/guidelines/TYPESCRIPT.md`
 3. Backend: `validators/` parsers for new request bodies and query strings
 4. Backend: `repositories/` additions (new query methods; user-scoped ones end in `ForUser`)
@@ -110,7 +110,10 @@ npm run build  # the app and the public site must build without errors
 npm test       # backend, frontend and site unit tests must pass
 npm run dev    # Worker (8787) and Vite (5173) must both start without errors
 npm run dev:site  # the public site, when the change touches site/
+npm run db:check  # when the change has a migration: lists what db:push would apply
 ```
+
+A change with a migration is applied with `npm run db:push` before its pull request is merged, and `npm run db:status` must then show every migration applied. CI never touches the database; it only runs `backend/tests/database/migrations.test.ts`, which checks the files. See `docs/workflows/DEPLOYMENT.md` (Database Changes).
 
 **Step 14 - Lint**  
 ```bash

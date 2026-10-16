@@ -4,7 +4,7 @@
 
 | Credential | Where stored | Who reads it | Exposed to client? |
 |---|---|---|---|
-| Supabase anon key | `VITE_SUPABASE_ANON_KEY` (env var in frontend build) | Frontend (Supabase JS auth) | **Yes - intentionally public**, which is why RLS must be enabled on every application table (see `docs/architecture/database/SECURITY.md`) |
+| Supabase anon key | `VITE_SUPABASE_ANON_KEY` (env var in frontend build) | Frontend (Supabase JS auth) | **Yes - intentionally public**, which is why every application table and function is closed to the browser roles: RLS on with no policies, and no grants (see `docs/architecture/database/SECURITY.md`) |
 | Supabase service role key | Worker secret | Worker only | **Never** |
 | Instagram App ID | Worker secret | Worker only | **Never** |
 | Instagram App Secret | Worker secret | Worker only | **Never** |
@@ -33,7 +33,8 @@ Instagram access tokens grant posting authority on behalf of users. They must be
 **Rules:**
 - Stored in `accounts.data.accessToken` (jsonb field, not a dedicated column - intentional)
 - Never selected and returned to the frontend. The `safeAccount()` function strips them before responses
-- When updating an account, the token field must survive the jsonb merge - never replace the whole `data` object with a subset
+- When updating an account, the token field must survive the jsonb merge - never replace the whole `data` object with a subset. Updates go through `merge_account_data`, one statement in the database, so a concurrent refresh cannot put an old token back
+- The browser roles have no access to the `accounts` table, so the token cannot be read through Supabase's public Data API either, not even by its owner
 - When deleting an account, the token becomes inaccessible because the row is deleted
 
 ## User Row Isolation
@@ -42,7 +43,7 @@ The Worker uses the service role key and is therefore responsible for its own ac
 
 **The invariant:** Every user-data query must include `.eq('user_id', userId)` where `userId` comes exclusively from the verified Supabase JWT.
 
-**What this prevents:** User A querying user B's accounts, posts, or settings by guessing an account ID.
+**What this prevents:** User A querying user B's accounts, posts, or settings by guessing an account ID. Ids are also UUIDs from `crypto.randomUUID()` (`newRowId()`), so they cannot be guessed from another id.
 
 **What to verify when adding new queries:**
 ```ts
@@ -57,6 +58,19 @@ const { data } = await supabase
 // Wrong: no user_id filter
 const { data } = await supabase.from('accounts').select('*').eq('id', accountId);
 ```
+
+## The Database Guards Ownership Too
+
+The query filter is the first guard. The schema adds a second one that holds even if the code has a bug (ADR-038):
+
+- **No browser access.** The migrations turn row level security on with no policies, revoke every grant on the tables from `anon` and `authenticated`, revoke the default privileges for new tables and functions, and let only `service_role` call the merge functions. The anon key gets 401 permission denied from the Data API.
+- **Composite foreign keys.** `scheduled_posts` and `tracked_posts` reference `accounts (id, user_id)`, so a row can only name an account that belongs to the same user.
+- **Service checks first.** Creating a scheduled post loads the account with `findForUser` and refuses another user's account with 404; changing a tracked item's account does the same for Reddit accounts. The foreign key refuses the same write if a check is ever missed.
+- **Value checks.** CHECK constraints refuse an unknown platform, post status or tracked item type.
+
+Before the migrations, three tables had policies that let a signed-in user reach their own rows through the Data API, every table had full grants to the browser roles, and the API never checked a scheduled post's account. A user could read their raw tokens and cookies and write a scheduled post that named another user's Instagram account. All of these are closed; see `docs/architecture/database/SECURITY.md`.
+
+Schema changes only arrive through migrations in `supabase/migrations/`, reviewed like code. A migration that grants anything to `anon` or `authenticated`, or creates a function without revoking execute from them, is a security bug; `backend/tests/database/migrations.test.ts` catches the second.
 
 ## OAuth State Verification
 

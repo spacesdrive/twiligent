@@ -25,6 +25,8 @@ Start with `docs/guidelines/CODE_STYLE.md`, which shows how code reads across th
 | Frontend utilities | `camelCase.ts` | `formatters.ts`, `api.ts`, `utils.ts` |
 | shadcn components | `kebab-case.tsx` | `button.tsx`, `card.tsx` (generated - do not rename) |
 | Tests | `<source name>.test.ts` in the workspace `tests/` folder | `backend/tests/routes/accountRoutes.test.ts`, `backend/tests/services/youtube/youtubeChannels.test.ts` |
+| Database migrations | `<14 digit version>_<verb>_<object>.sql` in `supabase/migrations/`, created by `npm run db:new <verb>_<object>` | `20261016001700_add_accounts_updated_at.sql`, `20261016002400_index_accounts_list.sql` |
+| Database rollbacks | the same file name as the migration, in `supabase/rollbacks/` | `20261016001700_add_accounts_updated_at.sql` |
 | Documentation | `SCREAMING_SNAKE_CASE.md` | `OVERVIEW.md`, `TYPESCRIPT.md`, `SCHEMA.md` |
 
 Use `.tsx` only for files that contain JSX; everything else is `.ts`.
@@ -35,7 +37,7 @@ Use `.tsx` only for files that contain JSX; everything else is `.ts`.
 - Backend validators: `parse` + noun - `parseScheduledPost`, `parseVideoLibraryQuery`
 - Backend service factories: `create` + service name - `createAccountService`, `createScheduledPublisher`; their methods are short verbs, because the service names the noun - `accounts.list`, `accounts.refresh`, `scheduledPosts.removeAll`
 - Backend platform functions: `camelCase` verb + noun - `fetchChannelData()`, `computeVideoAnalytics()`, `createMediaContainer()`
-- Backend repository methods: verb + `ForUser` when scoped to the verified user - `listForUser()`, `findForUser()`, `updateForUser()`, `deleteForUser()`; the cross-user methods for cron jobs have no suffix - `listAll()`, `findById()`, `updateById()`, `listDue()`, `listStale()`, `claim()`
+- Backend repository methods: verb + `ForUser` when scoped to the verified user - `listForUser()`, `findForUser()`, `updateForUser()`, `deleteForUser()`; the cross-user methods for cron jobs have no suffix - `listByPlatform()`, `findById()`, `updateById()`, `listDue()`, `listStale()`, `claim()`
 - Frontend API methods: `camelCase` verb + noun - `getAnalytics()`, `createScheduledPost()`, `deleteAccount()`
 - React event handlers: `handle` + PascalCase noun/event - `handleSubmit()`, `handleDeleteClick()`, `handleInputChange()`
 - React custom hooks: `use` + PascalCase noun - `useAppContext()`, `useIsMobile()`
@@ -69,6 +71,19 @@ Use `.tsx` only for files that contain JSX; everything else is `.ts`.
 - Table names: `snake_case`, plural - `accounts`, `settings`, `scheduled_posts`
 - Column names: `snake_case` - `user_id`, `account_id`, `scheduled_at`, `access_token` (inside jsonb)
 - jsonb field names: `camelCase` - they become fields on TypeScript objects, so they follow the code's naming: `accessToken`, `subscriberCount`, `publishedAt`
+- Every table has `created_at` and `updated_at`; `updated_at` is kept by the `<table>_set_updated_at` trigger
+
+| Object | Convention | Examples |
+|---|---|---|
+| Migration name | verb first, then the object; one table or one function per file | `baseline_accounts`, `add_accounts_updated_at`, `create_merge_account_data_function`, `revoke_browser_access_settings` |
+| Value checks migration | `check_<table>_values` | `check_scheduled_posts_values` |
+| Index migration | `index_<table>_<query>`, named for the query the index serves | `index_accounts_list`, `index_scheduled_posts_schedulers` |
+| Index | `<table>_<columns>_idx`, or the purpose for a partial index | `accounts_user_id_created_at_idx`, `scheduled_posts_due_idx`, `scheduled_posts_claimed_idx` |
+| CHECK constraint | `<table>_<column>_check` | `accounts_platform_check`, `scheduled_posts_claim_check` |
+| Foreign key | `<table>_<referenced>_fkey` | `scheduled_posts_account_fkey` |
+| Unique key | `<table>_<columns>_key` | `accounts_id_user_id_key` |
+| Trigger | `<table>_set_updated_at` | `tracked_posts_set_updated_at` |
+| Function | `snake_case` verb first; parameters prefixed `p_` | `set_updated_at()`, `merge_scheduled_post(p_id, p_user_id, p_patch)` |
 
 ## Routes
 

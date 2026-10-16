@@ -110,7 +110,7 @@ Controllers call `ScheduledPostService` (`services/scheduledPostService.ts`).
 | Method | Path | File | Purpose |
 |---|---|---|---|
 | GET | `/api/scheduled-posts` | `scheduledPostRoutes.ts`, `scheduledPostController.listScheduledPosts` | List all user's scheduled posts, ordered by `scheduled_at` ascending |
-| POST | `/api/scheduled-posts` | `scheduledPostRoutes.ts`, `scheduledPostController.createScheduledPost` | Create a new scheduled post with `status: 'pending'`; 400 unless `scheduledAt` is a future date |
+| POST | `/api/scheduled-posts` | `scheduledPostRoutes.ts`, `scheduledPostController.createScheduledPost` | Create a new scheduled post with `status: 'pending'`; 400 unless `scheduledAt` is a future date; 404 `Instagram account not found` unless `accountId` is one of the user's Instagram accounts; 400 when that account has no token |
 | PUT | `/api/scheduled-posts/:id` | `scheduledPostRoutes.ts`, `scheduledPostController.updateScheduledPost` | Edit a pending post (caption, scheduled time, media, etc.); 400 for a post that is not pending |
 | DELETE | `/api/scheduled-posts/:id` | `scheduledPostRoutes.ts`, `scheduledPostController.deleteScheduledPost` | Delete a single post; 400 while it is publishing |
 | DELETE | `/api/scheduled-posts` | `scheduledPostRoutes.ts`, `scheduledPostController.deleteAllScheduledPosts` | Delete all posts except those with `status: 'publishing'`; returns `{ deleted, kept }` |
@@ -140,7 +140,7 @@ Controllers call `TrackedContentService`; link detection and the manual views an
 |---|---|---|---|
 | GET | `/api/tracked-content` | `trackedContentRoutes.ts`, `trackedContentController.listTrackedContent` | List all tracked items for the current user (Reddit posts and YouTube videos) |
 | POST | `/api/tracked-content` | `trackedContentRoutes.ts`, `trackedContentController.addTrackedContent` | Add a URL to track; auto-detects Reddit or YouTube; fetches live data immediately; answers `201` |
-| PUT | `/api/tracked-content/:id` | `trackedContentRoutes.ts`, `trackedContentController.updateTrackedContent` | Update `label`, `category`, `accountId`, `manualViews`, or `imageUrl` for a tracked item. `manualViews` and `imageUrl` are Reddit-only (400 for YouTube) and `null` clears either. `manualViews` must be a whole number of 0 or more; `imageUrl` must parse as an `https:` URL |
+| PUT | `/api/tracked-content/:id` | `trackedContentRoutes.ts`, `trackedContentController.updateTrackedContent` | Update `label`, `category`, `accountId`, `manualViews`, or `imageUrl` for a tracked item. `manualViews` and `imageUrl` are Reddit-only (400 for YouTube) and `null` clears either. `manualViews` must be a whole number of 0 or more; `imageUrl` must parse as an `https:` URL. An `accountId` on a YouTube item is 400, and one that is not the user's Reddit account is 404 `Reddit account not found` |
 | DELETE | `/api/tracked-content/:id` | `trackedContentRoutes.ts`, `trackedContentController.deleteTrackedContent` | Remove a tracked item |
 | POST | `/api/tracked-content/:id/refresh` | `trackedContentRoutes.ts`, `trackedContentController.refreshTrackedContent` | Re-fetch live data from Reddit or YouTube API for one tracked item |
 

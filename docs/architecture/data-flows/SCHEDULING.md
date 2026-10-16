@@ -126,18 +126,23 @@ Both schedulers implement the same logic:
 | Fetch due posts | `posts.listDue()` | `GET /scheduled_posts?status=eq.pending&scheduled_at=lte.now` |
 | Fetch stale posts | `posts.listStale(staleClaimCutoff(now))` | `GET /scheduled_posts?status=eq.publishing&claimed_at=lt.{cutoff}` |
 | Claim | `posts.claim(post)` | `PATCH /scheduled_posts?id=eq.{id}&attempts=eq.{n}&status=eq.pending` (or `status=eq.publishing&claimed_at=eq.{claimedAt}`) |
-| Fetch account | `accounts.findById(accountId)`, checked by `publishableAccount()` | `GET /accounts?id=eq.{accountId}` |
+| Fetch account | `accounts.findById(accountId)`, checked by `publishableAccount()` | `GET /accounts?id=eq.{accountId}` (the id passed through `encodeURIComponent`) |
 | Publish to IG | `createMediaContainer`, `fetchContainerStatus`, `publishMediaContainer` from `services/instagram/instagramPublishing.ts` | Its own Graph API calls |
-| Save the container | `posts.updateById(id, { containerId })` | `PATCH /scheduled_posts?id=eq.{id}` |
+| Save the container | `posts.updateById(id, { containerId })` | `POST /rpc/merge_scheduled_post` |
 | Decide after a failure | `containerStep`, `isTransientGraphCode`, `failureOutcome`, `failureMessage` from `lib/scheduledPublishing.ts` | The same functions, imported by relative path |
-| Update status | `posts.updateById(id, ...)` | `PATCH /scheduled_posts?id=eq.{id}` |
+| Update status | `posts.updateById(id, ...)` | `POST /rpc/merge_scheduled_post` |
 
 The Worker's repository methods `listDue`, `listStale`, `claim`, `findById` and `updateById` have no `userId` filter; only the schedulers use them.
+
+Both schedulers save a status and a data patch with the database function `merge_scheduled_post` (`supabase/migrations/`), one UPDATE that merges the patch into `data`. Before, the script read `data` and wrote it back, so a change made between the two was lost. The script calls it with `p_user_id: null`, the cron form; the Worker's `updateById` does the same. `claimed_at` and `attempts` change only in the claim. The ids in the script's PostgREST filters go through `encodeURIComponent`.
+
+The due and stale lists are served by two partial indexes, `scheduled_posts_due_idx` on `scheduled_at` where `status = 'pending'` and `scheduled_posts_claimed_idx` on `claimed_at` where `status = 'publishing'`, so the published history does not slow the schedulers down as it grows.
 
 ## Configuration Requirements
 
 ### Database
-- `scheduled_posts` needs the `claimed_at` and `attempts` columns and the two indexes. An instance created before the lease runs the upgrade SQL in `docs/architecture/database/SCHEMA.md` before deploying the code.
+- `scheduled_posts` needs the `claimed_at` and `attempts` columns, the `merge_scheduled_post` function and the two partial indexes. All come from the migrations in `supabase/migrations/`: run `npm run db:push` before deploying the code. The baseline migration also marks posts stuck in `publishing` with no claim as `failed`.
+- A post can only name one of its owner's Instagram accounts. `POST /api/scheduled-posts` loads the account with `findForUser` and answers 404 `Instagram account not found` for another user's, a missing or a non-Instagram account (400 when it has no token), and the composite foreign key `(account_id, user_id)` refuses such a row in the database. Removing an account removes its scheduled posts.
 
 ### For Worker Cron (System A)
 - Worker secrets: `SUPABASE_URL`, `SUPABASE_SERVICE_KEY`, `INSTAGRAM_APP_ID` (not used by scheduler directly - the account's stored `accessToken` is used)

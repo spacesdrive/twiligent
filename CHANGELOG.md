@@ -7,6 +7,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+
+- The database layout is kept as versioned migrations in `supabase/migrations/`, applied with the Supabase CLI, with the reverse of each change in `supabase/rollbacks/`; existing instances run `npm run db:push` before deploying this version, and the setup SQL in the README and docs is replaced by the same command (#74, ADR-038)
+- `npm run db:new`, `db:status`, `db:check` and `db:push` create, list, preview and apply migrations (#74)
+
+### Changed
+
+- The database now refuses values the app never writes: an unknown platform, post status or tracked item type, a YouTube tracked item with an account, or a post marked Publishing without a claim time (#77)
+- Every table has an `updated_at` time that the database keeps current (#77)
+- Removing an account also removes its scheduled posts, published ones included; tracked items stay and lose only the account (#76)
+- Account, scheduled post and tracked item lists are served by indexes that match their order, and the schedulers read only pending and publishing posts (#78)
+- New accounts, scheduled posts and tracked items get random ids that cannot be worked out from another one (#80)
+
+### Fixed
+
+- Security: a signed-in member could read their stored Instagram tokens and Reddit cookies and write rows directly through Supabase's public API; the tables and database functions are now closed to the browser (#75)
+- Security: a scheduled post could name another member's Instagram account, and the scheduler would publish to it; the account must now be one of your own Instagram accounts (#76)
+- Changing a tracked item's account now only accepts one of your own Reddit accounts, and refuses an account on a YouTube item (#76)
+- A token refresh and an analytics refresh on the same account at the same moment no longer put the old access token back, and a manual view count no longer disappears when a refresh lands at the same time (#79)
+- Accounts are listed in the order they were added, the same on every load (#78)
+
 ---
 
 ## [1.1.1] - 2026-10-15

@@ -34,7 +34,7 @@ A service receives only what it uses: repositories, the cleaned `AppConfig` from
 | `instagramAnalytics` | `instagramAnalyticsService.ts` | accounts, cache | `analytics`, `media` |
 | `redditAnalytics` | `redditAnalyticsService.ts` | accounts, cache | `analytics`, `posts` |
 | `publishing` | `publishingService.ts` | accounts | `cloudinaryConfig`, `publishingLimit`, `createContainer`, `containerStatus`, `publishContainer` |
-| `scheduledPosts` | `scheduledPostService.ts` | scheduled posts (and the publisher) | `list`, `create`, `update`, `remove`, `removeAll`, `publishDueNow` |
+| `scheduledPosts` | `scheduledPostService.ts` | accounts, scheduled posts (and the publisher) | `list`, `create`, `update`, `remove`, `removeAll`, `publishDueNow` |
 | `scheduledPublisher` | `scheduledPublisher.ts` | accounts, scheduled posts | `publishDue` (every user's due posts; cron and manual trigger) |
 | `tokenRefresh` | `tokenRefreshService.ts` | accounts | `refreshExpiringInstagramTokens` (daily cron) |
 | `trackedContent` | `trackedContentService.ts` | accounts, tracked posts | `list`, `add`, `update`, `remove`, `refresh` |
@@ -43,21 +43,26 @@ A service receives only what it uses: repositories, the cleaned `AppConfig` from
 | `instagramConnect` | `instagramConnectService.ts` | accounts | `authorizationUrl`, `userIdFromState`, `connect`, plus `configured` and `accountsPageUrl` |
 | `authEmail` | `authEmailService.ts` | email quota (Redis, the fail-fast client) | `send(hook, webhookId)` (Supabase Auth's Send Email hook; no user) |
 
-Every user-scoped method takes the verified `userId` as its first argument. Methods that need one of the user's records load it with a `...ForUser` repository method and throw `NotFoundError` when it is missing or on the wrong platform, so another user's record is never found. `scheduledPublisher` and `tokenRefresh` are the only services that use the cross-user repository methods (`listAll`, `findById`, `updateById`, `listDue`, `listStale`, `claim`).
+Every user-scoped method takes the verified `userId` as its first argument. Methods that need one of the user's records load it with a `...ForUser` repository method and throw `NotFoundError` when it is missing or on the wrong platform, so another user's record is never found. `scheduledPublisher` and `tokenRefresh` are the only services that use the cross-user repository methods (`listByPlatform`, `findById`, `updateById`, `listDue`, `listStale`, `claim`).
+
+New rows get their id from `newRowId()` in `backend/lib/ids.ts`, a UUID from `crypto.randomUUID()`, so an id cannot be worked out from another one. Tests pin the ids with `mockRowIds()` from `backend/tests/fixtures/rowIds.ts`.
 
 ### Accounts (`accountService.ts`, `accountFactory.ts`)
 
-`accountFactory.ts` holds pure builders: `newAccountId`, `tokenExpiryIso` (null without a lifetime), `buildYouTubeAccount`, `buildRedditAccount`, `buildInstagramAccount`.
+`accountFactory.ts` holds pure builders: `tokenExpiryIso` (null without a lifetime), `buildYouTubeAccount`, `buildRedditAccount`, `buildInstagramAccount`. Each builder takes its id from `newRowId()`.
 
 `AccountService`:
 
 - `addYouTube`, `addReddit` and `addInstagram` throw `ConflictError` (409) for an account the user already has. `addInstagram` tries the long-lived token exchange when `INSTAGRAM_APP_SECRET` is set and keeps the pasted token if it fails.
 - `refresh` and `refreshAll` check the fields the platform call needs first (an Instagram token, a Reddit username and cookie, a YouTube channel id) and throw `ValidationError` (400) when one is missing; a missing YouTube key is a `NotConfiguredError` (503). A single refresh updates more fields than refresh-all. `refreshAll` uses `Promise.allSettled`, so one failure does not stop the rest, and its `results` line up with the account list by index.
-- `remove` deletes the account row and its cache entries.
+- `remove` deletes the account row and its cache entries. The database removes the account's scheduled posts with it and clears the account from its tracked items (the foreign keys in `docs/architecture/database/SCHEMA.md`).
+- Account updates go through `merge_account_data`, one statement in the database, so a token refresh and an analytics refresh on the same account never undo each other. A field passed as `undefined` keeps its stored value.
 
 `YouTubeAnalyticsService.channelAnalytics` fills channel fields for a YouTube account without `publishedAt` the first time its analytics load; a failure is logged and skipped.
 
 ### Tracked content (`trackedContentService.ts`, `trackedContentRules.ts`)
+
+`TrackedContentService.add` stores the fetched data in the same insert that creates the item. `update` checks a new `accountId` before storing it: a YouTube item answers 400 `YouTube videos are read without an account; remove the account from this item.`, and an account that is not one of the user's Reddit accounts answers 404 `Reddit account not found`. `refresh` and the manual fields merge into `data` with `merge_tracked_post_data`.
 
 `trackedContentRules.ts` holds the pure rules: `detectContentType(url)` (`reddit`, `youtube` or `null`), `manualViewsPatch(value, isYouTube)` and `imageUrlPatch(value, isYouTube)`. The two patch helpers return `{ patch }` to merge into the item's `data`, or `{ error }`, which the service throws as a `ValidationError`. Empty values clear the field, YouTube items refuse both, views must be whole numbers of 0 or more, and images must be `https` URLs.
 
@@ -94,6 +99,8 @@ A notice that hits a cap is skipped with a warning instead of failing, because t
 `publishableAccount(account)` in `publishingService.ts` is the one check both publishers use: the account must be Instagram (`NotFoundError` otherwise) and have an `igUserId` and token (`ValidationError` otherwise). `cloudinaryConfig()` throws `NotConfiguredError` (503) when the Worker has no Cloudinary settings.
 
 `scheduledPublisher.publishDue()` lists due posts and posts whose claim is older than the 20 minute lease, and claims each one in a single conditional update (`publishing`, `claimed_at = now`, `attempts + 1`), so the GitHub Actions scheduler and the cron never hold the same post and a run that died is taken over. It saves the container id before publishing, and a post with a saved container is checked on Instagram first, so a post that already went out is never published again. It then waits for Reels and Stories to finish processing, publishes, and marks the post `published`. A temporary failure goes back to `pending` for up to 3 attempts, a definite one or the third attempt marks it `failed`, and an outcome it cannot confirm leaves the post `publishing` for a run after the lease. The rules it shares with `scripts/publish-scheduled.ts` live in `backend/lib/scheduledPublishing.ts`. See `docs/architecture/data-flows/SCHEDULING.md`.
+
+`scheduledPostService.create` checks the scheduled time first, then loads the account with `accounts.findForUser(accountId, userId)` and passes it to `publishableAccount()`. Another user's account, a missing one or one that is not Instagram answers 404 `Instagram account not found`; an account with no token answers 400 `No Instagram access token stored - reconnect this account`. The composite foreign key on `scheduled_posts` refuses the same rows in the database.
 
 `scheduledPostService.update` and `remove` re-check the status inside the write: `updatePendingForUser` only changes a `pending` post and `deleteForUser` never deletes a `publishing` one, so a scheduler claiming the post in between cannot be overridden. The errors stay `Can only edit pending posts` and `Cannot delete a post that is currently publishing`.
 

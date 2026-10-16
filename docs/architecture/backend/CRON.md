@@ -62,10 +62,10 @@ The lease, attempt limit and failure rules live in `backend/lib/scheduledPublish
 **Function:** `tokenRefresh.refreshExpiringInstagramTokens()` in `backend/services/tokenRefreshService.ts`
 
 **What it does:**
-1. Lists every account with `accountRepository.listAll()` and keeps the Instagram accounts with a token and an expiry
+1. Lists the Instagram accounts of every user with `accountRepository.listByPlatform('instagram')`, filtered in SQL, and keeps those with a token and an expiry
 2. For each account, checks if the Instagram long-lived token expires within 15 days
 3. If expiring soon: calls `refreshLongLivedToken()` (`GET https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=<token>`)
-4. Updates the account's `accessToken` and `tokenExpiresAt` with `accountRepository.updateById()`
+4. Updates the account's `accessToken` and `tokenExpiresAt` with `accountRepository.updateById()`, which merges them into `data` in one statement (`merge_account_data`), so an analytics refresh at the same moment cannot put the old token back
 
 One failed account is logged and skipped; it never stops the others. `backend/tests/services/tokenRefreshService.test.ts` covers the selection and the updates.
 

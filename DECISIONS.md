@@ -793,3 +793,37 @@ Records every significant architectural decision, the alternatives considered, a
 - Retries add up to two more scheduler runs, about half an hour, before a temporary failure is reported.
 - The GitHub fallback's timing stays best effort. Moving it off the top of the hour follows GitHub's advice, but GitHub still decides when the runs start; the docs and the app now say the Worker publishes within 15 minutes and the fallback catches missed posts later.
 - A file in `backend/lib/` is now part of the script's runtime, so it must stay import-free; `docs/guidelines/TYPESCRIPT.md` records the rule.
+
+---
+
+## ADR-038: Versioned migrations with the Supabase CLI, and a database that guards its own rules
+
+**Date:** 2026-10-16
+**Status:** Accepted
+
+**Decision:** The schema is versioned as SQL migrations in `supabase/migrations/` and applied with the Supabase CLI (`supabase`, a root dev dependency) through `npm run db:new`, `db:status`, `db:check` (`supabase db push --dry-run`) and `db:push`. The CLI connects through its short-lived login role, so no database password is stored. Each file changes one table or one function, at the owner's request, so a change can be read, applied and undone on its own. The first four files are baselines: each recreates one table as it stood before migrations, with `if not exists` throughout, and brings older setups to the same shape (adds `created_at` and the claim columns, replaces null `data` and `value` with `{}`, fails posts stuck in `publishing` with no claim). The CLI has no down migrations, so `supabase/rollbacks/` holds the reverse of every non-baseline migration under the same file name; a rollback is run in the SQL editor and recorded with `supabase migration repair --status reverted <version>`. On top of the baseline the migrations:
+
+- Drop the three `users_own_*` policies and revoke all on the four tables from `anon` and `authenticated`, and revoke the default privileges for tables and functions that `postgres` creates in `public`. Row level security stays on with no policies.
+- Add CHECK constraints for the allowed values (`platform`, `status`, `content_type`), for `attempts >= 0`, for a `publishing` post having a `claimed_at`, for only Reddit items having an account, and for `data` and `value` being JSON objects.
+- Add `unique (id, user_id)` on `accounts` and composite foreign keys from `scheduled_posts (account_id, user_id)` (on delete cascade) and `tracked_posts (account_id, user_id)` (on delete set null of `account_id` only, Postgres 15 syntax), so a row can only name an account of the same user. The services check the same rule first, so the API answers 404 instead of a database error.
+- Add `updated_at` to every table, kept by one `set_updated_at()` trigger function.
+- Add `merge_account_data`, `merge_scheduled_post` and `merge_tracked_post_data`: SQL functions that run `data = data || p_patch` (and the status and time for posts) in one UPDATE, with `search_path = ''`, returning `true` or null, executable only by `service_role`. A null `p_user_id` is the cron form. The repositories and `scripts/publish-scheduled.ts` call them instead of reading `data` and writing it back.
+- Index by workload: `accounts (user_id, created_at, id)`, `scheduled_posts (user_id, scheduled_at)` and `tracked_posts (user_id, created_at desc)` serve each list query with no sort, and two partial indexes serve the schedulers (`scheduled_at` where `pending`, `claimed_at` where `publishing`). `accounts.platform` and the two `account_id` columns are left unindexed, because only the daily token refresh and account removal read them.
+
+New row ids come from `crypto.randomUUID()` (`newRowId()` in `backend/lib/ids.ts`). `accounts.listForUser` orders by `created_at, id`, and the token refresh lists Instagram accounts with `listByPlatform('instagram')` instead of loading every account.
+
+**Context:** The schema lived only as SQL pasted into the README and the docs page, with no record of what ran where, and production had drifted from it (#73, #74). `scheduled_posts.account_id` had no foreign key, although `SCHEMA.md` listed one. Three tables had policies `for all using (auth.uid() = user_id)` and every table had full grants to `anon` and `authenticated`, so a signed-in member could read their raw Instagram tokens and Reddit cookies through the Data API and write rows directly, such as a scheduled post naming another user's account; the API itself never checked a scheduled post's account either (#75, #76). Account, post and tracked item updates read the `data` column and wrote it back, so a token refresh and an analytics refresh on one account could put the old token back (#79). The account list had no stable order and no matching index, and the scheduler indexes covered the whole growing history (#78). Ids were built from the time and `Math.random`, which is predictable (#80). Before the push, every migration ran on a local Postgres (PGlite, Postgres 18) from three starting points (a fresh database, production's shape and the old README shape), and all three ended with the same schema; every rollback ran in reverse and the migrations ran again to the same schema; `EXPLAIN` showed each list query on its index with no sort. All 28 then ran on production inside a transaction that was rolled back, before the real `db push`. Afterwards the anon key got 401 for all four tables and the merge functions, and the data was intact.
+
+**Alternatives considered:**
+- dbmate. A small, database-agnostic migration tool with down migrations, but one more tool beside Supabase, and it needs the database connection string and password. The owner chose the Supabase CLI.
+- Plain numbered SQL files run by hand in the SQL editor. No dependency, but nothing records what ran on which instance, which is how production drifted.
+- Postgres enum types for `platform`, `status` and `content_type`. They document the values just as well, but a value cannot be removed and adding one needs care, while a CHECK constraint is replaced in one migration.
+- RLS policies for ownership, letting the browser reach its own rows. The browser has no reason to read the tables, and a policy would expose stored tokens and cookies and let it write rows the API refuses.
+- Row locking with `select ... for update` around a read and a write. It also prevents lost updates, but needs a transaction across two round trips, which supabase-js over PostgREST does not offer; one merge statement needs neither.
+
+**Trade-offs:**
+- The `supabase` CLI is a root dev dependency (about 200 lines of lockfile); `npm ci` installs it in every workflow, though no workflow calls it.
+- Removing an account now removes its scheduled posts, published records included, because the foreign key cascades. Tracked items keep the item and lose only the account.
+- A field passed as `undefined` in an update is dropped from the JSON, so it keeps its stored value instead of being removed. Clearing a field takes an explicit `null`.
+- Rolling back is manual: run the rollback file, then repair the migration history. The baselines cannot be rolled back.
+- The PGlite harness that ran the migrations lived in a scratchpad and is not in the repository. Running the SQL in CI would need the `@electric-sql/pglite` dev dependency, which was not approved; `migrations.test.ts` checks names, order, rollback pairs, repeatable baselines and closed functions without running the SQL. Adding the harness is a possible follow-up.
