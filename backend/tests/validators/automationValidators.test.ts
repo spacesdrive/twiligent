@@ -11,7 +11,25 @@ test('a new rule gets its defaults: contains, ignoring case, every post, off, no
     assert.deepEqual(parseAutomationRule(valid), {
         accountId: 'ig1', name: 'Guide', keywords: ['GUIDE'], matchMode: 'contains', caseSensitive: false, mediaIds: [],
         replyText: 'Here it is', linkUrl: null, enabled: false, hourlyLimit: null,
+        requireFollow: false, followPromptText: null, notFollowingText: null,
     });
+});
+
+test('a rule that answers any comment takes no keywords, and a keyword rule still needs one', () => {
+    assert.deepEqual(parseAutomationRule({ ...valid, matchMode: 'any', keywords: [] }).keywords, []);
+    assert.deepEqual(parseAutomationRule({ ...valid, matchMode: 'any', keywords: undefined }).keywords, []);
+    assert.throws(() => parseAutomationRule({ ...valid, matchMode: 'any' }), /answers any comment has no keywords/);
+    assert.throws(() => parseAutomationRule({ ...valid, keywords: [] }), /Add at least one keyword/);
+    assert.throws(() => parseAutomationTest({ matchMode: 'any', keywords: ['GUIDE'], replyText: 'Hi', comment: 'x' }), /answers any comment has no keywords/);
+});
+
+test('a followers-only rule needs both of its messages, each within Instagram\'s size, and keeps them trimmed', () => {
+    const rule = parseAutomationRule({ ...valid, requireFollow: true, followPromptText: ' Follow and reply ', notFollowingText: 'Follow first' });
+    assert.deepEqual([rule.requireFollow, rule.followPromptText, rule.notFollowingText], [true, 'Follow and reply', 'Follow first']);
+    assert.throws(() => parseAutomationRule({ ...valid, requireFollow: true, notFollowingText: 'Follow first' }), /asks people to follow you and reply/);
+    assert.throws(() => parseAutomationRule({ ...valid, requireFollow: true, followPromptText: 'Follow' }), /reminder for people who do not follow/);
+    assert.throws(() => parseAutomationRule({ ...valid, requireFollow: true, followPromptText: 'x'.repeat(1001), notFollowingText: 'y' }), /at most 1000 characters/);
+    assert.deepEqual(parseAutomationRuleUpdate({ requireFollow: false, followPromptText: '' }), { requireFollow: false, followPromptText: null });
 });
 
 test('keywords are trimmed, blanks dropped and repeats removed, ignoring case unless the rule is case sensitive', () => {
@@ -50,7 +68,7 @@ test('the hourly limit is a whole number up to Instagram\'s 750, or null for non
     assert.equal(parseAutomationRule({ ...valid, hourlyLimit: null }).hourlyLimit, null);
     assert.throws(() => parseAutomationRule({ ...valid, hourlyLimit: 751 }), /from 1 to 750/);
     assert.throws(() => parseAutomationRule({ ...valid, hourlyLimit: 2.5 }), /from 1 to 750/);
-    assert.throws(() => parseAutomationRule({ ...valid, matchMode: 'regex' }), /contains or exact/);
+    assert.throws(() => parseAutomationRule({ ...valid, matchMode: 'regex' }), /contains, exact or any/);
 });
 
 test('an update keeps only the fields sent, can clear the link and the limit, and refuses an empty body', () => {

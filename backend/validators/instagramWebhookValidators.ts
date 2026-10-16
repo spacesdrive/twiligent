@@ -17,8 +17,19 @@ export interface InstagramCommentEvent {
     notifiedAt: number;
 }
 
+// a person's message or button tap in a conversation with a connected account; its text is not read
+export interface InstagramMessageEvent {
+    // the professional account that received it (the entry id)
+    igUserId: string;
+    senderId: string;
+    messageId: string;
+    // when the person sent it, in milliseconds
+    sentAt: number;
+}
+
 export interface InstagramWebhook {
     comments: InstagramCommentEvent[];
+    messages: InstagramMessageEvent[];
     // changes for other fields, or comments missing their id, which are acknowledged and dropped
     unsupported: number;
 }
@@ -52,17 +63,48 @@ function comment(entryId: string, notifiedAt: number, value: Fields): InstagramC
     };
 }
 
-// a body that is not an Instagram notification at all is refused; inside one, anything but a comment is skipped
+// a message the person sent, or 'expected' for the account's own echoes, test messages and deletions, which are normal
+// traffic once messages are subscribed but not answers; null for anything that cannot be used
+function message(entryId: string, now: number, value: Fields): InstagramMessageEvent | 'expected' | null {
+    const sender = isObject(value.sender) ? id(value.sender.id) : null;
+    if (isObject(value.message) && (value.message.is_echo === true || value.message.is_self === true || value.message.is_deleted === true)) return 'expected';
+    if (!sender) return null;
+    if (sender === entryId) return 'expected';
+    const sentAt = typeof value.timestamp === 'number' && value.timestamp > 0 ? Math.min(value.timestamp, now) : now;
+    if (isObject(value.message)) {
+        const { mid } = value.message;
+        const messageId = typeof mid === 'string' && mid.length <= 512 ? mid : null;
+        return messageId ? { igUserId: entryId, senderId: sender, messageId, sentAt } : null;
+    }
+    if (isObject(value.postback)) {
+        const messageId = typeof value.postback.mid === 'string' && value.postback.mid.length <= 512 ? value.postback.mid : null;
+        return messageId ? { igUserId: entryId, senderId: sender, messageId, sentAt } : null;
+    }
+    return null;
+}
+
+// a body that is not an Instagram notification at all is refused; inside one, anything but a comment or a person's
+// message is skipped
 export function parseInstagramWebhook(body: Fields, now = Date.now()): InstagramWebhook {
     if (body.object !== 'instagram') throw new ValidationError('Only Instagram webhook notifications are accepted here');
     if (!Array.isArray(body.entry)) throw new ValidationError('The notification has no entry list');
 
     const comments: InstagramCommentEvent[] = [];
+    const messages: InstagramMessageEvent[] = [];
     let unsupported = 0;
     for (const entry of body.entry) {
         const entryId = isObject(entry) ? id(entry.id) : null;
         if (!isObject(entry) || !entryId) {
             unsupported++;
+            continue;
+        }
+        // messaging events carry their own millisecond timestamps
+        if (Array.isArray(entry.messaging)) {
+            for (const event of entry.messaging) {
+                const parsed = isObject(event) ? message(entryId, now, event) : null;
+                if (parsed === null) unsupported++;
+                else if (parsed !== 'expected') messages.push(parsed);
+            }
             continue;
         }
         // time is in seconds; a missing or odd value falls back to now, and a reply sent after Instagram's window is refused there
@@ -77,5 +119,5 @@ export function parseInstagramWebhook(body: Fields, now = Date.now()): Instagram
             else unsupported++;
         }
     }
-    return { comments, unsupported };
+    return { comments, messages, unsupported };
 }

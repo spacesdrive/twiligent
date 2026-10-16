@@ -1,16 +1,80 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-    MAX_SEND_ATTEMPTS, REPLY_WINDOW_MS, classifySendError, composeReply, cooldownFromUsage, expiresAtFor, finishPlan, messageBytes,
-    readinessPlan, releasePlan, retryDelayMs,
+    MAX_FOLLOW_REMINDERS, MAX_SEND_ATTEMPTS, REPLY_WINDOW_MS, classifySendError, composeReply, cooldownFromUsage, expiresAtFor, finishPlan,
+    followupMessage, followupReadiness, messageBytes, messageDigest, readinessPlan, releasePlan, replyMessage, retryDelayMs,
 } from '../../lib/automationDelivery.ts';
-import type { SendResult } from '../../lib/automationDelivery.ts';
+import type { FollowupJob, SendResult } from '../../lib/automationDelivery.ts';
 
 const NOW = Date.parse('2026-10-16T12:00:00Z');
 const MINUTE = 60 * 1000;
 const job = (attempts = 1, expiresIn = 6 * 24 * 60 * MINUTE) => ({ attempts, expiresAt: new Date(NOW + expiresIn).toISOString() });
 const graphError = (code: number | undefined, subcode?: number, httpStatus = 400, usageHeader: string | null = null): SendResult =>
     ({ kind: 'error', code, subcode, httpStatus, message: 'Graph said no', usageHeader });
+
+function followup(overrides: Partial<FollowupJob> = {}): FollowupJob {
+    return {
+        attempts: 0, windowExpiresAt: new Date(NOW + 20 * 60 * MINUTE).toISOString(), ruleEnabled: true, requireFollow: true, gateStatus: 'awaiting_reply',
+        gatePrompts: 0, replyText: 'Here is your guide', linkUrl: 'https://example.com/g', notFollowingText: 'Follow first, then reply', accessToken: 'TOK',
+        ...overrides,
+    };
+}
+
+test('a followers-only rule\'s private reply is its request to follow and reply, never the link', () => {
+    const job = { replyText: 'Here', linkUrl: 'https://e.com', followPromptText: 'Follow and reply' };
+    assert.equal(replyMessage({ ...job, requireFollow: true }), 'Follow and reply');
+    assert.equal(replyMessage({ ...job, requireFollow: false }), 'Here\n\nhttps://e.com');
+});
+
+test('the digest of a message is the hex sha-256 of its exact text', async () => {
+    assert.equal(await messageDigest('abc'), 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+    assert.notEqual(await messageDigest('abc '), await messageDigest('abc'));
+});
+
+test('only a confirmed follower gets the reply and link, and that ends the wait', () => {
+    assert.deepEqual(followupMessage({ kind: 'following' }, followup(), NOW), {
+        message: { kind: 'link', text: 'Here is your guide\n\nhttps://example.com/g', gateStatus: 'completed', countReminder: false },
+    });
+});
+
+test('someone who does not follow yet gets the reminder, and the last reminder ends the wait', () => {
+    assert.deepEqual(followupMessage({ kind: 'not_following' }, followup(), NOW), {
+        message: { kind: 'reminder', text: 'Follow first, then reply', gateStatus: null, countReminder: true },
+    });
+    assert.deepEqual(followupMessage({ kind: 'not_following' }, followup({ gatePrompts: MAX_FOLLOW_REMINDERS - 1 }), NOW), {
+        message: { kind: 'reminder', text: 'Follow first, then reply', gateStatus: 'closed', countReminder: true },
+    });
+    const used = followupMessage({ kind: 'not_following' }, followup({ gatePrompts: MAX_FOLLOW_REMINDERS }), NOW);
+    assert.equal('release' in used && used.release.reason, 'reminders_used');
+});
+
+test('when Instagram cannot say whether the person follows, nothing is sent and the reason is kept', () => {
+    const unverifiable = followupMessage({ kind: 'unverifiable', message: 'User consent is required to access user profile' }, followup(), NOW);
+    assert.ok('release' in unverifiable);
+    assert.deepEqual([unverifiable.release.status, unverifiable.release.reason], ['failed', 'follow_unverifiable']);
+    assert.match(unverifiable.release.errorMessage!, /User consent is required.*so the link was not sent/);
+    const refused = followupMessage({ kind: 'not_authorized', message: 'invalid token' }, followup(), NOW);
+    assert.ok('release' in refused && refused.release.reason === 'not_authorized');
+});
+
+test('a follow check Instagram could not answer now is asked again a few minutes later, or expires with the window', () => {
+    const later = followupMessage({ kind: 'retry', message: 'timed out' }, followup(), NOW);
+    assert.ok('release' in later);
+    assert.deepEqual([later.release.status, later.release.nextAttemptAt], ['retry_wait', new Date(NOW + 5 * MINUTE).toISOString()]);
+    const closing = followupMessage({ kind: 'retry', message: 'timed out' }, followup({ windowExpiresAt: new Date(NOW + MINUTE).toISOString() }), NOW);
+    assert.ok('release' in closing);
+    assert.equal(closing.release.status, 'expired');
+    assert.match(closing.release.errorMessage!, /24 hours/);
+});
+
+test('a follow-up stops before asking Instagram when its window closed, its rule changed or the token is gone', () => {
+    assert.equal(followupReadiness(followup(), NOW), null);
+    assert.equal(followupReadiness(followup({ windowExpiresAt: new Date(NOW - 1).toISOString() }), NOW)?.status, 'expired');
+    assert.equal(followupReadiness(followup({ ruleEnabled: false }), NOW)?.reason, 'rule_disabled');
+    assert.equal(followupReadiness(followup({ requireFollow: false }), NOW)?.reason, 'rule_changed');
+    assert.equal(followupReadiness(followup({ gateStatus: 'completed' }), NOW)?.reason, 'answered');
+    assert.equal(followupReadiness(followup({ accessToken: null }), NOW)?.status, 'failed');
+});
 
 test('the reply puts the link on its own line after the text', () => {
     assert.equal(composeReply('Here it is', 'https://example.com/g'), 'Here it is\n\nhttps://example.com/g');
@@ -61,13 +125,21 @@ test('the cooldown follows Meta\'s usage header, and falls back to 15 minutes wh
     assert.equal(cooldownFromUsage(JSON.stringify({ '1': [{ estimated_time_to_regain_access: 99999 }] })), 24 * 60 * MINUTE);
 });
 
-test('an accepted send records Instagram\'s message id and nothing else', () => {
-    const plan = finishPlan({ kind: 'accepted', messageId: 'm1' }, job(), NOW);
+test('an accepted send records Instagram\'s message id and recipient and nothing else', () => {
+    const plan = finishPlan({ kind: 'accepted', messageId: 'm1', recipientId: 'igsid-1' }, job(), NOW);
     assert.equal(plan.status, 'accepted');
     assert.equal(plan.outcome, 'accepted');
     assert.equal(plan.messageId, 'm1');
+    assert.equal(plan.recipientId, 'igsid-1');
+    assert.equal(plan.gateStatus, null);
     assert.equal(plan.nextAttemptAt, null);
     assert.equal(plan.cooldownUntil, null);
+});
+
+test('an accepted followers-only reply starts the wait for the person\'s answer, with the commenter as recipient when Instagram names none', () => {
+    const plan = finishPlan({ kind: 'accepted', messageId: 'm1', recipientId: null }, { ...job(), fromId: 'fan', awaitsReply: true }, NOW);
+    assert.equal(plan.recipientId, 'fan');
+    assert.equal(plan.gateStatus, 'awaiting_reply');
 });
 
 test('a send with no answer is held for a person and never retried on its own', () => {

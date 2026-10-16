@@ -10,12 +10,17 @@ export const verifyInstagramWebhook = controller.createHandlers(queryParams(pars
     return c.text(challenge);
 });
 
-// called by Meta, not a browser: verifyMetaWebhook has already checked the signature. The comments are stored before
-// the 200, so Meta keeps retrying for 36 hours if storing fails; the replies go out after the response
+// called by Meta, not a browser: verifyMetaWebhook has already checked the signature. Comments and answers are stored
+// before the 200, so Meta keeps retrying for 36 hours if storing fails; the messages go out after the response
 export const receiveInstagramWebhook = controller.createHandlers(jsonBody(body => parseInstagramWebhook(body)), async c => {
-    const { queuedIds, subrequests } = await servicesFor(c).automationWebhook.ingest(c.req.valid('json'));
-    // the replies share this invocation's subrequests with the intake and the middleware before it
+    const { queuedIds, followupIds, subrequests } = await servicesFor(c).automationWebhook.ingest(c.req.valid('json'));
+    // the sends share this invocation's subrequests with the intake and the middleware before it
     const left = FREE_PLAN_SUBREQUESTS - REQUEST_SUBREQUESTS - subrequests;
-    if (queuedIds.length > 0) inBackground(c, 'automation replies', services => services.automationProcessor.run({ ids: queuedIds, subrequests: left }));
+    if (queuedIds.length > 0 || followupIds.length > 0) {
+        inBackground(c, 'automation replies', async services => {
+            const replies = queuedIds.length > 0 ? await services.automationProcessor.run({ ids: queuedIds, subrequests: left }) : null;
+            if (followupIds.length > 0) await services.automationFollowups.run({ ids: followupIds, subrequests: left - (replies?.subrequests ?? 0) });
+        });
+    }
     return c.json({ success: true });
 });

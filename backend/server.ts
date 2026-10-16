@@ -6,7 +6,8 @@ import type { Env } from './types/env.ts';
 export default {
     fetch: app.fetch,
 
-    // wrangler.toml schedules: the reply queue every 5 minutes with due posts on the quarter hour, and daily upkeep
+    // wrangler.toml schedules: the reply dispatch every minute, due posts on the quarter hour with queue checks on the
+    // other five minute runs, and daily upkeep
     async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext) {
         ctx.waitUntil(runScheduledJob(event.cron, env, event.scheduledTime));
     },

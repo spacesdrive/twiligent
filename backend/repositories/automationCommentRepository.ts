@@ -1,8 +1,12 @@
 import { execute, maybeRow, rows } from './query.ts';
 import { DUE_NOW_SKEW_MS } from '../lib/automationDelivery.ts';
 import type { FinishPlan, ReleasePlan, ReserveOutcome } from '../lib/automationDelivery.ts';
+import type { QueueHealth } from '../lib/automationHealth.ts';
 import type { SupabaseClient } from '../types/app.ts';
-import type { AutomationActivityItem, AutomationCommentStatus, AutomationLimits, AutomationStats } from '../../shared/types/automation.ts';
+import type {
+    AutomationActivityItem, AutomationCommentStatus, AutomationFollowupKind, AutomationFollowupStatus, AutomationGateStatus, AutomationLimits,
+    AutomationStats,
+} from '../../shared/types/automation.ts';
 
 interface AutomationCommentRow {
     id: string;
@@ -20,6 +24,16 @@ interface AutomationCommentRow {
     accepted_at: string | null;
     expires_at: string;
     created_at: string;
+    gate_status: AutomationGateStatus | null;
+    // PostgREST embeds the comment's follow-ups through their foreign key
+    automation_followups?: FollowupRow[] | null;
+}
+
+interface FollowupRow {
+    status: AutomationFollowupStatus;
+    kind: AutomationFollowupKind | null;
+    error_message: string | null;
+    created_at: string;
 }
 
 interface ClaimedRow {
@@ -36,6 +50,29 @@ interface ClaimedRow {
     reply_text: string | null;
     link_url: string | null;
     access_token: string | null;
+    require_follow: boolean | null;
+    follow_prompt_text: string | null;
+}
+
+interface ReviewCandidateRow {
+    id: string;
+    ig_user_id: string;
+    from_id: string;
+    started_at: string;
+    message_digest: string | null;
+    access_token: string | null;
+    review_checks: number;
+}
+
+interface QueueHealthRow {
+    due?: number;
+    oldest_due_at?: string | null;
+    waiting?: number;
+    stale?: number;
+    needs_review?: number;
+    followups_due?: number;
+    paused_accounts?: number;
+    limited_accounts?: number;
 }
 
 // a comment as the webhook stores it
@@ -72,7 +109,34 @@ export interface ClaimedComment {
     replyText: string | null;
     linkUrl: string | null;
     accessToken: string | null;
+    // a followers-only rule sends its request to follow and answer instead of the reply
+    requireFollow: boolean;
+    followPromptText: string | null;
 }
+
+// a reply whose answer was lost, with what is needed to look for it in the conversation
+export interface ReviewCandidate {
+    id: string;
+    igUserId: string;
+    fromId: string;
+    startedAt: string;
+    messageDigest: string | null;
+    accessToken: string | null;
+    // checks made before this one
+    reviewChecks: number;
+}
+
+export interface ReviewCandidateOptions {
+    limit: number;
+    settleSeconds: number;
+    maxChecks: number;
+    recheckSeconds: number;
+}
+
+// what one look at the conversation found; a found reply carries its message id and time
+export type ReviewResult =
+    | { found: true; messageId: string; sentAt: string }
+    | { found: false; note: string };
 
 export interface ClaimOptions {
     limit: number;
@@ -113,7 +177,13 @@ export interface StatsFilter {
 // a person may ask for these to be tried again; an expired one can never be sent
 const RETRYABLE: AutomationCommentStatus[] = ['failed', 'needs_review', 'skipped'];
 
-const COLUMNS = 'id, account_id, rule_id, comment_id, media_id, from_username, text, status, status_reason, error_message, attempts, next_attempt_at, accepted_at, expires_at, created_at';
+const COLUMNS = 'id, account_id, rule_id, comment_id, media_id, from_username, text, status, status_reason, error_message, attempts, next_attempt_at, accepted_at, expires_at, created_at, gate_status, automation_followups(status, kind, error_message, created_at)';
+
+// the latest follow-up, so the list shows where a followers-only reply stands
+function latestFollowup(rows: FollowupRow[] | null | undefined): AutomationActivityItem['followup'] {
+    const latest = [...(rows ?? [])].sort((a, b) => b.created_at.localeCompare(a.created_at))[0];
+    return latest ? { status: latest.status, kind: latest.kind, errorMessage: latest.error_message, createdAt: latest.created_at } : null;
+}
 
 function toItem(row: AutomationCommentRow): AutomationActivityItem {
     return {
@@ -132,6 +202,8 @@ function toItem(row: AutomationCommentRow): AutomationActivityItem {
         acceptedAt: row.accepted_at,
         expiresAt: row.expires_at,
         createdAt: row.created_at,
+        gateStatus: row.gate_status ?? null,
+        followup: latestFollowup(row.automation_followups),
     };
 }
 
@@ -150,15 +222,29 @@ function toClaimed(row: ClaimedRow): ClaimedComment {
         replyText: row.reply_text,
         linkUrl: row.link_url,
         accessToken: row.access_token,
+        requireFollow: row.require_follow ?? false,
+        followPromptText: row.follow_prompt_text ?? null,
     };
 }
 
-// methods named ...ForUser filter by the verified user id; insertMany, claim, reserve, finish, release and
-// deleteCreatedBefore serve the webhook and the sweep across all users
+function toHealth(row: QueueHealthRow): QueueHealth {
+    return {
+        due: row.due ?? 0,
+        oldestDueAt: row.oldest_due_at ?? null,
+        waiting: row.waiting ?? 0,
+        stale: row.stale ?? 0,
+        needsReview: row.needs_review ?? 0,
+        followupsDue: row.followups_due ?? 0,
+        pausedAccounts: row.paused_accounts ?? 0,
+        limitedAccounts: row.limited_accounts ?? 0,
+    };
+}
+
+// methods named ...ForUser filter by the verified user id; the others serve the webhook and the cron jobs across all users
 export interface AutomationCommentRepository {
     insertMany(comments: NewAutomationComment[]): Promise<NewAutomationComment[]>;
     claim(options: ClaimOptions): Promise<ClaimedComment[]>;
-    reserve(id: string, attemptId: string, limits: AutomationLimits): Promise<Reservation>;
+    reserve(id: string, attemptId: string, limits: AutomationLimits, messageDigest?: string): Promise<Reservation>;
     finish(id: string, attemptId: string, plan: FinishPlan): Promise<boolean>;
     release(id: string, plan: ReleasePlan): Promise<boolean>;
     returnUnstarted(ids: string[]): Promise<void>;
@@ -167,7 +253,11 @@ export interface AutomationCommentRepository {
     requeueForUser(id: string, userId: string): Promise<AutomationActivityItem | null>;
     releaseHeldForAccount(accountId: string, userId: string): Promise<void>;
     statsForUser(userId: string, filter: StatsFilter): Promise<AutomationStats>;
-    deleteCreatedBefore(cutoff: string): Promise<number>;
+    expireDue(limit: number): Promise<{ comments: number; followups: number }>;
+    reviewCandidates(options: ReviewCandidateOptions): Promise<ReviewCandidate[]>;
+    recordReview(id: string, result: ReviewResult): Promise<boolean>;
+    health(leaseSeconds: number): Promise<QueueHealth>;
+    purgeCreatedBefore(cutoff: string, limit: number): Promise<number>;
 }
 
 export function createAutomationCommentRepository(db: SupabaseClient): AutomationCommentRepository {
@@ -209,7 +299,7 @@ export function createAutomationCommentRepository(db: SupabaseClient): Automatio
             return ((data ?? []) as ClaimedRow[]).map(toClaimed);
         },
 
-        async reserve(id, attemptId, limits) {
+        async reserve(id, attemptId, limits, messageDigest) {
             const { data } = await execute('automationComments.reserve', () => db.rpc('reserve_automation_send', {
                 p_id: id,
                 p_attempt_id: attemptId,
@@ -217,6 +307,7 @@ export function createAutomationCommentRepository(db: SupabaseClient): Automatio
                 p_user_limit: limits.userHourly,
                 p_account_limit: limits.accountHourly,
                 p_recipient_limit: limits.recipientDaily,
+                p_message_digest: messageDigest ?? null,
             }));
             const [row] = (data ?? []) as { outcome: ReserveOutcome; retry_at: string | null }[];
             return row ? { outcome: row.outcome, retryAt: row.retry_at } : { outcome: 'gone', retryAt: null };
@@ -238,6 +329,8 @@ export function createAutomationCommentRepository(db: SupabaseClient): Automatio
                 p_cooldown_until: plan.cooldownUntil,
                 p_cooldown_reason: plan.cooldownReason,
                 p_pause_reason: plan.pauseReason,
+                p_recipient_id: plan.recipientId,
+                p_gate_status: plan.gateStatus,
             }));
             return data === true;
         },
@@ -330,13 +423,47 @@ export function createAutomationCommentRepository(db: SupabaseClient): Automatio
             return { comments: stats.comments ?? {}, attempts: stats.attempts ?? {} };
         },
 
-        async deleteCreatedBefore(cutoff) {
-            const deleted = await rows<{ id: string }>('automationComments.deleteOld', () => db
-                .from('automation_comments')
-                .delete()
-                .lt('created_at', cutoff)
-                .select('id'));
-            return deleted.length;
+        async expireDue(limit) {
+            const { data } = await execute('automationComments.expireDue', () => db.rpc('expire_automation_jobs', { p_limit: limit }));
+            const counts = (data ?? {}) as { comments?: number; followups?: number };
+            return { comments: counts.comments ?? 0, followups: counts.followups ?? 0 };
+        },
+
+        async reviewCandidates({ limit, settleSeconds, maxChecks, recheckSeconds }) {
+            const { data } = await execute('automationComments.reviewCandidates', () => db.rpc('automation_review_candidates', {
+                p_limit: limit,
+                p_settle_seconds: settleSeconds,
+                p_max_checks: maxChecks,
+                p_recheck_seconds: recheckSeconds,
+            }));
+            return ((data ?? []) as ReviewCandidateRow[]).map(row => ({
+                id: row.id,
+                igUserId: row.ig_user_id,
+                fromId: row.from_id,
+                startedAt: row.started_at,
+                messageDigest: row.message_digest,
+                accessToken: row.access_token,
+                reviewChecks: row.review_checks ?? 0,
+            }));
+        },
+
+        // only a comment still waiting for review changes, so a person's retry in between is never undone
+        async recordReview(id, result) {
+            const { data } = await execute('automationComments.recordReview', () => db.rpc('record_automation_review', result.found
+                ? { p_id: id, p_found: true, p_message_id: result.messageId, p_sent_at: result.sentAt, p_note: null }
+                : { p_id: id, p_found: false, p_message_id: null, p_sent_at: null, p_note: result.note }));
+            return data === true;
+        },
+
+        async health(leaseSeconds) {
+            const { data } = await execute('automationComments.health', () => db.rpc('automation_queue_health', { p_lease_seconds: leaseSeconds }));
+            return toHealth((data ?? {}) as QueueHealthRow);
+        },
+
+        // one bounded batch per call, oldest first, so a long backlog never becomes one long delete
+        async purgeCreatedBefore(cutoff, limit) {
+            const { data } = await execute('automationComments.purge', () => db.rpc('purge_automation_comments', { p_before: cutoff, p_limit: limit }));
+            return typeof data === 'number' ? data : 0;
         },
     };
 }

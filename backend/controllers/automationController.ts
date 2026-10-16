@@ -51,10 +51,13 @@ export const getAutomationStats = controller.createHandlers(queryParams(parseSta
     return c.json({ success: true, ...period } satisfies AutomationStatsResponse);
 });
 
-// the item goes back in the queue and this request starts sending it, instead of waiting for the next sweep
+// the item goes back in the queue and this request starts sending it, instead of waiting for the next dispatch
 export const retryAutomationActivity = controller.createHandlers(async c => {
-    const item = await servicesFor(c).automations.retry(c.get('userId'), pathParam(c, 'id'));
-    inBackground(c, 'automation retry', services => services.automationProcessor.run({ ids: [item.id], subrequests: FREE_PLAN_SUBREQUESTS - REQUEST_SUBREQUESTS }));
+    const { item, followupId } = await servicesFor(c).automations.retry(c.get('userId'), pathParam(c, 'id'));
+    const subrequests = FREE_PLAN_SUBREQUESTS - REQUEST_SUBREQUESTS;
+    inBackground(c, 'automation retry', services => (followupId
+        ? services.automationFollowups.run({ ids: [followupId], subrequests })
+        : services.automationProcessor.run({ ids: [item.id], subrequests })));
     return c.json({ success: true, item } satisfies AutomationActivityItemResponse);
 });
 

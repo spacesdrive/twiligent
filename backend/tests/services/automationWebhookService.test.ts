@@ -5,7 +5,7 @@ import { readAutomationConfig } from '../../lib/config.ts';
 import { createLogger } from '../../lib/logger.ts';
 import { parseInstagramWebhook } from '../../validators/instagramWebhookValidators.ts';
 import { commentNotification } from '../fixtures/metaWebhook.ts';
-import { fakeAutomationQueue } from '../fixtures/fakeAutomationQueue.ts';
+import { fakeAutomationQueue, queueRow } from '../fixtures/fakeAutomationQueue.ts';
 import type { FakeQueue } from '../fixtures/fakeAutomationQueue.ts';
 import { mockRowIds } from '../fixtures/rowIds.ts';
 import type { AutomationRuleRepository, WebhookRule } from '../../repositories/automationRuleRepository.ts';
@@ -33,6 +33,7 @@ function service(queue: FakeQueue, env: Partial<Env> = {}) {
     return createAutomationWebhookService({
         rules: rulesRepository(),
         comments,
+        followups: queue.followups,
         automation: readAutomationConfig(env as Env),
         context: { requestId: 'req-test', signal: new AbortController().signal, log: createLogger() },
     });
@@ -87,7 +88,7 @@ describe('instagram webhook intake', () => {
         const body = commentNotification('1784', SENT_AT, [{ id: '1', text: 'GUIDE', mediaId: 'A' }, { id: '2', text: 'GUIDE', mediaId: 'A' }]);
         await ingest(queue, body);
         const again = await ingest(queue, body);
-        assert.deepEqual(again, { stored: 0, duplicates: 2, queuedIds: [], subrequests: 2 });
+        assert.deepEqual(again, { stored: 0, duplicates: 2, queuedIds: [], followupIds: [], subrequests: 2 });
         assert.equal(queue.rows.length, 2);
     });
 
@@ -98,10 +99,38 @@ describe('instagram webhook intake', () => {
         assert.equal(inserted[0].length, 1);
     });
 
+    test('a message from someone waiting on a followers-only reply makes one follow-up; anyone else\'s makes none', async () => {
+        const queue = fakeAutomationQueue([queueRow('gated', { status: 'accepted', nextAttemptAt: null, acceptedAt: new Date(SENT_AT * 1000 - 60_000).toISOString(), recipientId: '77', gateStatus: 'awaiting_reply' })]);
+        const body = {
+            object: 'instagram',
+            entry: [{
+                id: '1784',
+                messaging: [
+                    { sender: { id: '77' }, recipient: { id: '1784' }, timestamp: SENT_AT * 1000, message: { mid: 'm1', text: 'done' } },
+                    { sender: { id: '77' }, recipient: { id: '1784' }, timestamp: SENT_AT * 1000 + 1, message: { mid: 'm2', text: 'hello?' } },
+                    { sender: { id: '99' }, recipient: { id: '1784' }, timestamp: SENT_AT * 1000, message: { mid: 'm3', text: 'hi' } },
+                    { sender: { id: '1784' }, recipient: { id: '77' }, timestamp: SENT_AT * 1000, message: { mid: 'm4', is_echo: true } },
+                ],
+            }],
+        };
+        const result = await ingest(queue, body);
+        assert.equal(result.followupIds.length, 1);
+        assert.deepEqual([result.stored, result.subrequests], [0, 1]);
+        assert.deepEqual(queue.followupRows.map(row => [row.commentRowId, row.triggerMessageId, row.recipientId]), [['gated', 'm1', '77']]);
+        assert.deepEqual((await ingest(queue, body)).followupIds, []);
+    });
+
+    test('a failed follow-up insert fails the intake, so Meta delivers the messages again', async () => {
+        const queue = fakeAutomationQueue();
+        queue.failNext('insertForMessages');
+        const body = { object: 'instagram', entry: [{ id: '1784', messaging: [{ sender: { id: '77' }, timestamp: SENT_AT * 1000, message: { mid: 'm1' } }] }] };
+        await assert.rejects(ingest(queue, body), /database unavailable during insertForMessages/);
+    });
+
     test('comments for an account with no enabled rule are not kept at all', async () => {
         const queue = fakeAutomationQueue();
         const result = await ingest(queue, commentNotification('5555', SENT_AT, [{ id: '1', text: 'GUIDE' }]));
-        assert.deepEqual(result, { stored: 0, duplicates: 0, queuedIds: [], subrequests: 1 });
+        assert.deepEqual(result, { stored: 0, duplicates: 0, queuedIds: [], followupIds: [], subrequests: 1 });
         assert.deepEqual(inserted, [[]]);
     });
 
@@ -109,7 +138,7 @@ describe('instagram webhook intake', () => {
         const queue = fakeAutomationQueue();
         const broken = { ...queue, insertMany: async () => { throw new Error('database unavailable'); } };
         const intake = createAutomationWebhookService({
-            rules: rulesRepository(), comments: broken, automation: readAutomationConfig({} as Env),
+            rules: rulesRepository(), comments: broken, followups: queue.followups, automation: readAutomationConfig({} as Env),
             context: { requestId: 'req-test', signal: new AbortController().signal, log: createLogger() },
         });
         await assert.rejects(intake.ingest(parseInstagramWebhook(commentNotification('1784', SENT_AT, [{ id: '1', text: 'GUIDE', mediaId: 'A' }]))), /database unavailable/);
