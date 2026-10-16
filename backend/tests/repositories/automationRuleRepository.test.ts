@@ -34,7 +34,9 @@ test('pausing or resuming by hand creates the account\'s row once and clears a h
     assert.deepEqual([controls.paused, controls.pausedReason], [false, null]);
     assert.equal(supabase.calls[0].onConflict, 'account_id');
     assert.equal(supabase.table.filter(row => row._table === 'automation_accounts').length, 1);
-    assert.ok((await repo.markSubscribedForUser('ig2', 'user-1')).subscribedAt);
+    const subscribed = await repo.markSubscribedForUser('ig2', 'user-1', ['comments', 'messages']);
+    assert.ok(subscribed.subscribedAt);
+    assert.deepEqual(subscribed.subscribedFields, ['comments', 'messages']);
 });
 
 test('audit events are written for the user and old ones are deleted by date', async () => {

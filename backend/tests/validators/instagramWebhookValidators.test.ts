@@ -4,7 +4,7 @@ import { parseInstagramWebhook } from '../../validators/instagramWebhookValidato
 
 const NOW = Date.parse('2026-10-16T12:00:00Z');
 
-test('a comments notification becomes one event per comment, with the time Meta sent it', () => {
+test('a comments notification becomes one event per comment, with the time Meta sent it, and no messages', () => {
     const parsed = parseInstagramWebhook({
         object: 'instagram',
         entry: [{
@@ -21,6 +21,7 @@ test('a comments notification becomes one event per comment, with the time Meta 
             igUserId: '1784', commentId: '555', text: 'GUIDE', fromId: '77', fromUsername: 'fan', mediaId: '9001',
             mediaProductType: 'REELS', parentId: '444', notifiedAt: 1792152000 * 1000,
         }],
+        messages: [],
         unsupported: 0,
     });
 });
@@ -43,7 +44,44 @@ test('other fields, messaging entries and comments without an id are counted and
             'junk',
         ],
     }, NOW);
-    assert.deepEqual(parsed, { comments: [], unsupported: 5 });
+    assert.deepEqual(parsed, { comments: [], messages: [], unsupported: 5 });
+});
+
+test('a person\'s message or button tap becomes a message event, without its text, at the time they sent it', () => {
+    const parsed = parseInstagramWebhook({
+        object: 'instagram',
+        entry: [{
+            id: '1784',
+            time: 1,
+            messaging: [
+                { sender: { id: '77' }, recipient: { id: '1784' }, timestamp: NOW - 2000, message: { mid: 'm1', text: 'done, I follow you' } },
+                { sender: { id: '78' }, recipient: { id: '1784' }, timestamp: NOW - 1000, postback: { mid: 'm2', payload: 'LINK' } },
+            ],
+        }],
+    }, NOW);
+    assert.deepEqual(parsed.messages, [
+        { igUserId: '1784', senderId: '77', messageId: 'm1', sentAt: NOW - 2000 },
+        { igUserId: '1784', senderId: '78', messageId: 'm2', sentAt: NOW - 1000 },
+    ]);
+    assert.equal(parsed.unsupported, 0);
+    assert.equal(JSON.stringify(parsed).includes('I follow you'), false);
+});
+
+test('the account\'s own echoes, test messages and deleted messages are skipped without counting as unsupported', () => {
+    const parsed = parseInstagramWebhook({
+        object: 'instagram',
+        entry: [{
+            id: '1784',
+            messaging: [
+                { sender: { id: '1784' }, recipient: { id: '77' }, timestamp: NOW, message: { mid: 'e', is_echo: true } },
+                { sender: { id: '77' }, timestamp: NOW, message: { mid: 's', is_self: true } },
+                { sender: { id: '77' }, timestamp: NOW, message: { mid: 'd', is_deleted: true } },
+                { sender: { id: '1784' }, timestamp: NOW, message: { mid: 'own' } },
+                { sender: { id: '77' }, timestamp: NOW, message: { text: 'no id' } },
+            ],
+        }],
+    }, NOW);
+    assert.deepEqual(parsed, { comments: [], messages: [], unsupported: 1 });
 });
 
 test('a missing or future time falls back to now', () => {

@@ -40,6 +40,37 @@ const RPC: Record<string, RpcHandler> = {
         Object.assign(row, { status: args.p_status, message_id: args.p_message_id });
         return true;
     },
+    // the follow-up functions, reduced the same way: a waiting comment's sender gets one follow-up
+    automation_followups_for_messages: (args, table) => (args.p_messages as Row[]).flatMap(message => {
+        const comment = table.find(row => inTable(row, 'automation_comments') && row.recipient_id === message.sender_id && row.gate_status === 'awaiting_reply');
+        if (!comment) return [];
+        table.push(tableRow('automation_followups', { id: message.id, automation_comment_id: comment.id, account_id: comment.account_id, recipient_id: message.sender_id, status: 'queued' }));
+        return [{ id: message.id }];
+    }),
+    claim_automation_followups: (args, table) => table
+        .filter(row => inTable(row, 'automation_followups') && row.status === 'queued' && (args.p_ids as string[]).includes(row.id as string))
+        .map(row => {
+            row.status = 'processing';
+            const comment = table.find(candidate => inTable(candidate, 'automation_comments') && candidate.id === row.automation_comment_id)!;
+            const rule = table.find(candidate => inTable(candidate, 'automation_rules') && candidate.id === comment.rule_id)!;
+            return {
+                ...row, ig_user_id: '1784', attempts: 0, window_expires_at: new Date(Date.now() + 60 * 60 * 1000).toISOString(), gate_status: comment.gate_status,
+                gate_prompts: 0, rule_enabled: rule.enabled, require_follow: rule.require_follow, reply_text: rule.reply_text, link_url: rule.link_url,
+                not_following_text: rule.not_following_text, access_token: 'TOKEN-1',
+            };
+        }),
+    reserve_automation_followup: (args, table) => {
+        const row = table.find(candidate => inTable(candidate, 'automation_followups') && candidate.id === args.p_id && candidate.status === 'processing')!;
+        Object.assign(row, { status: 'sending', kind: args.p_kind });
+        return [{ outcome: 'ok', retry_at: null }];
+    },
+    finish_automation_followup: (args, table) => {
+        const row = table.find(candidate => inTable(candidate, 'automation_followups') && candidate.id === args.p_id)!;
+        row.status = args.p_status;
+        const comment = table.find(candidate => inTable(candidate, 'automation_comments') && candidate.id === row.automation_comment_id)!;
+        comment.gate_status = args.p_gate_status ?? comment.gate_status;
+        return true;
+    },
 };
 
 function seed(): Row[] {
@@ -59,6 +90,7 @@ beforeEach(() => {
     mock.method(console, 'warn', () => {});
     mock.method(console, 'error', () => {});
     fetchMock = installFetch(request => {
+        if (request.method === 'GET') return reply({ is_user_follow_business: true });
         sends.push(request.body ?? '');
         return reply({ recipient_id: 'r', message_id: 'mid-1' });
     });
@@ -101,6 +133,23 @@ describe('instagram webhook routes', () => {
         assert.equal(stored.length, 1);
         assert.deepEqual([stored[0].comment_id, stored[0].status, stored[0].message_id], ['555', 'accepted', 'mid-1']);
         assert.deepEqual(JSON.parse(sends[0]), { recipient: { comment_id: '555' }, message: { text: 'Here it is\n\nhttps://example.com/g' } });
+    });
+
+    test('a signed message from someone waiting on a followers-only reply is answered with the link once they follow', async () => {
+        const target = app(fakeSupabase([
+            ...seed().map(row => (row.id === 'rule-1' ? { ...row, require_follow: true, follow_prompt_text: 'Follow and reply', not_following_text: 'Follow first' } : row)),
+            tableRow('automation_comments', { id: 'gated', account_id: 'ig1', rule_id: 'rule-1', status: 'accepted', recipient_id: '77', gate_status: 'awaiting_reply' }),
+        ], RPC));
+        const body = JSON.stringify({
+            object: 'instagram',
+            entry: [{ id: '1784', time: SENT_AT, messaging: [{ sender: { id: '77' }, recipient: { id: '1784' }, timestamp: SENT_AT * 1000, message: { mid: 'm1', text: 'done' } }] }],
+        });
+        const result = await post(target, body, await metaSignature('IGSECRET', body));
+        assert.equal(result.status, 200);
+        assert.deepEqual(JSON.parse(sends[0]), { recipient: { id: '77' }, message: { text: 'Here it is\n\nhttps://example.com/g' } });
+        const followup = target.supabase.table.find(row => inTable(row, 'automation_followups'))!;
+        assert.deepEqual([followup.status, followup.kind], ['accepted', 'link']);
+        assert.equal(target.supabase.table.find(row => row.id === 'gated')!.gate_status, 'completed');
     });
 
     test('the same notification delivered twice sends one reply', async () => {

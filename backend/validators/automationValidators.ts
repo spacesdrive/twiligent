@@ -1,4 +1,5 @@
 import { ValidationError } from '../lib/errors.ts';
+import { followTextsProblem, keywordsProblem } from '../lib/automationRules.ts';
 import { isString, optionalArray, optionalBoolean, optionalNumber, optionalString, presentField, requiredString } from './fields.ts';
 import type { Fields } from './fields.ts';
 import type { ActivityCursor } from '../repositories/automationCommentRepository.ts';
@@ -7,7 +8,7 @@ import type {
     AutomationTestRequest,
 } from '../../shared/types/automation.ts';
 
-const MATCH_MODES: AutomationMatchMode[] = ['contains', 'exact'];
+const MATCH_MODES: AutomationMatchMode[] = ['contains', 'exact', 'any'];
 const STATUSES: AutomationCommentStatus[] = ['ignored', 'queued', 'processing', 'retry_wait', 'sending', 'accepted', 'failed', 'needs_review', 'skipped', 'expired'];
 const MAX_NAME = 80;
 const MAX_KEYWORDS = 10;
@@ -51,7 +52,8 @@ function name(body: Fields): string {
     return value;
 }
 
-// trimmed, without blanks or repeats, so "guide" and "GUIDE " count once when matching ignores case
+// trimmed, without blanks or repeats, so "guide" and "GUIDE " count once when matching ignores case; whether the
+// list may be empty depends on the match mode, checked with keywordsProblem
 function keywords(body: Fields, caseSensitive: boolean): string[] {
     const list = optionalArray(body, 'keywords', isString, 'words') ?? [];
     const seen = new Set<string>();
@@ -63,17 +65,35 @@ function keywords(body: Fields, caseSensitive: boolean): string[] {
         seen.add(key);
         kept.push(keyword);
     }
-    if (kept.length === 0) throw new ValidationError('Add at least one keyword');
     if (kept.length > MAX_KEYWORDS) throw new ValidationError(`A rule can have at most ${MAX_KEYWORDS} keywords`);
     return kept;
+}
+
+function keywordsFor(mode: AutomationMatchMode, list: string[]): string[] {
+    const problem = keywordsProblem(mode, list);
+    if (problem) throw new ValidationError(problem);
+    return list;
 }
 
 function matchMode(body: Fields): AutomationMatchMode | undefined {
     const value = optionalString(body, 'matchMode');
     if (!value) return undefined;
-    if (!MATCH_MODES.includes(value as AutomationMatchMode)) throw new ValidationError('matchMode must be contains or exact');
+    if (!MATCH_MODES.includes(value as AutomationMatchMode)) throw new ValidationError('matchMode must be contains, exact or any');
     return value as AutomationMatchMode;
 }
+
+// a followers-only message: absent leaves it as it is, empty clears it
+function followText(body: Fields, field: 'followPromptText' | 'notFollowingText', label: string): string | null | undefined {
+    if (!presentField(body, field)) return undefined;
+    const value = optionalString(body, field)?.trim();
+    if (!value) return null;
+    if (value.length > MAX_REPLY) throw new ValidationError(`${label} can be at most ${MAX_REPLY} characters`);
+    return value;
+}
+
+const FOLLOW_PROMPT_LABEL = 'The message asking people to follow and reply';
+const NOT_FOLLOWING_LABEL = 'The reminder for people who do not follow yet';
+
 
 function mediaIds(body: Fields): string[] | undefined {
     const list = optionalArray(body, 'mediaIds', isString, 'post ids');
@@ -146,21 +166,29 @@ function statuses(query: Fields): AutomationCommentStatus[] | undefined {
 
 export function parseAutomationRule(body: Fields): AutomationRuleRequest {
     const caseSensitive = optionalBoolean(body, 'caseSensitive') ?? false;
-    return {
+    const mode = matchMode(body) ?? 'contains';
+    const rule = {
         accountId: requiredString(body, 'accountId', 'Choose the Instagram account'),
         name: name(body),
-        keywords: keywords(body, caseSensitive),
-        matchMode: matchMode(body) ?? 'contains',
+        keywords: keywordsFor(mode, keywords(body, caseSensitive)),
+        matchMode: mode,
         caseSensitive,
         mediaIds: mediaIds(body) ?? [],
         replyText: replyText(body),
         linkUrl: linkUrl(body) ?? null,
         enabled: optionalBoolean(body, 'enabled') ?? false,
         hourlyLimit: hourlyLimit(body) ?? null,
+        requireFollow: optionalBoolean(body, 'requireFollow') ?? false,
+        followPromptText: followText(body, 'followPromptText', FOLLOW_PROMPT_LABEL) ?? null,
+        notFollowingText: followText(body, 'notFollowingText', NOT_FOLLOWING_LABEL) ?? null,
     };
+    const problem = followTextsProblem(rule);
+    if (problem) throw new ValidationError(problem);
+    return rule;
 }
 
-// only the fields present in the body change; accountId is ignored, a rule stays on its account
+// only the fields present in the body change; accountId is ignored, a rule stays on its account. Rules that span
+// fields, such as keywords for the match mode, are checked by the service against the rule as it will be saved
 export function parseAutomationRuleUpdate(body: Fields): AutomationRuleUpdateRequest {
     const changes: AutomationRuleUpdateRequest = {};
     const caseSensitive = optionalBoolean(body, 'caseSensitive');
@@ -173,6 +201,9 @@ export function parseAutomationRuleUpdate(body: Fields): AutomationRuleUpdateReq
     if (presentField(body, 'linkUrl')) changes.linkUrl = linkUrl(body);
     if (presentField(body, 'enabled')) changes.enabled = optionalBoolean(body, 'enabled');
     if (presentField(body, 'hourlyLimit')) changes.hourlyLimit = hourlyLimit(body);
+    if (presentField(body, 'requireFollow')) changes.requireFollow = optionalBoolean(body, 'requireFollow');
+    if (presentField(body, 'followPromptText')) changes.followPromptText = followText(body, 'followPromptText', FOLLOW_PROMPT_LABEL);
+    if (presentField(body, 'notFollowingText')) changes.notFollowingText = followText(body, 'notFollowingText', NOT_FOLLOWING_LABEL);
     if (Object.keys(changes).length === 0) throw new ValidationError('Nothing to change: send at least one rule field');
     return changes;
 }
@@ -181,13 +212,16 @@ export function parseAutomationTest(body: Fields): AutomationTestRequest {
     const caseSensitive = optionalBoolean(body, 'caseSensitive') ?? false;
     const comment = requiredString(body, 'comment', 'Type a sample comment to test');
     if (comment.length > MAX_TEST_COMMENT) throw new ValidationError(`A comment can be at most ${MAX_TEST_COMMENT} characters`);
+    const mode = matchMode(body) ?? 'contains';
     return {
-        keywords: keywords(body, caseSensitive),
-        matchMode: matchMode(body) ?? 'contains',
+        keywords: keywordsFor(mode, keywords(body, caseSensitive)),
+        matchMode: mode,
         caseSensitive,
         mediaIds: mediaIds(body) ?? [],
         replyText: replyText(body),
         linkUrl: linkUrl(body) ?? null,
+        requireFollow: optionalBoolean(body, 'requireFollow') ?? false,
+        followPromptText: followText(body, 'followPromptText', FOLLOW_PROMPT_LABEL) ?? null,
         comment,
         mediaId: optionalString(body, 'mediaId') || undefined,
     };

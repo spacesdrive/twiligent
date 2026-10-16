@@ -33,7 +33,7 @@ describe('automation comment repository', () => {
         const supabase = fakeSupabase([], {
             claim_automation_comments: () => [{
                 id: 'a', user_id: 'user-1', account_id: 'ig1', rule_id: 'r', ig_user_id: '1784', comment_id: 'c', from_id: 'f', attempts: 2,
-                expires_at: 'E', rule_enabled: true, reply_text: 'T', link_url: null, access_token: 'TOK',
+                expires_at: 'E', rule_enabled: true, reply_text: 'T', link_url: null, access_token: 'TOK', require_follow: true, follow_prompt_text: 'P',
             }],
             reserve_automation_send: () => [{ outcome: 'account_limit', retry_at: 'R' }],
             finish_automation_send: () => true,
@@ -42,23 +42,47 @@ describe('automation comment repository', () => {
         const [claimed] = await repo.claim({ limit: 10, perAccount: 5, leaseSeconds: 1200 });
         assert.deepEqual(claimed, {
             id: 'a', userId: 'user-1', accountId: 'ig1', ruleId: 'r', igUserId: '1784', commentId: 'c', fromId: 'f', attempts: 2,
-            expiresAt: 'E', ruleEnabled: true, replyText: 'T', linkUrl: null, accessToken: 'TOK',
+            expiresAt: 'E', ruleEnabled: true, replyText: 'T', linkUrl: null, accessToken: 'TOK', requireFollow: true, followPromptText: 'P',
         });
         assert.deepEqual(rpcArgs(supabase, 'claim_automation_comments'), { p_limit: 10, p_per_account: 5, p_lease_seconds: 1200, p_ids: null });
-        assert.deepEqual(await repo.reserve('a', 'att', LIMITS), { outcome: 'account_limit', retryAt: 'R' });
+        assert.deepEqual(await repo.reserve('a', 'att', LIMITS, 'digest'), { outcome: 'account_limit', retryAt: 'R' });
         assert.deepEqual(rpcArgs(supabase, 'reserve_automation_send'), {
-            p_id: 'a', p_attempt_id: 'att', p_global_limit: 1000, p_user_limit: 500, p_account_limit: 200, p_recipient_limit: 3,
+            p_id: 'a', p_attempt_id: 'att', p_global_limit: 1000, p_user_limit: 500, p_account_limit: 200, p_recipient_limit: 3, p_message_digest: 'digest',
         });
         const plan: FinishPlan = {
             status: 'retry_wait', outcome: 'rate_limited', reason: 'rate_limited', errorMessage: 'm', messageId: null, errorCode: 4, errorSubcode: null,
-            httpStatus: 400, nextAttemptAt: 'N', cooldownUntil: 'C', cooldownReason: 'why', pauseReason: null,
+            httpStatus: 400, nextAttemptAt: 'N', cooldownUntil: 'C', cooldownReason: 'why', pauseReason: null, recipientId: 'igsid', gateStatus: 'awaiting_reply',
         };
         assert.equal(await repo.finish('a', 'att', plan), true);
         assert.deepEqual(rpcArgs(supabase, 'finish_automation_send'), {
             p_id: 'a', p_attempt_id: 'att', p_status: 'retry_wait', p_outcome: 'rate_limited', p_reason: 'rate_limited', p_error_message: 'm',
             p_message_id: null, p_error_code: 4, p_error_subcode: null, p_http_status: 400, p_next_attempt_at: 'N', p_cooldown_until: 'C',
-            p_cooldown_reason: 'why', p_pause_reason: null,
+            p_cooldown_reason: 'why', p_pause_reason: null, p_recipient_id: 'igsid', p_gate_status: 'awaiting_reply',
         });
+    });
+
+    test('expiry, review, health and purge pass their bounds to the database functions and read the answers', async () => {
+        const supabase = fakeSupabase([], {
+            expire_automation_jobs: () => ({ comments: 3, followups: 1 }),
+            automation_review_candidates: () => [{ id: 'a', ig_user_id: '1784', from_id: 'f', started_at: 'S', message_digest: 'd', access_token: 'TOK', review_checks: 1 }],
+            record_automation_review: () => true,
+            automation_queue_health: () => ({ due: 4, oldest_due_at: 'O', needs_review: 2 }),
+            purge_automation_comments: () => 1000,
+        });
+        const repo = createAutomationCommentRepository(supabase);
+        assert.deepEqual(await repo.expireDue(500), { comments: 3, followups: 1 });
+        assert.deepEqual(rpcArgs(supabase, 'expire_automation_jobs'), { p_limit: 500 });
+        assert.deepEqual(await repo.reviewCandidates({ limit: 4, settleSeconds: 300, maxChecks: 3, recheckSeconds: 1800 }), [
+            { id: 'a', igUserId: '1784', fromId: 'f', startedAt: 'S', messageDigest: 'd', accessToken: 'TOK', reviewChecks: 1 },
+        ]);
+        assert.deepEqual(rpcArgs(supabase, 'automation_review_candidates'), { p_limit: 4, p_settle_seconds: 300, p_max_checks: 3, p_recheck_seconds: 1800 });
+        assert.equal(await repo.recordReview('a', { found: true, messageId: 'm', sentAt: 'T' }), true);
+        assert.deepEqual(rpcArgs(supabase, 'record_automation_review'), { p_id: 'a', p_found: true, p_message_id: 'm', p_sent_at: 'T', p_note: null });
+        assert.deepEqual(await repo.health(1200), {
+            due: 4, oldestDueAt: 'O', waiting: 0, stale: 0, needsReview: 2, followupsDue: 0, pausedAccounts: 0, limitedAccounts: 0,
+        });
+        assert.equal(await repo.purgeCreatedBefore('2026-07-01T00:00:00Z', 1000), 1000);
+        assert.deepEqual(rpcArgs(supabase, 'purge_automation_comments'), { p_before: '2026-07-01T00:00:00Z', p_limit: 1000 });
     });
 
     test('a reservation with no answer counts as gone, so the job is never sent', async () => {
@@ -135,13 +159,17 @@ describe('automation comment repository', () => {
         assert.deepEqual(await repo.statsForUser('user-1', { from: 'F', to: 'T' }), { comments: { accepted: 2 }, attempts: {} });
     });
 
-    test('retention deletes comments created before the cutoff across all users', async () => {
-        const supabase = fakeSupabase([
-            tableRow('automation_comments', { id: 'old', created_at: '2026-01-01T00:00:00Z' }),
-            tableRow('automation_comments', { id: 'new', created_at: '2026-10-01T00:00:00Z' }),
-        ]);
-        assert.equal(await createAutomationCommentRepository(supabase).deleteCreatedBefore('2026-07-01T00:00:00Z'), 1);
-        assert.deepEqual(supabase.table.map(row => row.id), ['new']);
+    test('an activity item shows its followers-only wait and its latest follow-up', async () => {
+        const supabase = fakeSupabase([tableRow('automation_comments', {
+            id: 'a', user_id: 'user-1', status: 'accepted', gate_status: 'awaiting_reply',
+            automation_followups: [
+                { status: 'accepted', kind: 'reminder', error_message: null, created_at: '2026-10-16T10:00:00Z' },
+                { status: 'failed', kind: null, error_message: 'not sent', created_at: '2026-10-16T11:00:00Z' },
+            ],
+        })]);
+        const [item] = await createAutomationCommentRepository(supabase).listForUser('user-1', { limit: 10 });
+        assert.equal(item.gateStatus, 'awaiting_reply');
+        assert.deepEqual(item.followup, { status: 'failed', kind: null, errorMessage: 'not sent', createdAt: '2026-10-16T11:00:00Z' });
     });
 
     test('a failed query becomes a DatabaseError', async () => {

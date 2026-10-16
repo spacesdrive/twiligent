@@ -8,11 +8,14 @@ import type { WebhookVerification } from '../validators/automationValidators.ts'
 import type { AutomationConfig } from '../lib/config.ts';
 import type { AutomationRuleRepository, WebhookRule } from '../repositories/automationRuleRepository.ts';
 import type { AutomationCommentRepository, NewAutomationComment } from '../repositories/automationCommentRepository.ts';
+import type { AutomationFollowupRepository } from '../repositories/automationFollowupRepository.ts';
+import type { InstagramMessageEvent } from '../validators/instagramWebhookValidators.ts';
 import type { RequestContext } from '../types/context.ts';
 
 export interface AutomationWebhookDeps {
     rules: AutomationRuleRepository;
     comments: AutomationCommentRepository;
+    followups: AutomationFollowupRepository;
     automation: AutomationConfig;
     context: RequestContext;
 }
@@ -22,6 +25,8 @@ export interface IngestResult {
     duplicates: number;
     // the new comments that matched a rule, for the request to start sending right away
     queuedIds: string[];
+    // follow-ups for people who answered a followers-only reply
+    followupIds: string[];
     // database calls the intake made, which count against the request's subrequests
     subrequests: number;
 }
@@ -65,7 +70,7 @@ function classify(event: InstagramCommentEvent, rules: WebhookRule[]): NewAutoma
 }
 
 // stores what a webhook delivered before it is acknowledged; comments for accounts without an enabled rule are not kept
-export function createAutomationWebhookService({ rules, comments, automation, context }: AutomationWebhookDeps): AutomationWebhookService {
+export function createAutomationWebhookService({ rules, comments, followups, automation, context }: AutomationWebhookDeps): AutomationWebhookService {
     return {
         // Meta checks the callback by sending the Verify Token from its dashboard and expects the challenge back
         async challengeAnswer({ mode, verifyToken, challenge }) {
@@ -81,6 +86,8 @@ export function createAutomationWebhookService({ rules, comments, automation, co
         async ingest(webhook) {
             const byAccount = new Map<string, InstagramCommentEvent[]>();
             for (const event of webhook.comments) byAccount.set(event.igUserId, [...(byAccount.get(event.igUserId) ?? []), event]);
+            const messagesByAccount = new Map<string, InstagramMessageEvent[]>();
+            for (const event of webhook.messages) messagesByAccount.set(event.igUserId, [...(messagesByAccount.get(event.igUserId) ?? []), event]);
 
             const rows: NewAutomationComment[] = [];
             let subrequests = 0;
@@ -100,13 +107,25 @@ export function createAutomationWebhookService({ rules, comments, automation, co
             const inserted = await comments.insertMany(rows);
             const queuedIds = inserted.filter(row => row.status === 'queued').map(row => row.id);
             if (rows.length > 0) subrequests++;
-            const result = { stored: inserted.length, duplicates: rows.length - inserted.length, queuedIds, subrequests };
+
+            // a message only matters when its sender is waiting on a followers-only reply; the database decides that in
+            // one call per account, and messages delivered again insert nothing
+            const followupIds: string[] = [];
+            for (const [igUserId, events] of messagesByAccount) {
+                const incoming = events.map(event => ({ id: newRowId(), senderId: event.senderId, messageId: event.messageId, sentAt: new Date(event.sentAt).toISOString() }));
+                followupIds.push(...await followups.insertForMessages(igUserId, incoming));
+                subrequests++;
+            }
+
+            const result = { stored: inserted.length, duplicates: rows.length - inserted.length, queuedIds, followupIds, subrequests };
             context.log.info('instagram webhook stored', {
                 comments: webhook.comments.length,
+                messages: webhook.messages.length,
                 unsupported: webhook.unsupported,
                 stored: result.stored,
                 duplicates: result.duplicates,
                 queued: queuedIds.length,
+                followups: followupIds.length,
             });
             return result;
         },

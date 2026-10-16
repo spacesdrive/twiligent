@@ -14,6 +14,9 @@ interface AutomationRuleRow {
     link_url: string | null;
     enabled: boolean;
     hourly_limit: number | null;
+    require_follow: boolean;
+    follow_prompt_text: string | null;
+    not_following_text: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -41,7 +44,7 @@ interface WebhookRuleRow {
 
 export type AutomationRuleChanges = Partial<Omit<AutomationRule, 'id' | 'accountId' | 'createdAt' | 'updatedAt'>>;
 
-const COLUMNS = 'id, account_id, name, keywords, match_mode, case_sensitive, media_ids, reply_text, link_url, enabled, hourly_limit, created_at, updated_at';
+const COLUMNS = 'id, account_id, name, keywords, match_mode, case_sensitive, media_ids, reply_text, link_url, enabled, hourly_limit, require_follow, follow_prompt_text, not_following_text, created_at, updated_at';
 
 function toRule(row: AutomationRuleRow): AutomationRule {
     return {
@@ -56,6 +59,9 @@ function toRule(row: AutomationRuleRow): AutomationRule {
         linkUrl: row.link_url,
         enabled: row.enabled,
         hourlyLimit: row.hourly_limit,
+        requireFollow: row.require_follow ?? false,
+        followPromptText: row.follow_prompt_text ?? null,
+        notFollowingText: row.not_following_text ?? null,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
     };
@@ -73,6 +79,9 @@ function toColumns(changes: AutomationRuleChanges): Record<string, unknown> {
         link_url: changes.linkUrl,
         enabled: changes.enabled,
         hourly_limit: changes.hourlyLimit,
+        require_follow: changes.requireFollow,
+        follow_prompt_text: changes.followPromptText,
+        not_following_text: changes.notFollowingText,
     };
     return Object.fromEntries(Object.entries(columns).filter(([, value]) => value !== undefined));
 }

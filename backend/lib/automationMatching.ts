@@ -7,9 +7,10 @@ export interface MatchableRule {
     mediaIds: string[];
 }
 
+// keyword is null when an any-comment rule answered
 export interface RuleMatch<T extends MatchableRule> {
     rule: T;
-    keyword: string;
+    keyword: string | null;
 }
 
 // what surrounds a comment's words without changing them: spaces, punctuation and emoji
@@ -41,17 +42,30 @@ export function matchedKeyword(comment: string, rule: MatchableRule): string | n
     return null;
 }
 
+// whether the rule answers this comment; an any-comment rule answers every comment with something in it
+export function ruleMatch<T extends MatchableRule>(comment: string, rule: T): RuleMatch<T> | null {
+    if (rule.matchMode === 'any') return normalize(comment, false) ? { rule, keyword: null } : null;
+    const keyword = matchedKeyword(comment, rule);
+    return keyword === null ? null : { rule, keyword };
+}
+
 export function coversMedia(rule: MatchableRule, mediaId: string | null): boolean {
     return rule.mediaIds.length === 0 || (mediaId !== null && rule.mediaIds.includes(mediaId));
 }
 
-// a rule aimed at this post wins over a rule for every post; within each group the order given (oldest first) decides
+// the more specific rule answers: rules for this post before rules for every post, and in each group keyword rules
+// before any-comment rules
+function rank(rule: MatchableRule): number {
+    return (rule.mediaIds.length > 0 ? 0 : 2) + (rule.matchMode === 'any' ? 1 : 0);
+}
+
+// one rule answers a comment, so one comment never gets two replies; inside a rank the order given (oldest first) decides
 export function pickRule<T extends MatchableRule>(rules: T[], comment: string, mediaId: string | null): RuleMatch<T> | null {
-    const ordered = [...rules.filter(rule => rule.mediaIds.length > 0), ...rules.filter(rule => rule.mediaIds.length === 0)];
-    for (const rule of ordered) {
+    const ordered = rules.map((rule, index) => ({ rule, index })).sort((a, b) => rank(a.rule) - rank(b.rule) || a.index - b.index);
+    for (const { rule } of ordered) {
         if (!coversMedia(rule, mediaId)) continue;
-        const keyword = matchedKeyword(comment, rule);
-        if (keyword !== null) return { rule, keyword };
+        const match = ruleMatch(comment, rule);
+        if (match) return match;
     }
     return null;
 }

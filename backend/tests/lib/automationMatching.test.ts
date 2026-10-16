@@ -1,11 +1,37 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { coversMedia, matchedKeyword, pickRule } from '../../lib/automationMatching.ts';
+import { coversMedia, matchedKeyword, pickRule, ruleMatch } from '../../lib/automationMatching.ts';
 import type { MatchableRule } from '../../lib/automationMatching.ts';
 
 function rule(overrides: Partial<MatchableRule> = {}): MatchableRule {
     return { keywords: ['GUIDE'], matchMode: 'contains', caseSensitive: false, mediaIds: [], ...overrides };
 }
+
+test('an any-comment rule answers every comment with something in it, emoji included, and names no keyword', () => {
+    const any = rule({ matchMode: 'any', keywords: [] });
+    assert.deepEqual(ruleMatch('love this', any), { rule: any, keyword: null });
+    assert.deepEqual(ruleMatch('🔥', any), { rule: any, keyword: null });
+    assert.equal(ruleMatch('   ', any), null);
+});
+
+test('the most specific rule answers: this post\'s keyword rule, then this post\'s any-comment rule, then the same for every post', () => {
+    const everyAny = rule({ matchMode: 'any', keywords: [] });
+    const everyKeyword = rule({ keywords: ['GUIDE'] });
+    const postAny = rule({ matchMode: 'any', keywords: [], mediaIds: ['C'] });
+    const postKeyword = rule({ keywords: ['GUIDE'], mediaIds: ['C'] });
+    const all = [everyAny, everyKeyword, postAny, postKeyword];
+    assert.equal(pickRule(all, 'GUIDE', 'C')?.rule, postKeyword);
+    assert.equal(pickRule(all, 'nice', 'C')?.rule, postAny);
+    assert.equal(pickRule(all, 'GUIDE', 'D')?.rule, everyKeyword);
+    assert.equal(pickRule(all, 'nice', 'D')?.rule, everyAny);
+    assert.equal(pickRule([everyKeyword], 'nice', 'D'), null);
+});
+
+test('among rules of the same kind the oldest answers, so two copies of a rule never both reply', () => {
+    const first = rule({ matchMode: 'any', keywords: [] });
+    const second = rule({ matchMode: 'any', keywords: [] });
+    assert.equal(pickRule([first, second], 'hello', '1')?.rule, first);
+});
 
 test('contains matches the keyword as a whole word anywhere in the comment, ignoring case', () => {
     assert.equal(matchedKeyword('Please send the guide!', rule()), 'GUIDE');

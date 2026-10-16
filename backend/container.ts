@@ -8,6 +8,7 @@ import { createAuditRepository } from './repositories/auditRepository.ts';
 import { createAutomationRuleRepository } from './repositories/automationRuleRepository.ts';
 import { createAutomationCommentRepository } from './repositories/automationCommentRepository.ts';
 import { createAutomationAccountRepository } from './repositories/automationAccountRepository.ts';
+import { createAutomationFollowupRepository } from './repositories/automationFollowupRepository.ts';
 import { createAccountService } from './services/accountService.ts';
 import { createYouTubeAnalyticsService } from './services/youtubeAnalyticsService.ts';
 import { createInstagramAnalyticsService } from './services/instagramAnalyticsService.ts';
@@ -24,6 +25,8 @@ import { createAuthEmailService } from './services/authEmailService.ts';
 import { createAutomationService } from './services/automationService.ts';
 import { createAutomationWebhookService } from './services/automationWebhookService.ts';
 import { createAutomationProcessor } from './services/automationProcessor.ts';
+import { createAutomationFollowupProcessor } from './services/automationFollowupProcessor.ts';
+import { createAutomationReconciler } from './services/automationReconciler.ts';
 import { createRetentionService } from './services/retentionService.ts';
 import type { AccountService } from './services/accountService.ts';
 import type { YouTubeAnalyticsService } from './services/youtubeAnalyticsService.ts';
@@ -41,6 +44,8 @@ import type { AuthEmailService } from './services/authEmailService.ts';
 import type { AutomationService } from './services/automationService.ts';
 import type { AutomationWebhookService } from './services/automationWebhookService.ts';
 import type { AutomationProcessor } from './services/automationProcessor.ts';
+import type { AutomationFollowupProcessor } from './services/automationFollowupProcessor.ts';
+import type { AutomationReconciler } from './services/automationReconciler.ts';
 import type { RetentionService } from './services/retentionService.ts';
 import type { AppConfig } from './lib/config.ts';
 import type { RequestContext } from './types/context.ts';
@@ -70,6 +75,8 @@ export interface Services {
     automations: AutomationService;
     automationWebhook: AutomationWebhookService;
     automationProcessor: AutomationProcessor;
+    automationFollowups: AutomationFollowupProcessor;
+    automationReconciler: AutomationReconciler;
     retention: RetentionService;
 }
 
@@ -84,6 +91,7 @@ export function createServices(clients: Clients, config: AppConfig, context: Req
     const rules = createAutomationRuleRepository(clients.supabase);
     const comments = createAutomationCommentRepository(clients.supabase);
     const automationAccounts = createAutomationAccountRepository(clients.supabase);
+    const followups = createAutomationFollowupRepository(clients.supabase);
     const { automation } = config;
     const scheduledPublisher = createScheduledPublisher({ accounts, posts, context });
     return {
@@ -100,9 +108,11 @@ export function createServices(clients: Clients, config: AppConfig, context: Req
         settings: createSettingsService({ settings, config }),
         instagramConnect: createInstagramConnectService({ accounts, audit, config, context }),
         authEmail: createAuthEmailService({ quota: createEmailQuotaRepository(clients.rateLimitRedis), config, context }),
-        automations: createAutomationService({ accounts, rules, comments, automationAccounts, audit, automation, context }),
-        automationWebhook: createAutomationWebhookService({ rules, comments, automation, context }),
+        automations: createAutomationService({ accounts, rules, comments, followups, automationAccounts, audit, automation, context }),
+        automationWebhook: createAutomationWebhookService({ rules, comments, followups, automation, context }),
         automationProcessor: createAutomationProcessor({ comments, automation, context }),
+        automationFollowups: createAutomationFollowupProcessor({ followups, automation, context }),
+        automationReconciler: createAutomationReconciler({ comments, context }),
         retention: createRetentionService({ comments, audit, context }),
     };
 }

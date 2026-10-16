@@ -73,7 +73,7 @@ describe('automation processor', () => {
         instagram();
         const queue = fakeAutomationQueue([queueRow('a'), queueRow('b')]);
         const run = await processor(queue).run();
-        assert.deepEqual(run, { claimed: 2, outcomes: { accepted: 2 } });
+        assert.deepEqual(run, { claimed: 2, outcomes: { accepted: 2 }, subrequests: 7 });
         assert.deepEqual(sent.map(item => item.commentId).sort(), ['c-a', 'c-b']);
         assert.deepEqual(sent[0], { igUserId: '1784', commentId: 'c-a', text: 'Here is your guide\n\nhttps://example.com/guide', token: 'Bearer TOKEN-1' });
         assert.equal(queue.rows[0].messageId, 'm-c-a');
@@ -107,15 +107,56 @@ describe('automation processor', () => {
         assert.equal(new Set(sent.map(item => item.commentId)).size, 8);
     });
 
-    test('a burst larger than the batch is spread over runs, and one busy account cannot take a sweep from another', async () => {
+    test('a burst larger than the batch is spread over runs, and accounts take turns so a busy one cannot hold back another', async () => {
         instagram();
-        const busy = Array.from({ length: 12 }, (_, i) => queueRow(`busy${i}`));
+        const busy = Array.from({ length: 12 }, (_, i) => queueRow(`busy${i}`, { nextAttemptAt: new Date(Date.now() - 60_000 + i).toISOString() }));
         const quiet = queueRow('quiet', { accountId: 'ig2', igUserId: '2000' });
         const queue = fakeAutomationQueue([...busy, quiet]);
         const run = await processor(queue, automation({ AUTOMATION_BATCH_SIZE: '4' })).run();
-        assert.equal(run.claimed, 3);
-        assert.ok(sent.some(item => item.commentId === 'c-quiet'));
-        assert.equal(queue.rows.filter(row => row.status === 'queued').length, 10);
+        assert.equal(run.claimed, 4);
+        assert.deepEqual(sent.map(item => item.commentId), ['c-busy0', 'c-quiet', 'c-busy1', 'c-busy2']);
+        assert.equal(queue.rows.filter(row => row.status === 'queued').length, 9);
+    });
+
+    test('an account alone uses the whole batch', async () => {
+        instagram();
+        const queue = fakeAutomationQueue(Array.from({ length: 12 }, (_, i) => queueRow(`solo${i}`)));
+        const run = await processor(queue, automation({ AUTOMATION_BATCH_SIZE: '10' })).run();
+        assert.equal(run.claimed, 10);
+        assert.equal(sent.length, 10);
+    });
+
+    test('a run reports the subrequests it made: the claim, then three for each reply', async () => {
+        instagram();
+        const queue = fakeAutomationQueue([queueRow('a'), queueRow('b')]);
+        assert.equal((await processor(queue).run()).subrequests, 7);
+    });
+
+    test('every attempt keeps a digest of the exact text sent', async () => {
+        instagram();
+        const queue = fakeAutomationQueue([queueRow('a')]);
+        await processor(queue).run();
+        assert.match(queue.attempts[0].digest!, /^[0-9a-f]{64}$/);
+    });
+
+    test('a followers-only rule sends its request to follow and reply, and the comment then waits for the answer', async () => {
+        instagram();
+        const queue = fakeAutomationQueue([queueRow('gate')]);
+        Object.assign(queue.rules.get('rule-guide')!, { requireFollow: true, followPromptText: 'Follow us and reply to get the guide', notFollowingText: 'Follow first' });
+        await processor(queue).run();
+        assert.equal(sent[0].text, 'Follow us and reply to get the guide');
+        assert.deepEqual([queue.rows[0].status, queue.rows[0].gateStatus, queue.rows[0].recipientId], ['accepted', 'awaiting_reply', 'r']);
+    });
+
+    test('a paused account\'s replies are not claimed at all, and go out once it is resumed', async () => {
+        instagram();
+        const queue = fakeAutomationQueue([queueRow('held'), queueRow('other', { accountId: 'ig2', igUserId: '2000' })]);
+        queue.controls.set('ig1', { paused: true, pausedReason: null, cooldownUntil: null });
+        await processor(queue).run();
+        assert.deepEqual(statuses(queue), { held: 'queued', other: 'accepted' });
+        queue.controls.get('ig1')!.paused = false;
+        await processor(queue).run();
+        assert.equal(statuses(queue).held, 'accepted');
     });
 
     test('a webhook\'s own comments are claimed by id, all at once, leaving older jobs to the sweep', async () => {
@@ -178,6 +219,24 @@ describe('automation processor', () => {
         assert.ok(Date.parse(queue.rows[2].nextAttemptAt!) > Date.now() + 59 * MINUTE);
     });
 
+    test('a full account is marked until a send frees up, so later runs leave its waiting replies alone', async () => {
+        instagram();
+        const queue = fakeAutomationQueue(Array.from({ length: 5 }, (_, i) => queueRow(`b${i}`)));
+        const config = automation({ AUTOMATION_ACCOUNT_HOURLY_LIMIT: '2', AUTOMATION_BATCH_SIZE: '3' });
+        await processor(queue, config).run();
+        assert.ok(Date.parse(queue.controls.get('ig1')!.limitedUntil!) > Date.now() + 59 * MINUTE);
+        assert.deepEqual(await processor(queue, config).run(), { claimed: 0, outcomes: {}, subrequests: 1 });
+        assert.deepEqual(queue.rows.slice(3).map(row => row.status), ['queued', 'queued']);
+    });
+
+    test('a follow-up does not count toward the account\'s private reply limit', async () => {
+        instagram();
+        const queue = fakeAutomationQueue([queueRow('a')]);
+        queue.attempts.push({ id: 'f', commentRowId: 'x', followupId: 'fu', kind: 'followup', userId: 'user-1', accountId: 'ig1', ruleId: 'rule-guide', recipientId: 'p', outcome: 'accepted', startedAt: Date.now() });
+        await processor(queue, automation({ AUTOMATION_ACCOUNT_HOURLY_LIMIT: '1' })).run();
+        assert.equal(statuses(queue).a, 'accepted');
+    });
+
     test('a person who triggers many rules gets only the daily number of replies', async () => {
         instagram();
         const queue = fakeAutomationQueue(['r1', 'r2', 'r3', 'r4'].map(id => queueRow(id, { fromId: 'same-fan' })));
@@ -235,14 +294,15 @@ describe('automation processor', () => {
         await processor(queue, automation({ AUTOMATION_BATCH_SIZE: '1' })).run();
         await processor(queue, automation({ AUTOMATION_BATCH_SIZE: '1' })).run();
         assert.equal(queue.controls.get('ig1')!.paused, true);
-        assert.deepEqual(queue.rows.map(row => [row.status, row.statusReason]), [['queued', 'paused'], ['queued', 'paused']]);
+        // the held account is left out of later claims, so its second reply waits untouched
+        assert.deepEqual(queue.rows.map(row => [row.status, row.statusReason]), [['queued', 'paused'], ['queued', null]]);
         assert.equal(sent.length, 1);
     });
 
     test('pausing this instance sends nothing and claims nothing', async () => {
         instagram();
         const queue = fakeAutomationQueue([queueRow('a')]);
-        assert.deepEqual(await processor(queue, automation({ AUTOMATION_PAUSED: 'true' })).run(), { claimed: 0, outcomes: {} });
+        assert.deepEqual(await processor(queue, automation({ AUTOMATION_PAUSED: 'true' })).run(), { claimed: 0, outcomes: {}, subrequests: 0 });
         assert.equal(statuses(queue).a, 'queued');
     });
 
@@ -272,7 +332,7 @@ describe('automation processor', () => {
         const controller = new AbortController();
         controller.abort();
         const run = await processor(queue, automation(), controller.signal).run();
-        assert.deepEqual(run, { claimed: 1, outcomes: { returned: 1 } });
+        assert.deepEqual(run, { claimed: 1, outcomes: { returned: 1 }, subrequests: 2 });
         assert.equal(sent.length, 0);
         assert.equal(statuses(queue).a, 'queued');
     });
@@ -293,7 +353,7 @@ describe('automation processor', () => {
         const run = await processor(queue).run({ ids: queue.rows.map(row => row.id), subrequests: 11 });
         assert.equal(run.claimed, 3);
         assert.equal(sent.length, 3);
-        assert.deepEqual(await processor(queue).run({ subrequests: 4 }), { claimed: 0, outcomes: {} });
+        assert.deepEqual(await processor(queue).run({ subrequests: 4 }), { claimed: 0, outcomes: {}, subrequests: 0 });
         assert.equal(queue.rows.filter(row => row.status === 'queued').length, 3);
     });
 });

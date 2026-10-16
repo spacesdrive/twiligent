@@ -85,6 +85,7 @@ describe('automation routes', () => {
         assert.deepEqual(body.rules.map((rule: { id: string }) => rule.id), ['rule-mine']);
         assert.deepEqual(body.accounts, [{
             accountId: 'ig1', username: 'mine', profilePictureUrl: '', paused: false, cooldownUntil: null, cooldownReason: null, subscribedAt: null,
+            limitedUntil: null, messagesSubscribed: false,
         }]);
         assert.deepEqual(body.settings, { webhookConfigured: true, paused: false, limits: { accountHourly: 200, userHourly: 500, globalHourly: 1000, recipientDaily: 3 } });
     });
@@ -109,6 +110,58 @@ describe('automation routes', () => {
         const { status } = await call(target, 'POST', '/automations/rules', { accountId: 'ig1', name: 'G', keywords: ['G'], replyText: 'x', enabled: true });
         assert.equal(status, 200);
         assert.equal((await call(target, 'GET', '/automations')).body.accounts[0].subscribedAt, null);
+    });
+
+    test('a rule that answers any comment is saved without keywords, and switching a rule to it clears them', async () => {
+        const target = server();
+        const created = await call(target, 'POST', '/automations/rules', { accountId: 'ig1', name: 'Giveaway', matchMode: 'any', keywords: [], replyText: 'Thanks' });
+        assert.deepEqual([created.status, created.body.rule.matchMode, created.body.rule.keywords], [200, 'any', []]);
+        const switched = await call(target, 'PUT', '/automations/rules/rule-mine', { matchMode: 'any' });
+        assert.deepEqual([switched.body.rule.matchMode, switched.body.rule.keywords], ['any', []]);
+        const back = await call(target, 'PUT', '/automations/rules/rule-mine', { matchMode: 'contains' });
+        assert.equal(back.status, 400);
+        assert.equal(back.body.message, 'Add at least one keyword');
+    });
+
+    test('an enabled followers-only rule asks Instagram for the account\'s comments and messages', async () => {
+        const target = server();
+        const { status, body } = await call(target, 'POST', '/automations/rules', {
+            accountId: 'ig1', name: 'Gate', keywords: ['GUIDE'], replyText: 'Here it is', linkUrl: 'https://example.com/g', enabled: true,
+            requireFollow: true, followPromptText: 'Follow and reply to get it', notFollowingText: 'Follow first, then reply',
+        });
+        assert.equal(status, 200);
+        assert.deepEqual([body.rule.requireFollow, body.rule.followPromptText], [true, 'Follow and reply to get it']);
+        assert.equal(new URL(graph[0].url).searchParams.get('subscribed_fields'), 'comments,messages');
+        assert.equal((await call(target, 'GET', '/automations')).body.accounts[0].messagesSubscribed, true);
+    });
+
+    test('when Instagram refuses messages, the account still gets comments and shows that follow checks cannot work', async () => {
+        subscribeAnswer = () => reply({ error: { message: 'messages is not available for this app', code: 100 } }, 400);
+        let calls = 0;
+        fetchMock?.restore();
+        fetchMock = installFetch(request => {
+            graph.push(request);
+            calls++;
+            return calls === 1 ? subscribeAnswer() : reply({ success: true });
+        });
+        const target = server();
+        await call(target, 'POST', '/automations/rules', {
+            accountId: 'ig1', name: 'Gate', keywords: ['GUIDE'], replyText: 'x', enabled: true,
+            requireFollow: true, followPromptText: 'Follow and reply', notFollowingText: 'Follow first',
+        });
+        assert.deepEqual(graph.map(request => new URL(request.url).searchParams.get('subscribed_fields')), ['comments,messages', 'comments']);
+        const account = (await call(target, 'GET', '/automations')).body.accounts[0];
+        assert.deepEqual([!!account.subscribedAt, account.messagesSubscribed], [true, false]);
+    });
+
+    test('turning the followers-only option off asks Instagram for comments only again', async () => {
+        const target = server(fakeSupabase([
+            ...seed().filter(row => row.id !== 'rule-mine'),
+            ruleRow('rule-mine', 'user-1', 'ig1', { enabled: true, require_follow: true, follow_prompt_text: 'Follow', not_following_text: 'Follow first' }),
+            tableRow('automation_accounts', { account_id: 'ig1', user_id: 'user-1', paused: false, subscribed_at: PAST, subscribed_fields: ['comments', 'messages'] }),
+        ]));
+        await call(target, 'PUT', '/automations/rules/rule-mine', { requireFollow: false });
+        assert.equal(new URL(graph[0].url).searchParams.get('subscribed_fields'), 'comments');
     });
 
     test('a rule can only use the user\'s own Instagram account', async () => {
@@ -142,6 +195,13 @@ describe('automation routes', () => {
         assert.deepEqual(audits(target.supabase), ['automation_rule.updated', 'automation_rule.duplicated', 'automation_rule.deleted']);
     });
 
+    test('testing an any-comment, followers-only draft matches any words and shows the request to follow, not the link', async () => {
+        const { body } = await call(server(), 'POST', '/automations/test', {
+            matchMode: 'any', keywords: [], replyText: 'Hi', linkUrl: 'https://e.com', requireFollow: true, followPromptText: 'Follow and reply', comment: 'love this',
+        });
+        assert.deepEqual([body.matched, body.keyword, body.message], [true, null, 'Follow and reply']);
+    });
+
     test('testing a rule draft shows whether a sample comment matches and the exact reply, and sends nothing', async () => {
         const { body } = await call(server(), 'POST', '/automations/test', { keywords: ['GUIDE'], replyText: 'Hi', linkUrl: 'https://e.com', comment: 'the guide please' });
         assert.deepEqual(body, { success: true, matched: true, keyword: 'GUIDE', message: 'Hi\n\nhttps://e.com', messageBytes: 17, maxMessageBytes: 1000 });
@@ -167,6 +227,22 @@ describe('automation routes', () => {
         assert.equal((await call(target, 'POST', '/automations/activity/failed-theirs/retry')).status, 404);
         assert.equal(target.supabase.table.find(row => row.id === 'failed-theirs')!.status, 'failed');
         assert.ok(target.supabase.calls.some(call => call.type === 'rpc' && call.table === 'claim_automation_comments'));
+    });
+
+    test('on an accepted followers-only reply, retry sends the failed follow-up again inside its 24 hours', async () => {
+        const target = server(fakeSupabase([
+            ...seed(),
+            commentRow('gated', 'user-1', 'accepted', { gate_status: 'awaiting_reply' }),
+            tableRow('automation_followups', {
+                id: 'fu-1', user_id: 'user-1', automation_comment_id: 'gated', status: 'failed', created_at: '2026-10-15T01:00:00Z',
+                window_expires_at: FUTURE, next_attempt_at: null,
+            }),
+        ], { claim_automation_followups: () => [] }));
+        const retried = await call(target, 'POST', '/automations/activity/gated/retry');
+        assert.equal(retried.status, 200);
+        assert.equal(target.supabase.table.find(row => row.id === 'fu-1')!.status, 'queued');
+        assert.ok(target.supabase.calls.some(call => call.type === 'rpc' && call.table === 'claim_automation_followups'));
+        assert.equal((await call(target, 'POST', '/automations/activity/gated/retry')).status, 409);
     });
 
     test('stats default to the last 7 days and pass the filters on', async () => {

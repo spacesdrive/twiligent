@@ -13,13 +13,14 @@ returns table (
     from_id text,
     started_at timestamptz,
     message_digest text,
-    access_token text
+    access_token text,
+    review_checks integer
 )
 language sql
 stable
 set search_path = ''
 as $$
-    select c.id, c.ig_user_id, c.from_id, t.started_at, t.message_digest, a.data ->> 'accessToken'
+    select c.id, c.ig_user_id, c.from_id, t.started_at, t.message_digest, a.data ->> 'accessToken', c.review_checks
     from public.automation_comments c
     join lateral (
         select t.started_at, t.message_digest

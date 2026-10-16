@@ -1,7 +1,7 @@
 import { sendPrivateReply } from './instagram/instagramMessaging.ts';
 import {
     BACKGROUND_RUN_MS, CLAIM_LEASE_SECONDS, FREE_PLAN_SUBREQUESTS, SEND_TIMEOUT_MS, SUBREQUESTS_PER_REPLY,
-    composeReply, finishPlan, readinessPlan, releasePlan,
+    finishPlan, messageDigest, readinessPlan, releasePlan, replyMessage,
 } from '../lib/automationDelivery.ts';
 import { newRowId } from '../lib/ids.ts';
 import { errorFields } from '../lib/logger.ts';
@@ -32,6 +32,8 @@ export interface ProcessRun {
     // the status each claimed job ended in this run; gone means another run settled it first, returned that it was
     // handed back unstarted because the run ran out of time or subrequests
     outcomes: Partial<Record<AutomationCommentStatus | 'gone' | 'returned' | 'error', number>>;
+    // subrequests the run made, so the rest of its invocation knows what is left
+    subrequests: number;
 }
 
 export interface AutomationProcessor {
@@ -46,26 +48,32 @@ const SEND_MARGIN_MS = 2_000;
 export function createAutomationProcessor({ comments, automation, context }: AutomationProcessorDeps): AutomationProcessor {
     const { signal, log } = context;
 
-    async function settle(job: ClaimedComment): Promise<AutomationCommentStatus | 'gone'> {
+    async function settle(job: ClaimedComment, spend: () => void): Promise<AutomationCommentStatus | 'gone'> {
         const now = Date.now();
         const notReady = readinessPlan(job, now);
         if (notReady) {
+            spend();
             await comments.release(job.id, notReady);
             return notReady.status;
         }
 
+        // readinessPlan checked that the rule is on and the token is there
+        const text = replyMessage({ requireFollow: job.requireFollow, followPromptText: job.followPromptText, replyText: job.replyText!, linkUrl: job.linkUrl });
         const attemptId = newRowId();
-        const reservation = await comments.reserve(job.id, attemptId, automation.limits);
+        spend();
+        const reservation = await comments.reserve(job.id, attemptId, automation.limits, await messageDigest(text));
         if (reservation.outcome === 'gone') return 'gone';
         const held = releasePlan(reservation.outcome, reservation.retryAt, job, now);
         if (held) {
+            spend();
             await comments.release(job.id, held);
             return held.status;
         }
 
-        // readinessPlan checked that the rule is on and the token is there
-        const result = await sendPrivateReply(job.igUserId, job.accessToken!, job.commentId, composeReply(job.replyText!, job.linkUrl));
-        const plan = finishPlan(result, { attempts: job.attempts + 1, expiresAt: job.expiresAt }, Date.now());
+        spend();
+        const result = await sendPrivateReply(job.igUserId, job.accessToken!, job.commentId, text);
+        const plan = finishPlan(result, { attempts: job.attempts + 1, expiresAt: job.expiresAt, fromId: job.fromId, awaitsReply: job.requireFollow }, Date.now());
+        spend();
         await comments.finish(job.id, attemptId, plan);
         log.info('automation reply settled', {
             commentRowId: job.id,
@@ -73,6 +81,7 @@ export function createAutomationProcessor({ comments, automation, context }: Aut
             ruleId: job.ruleId,
             status: plan.status,
             outcome: plan.outcome,
+            followersOnly: job.requireFollow,
             errorCode: plan.errorCode,
             errorSubcode: plan.errorSubcode,
         });
@@ -95,7 +104,7 @@ export function createAutomationProcessor({ comments, automation, context }: Aut
             const outcomes: ProcessRun['outcomes'] = {};
             if (automation.paused) {
                 log.info('automation paused on this instance; nothing sent');
-                return { claimed: 0, outcomes };
+                return { claimed: 0, outcomes, subrequests: 0 };
             }
             const started = Date.now();
             // the claim and one hand-back come first, then each reply needs its three calls
@@ -103,20 +112,22 @@ export function createAutomationProcessor({ comments, automation, context }: Aut
             const batch = Math.min(limit ?? automation.batchSize, automation.batchSize, affordable);
             if (batch < 1) {
                 log.warn('automation run skipped: no subrequests left', { subrequests });
-                return { claimed: 0, outcomes };
+                return { claimed: 0, outcomes, subrequests: 0 };
             }
-            // a sweep shares its batch between accounts; a webhook's own comments are all from the accounts it named
-            const perAccount = ids ? batch : Math.max(1, Math.ceil(batch / 2));
-            const jobs = await comments.claim({ limit: batch, perAccount, leaseSeconds: CLAIM_LEASE_SECONDS, ids });
+            let spent = 1;
+            const spend = () => { spent++; };
+            // accounts take turns inside the claim, so one account may fill the batch only when no other is waiting
+            const jobs = await comments.claim({ limit: batch, perAccount: batch, leaseSeconds: CLAIM_LEASE_SECONDS, ids });
 
             for (const [index, job] of jobs.entries()) {
                 const timeLeft = timeBudgetMs - (Date.now() - started);
                 if (signal.aborted || timeLeft < SEND_TIMEOUT_MS + SEND_MARGIN_MS) {
+                    spent++;
                     await handBack(jobs.slice(index), outcomes);
                     break;
                 }
                 try {
-                    const status = await settle(job);
+                    const status = await settle(job, spend);
                     outcomes[status] = (outcomes[status] ?? 0) + 1;
                 } catch (err) {
                     // one job's database failure must not stop the others; its claim or reservation expires and recovers it
@@ -124,7 +135,7 @@ export function createAutomationProcessor({ comments, automation, context }: Aut
                     log.error('automation reply failed', { commentRowId: job.id, accountId: job.accountId, ...errorFields(err) });
                 }
             }
-            return { claimed: jobs.length, outcomes };
+            return { claimed: jobs.length, outcomes, subrequests: spent };
         },
     };
 }

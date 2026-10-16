@@ -1,4 +1,6 @@
-import type { AutomationAttemptOutcome, AutomationCommentStatus } from '../../shared/types/automation.ts';
+import type {
+    AutomationAttemptOutcome, AutomationCommentStatus, AutomationFollowupKind, AutomationGateStatus,
+} from '../../shared/types/automation.ts';
 
 // Instagram refuses message text longer than 1,000 bytes
 export const MAX_MESSAGE_BYTES = 1000;
@@ -26,6 +28,17 @@ export const BACKGROUND_RUN_MS = 20_000;
 
 // new and retried jobs are due a little in the past, so a database clock slightly behind the Worker's still sees them as due
 export const DUE_NOW_SKEW_MS = 30_000;
+
+// a follow-up costs the follow check as well as reserve, send and finish
+export const SUBREQUESTS_PER_FOLLOWUP = 4;
+// the follow check is a read and safe to ask again, so it gets less time than a send: both fit a webhook's 20 seconds
+export const FOLLOW_CHECK_TIMEOUT_MS = 5_000;
+
+// a person who does not follow yet is reminded at most twice, then the wait ends
+export const MAX_FOLLOW_REMINDERS = 2;
+
+// a follow check Instagram could not answer now is asked again on a later run
+const FOLLOW_CHECK_RETRY_MS = 5 * 60 * 1000;
 
 // a reply held by a pause is looked at again on a later sweep, not every five minutes for a week
 const HOLD_RECHECK_MS = 15 * 60 * 1000;
@@ -68,7 +81,7 @@ export interface GraphSendError {
 // what one request to Instagram's messages endpoint came back as; ambiguous means it may have been delivered,
 // not_sent that the Worker refused to start the request
 export type SendResult =
-    | { kind: 'accepted'; messageId: string | null }
+    | { kind: 'accepted'; messageId: string | null; recipientId: string | null }
     | ({ kind: 'error'; usageHeader: string | null } & GraphSendError)
     | { kind: 'ambiguous'; message: string }
     | { kind: 'not_sent'; message: string };
@@ -77,9 +90,44 @@ export type SendResult =
 export interface DeliveryJob {
     attempts: number;
     expiresAt: string;
+    // who the reply goes to when Instagram does not name them, and whether it starts a followers-only wait
+    fromId?: string | null;
+    awaitsReply?: boolean;
+    // a follow-up's window is Instagram's 24 hours, not the 7 days of a private reply
+    expiredMessage?: string;
 }
 
-// one finish_automation_send call
+// what Instagram said about whether the person follows the account; retry means it could not answer now
+export type FollowCheck =
+    | { kind: 'following' }
+    | { kind: 'not_following' }
+    | { kind: 'unverifiable'; message: string }
+    | { kind: 'not_authorized'; message: string }
+    | { kind: 'retry'; message: string };
+
+// a claimed follow-up, as the follow-up rules need it
+export interface FollowupJob {
+    attempts: number;
+    windowExpiresAt: string;
+    ruleEnabled: boolean;
+    requireFollow: boolean;
+    gateStatus: AutomationGateStatus | null;
+    gatePrompts: number;
+    replyText: string | null;
+    linkUrl: string | null;
+    notFollowingText: string | null;
+    accessToken: string | null;
+}
+
+// the message a follow check leads to, and what its acceptance does to the comment's wait
+export interface FollowupMessage {
+    kind: AutomationFollowupKind;
+    text: string;
+    gateStatus: AutomationGateStatus | null;
+    countReminder: boolean;
+}
+
+// one finish_automation_send or finish_automation_followup call
 export interface FinishPlan {
     status: AutomationCommentStatus;
     outcome: AutomationAttemptOutcome;
@@ -93,6 +141,9 @@ export interface FinishPlan {
     cooldownUntil: string | null;
     cooldownReason: string | null;
     pauseReason: string | null;
+    // who Instagram says received an accepted reply, and the followers-only wait it starts or ends
+    recipientId: string | null;
+    gateStatus: AutomationGateStatus | null;
 }
 
 // a job given back without sending: where it goes and why
@@ -126,6 +177,7 @@ const LIMIT_MESSAGES: Record<Exclude<ReserveOutcome, 'ok' | 'gone' | 'paused' | 
 };
 
 const EXPIRED_MESSAGE = 'The 7 days in which Instagram allows a private reply to this comment ran out.';
+export const FOLLOWUP_EXPIRED_MESSAGE = 'The 24 hours in which Instagram allows a message after the person\'s reply ran out.';
 
 export function composeReply(replyText: string, linkUrl: string | null): string {
     return linkUrl ? `${replyText}\n\n${linkUrl}` : replyText;
@@ -137,6 +189,17 @@ export function messageBytes(message: string): number {
 
 export function expiresAtFor(notifiedAt: Date): string {
     return new Date(notifiedAt.getTime() + REPLY_WINDOW_MS).toISOString();
+}
+
+// sha-256 of the text sent, so a reply whose answer was lost can be recognised in the conversation later
+export async function messageDigest(text: string): Promise<string> {
+    const hash = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+    return [...new Uint8Array(hash)].map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+// the private reply a job sends: the request to follow and answer for a followers-only rule, the reply and link otherwise
+export function replyMessage(job: { requireFollow: boolean; followPromptText: string | null; replyText: string; linkUrl: string | null }): string {
+    return job.requireFollow && job.followPromptText ? job.followPromptText : composeReply(job.replyText, job.linkUrl);
 }
 
 export function classifySendError({ code, subcode, httpStatus }: GraphSendError): SendErrorKind {
@@ -175,20 +238,27 @@ export function cooldownFromUsage(usageHeader: string | null): number {
 function emptyPlan(): Omit<FinishPlan, 'status' | 'outcome'> {
     return {
         reason: null, errorMessage: null, messageId: null, errorCode: null, errorSubcode: null, httpStatus: null,
-        nextAttemptAt: null, cooldownUntil: null, cooldownReason: null, pauseReason: null,
+        nextAttemptAt: null, cooldownUntil: null, cooldownReason: null, pauseReason: null, recipientId: null, gateStatus: null,
     };
 }
 
 // a wait that ends after Instagram's reply window would only fail, so the job expires instead
 function waitUntil(at: number, job: DeliveryJob, reason: string, message: string): Pick<FinishPlan, 'status' | 'reason' | 'errorMessage' | 'nextAttemptAt'> {
-    if (at >= Date.parse(job.expiresAt)) return { status: 'expired', reason: 'expired', errorMessage: EXPIRED_MESSAGE, nextAttemptAt: null };
+    if (at >= Date.parse(job.expiresAt)) return { status: 'expired', reason: 'expired', errorMessage: job.expiredMessage ?? EXPIRED_MESSAGE, nextAttemptAt: null };
     return { status: 'retry_wait', reason, errorMessage: message, nextAttemptAt: new Date(at).toISOString() };
 }
 
 // what to record for the answer to one send
 export function finishPlan(result: SendResult, job: DeliveryJob, now: number, random: () => number = Math.random): FinishPlan {
     if (result.kind === 'accepted') {
-        return { ...emptyPlan(), status: 'accepted', outcome: 'accepted', messageId: result.messageId };
+        return {
+            ...emptyPlan(),
+            status: 'accepted',
+            outcome: 'accepted',
+            messageId: result.messageId,
+            recipientId: result.recipientId ?? job.fromId ?? null,
+            gateStatus: job.awaitsReply ? 'awaiting_reply' : null,
+        };
     }
     if (result.kind === 'not_sent') {
         return { ...emptyPlan(), ...waitUntil(now + NOT_SENT_RETRY_MS, job, 'not_sent', `The reply was not sent (${result.message}). It is tried again on the next run.`), outcome: 'rejected' };
@@ -264,4 +334,59 @@ export function releasePlan(outcome: ReserveOutcome, retryAt: string | null, job
     const at = retryAt ? Date.parse(retryAt) : now + DEFAULT_COOLDOWN_MS;
     const { status, reason, errorMessage, nextAttemptAt } = waitUntil(at, job, outcome, LIMIT_MESSAGES[outcome]);
     return { status, reason: reason ?? outcome, errorMessage, nextAttemptAt };
+}
+
+// a claimed follow-up that cannot go ahead, checked before Instagram is asked anything; null means it may
+export function followupReadiness(job: FollowupJob, now: number): ReleasePlan | null {
+    if (now >= Date.parse(job.windowExpiresAt)) return { status: 'expired', reason: 'expired', errorMessage: FOLLOWUP_EXPIRED_MESSAGE, nextAttemptAt: null };
+    if (!job.ruleEnabled) {
+        return { status: 'skipped', reason: 'rule_disabled', errorMessage: 'The rule was turned off or removed before the follow-up was sent.', nextAttemptAt: null };
+    }
+    if (!job.requireFollow) {
+        return { status: 'skipped', reason: 'rule_changed', errorMessage: 'The rule no longer asks people to follow, so no follow-up was sent.', nextAttemptAt: null };
+    }
+    if (job.gateStatus !== 'awaiting_reply') {
+        return { status: 'skipped', reason: 'answered', errorMessage: 'This person already got the link or every reminder.', nextAttemptAt: null };
+    }
+    if (!job.accessToken) {
+        return { status: 'failed', reason: 'not_connected', errorMessage: 'The Instagram account has no access token. Reconnect it on the Accounts page, then retry.', nextAttemptAt: null };
+    }
+    return null;
+}
+
+// what the follow check leads to: a message to send, or why nothing is sent. Only a confirmed follow sends the link
+export function followupMessage(check: FollowCheck, job: FollowupJob, now: number): { message: FollowupMessage } | { release: ReleasePlan } {
+    if (check.kind === 'following') {
+        return { message: { kind: 'link', text: composeReply(job.replyText ?? '', job.linkUrl), gateStatus: 'completed', countReminder: false } };
+    }
+    if (check.kind === 'not_following') {
+        if (job.gatePrompts >= MAX_FOLLOW_REMINDERS || !job.notFollowingText) {
+            return { release: { status: 'skipped', reason: 'reminders_used', errorMessage: 'This person does not follow the account and already got every reminder.', nextAttemptAt: null } };
+        }
+        const last = job.gatePrompts + 1 >= MAX_FOLLOW_REMINDERS;
+        return { message: { kind: 'reminder', text: job.notFollowingText, gateStatus: last ? 'closed' : null, countReminder: true } };
+    }
+    if (check.kind === 'unverifiable') {
+        return {
+            release: {
+                status: 'failed',
+                reason: 'follow_unverifiable',
+                errorMessage: `Instagram did not say whether this person follows the account (${check.message}), so the link was not sent.`.slice(0, 500),
+                nextAttemptAt: null,
+            },
+        };
+    }
+    if (check.kind === 'not_authorized') {
+        return {
+            release: {
+                status: 'failed',
+                reason: 'not_authorized',
+                errorMessage: 'Instagram refused this account\'s permission to check followers or send messages. Reconnect the account on the Accounts page, then retry.',
+                nextAttemptAt: null,
+            },
+        };
+    }
+    const wait = waitUntil(now + FOLLOW_CHECK_RETRY_MS, { attempts: job.attempts, expiresAt: job.windowExpiresAt, expiredMessage: FOLLOWUP_EXPIRED_MESSAGE },
+        'follow_check', `Instagram could not answer the follow check (${check.message}). It is asked again in a few minutes.`);
+    return { release: { status: wait.status, reason: wait.reason ?? 'follow_check', errorMessage: wait.errorMessage, nextAttemptAt: wait.nextAttemptAt } };
 }
