@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, PlaySquare, Scissors, Clapperboard, MessagesSquare, Bookmark, Send, Users, Settings,
+  LayoutDashboard, PlaySquare, Scissors, Clapperboard, MessagesSquare, Bookmark, Send, MessageSquareReply, Users, Settings,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -42,7 +42,8 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Publishing',
     items: [
-      { path: '/upload', label: 'Publish', icon: Send },
+      { path: '/upload',      label: 'Publish',     icon: Send },
+      { path: '/automations', label: 'Automations', icon: MessageSquareReply },
     ],
   },
   {
