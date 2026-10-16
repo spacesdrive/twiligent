@@ -22,6 +22,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Connecting an Instagram account that is already connected renews its token instead of answering that it is already added, so a revoked token can be fixed without removing the account (#89)
 - The Worker's publishing cron runs every 5 minutes instead of 15; posts still publish on the quarter hour, and the other runs send waiting comment replies (#89)
 
+### Fixed
+
+- The sign-in page opens the dashboard when you are already signed in, so the public site's Sign in and Get started buttons no longer ask you to sign in again (#94)
+
 ---
 
 ## [1.2.0] - 2026-10-16
