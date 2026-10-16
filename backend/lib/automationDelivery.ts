@@ -310,11 +310,12 @@ export function finishPlan(result: SendResult, job: DeliveryJob, now: number, ra
     return { ...details, status: 'failed', outcome: 'rejected', reason: kind, errorMessage: finalMessage };
 }
 
-// a claimed job that cannot be sent as it is, checked before any limit is spent; null means it may go ahead
+// a claimed job that cannot be sent as it is, checked before any limit is spent; null means it may go ahead. ruleEnabled
+// is false once the rule or its private reply is off
 export function readinessPlan(job: { ruleEnabled: boolean; accessToken: string | null; expiresAt: string }, now: number): ReleasePlan | null {
     if (now >= Date.parse(job.expiresAt)) return { status: 'expired', reason: 'expired', errorMessage: EXPIRED_MESSAGE, nextAttemptAt: null };
     if (!job.ruleEnabled) {
-        return { status: 'skipped', reason: 'rule_disabled', errorMessage: 'The rule was turned off or removed before the reply was sent.', nextAttemptAt: null };
+        return { status: 'skipped', reason: 'rule_disabled', errorMessage: 'The rule, or its private reply, was turned off or removed before the reply was sent.', nextAttemptAt: null };
     }
     if (!job.accessToken) {
         return { status: 'failed', reason: 'not_connected', errorMessage: 'The Instagram account has no access token. Reconnect it on the Accounts page, then retry.', nextAttemptAt: null };
