@@ -1,4 +1,4 @@
-import { Megaphone, UserCheck } from 'lucide-react';
+import { Megaphone, MessageCircle, Send, UserCheck } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,7 +12,9 @@ import { FieldRow } from '@/components/DetailPanel';
 import AccountSelect from '@/components/AccountSelect';
 import RuleMediaPicker from './RuleMediaPicker';
 import RulePreview from './RulePreview';
+import RulePublicReplies from './RulePublicReplies';
 import type { AutomationMatchMode } from '@shared/types/automation.ts';
+import type { ReactNode } from 'react';
 import type { AppAccount } from '../../utils/formatters';
 import type { RuleScope } from './automationData.ts';
 import type { RuleFormState } from './useRuleForm';
@@ -20,6 +22,16 @@ import type { RuleFormState } from './useRuleForm';
 interface RuleDialogProps {
   rule: RuleFormState;
   igAccounts: AppAccount[];
+}
+
+interface ReplySectionProps {
+  id: string;
+  icon: ReactNode;
+  title: string;
+  description: string;
+  checked: boolean;
+  onCheckedChange: (checked: boolean) => void;
+  children: ReactNode;
 }
 
 const MATCH_MODES: { value: AutomationMatchMode; label: string }[] = [
@@ -33,6 +45,20 @@ const SCOPES: { value: RuleScope; label: string }[] = [
   { value: 'selected', label: 'Only the posts I choose' },
 ];
 
+// one way of answering, switched on and off on its own; its fields show only while it is on
+function ReplySection({ id, icon, title, description, checked, onCheckedChange, children }: ReplySectionProps) {
+  return (
+    <div className="flex flex-col gap-3 rounded-card border border-line p-4">
+      <label htmlFor={id} className="flex items-center justify-between gap-3 text-sm font-medium text-ink">
+        <span className="flex items-center gap-2 [&_svg]:size-4 [&_svg]:text-ink-muted">{icon}{title}</span>
+        <Switch id={id} checked={checked} onCheckedChange={onCheckedChange} />
+      </label>
+      <p className="text-small text-ink-muted">{description}</p>
+      {checked && children}
+    </div>
+  );
+}
+
 export default function RuleDialog({ rule, igAccounts }: RuleDialogProps) {
   const { form, setField, saving } = rule;
   return (
@@ -40,7 +66,7 @@ export default function RuleDialog({ rule, igAccounts }: RuleDialogProps) {
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{rule.ruleId ? 'Edit rule' : 'New rule'}</DialogTitle>
-          <DialogDescription>When a comment matches, Twiligent sends its author this private reply on Instagram.</DialogDescription>
+          <DialogDescription>When a comment matches, Twiligent answers its author in a private message, publicly under the comment, or both.</DialogDescription>
         </DialogHeader>
         <form id="automation-rule-form" onSubmit={rule.handleSubmit} className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
           <div className="flex flex-col gap-5">
@@ -69,11 +95,11 @@ export default function RuleDialog({ rule, igAccounts }: RuleDialogProps) {
             {form.matchMode === 'any' ? (
               <Alert variant="warning">
                 <Megaphone />
-                <AlertTitle>Every comment gets this reply</AlertTitle>
+                <AlertTitle>Every comment gets this answer</AlertTitle>
                 <AlertDescription>
-                  Everyone who comments receives a private message, including people who did not ask for one, and a busy post reaches the
-                  hourly limits sooner. Each person gets at most a few replies a day. Aim the rule at chosen posts to keep it small. A
-                  keyword rule for the same post still answers first.
+                  Everyone who comments is answered, including people who did not ask, and a busy post reaches the hourly limits sooner.
+                  Each person gets at most a few private replies a day and one public reply per post a day. Aim the rule at chosen posts to
+                  keep it small. A keyword rule for the same post still answers first.
                 </AlertDescription>
               </Alert>
             ) : (
@@ -92,43 +118,66 @@ export default function RuleDialog({ rule, igAccounts }: RuleDialogProps) {
               </Select>
               {form.scope === 'selected' && <RuleMediaPicker media={rule.media} loading={rule.mediaLoading} selected={form.mediaIds} onToggle={rule.toggleMedia} />}
             </FieldRow>
-            <div className="flex flex-col gap-3 rounded-card border border-line p-4">
-              <label htmlFor="rule-follow" className="flex items-center justify-between gap-3 text-sm font-medium text-ink">
-                <span className="flex items-center gap-2">
-                  <UserCheck className="size-4 text-ink-muted" />Send the link only to followers
-                  <Badge variant="warning">Testing</Badge>
-                </span>
-                <Switch id="rule-follow" checked={form.requireFollow} onCheckedChange={checked => setField('requireFollow', checked)} />
-              </label>
+            <ReplySection
+              id="rule-private"
+              icon={<Send />}
+              title="Send a private reply"
+              description="Instagram allows one private message per comment, within 7 days of it."
+              checked={form.privateReplyEnabled}
+              onCheckedChange={checked => setField('privateReplyEnabled', checked)}
+            >
+              <div className="flex flex-col gap-3 border-t border-divider pt-3">
+                <label htmlFor="rule-follow" className="flex items-center justify-between gap-3 text-sm font-medium text-ink">
+                  <span className="flex items-center gap-2">
+                    <UserCheck className="size-4 text-ink-muted" />Send the link only to followers
+                    <Badge variant="warning">Testing</Badge>
+                  </span>
+                  <Switch id="rule-follow" checked={form.requireFollow} onCheckedChange={checked => setField('requireFollow', checked)} />
+                </label>
+                <p className="text-small text-ink-muted">
+                  Instagram tells Twiligent whether someone follows you only after they message you. With this on, the first reply asks them
+                  to follow and reply. When they reply, Twiligent asks Instagram, then sends the reply and link to followers and a reminder to
+                  everyone else, twice at most. If Instagram cannot say, nothing is sent.
+                </p>
+                <p className="text-small text-warning">
+                  This option is still being tested and may or may not work. It needs Instagram to send your account&apos;s messages to
+                  Twiligent, which Meta may not allow without extra app approval. Use a keyword rule when the link must arrive.
+                </p>
+                {form.requireFollow && (
+                  <>
+                    <FieldRow label="First reply" htmlFor="rule-follow-prompt" hint="Sent to everyone who comments. It has no link.">
+                      <Textarea id="rule-follow-prompt" rows={3} maxLength={1000} value={form.followPromptText} onChange={e => setField('followPromptText', e.target.value)} />
+                    </FieldRow>
+                    <FieldRow label="Reminder" htmlFor="rule-follow-reminder" hint="Sent when they reply but do not follow yet.">
+                      <Textarea id="rule-follow-reminder" rows={3} maxLength={1000} value={form.notFollowingText} onChange={e => setField('notFollowingText', e.target.value)} />
+                    </FieldRow>
+                  </>
+                )}
+              </div>
+              <FieldRow label={form.requireFollow ? 'Reply for followers' : 'Reply'} htmlFor="rule-reply">
+                <Textarea id="rule-reply" rows={4} maxLength={1000} value={form.replyText} onChange={e => setField('replyText', e.target.value)} placeholder="Here is your guide. Enjoy it." />
+              </FieldRow>
+              <FieldRow label="Link" htmlFor="rule-link" hint="Optional. Added on its own line after the reply. Must start with https://">
+                <Input id="rule-link" type="url" inputMode="url" value={form.linkUrl} onChange={e => setField('linkUrl', e.target.value)} placeholder="https://example.com/guide" />
+              </FieldRow>
+              <FieldRow label="Private replies an hour" htmlFor="rule-limit" hint="Optional. The account's own limit still applies; Instagram allows 750 an hour.">
+                <Input id="rule-limit" type="number" min={1} max={750} step={1} inputMode="numeric" value={form.hourlyLimit} onChange={e => setField('hourlyLimit', e.target.value)} placeholder="No limit for this rule" />
+              </FieldRow>
+            </ReplySection>
+            <ReplySection
+              id="rule-public"
+              icon={<MessageCircle />}
+              title="Reply publicly under the comment"
+              description="Everyone can see it. One wording is picked for each comment, so a busy post does not fill with the same words, and each person gets at most one public reply per post a day."
+              checked={form.publicReplyEnabled}
+              onCheckedChange={checked => setField('publicReplyEnabled', checked)}
+            >
+              <RulePublicReplies texts={form.publicReplyTexts} onChange={texts => setField('publicReplyTexts', texts)} />
               <p className="text-small text-ink-muted">
-                Instagram tells Twiligent whether someone follows you only after they message you. With this on, the first reply asks them
-                to follow and reply. When they reply, Twiligent asks Instagram, then sends the reply and link to followers and a reminder to
-                everyone else, twice at most. If Instagram cannot say, nothing is sent.
+                Keep it short and friendly, and leave the link for the private reply. The two are sent apart, so avoid promising a message:
+                the private reply can fail on its own, for example when the person does not accept messages.
               </p>
-              <p className="text-small text-warning">
-                This option is still being tested and may or may not work. It needs Instagram to send your account&apos;s messages to
-                Twiligent, which Meta may not allow without extra app approval. Use a keyword rule when the link must arrive.
-              </p>
-              {form.requireFollow && (
-                <>
-                  <FieldRow label="First reply" htmlFor="rule-follow-prompt" hint="Sent to everyone who comments. It has no link.">
-                    <Textarea id="rule-follow-prompt" rows={3} maxLength={1000} value={form.followPromptText} onChange={e => setField('followPromptText', e.target.value)} />
-                  </FieldRow>
-                  <FieldRow label="Reminder" htmlFor="rule-follow-reminder" hint="Sent when they reply but do not follow yet.">
-                    <Textarea id="rule-follow-reminder" rows={3} maxLength={1000} value={form.notFollowingText} onChange={e => setField('notFollowingText', e.target.value)} />
-                  </FieldRow>
-                </>
-              )}
-            </div>
-            <FieldRow label={form.requireFollow ? 'Reply for followers' : 'Reply'} htmlFor="rule-reply">
-              <Textarea id="rule-reply" rows={4} maxLength={1000} value={form.replyText} onChange={e => setField('replyText', e.target.value)} placeholder="Here is your guide. Enjoy it." />
-            </FieldRow>
-            <FieldRow label="Link" htmlFor="rule-link" hint="Optional. Added on its own line after the reply. Must start with https://">
-              <Input id="rule-link" type="url" inputMode="url" value={form.linkUrl} onChange={e => setField('linkUrl', e.target.value)} placeholder="https://example.com/guide" />
-            </FieldRow>
-            <FieldRow label="Replies an hour" htmlFor="rule-limit" hint="Optional. The account's own limit still applies; Instagram allows 750 an hour.">
-              <Input id="rule-limit" type="number" min={1} max={750} step={1} inputMode="numeric" value={form.hourlyLimit} onChange={e => setField('hourlyLimit', e.target.value)} placeholder="No limit for this rule" />
-            </FieldRow>
+            </ReplySection>
             <label htmlFor="rule-enabled" className="flex items-center justify-between gap-3 text-sm font-medium text-ink">
               Turn the rule on when saved
               <Switch id="rule-enabled" checked={form.enabled} onCheckedChange={checked => setField('enabled', checked)} />

@@ -40,12 +40,19 @@ function RuleRow({ rule, username, busy, automations, onEdit, onDelete }: RuleRo
           {rule.matchMode === 'any'
             ? <Badge variant="warning">Any comment</Badge>
             : rule.keywords.map(keyword => <Badge key={keyword} variant="secondary">{keyword}</Badge>)}
+          {rule.privateReplyEnabled && <Badge variant="info">Private reply</Badge>}
+          {rule.publicReplyEnabled && <Badge variant="info">Public reply</Badge>}
           {rule.requireFollow && <Badge variant="info">Followers only, testing</Badge>}
         </div>
         <p className="text-small text-ink-muted">
           {matchModeLabel(rule)} &middot; {ruleScopeLabel(rule)}{rule.hourlyLimit ? ` · at most ${rule.hourlyLimit} an hour` : ''}
         </p>
-        <p className="line-clamp-2 max-w-2xl text-small text-ink">{rule.replyText}{rule.linkUrl ? ` ${rule.linkUrl}` : ''}</p>
+        {rule.privateReplyEnabled && <p className="line-clamp-2 max-w-2xl text-small text-ink">{rule.replyText}{rule.linkUrl ? ` ${rule.linkUrl}` : ''}</p>}
+        {rule.publicReplyEnabled && (
+          <p className="line-clamp-2 max-w-2xl text-small text-ink-muted">
+            In public: {rule.publicReplyTexts[0]}{rule.publicReplyTexts.length > 1 ? ` (and ${rule.publicReplyTexts.length - 1} more wording${rule.publicReplyTexts.length > 2 ? 's' : ''})` : ''}
+          </p>
+        )}
       </div>
       <div className="flex shrink-0 items-center gap-1">
         <label htmlFor={switchId} className="mr-2 flex items-center gap-2 text-small text-ink-muted">
@@ -65,14 +72,14 @@ export default function AutomationRules({ rules, accounts, automations, onNew, o
   return (
     <SurfaceBox
       title="Rules"
-      subheader="A comment gets one private reply, from the first rule that matches it. Rules for chosen posts are checked before rules for every post."
+      subheader="A comment is answered by the first rule that matches it, in private, in public or both. Rules for chosen posts are checked before rules for every post."
     >
       {rules.length === 0 ? (
         <EmptyState
           compact
           icon={<ListChecks />}
           title="No rules yet"
-          description="Create a rule with a keyword, such as GUIDE, and the reply to send to anyone who comments it."
+          description="Create a rule with a keyword, such as GUIDE, and how to answer anyone who comments it: a private reply, a public reply or both."
           action={<Button size="sm" onClick={onNew}><Plus data-icon="inline-start" />New rule</Button>}
         />
       ) : (
