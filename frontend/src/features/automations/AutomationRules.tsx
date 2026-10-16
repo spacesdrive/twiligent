@@ -40,7 +40,7 @@ function RuleRow({ rule, username, busy, automations, onEdit, onDelete }: RuleRo
           {rule.matchMode === 'any'
             ? <Badge variant="warning">Any comment</Badge>
             : rule.keywords.map(keyword => <Badge key={keyword} variant="secondary">{keyword}</Badge>)}
-          {rule.requireFollow && <Badge variant="info">Followers only</Badge>}
+          {rule.requireFollow && <Badge variant="info">Followers only, testing</Badge>}
         </div>
         <p className="text-small text-ink-muted">
           {matchModeLabel(rule)} &middot; {ruleScopeLabel(rule)}{rule.hourlyLimit ? ` · at most ${rule.hourlyLimit} an hour` : ''}

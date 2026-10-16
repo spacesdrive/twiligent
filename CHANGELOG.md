@@ -17,7 +17,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - An audit record of connecting, reconnecting and removing accounts and of every automation change, kept a year (#89)
 - Every migration now holds one database entity (a table, its access, a trigger, an index or a function) with a rollback of the same size, and the migration test enforces it for new migrations (#93, ADR-041)
 - Automation rules can answer any comment, with no keyword; the most specific rule answers, so a comment still gets one reply (#102)
-- Followers-only rules: the first reply asks the person to follow and reply, and the link goes out only when Instagram confirms they follow; nothing is sent when Instagram cannot say (#103, ADR-043)
+- Followers-only rules, in testing and not yet tried with a real account: the first reply asks the person to follow and reply, and the link goes out only when Instagram confirms they follow; nothing is sent when Instagram cannot say (#103, #105, ADR-043)
 - A new every-minute cron trigger dispatches waiting replies and follow-ups, and the five minute runs off the quarter hour expire overdue replies, look for replies whose answer was lost in the conversation on Instagram, and log the queue's health (#99, #100, ADR-043)
 - New table `automation_followups` and new columns and functions for the reply queue; existing instances run `npm run db:push` before deploying (#99, #100, #102, #103)
 
