@@ -2,7 +2,7 @@
 
 ## Overview
 
-Supabase (PostgreSQL 17) with ten application tables: the four original ones, the five comment automation tables (`automation_accounts`, `automation_rules`, `automation_comments`, `automation_followups`, `automation_attempts`) and `audit_events`. Every table has `user_id` (uuid) referencing `auth.users`, so rows belong to one user, and `created_at` and `updated_at` timestamps.
+Supabase (PostgreSQL 17) with eleven application tables: the four original ones, the six comment automation tables (`automation_accounts`, `automation_rules`, `automation_comments`, `automation_followups`, `automation_public_replies`, `automation_attempts`) and `audit_events`. Every table has `user_id` (uuid) referencing `auth.users`, so rows belong to one user, and `created_at` and `updated_at` timestamps.
 
 The backend uses the **service-role key** and enforces isolation by always appending `.eq('user_id', userId)` on user-scoped queries. The `userId` comes exclusively from the verified JWT - never from request input.
 
@@ -293,7 +293,7 @@ Data is fetched on create and on manual refresh only. Not re-fetched on every GE
 
 ## Comment Automation Tables
 
-The data flow is in `docs/architecture/data-flows/AUTOMATION.md`. Every table references its account with the composite `(account_id, user_id)` foreign key to `accounts (id, user_id)` on delete cascade, so removing an Instagram account removes its rules, controls, comments, follow-ups and attempts.
+The data flow is in `docs/architecture/data-flows/AUTOMATION.md`. Every table references its account with the composite `(account_id, user_id)` foreign key to `accounts (id, user_id)` on delete cascade, so removing an Instagram account removes its rules, controls, comments, follow-ups, public replies and attempts.
 
 ### Table: `automation_accounts`
 
@@ -310,6 +310,9 @@ One row per Instagram account whose automation was paused, subscribed or cooled 
 | `subscribed_at` | timestamptz | | When Instagram confirmed it sends this account's comments to the webhook |
 | `subscribed_fields` | text[] | | The webhook fields Instagram confirmed (`comments`, and `messages` for followers-only rules); null for a subscription made before fields were recorded, which asked for comments only |
 | `limited_until` | timestamptz | | Set by `reserve_automation_send` when the account reached its hourly reply limit; the claim leaves the account's jobs alone until then |
+| `public_cooldown_until` | timestamptz | | No public reply is posted before this time; set from Instagram rate limits and blocks on public replies, only ever moved later. Private replies ignore it |
+| `public_cooldown_reason` | text | at most 200 characters | Shown on the page |
+| `public_limited_until` | timestamptz | | Set by `reserve_automation_public_reply` when the account reached its hourly public reply limit |
 | `created_at`, `updated_at` | timestamptz | not null, default now() | |
 
 ### Table: `automation_rules`
@@ -323,11 +326,14 @@ One row per Instagram account whose automation was paused, subscribed or cooled 
 | `match_mode` | text | `contains`, `exact` or `any`, default `contains` | `any` answers every comment with text |
 | `case_sensitive` | boolean | not null, default false | |
 | `media_ids` | text[] | not null, default `{}`, at most 50 | Empty means every post and reel |
-| `reply_text` | text | 1 to 1,000 characters | The service also checks text plus link against Instagram's 1,000 bytes |
+| `private_reply_enabled` | boolean | not null, default true | The rule sends a private reply; at least one of the two replies is on (`automation_rules_actions_check`) |
+| `reply_text` | text | 1 to 1,000 characters; may be empty while `private_reply_enabled` is false | The service also checks text plus link against Instagram's 1,000 bytes |
 | `link_url` | text | null or `^https://` | Added on its own line after the text |
 | `enabled` | boolean | not null, default false | |
-| `hourly_limit` | integer | null or 1 to 750 | Replies an hour for this rule |
-| `require_follow` | boolean | not null, default false | Followers-only: the private reply asks the person to follow and reply, and the reply and link go out once Instagram says they follow |
+| `public_reply_enabled` | boolean | not null, default false | The rule posts a public reply under the comment |
+| `public_reply_texts` | text[] | not null, default `{}`, at most 5; at least 1 while `public_reply_enabled` | The wordings; one is picked per comment. The Worker keeps each to 300 characters, 4 hashtags and 1 link |
+| `hourly_limit` | integer | null or 1 to 750 | Private replies an hour for this rule |
+| `require_follow` | boolean | not null, default false; needs `private_reply_enabled` | Followers-only: the private reply asks the person to follow and reply, and the reply and link go out once Instagram says they follow |
 | `follow_prompt_text` | text | null or 1 to 1,000 characters; required when `require_follow` | The private reply of a followers-only rule |
 | `not_following_text` | text | null or 1 to 1,000 characters; required when `require_follow` | The reminder for someone who replies but does not follow |
 | `created_at`, `updated_at` | timestamptz | not null, default now() | |
@@ -358,7 +364,7 @@ Every comment the webhook delivered for an account with an enabled rule. A match
 | `notified_at`, `expires_at` | timestamptz | not null | When Meta sent it, and 7 days later |
 | `created_at`, `updated_at` | timestamptz | not null, default now() | |
 
-`status` is one of `ignored`, `queued`, `processing`, `retry_wait`, `sending`, `accepted`, `failed`, `needs_review`, `skipped`, `expired`. The lifecycle is in `AUTOMATION.md`.
+`status` is one of `ignored`, `queued`, `processing`, `retry_wait`, `sending`, `accepted`, `failed`, `needs_review`, `skipped`, `expired`. The status is the private reply's; a comment whose rule sends no private reply is `skipped` with reason `private_reply_off`. The lifecycle is in `AUTOMATION.md`.
 
 ### Table: `automation_followups`
 
@@ -381,9 +387,32 @@ The message sent after a person answered a followers-only private reply: the rep
 | `window_expires_at` | timestamptz | not null | The person's message time plus 24 hours, Instagram's standard messaging window |
 | `created_at`, `updated_at` | timestamptz | not null, default now() | |
 
+### Table: `automation_public_replies`
+
+The public reply under a matched comment, one per comment, created with the comment in one transaction. Each row is a job like a comment row, tracked apart from the private reply.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | text | primary key | `newRowId()`, made by the Worker before the insert |
+| `user_id`, `account_id` | uuid, text | not null, composite foreign key | |
+| `automation_comment_id` | text | not null, references `automation_comments` on delete cascade; `unique` | The comment answered; refuses a second public reply job for it |
+| `rule_id` | text | references `automation_rules` on delete set null | |
+| `ig_user_id`, `comment_id` | text | not null | The professional account and the Instagram comment replied to |
+| `media_id`, `from_id` | text | | The post and the commenter, for the limit of one public reply per person and post a day |
+| `reply_text` | text | not null, 1 to 2,200 characters | The wording picked when the comment arrived |
+| `status` | text | the comment statuses except `ignored` | |
+| `status_reason`, `error_message` | text | `error_message` at most 500 characters | |
+| `attempts` | integer | not null, default 0, at least 0 | |
+| `next_attempt_at` | timestamptz | required while `queued` or `retry_wait` | |
+| `claimed_at` | timestamptz | | The lease is 20 minutes |
+| `reply_id`, `accepted_at` | text, timestamptz | | The id Instagram gave the reply, and when |
+| `review_checks`, `review_checked_at` | integer, timestamptz | `review_checks` not null, default 0 | Looks at the comment's replies for a reply whose answer was lost |
+| `expires_at` | timestamptz | not null | The comment's 7 days |
+| `created_at`, `updated_at` | timestamptz | not null, default now() | |
+
 ### Table: `automation_attempts`
 
-One row per message request sent to Instagram. The hourly and daily limits count the private reply rows.
+One row per message or public reply request sent to Instagram. The private reply limits count the `private_reply` rows, the public reply limit the `public_reply` rows.
 
 | Column | Type | Constraints | Description |
 |---|---|---|---|
@@ -393,9 +422,10 @@ One row per message request sent to Instagram. The hourly and daily limits count
 | `rule_id` | text | references `automation_rules` on delete set null | |
 | `recipient_id` | text | | The commenter |
 | `outcome` | text | `sending`, `accepted`, `rejected`, `rate_limited`, `ambiguous` | `sending` while the request is out |
-| `kind` | text | not null, default `private_reply`; `private_reply` or `followup` | Follow-ups use the Send API, so the private reply limits leave them out |
+| `kind` | text | not null, default `private_reply`; `private_reply`, `followup` or `public_reply` | Follow-ups use the Send API and public replies the comment endpoint, so each kind's limits count only their own |
 | `followup_id` | text | references `automation_followups` on delete cascade; set exactly when `kind` is `followup` | |
-| `message_digest` | text | | sha-256 of the text sent, to recognise a lost reply in the conversation |
+| `public_reply_id` | text | references `automation_public_replies` on delete cascade; set exactly when `kind` is `public_reply` | |
+| `message_digest` | text | | sha-256 of the text sent, to recognise a lost reply in the conversation or among the comment's replies |
 | `error_code`, `error_subcode`, `http_status` | integer | | Instagram's answer |
 | `started_at`, `finished_at` | timestamptz | `started_at` not null, default now() | |
 | `created_at`, `updated_at` | timestamptz | not null, default now() | |
@@ -410,13 +440,13 @@ Who connected, reconnected or removed an account, changed a rule, paused or subs
 |---|---|---|---|
 | `id` | text | primary key | `newRowId()` |
 | `user_id` | uuid | not null, references `auth.users` on delete cascade | |
-| `action` | text | `^[a-z_]+\.[a-z_]+$` | `account.connected`, `account.reconnected`, `account.removed`, `automation_rule.created`, `.updated`, `.duplicated`, `.deleted`, `automation_account.paused`, `.resumed`, `.subscribed`, `automation_comment.retried` |
+| `action` | text | `^[a-z_]+\.[a-z_]+$` | `account.connected`, `account.reconnected`, `account.removed`, `automation_rule.created`, `.updated`, `.duplicated`, `.deleted`, `automation_account.paused`, `.resumed`, `.subscribed`, `automation_comment.retried`, `automation_public_reply.retried` |
 | `subject_type` | text | `account`, `automation_rule`, `automation_account`, `automation_comment` | |
 | `subject_id` | text | | |
 | `details` | jsonb | not null, default `{}`, an object | Small facts such as the platform or the changed field names; never tokens or comment text |
 | `created_at`, `updated_at` | timestamptz | not null, default now() | |
 
-Retention: the daily cron deletes comments (and their attempts) older than 90 days and audit events older than 365 days.
+Retention: the daily cron deletes comments (and their attempts, follow-ups and public replies) older than 90 days and audit events older than 365 days.
 
 ---
 
@@ -448,6 +478,11 @@ An index exists because a frequent query filters or orders on its columns. Each 
 | `automation_followups_due_idx`, `automation_followups_claimed_idx` | `(account_id, next_attempt_at)` and `(claimed_at)`, partial like the comment ones | `claim_automation_followups`, the expiry | |
 | `automation_followups_open_comment_key` | unique `(automation_comment_id) where status in ('queued', 'processing', 'retry_wait', 'sending')` | One open follow-up per comment | Several messages from one person make one answer |
 | `automation_followups_comment_id_idx` | `(automation_comment_id, created_at)` | The cascade from a comment; the latest follow-up in the activity list | |
+| `automation_public_replies_due_account_idx`, `automation_public_replies_claimed_idx` | `(account_id, next_attempt_at)` and `(claimed_at)`, partial like the comment ones | `claim_automation_public_replies`, the expiry, the queue health | |
+| `automation_public_replies_needs_review_idx` | `(review_checked_at nulls first, updated_at) where status = 'needs_review'` | `automation_public_review_candidates`, the queue health | Partial |
+| `automation_public_replies_recipient_idx` | `(account_id, from_id, media_id, created_at) where status in ('sending', 'accepted', 'needs_review')` | `reserve_automation_public_reply`: one public reply per person and post a day | Partial: only replies that went out or may have |
+| `automation_public_replies_user_created_idx` | `(user_id, created_at)` | `automation_stats` | |
+| `automation_attempts_public_reply_idx` | `automation_attempts (public_reply_id) where public_reply_id is not null` | The cascade from a public reply; the review's attempt | |
 | `automation_comments_user_id_created_at_idx` | `automation_comments (user_id, created_at desc)` | `automationComments.listForUser`, `automation_stats` | |
 | `automation_comments_rule_id_idx` | `automation_comments (rule_id) where rule_id is not null` | Removing a rule (set null), stats by rule | |
 | `automation_comments_created_at_idx` | `automation_comments (created_at)` | `purge_automation_comments`: the oldest comments first, a batch at a time | |
@@ -480,8 +515,9 @@ Every function sets `search_path = ''` and names its tables with the schema. Fun
 | `merge_scheduled_post(p_id, p_user_id, p_patch, p_status, p_scheduled_at, p_only_status)` | sql | Merges `p_patch` into `data` and sets `status` and `scheduled_at` when given, in one UPDATE. `p_only_status` limits the update to a post still in that status |
 | `merge_tracked_post_data(p_id, p_user_id, p_patch)` | sql | `data = coalesce(data, '{}') \|\| p_patch` on one tracked item |
 
-| `automation_rules_for_ig_user(p_ig_user_id)` | sql, stable | The enabled rules of every connected account with that Instagram id, oldest account first |
-| `claim_automation_comments(p_limit, p_per_account, p_lease_seconds, p_ids)` | plpgsql | Marks `sending` jobs past the lease `needs_review` (their attempts `ambiguous`), finds the accounts with waiting jobs, leaves out paused, cooling and limited ones, locks each account's oldest due jobs with `for update skip locked` as it reads them, and claims them with accounts taking turns. Returns each job with its rule's reply, its followers-only fields and the account's token |
+| `automation_rules_for_ig_user(p_ig_user_id)` | sql, stable | The enabled rules of every connected account with that Instagram id, oldest account first, with their private and public reply settings |
+| `store_automation_comments(p_comments)` | plpgsql | Inserts a webhook's comments (`on conflict do nothing`) and then a public reply job for each one whose rule asks for one, joined to the stored comment while the same rule answers it, in one transaction. Returns the new comment ids and statuses and the new public reply ids |
+| `claim_automation_comments(p_limit, p_per_account, p_lease_seconds, p_ids)` | plpgsql | Marks `sending` jobs past the lease `needs_review` (their attempts `ambiguous`), finds the accounts with waiting jobs, leaves out paused, cooling and limited ones, locks each account's oldest due jobs with `for update skip locked` as it reads them, and claims them with accounts taking turns. Returns each job with its rule's reply, its followers-only fields and the account's token; `rule_enabled` is false once the rule or its private reply is off |
 | `reserve_automation_send(p_id, p_attempt_id, p_global_limit, p_user_limit, p_account_limit, p_recipient_limit, p_message_digest)` | plpgsql | Under `pg_advisory_xact_lock`, checks pause, cooldown, the recipient's daily replies and the hourly limits per rule, account, user and instance, counting private replies only; a full account gets `limited_until`. On success moves the job to `sending` and inserts the attempt with the digest. Returns `outcome` and, for a full scope, `retry_at` |
 | `finish_automation_send(p_id, p_attempt_id, p_status, p_outcome, ..., p_recipient_id, p_gate_status)` | plpgsql | Settles a `sending` job (or an interrupted one) and its attempt in one transaction, keeps the recipient and starts a followers-only wait, and sets the account's cooldown or hold when asked. Returns `false` and changes nothing when the job was already settled |
 | `automation_followups_for_messages(p_ig_user_id, p_messages)` | sql | Inserts a follow-up for each message whose sender has a followers-only reply waiting for them (accepted in the last 7 days); returns the new ids. Duplicates and a second open follow-up insert nothing |
@@ -490,10 +526,15 @@ Every function sets `search_path = ''` and names its tables with the schema. Fun
 | `finish_automation_followup(p_id, p_attempt_id, p_status, p_outcome, ..., p_gate_status, p_count_reminder)` | plpgsql | Settles a follow-up and its attempt, updates the comment's wait and reminder count, and the account's cooldown or hold |
 | `automation_review_candidates(p_limit, p_settle_seconds, p_max_checks, p_recheck_seconds)` | sql, stable | Needs review replies ready to be looked for in their conversation, with the attempt's time and digest and the token |
 | `record_automation_review(p_id, p_found, p_message_id, p_sent_at, p_note)` | plpgsql | Found: the comment and its ambiguous attempt become accepted. Not found: one more check with the note. Changes only a comment still waiting for review |
-| `expire_automation_jobs(p_limit)` | sql | Expires up to `p_limit` overdue replies and up to `p_limit` overdue follow-ups, skipping rows a run holds; returns both counts |
+| `claim_automation_public_replies(p_limit, p_per_account, p_lease_seconds, p_ids)` | plpgsql | The public reply claim: lease recovery (`sending` past the lease becomes `needs_review`, reason `interrupted`), paused accounts and public cooldowns and limits left out, `for update skip locked`, turns between accounts. Returns each reply with its text, whether the rule and its public reply are on, and the token |
+| `reserve_automation_public_reply(p_id, p_attempt_id, p_account_limit, p_message_digest)` | plpgsql | Under its own advisory lock, checks pause, the public cooldown, one public reply per person and post a day, and the account's hourly public limit (marking `public_limited_until`); on success moves the reply to `sending` and inserts a `public_reply` attempt with the digest |
+| `finish_automation_public_reply(p_id, p_attempt_id, p_status, p_outcome, ..., p_reply_id, ...)` | plpgsql | Settles a `sending` (or interrupted) public reply and its attempt, keeps the reply id, and sets the public cooldown or the account's hold |
+| `automation_public_review_candidates(p_limit, p_settle_seconds, p_max_checks, p_recheck_seconds)` | sql, stable | Public replies of unknown outcome ready to be looked for, with the latest ambiguous attempt's time and digest, the token, and how many of its sends had no answer |
+| `record_automation_public_review(p_id, p_found, p_reply_id, p_sent_at, p_note, p_resend)` | plpgsql | Found: the reply and its latest ambiguous attempt become accepted. `p_resend`: back to `queued` once, after the replies were read. Otherwise one more check with the note |
+| `expire_automation_jobs(p_limit)` | sql | Expires up to `p_limit` overdue replies, follow-ups and public replies each, skipping rows a run holds; returns the three counts |
 | `purge_automation_comments(p_before, p_limit)` | sql | Deletes up to `p_limit` comments created before `p_before`, oldest first; returns the count |
-| `automation_queue_health(p_lease_seconds)` | sql, stable | Due and waiting jobs, the oldest due time, stale claims, replies needing review, follow-ups due, paused and limited accounts, each through its partial index |
-| `automation_stats(p_user_id, p_from, p_to, p_account_id, p_rule_id)` | sql, stable | Comment counts by status and attempt counts by outcome for a period, as jsonb |
+| `automation_queue_health(p_lease_seconds)` | sql, stable | Due and waiting jobs, the oldest due time, stale claims, replies needing review, follow-ups due, public replies due, stale and needing review, paused and limited accounts, each through its partial index |
+| `automation_stats(p_user_id, p_from, p_to, p_account_id, p_rule_id)` | sql, stable | Comment counts by status, public reply counts by status and attempt counts by outcome for a period, as jsonb |
 
 The merge functions return `true` when a row matched and `null` when none did. A null `p_user_id` is the cron form, which reaches any user's row; `merge_tracked_post_data` always needs a user. The merge is one statement, so two writers at the same moment (a token refresh and an analytics refresh on one account) never put an old value back.
 
@@ -553,17 +594,22 @@ listForUser(userId) / findForUser(id, userId) / create(rule, userId) / updateFor
 listEnabledForInstagramUser(igUserId): Promise<WebhookRule[]>         // webhook only - automation_rules_for_ig_user, every user
 
 // Automation comments (automationCommentRepository.ts)
-insertMany(comments): Promise<NewAutomationComment[]>                 // webhook only - upsert, ignoring duplicates; returns the new ones
+store(comments): Promise<StoredComments>                             // webhook only - store_automation_comments: comments and their public replies in one transaction; returns the new ones
 claim(options) / reserve(id, attemptId, limits, digest?) / finish(id, attemptId, plan) / release(id, plan) / returnUnstarted(ids)   // processor only, every user
 listForUser(userId, filter) / findForUser(id, userId) / requeueForUser(id, userId) / releaseHeldForAccount(accountId, userId)
 statsForUser(userId, filter): Promise<AutomationStats>                // automation_stats
-expireDue(limit) / reviewCandidates(options) / recordReview(id, result) / health(leaseSeconds)   // reconciliation only, every user
+expireDue(limit) / reviewCandidates(options) / recordReview(id, result) / health(leaseSeconds)   // reconciliation only, every user; expireDue also expires public replies
 purgeCreatedBefore(cutoff, limit): Promise<number>                    // daily retention only, one batch per call
 
 // Automation follow-ups (automationFollowupRepository.ts)
 insertForMessages(igUserId, messages): Promise<string[]>              // webhook only - automation_followups_for_messages
 claim(options) / reserve(id, attemptId, kind, digest) / finish(id, attemptId, plan) / release(id, plan) / returnUnstarted(ids)   // follow-up processor only, every user
 requeueLatestForUser(commentRowId, userId): Promise<string | null>
+
+// Automation public replies (automationPublicReplyRepository.ts)
+claim(options) / reserve(id, attemptId, accountLimit, digest) / finish(id, attemptId, plan) / release(id, plan) / returnUnstarted(ids)   // public reply processor only, every user
+reviewCandidates(options) / recordReview(id, result)                  // reconciliation only, every user
+requeueForUser(commentRowId, userId): Promise<string | null> / releaseHeldForAccount(accountId, userId)
 
 // Automation account controls (automationAccountRepository.ts)
 listForUser(userId) / findForUser(accountId, userId) / setPausedForUser(accountId, userId, paused) / markSubscribedForUser(accountId, userId, fields)

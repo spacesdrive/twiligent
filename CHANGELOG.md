@@ -20,6 +20,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Followers-only rules, in testing and not yet tried with a real account: the first reply asks the person to follow and reply, and the link goes out only when Instagram confirms they follow; nothing is sent when Instagram cannot say (#103, #105, ADR-043)
 - A new every-minute cron trigger dispatches waiting replies and follow-ups, and the five minute runs off the quarter hour expire overdue replies, look for replies whose answer was lost in the conversation on Instagram, and log the queue's health (#99, #100, ADR-043)
 - New table `automation_followups` and new columns and functions for the reply queue; existing instances run `npm run db:push` before deploying (#99, #100, #102, #103)
+- Public replies: a rule can also post a public reply under the comment, or only that, with up to five wordings that rotate per comment; the private and public replies have their own status, limits, cooldown and retry, and one failing never sends the other again (#107, ADR-044)
+- A public reply whose answer was lost is looked for among the comment's replies and posted again once only when it is not there; `AUTOMATION_PUBLIC_ACCOUNT_HOURLY_LIMIT` (default 60) paces public replies, and each person gets at most one per post a day (#107)
+- New table `automation_public_replies` and new columns and functions; existing instances run `npm run db:push` before deploying (#107)
 
 ### Changed
 

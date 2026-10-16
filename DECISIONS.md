@@ -943,3 +943,28 @@ New row ids come from `crypto.randomUUID()` (`newRowId()` in `backend/lib/ids.ts
 - Followers-only rules need the `messages` field selected in the Meta dashboard, which Meta applies to every connected account, and Advanced Access for `instagram_business_manage_messages`.
 - Any-comment rules message people who did not ask for it; the form warns, and the per-person daily limit still applies.
 - The changed SQL functions keep their old parameters with defaults so the deployed Worker keeps working once the migrations are applied, but the migrations must be applied before the new Worker is deployed.
+
+## ADR-044: Public comment replies as their own jobs, beside private replies
+
+**Date:** 2026-10-16
+**Status:** Accepted
+
+**Decision:** A rule can answer a matching comment with a private reply, a public reply under the comment, or both, each switched on its own (#107). A public reply is a row in a new table, `automation_public_replies`, one per comment, created with the comment in one transaction by `store_automation_comments`. It has its own claim, reservation, finish and review functions, its own attempts (kind `public_reply`), its own hourly limit (`AUTOMATION_PUBLIC_ACCOUNT_HOURLY_LIMIT`, default 60, at most 200), its own cooldown (`automation_accounts.public_cooldown_until`), and a limit of one public reply per person and post a day. The every-minute dispatch posts public replies after private replies and follow-ups, keeping 11 of the run's 50 subrequests for them. A public reply whose answer was lost is looked for among the comment's replies; it is sent again once, by the dispatch, only when every reply was read on two checks minutes apart and it was in neither.
+
+**Context:** Meta's documentation (checked 2026-10-16) supports `POST /<comment-id>/replies` with Instagram Login and `instagram_business_manage_comments`, which Twiligent already requests, so no account has to reconnect. A reply answers with the new comment's id; only top-level comments take replies, and hidden and live comments cannot. Meta publishes no hourly number for comment replies: they count against the Business Use Case limit shared with insights, and accounts that comment like a bot are blocked (code 368). The owner asked for independent delivery: a failure of one reply must never repeat the other, and an unknown outcome must never be resent blindly.
+
+**Why a separate table:** Two state machines on `automation_comments` would make the two lanes lock each other's rows (`FOR UPDATE SKIP LOCKED` would skip a comment whose other reply is being sent) and double every queue column and index under prefixed names. One generic actions table for private replies, follow-ups and public replies would be cleaner in the long run, but it means rewriting the private reply path that is live; the new table follows the `automation_followups` pattern, so the three job kinds can be merged later if they keep converging.
+
+**Why a public reply may be sent again when a private one may not:** A private reply whose answer was lost can only be searched for in the conversation, and Instagram refuses a second private reply anyway. A public reply can be read back directly from the comment's replies, so its absence can be checked. Reading twice, minutes apart, over every page, and allowing one resend, makes a second public reply unlikely without leaving most lost answers to a person.
+
+**Alternatives considered:**
+- Columns for the public reply on `automation_comments`. Rejected for the locking and duplication above.
+- Waiting for the private reply before posting the public one, so "check your messages" is always true. It couples the two actions the owner asked to keep apart; private replies go first in every run instead, and the form says not to promise a message.
+- The comments webhook for the account's own reply as confirmation. Meta does send it, but whether and when is not documented; Twiligent ignores the account's own comments, and the read of the comment's replies is the check.
+- A per-rule hourly limit for public replies. The account limit and the one-per-person-and-post limit already bound them; the rule's limit stays a private reply limit.
+
+**Trade-offs:**
+- The 300 character, 4 hashtag and 1 link bounds are Twiligent's, from Instagram's older API; current documentation states none.
+- The activity list's status filter follows the private reply; public replies count in the Needs attention and Waiting numbers, and each row shows both.
+- Twenty-three migrations, one entity each, and three more SQL functions to keep in step with the fake queue in the tests.
+- The migrations must be applied before the new Worker is deployed; the old Worker keeps working with them, since replaced functions only gain columns and keys.
