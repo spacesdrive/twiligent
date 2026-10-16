@@ -50,7 +50,7 @@ describe('database migrations', () => {
     test('every migration from the one-entity rule on creates one entity: a table, its access, a trigger, an index or a function', () => {
         for (const name of migrations.filter(file => file.slice(0, 14) >= ONE_ENTITY_FROM)) {
             const sql = read('migrations', name);
-            const creates = sql.match(/create (?:table|(?:unique )?index|trigger|or replace function|function|policy|view)/gi) ?? [];
+            const creates = sql.match(/\bcreate (?:table|(?:unique )?index|trigger|or replace function|function|policy|view)\b/gi) ?? [];
             const access = /enable row level security|revoke all on table/i.test(sql) ? 1 : 0;
             assert.ok(creates.length + access <= 1, `${name} creates ${creates.length + access} entities; split it into one file each`);
             assert.ok(read('rollbacks', name).trim().length > 0, `${name} has an empty rollback`);
