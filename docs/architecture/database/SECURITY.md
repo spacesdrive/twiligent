@@ -8,13 +8,25 @@ The backend uses the **service-role key** for all database operations. This key 
 2. Controllers pass that `userId` to services, and every user-scoped repository method (named `...ForUser`) appends `.eq('user_id', userId)` using this verified value
 3. `userId` is never accepted from request body, query params, or any other user-controlled input
 
-**This means a missing `.eq('user_id', userId)` call is a security bug.** The centralization of all queries in `backend/repositories/` makes this auditable: a method that takes a `userId` ends in `ForUser`, and the few that reach every user (`listAll`, `findById`, `updateById`, `listDue`, `listStale`, `claim`) are used only by the cron services. Because ownership is a query filter, another user's record is simply not found (404).
+**This means a missing `.eq('user_id', userId)` call is a security bug.** The centralization of all queries in `backend/repositories/` makes this auditable: a method that takes a `userId` ends in `ForUser`, and the few that reach every user (`listByPlatform`, `findById`, `updateById`, `listDue`, `listStale`, `claim`) are used only by the cron services. Because ownership is a query filter, another user's record is simply not found (404).
 
-## Why Not Use RLS?
+The merge functions follow the same rule: the `...ForUser` repository methods pass the verified `userId` as `p_user_id`, and only `updateById` passes `null`, the cron form that reaches any user's row.
 
-See `DECISIONS.md` ADR-011 for the full reasoning. Summary:
+## Ownership of Referenced Accounts
+
+A scheduled post names the account it publishes to, and a tracked Reddit item names the account whose cookie reads it. Both are checked twice:
+
+1. **In the service.** `scheduledPostService.create` loads the account with `accounts.findForUser(accountId, userId)` and passes it to `publishableAccount()`: another user's account, a missing one or one that is not Instagram answers 404 `Instagram account not found`, and one with no token answers 400 `No Instagram access token stored - reconnect this account`. `trackedContentService.update` refuses an account on a YouTube item (400) and answers 404 `Reddit account not found` for an account that is not one of the user's Reddit accounts.
+2. **In the database.** `scheduled_posts` and `tracked_posts` reference `accounts (id, user_id)` with a composite foreign key, so a row whose `account_id` belongs to another user cannot be written, whatever the code does.
+
+Row ids are UUIDs from `crypto.randomUUID()` (`newRowId()` in `backend/lib/ids.ts`). Before, they were built from the time and `Math.random`, which is predictable; an id is still never trusted on its own, but it can no longer be worked out from another.
+
+## Why Not Use RLS Policies?
+
+See `DECISIONS.md` ADR-011 and ADR-038 for the full reasoning. Summary:
 - Cron handlers (scheduler, token refresh) need to query across all users - they cannot be scoped to a single JWT
 - Using the service-role key with application-layer filtering achieves the same isolation with less complexity
+- A policy that lets a signed-in user reach their own rows would also let them read their raw Instagram tokens and Reddit cookies and write rows the API would refuse. The browser has no reason to touch the tables, so it gets no access at all
 
 ## Key Hierarchy
 
@@ -24,20 +36,26 @@ See `DECISIONS.md` ADR-011 for the full reasoning. Summary:
 | `SUPABASE_ANON_KEY` | Cloudflare Worker (`requireAuth` only) | Only `getUser(token)` - JWT verification |
 | `VITE_SUPABASE_ANON_KEY` | Frontend browser | Supabase Auth (sign in, sign up, sign out, session management) |
 
-The anon key is public: it ships in the frontend bundle. It cannot read or write application tables **only if RLS is enabled on them**. With RLS disabled, Supabase's Data API lets anyone holding the anon key query the tables directly, bypassing the Worker.
+The anon key is public: it ships in the frontend bundle, and a signed-in browser also holds a JWT for the `authenticated` role. Supabase's Data API accepts both, so the database itself must refuse them.
 
-## Required: RLS Enabled With No Policies
+## Required: No Browser Access to Tables or Functions
 
-Every application table must have RLS enabled and no policies:
+The migrations in `supabase/migrations/` enforce this on every instance:
 
-```sql
-alter table accounts enable row level security;
-alter table settings enable row level security;
-alter table scheduled_posts enable row level security;
-alter table tracked_posts enable row level security;
-```
+| Rule | Migration | Effect |
+|---|---|---|
+| Row level security on, with no policies | `baseline_<table>` (four files) | The `anon` and `authenticated` roles match no row |
+| No grants to the browser roles | `revoke_browser_access_<table>` (four files) | `revoke all on table ... from anon, authenticated`; the Data API answers 401 permission denied |
+| No grants on future objects | `revoke_browser_default_privileges` | `alter default privileges for role postgres in schema public revoke all on tables` and `on functions from anon, authenticated` |
+| Functions closed | each `create_*_function` file | `revoke execute ... from public, anon, authenticated`; the merge functions are granted only to `service_role` |
 
-This denies the anon and authenticated roles everything, while the service-role key used by the Worker and the GitHub Actions scheduler still bypasses RLS. The frontend never queries tables directly (it uses Supabase only for Auth), so no policies are needed. Supabase's Table Editor flags any table with RLS disabled. The setup SQL in the README and on the public docs page `/docs/self-host/supabase` (`site/content/docs/self-host/supabase.mdx`) includes these statements.
+The service-role key used by the Worker and the GitHub Actions scheduler bypasses row level security and keeps its grants. The frontend never queries tables directly (it uses Supabase only for Auth). `backend/tests/database/migrations.test.ts` fails if a migration creates a function without the revoke.
+
+To check a live instance, call the Data API with the anon key (`GET <SUPABASE_URL>/rest/v1/accounts` with the `apikey` header): it must answer 401 for all four tables and for `POST /rest/v1/rpc/merge_account_data`. The manual check is in `docs/workflows/TESTING.md`.
+
+### What was wrong before
+
+Before the migrations, production had drifted from this model. The tables had the policies `users_own_accounts`, `users_own_settings` and `users_own_posts` (`for all using (auth.uid() = user_id)`) and full table grants to `anon` and `authenticated`. A signed-in user could read their raw Instagram tokens and Reddit cookies through the Data API and write rows directly, for example a scheduled post naming another user's account, which the scheduler would then publish to. `scheduled_posts` also had no foreign key to `accounts`, and the API never checked scheduled post account ownership. The migrations removed the policies and grants and added the composite keys; the service checks above were added at the same time.
 
 ## Signups
 
@@ -75,8 +93,10 @@ The Instagram `accessToken` stored in `accounts.data.accessToken` is a long-live
 
 When reviewing security, check these files:
 - `backend/middleware/auth.ts` - JWT verification
-- `backend/repositories/` - every user-scoped method ends in `ForUser` and filters by `user_id`; the methods without a `userId` are used only by `scheduledPublisher.ts` and `tokenRefreshService.ts`. `emailQuotaRepository.ts` is not user-scoped: it keeps instance-wide Redis counters for the Send Email hook, keyed by a hash of the address
+- `backend/repositories/` - every user-scoped method ends in `ForUser` and filters by `user_id` (or passes it as `p_user_id` to a merge function); the methods without a `userId` are used only by `scheduledPublisher.ts` and `tokenRefreshService.ts`. `emailQuotaRepository.ts` is not user-scoped: it keeps instance-wide Redis counters for the Send Email hook, keyed by a hash of the address
 - `backend/middleware/authHook.ts` and `backend/lib/webhookSignature.ts` - the only thing that authenticates the public Send Email hook
 - `backend/controllers/` and `backend/services/` - the `userId` passed to a repository always comes from `c.get('userId')`, never from the body or query
 - `backend/lib/safeAccount.ts` - `safeAccount()` definition; it strips every stored credential for all platforms
+- `supabase/migrations/` - no migration grants anything to `anon` or `authenticated`, and every function revokes execute from them
+- `backend/services/scheduledPostService.ts` and `trackedContentService.ts` - an account named in a request is loaded with `findForUser` before it is stored
 - All controllers in `backend/controllers/` - verify `safeAccount()` is called on every account response

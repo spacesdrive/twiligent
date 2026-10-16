@@ -29,7 +29,7 @@ Reddit needs no key. Each member pastes their own Reddit session cookie when the
 
 ## Order of setup
 
-1. [Supabase](/docs/self-host/supabase): create the project, the tables and turn on row level security.
+1. [Supabase](/docs/self-host/supabase): create the project, then create the tables with `npm run db:push`.
 2. [YouTube API key](/docs/self-host/youtube), [Instagram app](/docs/self-host/instagram), [Cloudinary](/docs/self-host/cloudinary) and optionally [Upstash Redis](/docs/self-host/redis), in any order.
 3. [Deploy the backend](/docs/self-host/deploy-backend) and give it every secret.
 4. [Deploy the frontend](/docs/self-host/deploy-frontend).

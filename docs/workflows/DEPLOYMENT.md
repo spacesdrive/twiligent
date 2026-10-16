@@ -13,6 +13,7 @@ A pull request merged into `main` -> GitHub Actions deploys automatically. `main
 | `shared/**` | Backend and frontend workflows | Worker and app (in parallel) |
 | `tsconfig.base.json` | All three workflows | Worker, app and site (in parallel) |
 | Root `package.json` or `package-lock.json` | All three workflows | Worker, app and site (in parallel) |
+| `supabase/**` | None | Nothing deployed; the owner applies migrations with `npm run db:push` (see Database Changes) |
 | `docs/`, `scripts/`, root `*.md` | None | Nothing deployed (`publish-scheduled.yml` runs `scripts/publish-scheduled.ts` and `backend/lib/scheduledPublishing.ts` from `main` on its next run) |
 
 Monitor deployment status at:  
@@ -68,28 +69,49 @@ The site needs no environment variables or secrets. Self-hosters can skip this s
 
 ## Database Changes
 
-Supabase is not migrated by any workflow. A change to the database is SQL the owner runs in the Supabase SQL editor, and it goes in before the code that needs it is merged, because merging deploys the Worker at once.
+No workflow migrates Supabase. The schema is versioned in `supabase/migrations/` and the owner applies it with the Supabase CLI from the repository root. A migration goes in before the code that needs it is merged, because merging deploys the Worker at once. `supabase/` changes alone deploy nothing.
 
-### Claim lease and attempts (`scheduled_posts`)
+| Script | Runs | Does |
+|---|---|---|
+| `npm run db:new <name>` | `supabase migration new` | Creates `supabase/migrations/<timestamp>_<name>.sql` |
+| `npm run db:status` | `supabase migration list` | Lists each migration as Local, Remote or both |
+| `npm run db:check` | `supabase db push --dry-run` | Shows the migrations a push would apply, without applying them |
+| `npm run db:push` | `supabase db push` | Applies the pending migrations and records them in `supabase_migrations.schema_migrations` |
 
-The scheduler fix that adds the claim lease, retries and the container check reads two new columns. Run this in the Supabase SQL editor before merging it:
+### Linking the CLI
 
-```sql
-alter table public.scheduled_posts
-  add column if not exists claimed_at timestamptz,
-  add column if not exists attempts integer not null default 0;
+Link once per clone. The CLI asks Supabase for a short-lived login role, so no database password is needed:
 
--- posts stuck before this change have no saved container, so nothing can tell whether they went out
-update public.scheduled_posts
-set status = 'failed',
-    data = data || jsonb_build_object('error', 'Publishing was interrupted before Twiligent tracked it. Check Instagram before scheduling this post again.')
-where status = 'publishing' and claimed_at is null;
-
-create index if not exists scheduled_posts_user_id_idx on public.scheduled_posts (user_id);
-create index if not exists scheduled_posts_due_idx on public.scheduled_posts (status, scheduled_at);
+```bash
+npx supabase login                            # or set SUPABASE_ACCESS_TOKEN
+npx supabase link --project-ref <project-ref> # the id in the project's dashboard URL
 ```
 
-The columns are additive and the old code ignores them, so running the SQL first is safe. The two indexes were listed in `SCHEMA.md` before but did not exist in production. Check afterwards with `select status, count(*) from public.scheduled_posts group by status;`: no post should be `publishing` without a recent `claimed_at`. See `docs/architecture/database/SCHEMA.md`.
+The link is stored in `supabase/.temp/`, which git ignores.
+
+### Applying a change
+
+1. Write the migration and its rollback (`docs/features/NEW_DATABASE_TABLE.md`), and run `npm test --workspace backend`.
+2. `npm run db:check` and read the list. It must show only the new files.
+3. `npm run db:push`.
+4. `npm run db:status`: every migration is in both columns.
+5. Merge the pull request with the code that needs the change.
+
+A change the old code cannot live with (a dropped column, a renamed function) needs two releases: first the code that works with both shapes, then the migration.
+
+### Rolling Back a Database Change
+
+The CLI has no down migrations. To undo one change on a remote database:
+
+1. Deploy code that does not need the change first, if any does. The merge function rollbacks say so in their comment.
+2. Open the matching file in `supabase/rollbacks/` (same name as the migration) and run it in the Supabase SQL editor.
+3. Mark the migration as not applied: `npx supabase migration repair --status reverted <version>`, where `<version>` is the 14 digit prefix of the file name.
+
+Roll back in reverse order when several changes are involved. The four baseline migrations have no rollback, because undoing them would drop tables with data.
+
+### Existing instances
+
+An instance set up from the old README SQL, or one that ran the claim lease upgrade SQL from v1.1.1, runs the same `npm run db:push`. The baseline files use `if not exists` throughout, add any missing `created_at`, `claimed_at` and `attempts` columns, and mark posts stuck in `publishing` with no claim as `failed`, so every earlier shape ends at the same schema.
 
 ## Setting Worker Secrets
 
@@ -218,7 +240,7 @@ For a fresh deployment from this repo:
 6. Install Node 22.18 or newer, run `npm ci` at the repository root, then `npx wrangler login`
 7. Set all Worker secrets (see above)
 8. Set all GitHub Actions secrets (see above)
-9. Run the setup SQL from `README.md` in the Supabase SQL editor (tables, the `scheduled_posts` columns and indexes, RLS)
+9. Link the Supabase CLI (`npx supabase login`, then `npx supabase link --project-ref <ref>`) and run `npm run db:push` to create the tables, constraints, functions and indexes from `supabase/migrations/`
 10. `npm run typecheck`, then `cd backend && npx wrangler deploy` (first manual deploy)
 11. Verify health endpoint
 12. `npm run build` at the root, then `cd frontend && npx wrangler pages deploy dist --project-name=twiligent`

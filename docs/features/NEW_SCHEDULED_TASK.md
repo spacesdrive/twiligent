@@ -17,7 +17,7 @@ For most tasks: use the Cloudflare Worker cron first. It's simpler and doesn't r
 
 ### Step 1: Write the job as a service method
 
-Cron work is a service method, wired in `backend/container.ts` like any other service (`scheduledPublisher.publishDue()` in `services/scheduledPublisher.ts`, `tokenRefresh.refreshExpiringInstagramTokens()` in `services/tokenRefreshService.ts`). The job receives repositories and a `RequestContext`, so it logs with the cron's request id and passes the cron's deadline signal to every platform call. A job that scans every user uses the cross-user repository methods (`listAll`, `findById`, `updateById`); add one to the repository if the job needs a query that does not exist yet, and keep it out of every request path.
+Cron work is a service method, wired in `backend/container.ts` like any other service (`scheduledPublisher.publishDue()` in `services/scheduledPublisher.ts`, `tokenRefresh.refreshExpiringInstagramTokens()` in `services/tokenRefreshService.ts`). The job receives repositories and a `RequestContext`, so it logs with the cron's request id and passes the cron's deadline signal to every platform call. A job that scans every user uses the cross-user repository methods (`listByPlatform`, `findById`, `updateById`); add one to the repository if the job needs a query that does not exist yet, and keep it out of every request path. Filter in SQL, not by loading every row and filtering in TypeScript, and only add an index if the job runs often enough to need one (`docs/philosophy/PERFORMANCE.md`).
 
 ```ts
 // backend/services/myPlatformTokenRefreshService.ts
@@ -40,7 +40,7 @@ export function createMyPlatformTokenRefreshService({ accounts, context }: MyPla
 
     return {
         async refreshTokens() {
-            const listed = (await accounts.listAll()).filter(account => account.platform === 'myPlatform');
+            const listed = await accounts.listByPlatform('myPlatform');
             for (const account of listed) {
                 if (!account.accessToken) continue;
                 try {
@@ -57,7 +57,7 @@ export function createMyPlatformTokenRefreshService({ accounts, context }: MyPla
 }
 ```
 
-A cron job must never throw for one bad account: catch per account and log, as above. Comparing `account.platform` with `'myPlatform'` only type-checks once the platform is in the `Platform` union in `shared/types/domain.ts` (see `NEW_INTEGRATION.md`).
+A cron job must never throw for one bad account: catch per account and log, as above. `listByPlatform('myPlatform')` only type-checks once the platform is in the `Platform` union in `shared/types/domain.ts`, and the database only stores such an account once a migration adds the platform to `accounts_platform_check` (see `NEW_INTEGRATION.md`).
 
 Add it to `Services` and `createServices()` in `backend/container.ts`:
 

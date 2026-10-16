@@ -20,6 +20,7 @@ Document the answers in `DECISIONS.md` as a new ADR before writing any code.
 |---|---|---|
 | Shared | `shared/types/{platform}.ts` | Create: profile, post, analytics and cache types |
 | Shared | `shared/types/domain.ts` | Add the platform to `Platform` and its fields to `Account` |
+| Database | `supabase/migrations/`, `supabase/rollbacks/` | A migration that replaces `accounts_platform_check` with one that lists the new platform, and its rollback (`docs/features/NEW_DATABASE_TABLE.md`); run `npm run db:push` before deploying |
 | Backend | `backend/services/{platform}/` | Create: API client and pure analytics modules |
 | Backend | `backend/services/{platform}AnalyticsService.ts` | Create: the feature service |
 | Backend | `backend/services/accountService.ts`, `accountFactory.ts` | Extend: add and refresh accounts of the new platform |

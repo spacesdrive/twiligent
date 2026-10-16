@@ -46,10 +46,14 @@ frontend/             React SPA (the app); tests in frontend/tests/ mirroring fr
 site/                 public marketing site and docs (Vite, React, MDX); docs pages in site/content/docs/,
                       build plugins in site/build/, tests in site/tests/
 scripts/              publish-scheduled.ts, run by GitHub Actions with no dependencies
+supabase/             the database schema: migrations/ (versioned SQL, one table or function per file, applied
+                      with the Supabase CLI), rollbacks/ (the reverse of each migration, same file name),
+                      config.toml (CLI config, Postgres 17)
 ```
 
 - `npm install` at the root installs every workspace. Never run `npm install` inside `backend/`, `frontend/` or `site/`, and never commit a lockfile there.
 - `npm run dev` starts the Worker (port 8787) and Vite (port 5173) together; `npm run dev:site` starts the public site on its own. `npm run typecheck`, `npm test`, `npm run lint` and `npm run build` cover the whole repo, the site included (`build` builds the app, then the site).
+- `npm run db:new <name>` creates a migration, `npm run db:status` lists which are applied, `npm run db:check` shows what a push would apply and `npm run db:push` applies it (the Supabase CLI is a root dev dependency; link it once with `npx supabase link --project-ref <ref>`). CI never runs migrations.
 - Add a dependency to the workspace that uses it: `npm install <pkg> --workspace backend`, `--workspace frontend` or `--workspace site`. Only shared dev tooling belongs in the root `package.json`.
 - Tests never live next to source files. A test for `backend/services/accountService.ts` is `backend/tests/services/accountService.test.ts`; a test for `frontend/src/lib/accounts.ts` is `frontend/tests/lib/accounts.test.ts`; site tests live in `site/tests/`.
 
@@ -103,7 +107,7 @@ docs/
       SITE.md              Public site and docs: stack, folders, docs pipeline, theming, icons, deploy
     database/
       SCHEMA.md            All tables, columns, types, constraints
-      SECURITY.md          RLS policy, service vs anon key, isolation
+      SECURITY.md          Browser access (RLS, grants), service vs anon key, isolation
     cloudflare/
       WORKERS.md           Worker export, env binding, cron handler
       PAGES.md             App and site deployment, build step, env vars
@@ -203,6 +207,8 @@ Read `docs/guidelines/CODE_STYLE.md` before writing code and run its checklist b
 - Formatting follows the file: 4 spaces in `backend/`, 2 elsewhere, single quotes, semicolons, trailing commas
 - Pure logic goes in a plain `.ts` helper (`lib/`) so Node can test it; markup used twice becomes a component; copy that changes by mode lives in a typed table
 - `scripts/` stays free of npm packages but may import a `backend/lib/` helper that imports nothing at runtime, so both schedulers share one set of rules (`scheduledPublishing.ts`)
+- The schema changes only through a migration in `supabase/migrations/` plus its rollback in `supabase/rollbacks/`, one table or one function per file; repositories update `data` through the merge functions, never by reading it and writing it back
+- New row ids come from `newRowId()` in `backend/lib/ids.ts` (`crypto.randomUUID()`)
 - Tests use `node:test` with sentence names that describe behaviour, live in `tests/` mirroring the source path, and use the smallest typed fake
 - When the code and `CODE_STYLE.md` disagree, update the guide in the same change
 
@@ -356,8 +362,9 @@ When anything changes, update every relevant docs file from the table below. The
 | Request pipeline, middleware order, request context or error contract changed | `docs/architecture/backend/REQUEST_PIPELINE.md`, `docs/architecture/backend/MIDDLEWARE.md`, `docs/guidelines/ERROR_HANDLING.md`, `docs/guidelines/API_CONVENTIONS.md`, `shared/types/domain.ts` (`ApiFailure`) |
 | New repository or repository method | `docs/architecture/backend/REQUEST_PIPELINE.md` (if a new repository), `docs/architecture/database/SECURITY.md` (if it is not user-scoped) |
 | Route deleted or changed | `docs/architecture/backend/ROUTES.md`, `docs/architecture/OVERVIEW.md` |
-| New DB table | `docs/architecture/database/SCHEMA.md`, `docs/architecture/database/SECURITY.md`, `DECISIONS.md`, `CHANGELOG.md` |
-| New DB column | `docs/architecture/database/SCHEMA.md` |
+| New DB table | A migration and its rollback in `supabase/` (`docs/features/NEW_DATABASE_TABLE.md`), `docs/architecture/database/SCHEMA.md`, `docs/architecture/database/SECURITY.md`, `DECISIONS.md`, `CHANGELOG.md` |
+| New DB column | A migration and its rollback in `supabase/`, `docs/architecture/database/SCHEMA.md` |
+| Schema, constraint, index, trigger or function changed | A migration and its rollback in `supabase/`, `docs/architecture/database/SCHEMA.md`, `docs/architecture/database/SECURITY.md` (if access changes) |
 | New env var / Worker secret | `docs/architecture/cloudflare/WORKERS.md`, `docs/architecture/cloudflare/CI_CD.md`, `docs/workflows/DEPLOYMENT.md`, `DECISIONS.md` |
 | Env var removed | `docs/architecture/cloudflare/WORKERS.md`, `docs/architecture/cloudflare/CI_CD.md`, `docs/workflows/DEPLOYMENT.md` |
 | New npm package (backend) | `docs/architecture/backend/HONO.md`, `DECISIONS.md` |

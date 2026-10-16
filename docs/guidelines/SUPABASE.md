@@ -24,7 +24,12 @@ export interface AccountRepository {
 export function createAccountRepository(db: SupabaseClient): AccountRepository {
     return {
         async listForUser(userId) {
-            const found = await rows<AccountRow>('accounts.listForUser', () => db.from('accounts').select(COLUMNS).eq('user_id', userId));
+            const found = await rows<AccountRow>('accounts.listForUser', () => db
+                .from('accounts')
+                .select(COLUMNS)
+                .eq('user_id', userId)
+                .order('created_at', { ascending: true })
+                .order('id', { ascending: true }));
             return found.map(toAccount);
         },
         // ...
@@ -67,21 +72,27 @@ function toAccount(row: AccountRow): Account {
     return { id: row.id, platform: row.platform, ...row.data };
 }
 
-// Updating: merge new fields with existing data (don't replace the whole object)
-const current = await find(id, userId);
-if (!current) throw new NotFoundError('Account not found');
-const { id: _id, platform: currentPlatform, ...currentData } = current;
-const { platform: newPlatform, ...dataUpdates } = updates;
-await execute('accounts.update', () => {
-    const query = db.from('accounts').update({
-        platform: newPlatform || currentPlatform,
-        data: { ...currentData, ...dataUpdates },  // merge, not replace
-    }).eq('id', id);
-    return userId ? query.eq('user_id', userId) : query;
-});
+// Updating: one atomic merge in the database through a function in supabase/migrations
+const { id: _id, platform: _platform, ...patch } = updates;
+const { data } = await execute('accounts.update', () => db.rpc('merge_account_data', { p_id: id, p_user_id: userId, p_patch: patch }));
+if (!data) throw new NotFoundError('Account not found');
 ```
 
-**Never replace the entire `data` object** without first reading the current value - you'll lose fields that aren't in the update.
+**Never read `data` and write it back.** Two writers at the same moment (a token refresh and an analytics refresh on one account) would each write their copy, and the later one puts the other's old values back. Updates to `data` call a merge function with `db.rpc()`, which runs `data = data || p_patch` in one UPDATE:
+
+| Function | Repository methods |
+|---|---|
+| `merge_account_data(p_id, p_user_id, p_patch)` | `accounts.updateForUser`, `accounts.updateById` |
+| `merge_scheduled_post(p_id, p_user_id, p_patch, p_status, p_scheduled_at, p_only_status)` | `scheduledPosts.updatePendingForUser` (with `p_only_status: 'pending'`), `scheduledPosts.updateById`, and `updatePost` in `scripts/publish-scheduled.ts` |
+| `merge_tracked_post_data(p_id, p_user_id, p_patch)` | `trackedPosts.patchDataForUser` |
+
+Each function returns `true` when a row matched and `null` when none did, so the repository can throw `NotFoundError` or return `false`. A `...ForUser` method passes the verified `userId` as `p_user_id`; only the cron methods pass `null`. The merge is shallow (top-level keys), and a field set to `undefined` is dropped from the JSON request, so it keeps its stored value. `updated_at` is set by a database trigger on every table; never set it in a query. The functions are described in `docs/architecture/database/SCHEMA.md`.
+
+## Schema Changes
+
+The schema is versioned in `supabase/migrations/` and applied with the Supabase CLI (`npm run db:check`, then `npm run db:push`). Never change a table, index or function in the SQL editor. Each change is one file for one table or one function, with its reverse in `supabase/rollbacks/` under the same name. A new function in `public` revokes execute from `public, anon, authenticated` and grants it only to `service_role`. The workflow is in `docs/features/NEW_DATABASE_TABLE.md`.
+
+New row ids come from `newRowId()` in `backend/lib/ids.ts` (`crypto.randomUUID()`), never from the time or `Math.random`.
 
 ## Row Isolation
 
@@ -96,7 +107,7 @@ export interface ScheduledPostRepository {
 }
 ```
 
-Only `scheduledPublisher.ts` and `tokenRefreshService.ts` call the cross-user methods (`listAll`, `findById`, `updateById`, `listDue`, `listStale`, `claim`). See `docs/architecture/database/SECURITY.md`.
+Only `scheduledPublisher.ts` and `tokenRefreshService.ts` call the cross-user methods (`listByPlatform`, `findById`, `updateById`, `listDue`, `listStale`, `claim`). A cross-user method filters in SQL (`listByPlatform('instagram')`), never by loading every row and filtering in TypeScript. See `docs/architecture/database/SECURITY.md`.
 
 ## Client Lifecycle
 

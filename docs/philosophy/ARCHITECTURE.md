@@ -16,7 +16,7 @@ Authentication is Supabase JWTs. The Worker verifies the JWT on every protected 
 
 ### 3. Application-layer isolation instead of RLS
 
-Every user-scoped repository method (named `...ForUser`) appends `.eq('user_id', userId)` where `userId` comes from the verified JWT and is passed down from the controller. The Worker uses the service-role key (which bypasses RLS). RLS is enabled with no policies only to keep the public anon key away from the tables; it is not relied upon for isolation.
+Every user-scoped repository method (named `...ForUser`) appends `.eq('user_id', userId)` where `userId` comes from the verified JWT and is passed down from the controller. The Worker uses the service-role key (which bypasses RLS). RLS is enabled with no policies and the browser roles have no grants, only to keep the public anon key and members' own tokens away from the tables; it is not relied upon for isolation. The schema adds a second guard: composite foreign keys tie a post's account to the same user (ADR-038).
 
 **Why:** RLS adds complexity without benefit when the application layer already enforces isolation. The service-role key is needed for admin operations (cron jobs, token refresh) that run without a user JWT. See `ADR-011`.
 

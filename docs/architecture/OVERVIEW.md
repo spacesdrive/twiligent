@@ -62,7 +62,7 @@
 | Backend API | Cloudflare Workers | `twiligent.ujjwalkrai.workers.dev` |
 | Public site and docs | Cloudflare Pages, project `twiligent-site` | `twiligent.ujjwal.fyi` (`twiligent.spacesdrive.cc` redirects here with a 301 rule on the spacesdrive.cc zone) |
 | Frontend SPA (the app) | Cloudflare Pages, project `twiligent` | `app.twiligent.ujjwal.fyi` (also `twiligent.pages.dev`) |
-| Database + Auth | Supabase | `nheuatbcevaxgxyvahtr.supabase.co` |
+| Database + Auth | Supabase; the schema is applied from `supabase/migrations/` with `npm run db:push` | `nheuatbcevaxgxyvahtr.supabase.co` |
 | Media cache | Upstash Redis | Configured via `UPSTASH_REDIS_REST_URL` |
 | Media hosting | Cloudinary | `CLOUDINARY_CLOUD_NAME` |
 | Auth emails | Resend, through Supabase's Send Email hook | `RESEND_API_KEY`, `EMAIL_FROM` |
@@ -116,7 +116,7 @@ Cloudflare scheduler fires cron trigger
                      or back to 'pending' for a temporary failure (up to 3 attempts), or 'failed'
           -> if cron === '0 0 * * *':
               tokenRefresh.refreshExpiringInstagramTokens()
-                  -> accounts.listAll()         [all users, Instagram accounts with a token]
+                  -> accounts.listByPlatform('instagram')   [all users, filtered in SQL]
                   -> for each expiring token: refreshLongLivedToken()
                   -> accounts.updateById(id, { accessToken, tokenExpiresAt })
 ```

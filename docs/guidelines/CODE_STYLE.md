@@ -80,6 +80,8 @@ The layers are in `docs/architecture/backend/REQUEST_PIPELINE.md`; the recipes a
 - Services never import `hono`. They receive repositories, `AppConfig` and the `RequestContext`, and log through `context.log` with a short lowercase message and fields: `context.log.warn('auth email skipped', { action, reason: 'limit reached' })`.
 - Every platform `fetch` gets `context.signal` (plus its own timeout when the caller has a budget).
 - Redis code catches every failure and falls back; nothing else swallows errors.
+- The schema changes only through a migration in `supabase/migrations/` (`npm run db:new <verb>_<object>`) with its reverse in `supabase/rollbacks/` under the same name, one table or one function per file; a repository updates `data` through a merge function with `db.rpc()`, never by reading and writing it back. See `docs/features/NEW_DATABASE_TABLE.md`.
+- New row ids come from `newRowId()` in `lib/ids.ts`; tests pin them with `mockRowIds()` from `tests/fixtures/rowIds.ts`.
 - No new runtime dependency in the Worker without approval: call HTTP APIs with `fetch` (Resend is called this way, not through its SDK).
 
 ## Errors and Messages

@@ -187,62 +187,22 @@ The repository is an npm workspaces monorepo: `backend/`, `frontend/` and `site/
 
 **3. Create the Supabase database tables**
 
-In your Supabase project, open the SQL editor and run the following:
+The schema is versioned in `supabase/migrations/` and applied with the Supabase CLI, which `npm install` installed. Link the CLI to your project once, then apply every migration:
 
-```sql
--- Accounts table
-create table accounts (
-  id text primary key,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  platform text not null,
-  data jsonb not null
-);
-
--- Settings table
-create table settings (
-  user_id uuid not null references auth.users(id) on delete cascade,
-  key text not null,
-  value jsonb,
-  primary key (user_id, key)
-);
-
--- Scheduled posts table
-create table scheduled_posts (
-  id text primary key,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  account_id text not null references accounts(id) on delete cascade,
-  status text not null default 'pending',
-  scheduled_at timestamptz not null,
-  claimed_at timestamptz,
-  attempts integer not null default 0,
-  data jsonb
-);
-create index scheduled_posts_user_id_idx on scheduled_posts (user_id);
-create index scheduled_posts_due_idx on scheduled_posts (status, scheduled_at);
-
--- Tracked content table
-create table tracked_posts (
-  id text primary key,
-  user_id uuid not null references auth.users(id) on delete cascade,
-  account_id text references accounts(id) on delete set null,
-  url text not null,
-  label text not null default '',
-  category text not null default '',
-  content_type text not null default 'reddit',
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  data jsonb
-);
-
--- Row level security: the backend uses the secret key, which bypasses it.
--- With no policies, the public publishable key cannot read or change any table.
-alter table accounts enable row level security;
-alter table settings enable row level security;
-alter table scheduled_posts enable row level security;
-alter table tracked_posts enable row level security;
+```bash
+npx supabase login                            # or set SUPABASE_ACCESS_TOKEN
+npx supabase link --project-ref <project-ref> # the id in your project's dashboard URL
+npm run db:check                              # lists the migrations it will apply
+npm run db:push                               # applies them
 ```
 
-If you created the tables from an earlier version of this README, run the `tracked_posts` and `alter table` statements above as well. If your `scheduled_posts` table has no `claimed_at` column, run the upgrade SQL in [the Supabase setup docs](https://twiligent.ujjwal.fyi/docs/self-host/supabase) before deploying this version: the schedulers need the `claimed_at` and `attempts` columns. Then, in Supabase Authentication, turn off **Confirm email** unless you have set up email verification codes ([docs](https://twiligent.ujjwal.fyi/docs/self-host/email-codes)), and turn off new signups once your team has accounts if the instance is private. The sign-in page's email field sends a sign-in code; without the email codes setup, Supabase sends its own rate-limited Magic Link email, which holds a link (add `{{ .Token }}` to its template in Authentication, Emails to show the code too).
+This creates the four tables Twiligent uses and closes them to the browser: row level security is on with no policies, and the roles behind the public publishable key have no grants. It also adds the value checks, the keys that tie posts to their owner's accounts, the `updated_at` triggers, the functions that merge row data in one statement, and the indexes. `npm run db:status` lists which migrations are applied.
+
+An instance created from an earlier version of this README, including one that ran the `claimed_at` and `attempts` upgrade SQL, runs the same commands before deploying this version. The first four migrations are baselines that are safe on existing tables and bring every earlier setup to the same schema. If a value check stops the push because of an old row, the error names the constraint; fix the row and run `npm run db:push` again.
+
+If you cannot use the CLI, open the SQL editor and run each file from `supabase/migrations/` in file name order, then apply later files the same way, since the CLI will not know they ran.
+
+Then, in Supabase Authentication, turn off **Confirm email** unless you have set up email verification codes ([docs](https://twiligent.ujjwal.fyi/docs/self-host/email-codes)), and turn off new signups once your team has accounts if the instance is private. The sign-in page's email field sends a sign-in code; without the email codes setup, Supabase sends its own rate-limited Magic Link email, which holds a link (add `{{ .Token }}` to its template in Authentication, Emails to show the code too).
 
 **4. Configure credentials**
 
@@ -273,12 +233,18 @@ Run every command from the repository root.
 | `npm test` | Runs the backend, frontend and site tests (Node's built-in test runner on `tests/**/*.test.ts`) |
 | `npm run lint` | Runs ESLint over the whole repository with the shared `eslint.config.mjs` |
 | `npm run format` | Applies Prettier (`.prettierrc.json`) to the whole repository |
+| `npm run db:new <name>` | Creates a migration file in `supabase/migrations/` (`supabase migration new`) |
+| `npm run db:status` | Lists the migrations and whether each is applied to the linked project (`supabase migration list`) |
+| `npm run db:check` | Shows what `db:push` would apply, without applying it (`supabase db push --dry-run`) |
+| `npm run db:push` | Applies pending migrations to the linked project (`supabase db push`) |
 
 Add a dependency to the workspace that uses it: `npm install <package> --workspace backend`, `--workspace frontend` or `--workspace site`. Only shared development tooling goes in the root `package.json`.
 
 The whole project is TypeScript in `strict` mode. Nothing is compiled ahead of time: Wrangler and Vite strip the types while bundling, and Node strips them when it runs the tests and `scripts/publish-scheduled.ts`. None of them checks types, so run `npm run typecheck` before you commit; CI runs it on every pull request and before every deploy. The API request and response types live once in `shared/types/` and are used by both the backend and the frontend. See `docs/guidelines/TYPESCRIPT.md`.
 
 Tests live outside the source folders, in `backend/tests/`, `frontend/tests/` and `site/tests/`, and mirror the source tree: the test for `backend/services/youtube/youtubeChannels.ts` is `backend/tests/services/youtube/youtubeChannels.test.ts`, and the test for `frontend/src/lib/accounts.ts` is `frontend/tests/lib/accounts.test.ts`. Backend fixtures and golden snapshots are in `backend/tests/fixtures/`.
+
+Database changes are migrations: `npm run db:new <name>` creates the file, its reverse goes in `supabase/rollbacks/` with the same name, and `npm run db:push` applies it before the code that needs it is merged. See `docs/features/NEW_DATABASE_TABLE.md` and `docs/workflows/DEPLOYMENT.md`.
 
 ESLint (with `typescript-eslint`), Prettier and EditorConfig are configured once at the root, and the shared compiler settings are in `tsconfig.base.json`. The existing code has not been reformatted in bulk, so run `npm run format` only when you mean to reformat.
 
@@ -474,6 +440,7 @@ twiligent/
 │   │   └── scheduled.ts             # Cron entry point: publish due posts, refresh Instagram tokens
 │   ├── lib/
 │   │   ├── errors.ts                # Typed errors; the error handler maps each code to a status
+│   │   ├── ids.ts                   # newRowId(): random UUIDs for new rows
 │   │   ├── logger.ts                # Structured JSON log lines
 │   │   ├── config.ts                # Cleaned Worker settings and allowed CORS origins
 │   │   ├── safeAccount.ts           # Strips tokens and cookies from accounts in responses
@@ -485,7 +452,7 @@ twiligent/
 │   │   ├── env.ts                   # Env: Worker secrets and bindings
 │   │   ├── app.ts                   # AppEnv, AppContext: Hono context typing
 │   │   └── context.ts               # RequestContext: request id, signal and logger for services
-│   ├── tests/                       # Node tests (*.test.ts) mirroring lib/, middleware/, repositories/, routes/, services/, validators/; fixtures/ holds fakes and golden snapshots
+│   ├── tests/                       # Node tests (*.test.ts) mirroring lib/, middleware/, repositories/, routes/, services/, validators/; database/ checks the migration files; fixtures/ holds fakes and golden snapshots
 │   ├── wrangler.toml                # Cloudflare Worker config (main = "server.ts") and cron triggers
 │   ├── tsconfig.json                # Worker type check (Workers types, no DOM or Node)
 │   └── package.json                 # Backend workspace: hono, supabase-js, upstash redis, wrangler, workers-types
@@ -531,6 +498,11 @@ twiligent/
 ├── shared/
 │   └── types/                       # API contract shared by backend and frontend (types only)
 │
+├── supabase/
+│   ├── migrations/                  # Versioned schema changes, one table or function per file, applied with npm run db:push
+│   ├── rollbacks/                   # The reverse of each migration, same file name, run by hand
+│   └── config.toml                  # Supabase CLI config (Postgres 17)
+│
 ├── scripts/
 │   ├── publish-scheduled.ts         # TypeScript run directly by Node in the GitHub Actions fallback (no dependencies)
 │   └── tsconfig.json                # Type check for scripts/ (Node types)
@@ -554,6 +526,7 @@ twiligent/
 | TypeScript | 6.0 | Strict type checking across the backend, frontend, public site, shared types, scripts and tests |
 | typescript-eslint | 8 | TypeScript lint rules |
 | Node.js | 22.18 or later | Runs the tests and the scheduled publisher by stripping types |
+| Supabase CLI (`supabase`) | 2 | Applies the database migrations (root dev dependency) |
 
 **Frontend**
 
