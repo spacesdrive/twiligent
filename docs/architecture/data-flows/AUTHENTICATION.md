@@ -13,6 +13,8 @@
 | `verify` | The code that confirms a password sign-up when **Confirm email** is on | `start` |
 | `forgot`, `reset` | The reset-by-code flow below | `password` |
 
+When the browser already holds a session, `/login` opens the dashboard (`/`) instead of the form, so the public site's Sign in and Get started buttons take a signed-in person straight in. `signInPageOutcome()` in `lib/signInPage.ts` decides it: the page renders nothing while the stored session loads, and a session created by a sign-in started on the page is left to that sign-in, so the password reset saves the new password before it navigates.
+
 `?mode=signup` (the public site's Get started buttons) keeps the `start` view but shows the headline "Create your Twiligent account" and Google's "Sign up with Google". The default ways to join are Google and an emailed code, both of which create the account on first use; the password sign-up stays behind the password view for instances that do not email codes.
 
 ## Login Flow (Emailed Code, the Default)
