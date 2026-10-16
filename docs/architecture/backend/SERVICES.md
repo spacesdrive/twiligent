@@ -42,10 +42,28 @@ A service receives only what it uses: repositories, the cleaned `AppConfig` from
 | `settings` | `settingsService.ts` | settings | `githubSettings`, `saveGithubSettings`, `serverKeyStatus` |
 | `instagramConnect` | `instagramConnectService.ts` | accounts | `authorizationUrl`, `userIdFromState`, `connect`, plus `configured` and `accountsPageUrl` |
 | `authEmail` | `authEmailService.ts` | email quota (Redis, the fail-fast client) | `send(hook, webhookId)` (Supabase Auth's Send Email hook; no user) |
+| `automations` | `automationService.ts` | accounts, automation rules, comments, account controls, audit | `overview`, `createRule`, `updateRule`, `duplicateRule`, `deleteRule`, `test`, `activity`, `stats`, `retry`, `setPaused`, `subscribe` |
+| `automationWebhook` | `automationWebhookService.ts` | automation rules, comments | `challengeAnswer` (Meta's verification), `ingest` (store a webhook's comments; no user) |
+| `automationProcessor` | `automationProcessor.ts` | comments | `run({ ids?, limit? })` (send due private replies; webhook, retry route and 5 minute cron) |
+| `retention` | `retentionService.ts` | comments, audit | `purge` (daily cron) |
 
-Every user-scoped method takes the verified `userId` as its first argument. Methods that need one of the user's records load it with a `...ForUser` repository method and throw `NotFoundError` when it is missing or on the wrong platform, so another user's record is never found. `scheduledPublisher` and `tokenRefresh` are the only services that use the cross-user repository methods (`listByPlatform`, `findById`, `updateById`, `listDue`, `listStale`, `claim`).
+Every user-scoped method takes the verified `userId` as its first argument. Methods that need one of the user's records load it with a `...ForUser` repository method and throw `NotFoundError` when it is missing or on the wrong platform, so another user's record is never found. `scheduledPublisher`, `tokenRefresh`, `automationWebhook`, `automationProcessor` and `retention` are the only services that use the cross-user repository methods (`listByPlatform`, `findById`, `updateById`, `listDue`, `listStale`, `claim`, and the automation queue, intake and retention methods).
+
+`accounts.remove` and `instagramConnect.connect` also record `account.removed`, `account.connected` and `account.reconnected` in `audit_events`. Connecting an Instagram account that is already connected renews its token in place and answers `reconnected`, so a revoked token is fixed without removing the account and its rules.
 
 New rows get their id from `newRowId()` in `backend/lib/ids.ts`, a UUID from `crypto.randomUUID()`, so an id cannot be worked out from another one. Tests pin the ids with `mockRowIds()` from `backend/tests/fixtures/rowIds.ts`.
+
+### Comment automation (`automationService.ts`, `automationWebhookService.ts`, `automationProcessor.ts`)
+
+The flow is in `docs/architecture/data-flows/AUTOMATION.md`. The rules the services apply are pure helpers in `backend/lib/`:
+
+| Helper | What it decides |
+|---|---|
+| `automationMatching.ts` | `matchedKeyword` (contains as whole words, or the exact comment; NFKC and case folding), `coversMedia`, `pickRule` (rules for the post first, then oldest) |
+| `automationDelivery.ts` | `classifySendError` (Graph codes to rate limited, blocked, transient, already replied, not authorized, not eligible, refused), `finishPlan` (what to record for each answer), `readinessPlan` and `releasePlan` (jobs that cannot send now), `retryDelayMs`, `cooldownFromUsage`, `composeReply`, `messageBytes`, and the constants: 1,000 byte messages, the 7 day window, the 20 minute claim lease, 5 tries |
+| `metaWebhookSignature.ts` | `verifyMetaSignature` and the constant-time `verifyTokenMatches` |
+
+`automationService` checks every account and item against the user before acting, refuses a reply and link over 1,000 bytes, records each change in `audit_events`, and subscribes an account to comment events when one of its rules is first turned on (a refusal is logged and the rule is still saved). `automationProcessor` returns at once when `AUTOMATION_PAUSED` is set, settles one job at a time, and logs a job's database failure and moves on, leaving the job to its lease.
 
 ### Accounts (`accountService.ts`, `accountFactory.ts`)
 
@@ -127,6 +145,7 @@ There is no barrel: services and tests import each module directly, and each mod
 | `instagramCaptions.ts` | Hashtag analysis and caption length correlation |
 | `instagramAnalytics.ts` | `computeInstagramAnalytics` orchestrator, the empty state and the engagement, views and ranking helpers |
 | `instagramPublishing.ts` | `buildMediaParams` (one helper per media type) and the Graph publishing calls: `createMediaContainer`, `fetchContainerStatus`, `publishMediaContainer`, `fetchPublishingLimit` |
+| `instagramMessaging.ts` | `sendPrivateReply(igUserId, token, commentId, text, signal)`: `POST /<ig-id>/messages` with the token as a Bearer header and a 10 second timeout. It answers a `SendResult` instead of throwing, because each Graph error code leads somewhere different, and never repeats the request; a timeout or lost connection is `ambiguous`, a fetch the runtime refused at the subrequest cap is `not_sent`. `subscribeToComments` calls `POST /<ig-id>/subscribed_apps?subscribed_fields=comments` and throws `UpstreamError` unless Instagram answers `success: true` |
 
 A Graph API error becomes an `UpstreamError` (502) with Instagram's message; a cancelled or timed out call becomes an `UpstreamTimeoutError` (504).
 

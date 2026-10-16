@@ -65,44 +65,31 @@ Add it to `Services` and `createServices()` in `backend/container.ts`:
 myPlatformTokenRefresh: createMyPlatformTokenRefreshService({ accounts, context }),
 ```
 
-### Step 2: Register the Trigger in `wrangler.toml`
+### Step 2: Choose a Run on an Existing Trigger
 
-```toml
-[triggers]
-crons = [
-    "*/15 * * * *",   # existing: scheduledPublisher.publishDue()
-    "0 0 * * *",      # existing: tokenRefresh.refreshExpiringInstagramTokens()
-    "30 3 * * *"      # new: myPlatformTokenRefresh.refreshTokens() (runs at 3:30 AM UTC daily)
-]
-```
-
-**Important:** every cron trigger calls the same `scheduled()` handler exported from `backend/server.ts`, which hands the expression to `runScheduledJob()` in `backend/jobs/scheduled.ts`. When you add a new cron string, you must also handle it there.
-
-### Step 3: Dispatch in `jobs/scheduled.ts`
+The Workers Free plan allows five cron triggers per Cloudflare account, and the project's account uses all five, so a new job runs on one of the Worker's two triggers (`*/5 * * * *` and `0 0 * * *`) at the times `cronPlan()` gives it, not on a new trigger. A daily job belongs on the daily trigger:
 
 ```ts
 // backend/jobs/scheduled.ts
-export const PUBLISH_DUE_POSTS_CRON = '*/15 * * * *';
-export const REFRESH_TOKENS_CRON = '0 0 * * *';
-export const REFRESH_MY_PLATFORM_TOKENS_CRON = '30 3 * * *';
-
-export async function runScheduledJob(cron: string, env: Env): Promise<void> {
-    const context = cronContext(cron);
-    const services = createServices({ supabase: getSupabase(env), redis: getRedis(env) }, readConfig(env), context);
-
-    if (cron === PUBLISH_DUE_POSTS_CRON) {
-        // ...
-    } else if (cron === REFRESH_TOKENS_CRON) {
-        await services.tokenRefresh.refreshExpiringInstagramTokens();
-    } else if (cron === REFRESH_MY_PLATFORM_TOKENS_CRON) {
-        await services.myPlatformTokenRefresh.refreshTokens();
-    } else {
-        context.log.warn('no job for this cron', { cron });
-    }
+} else if (plan === 'daily') {
+    await services.tokenRefresh.refreshExpiringInstagramTokens();
+    await services.retention.purge();
+    await services.myPlatformTokenRefresh.refreshTokens();
 }
 ```
 
-`event.cron` is the exact cron string from `wrangler.toml`, so the strings must match character for character. `server.ts` already wraps the job in `ctx.waitUntil()`, and the cron context gives it a `cron-` request id and a 14 minute deadline. Add a test in `backend/tests/services/` with fake repositories or the fake Supabase client (see `tokenRefreshService.test.ts`), and run `npm run typecheck` before deploying.
+A job that should run less often gets its own plan from the scheduled time, for example weekly on Mondays: `if (cron === DAILY_CRON) return new Date(scheduledTime).getUTCDay() === 1 ? 'daily_and_weekly' : 'daily';`. Keep each run under its 50 subrequests on the free plan; a job that needs many calls should spread them over several runs.
+
+### Step 3: Add a Trigger Only When There Is a Slot
+
+On an account with a free slot, or on Workers Paid (250 triggers), a job may get its own trigger instead:
+
+```toml
+[triggers]
+crons = ["*/5 * * * *", "0 0 * * *", "30 3 * * *"]
+```
+
+Every cron trigger calls the same `scheduled()` handler exported from `backend/server.ts`, which hands the expression to `runScheduledJob()`. Add a constant for the new expression in `backend/jobs/scheduled.ts`, return a new plan for it from `cronPlan()`, and run the job in that branch. `event.cron` is the exact cron string from `wrangler.toml`, so the strings must match character for character; `backend/tests/jobs/scheduled.test.ts` checks the list. `server.ts` already wraps the job in `ctx.waitUntil()`, and the cron context gives it a `cron-` request id and a 14 minute deadline. Add a test in `backend/tests/services/` with fake repositories or the fake Supabase client (see `tokenRefreshService.test.ts`), and run `npm run typecheck` before deploying.
 
 ### Step 4: Test Locally
 

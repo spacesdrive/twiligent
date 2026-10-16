@@ -1,0 +1,48 @@
+export const meta = { title: 'Reply to comments automatically', description: 'Send a private message to anyone who comments a keyword on your Instagram posts and reels.' }
+
+Automations send a private reply on Instagram when someone comments a keyword, such as GUIDE, on one of your posts or reels. A typical rule sends a link: "Here is your guide" and the address of the guide.
+
+<Callout type="note" title="Before you start">
+
+You need an Instagram Business or Creator account connected with Instagram sign-in, and the account must be public. Your administrator also turns on comment events for the server; until they do, the Automations page says comment events are not set up.
+
+</Callout>
+
+## Create a rule
+
+1. Open **Automations** in the sidebar and choose **New rule**.
+2. Choose the Instagram account, give the rule a name, and type its keywords, separated by commas.
+3. Choose how keywords match. **Anywhere in the comment, as a whole word** answers "send me the guide please" for GUIDE but not "guidelines". **The whole comment, nothing else** answers only a comment that is the keyword.
+4. Choose **Every post and reel**, or **Only the posts I choose** and pick them.
+5. Write the reply and, if you like, a link. The preview shows the message as it will arrive, and how much of Instagram's 1,000 byte limit it uses.
+6. Type a sample comment under **Test a comment** and choose **Test** to see whether it would match. Nothing is sent.
+7. Leave **Turn the rule on when saved** on, and choose **Create rule**.
+
+A comment gets one reply, from the first rule that matches it. Rules for chosen posts are checked before rules for every post. You can copy a rule (the copy starts off), change it, turn it off, or delete it.
+
+## What Instagram allows
+
+- One private reply per comment, sent within 7 days of the comment.
+- The person can only get more messages from you after they reply.
+- Up to 750 private replies an hour per account. Your administrator sets lower limits, and each rule can have its own.
+- A person gets at most a few replies a day from one account, however many keywords they comment.
+
+## Follow what happened
+
+The counts at the top cover the chosen period. **Activity** lists every comment received on an account with an active rule, newest first, with its status:
+
+| Status | Meaning |
+| --- | --- |
+| Accepted by Instagram | Instagram took the reply. Instagram does not report whether the person read it |
+| Waiting, Sending, Trying again | The reply is queued, going out, or waiting for a retry or a limit |
+| Held | Replies for that account are paused |
+| Needs review | The reply may or may not have gone out. Check the conversation on Instagram before you retry |
+| Failed | Instagram refused it; the details say why |
+| Skipped, Expired | The rule was turned off, the person reached the daily number of replies, or the 7 days ran out |
+| No match | No rule answers this comment; its words are not kept |
+
+Choose the retry button on a failed, skipped or review item to send it again. Instagram refuses a second private reply to the same comment, so a retry never messages someone twice.
+
+## Pause an account
+
+Turn off **Replies** next to an account to hold its replies, for example during a live event. Comments keep arriving and their replies go out when you turn it back on, if they are still within 7 days. If an account shows **Held**, Instagram refused its permission to send messages: connect it again on the **Accounts** page, then turn its replies back on.

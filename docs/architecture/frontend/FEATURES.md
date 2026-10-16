@@ -9,6 +9,8 @@ frontend/src/
 │   ├── MetricAreaChart.tsx                 <- Shared Recharts area chart for single-metric comparisons
 │   ├── ChartPanel.tsx                      <- Titled chart container with an empty state
 │   ├── ImageLightbox.tsx                   <- Thumbnail that opens the full image in a Dialog
+│   ├── AccountSelect.tsx                   <- Instagram account picker with avatars (Publish, Automations)
+│   ├── RowAction.tsx                       <- Icon button with a tooltip for table and list rows (Tracked content, Automations)
 │   └── DocsRedirect.tsx                    <- The /docs/* route: replaces the location with the same page on the public docs
 ├── lib/
 │   └── docs.ts                             <- DOCS_URL and docsUrl(path): links from the app to the public docs
@@ -47,7 +49,7 @@ frontend/src/
 │   │   └── tracked/
 │   │       ├── TrackedContent.tsx          <- Page: tracked Reddit posts and YouTube videos
 │   │       ├── TrackedMetrics.tsx, TrackedFilters.tsx, BulkCategoryBar.tsx, TrackedTable.tsx, TrackedRow.tsx, TrackedThumbnail.tsx
-│   │       ├── AddTrackedDialog.tsx, EditTrackedDialog.tsx, TrackedImageField.tsx, CategoryPicker.tsx, RowAction.tsx
+│   │       ├── AddTrackedDialog.tsx, EditTrackedDialog.tsx, TrackedImageField.tsx, CategoryPicker.tsx
 │   │       ├── useTrackedItems.ts, useTrackedFilters.ts, useTrackedSelection.ts, useBulkCategory.ts
 │   │       ├── useTrackedDelete.ts, useAddTracked.ts, useTrackedEditor.ts   <- Delete, add form, edit and image upload
 │   │       ├── trackedList.ts              <- Pure sort, filter, stats and form helpers (trackedList.test.ts)
@@ -73,7 +75,7 @@ frontend/src/
 │   │   ├── BulkFileList.tsx, BulkFileItem.tsx, BulkResults.tsx, BulkSettings.tsx, BulkScheduleFields.tsx
 │   │   ├── ScheduledPostsSection.tsx       <- Scheduled post table with filters and the overdue alert
 │   │   ├── ScheduledPostRow.tsx, ScheduledPostEditRow.tsx, ScheduledPostDialogs.tsx, OverdueAlert.tsx
-│   │   ├── AccountSelect.tsx, TypePicker.tsx, ScheduleToggle.tsx, ScheduleHint.tsx, IconInput.tsx, StatusBadge.tsx, NoInstagramAccount.tsx
+│   │   ├── TypePicker.tsx, ScheduleToggle.tsx, ScheduleHint.tsx, IconInput.tsx, StatusBadge.tsx, NoInstagramAccount.tsx
 │   │   ├── useSinglePostForm.ts, useSinglePostMedia.ts   <- Single post fields, file and cover
 │   │   ├── useSinglePublish.ts, usePublishProgress.ts    <- Single post publish or schedule run
 │   │   ├── useBulkSettings.ts, useBulkQueue.ts, useBulkPublish.ts   <- Bulk settings, file queue, upload loop
@@ -82,6 +84,15 @@ frontend/src/
 │   │   ├── singlePostFlow.ts               <- Single post Cloudinary upload, then publish or schedule
 │   │   ├── publishConstants.ts             <- Content types, statuses, intervals, caption limit
 │   │   └── publishHelpers.ts, scheduleHelpers.ts, queueHelpers.ts   <- Pure helpers with *.test.ts
+│   ├── automations/
+│   │   ├── Automations.tsx                 <- Page: server notices, counts, account controls, rules, activity, the rule dialog
+│   │   ├── AutomationNotices.tsx           <- Webhook not set up, or replies paused on the server
+│   │   ├── AutomationMetrics.tsx, AutomationAccounts.tsx, AutomationRules.tsx, AutomationActivity.tsx
+│   │   ├── RuleDialog.tsx, RuleMediaPicker.tsx, RulePreview.tsx   <- Rule form, post picker, reply preview and keyword test
+│   │   ├── useAutomations.ts               <- Overview and every rule and account action, with toasts
+│   │   ├── useAutomationActivity.ts        <- Filters, counts, activity pages and retry
+│   │   ├── useRuleForm.ts                  <- Rule dialog state, the account's posts, the test call
+│   │   └── automationData.ts               <- Pure status labels, filters, summary, form conversion and checks (automationData.test.ts)
 │   ├── settings/
 │   │   ├── Settings.tsx                    <- Page: loads server settings, then renders each section; keeps the #hash scroll
 │   │   ├── SettingsSection.tsx, AppearanceSection.tsx, PasswordSection.tsx, ServerKeysSection.tsx, SchedulingSection.tsx
@@ -210,6 +221,7 @@ Each page manages its own loading/data/error state. Pages do not write to `AppCo
 | Tracked Category | `/tracked-content/category/:name` | Detailed per-category analytics; YouTube section (views, likes, comments, bar chart, table) and Reddit section (score, ratio, comments, bar chart, table) rendered separately |
 | Video Explorer | `/videos/:id` | YouTube video library with search and sort |
 | Publish | `/upload` | Publish or schedule to Instagram, bulk upload, and the scheduled post queue |
+| Automations | `/automations` | Keyword rules that answer Instagram comments with a private reply, account pause and comment events, counts and the reply activity with retry (`docs/architecture/data-flows/AUTOMATION.md`) |
 | Settings | `/settings` | Theme, server key status, who sets up scheduling, the optional GitHub backup guide |
 | Documentation | `/docs/*` | Not a page in the app: `DocsRedirect` sends the visitor to the same path on the public docs at `https://twiligent.ujjwal.fyi/docs`. The Documentation item in the sidebar user menu and Open documentation in the command palette open the docs in a new tab |
 

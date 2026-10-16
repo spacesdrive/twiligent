@@ -65,6 +65,7 @@ The project's own public site and documentation are at [twiligent.ujjwal.fyi](ht
 | **Unified overview** | Cross-platform totals, audience comparison chart, audience share pie, leaderboards |
 | **Content explorers** | Sortable and filterable grids for all YouTube Videos, all YouTube Shorts, and all Instagram Reels and posts |
 | **Scheduled publishing** | Schedule Instagram photos, Reels, and Stories; a Cloudflare Worker cron publishes them every 15 minutes automatically |
+| **Comment-to-DM automation** | When someone comments a keyword such as GUIDE on your Instagram posts or Reels, Twiligent sends them your private reply and link within seconds, through Meta's comments webhook and official private replies; per-account, per-rule and per-person limits, retries and an activity log |
 | **Bulk upload** | Upload multiple files at once, assign captions individually or apply a shared caption, schedule them with configurable intervals |
 | **Cloudinary CDN** | Upload media directly from the dashboard; Instagram requires public URLs before publishing |
 | **Token auto-refresh** | Instagram long-lived tokens renew automatically every 24 hours via a daily Worker cron so analytics never break |
@@ -309,7 +310,11 @@ npx wrangler secret put SEND_EMAIL_HOOK_SECRET      # optional; email verificati
 npx wrangler secret put RESEND_API_KEY              # optional
 npx wrangler secret put EMAIL_FROM                  # optional
 npx wrangler secret put EMAIL_DAILY_LIMIT           # optional; defaults to 100
+npx wrangler secret put INSTAGRAM_WEBHOOK_VERIFY_TOKEN  # optional; comment-to-DM automation
+npx wrangler secret put META_APP_SECRET             # optional; a second key for webhook signatures
 ```
+
+Comment-to-DM automation needs `INSTAGRAM_WEBHOOK_VERIFY_TOKEN`, the webhook added in the Meta dashboard (`https://<worker>/api/webhooks/instagram`, field `comments`) and, for comments from people without a role on your app, a Live app with Advanced Access. Optional `AUTOMATION_*` settings change the reply limits or pause every reply. Setup steps are in the [docs](https://twiligent.ujjwal.fyi/docs/self-host/comment-automation).
 
 The four email secrets turn on the 6-digit codes that sign people in and confirm password sign-ups, sent free through Resend (100 a day). Supabase Auth hands each email to the Worker through its Send Email hook (`POST /api/auth/email-hook`); every code sign-in is one email. Past the daily limit, the sign-in page pauses email codes and points people to Google or their password. Setup steps are in the [docs](https://twiligent.ujjwal.fyi/docs/self-host/email-codes).
 
@@ -401,10 +406,10 @@ flowchart TD
 
 **Cron lifecycle:**
 
-1. The Cloudflare scheduler fires the Worker on a `*/15 * * * *` cron
+1. The Cloudflare scheduler fires the Worker every 5 minutes (`*/5 * * * *`); the runs on the quarter hour publish, the others send waiting comment replies
 2. The Worker queries `scheduled_posts` for rows with `status = 'pending'` and `scheduled_at <= now()`, and for `publishing` rows whose claim is older than 20 minutes
 3. Each post is claimed (`publishing`, with `claimed_at` and `attempts`), published to Instagram, then set to `published`, back to `pending` for a retry, or `failed`
-4. A separate `0 0 * * *` cron refreshes expiring Instagram access tokens across all users
+4. A separate `0 0 * * *` cron refreshes expiring Instagram access tokens across all users and deletes comment automation records past their retention
 
 ---
 
@@ -424,20 +429,21 @@ twiligent/
 │   ├── app.ts                       # createApp(): the ordered middleware pipeline and route groups
 │   ├── server.ts                    # Worker export (fetch + scheduled)
 │   ├── container.ts                 # Composition root: builds repositories and services per request
-│   ├── middleware/                  # cors, requestContext, securityHeaders, clients, rateLimit, auth, validate, errorHandler
+│   ├── middleware/                  # cors, requestContext, securityHeaders, clients, rateLimit, auth, authHook, metaWebhook, validate, errorHandler
 │   ├── routes/                      # One route table per feature (<feature>Routes.ts) and index.ts (public and protected)
 │   ├── controllers/                 # HTTP only: read input, call one service method, build the response
 │   ├── validators/                  # Request body and query parsers
 │   ├── services/
 │   │   ├── *Service.ts              # Feature services: business rules, no Hono types
 │   │   ├── scheduledPublisher.ts    # Publishes due scheduled posts (cron and manual trigger)
+│   │   ├── automationProcessor.ts   # Sends comment-to-DM replies within limits (webhook, retry and 5 minute cron)
 │   │   ├── youtube/                 # YouTube Data API v3 client and analytics
 │   │   ├── instagram/               # Instagram Graph API client, OAuth, publishing and analytics
 │   │   └── reddit/                  # Reddit public JSON API client and analytics
 │   ├── repositories/                # All Supabase queries and the Redis analytics cache
 │   ├── database/                    # Supabase and Upstash Redis client factories
 │   ├── jobs/
-│   │   └── scheduled.ts             # Cron entry point: publish due posts, refresh Instagram tokens
+│   │   └── scheduled.ts             # Cron entry point: due posts and the reply sweep every 5 minutes, token refresh and retention daily
 │   ├── lib/
 │   │   ├── errors.ts                # Typed errors; the error handler maps each code to a status
 │   │   ├── ids.ts                   # newRowId(): random UUIDs for new rows
@@ -447,6 +453,9 @@ twiligent/
 │   │   ├── oauthState.ts            # HMAC-signed Instagram OAuth state
 │   │   ├── analyticsMath.ts         # Shared analytics formulas
 │   │   ├── scheduledPublishing.ts   # Lease, retry and container rules shared with the GitHub Actions script
+│   │   ├── automationMatching.ts    # Keyword matching for comment automation rules
+│   │   ├── automationDelivery.ts    # What each Instagram answer means for a reply: retry, wait, stop or review
+│   │   ├── metaWebhookSignature.ts  # X-Hub-Signature-256 check for Meta's webhooks
 │   │   └── rateLimit/               # Rate limit rules, algorithms and Lua scripts
 │   ├── types/
 │   │   ├── env.ts                   # Env: Worker secrets and bindings
@@ -477,6 +486,7 @@ twiligent/
 │       │   │   └── reels/           # Instagram content explorer
 │       │   ├── accounts/            # Account management UI
 │       │   ├── publishing/          # Single and bulk upload with scheduler
+│       │   ├── automations/         # Comment-to-DM rules, account controls and reply activity
 │       │   └── settings/            # Theme, server status, setup guides
 │       ├── context/
 │       │   └── AppContext.tsx       # Global accounts and loading state

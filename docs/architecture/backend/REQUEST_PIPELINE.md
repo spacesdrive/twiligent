@@ -26,7 +26,8 @@ Request
   4. Clients           middleware/clients.ts         per-request Supabase and Redis clients
   5. Rate limit by IP  middleware/rateLimit.ts       before authentication, so bad tokens never reach Supabase Auth
      Public routes     routes/index.ts               /api/health, /api/auth/instagram/callback (with its own oauth limit),
-                                                     /api/auth/email-hook (middleware/authHook.ts checks Supabase's signature)
+                                                     /api/auth/email-hook (middleware/authHook.ts checks Supabase's signature),
+                                                     /api/webhooks/instagram (middleware/metaWebhook.ts checks Meta's signature)
   6. Authentication    middleware/auth.ts            verifies the JWT and sets userId; 401 otherwise
   7. Per-user limits   middleware/rateLimit.ts       user, quota and publish rules
   8. Route table       routes/<feature>Routes.ts
@@ -37,7 +38,7 @@ Request
 Response, or a thrown error -> middleware/errorHandler.ts
 ```
 
-Authorization is ownership: every user-scoped repository method filters by the verified user id, so another user's row is simply not found (404). There are no roles. The Send Email hook has no user: Supabase Auth calls it, and the webhook signature takes the place of the JWT.
+Authorization is ownership: every user-scoped repository method filters by the verified user id, so another user's row is simply not found (404). There are no roles. The Send Email hook and the Instagram webhook have no user: Supabase Auth and Meta call them, and their signatures take the place of the JWT. The Instagram webhook attaches each comment to the account its signed payload names.
 
 ## Request context
 
@@ -53,7 +54,7 @@ Services never see the Hono context. A controller hands them a `RequestContext` 
 
 The user id is passed to service methods explicitly (`accounts.refresh(userId, accountId)`), never read from the request body.
 
-Cron jobs build the same context in `jobs/scheduled.ts`, with a `cron-` request id and a 14 minute deadline. The Overview's background warming outlives the response, so it uses its own 25 second deadline instead of the request signal.
+Cron jobs build the same context in `jobs/scheduled.ts`, with a `cron-` request id and a 14 minute deadline. The Overview's background warming outlives the response, so it uses its own 25 second deadline instead of the request signal. `inBackground(c, label, work)` in `controllers/http.ts` does the same for any work after a response: it builds services with a fresh context (the request id, a 25 second deadline, a logger tagged with the label) and runs the work under `ctx.waitUntil()`, logging a failure because nobody is waiting for it. The Instagram webhook and the automation retry route use it to send replies.
 
 ## Composition
 

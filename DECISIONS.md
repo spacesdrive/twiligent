@@ -849,3 +849,32 @@ New row ids come from `crypto.randomUUID()` (`newRowId()` in `backend/lib/ids.ts
 **Trade-offs:**
 - A skipped platform package now costs one extra `npm ci` (about 20 seconds) instead of a failed run.
 - The audit is not clean while the shadcn chain waits for upstream; check it again when `braces` or `fast-glob` releases a fix.
+
+## ADR-040: Comment-to-DM automation with the database as the queue, on one shared cron trigger
+
+**Date:** 2026-10-16
+**Status:** Accepted
+
+**Decision:** Instagram comments arrive through Meta's `comments` webhook at a public, signed route on the existing Worker. Each comment is stored in `automation_comments` before the webhook answers, and a matched comment's row is the job that sends its private reply: the Worker sends it after the response with `ctx.waitUntil()`, and the existing five minute cron sweeps what is left. Claims, limits and outcomes are Postgres functions (`claim_automation_comments`, `reserve_automation_send`, `finish_automation_send`). The Worker's two cron triggers stay two: `*/15 * * * *` becomes `*/5 * * * *`, publishing keeps its quarter-hour runs and the other runs sweep the reply queue. Connecting an Instagram account again renews its token instead of answering "already added", and sensitive changes are recorded in a new `audit_events` table.
+
+**Context:** The owner asked for keyword-triggered private replies with production-grade reliability: no lost or duplicated replies, bounded retries, limits enforced across Worker instances, per-account isolation, and nothing left uncertain reported as delivered (#87). The Instagram account connection already used Instagram Login with `instagram_business_manage_comments` and `instagram_business_manage_messages`, so no new OAuth flow was needed. Meta's documentation (checked 2026-10-16) allows one private reply per comment within 7 days, 750 private replies an hour per account for posts and reels, text up to 1,000 bytes, and retries unacknowledged webhooks for 36 hours. The Cloudflare account runs on the Workers Free plan (10 ms CPU and 50 subrequests per invocation, `waitUntil` up to 30 seconds after a response) and its five cron triggers are all in use, three by other projects that the owner chose to keep.
+
+**Why the database and not Cloudflare Queues:** Queues has been on the free plan since February 2026 (10,000 operations a day, 24 hour retention). It was not chosen because the comment row is needed anyway, for deduplication, status and history, so a queue message would only repeat it; a queue still needs a database sweep for comments whose publish to the queue failed, so it would not remove the sweep; the free plan's 24 hour retention is shorter than the 7 day reply window; per-account fairness and the hourly limits need the database regardless; and every self-hoster would have to create and bind two queues. With the row as the job, acceptance is one insert, and there is no window in which an acknowledged comment exists only in a queue.
+
+**Why limits live in Postgres:** Redis is optional in this project and its fallback is per-isolate memory, which is not shared between Worker instances. One transaction under a transaction-scoped advisory lock counts the last hour's attempts per instance, user, account and rule and the last day's replies per person, so two Workers cannot both take the last slot. The serialisation is acceptable at the volumes one account can send (Instagram stops at 750 an hour).
+
+**Ambiguous sends:** a send whose answer is lost is marked `needs_review` and never resent automatically; a person retries after checking Instagram, and Instagram refuses a second private reply to one comment (10900), so a retry cannot message the person twice. A send the runtime refused at the subrequest cap is known not to have left and waits for the next run.
+
+**Alternatives considered:**
+- Cloudflare Queues for dispatch, as above.
+- A separate every-minute cron trigger for the sweep. The account has no free slot, and freeing one meant removing another project's job.
+- Sweeping inside the existing quarter-hour runs. Publishing and replies would share one run's 50 subrequests, and the fallback wait would be 15 minutes.
+- Matching at send time instead of at intake. Unmatched comments would have to be stored with their text; matching at intake keeps only matched comments' words.
+- Processing every comment inline in the webhook before answering. Meta wants a prompt answer, and a slow Instagram call would hold the acknowledgement.
+
+**Trade-offs:**
+- The quarter-hour runs now also decide whether to sweep, so publishing and the sweep share a trigger; `cronPlan()` and its test keep the split explicit.
+- The fallback for a reply that misses the immediate send is up to 5 minutes (10 around a run that published), not seconds.
+- `expires_at` is measured from Meta's notification time, which can be later than the comment on a redelivery; a late reply is refused by Instagram and recorded as failed.
+- Reconnecting renews the token in place, so the "already connected" refusal is gone; the audit table records each reconnect.
+- A burst over `AUTOMATION_BATCH_SIZE` in one notification waits for the sweep; the cap of 15 follows the free plan's subrequests and can be raised in the code on Workers Paid.

@@ -5,8 +5,8 @@
 Twiligent is a self-hosted social media analytics and publishing dashboard for creators and teams managing multiple YouTube channels, Instagram accounts and Reddit profiles. It is a private deployment product - the owner runs their own instance with their own API credentials. There is no SaaS model, no multi-tenancy abstraction, and no billing system.
 
 - Primary users: Small creator teams, agencies, individual power users
-- Primary value: Unified analytics and scheduled Instagram publishing across multiple accounts
-- Current platforms: YouTube (analytics only), Instagram (analytics and publishing), Reddit (analytics only)
+- Primary value: Unified analytics, scheduled Instagram publishing, and automatic private replies to Instagram comments across multiple accounts
+- Current platforms: YouTube (analytics only), Instagram (analytics, publishing and comment-to-DM automation), Reddit (analytics only)
 - Public site: https://twiligent.ujjwal.fyi is the project's own marketing site and documentation (the `site/` workspace); the app runs at https://app.twiligent.ujjwal.fyi. Self-hosters run only the app and the Worker; the site is not needed to run Twiligent
 - GitHub repository: https://github.com/spacesdrive/twiligent
 - Goals and priorities: `ROADMAP.md`
@@ -118,6 +118,7 @@ docs/
       PUBLISHING.md        Cloudinary to IG container to publish pipeline
       ANALYTICS.md         YouTube and Instagram analytics fetch and compute
       SCHEDULING.md        Scheduled post lifecycle, dual-scheduler design
+      AUTOMATION.md        Comment webhook, keyword rules, reply queue, limits and failure handling
   guidelines/
     CODE_STYLE.md          How code reads: the shapes to copy per layer, comments, naming, messages, tests, pre-commit checklist
     TYPESCRIPT.md          Compiler settings, typing rules, where types live, code style, comments policy
@@ -306,6 +307,7 @@ This is not optional for features that touch new UI patterns, new APIs, or new i
 - Instagram `accessToken` is always stripped by `safeAccount()` before any response
 - All user-scoped queries always append `.eq('user_id', userId)` where `userId` comes from a verified JWT, never from user input; only repository methods named `...ForUser` serve requests, and the unscoped ones are for cron jobs
 - `backend/.dev.vars` must never be committed
+- Public webhooks (`/api/auth/email-hook`, `/api/webhooks/instagram`) act only after their signature is verified, and a private reply whose outcome is unknown is never sent again without a person's decision
 
 **Keep each layer to its job.** Read `docs/architecture/backend/REQUEST_PIPELINE.md`. Middleware handles cross-cutting work in the order set in `backend/app.ts`. A route table only maps a path to middleware and a controller. A controller reads validated input (`backend/validators/`) and the user id, calls one service method and builds the response; it never queries the database or catches errors to format them. A service holds the rules, receives repositories and a `RequestContext`, never imports `hono`, and throws the typed errors in `lib/errors.ts`. Every Supabase query and every cache read or write lives in a repository in `backend/repositories/`, one method per query.
 

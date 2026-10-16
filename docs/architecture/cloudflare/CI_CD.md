@@ -52,7 +52,7 @@ A type error or failing test stops the run before the deploy step.
 - `CLOUDFLARE_API_TOKEN` - API token with Worker deploy permission
 - `CLOUDFLARE_ACCOUNT_ID` - your Cloudflare account ID
 
-The workflow does not set the Worker's own secrets (`SUPABASE_*`, `FRONTEND_URL`, the optional `ALLOWED_ORIGINS`, the optional email secrets `SEND_EMAIL_HOOK_SECRET`, `RESEND_API_KEY`, `EMAIL_FROM` and `EMAIL_DAILY_LIMIT`, and the rest). They are set once with `npx wrangler secret put` and kept across deploys; see `WORKERS.md`.
+The workflow does not set the Worker's own secrets (`SUPABASE_*`, `FRONTEND_URL`, the optional `ALLOWED_ORIGINS`, the optional email secrets `SEND_EMAIL_HOOK_SECRET`, `RESEND_API_KEY`, `EMAIL_FROM` and `EMAIL_DAILY_LIMIT`, the optional automation settings `INSTAGRAM_WEBHOOK_VERIFY_TOKEN`, `META_APP_SECRET` and `AUTOMATION_*`, and the rest). They are set once with `npx wrangler secret put` and kept across deploys; see `WORKERS.md`.
 
 **Does not** redeploy on frontend-only changes, documentation changes, or script changes.
 
@@ -126,7 +126,7 @@ The site needs no other secret: every value it shows is public and lives in the 
 - `SUPABASE_URL` - the Supabase project URL
 - `SUPABASE_SERVICE_KEY` - service-role key (needed to query all users' posts)
 
-**This is the GitHub Actions fallback for the Worker cron.** Both this workflow and the Worker cron (`*/15`) run the same publishing logic against the same Supabase table. A conditional claim with a 20 minute lease prevents double-publishing and lets a later run take over a post whose run died; see `docs/architecture/data-flows/SCHEDULING.md`.
+**This is the GitHub Actions fallback for the Worker cron.** Both this workflow and the Worker cron (`*/5`, publishing on the quarter hour) run the same publishing logic against the same Supabase table. A conditional claim with a 20 minute lease prevents double-publishing and lets a later run take over a post whose run died; see `docs/architecture/data-flows/SCHEDULING.md`.
 
 The script imports the shared rules from `backend/lib/scheduledPublishing.ts` by relative path, and the workflow runs whatever is on the default branch, so a change to that file reaches this workflow on its next run without a deploy.
 

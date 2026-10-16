@@ -135,13 +135,20 @@ npx wrangler secret put SEND_EMAIL_HOOK_SECRET      # optional; email verificati
 npx wrangler secret put RESEND_API_KEY              # optional
 npx wrangler secret put EMAIL_FROM                  # optional
 npx wrangler secret put EMAIL_DAILY_LIMIT           # optional; defaults to 100
+npx wrangler secret put INSTAGRAM_WEBHOOK_VERIFY_TOKEN  # optional; comment-to-DM automation (with INSTAGRAM_APP_SECRET)
+npx wrangler secret put META_APP_SECRET             # optional; a second key for webhook signatures
+npx wrangler secret put AUTOMATION_PAUSED           # optional; "true" holds every automated reply
 ```
+
+The `AUTOMATION_*` limits (`ACCOUNT_HOURLY_LIMIT`, `USER_HOURLY_LIMIT`, `GLOBAL_HOURLY_LIMIT`, `RECIPIENT_DAILY_LIMIT`, `BATCH_SIZE`) are optional too; `WORKERS.md` lists their defaults.
 
 Each command prompts for the value (no echo - the value is not shown).
 
 `FRONTEND_URL` is also the browser origin the API accepts: CORS answers only `FRONTEND_URL` and the origins listed in `ALLOWED_ORIGINS`. Set `ALLOWED_ORIGINS` when the app is served from more than one address (for example a custom domain and the `pages.dev` address), and update `FRONTEND_URL` when the domain changes, or the browser blocks every API call. Both name the app's address (`https://app.twiligent.ujjwal.fyi` for the project's own instance), not the public site, which makes no API calls.
 
 The email secrets only matter once Supabase's Send Email hook points at `https://<worker>/api/auth/email-hook`. Set them before turning the hook on: while the hook is on and the secrets are missing, every sign-up and password reset fails with a 503. The full setup (Resend domain, hook, **Confirm email**, rate limit) is in the public docs at `https://twiligent.ujjwal.fyi/docs/self-host/email-codes` (source: `site/content/docs/self-host/email-codes.mdx`). To check the hook after a deploy, sign up with an address you own and watch `npx wrangler tail` for the `auth email sent` line. Keep Resend's click and open tracking off: its tracking record once took the name `twiligent` and replaced the Pages record for `twiligent.ujjwal.fyi`, which took the site offline until the record was pointed back at `twiligent.pages.dev` (proxied) and the Pages custom domain was reactivated (#37). That name now belongs to the public site; the same care applies to the `app.twiligent` record.
+
+Comment-to-DM automation needs its migrations applied (`npm run db:push`), `INSTAGRAM_WEBHOOK_VERIFY_TOKEN` set, and the webhook added in the Meta dashboard with the callback `https://<worker>/api/webhooks/instagram` and the `comments` field. The app must be Live with Advanced Access for `comments` before comments from accounts without a role on the app arrive. The full setup is in the public docs at `https://twiligent.ujjwal.fyi/docs/self-host/comment-automation` (source: `site/content/docs/self-host/comment-automation.mdx`). To check it after a deploy, comment a keyword on a post of a connected account from another Instagram account and watch `npx wrangler tail` for `instagram webhook stored` and `automation reply settled`. To stop every reply at once, set `AUTOMATION_PAUSED` to `true`.
 
 ## Setting GitHub Actions Secrets
 

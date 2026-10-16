@@ -21,11 +21,11 @@ These statuses apply to every route below and are not repeated in the tables:
 | 400 | `VALIDATION_ERROR` | The body or query fails its validator, or a stored field the request needs (such as a token or uploads playlist) is missing |
 | 401 | `UNAUTHORIZED` | Protected route without a valid token |
 | 404 | `NOT_FOUND` | The account, post or item does not exist for this user, is on the wrong platform, or the route does not exist |
-| 409 | `CONFLICT` | The account is already added |
+| 409 | `CONFLICT` | The account is already added, or an automation item cannot be retried in its state |
 | 429 | `RATE_LIMITED` | A rate limit rule is exceeded; the body adds `retryAfter` (seconds). The email hook also answers 429 when the day's emails are used up |
 | 500 | `DATABASE_ERROR`, `INTERNAL_ERROR` | A Supabase query failed, or a bug |
 | 502 | `UPSTREAM_ERROR` | YouTube, Instagram or Reddit answered with an error; the platform's message is kept with URLs removed |
-| 503 | `NOT_CONFIGURED` | A Worker secret the route needs (YouTube key, Instagram app, Cloudinary, the email hook secrets) is not set |
+| 503 | `NOT_CONFIGURED` | A Worker secret the route needs (YouTube key, Instagram app, Cloudinary, the email hook secrets, the Instagram webhook secrets) is not set |
 | 504 | `UPSTREAM_TIMEOUT` | A platform call was cancelled or timed out |
 
 ## Public Routes
@@ -35,8 +35,20 @@ Registered on `publicRoutes` in `routes/index.ts`.
 | Method | Path | Controller | Purpose |
 |---|---|---|---|
 | GET | `/api/health` | `healthController.getHealth` | Returns `{ status: 'ok', timestamp }` |
-| GET | `/api/auth/instagram/callback` | `instagramAuthController.handleInstagramCallback` | OAuth code exchange; always redirects the browser back to the accounts page with `ig_connected=true` or `ig_error=<reason>`, never a JSON error |
+| GET | `/api/auth/instagram/callback` | `instagramAuthController.handleInstagramCallback` | OAuth code exchange; always redirects the browser back to the accounts page with `ig_connected=true`, `ig_connected=reconnected` (the account was already connected and its token was renewed) or `ig_error=<reason>`, never a JSON error |
 | POST | `/api/auth/email-hook` | `authHookController.sendAuthEmail` (`routes/authHookRoutes.ts`) | Supabase Auth's Send Email hook: sends sign-up, password reset and other auth emails through Resend. Answers `{}` |
+| GET | `/api/webhooks/instagram` | `instagramWebhookController.verifyInstagramWebhook` (`routes/instagramWebhookRoutes.ts`) | Meta's webhook check: answers the bare `hub.challenge` as text when `hub.mode=subscribe` and `hub.verify_token` matches `INSTAGRAM_WEBHOOK_VERIFY_TOKEN`; 403 otherwise, 503 when the token is not set |
+| POST | `/api/webhooks/instagram` | `instagramWebhookController.receiveInstagramWebhook` | Instagram comment notifications, signed by Meta. Stores them, answers `{ success: true }`, then sends the matched replies |
+
+### Instagram webhook
+
+Meta calls this route, not a browser:
+
+- **Authentication.** `middleware/metaWebhook.ts` (`verifyMetaWebhook`) checks `X-Hub-Signature-256` (HMAC-SHA256 of the raw body) against `INSTAGRAM_APP_SECRET`, or `META_APP_SECRET` when set. No JWT.
+- **Statuses.** `200` once every comment is stored (duplicates included). `400` for a body over 1 MB, malformed JSON, or an `object` other than `instagram`. `401` for a missing or wrong signature. `503` when no app secret is set. `500` when storing fails; Meta delivers the notification again for up to 36 hours.
+- **After the response.** The new matched comments are sent with `ctx.waitUntil()` and their own 25 second deadline; anything left is sent by the 5 minute cron.
+
+See `docs/architecture/data-flows/AUTOMATION.md`.
 
 ### Send Email hook
 
@@ -143,6 +155,24 @@ Controllers call `TrackedContentService`; link detection and the manual views an
 | PUT | `/api/tracked-content/:id` | `trackedContentRoutes.ts`, `trackedContentController.updateTrackedContent` | Update `label`, `category`, `accountId`, `manualViews`, or `imageUrl` for a tracked item. `manualViews` and `imageUrl` are Reddit-only (400 for YouTube) and `null` clears either. `manualViews` must be a whole number of 0 or more; `imageUrl` must parse as an `https:` URL. An `accountId` on a YouTube item is 400, and one that is not the user's Reddit account is 404 `Reddit account not found` |
 | DELETE | `/api/tracked-content/:id` | `trackedContentRoutes.ts`, `trackedContentController.deleteTrackedContent` | Remove a tracked item |
 | POST | `/api/tracked-content/:id/refresh` | `trackedContentRoutes.ts`, `trackedContentController.refreshTrackedContent` | Re-fetch live data from Reddit or YouTube API for one tracked item |
+
+### Automations
+
+Controllers call `AutomationService` (`services/automationService.ts`). Every route works only on the user's own rules, accounts and items; another user's answers 404.
+
+| Method | Path | File | Purpose |
+|---|---|---|---|
+| GET | `/api/automations` | `automationRoutes.ts`, `automationController.getAutomations` | The user's rules, each Instagram account's automation state (`paused`, `cooldownUntil`, `cooldownReason`, `subscribedAt`) and the server settings (`webhookConfigured`, `paused`, `limits`) |
+| POST | `/api/automations/rules` | `automationController.createAutomationRule` | Create a rule (`accountId`, `name`, `keywords`, `replyText`, optional `matchMode`, `caseSensitive`, `mediaIds`, `linkUrl`, `enabled`, `hourlyLimit`). 404 unless the account is one of the user's Instagram accounts; 400 when the reply and link pass 1,000 bytes. An enabled rule also subscribes the account to comment events |
+| PUT | `/api/automations/rules/:id` | `automationController.updateAutomationRule` | Change any of the fields sent; the account stays. Turning it on subscribes the account if needed |
+| DELETE | `/api/automations/rules/:id` | `automationController.deleteAutomationRule` | Delete a rule; its past comments keep their status |
+| POST | `/api/automations/rules/:id/duplicate` | `automationController.duplicateAutomationRule` | Copy a rule, turned off, named "(copy)" |
+| POST | `/api/automations/test` | `automationController.testAutomationRule` | Match a sample `comment` against a rule draft and return `{ matched, keyword, message, messageBytes, maxMessageBytes }`. Stores and sends nothing |
+| GET | `/api/automations/activity` | `automationController.listAutomationActivity` | Received comments, newest first. Query: `accountId`, `ruleId`, `status` (one or comma-separated), `from`, `to`, `before` (the previous page's `nextBefore`), `limit` (1 to 100, default 50) |
+| POST | `/api/automations/activity/:id/retry` | `automationController.retryAutomationActivity` | Put a failed, skipped or review item inside its 7 days back in the queue and start sending it; 409 for any other state |
+| GET | `/api/automations/stats` | `automationController.getAutomationStats` | Comment counts by status and request counts by outcome. Query: `accountId`, `ruleId`, `from`, `to` (default the last 7 days) |
+| PUT | `/api/automations/accounts/:accountId` | `automationController.updateAutomationAccount` | `{ paused }`: hold or release the account's replies; resuming also clears a hold the Worker set and sends held replies on the next run |
+| POST | `/api/automations/accounts/:accountId/subscribe` | `automationController.subscribeAutomationAccount` | Ask Instagram to send the account's comments to the webhook (`POST /<ig-id>/subscribed_apps?subscribed_fields=comments`); 502 when Instagram refuses. Covered by the quota rate limit |
 
 ### Settings
 | Method | Path | File | Purpose |

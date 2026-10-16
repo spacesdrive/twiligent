@@ -19,7 +19,7 @@ The repository has a third folder, `site`, which is the project's own public web
 | Supabase | Sign-in and the database | <Badge tone="required">Required</Badge> | Free plan is enough |
 | Cloudflare | Hosting the backend and frontend | <Badge tone="required">Required</Badge> | Free plan is enough |
 | Google Cloud | YouTube analytics | <Badge tone="optional">For YouTube</Badge> | Free, 10,000 quota units a day |
-| Meta for Developers | Connecting Instagram and publishing | <Badge tone="optional">For Instagram</Badge> | Free |
+| Meta for Developers | Connecting Instagram, publishing, and replying to comments | <Badge tone="optional">For Instagram</Badge> | Free; comment replies need App Review |
 | Cloudinary | Hosting media before Instagram fetches it | <Badge tone="optional">For publishing</Badge> | Free plan is enough |
 | Upstash | Caching to save API quota and speed pages up | <Badge tone="optional">Optional</Badge> | Free plan is enough |
 | Resend | Emailing sign-in and verification codes to members | <Badge tone="optional">Optional</Badge> | Free, 100 emails a day |
@@ -30,7 +30,7 @@ Reddit needs no key. Each member pastes their own Reddit session cookie when the
 ## Order of setup
 
 1. [Supabase](/docs/self-host/supabase): create the project, then create the tables with `npm run db:push`.
-2. [YouTube API key](/docs/self-host/youtube), [Instagram app](/docs/self-host/instagram), [Cloudinary](/docs/self-host/cloudinary) and optionally [Upstash Redis](/docs/self-host/redis), in any order.
+2. [YouTube API key](/docs/self-host/youtube), [Instagram app](/docs/self-host/instagram), [Cloudinary](/docs/self-host/cloudinary) and optionally [Upstash Redis](/docs/self-host/redis), in any order. [Comment automation](/docs/self-host/comment-automation) comes after the Instagram app and the backend are deployed.
 3. [Deploy the backend](/docs/self-host/deploy-backend) and give it every secret.
 4. [Deploy the frontend](/docs/self-host/deploy-frontend).
 5. Optionally connect [GitHub](/docs/self-host/github), then run through the [launch checklist](/docs/self-host/checklist).

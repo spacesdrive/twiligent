@@ -12,7 +12,7 @@ The app uses React Router v6 in `frontend/src/App.tsx`. The router uses `Browser
 | `/docs/*` | `components/DocsRedirect.tsx` | Public. The docs live on the public site; this route replaces the location with the same path and hash under `https://twiligent.ujjwal.fyi/docs` (`docsUrl()` in `lib/docs.ts`), so old links keep working |
 | `/` (layout) | `AppLayout` (inline) | Protected - redirects to `/login` if unauthenticated |
 | `/` (index) | `Overview.tsx` | Default page after login |
-| `/accounts` | `AccountManager.tsx` | Connect and remove accounts. `?add=1` opens the add flow; `?ig_connected` and `?ig_error` report the Instagram OAuth result |
+| `/accounts` | `AccountManager.tsx` | Connect and remove accounts. `?add=1` opens the add flow; `?ig_connected` (`true`, or `reconnected` when the account was already there) and `?ig_error` report the Instagram OAuth result |
 | `/channel/:id` | `ChannelAnalytics.tsx` | `:id` = account.id for YouTube accounts |
 | `/instagram/:id` | `InstagramAnalytics.tsx` | `:id` = account.id for Instagram accounts |
 | `/reddit/:id` | `RedditAnalytics.tsx` | `:id` = account.id for Reddit accounts |
@@ -25,6 +25,7 @@ The app uses React Router v6 in `frontend/src/App.tsx`. The router uses `Browser
 | `/shorts` | `ShortsExplorer.tsx` | Videos of 60 seconds or less |
 | `/reels` | `ReelsExplorer.tsx` | Instagram reels, posts and videos |
 | `/upload` | `UploadContent.tsx` | Publish and schedule to Instagram, plus the scheduled post queue |
+| `/automations` | `features/automations/Automations.tsx` | Comment-to-DM rules, account controls and reply activity; in the sidebar under Publishing |
 | `/settings` | `Settings.tsx` | User/platform settings |
 
 ## Auth Guard

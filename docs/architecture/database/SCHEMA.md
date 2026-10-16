@@ -2,11 +2,11 @@
 
 ## Overview
 
-Supabase (PostgreSQL 17) with four application tables. Every table has `user_id` (uuid) referencing `auth.users`, so rows belong to one user, and `created_at` and `updated_at` timestamps.
+Supabase (PostgreSQL 17) with nine application tables: the four original ones, the four comment automation tables (`automation_accounts`, `automation_rules`, `automation_comments`, `automation_attempts`) and `audit_events`. Every table has `user_id` (uuid) referencing `auth.users`, so rows belong to one user, and `created_at` and `updated_at` timestamps.
 
 The backend uses the **service-role key** and enforces isolation by always appending `.eq('user_id', userId)` on user-scoped queries. The `userId` comes exclusively from the verified JWT - never from request input.
 
-The cron jobs (`scheduledPublisher.publishDue()`, `tokenRefresh.refreshExpiringInstagramTokens()`) intentionally use the repository methods without a `userId` filter to operate across all users.
+The cron jobs (`scheduledPublisher.publishDue()`, `tokenRefresh.refreshExpiringInstagramTokens()`, the automation sweep and the retention purge) and the Instagram webhook intentionally use the repository methods without a `userId` filter to operate across all users.
 
 The browser roles (`anon`, `authenticated`) have no access to any table or function: row level security is on with no policies, and their grants are revoked. See `SECURITY.md`.
 
@@ -36,6 +36,9 @@ The first four files are baselines. Each recreates one table as it stood before 
 | 7 | `create_set_updated_at_function`, `add_<table>_updated_at` (three files), `add_tracked_posts_updated_at_trigger` | The `updated_at` column and its trigger on every table |
 | 8 | `create_merge_account_data_function`, `create_merge_scheduled_post_function`, `create_merge_tracked_post_data_function` | The merge functions below |
 | 9 | `index_accounts_list`, `index_scheduled_posts_list`, `index_scheduled_posts_schedulers`, `index_tracked_posts_list` | The indexes below |
+| 10 | `create_automation_accounts`, `create_automation_rules`, `create_automation_comments`, `create_automation_attempts`, `create_audit_events` | The automation and audit tables, each with its constraints, row level security, trigger and indexes |
+| 11 | `index_accounts_instagram_user` | The webhook's lookup of an account by its Instagram id |
+| 12 | `create_automation_rules_for_ig_user_function`, `create_claim_automation_comments_function`, `create_reserve_automation_send_function`, `create_finish_automation_send_function`, `create_automation_stats_function` | The automation functions below |
 
 To change the schema, follow `docs/features/NEW_DATABASE_TABLE.md` (Write the Migration). The commands are in `docs/workflows/DEPLOYMENT.md`.
 
@@ -286,6 +289,102 @@ Data is fetched on create and on manual refresh only. Not re-fetched on every GE
 
 ---
 
+## Comment Automation Tables
+
+The data flow is in `docs/architecture/data-flows/AUTOMATION.md`. Every table references its account with the composite `(account_id, user_id)` foreign key to `accounts (id, user_id)` on delete cascade, so removing an Instagram account removes its rules, controls, comments and attempts.
+
+### Table: `automation_accounts`
+
+One row per Instagram account whose automation was paused, subscribed or cooled down; an account without a row has the defaults.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `account_id` | text | primary key, part of the account foreign key | The Twiligent account |
+| `user_id` | uuid | not null, references `auth.users` on delete cascade | Owner |
+| `paused` | boolean | not null, default false | Replies are held while true |
+| `paused_reason` | text | at most 200 characters | Null when the owner paused it; set when the Worker held replies because Instagram refused the token |
+| `cooldown_until` | timestamptz | | No reply is sent before this time; set from Instagram rate limits and blocks, and only ever moved later |
+| `cooldown_reason` | text | at most 200 characters | Shown on the page |
+| `subscribed_at` | timestamptz | | When Instagram confirmed it sends this account's comments to the webhook |
+| `created_at`, `updated_at` | timestamptz | not null, default now() | |
+
+### Table: `automation_rules`
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | text | primary key | `newRowId()` |
+| `user_id`, `account_id` | uuid, text | not null, composite foreign key | Owner and Instagram account |
+| `name` | text | 1 to 80 characters | |
+| `keywords` | text[] | 1 to 10 items | Matched as whole words or as the whole comment |
+| `match_mode` | text | `contains` or `exact`, default `contains` | |
+| `case_sensitive` | boolean | not null, default false | |
+| `media_ids` | text[] | not null, default `{}`, at most 50 | Empty means every post and reel |
+| `reply_text` | text | 1 to 1,000 characters | The service also checks text plus link against Instagram's 1,000 bytes |
+| `link_url` | text | null or `^https://` | Added on its own line after the text |
+| `enabled` | boolean | not null, default false | |
+| `hourly_limit` | integer | null or 1 to 750 | Replies an hour for this rule |
+| `created_at`, `updated_at` | timestamptz | not null, default now() | |
+
+### Table: `automation_comments`
+
+Every comment the webhook delivered for an account with an enabled rule. A matched comment is also the job that sends its reply.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | text | primary key | `newRowId()` |
+| `user_id`, `account_id` | uuid, text | not null, composite foreign key | The member whose rule (or oldest account) owns it |
+| `rule_id` | text | references `automation_rules` on delete set null | The matched rule; null when none matched |
+| `ig_user_id` | text | not null | The professional account the webhook named |
+| `comment_id` | text | not null; `unique (ig_user_id, comment_id)` | Refuses a notification Meta delivered again |
+| `media_id`, `from_id` | text | | The post and the commenter's Instagram-scoped id |
+| `from_username`, `text` | text | `text` at most 2,200 characters | Kept only for matched comments |
+| `status` | text | not null, one of the values below | |
+| `status_reason`, `error_message` | text | `error_message` at most 500 characters | Why it is in its status, for people |
+| `attempts` | integer | not null, default 0, at least 0 | Requests sent to Instagram |
+| `next_attempt_at` | timestamptz | required while `queued` or `retry_wait` | When it is due |
+| `claimed_at` | timestamptz | | When a run took it; the lease is 20 minutes |
+| `message_id`, `accepted_at` | text, timestamptz | | Instagram's message id and when it accepted the reply |
+| `notified_at`, `expires_at` | timestamptz | not null | When Meta sent it, and 7 days later |
+| `created_at`, `updated_at` | timestamptz | not null, default now() | |
+
+`status` is one of `ignored`, `queued`, `processing`, `retry_wait`, `sending`, `accepted`, `failed`, `needs_review`, `skipped`, `expired`. The lifecycle is in `AUTOMATION.md`.
+
+### Table: `automation_attempts`
+
+One row per private reply request sent to Instagram. The hourly and daily limits count these rows.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | text | primary key | `newRowId()`, made before the reservation |
+| `user_id`, `account_id` | uuid, text | not null, composite foreign key | |
+| `automation_comment_id` | text | not null, references `automation_comments` on delete cascade | |
+| `rule_id` | text | references `automation_rules` on delete set null | |
+| `recipient_id` | text | | The commenter |
+| `outcome` | text | `sending`, `accepted`, `rejected`, `rate_limited`, `ambiguous` | `sending` while the request is out |
+| `error_code`, `error_subcode`, `http_status` | integer | | Instagram's answer |
+| `started_at`, `finished_at` | timestamptz | `started_at` not null, default now() | |
+| `created_at`, `updated_at` | timestamptz | not null, default now() | |
+
+---
+
+## Table: `audit_events`
+
+Who connected, reconnected or removed an account, changed a rule, paused or subscribed an account, or retried a reply. Rows reference only the user, so they outlive the account they describe.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | text | primary key | `newRowId()` |
+| `user_id` | uuid | not null, references `auth.users` on delete cascade | |
+| `action` | text | `^[a-z_]+\.[a-z_]+$` | `account.connected`, `account.reconnected`, `account.removed`, `automation_rule.created`, `.updated`, `.duplicated`, `.deleted`, `automation_account.paused`, `.resumed`, `.subscribed`, `automation_comment.retried` |
+| `subject_type` | text | `account`, `automation_rule`, `automation_account`, `automation_comment` | |
+| `subject_id` | text | | |
+| `details` | jsonb | not null, default `{}`, an object | Small facts such as the platform or the changed field names; never tokens or comment text |
+| `created_at`, `updated_at` | timestamptz | not null, default now() | |
+
+Retention: the daily cron deletes comments (and their attempts) older than 90 days and audit events older than 365 days.
+
+---
+
 ## Why CHECK Constraints, Not Enums
 
 Allowed values (`platform`, `status`, `content_type`) are CHECK constraints, not Postgres enum types. A value is added or removed by replacing one constraint in a migration; an enum value cannot be removed, and adding one needs care inside a transaction. The constraint still records the allowed values in the schema, and a wrong value fails at the write instead of breaking a later read.
@@ -303,6 +402,17 @@ An index exists because a frequent query filters or orders on its columns. Each 
 | `scheduled_posts_due_idx` | `scheduled_posts (scheduled_at) where status = 'pending'` | `listDue`: pending posts at or before now | Partial, so the growing published history is left out. Runs every 15 minutes from two schedulers |
 | `scheduled_posts_claimed_idx` | `scheduled_posts (claimed_at) where status = 'publishing'` | `listStale`: publishing posts whose claim is older than the lease | Partial, the same reason |
 | `tracked_posts_user_id_created_at_idx` | `tracked_posts (user_id, created_at desc)` | `trackedPosts.listForUser`: `where user_id = $1 order by created_at desc` | Replaces `tracked_posts_user_id_idx` |
+| `accounts_instagram_user_idx` | `accounts ((data ->> 'igUserId')) where platform = 'instagram'` | `automation_rules_for_ig_user`: the accounts a webhook names | An expression index, since the id lives in `data` |
+| `automation_rules_user_id_created_at_idx` | `automation_rules (user_id, created_at, id)` | `automationRules.listForUser` | |
+| `automation_rules_enabled_account_idx` | `automation_rules (account_id) where enabled` | The webhook's rule lookup | Partial: only enabled rules are read |
+| `automation_comments_due_idx` | `automation_comments (next_attempt_at) where status in ('queued', 'retry_wait')` | `claim_automation_comments`: due jobs | Partial, so the growing history is left out |
+| `automation_comments_claimed_idx` | `automation_comments (claimed_at) where status in ('processing', 'sending')` | The claim's lease recovery | Partial |
+| `automation_comments_user_id_created_at_idx` | `automation_comments (user_id, created_at desc)` | `automationComments.listForUser`, `automation_stats` | |
+| `automation_comments_rule_id_idx` | `automation_comments (rule_id) where rule_id is not null` | Removing a rule (set null), stats by rule | |
+| `automation_comments_created_at_idx` | `automation_comments (created_at)` | The daily retention delete | |
+| `automation_attempts_*_started_at_idx` | `(started_at)`, `(user_id, started_at)`, `(account_id, started_at)`, `(rule_id, started_at)`, `(account_id, recipient_id, started_at)` | `reserve_automation_send`: sends in the last hour per scope, and per recipient in the last day | One per limit the reservation counts |
+| `automation_attempts_comment_idx` | `automation_attempts (automation_comment_id)` | Finishing and recovering one comment's attempt; the cascade | |
+| `audit_events_user_id_created_at_idx`, `audit_events_created_at_idx` | `(user_id, created_at desc)`, `(created_at)` | Listing a user's events; the retention delete | |
 
 The primary keys serve every lookup by `id`, and `settings` is read through its `(user_id, key)` primary key.
 
@@ -328,6 +438,12 @@ Every function sets `search_path = ''` and names its tables with the schema. Fun
 | `merge_account_data(p_id, p_user_id, p_patch)` | sql | `data = data \|\| p_patch` on one account |
 | `merge_scheduled_post(p_id, p_user_id, p_patch, p_status, p_scheduled_at, p_only_status)` | sql | Merges `p_patch` into `data` and sets `status` and `scheduled_at` when given, in one UPDATE. `p_only_status` limits the update to a post still in that status |
 | `merge_tracked_post_data(p_id, p_user_id, p_patch)` | sql | `data = coalesce(data, '{}') \|\| p_patch` on one tracked item |
+
+| `automation_rules_for_ig_user(p_ig_user_id)` | sql, stable | The enabled rules of every connected account with that Instagram id, oldest account first |
+| `claim_automation_comments(p_limit, p_per_account, p_lease_seconds, p_ids)` | plpgsql | Marks `sending` jobs past the lease `needs_review` (their attempts `ambiguous`), then claims due jobs with `for update skip locked`, at most `p_per_account` per account, rechecking the status on each locked row. Returns each job with its rule's reply and the account's token |
+| `reserve_automation_send(p_id, p_attempt_id, p_global_limit, p_user_limit, p_account_limit, p_recipient_limit)` | plpgsql | Under `pg_advisory_xact_lock`, checks pause, cooldown, the recipient's daily replies and the hourly limits per rule, account, user and instance; on success moves the job to `sending` and inserts the attempt. Returns `outcome` and, for a full scope, `retry_at` |
+| `finish_automation_send(p_id, p_attempt_id, p_status, p_outcome, ...)` | plpgsql | Settles a `sending` job (or an interrupted one) and its attempt in one transaction, and sets the account's cooldown or hold when asked. Returns `false` and changes nothing when the job was already settled |
+| `automation_stats(p_user_id, p_from, p_to, p_account_id, p_rule_id)` | sql, stable | Comment counts by status and attempt counts by outcome for a period, as jsonb |
 
 The merge functions return `true` when a row matched and `null` when none did. A null `p_user_id` is the cron form, which reaches any user's row; `merge_tracked_post_data` always needs a user. The merge is one statement, so two writers at the same moment (a token refresh and an analytics refresh on one account) never put an old value back.
 
@@ -380,6 +496,28 @@ updateForUser(id, updates: TrackedPostUpdates, userId): Promise<void>
 patchDataForUser(id, patch: Record<string, unknown>, userId): Promise<void> // merge_tracked_post_data; NotFoundError when no row matched
 deleteForUser(id, userId): Promise<void>
 ```
+
+```ts
+// Automation rules (automationRuleRepository.ts)
+listForUser(userId) / findForUser(id, userId) / create(rule, userId) / updateForUser(id, changes, userId) / deleteForUser(id, userId)
+listEnabledForInstagramUser(igUserId): Promise<WebhookRule[]>         // webhook only - automation_rules_for_ig_user, every user
+
+// Automation comments (automationCommentRepository.ts)
+insertMany(comments): Promise<NewAutomationComment[]>                 // webhook only - upsert, ignoring duplicates; returns the new ones
+claim(options) / reserve(id, attemptId, limits) / finish(id, attemptId, plan) / release(id, plan)   // processor only, every user
+listForUser(userId, filter) / findForUser(id, userId) / requeueForUser(id, userId) / releaseHeldForAccount(accountId, userId)
+statsForUser(userId, filter): Promise<AutomationStats>                // automation_stats
+deleteCreatedBefore(cutoff): Promise<number>                          // daily retention only
+
+// Automation account controls (automationAccountRepository.ts)
+listForUser(userId) / findForUser(accountId, userId) / setPausedForUser(accountId, userId, paused) / markSubscribedForUser(accountId, userId)
+
+// Audit events (auditRepository.ts)
+recordForUser(userId, event): Promise<void>
+deleteCreatedBefore(cutoff): Promise<number>                          // daily retention only
+```
+
+Rules and controls are plain columns, so their repositories update columns directly; only `data` jsonb needs the merge functions.
 
 The Redis analytics cache has its own repository, `analyticsCacheRepository.ts`; see `docs/architecture/backend/CACHING.md`.
 
