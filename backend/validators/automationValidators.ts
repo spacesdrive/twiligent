@@ -23,7 +23,8 @@ const MAX_PAGE = 100;
 export interface ActivityQuery {
     accountId?: string;
     ruleId?: string;
-    status?: AutomationCommentStatus;
+    // one status or several, sent as a comma-separated list
+    statuses?: AutomationCommentStatus[];
     from?: string;
     to?: string;
     before?: string;
@@ -123,11 +124,12 @@ function isoDate(query: Fields, field: string): string | undefined {
     return new Date(time).toISOString();
 }
 
-function status(query: Fields): AutomationCommentStatus | undefined {
+function statuses(query: Fields): AutomationCommentStatus[] | undefined {
     const value = optionalString(query, 'status');
     if (!value) return undefined;
-    if (!STATUSES.includes(value as AutomationCommentStatus)) throw new ValidationError(`status must be one of ${STATUSES.join(', ')}`);
-    return value as AutomationCommentStatus;
+    const list = [...new Set(value.split(',').map(item => item.trim()).filter(Boolean))];
+    if (list.some(item => !STATUSES.includes(item as AutomationCommentStatus))) throw new ValidationError(`status must be one of ${STATUSES.join(', ')}`);
+    return list as AutomationCommentStatus[];
 }
 
 export function parseAutomationRule(body: Fields): AutomationRuleRequest {
@@ -186,7 +188,7 @@ export function parseActivityQuery(query: Fields): ActivityQuery {
     return {
         accountId: optionalString(query, 'accountId') || undefined,
         ruleId: optionalString(query, 'ruleId') || undefined,
-        status: status(query),
+        statuses: statuses(query),
         from: isoDate(query, 'from'),
         to: isoDate(query, 'to'),
         before: isoDate(query, 'before'),

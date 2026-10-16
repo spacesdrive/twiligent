@@ -151,7 +151,7 @@ describe('automation routes', () => {
     });
 
     test('activity lists only the user\'s comments, newest page first', async () => {
-        const { body } = await call(server(), 'GET', '/automations/activity?status=failed&limit=1');
+        const { body } = await call(server(), 'GET', '/automations/activity?status=failed,needs_review&limit=1');
         assert.deepEqual(body.items.map((item: { id: string }) => item.id), ['failed-mine']);
         assert.equal(body.nextBefore, '2026-10-15T00:00:00Z');
     });
