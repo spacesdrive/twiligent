@@ -1,3 +1,5 @@
+import { Megaphone, UserCheck } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -22,6 +24,7 @@ interface RuleDialogProps {
 const MATCH_MODES: { value: AutomationMatchMode; label: string }[] = [
   { value: 'contains', label: 'Anywhere in the comment, as a whole word' },
   { value: 'exact', label: 'The whole comment, nothing else' },
+  { value: 'any', label: 'Any comment, no keyword needed' },
 ];
 
 const SCOPES: { value: RuleScope; label: string }[] = [
@@ -36,7 +39,7 @@ export default function RuleDialog({ rule, igAccounts }: RuleDialogProps) {
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{rule.ruleId ? 'Edit rule' : 'New rule'}</DialogTitle>
-          <DialogDescription>When a comment contains a keyword, Twiligent sends its author this private reply on Instagram.</DialogDescription>
+          <DialogDescription>When a comment matches, Twiligent sends its author this private reply on Instagram.</DialogDescription>
         </DialogHeader>
         <form id="automation-rule-form" onSubmit={rule.handleSubmit} className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,0.9fr)]">
           <div className="flex flex-col gap-5">
@@ -45,9 +48,6 @@ export default function RuleDialog({ rule, igAccounts }: RuleDialogProps) {
             </FieldRow>
             <FieldRow label="Name" htmlFor="rule-name" hint="Only you see this.">
               <Input id="rule-name" value={form.name} maxLength={80} onChange={e => setField('name', e.target.value)} placeholder="Free guide" />
-            </FieldRow>
-            <FieldRow label="Keywords" htmlFor="rule-keywords" hint="Separate keywords with commas. Up to 10.">
-              <Input id="rule-keywords" value={form.keywordsText} onChange={e => setField('keywordsText', e.target.value)} placeholder="GUIDE, LINK" />
             </FieldRow>
             <FieldRow label="Match">
               <Select value={form.matchMode} onValueChange={value => value && setField('matchMode', value as AutomationMatchMode)} items={MATCH_MODES}>
@@ -58,11 +58,28 @@ export default function RuleDialog({ rule, igAccounts }: RuleDialogProps) {
                   </SelectGroup>
                 </SelectContent>
               </Select>
-              <label htmlFor="rule-case" className="flex items-center justify-between gap-3 text-small text-ink-muted">
-                Match the letter case exactly
-                <Switch id="rule-case" checked={form.caseSensitive} onCheckedChange={checked => setField('caseSensitive', checked)} />
-              </label>
+              {form.matchMode !== 'any' && (
+                <label htmlFor="rule-case" className="flex items-center justify-between gap-3 text-small text-ink-muted">
+                  Match the letter case exactly
+                  <Switch id="rule-case" checked={form.caseSensitive} onCheckedChange={checked => setField('caseSensitive', checked)} />
+                </label>
+              )}
             </FieldRow>
+            {form.matchMode === 'any' ? (
+              <Alert variant="warning">
+                <Megaphone />
+                <AlertTitle>Every comment gets this reply</AlertTitle>
+                <AlertDescription>
+                  Everyone who comments receives a private message, including people who did not ask for one, and a busy post reaches the
+                  hourly limits sooner. Each person gets at most a few replies a day. Aim the rule at chosen posts to keep it small. A
+                  keyword rule for the same post still answers first.
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <FieldRow label="Keywords" htmlFor="rule-keywords" hint="Separate keywords with commas. Up to 10.">
+                <Input id="rule-keywords" value={form.keywordsText} onChange={e => setField('keywordsText', e.target.value)} placeholder="GUIDE, LINK" />
+              </FieldRow>
+            )}
             <FieldRow label="Posts">
               <Select value={form.scope} onValueChange={value => value && setField('scope', value as RuleScope)} items={SCOPES}>
                 <SelectTrigger className="w-full" aria-label="Posts"><SelectValue /></SelectTrigger>
@@ -74,7 +91,28 @@ export default function RuleDialog({ rule, igAccounts }: RuleDialogProps) {
               </Select>
               {form.scope === 'selected' && <RuleMediaPicker media={rule.media} loading={rule.mediaLoading} selected={form.mediaIds} onToggle={rule.toggleMedia} />}
             </FieldRow>
-            <FieldRow label="Reply" htmlFor="rule-reply">
+            <div className="flex flex-col gap-3 rounded-card border border-line p-4">
+              <label htmlFor="rule-follow" className="flex items-center justify-between gap-3 text-sm font-medium text-ink">
+                <span className="flex items-center gap-2"><UserCheck className="size-4 text-ink-muted" />Send the link only to followers</span>
+                <Switch id="rule-follow" checked={form.requireFollow} onCheckedChange={checked => setField('requireFollow', checked)} />
+              </label>
+              <p className="text-small text-ink-muted">
+                Instagram tells Twiligent whether someone follows you only after they message you. With this on, the first reply asks them
+                to follow and reply. When they reply, Twiligent asks Instagram, then sends the reply and link to followers and a reminder to
+                everyone else, twice at most. If Instagram cannot say, nothing is sent.
+              </p>
+              {form.requireFollow && (
+                <>
+                  <FieldRow label="First reply" htmlFor="rule-follow-prompt" hint="Sent to everyone who comments. It has no link.">
+                    <Textarea id="rule-follow-prompt" rows={3} maxLength={1000} value={form.followPromptText} onChange={e => setField('followPromptText', e.target.value)} />
+                  </FieldRow>
+                  <FieldRow label="Reminder" htmlFor="rule-follow-reminder" hint="Sent when they reply but do not follow yet.">
+                    <Textarea id="rule-follow-reminder" rows={3} maxLength={1000} value={form.notFollowingText} onChange={e => setField('notFollowingText', e.target.value)} />
+                  </FieldRow>
+                </>
+              )}
+            </div>
+            <FieldRow label={form.requireFollow ? 'Reply for followers' : 'Reply'} htmlFor="rule-reply">
               <Textarea id="rule-reply" rows={4} maxLength={1000} value={form.replyText} onChange={e => setField('replyText', e.target.value)} placeholder="Here is your guide. Enjoy it." />
             </FieldRow>
             <FieldRow label="Link" htmlFor="rule-link" hint="Optional. Added on its own line after the reply. Must start with https://">

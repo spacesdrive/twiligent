@@ -9,7 +9,7 @@ import RowAction from '@/components/RowAction';
 import SurfaceBox from '@/components/SurfaceBox';
 import { EmptyState } from '@/components/StateViews';
 import { fmtDate, timeAgo } from '../../utils/formatters';
-import { ACTIVITY_FILTERS, STATS_PERIODS, canRetry, statusDisplay } from './automationData.ts';
+import { ACTIVITY_FILTERS, STATS_PERIODS, canRetry, gateDetail, statusDisplay } from './automationData.ts';
 import type { ActivityFilter, StatsPeriod } from './automationData.ts';
 import type { AutomationAccountState, AutomationActivityItem, AutomationRule } from '@shared/types/automation.ts';
 import type { AutomationActivityState } from './useAutomationActivity';
@@ -47,11 +47,15 @@ function ActivityRow({ item, now, ruleName, username, retrying, onRetry }: Activ
       <TableCell className="whitespace-nowrap text-small text-ink-muted">{ruleName ?? '-'}</TableCell>
       <TableCell><Badge variant={status.tone}>{status.label}</Badge></TableCell>
       <TableCell className="min-w-64 max-w-md whitespace-normal text-small text-ink-muted">
-        {item.errorMessage ?? waitingUntil ?? (item.acceptedAt ? `Accepted ${fmtDate(item.acceptedAt)}` : '-')}
+        {gateDetail(item) ?? item.errorMessage ?? waitingUntil ?? (item.acceptedAt ? `Accepted ${fmtDate(item.acceptedAt)}` : '-')}
       </TableCell>
       <TableCell className="text-right">
         {canRetry(item, now) && (
-          <RowAction label={item.status === 'needs_review' ? 'Send again after checking Instagram' : 'Try again'} onClick={() => onRetry(item)} disabled={retrying}>
+          <RowAction
+            label={item.status === 'needs_review' || item.followup?.status === 'needs_review' ? 'Send again after checking Instagram' : 'Try again'}
+            onClick={() => onRetry(item)}
+            disabled={retrying}
+          >
             {retrying ? <Spinner /> : <RotateCcw />}
           </RowAction>
         )}

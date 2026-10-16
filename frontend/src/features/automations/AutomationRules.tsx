@@ -37,7 +37,10 @@ function RuleRow({ rule, username, busy, automations, onEdit, onDelete }: RuleRo
           <span className="text-caption text-ink-faint">@{username}</span>
         </div>
         <div className="flex flex-wrap gap-1.5" aria-label="Keywords">
-          {rule.keywords.map(keyword => <Badge key={keyword} variant="secondary">{keyword}</Badge>)}
+          {rule.matchMode === 'any'
+            ? <Badge variant="warning">Any comment</Badge>
+            : rule.keywords.map(keyword => <Badge key={keyword} variant="secondary">{keyword}</Badge>)}
+          {rule.requireFollow && <Badge variant="info">Followers only</Badge>}
         </div>
         <p className="text-small text-ink-muted">
           {matchModeLabel(rule)} &middot; {ruleScopeLabel(rule)}{rule.hourlyLimit ? ` · at most ${rule.hourlyLimit} an hour` : ''}

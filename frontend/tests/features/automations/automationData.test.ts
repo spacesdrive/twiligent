@@ -1,8 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  ACTIVITY_FILTERS, MAX_MESSAGE_BYTES, accountStatus, canRetry, composeReply, emptyRuleForm, formToRequest, matchModeLabel, messageBytes,
-  parseKeywords, periodStart, ruleFormProblem, ruleScopeLabel, ruleToForm, statusDisplay, summarizeStats,
+  ACTIVITY_FILTERS, DEFAULT_FOLLOW_PROMPT, DEFAULT_NOT_FOLLOWING, MAX_MESSAGE_BYTES, accountStatus, canRetry, composeReply, emptyRuleForm,
+  formToRequest, gateDetail, matchModeLabel, messageBytes, needsMessageEvents, parseKeywords, periodStart, ruleFormProblem, ruleScopeLabel,
+  ruleToForm, statusDisplay, summarizeStats,
 } from '../../../src/features/automations/automationData.ts';
 import type { RuleForm } from '../../../src/features/automations/automationData.ts';
 import type { AutomationAccountState, AutomationRule } from '../../../../shared/types/automation.ts';
@@ -15,13 +16,27 @@ function form(overrides: Partial<RuleForm> = {}): RuleForm {
 
 const rule: AutomationRule = {
   id: 'r1', accountId: 'ig1', name: 'Guide', keywords: ['GUIDE', 'LINK'], matchMode: 'exact', caseSensitive: true, mediaIds: ['1', '2'],
-  replyText: 'Here it is', linkUrl: 'https://example.com', enabled: false, hourlyLimit: 30, createdAt: 'c', updatedAt: 'u',
+  replyText: 'Here it is', linkUrl: 'https://example.com', enabled: false, hourlyLimit: 30, requireFollow: true, followPromptText: 'Follow and reply',
+  notFollowingText: 'Follow first', createdAt: 'c', updatedAt: 'u',
 };
 
 test('accepted replies say Instagram accepted them, never that they were delivered or read', () => {
   assert.equal(statusDisplay({ status: 'accepted', statusReason: null }).label, 'Accepted by Instagram');
   assert.deepEqual(statusDisplay({ status: 'queued', statusReason: 'paused' }), { label: 'Held', tone: 'warning' });
   assert.equal(statusDisplay({ status: 'needs_review', statusReason: 'no_answer' }).label, 'Needs review');
+});
+
+test('an accepted followers-only reply shows where the wait for the person stands', () => {
+  const accepted = { status: 'accepted' as const, statusReason: null };
+  assert.equal(statusDisplay({ ...accepted, gateStatus: null }).label, 'Accepted by Instagram');
+  assert.deepEqual(statusDisplay({ ...accepted, gateStatus: 'awaiting_reply', followup: null }), { label: 'Asked to follow', tone: 'info' });
+  assert.deepEqual(statusDisplay({ ...accepted, gateStatus: 'completed' }), { label: 'Link sent', tone: 'success' });
+  assert.deepEqual(statusDisplay({ ...accepted, gateStatus: 'closed' }), { label: 'Not following', tone: 'secondary' });
+  const failed = { status: 'failed' as const, kind: null, errorMessage: 'Instagram did not say', createdAt: 'x' };
+  assert.deepEqual(statusDisplay({ ...accepted, gateStatus: 'awaiting_reply', followup: failed }), { label: 'Follow-up failed', tone: 'destructive' });
+  assert.equal(gateDetail({ status: 'accepted', gateStatus: 'awaiting_reply', followup: failed }), 'Instagram did not say');
+  assert.match(gateDetail({ status: 'accepted', gateStatus: 'awaiting_reply', followup: null })!, /link goes out if they do/);
+  assert.equal(gateDetail({ status: 'accepted', gateStatus: null, followup: null }), null);
 });
 
 test('the status filters cover every status exactly once, apart from All', () => {
@@ -49,6 +64,15 @@ test('rule summaries name the posts covered and how keywords match', () => {
   assert.equal(ruleScopeLabel({ mediaIds: ['1', '2'] }), '2 selected posts');
   assert.equal(matchModeLabel({ matchMode: 'contains', caseSensitive: false }), 'Anywhere in the comment');
   assert.equal(matchModeLabel({ matchMode: 'exact', caseSensitive: true }), 'Whole comment, same letter case');
+  assert.equal(matchModeLabel({ matchMode: 'any', caseSensitive: true }), 'Any comment');
+});
+
+test('a failed follow-up on an accepted reply can be retried inside the 24 hours after the person\'s answer', () => {
+  const future = new Date(NOW + 1000).toISOString();
+  const followup = (status: 'failed' | 'accepted', hoursAgo: number) => ({ status, kind: null, errorMessage: null, createdAt: new Date(NOW - hoursAgo * 3600_000).toISOString() });
+  assert.equal(canRetry({ status: 'accepted', expiresAt: future, followup: followup('failed', 1) }, NOW), true);
+  assert.equal(canRetry({ status: 'accepted', expiresAt: future, followup: followup('failed', 25) }, NOW), false);
+  assert.equal(canRetry({ status: 'accepted', expiresAt: future, followup: followup('accepted', 1) }, NOW), false);
 });
 
 test('only failed, skipped and review items inside the 7 days offer a retry', () => {
@@ -75,9 +99,27 @@ test('a rule turns into its form and back without losing a field', () => {
   assert.deepEqual(editing, {
     accountId: 'ig1', name: 'Guide', keywordsText: 'GUIDE, LINK', matchMode: 'exact', caseSensitive: true, scope: 'selected', mediaIds: ['1', '2'],
     replyText: 'Here it is', linkUrl: 'https://example.com', hourlyLimit: '30', enabled: false,
+    requireFollow: true, followPromptText: 'Follow and reply', notFollowingText: 'Follow first',
   });
-  const { accountId, name, keywords, matchMode, caseSensitive, mediaIds, replyText, linkUrl, enabled, hourlyLimit } = rule;
-  assert.deepEqual(formToRequest(editing), { accountId, name, keywords, matchMode, caseSensitive, mediaIds, replyText, linkUrl, enabled, hourlyLimit });
+  const { accountId, name, keywords, matchMode, caseSensitive, mediaIds, replyText, linkUrl, enabled, hourlyLimit, requireFollow, followPromptText, notFollowingText } = rule;
+  assert.deepEqual(formToRequest(editing), {
+    accountId, name, keywords, matchMode, caseSensitive, mediaIds, replyText, linkUrl, enabled, hourlyLimit, requireFollow, followPromptText, notFollowingText,
+  });
+});
+
+test('a new rule starts with editable followers-only messages, used only when the option is on', () => {
+  const fresh = emptyRuleForm('ig1');
+  assert.deepEqual([fresh.requireFollow, fresh.followPromptText, fresh.notFollowingText], [false, DEFAULT_FOLLOW_PROMPT, DEFAULT_NOT_FOLLOWING]);
+  assert.equal(ruleFormProblem(form({ requireFollow: true })), null);
+  assert.equal(ruleFormProblem(form({ requireFollow: true, followPromptText: ' ' })), 'Write the message that asks people to follow you and reply');
+  assert.equal(ruleFormProblem(form({ requireFollow: true, notFollowingText: '' })), 'Write the reminder for people who do not follow you yet');
+  assert.match(ruleFormProblem(form({ requireFollow: true, notFollowingText: 'é'.repeat(501) }))!, /followers-only message is 1002 bytes/);
+  assert.equal(ruleFormProblem(form({ requireFollow: false, followPromptText: '' })), null);
+});
+
+test('an any-comment rule needs no keywords and sends none, even ones typed before switching', () => {
+  assert.equal(ruleFormProblem(form({ matchMode: 'any', keywordsText: '' })), null);
+  assert.deepEqual(formToRequest(form({ matchMode: 'any', keywordsText: 'GUIDE' })).keywords, []);
 });
 
 test('a rule for every post sends no post ids, and blank optional fields become null', () => {
@@ -100,13 +142,27 @@ test('the form names the first thing to fix, in the order of the fields', () => 
   assert.match(ruleFormProblem(form({ replyText: 'é'.repeat(MAX_MESSAGE_BYTES / 2 + 1) }))!, /is 1002 bytes; Instagram accepts at most 1000/);
 });
 
-test('an account shows held, paused, cooling down, not receiving or receiving, in that order', () => {
+test('an account shows held, paused, cooling down, at its limit, not receiving, follow checks off or receiving, in that order', () => {
   const base: AutomationAccountState = {
     accountId: 'ig1', username: 'me', profilePictureUrl: '', paused: false, cooldownUntil: null, cooldownReason: null, subscribedAt: 'x',
+    limitedUntil: null, messagesSubscribed: false,
   };
   assert.equal(accountStatus({ ...base, paused: true, cooldownReason: 'Reconnect it' }, NOW).label, 'Held');
   assert.equal(accountStatus({ ...base, paused: true }, NOW).label, 'Paused');
   assert.equal(accountStatus({ ...base, cooldownUntil: new Date(NOW + 1000).toISOString() }, NOW).label, 'Cooling down');
+  assert.equal(accountStatus({ ...base, limitedUntil: new Date(NOW + 1000).toISOString() }, NOW).label, 'At its hourly limit');
   assert.equal(accountStatus({ ...base, cooldownUntil: new Date(NOW - 1000).toISOString() }, NOW).label, 'Receiving comments');
   assert.equal(accountStatus({ ...base, subscribedAt: null }, NOW).label, 'Not receiving comments');
+  assert.equal(accountStatus(base, NOW, true).label, 'Follow checks off');
+  assert.equal(accountStatus({ ...base, messagesSubscribed: true }, NOW, true).label, 'Receiving comments');
+});
+
+test('an account needs message events only while one of its followers-only rules is on', () => {
+  const rules = [
+    { accountId: 'ig1', enabled: true, requireFollow: false },
+    { accountId: 'ig1', enabled: false, requireFollow: true },
+    { accountId: 'ig2', enabled: true, requireFollow: true },
+  ];
+  assert.equal(needsMessageEvents(rules, 'ig1'), false);
+  assert.equal(needsMessageEvents(rules, 'ig2'), true);
 });

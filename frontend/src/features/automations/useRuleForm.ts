@@ -69,10 +69,11 @@ export function useRuleForm({ saveRule }: RuleFormDeps) {
     const request = formToRequest(form);
     setTesting(true);
     try {
-      // the test checks the keywords; which posts the rule covers applies to real comments only
+      // the test checks the match; which posts the rule covers applies to real comments only
       setTestResult(await api.testAutomationRule({
         keywords: request.keywords, matchMode: request.matchMode, caseSensitive: request.caseSensitive,
         replyText: request.replyText || TEST_REPLY_PLACEHOLDER, linkUrl: request.linkUrl, comment: sampleComment,
+        requireFollow: request.requireFollow, followPromptText: request.followPromptText,
       }));
     } catch (err) {
       showToast(`Couldn't test the rule. ${(err as Error).message}`, 'error');
