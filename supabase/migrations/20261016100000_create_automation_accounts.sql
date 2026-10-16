@@ -15,10 +15,3 @@ create table public.automation_accounts (
     constraint automation_accounts_paused_reason_check check (paused_reason is null or char_length(paused_reason) <= 200),
     constraint automation_accounts_cooldown_reason_check check (cooldown_reason is null or char_length(cooldown_reason) <= 200)
 );
-
--- only the Worker's service role reads the table; the anon key ships in every browser
-alter table public.automation_accounts enable row level security;
-revoke all on table public.automation_accounts from anon, authenticated;
-
-create trigger automation_accounts_set_updated_at before update on public.automation_accounts
-    for each row execute function public.set_updated_at();

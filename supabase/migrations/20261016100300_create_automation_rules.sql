@@ -26,15 +26,3 @@ create table public.automation_rules (
     -- Instagram allows 750 private replies an hour per account for posts and reels
     constraint automation_rules_hourly_limit_check check (hourly_limit is null or hourly_limit between 1 and 750)
 );
-
--- only the Worker's service role reads the table; the anon key ships in every browser
-alter table public.automation_rules enable row level security;
-revoke all on table public.automation_rules from anon, authenticated;
-
-create trigger automation_rules_set_updated_at before update on public.automation_rules
-    for each row execute function public.set_updated_at();
-
--- automationRules.listForUser: where user_id = $1 order by created_at, id
-create index automation_rules_user_id_created_at_idx on public.automation_rules (user_id, created_at, id);
--- the webhook reads only the enabled rules of an account
-create index automation_rules_enabled_account_idx on public.automation_rules (account_id) where enabled;
