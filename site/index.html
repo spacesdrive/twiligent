@@ -3,6 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // the app leaves this cookie on the shared domain while someone is signed in (frontend/src/lib/signedInCookie.ts),
+      // so the home page opens the dashboard before it paints; docs and other pages stay readable
+      if (location.pathname === '/' && /(?:^|;\s*)twiligent_signed_in=1(?:;|$)/.test(document.cookie)) {
+        location.replace('https://app.twiligent.ujjwal.fyi/');
+      }
+    </script>
     <title>Twiligent: every channel, folded into one clear picture</title>
     <meta name="description" content="Twiligent puts your YouTube, Instagram and Reddit numbers side by side, publishes and schedules your Instagram posts, and runs on accounts you own." />
     <link rel="icon" href="/brand/twiligent-favicon.svg" type="image/svg+xml" />
