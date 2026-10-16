@@ -17,7 +17,11 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "typecheck": "npm run typecheck --workspace backend && npm run typecheck --workspace frontend && npm run typecheck --workspace site && tsc -p scripts/tsconfig.json",
-    "dev:site": "npm run dev --workspace site"
+    "dev:site": "npm run dev --workspace site",
+    "db:new": "supabase migration new",
+    "db:status": "supabase migration list",
+    "db:check": "supabase db push --dry-run",
+    "db:push": "supabase db push"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
@@ -28,6 +32,7 @@
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
     "prettier": "^3.9.9",
+    "supabase": "^2.121.0",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.71.2"
   },
