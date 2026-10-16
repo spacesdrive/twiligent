@@ -1,6 +1,6 @@
 import { Suspense, lazy, useState } from 'react';
 import type { FormEvent } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ArrowLeft, MailWarning } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +11,7 @@ import { GOOGLE_CLIENT_ID } from '@/lib/googleIdentity';
 import { emailErrorNotice, isExistingAccount, passwordErrorMessage } from '@/lib/authErrors';
 import type { AuthErrorLike } from '@/lib/authErrors';
 import { PASSWORD_MIN_LENGTH, newPasswordProblem } from '@/lib/passwords';
+import { signInPageOutcome } from '@/lib/signInPage';
 import { FieldRow } from '@/components/DetailPanel';
 import { useCountdown } from './useCountdown';
 import LoginEmailStart from './LoginEmailStart';
@@ -64,7 +65,7 @@ const QUIET_LINK =
 // then an email that receives a sign-in code, with the password behind a quiet link
 export default function Login() {
   const {
-    signIn, signUp, verifySignUpCode, resendSignUpCode, sendSignInCode, verifySignInCode, sendPasswordReset, verifyPasswordResetCode,
+    session, signIn, signUp, verifySignUpCode, resendSignUpCode, sendSignInCode, verifySignInCode, sendPasswordReset, verifyPasswordResetCode,
     updatePassword, signInWithGoogle,
   } = useAuth();
   const navigate = useNavigate();
@@ -79,6 +80,7 @@ export default function Login() {
   const [resending, setResending] = useState(false);
   const [resendIn, startResendWait] = useCountdown();
   const [emailLimitMessage, setEmailLimitMessage] = useState<string | null>(null);
+  const [signingIn, setSigningIn] = useState(false);
   const copy = LOGIN_COPY[view];
   const title = view === 'start' && signingUp ? SIGN_UP_TITLE : copy.title;
   const back = BACK_TO[view];
@@ -191,6 +193,7 @@ export default function Login() {
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    setSigningIn(true);
     setLoading(true);
     try {
       await SUBMIT[view]();
@@ -222,6 +225,7 @@ export default function Login() {
   }
 
   async function handleGoogleCredential(idToken: string, nonce: string) {
+    setSigningIn(true);
     setLoading(true);
     try {
       const { error } = await signInWithGoogle(idToken, nonce);
@@ -233,6 +237,11 @@ export default function Login() {
       setLoading(false);
     }
   }
+
+  // the public site's Sign in and Get started buttons land here, so a stored session opens the dashboard
+  const outcome = signInPageOutcome(session === undefined ? undefined : !!session, signingIn);
+  if (outcome === 'wait') return null;
+  if (outcome === 'dashboard') return <Navigate to="/" replace />;
 
   return (
     <div className="relative min-h-svh bg-surface">
