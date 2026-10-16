@@ -1,11 +1,10 @@
 import { buildGraphUrl, igPost } from './instagramApi.ts';
 import { UpstreamError, isAbortError } from '../../lib/errors.ts';
 import { redactUrls } from '../../lib/redact.ts';
+import { SEND_TIMEOUT_MS } from '../../lib/automationDelivery.ts';
 import type { SendResult } from '../../lib/automationDelivery.ts';
 import type { InstagramApiErrorBody } from './instagramApi.ts';
 
-// a webhook's background work has 30 seconds in all, so one send may take a third of it
-const SEND_TIMEOUT_MS = 10_000;
 // the Workers runtime refuses a fetch past the run's subrequest allowance before anything leaves
 const SUBREQUEST_LIMIT = /too many subrequests/i;
 // the webhook fields the automation needs; Instagram sends every field the app subscribes to in the Meta dashboard
@@ -21,16 +20,16 @@ interface SubscribeBody {
 }
 
 // answers instead of throwing, because each failure needs its code to decide between retrying, waiting and stopping;
-// the request is never repeated here, since a repeat after a lost answer could message the person twice
-export async function sendPrivateReply(igUserId: string, accessToken: string, commentId: string, text: string, signal?: AbortSignal): Promise<SendResult> {
-    const timeout = AbortSignal.timeout(SEND_TIMEOUT_MS);
+// the request is never repeated here, since a repeat after a lost answer could message the person twice. Only its own
+// timeout can cut it off: the caller starts a send only with that much time left, so a run's deadline never makes one ambiguous
+export async function sendPrivateReply(igUserId: string, accessToken: string, commentId: string, text: string): Promise<SendResult> {
     let response: Response;
     try {
         response = await fetch(buildGraphUrl(`/${igUserId}/messages`).toString(), {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
             body: JSON.stringify({ recipient: { comment_id: commentId }, message: { text } }),
-            signal: signal ? AbortSignal.any([signal, timeout]) : timeout,
+            signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
         });
     } catch (err) {
         if (SUBREQUEST_LIMIT.test((err as Error).message ?? '')) return { kind: 'not_sent', message: 'this run reached its request limit' };

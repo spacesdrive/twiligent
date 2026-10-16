@@ -12,6 +12,21 @@ export const CLAIM_LEASE_SECONDS = 20 * 60;
 // five tries over about half an hour give a passing Instagram problem time to clear without retrying forever
 export const MAX_SEND_ATTEMPTS = 5;
 
+// a webhook's background work has 30 seconds in all, so one send may take a third of it
+export const SEND_TIMEOUT_MS = 10_000;
+
+// the Workers Free plan allows 50 subrequests per invocation; a run that hits the cap cannot even record what happened
+export const FREE_PLAN_SUBREQUESTS = 50;
+// a request's own middleware and queries (authentication, rate limits, its writes) stay under this before background work starts
+export const REQUEST_SUBREQUESTS = 10;
+// reserve, send and finish; a reply stopped before sending costs one release instead
+export const SUBREQUESTS_PER_REPLY = 3;
+// background work after a response gets 25 seconds; a send starts only with its whole timeout and a margin left
+export const BACKGROUND_RUN_MS = 20_000;
+
+// new and retried jobs are due a little in the past, so a database clock slightly behind the Worker's still sees them as due
+export const DUE_NOW_SKEW_MS = 30_000;
+
 // a reply held by a pause is looked at again on a later sweep, not every five minutes for a week
 const HOLD_RECHECK_MS = 15 * 60 * 1000;
 

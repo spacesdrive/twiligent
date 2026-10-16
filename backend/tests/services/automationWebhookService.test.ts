@@ -57,6 +57,7 @@ describe('instagram webhook intake', () => {
         ]));
         assert.equal(result.stored, 3);
         assert.equal(result.queuedIds.length, 3);
+        assert.equal(result.subrequests, 2);
         assert.deepEqual(queue.rows.map(row => [row.commentId, row.ruleId, row.status]), [['1', 'reel-a', 'queued'], ['2', 'reel-b', 'queued'], ['3', 'any', 'queued']]);
         assert.equal(inserted[0][0].expiresAt, new Date(SENT_AT * 1000 + 7 * 24 * 60 * 60 * 1000).toISOString());
         assert.equal(inserted[0][0].text, 'GUIDE please');
@@ -86,7 +87,7 @@ describe('instagram webhook intake', () => {
         const body = commentNotification('1784', SENT_AT, [{ id: '1', text: 'GUIDE', mediaId: 'A' }, { id: '2', text: 'GUIDE', mediaId: 'A' }]);
         await ingest(queue, body);
         const again = await ingest(queue, body);
-        assert.deepEqual(again, { stored: 0, duplicates: 2, queuedIds: [] });
+        assert.deepEqual(again, { stored: 0, duplicates: 2, queuedIds: [], subrequests: 2 });
         assert.equal(queue.rows.length, 2);
     });
 
@@ -100,7 +101,7 @@ describe('instagram webhook intake', () => {
     test('comments for an account with no enabled rule are not kept at all', async () => {
         const queue = fakeAutomationQueue();
         const result = await ingest(queue, commentNotification('5555', SENT_AT, [{ id: '1', text: 'GUIDE' }]));
-        assert.deepEqual(result, { stored: 0, duplicates: 0, queuedIds: [] });
+        assert.deepEqual(result, { stored: 0, duplicates: 0, queuedIds: [], subrequests: 1 });
         assert.deepEqual(inserted, [[]]);
     });
 

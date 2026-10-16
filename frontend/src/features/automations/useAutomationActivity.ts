@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { api } from '../../services/api';
 import { ACTIVITY_FILTERS, periodStart, summarizeStats } from './automationData.ts';
@@ -36,9 +36,13 @@ export function useAutomationActivity() {
   const [retryingId, setRetryingId] = useState<string | null>(null);
   // the time the list was read, so which items can be retried is decided against a fixed moment during render
   const [checkedAt, setCheckedAt] = useState(() => Date.now());
+  // each load for new filters gets a number; an answer for an older one arrives too late and is dropped
+  const generation = useRef(0);
 
   const load = useCallback(async () => {
+    const current = ++generation.current;
     setLoading(true);
+    setNextBefore(null);
     try {
       const statsQuery = query({ ...filters, filter: 'all' });
       statsQuery.delete('status');
@@ -47,14 +51,15 @@ export function useAutomationActivity() {
         api.getAutomationActivity(query(filters)),
         api.getAutomationStats(statsQuery),
       ]);
+      if (current !== generation.current) return;
       setItems(page.items);
       setNextBefore(page.nextBefore);
       setSummary(summarizeStats(stats.stats));
       setCheckedAt(Date.now());
     } catch (err) {
-      showToast(`Couldn't load the reply activity. ${(err as Error).message}`, 'error');
+      if (current === generation.current) showToast(`Couldn't load the reply activity. ${(err as Error).message}`, 'error');
     } finally {
-      setLoading(false);
+      if (current === generation.current) setLoading(false);
     }
   }, [filters, showToast]);
 
@@ -62,10 +67,12 @@ export function useAutomationActivity() {
 
   const loadMore = useCallback(async () => {
     if (!nextBefore) return;
+    const current = generation.current;
     setLoadingMore(true);
     try {
       const page = await api.getAutomationActivity(query(filters, nextBefore));
-      setItems(current => [...current, ...page.items]);
+      if (current !== generation.current) return;
+      setItems(existing => [...existing, ...page.items]);
       setNextBefore(page.nextBefore);
     } catch (err) {
       showToast(`Couldn't load more activity. ${(err as Error).message}`, 'error');

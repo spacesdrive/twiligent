@@ -1,5 +1,5 @@
 import { pickRule } from '../lib/automationMatching.ts';
-import { expiresAtFor } from '../lib/automationDelivery.ts';
+import { DUE_NOW_SKEW_MS, expiresAtFor } from '../lib/automationDelivery.ts';
 import { ForbiddenError, NotConfiguredError } from '../lib/errors.ts';
 import { newRowId } from '../lib/ids.ts';
 import { verifyTokenMatches } from '../lib/metaWebhookSignature.ts';
@@ -22,6 +22,8 @@ export interface IngestResult {
     duplicates: number;
     // the new comments that matched a rule, for the request to start sending right away
     queuedIds: string[];
+    // database calls the intake made, which count against the request's subrequests
+    subrequests: number;
 }
 
 export interface AutomationWebhookService {
@@ -45,7 +47,7 @@ function newComment(event: InstagramCommentEvent, owner: WebhookRule, fields: Pi
         // the words and the author are kept only for comments a rule answers
         fromUsername: queued ? event.fromUsername : null,
         text: queued ? event.text?.slice(0, MAX_TEXT) ?? null : null,
-        nextAttemptAt: queued ? new Date().toISOString() : null,
+        nextAttemptAt: queued ? new Date(Date.now() - DUE_NOW_SKEW_MS).toISOString() : null,
         notifiedAt: new Date(event.notifiedAt).toISOString(),
         expiresAt: expiresAtFor(new Date(event.notifiedAt)),
         ...fields,
@@ -81,8 +83,10 @@ export function createAutomationWebhookService({ rules, comments, automation, co
             for (const event of webhook.comments) byAccount.set(event.igUserId, [...(byAccount.get(event.igUserId) ?? []), event]);
 
             const rows: NewAutomationComment[] = [];
+            let subrequests = 0;
             for (const [igUserId, events] of byAccount) {
                 const accountRules = await rules.listEnabledForInstagramUser(igUserId);
+                subrequests++;
                 if (accountRules.length === 0) continue;
                 // one notification can repeat a comment; the first copy is the one kept
                 const seen = new Set<string>();
@@ -95,7 +99,8 @@ export function createAutomationWebhookService({ rules, comments, automation, co
 
             const inserted = await comments.insertMany(rows);
             const queuedIds = inserted.filter(row => row.status === 'queued').map(row => row.id);
-            const result = { stored: inserted.length, duplicates: rows.length - inserted.length, queuedIds };
+            if (rows.length > 0) subrequests++;
+            const result = { stored: inserted.length, duplicates: rows.length - inserted.length, queuedIds, subrequests };
             context.log.info('instagram webhook stored', {
                 comments: webhook.comments.length,
                 unsupported: webhook.unsupported,

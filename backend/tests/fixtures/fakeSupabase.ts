@@ -3,7 +3,7 @@ import type { SupabaseClient } from '../../types/app.ts';
 
 export type Row = Record<string, unknown>;
 
-type Filter = [column: string, value: unknown, operator?: 'lte' | 'lt' | 'neq' | 'gte' | 'gt' | 'in'];
+type Filter = [column: string, value: unknown, operator?: 'lte' | 'lt' | 'neq' | 'gte' | 'gt' | 'in' | 'or'];
 
 interface Action {
     type: 'select' | 'update' | 'insert' | 'upsert' | 'delete' | 'rpc';
@@ -30,6 +30,7 @@ interface FakeQuery {
     gte(column: string, value: unknown): FakeQuery;
     gt(column: string, value: unknown): FakeQuery;
     in(column: string, values: unknown[]): FakeQuery;
+    or(expression: string): FakeQuery;
     order(): FakeQuery;
     limit(count: number): FakeQuery;
     single(): Promise<QueryResult>;
@@ -49,13 +50,45 @@ function copy<T>(value: T): T {
     return value === undefined ? undefined as T : structuredClone(value);
 }
 
-function matchesFilter(row: Row, [column, value, operator]: Filter) {
+// splits a PostgREST or() list at the commas outside quotes and parentheses
+function splitTopLevel(expression: string): string[] {
+    const parts: string[] = [];
+    let depth = 0;
+    let quoted = false;
+    let current = '';
+    for (const char of expression) {
+        if (char === '"') quoted = !quoted;
+        if (!quoted && char === '(') depth++;
+        if (!quoted && char === ')') depth--;
+        if (!quoted && depth === 0 && char === ',') {
+            parts.push(current);
+            current = '';
+        } else {
+            current += char;
+        }
+    }
+    return [...parts, current];
+}
+
+// the forms the repositories use: column.op."value" and and(...), any of them true
+function matchesOr(row: Row, expression: string): boolean {
+    return splitTopLevel(expression).some(part => {
+        if (part.startsWith('and(')) return splitTopLevel(part.slice(4, -1)).every(inner => matchesOr(row, inner));
+        const [, column, operator, raw] = /^(\w+)\.(eq|neq|lt|lte|gt|gte)\.(.*)$/.exec(part) ?? [];
+        if (!column) throw new Error(`fakeSupabase cannot read or() part ${part}`);
+        const value = raw.replace(/^"|"$/g, '');
+        return matchesFilter(row, [column, value, operator === 'eq' ? undefined : operator as Filter[2]]);
+    });
+}
+
+function matchesFilter(row: Row, [column, value, operator]: Filter): boolean {
     if (operator === 'lte') return (row[column] as string) <= (value as string);
     if (operator === 'lt') return row[column] != null && (row[column] as string) < (value as string);
     if (operator === 'neq') return row[column] !== value;
     if (operator === 'gte') return row[column] != null && (row[column] as string) >= (value as string);
     if (operator === 'gt') return row[column] != null && (row[column] as string) > (value as string);
     if (operator === 'in') return (value as unknown[]).includes(row[column]);
+    if (operator === 'or') return matchesOr(row, value as string);
     return row[column] === value;
 }
 
@@ -128,6 +161,10 @@ function queryBuilder(action: Action, run: Run): FakeQuery {
         },
         in(column: string, values: unknown[]) {
             filters.push([column, values, 'in']);
+            return query;
+        },
+        or(expression: string) {
+            filters.push(['', expression, 'or']);
             return query;
         },
         // rows come back in the order they were stored; tests that page seed rows newest first
