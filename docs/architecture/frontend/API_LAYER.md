@@ -137,7 +137,7 @@ setAutomationAccountPaused: (accountId: string, paused: boolean) => request<Auto
 subscribeAutomationAccount: (accountId: string) => request<AutomationAccountResponse>(`/automations/accounts/${accountId}/subscribe`, { method: 'POST' }),
 ```
 
-The types are in `shared/types/automation.ts`. Activity and stats take their filters as `URLSearchParams` (`accountId`, `ruleId`, `status` as a comma-separated list, `from`, `to`, `before`, `limit`), built in `features/automations/useAutomationActivity.ts`. An accepted reply means Instagram took the request; the API reports nothing about delivery or reading.
+The types are in `shared/types/automation.ts`. Activity and stats take their filters as `URLSearchParams` (`accountId`, `ruleId`, `status` as a comma-separated list, `from`, `to`, `before`, `limit`), built in `features/automations/useAutomationActivity.ts`. An accepted reply means Instagram took the request; the API reports nothing about delivery or reading. Rules carry `matchMode` (`contains`, `exact` or `any`) and the followers-only fields `requireFollow`, `followPromptText` and `notFollowingText`; account states carry `limitedUntil` and `messagesSubscribed`; activity items carry `gateStatus` and `followup`.
 
 ## Tracked Content Methods
 

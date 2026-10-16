@@ -8,8 +8,11 @@ The backend is a single Hono application exported as a Cloudflare Workers module
 // the Worker's two entry points: HTTP requests go through the pipeline in app.ts, cron triggers to jobs/
 export default {
     fetch: app.fetch,
+
+    // wrangler.toml schedules: the reply dispatch every minute, due posts on the quarter hour with queue checks on the
+    // other five minute runs, and daily upkeep
     async scheduled(event: ScheduledController, env: Env, ctx: ExecutionContext) {
-        ctx.waitUntil(runScheduledJob(event.cron, env));
+        ctx.waitUntil(runScheduledJob(event.cron, env, event.scheduledTime));
     },
 } satisfies ExportedHandler<Env>;
 ```
@@ -32,7 +35,7 @@ The backend is split into layers, each with one job. `REQUEST_PIPELINE.md` is th
 | `services/` | Feature services (`<feature>Service.ts`, `scheduledPublisher.ts`) the platform modules in `youtube/`, `instagram/` and `reddit/`, and the auth email modules in `email/` (see `SERVICES.md`) |
 | `repositories/` | Data access, one repository per table or cache (`<table>Repository.ts`), and the query helpers in `query.ts` |
 | `database/` | `supabase.ts` (`getSupabase`, `getSupabaseAuth`) and `redis.ts` (`getRedis`, `getRateLimitRedis`) |
-| `jobs/` | `scheduled.ts`: the cron entry point, `runScheduledJob(cron, env)` |
+| `jobs/` | `scheduled.ts`: the cron entry point, `runScheduledJob(cron, env, scheduledTime)` |
 | `lib/` | Helpers with no HTTP or database code: `errors.ts`, `logger.ts`, `config.ts`, `redact.ts`, `safeAccount.ts`, `oauthState.ts`, `webhookSignature.ts`, `analyticsMath.ts`, `rateLimit/` |
 | `types/` | `env.ts` (`Env`), `app.ts` (`AppEnv`, `AppVariables`, `AppContext`), `context.ts` (`RequestContext`), `authHook.ts` (the Send Email hook payload and error body) |
 
@@ -174,7 +177,8 @@ Worker variables are declared in `Env` and reach the code through `lib/config.ts
 if (!config.youtubeApiKey) throw new NotConfiguredError(NO_YOUTUBE_KEY_MESSAGE);
 
 // in the cron entry point, jobs/scheduled.ts
-const services = createServices({ supabase: getSupabase(env), redis: getRedis(env) }, readConfig(env), context);
+const clients = { supabase: getSupabase(env), redis: getRedis(env), rateLimitRedis: getRateLimitRedis(env) };
+const services = createServices(clients, readConfig(env), context);
 ```
 
 The Supabase and Redis credentials are read by `database/supabase.ts` and `database/redis.ts`.

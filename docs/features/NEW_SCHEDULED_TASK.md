@@ -67,13 +67,13 @@ myPlatformTokenRefresh: createMyPlatformTokenRefreshService({ accounts, context 
 
 ### Step 2: Choose a Run on an Existing Trigger
 
-The Workers Free plan allows five cron triggers per Cloudflare account, and the project's account uses all five, so a new job runs on one of the Worker's two triggers (`*/5 * * * *` and `0 0 * * *`) at the times `cronPlan()` gives it, not on a new trigger. A daily job belongs on the daily trigger:
+The Workers Free plan allows five cron triggers per Cloudflare account, and this Worker uses three (`* * * * *`, `*/5 * * * *` and `0 0 * * *`). Other Workers on the same account count toward the five, so count the triggers on your account before adding one. When no slot is free, a new job runs on one of the existing triggers at the times `cronPlan()` gives it. A daily job belongs on the daily trigger:
 
 ```ts
 // backend/jobs/scheduled.ts
 } else if (plan === 'daily') {
     await services.tokenRefresh.refreshExpiringInstagramTokens();
-    await services.retention.purge();
+    await services.retention.purge(Date.now(), { commentBatches: RETENTION_BATCHES });
     await services.myPlatformTokenRefresh.refreshTokens();
 }
 ```
@@ -86,7 +86,7 @@ On an account with a free slot, or on Workers Paid (250 triggers), a job may get
 
 ```toml
 [triggers]
-crons = ["*/5 * * * *", "0 0 * * *", "30 3 * * *"]
+crons = ["* * * * *", "*/5 * * * *", "0 0 * * *", "30 3 * * *"]
 ```
 
 Every cron trigger calls the same `scheduled()` handler exported from `backend/server.ts`, which hands the expression to `runScheduledJob()`. Add a constant for the new expression in `backend/jobs/scheduled.ts`, return a new plan for it from `cronPlan()`, and run the job in that branch. `event.cron` is the exact cron string from `wrangler.toml`, so the strings must match character for character; `backend/tests/jobs/scheduled.test.ts` checks the list. `server.ts` already wraps the job in `ctx.waitUntil()`, and the cron context gives it a `cron-` request id and a 14 minute deadline. Add a test in `backend/tests/services/` with fake repositories or the fake Supabase client (see `tokenRefreshService.test.ts`), and run `npm run typecheck` before deploying.

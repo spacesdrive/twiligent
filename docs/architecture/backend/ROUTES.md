@@ -38,15 +38,16 @@ Registered on `publicRoutes` in `routes/index.ts`.
 | GET | `/api/auth/instagram/callback` | `instagramAuthController.handleInstagramCallback` | OAuth code exchange; always redirects the browser back to the accounts page with `ig_connected=true`, `ig_connected=reconnected` (the account was already connected and its token was renewed) or `ig_error=<reason>`, never a JSON error |
 | POST | `/api/auth/email-hook` | `authHookController.sendAuthEmail` (`routes/authHookRoutes.ts`) | Supabase Auth's Send Email hook: sends sign-up, password reset and other auth emails through Resend. Answers `{}` |
 | GET | `/api/webhooks/instagram` | `instagramWebhookController.verifyInstagramWebhook` (`routes/instagramWebhookRoutes.ts`) | Meta's webhook check: answers the bare `hub.challenge` as text when `hub.mode=subscribe` and `hub.verify_token` matches `INSTAGRAM_WEBHOOK_VERIFY_TOKEN`; 403 otherwise, 503 when the token is not set |
-| POST | `/api/webhooks/instagram` | `instagramWebhookController.receiveInstagramWebhook` | Instagram comment notifications, signed by Meta. Stores them, answers `{ success: true }`, then sends the matched replies |
+| POST | `/api/webhooks/instagram` | `instagramWebhookController.receiveInstagramWebhook` | Instagram comment notifications and message events (messages and postbacks), signed by Meta. Stores the comments and a follow-up for each message that answers a followers-only reply, answers `{ success: true }`, then sends the matched replies and the follow-ups |
 
 ### Instagram webhook
 
 Meta calls this route, not a browser:
 
 - **Authentication.** `middleware/metaWebhook.ts` (`verifyMetaWebhook`) checks `X-Hub-Signature-256` (HMAC-SHA256 of the raw body) against `INSTAGRAM_APP_SECRET`, or `META_APP_SECRET` when set. No JWT.
-- **Statuses.** `200` once every comment is stored (duplicates included). `400` for a body over 1 MB, malformed JSON, or an `object` other than `instagram`. `401` for a missing or wrong signature. `503` when no app secret is set. `500` when storing fails; Meta delivers the notification again for up to 36 hours.
-- **After the response.** The new matched comments are sent with `ctx.waitUntil()` and their own 25 second deadline; anything left is sent by the 5 minute cron.
+- **Statuses.** `200` once every comment and follow-up is stored (duplicates included). `400` for a body over 1 MB, malformed JSON, or an `object` other than `instagram`. `401` for a missing or wrong signature. `503` when no app secret is set. `500` when storing fails; Meta delivers the notification again for up to 36 hours.
+- **Message events.** Echoes, the account's own messages and deleted messages are skipped, and message text is never read or stored. One database call per account turns the senders into follow-up jobs, and a redelivered message is dropped.
+- **After the response.** The new matched comments and follow-ups are sent with `ctx.waitUntil()` and their own 25 second deadline; anything left is sent by the every minute cron.
 
 See `docs/architecture/data-flows/AUTOMATION.md`.
 
@@ -162,17 +163,17 @@ Controllers call `AutomationService` (`services/automationService.ts`). Every ro
 
 | Method | Path | File | Purpose |
 |---|---|---|---|
-| GET | `/api/automations` | `automationRoutes.ts`, `automationController.getAutomations` | The user's rules, each Instagram account's automation state (`paused`, `cooldownUntil`, `cooldownReason`, `subscribedAt`) and the server settings (`webhookConfigured`, `paused`, `limits`) |
-| POST | `/api/automations/rules` | `automationController.createAutomationRule` | Create a rule (`accountId`, `name`, `keywords`, `replyText`, optional `matchMode`, `caseSensitive`, `mediaIds`, `linkUrl`, `enabled`, `hourlyLimit`). 404 unless the account is one of the user's Instagram accounts; 400 when the reply and link pass 1,000 bytes. An enabled rule also subscribes the account to comment events |
+| GET | `/api/automations` | `automationRoutes.ts`, `automationController.getAutomations` | The user's rules, each Instagram account's automation state (`paused`, `cooldownUntil`, `cooldownReason`, `subscribedAt`, `limitedUntil`, `messagesSubscribed`) and the server settings (`webhookConfigured`, `paused`, `limits`) |
+| POST | `/api/automations/rules` | `automationController.createAutomationRule` | Create a rule (`accountId`, `name`, `keywords`, `replyText`, optional `matchMode` (`contains`, `exact` or `any`), `caseSensitive`, `mediaIds`, `linkUrl`, `enabled`, `hourlyLimit`, `requireFollow`, `followPromptText`, `notFollowingText`). 404 unless the account is one of the user's Instagram accounts; 400 when the reply and link pass 1,000 bytes, when `any` has keywords or another mode has none, or when a followers-only rule lacks either text. An enabled rule also subscribes the account to comment events, and to message events while a followers-only rule is on |
 | PUT | `/api/automations/rules/:id` | `automationController.updateAutomationRule` | Change any of the fields sent; the account stays. Turning it on subscribes the account if needed |
 | DELETE | `/api/automations/rules/:id` | `automationController.deleteAutomationRule` | Delete a rule; its past comments keep their status |
 | POST | `/api/automations/rules/:id/duplicate` | `automationController.duplicateAutomationRule` | Copy a rule, turned off, named "(copy)" |
-| POST | `/api/automations/test` | `automationController.testAutomationRule` | Match a sample `comment` against a rule draft and return `{ matched, keyword, message, messageBytes, maxMessageBytes }`. Stores and sends nothing |
-| GET | `/api/automations/activity` | `automationController.listAutomationActivity` | Received comments, newest first. Query: `accountId`, `ruleId`, `status` (one or comma-separated), `from`, `to`, `before` (the previous page's `nextBefore`, an opaque `<created_at>|<id>` cursor, so comments stored in the same instant are neither skipped nor repeated), `limit` (1 to 100, default 50) |
-| POST | `/api/automations/activity/:id/retry` | `automationController.retryAutomationActivity` | Put a failed, skipped or review item inside its 7 days back in the queue and start sending it; 409 for any other state |
+| POST | `/api/automations/test` | `automationController.testAutomationRule` | Match a sample `comment` against a rule draft (accepts `matchMode: 'any'`, `requireFollow` and `followPromptText`) and return `{ matched, keyword, message, messageBytes, maxMessageBytes }`; `keyword` is `null` for any comment, and `message` is the follow prompt for a followers-only draft. Stores and sends nothing |
+| GET | `/api/automations/activity` | `automationController.listAutomationActivity` | Received comments, newest first; each item has `gateStatus` and `followup` (`{ status, kind, errorMessage, createdAt }` or `null`) for followers-only replies. Query: `accountId`, `ruleId`, `status` (one or comma-separated), `from`, `to`, `before` (the previous page's `nextBefore`, an opaque `<created_at>|<id>` cursor, so comments stored in the same instant are neither skipped nor repeated), `limit` (1 to 100, default 50) |
+| POST | `/api/automations/activity/:id/retry` | `automationController.retryAutomationActivity` | Put a failed, skipped or review item inside its 7 days back in the queue and start sending it. For an accepted followers-only reply, requeue its latest failed, skipped or review follow-up inside its 24 hours and start the follow-up processor in the background; 409 for any other state |
 | GET | `/api/automations/stats` | `automationController.getAutomationStats` | Comment counts by status and request counts by outcome. Query: `accountId`, `ruleId`, `from`, `to` (default the last 7 days) |
 | PUT | `/api/automations/accounts/:accountId` | `automationController.updateAutomationAccount` | `{ paused }`: hold or release the account's replies; resuming also clears a hold the Worker set and sends held replies on the next run |
-| POST | `/api/automations/accounts/:accountId/subscribe` | `automationController.subscribeAutomationAccount` | Ask Instagram to send the account's comments to the webhook (`POST /<ig-id>/subscribed_apps?subscribed_fields=comments`); 502 when Instagram refuses. Covered by the quota rate limit |
+| POST | `/api/automations/accounts/:accountId/subscribe` | `automationController.subscribeAutomationAccount` | Ask Instagram to send the account's comments to the webhook, plus its messages while a followers-only rule is on (`POST /<ig-id>/subscribed_apps` with `comments` or `comments,messages`); when Instagram refuses messages, comments only. 502 when Instagram refuses. Covered by the quota rate limit |
 
 ### Settings
 | Method | Path | File | Purpose |

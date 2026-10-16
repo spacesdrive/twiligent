@@ -8,13 +8,13 @@ main = "server.ts"
 compatibility_date = "2025-01-01"
 
 [triggers]
-crons = ["*/5 * * * *", "0 0 * * *"]
+crons = ["* * * * *", "*/5 * * * *", "0 0 * * *"]
 ```
 
 - `name` - the Worker name as deployed on Cloudflare; also determines the default URL
 - `main` - entry point file (`backend/server.ts`). Wrangler bundles it with esbuild, which strips the TypeScript types without checking them; `npm run typecheck` is the check
 - `compatibility_date` - pins the Workers runtime API version
-- `crons` - cron trigger schedules (see `docs/architecture/backend/CRON.md`). The five minute trigger carries both scheduled publishing (on the quarter hour) and the comment reply sweep, because the account already uses the five cron triggers the Workers Free plan allows
+- `crons` - cron trigger schedules (see `docs/architecture/backend/CRON.md`). The every minute trigger sends waiting comment replies and follow-ups; the five minute trigger publishes due posts on the quarter hour and checks the reply queue on its other runs; the daily trigger refreshes tokens and deletes old records. The Workers Free plan allows five cron triggers per account and this Worker uses three, so a self-hoster with other Workers should count the triggers on their account first. Each cron run counts as a Worker request: the every minute trigger adds 1,440 a day (about 1.4% of the Free plan's 100,000), the five minute one 288 and the daily one 1
 
 ## Worker Export Format
 
@@ -63,7 +63,7 @@ All secrets are set via `npx wrangler secret put <NAME>`, run from `backend/`. T
 | `AUTOMATION_USER_HOURLY_LIMIT` | Optional | Private replies an hour across one member's accounts; default `500` |
 | `AUTOMATION_GLOBAL_HOURLY_LIMIT` | Optional | Private replies an hour across the instance; default `1000` |
 | `AUTOMATION_RECIPIENT_DAILY_LIMIT` | Optional | Private replies a day one person can get from one account; default `3` |
-| `AUTOMATION_BATCH_SIZE` | Optional | Replies sent by one webhook request or one sweep; default `10`, at most `15` (each costs three of the free plan's 50 subrequests) |
+| `AUTOMATION_BATCH_SIZE` | Optional | Replies sent by one webhook request or one dispatch run; default `10`, at most `15` (each costs three of the free plan's 50 subrequests) |
 
 The automation values are plain settings, not secrets, but setting them with `wrangler secret put` keeps them across deploys like the rest. A missing or invalid value falls back to its default.
 
@@ -121,7 +121,7 @@ These are hard constraints imposed by the Cloudflare Workers runtime. Violating 
 
 4. **CPU time limit.** On the Workers Free plan each invocation gets 10 ms of CPU time (Workers Paid: 30 seconds by default, up to 5 minutes). Time waiting on `fetch` does not count, so I/O-bound work fits; long synchronous work is killed. Use async/await for all I/O.
 
-5. **Subrequests.** On the Workers Free plan an invocation can make 50 subrequests (each `fetch`, including Supabase and Redis calls); Workers Paid allows 10,000. A webhook request, a sweep and a publishing run each count separately. `AUTOMATION_BATCH_SIZE` is capped at 15 for this reason, and a fetch the runtime refuses at the cap is recorded as not sent rather than as an unknown outcome.
+5. **Subrequests.** On the Workers Free plan an invocation can make 50 subrequests (each `fetch`, including Supabase and Redis calls); Workers Paid allows 10,000. A webhook request, a dispatch run, a reconcile run and a publishing run each count separately. `AUTOMATION_BATCH_SIZE` is capped at 15 for this reason, and a fetch the runtime refuses at the cap is recorded as not sent rather than as an unknown outcome.
 
 6. **`ctx.waitUntil()` in cron handlers and after responses.** Cron handlers must use `ctx.waitUntil(promise)` for async work. Without it, the Worker may terminate before the work completes. After an HTTP response, `waitUntil` keeps the Worker running for at most 30 seconds; `inBackground()` in `controllers/http.ts` gives such work its own 25 second deadline.
 

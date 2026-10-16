@@ -54,12 +54,15 @@ Open `https://your-backend-url/api/health`. It should return `{"status":"ok"}` w
 
 ## Scheduled jobs
 
-Deploying also registers two cron triggers from `wrangler.toml`. You do not need to set anything up.
+Deploying also registers three cron triggers from `wrangler.toml`. You do not need to set anything up.
 
 | Schedule | What it does |
 | --- | --- |
-| `*/5 * * * *` | At minutes 0, 15, 30 and 45, publishes scheduled Instagram posts that are due. On every run, sends comment replies that are waiting. |
+| `* * * * *` | Sends comment replies and follow-up messages that are waiting. |
+| `*/5 * * * *` | At minutes 0, 15, 30 and 45, publishes scheduled Instagram posts that are due. On the other runs, checks the reply queue: expires replies that waited too long, looks for replies whose answer from Instagram was lost, and reports the queue's health in the logs. |
 | `0 0 * * *` | Renews Instagram access tokens before they expire, and deletes comment automation records older than 90 days. |
+
+The Workers Free plan allows five cron triggers per Cloudflare account. If other Workers on your account already use three or more, free one before you deploy; the deploy fails when the account has no slot left.
 
 ## Run it locally
 

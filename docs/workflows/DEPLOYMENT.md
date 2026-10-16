@@ -47,6 +47,8 @@ cd backend
 npx wrangler deploy
 ```
 
+A deploy also registers the cron triggers in `wrangler.toml`: `* * * * *`, `*/5 * * * *` and `0 0 * * *`. The every minute trigger was added with the reply queue changes (#98). The Workers Free plan allows five cron triggers per Cloudflare account, so the account needs a free slot for it; the deploy fails when there is none. Count the triggers of the account's other Workers before the first deploy that adds one.
+
 ### Frontend (Cloudflare Pages)
 
 ```bash
@@ -99,6 +101,8 @@ The link is stored in `supabase/.temp/`, which git ignores.
 
 A change the old code cannot live with (a dropped column, a renamed function) needs two releases: first the code that works with both shapes, then the migration.
 
+A Worker that calls new database functions fails until they exist, so run `npm run db:push` before merging such a change. The reply queue changes (#98) are one: their migrations add the follow-up, review, expiry, purge and queue health functions and replace the claim, reserve and finish functions. The replaced functions keep their old arguments working, so applying the migrations while the old Worker runs is safe.
+
 ### Rolling Back a Database Change
 
 The CLI has no down migrations. To undo one change on a remote database:
@@ -148,7 +152,7 @@ Each command prompts for the value (no echo - the value is not shown).
 
 The email secrets only matter once Supabase's Send Email hook points at `https://<worker>/api/auth/email-hook`. Set them before turning the hook on: while the hook is on and the secrets are missing, every sign-up and password reset fails with a 503. The full setup (Resend domain, hook, **Confirm email**, rate limit) is in the public docs at `https://twiligent.ujjwal.fyi/docs/self-host/email-codes` (source: `site/content/docs/self-host/email-codes.mdx`). To check the hook after a deploy, sign up with an address you own and watch `npx wrangler tail` for the `auth email sent` line. Keep Resend's click and open tracking off: its tracking record once took the name `twiligent` and replaced the Pages record for `twiligent.ujjwal.fyi`, which took the site offline until the record was pointed back at `twiligent.pages.dev` (proxied) and the Pages custom domain was reactivated (#37). That name now belongs to the public site; the same care applies to the `app.twiligent` record.
 
-Comment-to-DM automation needs its migrations applied (`npm run db:push`), `INSTAGRAM_WEBHOOK_VERIFY_TOKEN` set, and the webhook added in the Meta dashboard with the callback `https://<worker>/api/webhooks/instagram` and the `comments` field. The app must be Live with Advanced Access for `comments` before comments from accounts without a role on the app arrive. The full setup is in the public docs at `https://twiligent.ujjwal.fyi/docs/self-host/comment-automation` (source: `site/content/docs/self-host/comment-automation.mdx`). To check it after a deploy, comment a keyword on a post of a connected account from another Instagram account and watch `npx wrangler tail` for `instagram webhook stored` and `automation reply settled`. To stop every reply at once, set `AUTOMATION_PAUSED` to `true`.
+Comment-to-DM automation needs its migrations applied (`npm run db:push`), `INSTAGRAM_WEBHOOK_VERIFY_TOKEN` set, and the webhook added in the Meta dashboard with the callback `https://<worker>/api/webhooks/instagram` and the `comments` field. The app must be Live with Advanced Access for `comments` before comments from accounts without a role on the app arrive. Followers-only rules also need the `messages` field selected (Instagram, API setup with Instagram login, Configure webhooks) and Advanced Access for `instagram_business_manage_messages`. Select it only when such a rule is used: Meta then sends every direct message to the connected accounts to the Worker, each one a Worker request and a database call. The full setup is in the public docs at `https://twiligent.ujjwal.fyi/docs/self-host/comment-automation` (source: `site/content/docs/self-host/comment-automation.mdx`). To check it after a deploy, comment a keyword on a post of a connected account from another Instagram account and watch `npx wrangler tail` for `instagram webhook stored` and `automation reply settled`. To stop every reply at once, set `AUTOMATION_PAUSED` to `true`.
 
 ## Setting GitHub Actions Secrets
 

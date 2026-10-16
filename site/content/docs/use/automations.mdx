@@ -1,6 +1,6 @@
 export const meta = { title: 'Reply to comments automatically', description: 'Send a private message to anyone who comments a keyword on your Instagram posts and reels.' }
 
-Automations send a private reply on Instagram when someone comments a keyword, such as GUIDE, on one of your posts or reels. A typical rule sends a link: "Here is your guide" and the address of the guide.
+Automations send a private reply on Instagram when someone comments a keyword, such as GUIDE, on one of your posts or reels, or any comment at all on the posts you choose. A typical rule sends a link: "Here is your guide" and the address of the guide.
 
 <Callout type="note" title="Before you start">
 
@@ -12,13 +12,28 @@ You need an Instagram Business or Creator account connected with Instagram sign-
 
 1. Open **Automations** in the sidebar and choose **New rule**.
 2. Choose the Instagram account, give the rule a name, and type its keywords, separated by commas.
-3. Choose how keywords match. **Anywhere in the comment, as a whole word** answers "send me the guide please" for GUIDE but not "guidelines". **The whole comment, nothing else** answers only a comment that is the keyword.
+3. Choose how comments match. **Anywhere in the comment, as a whole word** answers "send me the guide please" for GUIDE but not "guidelines". **The whole comment, nothing else** answers only a comment that is the keyword. **Any comment, no keyword needed** answers everyone who comments.
 4. Choose **Every post and reel**, or **Only the posts I choose** and pick them.
 5. Write the reply and, if you like, a link. The preview shows the message as it will arrive, and how much of Instagram's 1,000 byte limit it uses.
 6. Type a sample comment under **Test a comment** and choose **Test** to see whether it would match. Nothing is sent.
 7. Leave **Turn the rule on when saved** on, and choose **Create rule**.
 
-A comment gets one reply, from the first rule that matches it. Rules for chosen posts are checked before rules for every post. You can copy a rule (the copy starts off), change it, turn it off, or delete it.
+A comment gets one reply, from the most specific rule that answers it: rules for chosen posts come before rules for every post, and keyword rules before any-comment rules. Among equals, the oldest rule answers. You can copy a rule (the copy starts off), change it, turn it off, or delete it.
+
+<Callout type="warning" title="Any comment means everyone">
+
+An any-comment rule messages everyone who comments, including people who did not ask for a message. A busy post reaches the hourly limits sooner, and replies to other rules of the account then wait too. Aim such a rule at the posts you choose.
+
+</Callout>
+
+## Send the link only to followers
+
+Turn on **Send the link only to followers** to keep the link for people who follow you. Instagram lets Twiligent check whether someone follows you only after that person has messaged you, so the rule works in two steps:
+
+1. Everyone who comments gets the **First reply**, which asks them to follow you and reply. It has no link.
+2. When they reply, Twiligent asks Instagram whether they follow you. A follower gets your reply and link. Anyone else gets the **Reminder**, at most twice.
+
+If Instagram cannot say whether the person follows you, nothing is sent, and the activity says why. The link is never sent on a guess. The reply must come within 7 days of the first message, and the answer goes out within Instagram's 24 hours after their reply.
 
 ## What Instagram allows
 
@@ -40,9 +55,15 @@ The counts at the top cover the chosen period. **Activity** lists every comment 
 | Failed | Instagram refused it; the details say why |
 | Skipped, Expired | The rule was turned off, the person reached the daily number of replies, or the 7 days ran out |
 | No match | No rule answers this comment; its words are not kept |
+| Asked to follow | A followers-only rule sent its first reply and waits for the person to reply |
+| Link sent | Instagram confirmed the person follows you and accepted the reply with the link |
+| Not following | The person replied without following, and every reminder was sent |
+| Follow-up failed | The message after their reply did not go out; the details say why |
 
-Choose the retry button on a failed, skipped or review item to send it again. Instagram refuses a second private reply to the same comment, so a retry never messages someone twice.
+Choose the retry button on a failed, skipped or review item to send it again. Instagram refuses a second private reply to the same comment, so a retry never messages someone twice. On a followers-only reply, the retry sends the failed follow-up again, within 24 hours of the person's reply.
+
+Twiligent also looks for **Needs review** replies in the conversation on Instagram a few times, and marks the ones it finds as accepted. It never sends anything while it looks.
 
 ## Pause an account
 
-Turn off **Replies** next to an account to hold its replies, for example during a live event. Comments keep arriving and their replies go out when you turn it back on, if they are still within 7 days. If an account shows **Held**, Instagram refused its permission to send messages: connect it again on the **Accounts** page, then turn its replies back on.
+Turn off **Replies** next to an account to hold its replies, for example during a live event. Comments keep arriving and their replies go out when you turn it back on, if they are still within 7 days. If an account shows **Held**, Instagram refused its permission to send messages: connect it again on the **Accounts** page, then turn its replies back on. **At its hourly limit** means the account sent its hourly number of replies; the rest go out as the hour frees up.

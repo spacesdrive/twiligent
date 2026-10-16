@@ -54,7 +54,7 @@ Services never see the Hono context. A controller hands them a `RequestContext` 
 
 The user id is passed to service methods explicitly (`accounts.refresh(userId, accountId)`), never read from the request body.
 
-Cron jobs build the same context in `jobs/scheduled.ts`, with a `cron-` request id and a 14 minute deadline. The Overview's background warming outlives the response, so it uses its own 25 second deadline instead of the request signal. `inBackground(c, label, work)` in `controllers/http.ts` does the same for any work after a response: it builds services with a fresh context (the request id, a 25 second deadline, a logger tagged with the label) and runs the work under `ctx.waitUntil()`, logging a failure because nobody is waiting for it. The Instagram webhook and the automation retry route use it to send replies.
+Cron jobs build the same context in `jobs/scheduled.ts`, with a `cron-` request id and a 14 minute deadline. The Overview's background warming outlives the response, so it uses its own 25 second deadline instead of the request signal. `inBackground(c, label, work)` in `controllers/http.ts` does the same for any work after a response: it builds services with a fresh context (the request id, a 25 second deadline, a logger tagged with the label) and runs the work under `ctx.waitUntil()`, logging a failure because nobody is waiting for it. The Instagram webhook and the automation retry route use it to send replies and follow-ups.
 
 ## Composition
 

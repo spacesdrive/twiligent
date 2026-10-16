@@ -65,7 +65,7 @@ The project's own public site and documentation are at [twiligent.ujjwal.fyi](ht
 | **Unified overview** | Cross-platform totals, audience comparison chart, audience share pie, leaderboards |
 | **Content explorers** | Sortable and filterable grids for all YouTube Videos, all YouTube Shorts, and all Instagram Reels and posts |
 | **Scheduled publishing** | Schedule Instagram photos, Reels, and Stories; a Cloudflare Worker cron publishes them every 15 minutes automatically |
-| **Comment-to-DM automation** | When someone comments a keyword such as GUIDE on your Instagram posts or Reels, Twiligent sends them your private reply and link within seconds, through Meta's comments webhook and official private replies; per-account, per-rule and per-person limits, retries and an activity log |
+| **Comment-to-DM automation** | When someone comments a keyword such as GUIDE, or any comment at all, on your Instagram posts or Reels, Twiligent sends them your private reply and link within seconds, through Meta's comments webhook and official private replies; optional followers-only rules send the link only after Instagram confirms the person follows you; per-account, per-rule and per-person limits, retries, a queue that sends waiting replies every minute and an activity log |
 | **Bulk upload** | Upload multiple files at once, assign captions individually or apply a shared caption, schedule them with configurable intervals |
 | **Cloudinary CDN** | Upload media directly from the dashboard; Instagram requires public URLs before publishing |
 | **Token auto-refresh** | Instagram long-lived tokens renew automatically every 24 hours via a daily Worker cron so analytics never break |
@@ -314,7 +314,7 @@ npx wrangler secret put INSTAGRAM_WEBHOOK_VERIFY_TOKEN  # optional; comment-to-D
 npx wrangler secret put META_APP_SECRET             # optional; a second key for webhook signatures
 ```
 
-Comment-to-DM automation needs `INSTAGRAM_WEBHOOK_VERIFY_TOKEN`, the webhook added in the Meta dashboard (`https://<worker>/api/webhooks/instagram`, field `comments`) and, for comments from people without a role on your app, a Live app with Advanced Access. Optional `AUTOMATION_*` settings change the reply limits or pause every reply. Setup steps are in the [docs](https://twiligent.ujjwal.fyi/docs/self-host/comment-automation).
+Comment-to-DM automation needs `INSTAGRAM_WEBHOOK_VERIFY_TOKEN`, the webhook added in the Meta dashboard (`https://<worker>/api/webhooks/instagram`, field `comments`, plus `messages` only for followers-only rules) and, for comments from people without a role on your app, a Live app with Advanced Access. Optional `AUTOMATION_*` settings change the reply limits or pause every reply. Setup steps are in the [docs](https://twiligent.ujjwal.fyi/docs/self-host/comment-automation).
 
 The four email secrets turn on the 6-digit codes that sign people in and confirm password sign-ups, sent free through Resend (100 a day). Supabase Auth hands each email to the Worker through its Send Email hook (`POST /api/auth/email-hook`); every code sign-in is one email. Past the daily limit, the sign-in page pauses email codes and points people to Google or their password. Setup steps are in the [docs](https://twiligent.ujjwal.fyi/docs/self-host/email-codes).
 
@@ -390,7 +390,7 @@ flowchart TD
     B -->|YouTube Data API v3| F[Google APIs]
     B -->|Instagram Graph API v25| G[Meta APIs]
     B -->|Upload preset config| H[Cloudinary CDN]
-    B -->|Worker cron every 15 min| B
+    B -->|Worker crons: replies every minute, posts every 15 min| B
     B -->|Publish scheduled posts| G
     I[GitHub Actions - best effort] -->|Read pending posts| D
     I -->|Publish fallback| G
@@ -406,10 +406,10 @@ flowchart TD
 
 **Cron lifecycle:**
 
-1. The Cloudflare scheduler fires the Worker every 5 minutes (`*/5 * * * *`); the runs on the quarter hour publish, the others send waiting comment replies
-2. The Worker queries `scheduled_posts` for rows with `status = 'pending'` and `scheduled_at <= now()`, and for `publishing` rows whose claim is older than 20 minutes
+1. The Worker has three cron triggers. Every minute (`* * * * *`) it sends the comment replies and follow-up messages that are waiting. Every 5 minutes (`*/5 * * * *`) it publishes due posts on the quarter hour (minutes 0, 15, 30 and 45); the other runs check the reply queue: they expire overdue replies, look for replies whose answer was lost and log the queue's health
+2. On a publishing run the Worker queries `scheduled_posts` for rows with `status = 'pending'` and `scheduled_at <= now()`, and for `publishing` rows whose claim is older than 20 minutes
 3. Each post is claimed (`publishing`, with `claimed_at` and `attempts`), published to Instagram, then set to `published`, back to `pending` for a retry, or `failed`
-4. A separate `0 0 * * *` cron refreshes expiring Instagram access tokens across all users and deletes comment automation records past their retention
+4. A daily `0 0 * * *` cron refreshes expiring Instagram access tokens across all users and deletes comment automation records past their retention, in batches
 
 ---
 
@@ -436,14 +436,16 @@ twiligent/
 │   ├── services/
 │   │   ├── *Service.ts              # Feature services: business rules, no Hono types
 │   │   ├── scheduledPublisher.ts    # Publishes due scheduled posts (cron and manual trigger)
-│   │   ├── automationProcessor.ts   # Sends comment-to-DM replies within limits (webhook, retry and 5 minute cron)
+│   │   ├── automationProcessor.ts   # Sends comment-to-DM replies within limits (webhook, retry and every minute cron)
+│   │   ├── automationFollowupProcessor.ts # Checks the follow for followers-only replies and sends the link or a reminder
+│   │   ├── automationReconciler.ts  # Expires overdue replies, checks lost replies on Instagram, logs queue health
 │   │   ├── youtube/                 # YouTube Data API v3 client and analytics
 │   │   ├── instagram/               # Instagram Graph API client, OAuth, publishing and analytics
 │   │   └── reddit/                  # Reddit public JSON API client and analytics
 │   ├── repositories/                # All Supabase queries and the Redis analytics cache
 │   ├── database/                    # Supabase and Upstash Redis client factories
 │   ├── jobs/
-│   │   └── scheduled.ts             # Cron entry point: due posts and the reply sweep every 5 minutes, token refresh and retention daily
+│   │   └── scheduled.ts             # Cron entry point: reply dispatch every minute, due posts on the quarter hour, queue checks every 5 minutes, token refresh and retention daily
 │   ├── lib/
 │   │   ├── errors.ts                # Typed errors; the error handler maps each code to a status
 │   │   ├── ids.ts                   # newRowId(): random UUIDs for new rows
@@ -453,8 +455,11 @@ twiligent/
 │   │   ├── oauthState.ts            # HMAC-signed Instagram OAuth state
 │   │   ├── analyticsMath.ts         # Shared analytics formulas
 │   │   ├── scheduledPublishing.ts   # Lease, retry and container rules shared with the GitHub Actions script
-│   │   ├── automationMatching.ts    # Keyword matching for comment automation rules
+│   │   ├── automationMatching.ts    # Keyword and any-comment matching for comment automation rules
+│   │   ├── automationRules.ts       # Rule checks: keywords for each mode, followers-only texts
 │   │   ├── automationDelivery.ts    # What each Instagram answer means for a reply: retry, wait, stop or review
+│   │   ├── automationReview.ts      # Finds a lost reply in the Instagram conversation
+│   │   ├── automationHealth.ts      # Reply queue health and when it warrants a warning
 │   │   ├── metaWebhookSignature.ts  # X-Hub-Signature-256 check for Meta's webhooks
 │   │   └── rateLimit/               # Rate limit rules, algorithms and Lua scripts
 │   ├── types/

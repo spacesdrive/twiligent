@@ -32,8 +32,10 @@
 │  └── Errors: errorHandler -> { success, code, message, ... }    │
 │                                                                 │
 │  Cron handlers (wrangler.toml triggers, jobs/scheduled.ts):     │
-│  ├── */5 * * * *   -> on :00 :15 :30 :45 publishDue(), then     │
-│  │                    automationProcessor.run() (reply sweep)   │
+│  ├── * * * * *     -> automationProcessor.run(), then           │
+│  │                    automationFollowups.run() (dispatch)      │
+│  ├── */5 * * * *   -> on :00 :15 :30 :45 publishDue(); on the   │
+│  │                    other minutes automationReconciler.run()  │
 │  └── 0 0 * * *     -> token refresh, retention purge            │
 └──────┬──────────┬──────────────┬────────────────────────────────┘
        │          │              │
@@ -111,11 +113,20 @@ Cloudflare scheduler fires cron trigger
       -> ctx.waitUntil(runScheduledJob(event.cron, env, event.scheduledTime))   [jobs/scheduled.ts]
           -> createServices(service-role Supabase, Redis, config, cron context)
           -> cronPlan(cron, scheduledTime)
-          -> '*/5 * * * *' at minutes 0, 15, 30, 45: publish, then sweep 3 replies if nothing was due
-          -> '*/5 * * * *' at the other minutes: automationProcessor.run()
-                  -> claim due reply jobs (at most half the batch per account), reserve within limits,
-                     send the private reply, record the outcome   [see data-flows/AUTOMATION.md]
-          -> publishing:
+          -> '* * * * *': dispatch
+              automationProcessor.run()   [50 subrequests, stops starting sends after 50 seconds]
+                  -> claim due reply jobs (accounts take turns; paused, cooling down or limited
+                     accounts are left out), reserve within limits, send the private reply,
+                     record the outcome   [see data-flows/AUTOMATION.md]
+              automationFollowups.run()   [the subrequests the replies did not use]
+                  -> claim due follow-ups, check the follow, send the link or a reminder
+          -> '*/5 * * * *' at the other minutes: reconcile
+              automationReconciler.run()
+                  -> expire overdue replies (7 days) and follow-ups (24 hours)
+                  -> look for up to 4 Needs review replies in the Instagram conversation;
+                     a match is marked accepted, nothing is ever sent
+                  -> log the queue's health, and a warning when replies wait too long
+          -> '*/5 * * * *' at minutes 0, 15, 30, 45: publish
               scheduledPublisher.publishDue()
                   -> posts.listDue(), posts.listStale(cutoff)   [no userId filter - scans all users;
                                                                  stale = publishing, claim older than 20 minutes]
@@ -131,7 +142,8 @@ Cloudflare scheduler fires cron trigger
                   -> for each expiring token: refreshLongLivedToken()
                   -> accounts.updateById(id, { accessToken, tokenExpiresAt })
               retention.purge()
-                  -> delete automation comments older than 90 days, audit events older than a year
+                  -> delete automation comments older than 90 days in batches of 1,000 (up to 20,000 a day),
+                     audit events older than a year
 ```
 
 ## Webhook Lifecycle (Instagram Comments)
@@ -140,9 +152,10 @@ Cloudflare scheduler fires cron trigger
 Meta -> POST /api/webhooks/instagram
   -> CORS, request id, security headers, clients, per-IP rate limit (no requireAuth)
   -> verifyMetaWebhook: 1 MB limit, X-Hub-Signature-256 over the raw body   [401 when wrong]
-  -> automationWebhook.ingest(): rules for the Instagram account, match, store every comment once
+  -> automationWebhook.ingest(): rules for the Instagram account, match, store every comment once;
+     a message answering a followers-only reply creates a follow-up job
   -> 200 { success: true }                                                   [5xx when storing fails; Meta retries]
-  -> ctx.waitUntil(automationProcessor.run({ ids }))   the new matched comments, after the response
+  -> ctx.waitUntil(automationProcessor.run({ ids }), then automationFollowups.run({ ids }))   after the response
 ```
 
 The full flow, limits and failure handling are in `docs/architecture/data-flows/AUTOMATION.md`.
@@ -155,7 +168,7 @@ The full flow, limits and failure handling are in `docs/architecture/data-flows/
 | YouTube/Instagram accounts | `accounts` table, `data` jsonb | Flexible schema across platforms |
 | User settings (GitHub repository) | `settings` table, `value` jsonb | Generic key-value per user |
 | Scheduled posts | `scheduled_posts` table | Queryable by status + scheduled_at |
-| Comment automation rules, received comments, reply attempts, account controls | `automation_rules`, `automation_comments`, `automation_attempts`, `automation_accounts` tables | The comment rows are also the reply queue, so dedupe, claims and limits are enforced in one database |
+| Comment automation rules, received comments, reply attempts, follow-up messages, account controls | `automation_rules`, `automation_comments`, `automation_attempts`, `automation_followups`, `automation_accounts` tables | The comment rows are also the reply queue, so dedupe, claims and limits are enforced in one database |
 | Audit events | `audit_events` table | Who connected, removed or changed what; kept a year |
 | Video/media analytics | Upstash Redis (`videos:` / `ig:` keys) | Avoids repeated heavy API calls |
 | Auth email counts | Upstash Redis (`email:day:` / `email:to:` keys, addresses hashed) | Caps verification emails at the provider's free daily quota |
