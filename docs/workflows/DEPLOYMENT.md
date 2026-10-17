@@ -79,6 +79,7 @@ No workflow migrates Supabase. The schema is versioned in `supabase/migrations/`
 | `npm run db:status` | `supabase migration list` | Lists each migration as Local, Remote or both |
 | `npm run db:check` | `supabase db push --dry-run` | Shows the migrations a push would apply, without applying them |
 | `npm run db:push` | `supabase db push` | Applies the pending migrations and records them in `supabase_migrations.schema_migrations` |
+| `npm run db:schema` | `supabase db schema declarative generate --linked --schema public` | Rewrites `supabase/schemas/` from the linked database, one file per table and function; it only reads the database |
 
 ### Linking the CLI
 
@@ -97,7 +98,8 @@ The link is stored in `supabase/.temp/`, which git ignores.
 2. `npm run db:check` and read the list. It must show only the new files.
 3. `npm run db:push`.
 4. `npm run db:status`: every migration is in both columns.
-5. Merge the pull request with the code that needs the change.
+5. `npm run db:schema`, and commit the changed files in `supabase/schemas/` to the pull request; the migration test fails while the tree and the migrations disagree.
+6. Merge the pull request with the code that needs the change.
 
 A change the old code cannot live with (a dropped column, a renamed function) needs two releases: first the code that works with both shapes, then the migration.
 

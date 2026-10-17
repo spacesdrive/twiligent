@@ -27,6 +27,8 @@ The schema is versioned in `supabase/migrations/` and applied with the Supabase 
 
 **Keep every migration as small as possible: one database entity per file.** A table file holds the table with its columns, keys and checks. Its browser access, each trigger, each index and each function get files of their own, and every file gets a rollback of the same size under the same name. A small file is easy to review, fails alone when it fails, and rolls back one thing. `backend/tests/database/migrations.test.ts` refuses a migration that creates more than one entity. Never split or edit a migration production has already recorded; write a new one instead.
 
+Make every file with `npm run db:new <verb>_<object>`. The CLI puts the current UTC time in front of the name, and the CLI matches applied migrations by that version alone, so never type a version by hand or rename a file once it is applied. The name starts with what the file does to its entity: `create`, `alter`, `add`, `index`, `revoke`, `check`, `replace`, `drop` or `rename`. Every migration and rollback opens with one comment line, a plain sentence that says what the file does (`-- adds an index that lists a user's drafts newest first`); comments further down explain why. The migration test checks all three.
+
 A new table is therefore four or more migrations, run in this order:
 
 | File | Holds | Rollback |
@@ -46,7 +48,7 @@ npm run db:new index_content_drafts_user_id_created_at
 `create_content_drafts`:
 
 ```sql
--- drafts a user prepares before scheduling them
+-- creates content_drafts, which holds the drafts a user prepares before scheduling them
 create table public.content_drafts (
     id text primary key,
     user_id uuid not null references auth.users (id) on delete cascade,
@@ -82,23 +84,23 @@ create trigger content_drafts_set_updated_at before update on public.content_dra
 `index_content_drafts_user_id_created_at`:
 
 ```sql
--- contentDrafts.listForUser: where user_id = $1 order by created_at desc
+-- adds an index that lists a user's drafts newest first
 create index content_drafts_user_id_created_at_idx on public.content_drafts (user_id, created_at desc);
 ```
 
 Write the reverse of each in `supabase/rollbacks/` with the same file name. `backend/tests/database/migrations.test.ts` fails when a migration has no rollback or an empty one. The table's rollback:
 
 ```sql
--- removes the table and every draft in it
+-- removes content_drafts and every draft in it
 drop table if exists public.content_drafts;
 ```
 
-The others are one line each: `alter table public.content_drafts disable row level security;`, `drop trigger if exists content_drafts_set_updated_at on public.content_drafts;` and `drop index if exists public.content_drafts_user_id_created_at_idx;`. Roll them back newest first, so the table goes last.
+The others are one statement each under their sentence: `alter table public.content_drafts disable row level security;`, `drop trigger if exists content_drafts_set_updated_at on public.content_drafts;` and `drop index if exists public.content_drafts_user_id_created_at_idx;`. Roll them back newest first, so the table goes last. When a rollback deletes data or must run after another one, its sentence says so (`-- removes content_drafts and every draft in it; roll back content_draft_versions first`).
 
 If the repository updates `data`, add a merge function in its own migration (`npm run db:new create_merge_content_draft_function`), so an update is one statement and two writers never undo each other. Copy `create_merge_scheduled_post_function.sql`. A function in `public` is exposed through the Data API, so it always revokes execute from the browser roles and grants it only to the service role; the migration test enforces the revoke:
 
 ```sql
--- merges a patch into data in one UPDATE, so two writers never undo each other
+-- creates merge_content_draft, which merges changes into a draft in one step so two writers never undo each other
 create or replace function public.merge_content_draft(p_id text, p_user_id uuid, p_patch jsonb, p_status text default null)
 returns boolean
 language sql
@@ -120,11 +122,12 @@ Its rollback is `drop function if exists public.merge_content_draft(text, uuid, 
 
 ### Step 3: Apply the Migration
 
-1. Run `npm test --workspace backend`. The migration test checks the file names, the rollback pairs and the function grants.
+1. Run `npm test --workspace backend`. The migration test checks the file names, versions and opening sentences, the rollback pairs and the function grants. Until step 6 it also reports that the schema tree lacks the new objects.
 2. Link the CLI to the project once: `npx supabase link --project-ref <ref>`. It needs `SUPABASE_ACCESS_TOKEN` in the environment or `npx supabase login`.
 3. Run `npm run db:check` and read the list of migrations it would apply.
 4. Run `npm run db:push` before merging the code that needs the table, because merging deploys the Worker at once.
 5. Run `npm run db:status` and check that the new version is in both the Local and Remote columns.
+6. Run `npm run db:schema` and commit the changed files in `supabase/schemas/` with the migrations. The tree is generated from the database, one file per table (with its checks, indexes, trigger and grants) and per function, so a reviewer sees the table as it now stands. Never edit it by hand.
 
 A new instance gets the table from the same `npm run db:push`; there is no setup SQL to update in the README or the docs site. To undo the change, see Rolling Back a Database Change in `docs/workflows/DEPLOYMENT.md`.
 

@@ -113,7 +113,7 @@ npm run dev:site  # the public site, when the change touches site/
 npm run db:check  # when the change has a migration: lists what db:push would apply
 ```
 
-A change with a migration is applied with `npm run db:push` before its pull request is merged, and `npm run db:status` must then show every migration applied. CI never touches the database; it only runs `backend/tests/database/migrations.test.ts`, which checks the files. See `docs/workflows/DEPLOYMENT.md` (Database Changes).
+A change with a migration is applied with `npm run db:push` before its pull request is merged, and `npm run db:status` must then show every migration applied; `npm run db:schema` then refreshes `supabase/schemas/`, which goes in the same pull request. CI never touches the database; it only runs `backend/tests/database/migrations.test.ts`, which checks the files. See `docs/workflows/DEPLOYMENT.md` (Database Changes).
 
 **Step 14 - Lint**  
 ```bash
