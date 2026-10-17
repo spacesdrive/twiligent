@@ -144,6 +144,7 @@ docs/
     TESTING.md             Test types, commands, pass criteria
     GIT.md                 Commit format, branch rules, changelog
     DEPLOYMENT.md          Backend deploy, frontend deploy, verification
+    RECOVERY.md            Incidents: find the failure, stop the damage, roll back, back up and restore
     SCHEDULING_SETUP.md    Five-step GitHub Actions scheduling setup for self-hosters
   features/
     NEW_ANALYTICS_PAGE.md  Add analytics view for a new platform

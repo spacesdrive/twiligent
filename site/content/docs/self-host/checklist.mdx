@@ -3,6 +3,7 @@ export const meta = { title: 'Launch checklist', description: 'Confirm everythin
 | Check | How |
 | --- | --- |
 | Backend is up | `/api/health` on your backend URL returns status ok. |
+| Backend is ready | `/api/health/ready` returns status ready. If it names a missing secret, set it and deploy again. |
 | Sign-in works | On the site, sign in with an emailed code (or Use password, then Create one with a password), and with Continue with Google if you set it up. |
 | Keys are detected | Settings, Server API keys shows YouTube, Instagram and Cloudinary as set. |
 | YouTube works | Add any public channel in Accounts. |

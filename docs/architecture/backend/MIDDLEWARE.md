@@ -69,10 +69,13 @@ The API only answers JSON and redirects, so nothing it returns may be framed, sn
 **Source:** `backend/middleware/clients.ts` (`injectClients`)  
 **Applied to:** Every request
 
-Creates per-request Supabase and Redis client instances and sets them on the Hono context. The clients are stateless HTTP clients, so creating them per request is cheap and safe.
+Creates per-request Supabase and Redis client instances and sets them on the Hono context. The clients are stateless HTTP clients, so creating them per request is cheap and safe. It first checks the core secrets with `missingCoreSecrets(env)` (`lib/config.ts`): when `SUPABASE_URL` (or a URL that is not a web address), `SUPABASE_SERVICE_KEY` or `SUPABASE_ANON_KEY` is missing, it throws `NotConfiguredError` naming them, so every request answers 503 with a message that says what to set instead of an internal error.
 
 ```ts
 export async function injectClients(c: AppContext, next: Next): Promise<void> {
+    const missing = missingCoreSecrets(c.env);
+    if (missing.length > 0) throw new NotConfiguredError(coreSecretsMessage(missing));
+
     c.set('supabase', getSupabase(c.env));
     c.set('redis', getRedis(c.env));
     c.set('rateLimitRedis', getRateLimitRedis(c.env));
@@ -80,7 +83,7 @@ export async function injectClients(c: AppContext, next: Next): Promise<void> {
 }
 ```
 
-**`getSupabase(env)`** (`database/supabase.ts`) - a Supabase client with the service-role key, used by every repository.  
+**`getSupabase(env)`** (`database/supabase.ts`) - a Supabase client with the service-role key, used by every repository. Every query has a 15 second timeout (`DB_TIMEOUT_MS`).  
 **`getRedis(env)`** (`database/redis.ts`) - an Upstash Redis client if `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` are set, otherwise `null`. `analyticsCacheRepository` treats `null` as a cache that is always empty.  
 **`getRateLimitRedis(env)`** (`database/redis.ts`) - a second Upstash client for the rate limiter, with retries off and a 1 second timeout, so a Redis outage cannot slow every request. `null` without credentials.
 

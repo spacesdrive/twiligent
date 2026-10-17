@@ -32,6 +32,10 @@ Tests never sit next to source files. Each workspace has a `tests/` folder that 
 | `backend/services/tokenRefreshService.ts` | `backend/tests/services/tokenRefreshService.test.ts` |
 | `backend/repositories/accountRepository.ts` | `backend/tests/repositories/accountRepository.test.ts` |
 | `backend/middleware/errorHandler.ts` | `backend/tests/middleware/errorHandler.test.ts` |
+| `backend/middleware/clients.ts` | `backend/tests/middleware/clients.test.ts` |
+| `backend/routes/index.ts` (health checks) | `backend/tests/routes/healthRoutes.test.ts` |
+| `backend/database/supabase.ts` | `backend/tests/database/supabase.test.ts` |
+| `backend/lib/redact.ts` | `backend/tests/lib/redact.test.ts` |
 | `backend/validators/fields.ts` | `backend/tests/validators/fields.test.ts` |
 | `supabase/migrations/*.sql` and `supabase/rollbacks/*.sql` | `backend/tests/database/migrations.test.ts` |
 | `frontend/src/lib/accounts.ts` | `frontend/tests/lib/accounts.test.ts` |
@@ -77,7 +81,7 @@ Site tests are in `site/tests/docs/` and `site/tests/lib/`. `chart.test.ts` chec
 
 Test files import the code under test the same way, by relative path with the `.ts` extension (`../../src/lib/accounts.ts`). Type test fakes narrowly: cast a fake once to the interface it stands in for, rather than using `any`, which is a lint error.
 
-The error contract has its own tests: `tests/middleware/errorHandler.test.ts` (the status and body for each error code, platform messages without URLs, database and unexpected errors hidden from the client, validation and malformed JSON, and unknown routes) and, on the frontend, `tests/lib/apiErrors.test.ts` (the message `request()` throws, with the request id on 5xx). Repository tests (`tests/repositories/*.test.ts`) check the user filter, the `data` merge and the `DatabaseError` for a failed query against the fake Supabase client, and `analyticsCacheRepository.test.ts` the cache keys, versions and failure cooldown. Validator tests (`tests/validators/*.test.ts`) check the field helpers and their messages.
+The error contract has its own tests: `tests/middleware/errorHandler.test.ts` (the status and body for each error code, platform messages without URLs, database and unexpected errors hidden from the client, validation and malformed JSON, and unknown routes) and, on the frontend, `tests/lib/apiErrors.test.ts` (the message `request()` throws, with the request id on 5xx). Repository tests (`tests/repositories/*.test.ts`) check the user filter, the `data` merge and the `DatabaseError` for a failed query against the fake Supabase client, and `analyticsCacheRepository.test.ts` the cache keys, versions and failure cooldown. Validator tests (`tests/validators/*.test.ts`) check the field helpers and their messages. The failure paths around them have tests too: `tests/middleware/clients.test.ts` (a missing Supabase secret answers `NOT_CONFIGURED` naming it), `tests/lib/config.test.ts` (which secrets count as missing), `tests/jobs/scheduled.test.ts` (a cron run without them logs and stops), `tests/database/supabase.test.ts` (a query that never answers is cut off at the timeout, with mocked timers), `tests/routes/healthRoutes.test.ts` (liveness without the database, readiness, and a database failure hidden from the client) and `tests/lib/redact.test.ts` (URLs, Bearer tokens and token parameters removed, ordinary messages unchanged).
 
 Rate limiting has its own tests: `tests/lib/rateLimit/algorithms.test.ts` (each algorithm's decisions, retry and reset times), `tests/lib/rateLimit/limiter.test.ts` (Redis path, memory fallback, circuit breaker, deny cache, eviction) and `tests/middleware/rateLimit.test.ts` (headers, the 429 body, route filters, IPv6 keys). The Lua scripts in `lib/rateLimit/scripts.ts` cannot run in Node; when you change one, change the twin function in `algorithms.ts` the same way and check both against each other in a Lua VM (see `docs/architecture/backend/RATE_LIMITING.md`).
 
@@ -141,6 +145,9 @@ For any backend change, verify the affected routes directly:
 # Health check (should always work); the response carries an X-Request-Id header
 curl -i https://twiligent.ujjwalkrai.workers.dev/api/health
 
+# Readiness: 200 with { "status": "ready", "databaseMs": ..., "timestamp": ... } when the secrets are set and the database answers
+curl -i https://twiligent.ujjwalkrai.workers.dev/api/health/ready
+
 # Authenticated route (replace TOKEN with a real Supabase JWT)
 curl -H "Authorization: Bearer TOKEN" https://twiligent.ujjwalkrai.workers.dev/api/accounts
 
@@ -194,6 +201,7 @@ Open the app in a browser. For each changed area, test:
 - [ ] With the Worker on `localhost`, the Vite dev server on port 5173 can call it
 - [ ] A failing request returns `{ success: false, code, message, requestId }` with the status for its code, and `npx wrangler tail` shows a JSON log line with the same request id
 - [ ] A 5xx error toast in the app ends with `(request <id>)`
+- [ ] `.../api/health/ready` answers 200 with `databaseMs`; on a local Worker with `SUPABASE_SERVICE_KEY` removed from `.dev.vars`, every route answers `503 NOT_CONFIGURED` naming the secret
 
 **Rate limiting (if changed):**
 - [ ] `curl -i -H "CF-Connecting-IP: 203.0.113.1" http://localhost:8787/api/health` shows `RateLimit-Limit`, `RateLimit-Remaining` and `RateLimit-Reset`

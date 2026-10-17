@@ -47,7 +47,7 @@ If you use Redis, also add `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKE
 </Step>
 <Step title="Check it is running">
 
-Open `https://your-backend-url/api/health`. It should return `{"status":"ok"}` with a timestamp. Every response also carries an `X-Request-Id` header; server error messages in the app show the same id, and you can find its log line with `npx wrangler tail`.
+Open `https://your-backend-url/api/health`. It should return `{"status":"ok"}` with a timestamp. Then open `/api/health/ready`, which also checks the database: it should return `{"status":"ready"}`. If a Supabase secret is missing, it names the secret to set. Every response also carries an `X-Request-Id` header; server error messages in the app show the same id, and you can find its log line with `npx wrangler tail`.
 
 </Step>
 </Steps>
