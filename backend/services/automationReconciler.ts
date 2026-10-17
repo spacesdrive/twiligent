@@ -10,7 +10,7 @@ import {
     REVIEW_BATCH, REVIEW_MAX_CHECKS, REVIEW_RECHECK_SECONDS, REVIEW_SETTLE_SECONDS, SUBREQUESTS_PER_REVIEW, findSentReply, reviewNote,
 } from '../lib/automationReview.ts';
 import { errorFields } from '../lib/logger.ts';
-import { redactUrls } from '../lib/redact.ts';
+import { redactSecrets } from '../lib/redact.ts';
 import type { AutomationCommentRepository, ExpiredCounts, ReviewCandidate, ReviewResult } from '../repositories/automationCommentRepository.ts';
 import type { AutomationPublicReplyRepository, PublicReviewCandidate, PublicReviewResult } from '../repositories/automationPublicReplyRepository.ts';
 import type { QueueHealth } from '../lib/automationHealth.ts';
@@ -79,7 +79,7 @@ export function createAutomationReconciler({ comments, publicReplies, context }:
             } catch (err) {
                 // an Instagram error is a check that could not be made; it counts, so a broken conversation is not asked forever
                 reviewed.failed++;
-                const reason = redactUrls((err as Error).message ?? 'unknown error').slice(0, 200);
+                const reason = redactSecrets((err as Error).message ?? 'unknown error').slice(0, 200);
                 log.warn('automation review check failed', { commentRowId: candidate.id, ...errorFields(err) });
                 await comments.recordReview(candidate.id, { found: false, note: `Twiligent could not read the conversation on Instagram (${reason}). Check it yourself before you retry.` })
                     .catch(recordErr => log.error('automation review not recorded', { commentRowId: candidate.id, ...errorFields(recordErr) }));
@@ -117,7 +117,7 @@ export function createAutomationReconciler({ comments, publicReplies, context }:
                 else reviewed.notFound++;
             } catch (err) {
                 reviewed.failed++;
-                const reason = redactUrls((err as Error).message ?? 'unknown error').slice(0, 200);
+                const reason = redactSecrets((err as Error).message ?? 'unknown error').slice(0, 200);
                 log.warn('automation public review check failed', { publicReplyId: candidate.id, ...errorFields(err) });
                 await publicReplies.recordReview(candidate.id, { found: false, note: `Twiligent could not read the comment's replies on Instagram (${reason}). Check the comment yourself before you retry.`, resend: false })
                     .catch(recordErr => log.error('automation public review not recorded', { publicReplyId: candidate.id, ...errorFields(recordErr) }));

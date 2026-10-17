@@ -1,4 +1,4 @@
-import { redactUrls } from './redact.ts';
+import { redactSecrets } from './redact.ts';
 import type { ApiErrorCode } from '../../shared/types/domain.ts';
 
 // services throw these; middleware/errorHandler.ts maps each code to a status and the one error body
@@ -62,13 +62,13 @@ export interface UpstreamDetails {
     cause?: unknown;
 }
 
-// keeps the platform's wording, which users can act on, but never a url that may carry a key or token
+// keeps the platform's wording, which users can act on, but never a url, header or token that may carry a credential
 export class UpstreamError extends AppError {
     readonly reason: string;
     readonly upstreamStatus: number | undefined;
 
     constructor(message: string, { reason = '', status, cause }: UpstreamDetails = {}) {
-        super('UPSTREAM_ERROR', redactUrls(message), { cause });
+        super('UPSTREAM_ERROR', redactSecrets(message), { cause });
         this.reason = reason;
         this.upstreamStatus = status;
     }
