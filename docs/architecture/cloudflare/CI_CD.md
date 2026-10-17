@@ -44,7 +44,7 @@ Nothing compiles TypeScript ahead of time: Wrangler and Vite strip the types whi
 3. `npm ci` at the repository root, which installs every workspace, including Wrangler, then `node scripts/check-platform-packages.ts`, which installs once more when npm skipped a platform package
 4. `npm run typecheck --workspace backend` - checks the Worker source and the backend tests
 5. `npm test --workspace backend`
-6. Run `wrangler deploy` via `cloudflare/wrangler-action@v4` with `workingDirectory: backend`. The action finds the Wrangler installed from the lockfile (3.114.17) and uses it instead of installing its own default version.
+6. Run `wrangler deploy` via `cloudflare/wrangler-action@v4` with `workingDirectory: backend`. The action finds the Wrangler installed from the root lockfile (Wrangler 4, ADR-039) and uses it instead of installing its own default version.
 
 A type error or failing test stops the run before the deploy step.
 
