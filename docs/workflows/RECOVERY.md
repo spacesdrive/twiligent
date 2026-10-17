@@ -10,6 +10,8 @@ What to do when something breaks in production. Each section names the check tha
 | `curl -i <backend-url>/api/health/ready` | The Supabase secrets are set and the database answers; `databaseMs` shows how long the database took. A `503 NOT_CONFIGURED` names the missing secret, a `500 DATABASE_ERROR` means the database did not answer |
 | `npx wrangler tail` (from `backend/`) | The Worker's log lines as they happen: one access line per request, every failure with its request id, and the cron runs (`scheduled publish run`, `automation dispatch`, `automation reconcile`, `cron run skipped`) |
 
+A message such as "YouTube is not answering, so calls to it are paused for a moment" comes from the circuit breaker: that platform failed five times in a row, and calls to it fail at once for 30 seconds before one trial call checks again. It clears on its own; check the platform's status page if it keeps coming back.
+
 A person who reports an error can quote the request id at the end of the error message. Search the tail output for it. Logs are streamed, not stored: turn on Workers Logs for the Worker in the Cloudflare dashboard to keep them.
 
 ## 2. Stop the damage

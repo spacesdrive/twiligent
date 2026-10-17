@@ -10,7 +10,7 @@ Every backend failure is a typed error thrown where the problem is found and for
 | `UnauthorizedError` | `UNAUTHORIZED` | 401 | No token, or an invalid or expired one (thrown by `requireAuth`), or a Send Email hook call without a valid signature (thrown by `verifyAuthHook`) |
 | `ForbiddenError` | `FORBIDDEN` | 403 | Reserved; another user's record is a `NotFoundError` |
 | `NotFoundError` | `NOT_FOUND` | 404 | The record does not exist for this user, or is on the wrong platform |
-| `ConflictError` | `CONFLICT` | 409 | The account is already added |
+| `ConflictError` | `CONFLICT` | 409 | The account is already added, found by the list check or, for an add at the same moment, by the unique index (`isUniqueViolation`) |
 | `RateLimitedError` | `RATE_LIMITED` | 429 | A daily allowance is used up: the auth email caps in `authEmailService.ts`. Per-request limits are the rate limiter's job, not this error |
 | `UpstreamError` | `UPSTREAM_ERROR` | 502 | YouTube, Instagram, Reddit or Resend answered with an error |
 | `NotConfiguredError` | `NOT_CONFIGURED` | 503 | A Worker secret the request needs is not set, or a core Supabase secret is missing (thrown by `injectClients` for every request) |
@@ -31,6 +31,8 @@ if (data.error) {
     throw new UpstreamError(data.error.message, { reason: data.error.errors?.[0]?.reason || '', status: data.error.code });
 }
 ```
+
+Each platform's request helper (`ytFetch`, `igFetch` and `igPost`, `redditFetch`) runs its call through a circuit breaker (`lib/circuitBreaker.ts`, one per platform and Worker isolate). Five outages in a row, meaning a timeout the caller did not cause, an unreachable host or a 5xx, pause calls for 30 seconds: they fail at once with an `UpstreamError` (reason `unreachable`, so a scheduled post that meets it is retried) whose message says to try again in a minute. One trial call then decides whether the platform is back. A 4xx, such as an expired token, never opens it, and Instagram's Graph error codes are not read as HTTP statuses. Comment replies (`instagramMessaging.ts`) keep their own cooldowns and do not use it.
 
 `UpstreamError` passes its message through `redactSecrets` (`lib/redact.ts`), which removes URLs, `Bearer` tokens and token-like `name=value` pairs and JSON fields, because a platform error can echo the request URL, a header or the form body with the API key or token in it. Cast the parsed JSON once to an interface that covers the fields the module reads (see `docs/guidelines/TYPESCRIPT.md`).
 
@@ -73,7 +75,7 @@ The repository keeps this in three private helpers (`readKey`, `writeKey`, `dele
 
 ### Services (`services/*Service.ts`)
 
-Services hold the rules, so they throw most errors: `NotFoundError` when a `...ForUser` lookup returns `null`, `ValidationError` when a stored field the call needs is missing or a business rule fails, `ConflictError` for a duplicate, `NotConfiguredError` when a Worker secret is not set. Let platform and database errors propagate unchanged.
+Services hold the rules, so they throw most errors: `NotFoundError` when a `...ForUser` lookup returns `null`, `ValidationError` when a stored field the call needs is missing or a business rule fails, `ConflictError` for a duplicate, `NotConfiguredError` when a Worker secret is not set. Let platform and database errors propagate unchanged, with one exception: an insert that breaks a unique index (`isUniqueViolation(err)` in `lib/errors.ts`, Postgres code `23505`) is a duplicate the service already has a message for, so it becomes that `ConflictError`.
 
 Catch only when one failure must not stop other work, and say why:
 

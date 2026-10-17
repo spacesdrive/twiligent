@@ -144,7 +144,7 @@ There is no barrel: services and tests import each module directly, and each mod
 
 | Module | Contents |
 |---|---|
-| `instagramApi.ts` | `igFetch(endpoint, params, retries, signal)` GET transport (15 s timeout, one retry on a network blip, never after the request signal aborted; no API version prefix for `/oauth`, `/access_token`, `/refresh_access_token`), `igPost(endpoint, params, signal)` (never retried, so a publish cannot run twice), `readGraphResponse` and `fetchInstagramProfile` |
+| `instagramApi.ts` | `igFetch(endpoint, params, retries, signal)` GET transport (through the Instagram circuit breaker, 15 s timeout, one retry on a network blip, never after the request signal aborted; no API version prefix for `/oauth`, `/access_token`, `/refresh_access_token`), `igPost(endpoint, params, signal)` (never retried, so a publish cannot run twice), `readGraphResponse` and `fetchInstagramProfile` |
 | `instagramTokens.ts` | `exchangeForLongLivedToken`, `refreshLongLivedToken` |
 | `instagramOAuth.ts` | `isOAuthConfigured`, `buildAuthorizationUrl`, `exchangeCodeForToken`, `upgradeToLongLivedToken` |
 | `instagramMedia.ts` | `classifyInstagramMedia`, `extractInstagramViews`, `normalizeInstagramMedia`, paged `fetchInstagramMedia` |
@@ -214,7 +214,7 @@ There is no barrel: services and tests import each module directly.
 
 | Module | Contents |
 |---|---|
-| `youtubeApi.ts` | `ytFetch(endpoint, params, apiKey, signal)` (adds `key` to the params object it is given; an API error becomes an `UpstreamError` carrying `reason` and `status`, a cancelled call an `UpstreamTimeoutError`) and `optionalCount` (null for a hidden or missing count) |
+| `youtubeApi.ts` | `ytFetch(endpoint, params, apiKey, signal)` (through the YouTube circuit breaker; adds `key` to the params object it is given; an API error becomes an `UpstreamError` carrying `reason` and `status`, a cancelled call an `UpstreamTimeoutError`) and `optionalCount` (null for a hidden or missing count) |
 | `youtubeChannels.ts` | Channel id extraction from URLs and handles, the handle, username, search lookup chain, `resolveChannelId`, `fetchChannelData` |
 | `youtubeVideos.ts` | `normalizeYouTubeVideo`, the playlist page fetch that treats `playlistNotFound` as no videos, `fetchAllVideos` |
 | `youtubeTracked.ts` | `extractYouTubeVideoId`, `fetchTrackedYouTubeData` |
@@ -258,7 +258,7 @@ There is no barrel: services and tests import each module directly.
 
 ### HTTP Client
 
-`redditApi.ts` holds the API code. All Reddit public JSON API calls go through `redditFetch(path, cookie, signal)`, and `normalizeRedditPost()` maps each submitted post to the cached post shape. Requests include a descriptive `User-Agent` header (required by Reddit). When a cookie is passed, it is sent as `Cookie: reddit_session=<value>` for private account access and higher rate limits. A 404 becomes a `NotFoundError` (the user does not exist); a 403 (expired cookie), a 429 and other failures become an `UpstreamError` with a message that says what to do.
+`redditApi.ts` holds the API code. All Reddit public JSON API calls go through `redditFetch(path, cookie, signal)`, which runs them through the Reddit circuit breaker (`lib/circuitBreaker.ts`), and `normalizeRedditPost()` maps each submitted post to the cached post shape. Requests include a descriptive `User-Agent` header (required by Reddit). When a cookie is passed, it is sent as `Cookie: reddit_session=<value>` for private account access and higher rate limits. A 404 becomes a `NotFoundError` (the user does not exist); a 403 (expired cookie), a 429 and other failures become an `UpstreamError` with a message that says what to do.
 
 ### Key Functions
 
