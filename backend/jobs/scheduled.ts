@@ -1,7 +1,7 @@
 import { createServices } from '../container.ts';
 import { getSupabase } from '../database/supabase.ts';
 import { getRedis, getRateLimitRedis } from '../database/redis.ts';
-import { readConfig } from '../lib/config.ts';
+import { coreSecretsMessage, missingCoreSecrets, readConfig } from '../lib/config.ts';
 import { FREE_PLAN_SUBREQUESTS } from '../lib/automationDelivery.ts';
 import { createLogger } from '../lib/logger.ts';
 import type { Services } from '../container.ts';
@@ -64,6 +64,12 @@ async function dispatch(services: Services, context: RequestContext): Promise<vo
 // the cron entry point: the same services the API uses, built from the Worker env instead of a request
 export async function runScheduledJob(cron: string, env: Env, scheduledTime = Date.now()): Promise<void> {
     const context = cronContext(cron);
+    // nothing can run without the database, so the log says which secret is missing instead of a client error
+    const missing = missingCoreSecrets(env);
+    if (missing.length > 0) {
+        context.log.error('cron run skipped', { reason: coreSecretsMessage(missing) });
+        return;
+    }
     const clients = { supabase: getSupabase(env), redis: getRedis(env), rateLimitRedis: getRateLimitRedis(env) };
     const services = createServices(clients, readConfig(env), context);
     const started = Date.now();

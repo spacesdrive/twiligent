@@ -87,6 +87,25 @@ function allowedOrigins(env: Env): string[] {
     return [...new Set(listed)];
 }
 
+// no request or cron run can work without the database and token checks, so these are checked before anything else
+const CORE_SECRETS = ['SUPABASE_URL', 'SUPABASE_SERVICE_KEY', 'SUPABASE_ANON_KEY'] as const;
+
+// the core secrets that are not set, or for the url not a web address
+export function missingCoreSecrets(env: Partial<Env>): string[] {
+    return CORE_SECRETS.filter(name => {
+        const value = cleanSecret(env[name]);
+        if (!value) return true;
+        return name === 'SUPABASE_URL' && !(/^https?:\/\//.test(value) && originOf(value));
+    });
+}
+
+export function coreSecretsMessage(missing: string[]): string {
+    const names = missing.join(', ');
+    const subject = missing.length === 1 ? `the ${names} Worker secret is` : `the ${names} Worker secrets are`;
+    const object = missing.length === 1 ? 'it' : 'them';
+    return `The server is not set up: ${subject} missing or invalid. Set ${object} with wrangler secret put, then deploy again.`;
+}
+
 // a Worker served from localhost is a development instance, so the local Vite server may call it too
 export function corsOrigins(config: AppConfig, requestUrl: string): string[] {
     const local = LOCAL_HOSTNAMES.includes(new URL(requestUrl).hostname);

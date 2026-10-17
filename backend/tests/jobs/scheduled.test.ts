@@ -1,7 +1,8 @@
-import { test } from 'node:test';
+import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { DAILY_CRON, EVERY_FIVE_MINUTES_CRON, EVERY_MINUTE_CRON, cronPlan } from '../../jobs/scheduled.ts';
+import type { Env } from '../../types/env.ts';
+import { DAILY_CRON, EVERY_FIVE_MINUTES_CRON, EVERY_MINUTE_CRON, cronPlan, runScheduledJob } from '../../jobs/scheduled.ts';
 
 const at = (time: string) => Date.parse(`2026-10-16T${time}:00Z`);
 
@@ -26,4 +27,14 @@ test('the crons in wrangler.toml are the ones the Worker dispatches', () => {
     const toml = readFileSync(new URL('../../wrangler.toml', import.meta.url), 'utf8');
     assert.match(toml, /crons = \["\* \* \* \* \*", "\*\/5 \* \* \* \*", "0 0 \* \* \*"\]/);
     assert.deepEqual([EVERY_MINUTE_CRON, EVERY_FIVE_MINUTES_CRON, DAILY_CRON], ['* * * * *', '*/5 * * * *', '0 0 * * *']);
+});
+
+test('a cron run without the Supabase secrets logs which are missing and stops instead of failing', async t => {
+    const written = mock.method(console, 'error', () => {});
+    t.after(() => written.mock.restore());
+    await runScheduledJob(EVERY_MINUTE_CRON, { SUPABASE_URL: 'https://project.supabase.co' } as Env);
+    assert.equal(written.mock.callCount(), 1);
+    const line = JSON.parse(String(written.mock.calls[0].arguments[0]));
+    assert.equal(line.message, 'cron run skipped');
+    assert.match(line.reason, /SUPABASE_SERVICE_KEY, SUPABASE_ANON_KEY Worker secrets are missing/);
 });
