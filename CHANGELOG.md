@@ -33,6 +33,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- The README recordings are animated WebP instead of GIF: 8.3 MB for all seven instead of 35.5 MB, so the repository page loads in a fraction of the time, with smoother motion and full colour (#129)
 - Connecting an Instagram account that is already connected renews its token instead of answering that it is already added, so a revoked token can be fixed without removing the account (#89)
 - The Worker's publishing cron runs every 5 minutes instead of 15; posts still publish on the quarter hour, and the other runs check the reply queue (#89, #100)
 - The reply queue sends up to 10 replies a minute instead of 10 every five minutes, accounts take turns so one busy reel cannot hold back another account, and paused, cooling or limited accounts are no longer claimed and put back on every run (#99)
