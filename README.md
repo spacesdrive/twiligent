@@ -27,7 +27,7 @@ It runs on accounts you own, mostly on free plans.</p>
 
 <br/>
 
-<img src="docs/media/overview.gif" alt="The Twiligent Overview: every account's audience, views and likes side by side" width="100%" />
+<img src="docs/media/overview.webp" alt="The Twiligent Overview: every account's audience, views and likes side by side" width="100%" />
 
 </div>
 
@@ -44,36 +44,36 @@ Twiligent puts them in one dashboard that you host yourself. Your data stays in 
 <table>
   <tr>
     <td width="50%" valign="top">
-      <img src="docs/media/youtube.gif" alt="A YouTube channel's analytics page" width="100%" />
+      <img src="docs/media/youtube.webp" alt="A YouTube channel's analytics page" width="100%" />
       <h4>See each channel in depth</h4>
       <p>Views, subscribers, engagement and growth for every YouTube channel, with Shorts and long videos compared and your best videos ranked.</p>
     </td>
     <td width="50%" valign="top">
-      <img src="docs/media/instagram.gif" alt="An Instagram account's analytics page" width="100%" />
+      <img src="docs/media/instagram.webp" alt="An Instagram account's analytics page" width="100%" />
       <h4>Know what works on Instagram</h4>
       <p>Followers, engagement rate, the best day and hour to post, and how Reels, photos and videos compare.</p>
     </td>
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <img src="docs/media/publish.gif" alt="The Publish page with post settings" width="100%" />
+      <img src="docs/media/publish.webp" alt="The Publish page with post settings" width="100%" />
       <h4>Publish now, or at the hour you pick</h4>
       <p>Post photos, Reels and Stories to Instagram, or schedule them. The server publishes within 15 minutes of that time, even with your browser closed.</p>
     </td>
     <td width="50%" valign="top">
-      <img src="docs/media/automations.gif" alt="Comment automation rules and activity" width="100%" />
+      <img src="docs/media/automations.webp" alt="Comment automation rules and activity" width="100%" />
       <h4>Answer comments automatically</h4>
       <p>When someone comments a keyword such as GUIDE, they get your private reply and link within seconds, a public reply under their comment, or both.</p>
     </td>
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <img src="docs/media/videos.gif" alt="The Videos explorer table" width="100%" />
+      <img src="docs/media/videos.webp" alt="The Videos explorer table" width="100%" />
       <h4>Find any video or post</h4>
       <p>Search and sort every video, Short, Reel and post across your accounts, by views, likes, comments or engagement.</p>
     </td>
     <td width="50%" valign="top">
-      <img src="docs/media/accounts.gif" alt="The Accounts page with connected channels" width="100%" />
+      <img src="docs/media/accounts.webp" alt="The Accounts page with connected channels" width="100%" />
       <h4>Bring every account together</h4>
       <p>Add YouTube channels by link or handle and Reddit profiles by username, connect Instagram with one sign-in, and refresh them all at once.</p>
     </td>
