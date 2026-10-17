@@ -10,12 +10,62 @@ const read = (folder: string, name: string) => readFileSync(`${supabase}${folder
 const isBaseline = (name: string) => /^\d{14}_baseline_/.test(name);
 // migrations before this version were applied to production before the rule and stay as recorded
 const ONE_ENTITY_FROM = '20261016100000';
+// a name starts with what the file does to its one entity, so the folder reads as a list of changes
+const VERBS = ['baseline', 'create', 'alter', 'add', 'index', 'revoke', 'check', 'replace', 'drop', 'rename'];
+const KINDS = ['table', 'index', 'function', 'trigger'] as const;
+type ObjectKind = typeof KINDS[number];
+
+function isRealUtcTime(version: string): boolean {
+    const [year, month, day, hour, minute, second] = [[0, 4], [4, 6], [6, 8], [8, 10], [10, 12], [12, 14]].map(([from, to]) => Number(version.slice(from, to)));
+    const time = new Date(Date.UTC(year, month - 1, day, hour, minute, second));
+    return time.toISOString().replace(/\D/g, '').slice(0, 14) === version;
+}
+
+// replays every create and drop in order, so an index dropped and made again counts once
+function objectsFromMigrations(): Record<ObjectKind, string[]> {
+    const live = Object.fromEntries(KINDS.map(kind => [kind, new Set<string>()])) as Record<ObjectKind, Set<string>>;
+    const statement = /\b(create|drop)\s+(?:or replace\s+)?(table|unique index|index|function|trigger)\s+(?:if (?:not )?exists\s+)?(?:public\.)?(\w+)/gi;
+    for (const name of migrations) {
+        const sql = read('migrations', name).replace(/--.*$/gm, '');
+        for (const [, verb, kind, object] of sql.matchAll(statement)) {
+            const set = live[kind.toLowerCase().replace('unique ', '') as ObjectKind];
+            if (verb.toLowerCase() === 'create') set.add(object);
+            else set.delete(object);
+        }
+    }
+    return Object.fromEntries(KINDS.map(kind => [kind, [...live[kind]].sort()])) as Record<ObjectKind, string[]>;
+}
+
+function objectsInSchemaTree(): Record<ObjectKind, string[]> {
+    const tables = readdirSync(`${supabase}schemas/public/tables`);
+    const inTables = (pattern: RegExp) => tables.flatMap(file => [...read('schemas/public/tables', file).matchAll(pattern)].map(match => match[1]));
+    return {
+        table: tables.map(file => file.replace(/\.sql$/, '')).sort(),
+        index: inTables(/CREATE (?:UNIQUE )?INDEX (\w+)/g).sort(),
+        function: readdirSync(`${supabase}schemas/public/functions`).map(file => file.replace(/\.sql$/, '')).sort(),
+        trigger: inTables(/CREATE TRIGGER (\w+)/g).sort(),
+    };
+}
 
 describe('database migrations', () => {
     test('every migration is named <14 digit version>_<lowercase name>.sql with a unique version', () => {
         for (const name of [...migrations, ...rollbacks]) assert.match(name, /^\d{14}_[a-z0-9_]+\.sql$/, name);
         const versions = migrations.map(name => name.slice(0, 14));
         assert.equal(new Set(versions).size, versions.length);
+    });
+
+    test('every version is a real UTC date and time, as npm run db:new writes it', () => {
+        for (const name of migrations) assert.ok(isRealUtcTime(name.slice(0, 14)), `${name}: make the file with npm run db:new`);
+    });
+
+    test('every name starts with what the file does: baseline, create, alter, add, index, revoke, check, replace, drop or rename', () => {
+        for (const name of migrations) assert.ok(VERBS.includes(name.slice(15).split('_')[0]), name);
+    });
+
+    test('the schema tree in supabase/schemas has the same tables, indexes, functions and triggers as the migrations', () => {
+        const fromMigrations = objectsFromMigrations();
+        const inTree = objectsInSchemaTree();
+        for (const kind of KINDS) assert.deepEqual(inTree[kind], fromMigrations[kind], `${kind}s differ; after npm run db:push, run npm run db:schema and commit supabase/schemas`);
     });
 
     test('the baseline files come before every change, so a new instance starts from the same tables', () => {

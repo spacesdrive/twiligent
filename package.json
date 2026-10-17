@@ -21,7 +21,8 @@
     "db:new": "supabase migration new",
     "db:status": "supabase migration list",
     "db:check": "supabase db push --dry-run",
-    "db:push": "supabase db push"
+    "db:push": "supabase db push",
+    "db:schema": "supabase db schema declarative generate --linked --schema public --overwrite --yes"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
