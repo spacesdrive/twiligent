@@ -1,4 +1,4 @@
--- merges a patch into data in one UPDATE, so two writers never undo each other; a null p_user_id is the cron form
+-- creates merge_account_data, which merges changes into an account in one step so two writers never undo each other
 create or replace function public.merge_account_data(p_id text, p_user_id uuid, p_patch jsonb)
 returns boolean
 language sql

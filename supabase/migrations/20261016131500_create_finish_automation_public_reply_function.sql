@@ -1,6 +1,4 @@
--- records what Instagram answered to a public reply in one transaction: the reply, its attempt, a cooldown for the
--- account's public replies, or a hold on the whole account when Instagram refused its token. An answer that comes
--- back after its run was marked interrupted still lands, because the answer is better than a guess
+-- creates finish_automation_public_reply, which saves what Instagram answered to a public reply
 create or replace function public.finish_automation_public_reply(
     p_id text,
     p_attempt_id text,

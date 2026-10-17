@@ -1,6 +1,4 @@
--- puts back the function from 20261016122300, without the public reply columns
--- expires up to p_limit replies whose 7 days ran out and up to p_limit follow-ups whose 24 hours ran out, without a
--- run claiming each one; rows a run holds are skipped and settled by that run
+-- puts back the earlier expire_automation_jobs, without public replies
 create or replace function public.expire_automation_jobs(p_limit integer)
 returns jsonb
 language sql

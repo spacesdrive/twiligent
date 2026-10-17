@@ -1,5 +1,4 @@
--- deletes at most p_limit comments created before p_before, oldest first, and returns how many; their attempts and
--- follow-ups go with them. A bounded batch keeps each statement short however much built up
+-- creates purge_automation_comments, which deletes old comments in small batches
 create or replace function public.purge_automation_comments(p_before timestamptz, p_limit integer)
 returns integer
 language sql

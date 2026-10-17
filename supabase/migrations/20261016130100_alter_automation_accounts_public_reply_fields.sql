@@ -1,5 +1,4 @@
--- public replies have their own cooldown and hourly limit: Instagram limits commenting and messaging apart, so a
--- block on one never holds the other
+-- adds a separate cooldown and hourly limit for public replies to automation_accounts
 alter table public.automation_accounts
     add column public_cooldown_until timestamptz,
     add column public_cooldown_reason text,

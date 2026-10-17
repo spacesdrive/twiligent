@@ -1,4 +1,4 @@
--- the tracked_posts table before versioned migrations; safe to repeat on a database that already has it
+-- creates the tracked_posts table as it was before migrations, and is safe to run again on a database that has it
 create table if not exists public.tracked_posts (
     id text primary key,
     user_id uuid not null references auth.users (id) on delete cascade,

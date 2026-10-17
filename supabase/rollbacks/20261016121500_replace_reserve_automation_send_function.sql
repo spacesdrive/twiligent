@@ -1,4 +1,4 @@
--- puts back the reservation from 20261016103300, which counts every attempt and marks no account as limited
+-- puts back the earlier reserve_automation_send, which counts every attempt
 drop function if exists public.reserve_automation_send(text, text, integer, integer, integer, integer, text);
 create or replace function public.reserve_automation_send(
     p_id text,

@@ -1,4 +1,4 @@
--- the accounts table before versioned migrations; safe to repeat on a database that already has it
+-- creates the accounts table as it was before migrations, and is safe to run again on a database that has it
 create table if not exists public.accounts (
     id text primary key,
     user_id uuid not null references auth.users (id) on delete cascade,

@@ -1,6 +1,4 @@
--- turns messages from people waiting on a followers-only reply into follow-up jobs, at most one open job per comment;
--- p_messages is [{ "id", "sender_id", "message_id", "sent_at" }] with row ids made by the Worker, and a message Meta
--- delivers again, or a second message while one is open, inserts nothing
+-- creates automation_followups_for_messages, which turns answers to followers-only replies into follow-up jobs
 create or replace function public.automation_followups_for_messages(p_ig_user_id text, p_messages jsonb)
 returns table (id text)
 language sql

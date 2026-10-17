@@ -1,6 +1,4 @@
--- expires up to p_limit replies whose 7 days ran out, up to p_limit follow-ups whose 24 hours ran out and up to
--- p_limit public replies still waiting 7 days after their comment, without a run claiming each one; rows a run holds
--- are skipped and settled by that run. The answer gains public_replies, which the earlier Worker ignores
+-- replaces expire_automation_jobs so it also expires public replies
 create or replace function public.expire_automation_jobs(p_limit integer)
 returns jsonb
 language sql

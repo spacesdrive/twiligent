@@ -1,4 +1,4 @@
--- merges a patch into data in one UPDATE, so a manual view count and a refresh at the same moment both survive
+-- creates merge_tracked_post_data, which merges changes into a tracked item in one step
 create or replace function public.merge_tracked_post_data(p_id text, p_user_id uuid, p_patch jsonb)
 returns boolean
 language sql

@@ -1,6 +1,4 @@
--- a rule answers a matching comment with a private reply, a public reply under the comment, or both; existing rules
--- keep the private reply alone. A public reply rotates between up to five texts, so a busy post does not fill with
--- the same words
+-- lets a rule send a private reply, a public reply under the comment, or both
 alter table public.automation_rules
     drop constraint automation_rules_reply_text_check,
     add column private_reply_enabled boolean not null default true,

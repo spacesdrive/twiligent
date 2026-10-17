@@ -1,3 +1,4 @@
+-- adds updated_at to scheduled_posts with the trigger that keeps updated_at current
 alter table public.scheduled_posts add column if not exists updated_at timestamptz not null default now();
 
 -- existing rows were last changed at an unknown time; their creation time is the closest honest value

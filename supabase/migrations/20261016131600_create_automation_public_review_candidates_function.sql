@@ -1,6 +1,4 @@
--- public replies whose outcome was unknown, ready to be looked for among the comment's replies on Instagram: the
--- last attempt left at least p_settle_seconds ago, fewer than p_max_checks checks so far and none in the last
--- p_recheck_seconds; ambiguous_attempts tells the Worker whether the reply was already sent again once
+-- creates automation_public_review_candidates, which lists public replies of unknown outcome that are ready to be looked for
 create or replace function public.automation_public_review_candidates(
     p_limit integer,
     p_settle_seconds integer,

@@ -1,5 +1,4 @@
--- public replies are counted with the other requests, under their own kind: Instagram limits them apart from
--- private replies, so neither kind's hourly limit counts the other
+-- lets automation_attempts record public replies as their own kind
 alter table public.automation_attempts
     add column public_reply_id text references public.automation_public_replies (id) on delete cascade,
     drop constraint automation_attempts_kind_check,

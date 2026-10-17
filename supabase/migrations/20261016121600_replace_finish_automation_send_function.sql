@@ -1,7 +1,4 @@
--- records what Instagram answered in one transaction: the attempt, the comment's new state, and a cooldown or a hold
--- for the account; a reply that comes back after its run was marked interrupted still lands, because the answer is
--- better than a guess. p_recipient_id keeps who received an accepted reply and p_gate_status starts a followers-only
--- wait; both default to null, so the Worker deployed before this change still calls it
+-- replaces finish_automation_send so it keeps who received the reply and starts the followers-only wait
 drop function if exists public.finish_automation_send(text, text, text, text, text, text, text, integer, integer, integer, timestamptz, timestamptz, text, text);
 create or replace function public.finish_automation_send(
     p_id text,

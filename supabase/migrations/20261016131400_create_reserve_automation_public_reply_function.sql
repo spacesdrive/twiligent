@@ -1,6 +1,4 @@
--- decides whether a claimed public reply may go out now and, when it may, records the attempt before the request
--- leaves; answers ok, gone, paused, cooldown, recipient_limit or account_limit. Only public reply attempts count, and
--- a full account is marked until a reply frees up so runs stop claiming its public replies
+-- creates reserve_automation_public_reply, which checks the limits and records an attempt before a public reply is posted
 create or replace function public.reserve_automation_public_reply(
     p_id text,
     p_attempt_id text,

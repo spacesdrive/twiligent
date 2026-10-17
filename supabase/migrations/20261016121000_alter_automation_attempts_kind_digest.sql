@@ -1,3 +1,4 @@
+-- adds the attempt kind, the follow-up link and a digest of the text sent to automation_attempts
 alter table public.automation_attempts
     -- private replies count against Instagram's 750 an hour per account; follow-ups go through the Send API instead
     add column kind text not null default 'private_reply',

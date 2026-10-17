@@ -1,6 +1,4 @@
--- replies whose outcome was unknown, ready to be looked for in the conversation on Instagram: the last attempt left
--- at least p_settle_seconds ago, fewer than p_max_checks checks so far and none in the last p_recheck_seconds;
--- the least checked first
+-- creates automation_review_candidates, which lists replies of unknown outcome that are ready to be looked for on Instagram
 create or replace function public.automation_review_candidates(
     p_limit integer,
     p_settle_seconds integer,

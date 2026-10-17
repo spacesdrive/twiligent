@@ -1,4 +1,4 @@
--- puts back the claim from 20261016103200, which takes the oldest due jobs and at most p_per_account per account
+-- puts back the earlier claim_automation_comments, where accounts do not take turns
 drop function if exists public.claim_automation_comments(integer, integer, integer, text[]);
 create or replace function public.claim_automation_comments(
     p_limit integer,

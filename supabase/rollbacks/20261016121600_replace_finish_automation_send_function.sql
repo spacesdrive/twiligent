@@ -1,4 +1,4 @@
--- puts back the finish from 20261016103400, which keeps no recipient and starts no followers-only wait
+-- puts back the earlier finish_automation_send, without the recipient or the followers-only wait
 drop function if exists public.finish_automation_send(text, text, text, text, text, text, text, integer, integer, integer, timestamptz, timestamptz, text, text, text, text);
 create or replace function public.finish_automation_send(
     p_id text,

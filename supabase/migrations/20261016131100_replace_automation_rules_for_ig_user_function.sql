@@ -1,6 +1,4 @@
--- the enabled rules of every connected account a webhook's Instagram account id belongs to, oldest account first,
--- with what each one answers with: the private reply, the public reply and its texts. The return only gains
--- columns, so the Worker deployed before this change reads the ones it knows
+-- replaces automation_rules_for_ig_user so it also returns each rule's public reply settings
 drop function if exists public.automation_rules_for_ig_user(text);
 create or replace function public.automation_rules_for_ig_user(p_ig_user_id text)
 returns table (

@@ -1,3 +1,3 @@
--- only the Worker's service role reads automation_rules; the anon key ships in every browser
+-- turns on row level security and removes browser access to automation_rules
 alter table public.automation_rules enable row level security;
 revoke all on table public.automation_rules from anon, authenticated;
