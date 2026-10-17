@@ -121,7 +121,7 @@ release: v1.1.0 - Reddit integration
 
 Every feature commit must include documentation updates. A feature is not complete until:
 - `CHANGELOG.md` is updated (Unreleased section)
-- Relevant architecture docs reflect the change (see `claude.md` Documentation Maintenance Policy)
+- Relevant architecture docs reflect the change (see `CLAUDE.md` Documentation Maintenance Policy)
 
 Include in the commit body which docs were updated:
 

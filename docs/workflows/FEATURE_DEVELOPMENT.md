@@ -158,7 +158,7 @@ Open browser DevTools -> Console. Verify no errors or warnings during normal usa
 ## Phase 6: Document and Commit
 
 **Step 21 - Update documentation**  
-Based on what changed (see `claude.md` Documentation Maintenance Policy):
+Based on what changed (see `CLAUDE.md` Documentation Maintenance Policy):
 - New route -> `docs/architecture/backend/ROUTES.md`
 - New DB column/table -> `docs/architecture/database/SCHEMA.md`
 - New env var -> `docs/architecture/cloudflare/WORKERS.md`
