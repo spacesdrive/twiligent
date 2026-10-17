@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { corsOrigins, readConfig } from '../../lib/config.ts';
+import { coreSecretsMessage, corsOrigins, missingCoreSecrets, readConfig } from '../../lib/config.ts';
 import type { Env } from '../../types/env.ts';
 
 const BOM = String.fromCharCode(0xfeff);
@@ -72,4 +72,19 @@ test('webhooks are signed with the Instagram app secret first and the Meta app s
     assert.equal(automation.verifyToken, 'tok');
     assert.equal(automation.paused, true);
     assert.equal(config({ AUTOMATION_PAUSED: 'yes' }).automation.paused, false);
+});
+
+const CORE = { SUPABASE_URL: 'https://project.supabase.co', SUPABASE_SERVICE_KEY: 'service', SUPABASE_ANON_KEY: 'anon' };
+
+test('the core Supabase secrets count as missing when unset, blank or, for the url, not a web address', () => {
+    assert.deepEqual(missingCoreSecrets(CORE), []);
+    assert.deepEqual(missingCoreSecrets({}), ['SUPABASE_URL', 'SUPABASE_SERVICE_KEY', 'SUPABASE_ANON_KEY']);
+    assert.deepEqual(missingCoreSecrets({ ...CORE, SUPABASE_SERVICE_KEY: `${BOM} ` }), ['SUPABASE_SERVICE_KEY']);
+    assert.deepEqual(missingCoreSecrets({ ...CORE, SUPABASE_URL: 'project.supabase.co' }), ['SUPABASE_URL']);
+    assert.deepEqual(missingCoreSecrets({ ...CORE, SUPABASE_URL: 'http://' }), ['SUPABASE_URL']);
+});
+
+test('the missing secrets message names each secret and says how to set it', () => {
+    assert.equal(coreSecretsMessage(['SUPABASE_URL']), 'The server is not set up: the SUPABASE_URL Worker secret is missing or invalid. Set it with wrangler secret put, then deploy again.');
+    assert.match(coreSecretsMessage(['SUPABASE_URL', 'SUPABASE_ANON_KEY']), /the SUPABASE_URL, SUPABASE_ANON_KEY Worker secrets are missing or invalid\. Set them with/);
 });
