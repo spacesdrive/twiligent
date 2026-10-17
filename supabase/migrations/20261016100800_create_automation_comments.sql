@@ -1,4 +1,4 @@
--- every comment the webhook delivered for an account with an enabled rule; a matched comment is also the job that sends its reply
+-- creates automation_comments, which stores each comment the webhook receives and is also the queue of private replies
 create table public.automation_comments (
     id text primary key,
     user_id uuid not null references auth.users (id) on delete cascade,

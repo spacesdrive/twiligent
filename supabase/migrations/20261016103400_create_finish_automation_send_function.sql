@@ -1,5 +1,4 @@
--- records what Instagram answered in one transaction: the attempt, the comment's new state, and a cooldown or a hold
--- for the account; a reply that comes back after its run was marked interrupted still lands, because the answer is better than a guess
+-- creates finish_automation_send, which saves what Instagram answered to a private reply
 create or replace function public.finish_automation_send(
     p_id text,
     p_attempt_id text,

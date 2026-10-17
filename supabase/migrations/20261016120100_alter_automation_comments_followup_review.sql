@@ -1,3 +1,4 @@
+-- adds the followers-only wait and the review checks to automation_comments
 alter table public.automation_comments
     -- the person Instagram says received the private reply, so their answer can be matched to this comment
     add column recipient_id text,

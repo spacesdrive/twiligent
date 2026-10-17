@@ -1,4 +1,4 @@
--- per Instagram account automation controls: the owner's pause, a cooldown after Instagram limits, and the webhook subscription
+-- creates automation_accounts, which holds each Instagram account's pause, cooldowns and webhook subscription
 create table public.automation_accounts (
     account_id text primary key,
     user_id uuid not null references auth.users (id) on delete cascade,

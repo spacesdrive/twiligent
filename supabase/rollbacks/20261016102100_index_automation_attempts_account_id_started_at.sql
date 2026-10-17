@@ -1,1 +1,2 @@
+-- removes the index that counts one account's sends
 drop index if exists public.automation_attempts_account_id_started_at_idx;

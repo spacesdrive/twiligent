@@ -1,4 +1,4 @@
--- who connected, removed or changed what; rows outlive the account they describe, and go with the user
+-- creates audit_events, which records who connected, removed or changed what
 create table public.audit_events (
     id text primary key,
     user_id uuid not null references auth.users (id) on delete cascade,

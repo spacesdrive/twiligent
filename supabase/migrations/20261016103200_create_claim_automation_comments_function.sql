@@ -1,5 +1,4 @@
--- hands one run the due reply jobs, at most p_per_account per account so a busy account cannot hold back the others;
--- p_ids limits it to the comments a webhook has just stored
+-- creates claim_automation_comments, which hands a run the private replies that are due to be sent
 create or replace function public.claim_automation_comments(
     p_limit integer,
     p_per_account integer,

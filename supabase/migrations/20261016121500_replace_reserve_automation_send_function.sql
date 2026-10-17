@@ -1,8 +1,4 @@
--- decides whether a claimed job may send now and, when it may, records the attempt before the request leaves;
--- answers ok, gone, paused, cooldown, recipient_limit, or the full scope (rule_limit, account_limit, user_limit,
--- global_limit). Only private replies count, since follow-ups use a different Instagram limit; a full account is
--- marked until a send frees up so runs stop claiming its jobs; p_message_digest lets a lost answer be checked later.
--- The new parameter has a default, so the Worker deployed before this change still calls it
+-- replaces reserve_automation_send so it counts private replies only and marks an account that reached its limit
 drop function if exists public.reserve_automation_send(text, text, integer, integer, integer, integer);
 create or replace function public.reserve_automation_send(
     p_id text,

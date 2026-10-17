@@ -1,6 +1,4 @@
--- puts back the function from 20261016122500, without the public reply columns
--- the instance's reply queue in one call, each count read through its own partial index: jobs due now and the oldest
--- of them, jobs held by runs that stopped, replies that need review, follow-ups due, and accounts that are held
+-- puts back the earlier automation_queue_health, without public replies
 create or replace function public.automation_queue_health(p_lease_seconds integer)
 returns jsonb
 language sql

@@ -1,4 +1,4 @@
--- puts back the claim from 20261016121400, which ignores whether the rule still sends a private reply
+-- puts back the earlier claim_automation_comments, which ignores whether the private reply is on
 create or replace function public.claim_automation_comments(
     p_limit integer,
     p_per_account integer,

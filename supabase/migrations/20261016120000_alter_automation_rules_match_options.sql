@@ -1,5 +1,4 @@
--- rules that answer any comment, and the followers-only option: the private reply asks the person to follow and
--- reply, because Instagram reports whether someone follows the account only after they have messaged it
+-- adds rules that answer any comment and the followers-only option to automation_rules
 alter table public.automation_rules
     drop constraint automation_rules_match_mode_check,
     drop constraint automation_rules_keywords_check,

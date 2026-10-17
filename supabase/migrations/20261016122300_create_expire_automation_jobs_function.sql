@@ -1,5 +1,4 @@
--- expires up to p_limit replies whose 7 days ran out and up to p_limit follow-ups whose 24 hours ran out, without a
--- run claiming each one; rows a run holds are skipped and settled by that run
+-- creates expire_automation_jobs, which marks replies and follow-ups whose time ran out as expired
 create or replace function public.expire_automation_jobs(p_limit integer)
 returns jsonb
 language sql

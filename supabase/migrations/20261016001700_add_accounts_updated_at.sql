@@ -1,3 +1,4 @@
+-- adds updated_at to accounts with the trigger that keeps updated_at current
 alter table public.accounts add column if not exists updated_at timestamptz not null default now();
 
 -- existing rows were last changed at an unknown time; their creation time is the closest honest value

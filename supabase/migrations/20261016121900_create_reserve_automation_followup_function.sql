@@ -1,6 +1,4 @@
--- decides whether a claimed follow-up may send now and records the attempt before the request leaves; answers ok,
--- gone, paused or cooldown. Follow-ups use Instagram's Send API, not the private reply allowance, so the hourly
--- reply limits do not apply to them
+-- creates reserve_automation_followup, which checks the account and records an attempt before a follow-up is sent
 create or replace function public.reserve_automation_followup(
     p_id text,
     p_attempt_id text,

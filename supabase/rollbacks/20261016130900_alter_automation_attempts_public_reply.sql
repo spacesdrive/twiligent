@@ -1,4 +1,4 @@
--- public reply attempts have no place in the old table, so they are removed first
+-- removes the public reply kind from automation_attempts, deleting public reply attempts first because the old table cannot hold them
 delete from public.automation_attempts where kind = 'public_reply';
 alter table public.automation_attempts
     drop constraint if exists automation_attempts_public_reply_check,

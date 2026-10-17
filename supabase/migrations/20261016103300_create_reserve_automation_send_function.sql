@@ -1,5 +1,4 @@
--- decides whether a claimed job may send now and, when it may, records the attempt before the request leaves;
--- answers ok, gone, paused, cooldown, recipient_limit, or the full scope (rule_limit, account_limit, user_limit, global_limit)
+-- creates reserve_automation_send, which checks the limits and records an attempt before a private reply is sent
 create or replace function public.reserve_automation_send(
     p_id text,
     p_attempt_id text,

@@ -1,4 +1,4 @@
--- puts back the function from 20261016103100, without the public reply columns
+-- puts back the earlier automation_rules_for_ig_user, without the public reply settings
 drop function if exists public.automation_rules_for_ig_user(text);
 -- the enabled rules of every connected account a webhook's Instagram account id belongs to, oldest account first
 create or replace function public.automation_rules_for_ig_user(p_ig_user_id text)

@@ -1,2 +1,2 @@
--- automation_followups_for_messages: a sender's comments that wait for their reply; partial, so it stays small
+-- adds an index that finds the followers-only replies waiting for a person's answer
 create index automation_comments_awaiting_reply_idx on public.automation_comments (ig_user_id, recipient_id, accepted_at) where gate_status = 'awaiting_reply';

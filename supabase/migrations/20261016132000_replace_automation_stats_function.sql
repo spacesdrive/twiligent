@@ -1,6 +1,4 @@
--- one user's comment counts by status, public reply counts by status and request counts by outcome for a period,
--- counted in the database instead of loading every row; p_account_id and p_rule_id narrow it when set. The answer
--- only gains public_replies, which the earlier Worker ignores
+-- replaces automation_stats so it also counts public replies
 create or replace function public.automation_stats(
     p_user_id uuid,
     p_from timestamptz,

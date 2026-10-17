@@ -1,6 +1,4 @@
--- records one check of a reply whose outcome was unknown. Found in the conversation: the comment and its attempt
--- become accepted, and a followers-only rule starts waiting for the person's reply. Not found: one more check is
--- counted with a note for the person; nothing is ever sent from here. Only a comment still waiting for review changes
+-- creates record_automation_review, which saves whether a reply of unknown outcome was found on Instagram
 create or replace function public.record_automation_review(
     p_id text,
     p_found boolean,

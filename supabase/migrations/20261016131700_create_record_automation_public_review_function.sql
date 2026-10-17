@@ -1,7 +1,4 @@
--- records one check of a public reply whose outcome was unknown. Found among the comment's replies: the reply and
--- its latest attempt become accepted. Not found, with p_resend: the Worker read every reply on two checks minutes
--- apart and it was in neither, so the reply goes back in the queue once. Otherwise one more check is counted with a
--- note for the person. Only a reply still waiting for review changes, so a person's retry in between is never undone
+-- creates record_automation_public_review, which saves whether a public reply of unknown outcome was found
 create or replace function public.record_automation_public_review(
     p_id text,
     p_found boolean,

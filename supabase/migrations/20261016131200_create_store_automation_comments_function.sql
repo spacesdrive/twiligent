@@ -1,6 +1,4 @@
--- stores a webhook's comments and the public replies their rules ask for in one transaction, so a comment is never
--- kept without its public reply. A notification Meta delivers again inserts nothing: comments are unique per account
--- and public replies per comment. Answers the new comments' ids and statuses and the new public replies' ids
+-- creates store_automation_comments, which saves a webhook's comments and their public replies together
 create or replace function public.store_automation_comments(p_comments jsonb)
 returns jsonb
 language plpgsql

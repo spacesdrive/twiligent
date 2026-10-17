@@ -1,4 +1,4 @@
--- one row per private reply request sent to Instagram, which is what the sending limits count
+-- creates automation_attempts, which records every request sent to Instagram so the sending limits can count them
 create table public.automation_attempts (
     id text primary key,
     user_id uuid not null references auth.users (id) on delete cascade,
