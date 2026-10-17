@@ -1,4 +1,4 @@
--- a rule without the private reply has no place in the old shape, so such rules are removed first
+-- removes the public reply options from automation_rules, deleting rules without a private reply first because the old shape refuses them
 delete from public.automation_rules where not private_reply_enabled;
 alter table public.automation_rules
     drop constraint if exists automation_rules_follow_private_check,

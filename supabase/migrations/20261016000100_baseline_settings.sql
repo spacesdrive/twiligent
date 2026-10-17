@@ -1,4 +1,4 @@
--- the settings table before versioned migrations; safe to repeat on a database that already has it
+-- creates the settings table as it was before migrations, and is safe to run again on a database that has it
 create table if not exists public.settings (
     user_id uuid not null references auth.users (id) on delete cascade,
     key text not null,

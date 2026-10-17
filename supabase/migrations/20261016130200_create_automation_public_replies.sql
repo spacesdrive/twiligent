@@ -1,5 +1,4 @@
--- a public reply under a comment a rule matched, one per comment; it is tracked apart from the private reply, so
--- either one can fail, wait or be retried without touching the other
+-- creates automation_public_replies, which holds the public reply under each matched comment as its own job
 create table public.automation_public_replies (
     id text primary key,
     user_id uuid not null references auth.users (id) on delete cascade,

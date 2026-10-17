@@ -1,4 +1,4 @@
--- the old checks allow no any-comment rule, so those rules are removed first
+-- removes the any-comment and followers-only rule options, deleting any-comment rules first because the old checks refuse them
 delete from public.automation_rules where match_mode = 'any';
 alter table public.automation_rules
     drop constraint if exists automation_rules_follow_texts_check,

@@ -57,6 +57,17 @@ describe('database migrations', () => {
         }
     });
 
+    test('every file opens with one plain sentence that says what it does', () => {
+        for (const [folder, names] of [['migrations', migrations], ['rollbacks', rollbacks]] as const) {
+            for (const name of names) {
+                const [first, second = ''] = read(folder, name).split(/\r?\n/);
+                assert.match(first, /^-- [a-z]\S*( \S+)+$/, `${folder}/${name} must open with "-- <what the file does>"`);
+                assert.doesNotMatch(first, /\.\s/, `${folder}/${name}: keep the opening comment to one sentence`);
+                assert.doesNotMatch(second, /^--/, `${folder}/${name}: keep the opening comment to one line`);
+            }
+        }
+    });
+
     test('no file uses an em or en dash', () => {
         for (const name of migrations) assert.doesNotMatch(read('migrations', name), /[–—]/, name);
         for (const name of rollbacks) assert.doesNotMatch(read('rollbacks', name), /[–—]/, name);

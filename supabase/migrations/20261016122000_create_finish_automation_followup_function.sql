@@ -1,5 +1,4 @@
--- records what Instagram answered to a follow-up in one transaction: the follow-up, its attempt, a cooldown or a hold
--- for the account, and the comment's followers-only state (link sent, or one more reminder counted)
+-- creates finish_automation_followup, which saves what Instagram answered to a follow-up
 create or replace function public.finish_automation_followup(
     p_id text,
     p_attempt_id text,

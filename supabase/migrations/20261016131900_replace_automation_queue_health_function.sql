@@ -1,6 +1,4 @@
--- the instance's reply queue in one call, each count read through its own partial index: jobs due now and the oldest
--- of them, jobs held by runs that stopped, replies that need review, follow-ups due, public replies due, held or
--- unknown, and accounts that are held. The answer only gains keys, which the earlier Worker ignores
+-- replaces automation_queue_health so it also counts public replies
 create or replace function public.automation_queue_health(p_lease_seconds integer)
 returns jsonb
 language sql

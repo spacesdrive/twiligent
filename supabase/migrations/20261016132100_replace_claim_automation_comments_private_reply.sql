@@ -1,6 +1,4 @@
--- hands one run the due reply jobs with accounts taking turns, as before; a rule whose private reply was turned off
--- after its comments were queued now counts as off for them, so they are skipped instead of sent. The signature and
--- columns are unchanged, so the Worker deployed before this change calls it the same way
+-- replaces claim_automation_comments so a rule whose private reply was turned off sends no private reply
 create or replace function public.claim_automation_comments(
     p_limit integer,
     p_per_account integer,

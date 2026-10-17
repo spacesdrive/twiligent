@@ -1,5 +1,4 @@
--- one user's comment counts by status and request counts by outcome for a period, counted in the database
--- instead of loading every row; p_account_id and p_rule_id narrow it when set
+-- creates automation_stats, which counts a user's comments and requests for a period
 create or replace function public.automation_stats(
     p_user_id uuid,
     p_from timestamptz,

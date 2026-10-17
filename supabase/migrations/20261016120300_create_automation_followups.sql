@@ -1,5 +1,4 @@
--- a message sent after a person answered a followers-only private reply: the reply and link once Instagram says they
--- follow the account, a reminder to follow otherwise
+-- creates automation_followups, which holds the message sent after someone answers a followers-only reply
 create table public.automation_followups (
     id text primary key,
     user_id uuid not null references auth.users (id) on delete cascade,

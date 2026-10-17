@@ -1,4 +1,4 @@
--- keyword rules that answer a comment with a private reply
+-- creates automation_rules, which holds the rules that answer Instagram comments
 create table public.automation_rules (
     id text primary key,
     user_id uuid not null references auth.users (id) on delete cascade,

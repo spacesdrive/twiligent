@@ -1,6 +1,4 @@
--- hands one run the due public replies with accounts taking turns, as claim_automation_comments does for private
--- replies. Accounts that are paused, or whose public replies are cooling down or at their hourly limit, are left out;
--- p_ids limits it to the replies a webhook or a retry has just queued
+-- creates claim_automation_public_replies, which hands a run the public replies that are due to be posted
 create or replace function public.claim_automation_public_replies(
     p_limit integer,
     p_per_account integer,

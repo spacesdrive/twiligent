@@ -1,6 +1,4 @@
--- puts back the function from 20261016103500, without the public reply columns
--- one user's comment counts by status and request counts by outcome for a period, counted in the database
--- instead of loading every row; p_account_id and p_rule_id narrow it when set
+-- puts back the earlier automation_stats, without public replies
 create or replace function public.automation_stats(
     p_user_id uuid,
     p_from timestamptz,

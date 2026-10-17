@@ -1,4 +1,4 @@
--- the enabled rules of every connected account a webhook's Instagram account id belongs to, oldest account first
+-- creates automation_rules_for_ig_user, which returns the enabled rules for the Instagram account a webhook names
 create or replace function public.automation_rules_for_ig_user(p_ig_user_id text)
 returns table (
     id text,

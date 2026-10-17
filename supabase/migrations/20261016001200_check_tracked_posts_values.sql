@@ -1,4 +1,4 @@
--- tracked items are Reddit posts or YouTube videos
+-- only allows Reddit posts and YouTube videos as tracked items, an account only on Reddit items, and a JSON object or nothing as data
 alter table public.tracked_posts
     add constraint tracked_posts_content_type_check check (content_type in ('reddit', 'youtube')),
     -- only Reddit items read through an account, for its cookie

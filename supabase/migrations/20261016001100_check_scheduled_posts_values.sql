@@ -1,4 +1,4 @@
--- the four statuses of the publishing lifecycle; anything else is a bug and fails at the write
+-- only allows the four publishing statuses, valid attempts and claims, and a JSON object as data on scheduled posts
 alter table public.scheduled_posts
     add constraint scheduled_posts_status_check check (status in ('pending', 'publishing', 'published', 'failed')),
     add constraint scheduled_posts_attempts_check check (attempts >= 0),

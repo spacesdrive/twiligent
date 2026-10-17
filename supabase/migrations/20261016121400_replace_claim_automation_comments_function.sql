@@ -1,8 +1,4 @@
--- hands one run the due reply jobs with accounts taking turns: each account's oldest job first, then each one's second,
--- so a busy account cannot hold back the others and an account alone can fill the batch. Accounts that are paused,
--- cooling down or at their hourly limit are left out, so their jobs wait in place instead of being claimed and put
--- back on every run; p_ids limits it to the comments a webhook has just stored. The return gains the rule's
--- followers-only fields, and the Worker deployed before this change reads the columns it knows
+-- replaces claim_automation_comments so accounts take turns and paused, cooling or limited accounts are skipped
 drop function if exists public.claim_automation_comments(integer, integer, integer, text[]);
 create or replace function public.claim_automation_comments(
     p_limit integer,

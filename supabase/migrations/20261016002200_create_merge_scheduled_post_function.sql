@@ -1,4 +1,4 @@
--- one UPDATE for status, time and a data patch; p_only_status keeps an edit off a post a scheduler has just claimed
+-- creates merge_scheduled_post, which changes a scheduled post in one step and can refuse a post that is no longer pending
 create or replace function public.merge_scheduled_post(
     p_id text,
     p_user_id uuid,

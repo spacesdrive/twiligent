@@ -1,5 +1,4 @@
--- hands one run the due follow-ups with accounts taking turns, leaving out paused and cooling accounts, with what a
--- follow-up needs: the person, the rule's texts, the comment's followers-only state and the account's token
+-- creates claim_automation_followups, which hands a run the follow-ups that are due
 create or replace function public.claim_automation_followups(
     p_limit integer,
     p_lease_seconds integer,

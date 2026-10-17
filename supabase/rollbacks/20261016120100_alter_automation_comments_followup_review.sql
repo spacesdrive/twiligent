@@ -1,3 +1,4 @@
+-- removes the followers-only wait and review columns from automation_comments
 alter table public.automation_comments
     drop constraint if exists automation_comments_review_checks_check,
     drop constraint if exists automation_comments_gate_prompts_check,

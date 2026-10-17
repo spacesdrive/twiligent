@@ -1,4 +1,4 @@
--- one trigger function keeps updated_at on every table, so no query has to remember to set it
+-- creates the trigger function that sets updated_at on every update
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
