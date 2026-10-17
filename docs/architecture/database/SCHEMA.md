@@ -39,6 +39,13 @@ The first four files are baselines. Each recreates one table as it stood before 
 | 10 | For each of `automation_accounts`, `automation_rules`, `automation_comments`, `automation_attempts` and `audit_events`: `create_<table>`, `revoke_browser_access_<table>`, `add_<table>_updated_at_trigger`, then one `index_<table>_<purpose>` per index | The automation and audit tables, one entity per file (29 files) |
 | 11 | `index_accounts_instagram_user` | The webhook's lookup of an account by its Instagram id |
 | 12 | `create_automation_rules_for_ig_user_function`, `create_claim_automation_comments_function`, `create_reserve_automation_send_function`, `create_finish_automation_send_function`, `create_automation_stats_function` | The automation functions below |
+| 13 | `alter_automation_rules_match_options`, `alter_automation_comments_followup_review`, `alter_automation_accounts_limit_fields`, `alter_automation_attempts_kind_digest` | The reply queue columns: any-comment and followers-only rules, the follow-up wait and review fields, `limited_until`, the attempt kind and digest (#99, #100, #102, #103) |
+| 14 | `create_automation_followups`, `revoke_browser_access_automation_followups`, `add_automation_followups_updated_at_trigger`, then `index_automation_followups_<purpose>` (four files) and `index_automation_comments_<purpose>` (three files) | The follow-up table and the indexes the turn-taking claim, the follow-up lookup and the review read |
+| 15 | `replace_claim_automation_comments_function`, `replace_reserve_automation_send_function`, `replace_finish_automation_send_function`, then `create_<name>_function` for the follow-up, review, expiry, purge and queue health functions (nine files) | The reply queue functions below; the replaced ones keep their old arguments working |
+| 16 | `alter_automation_rules_reply_actions`, `alter_automation_accounts_public_reply_fields`, `alter_automation_attempts_public_reply` | The public reply columns on rules, accounts and attempts (#107) |
+| 17 | `create_automation_public_replies`, `revoke_browser_access_automation_public_replies`, `add_automation_public_replies_updated_at_trigger`, then `index_automation_public_replies_<purpose>` (five files) and `index_automation_attempts_public_reply` | The public reply table and its indexes |
+| 18 | `replace_automation_rules_for_ig_user_function`, `create_store_automation_comments_function`, the four public reply functions, `create_automation_public_review_candidates_function`, `create_record_automation_public_review_function`, then `replace_` for the expiry, queue health, stats and comment claim functions | The public reply functions below, and the existing functions taught about public replies |
+| 19 | `index_accounts_identity` | The unique index `accounts_identity_key` below, one row per account (#116) |
 
 From order 10 on, every migration creates at most one entity, and the migration test enforces it. The files before it were applied to production first and stay as recorded.
 
@@ -125,12 +132,15 @@ Per-user key-value configuration store.
 
 ```json
 {
-    "githubPat": "ghp_xxxx",
-    "githubRepo": "owner/repo-name"
+    "github": {
+        "repoOwner": "owner",
+        "repoName": "repo-name",
+        "branch": "main"
+    }
 }
 ```
 
-The `api_keys` setting currently stores the GitHub repository (`github: { repoOwner, repoName, branch }`) used to build the scheduling guide links. No token is stored (ADR-031). This key name is generic enough to accommodate future per-user configuration values.
+The `api_keys` setting stores the GitHub repository used to build the scheduling guide links. No token is stored, and saving the repository drops a token an older version left behind (ADR-031). Other keys in `value` are kept as they are, so the key name can hold future per-user settings.
 
 ---
 
