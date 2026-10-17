@@ -10,7 +10,7 @@
 | `deploy-site.yml` | Pushes to `main` that touch the site, manual | Type check and test the public site, then build and deploy it to Pages |
 | `publish-scheduled.yml` | Minutes 7, 22, 37 and 52 of every hour (when GitHub starts them), manual | Publish due Instagram posts (fallback for the Worker cron) |
 
-No workflow runs database migrations. The owner applies `supabase/migrations/` with `npm run db:check` and `npm run db:push` before merging code that needs them (`docs/workflows/DEPLOYMENT.md`), and a change under `supabase/` alone deploys nothing. CI checks the migration files through `npm test` (`backend/tests/database/migrations.test.ts`: names, order, rollback pairs, repeatable baselines, closed functions) without a database. The `supabase` CLI is a root dev dependency, so `npm ci` installs it in every workflow, but no workflow calls it.
+No workflow runs database migrations. The owner applies `supabase/migrations/` with `npm run db:check` and `npm run db:push` before merging code that needs them (`docs/workflows/DEPLOYMENT.md`), and a change under `supabase/` alone deploys nothing. CI checks the migration files through `npm test` (`backend/tests/database/migrations.test.ts`: names, real UTC versions, opening sentences, order, rollback pairs, repeatable baselines, closed functions, and a schema tree in `supabase/schemas/` that matches the migrations) without a database. The `supabase` CLI is a root dev dependency, so `npm ci` installs it in every workflow, but no workflow calls it.
 
 Nothing compiles TypeScript ahead of time: Wrangler and Vite strip the types while bundling, and Node strips them when it runs tests and `scripts/publish-scheduled.ts`. None of those steps checks types, so each workflow that ships code runs `tsc` first.
 

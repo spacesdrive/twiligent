@@ -28,6 +28,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - When YouTube, Instagram or Reddit fails five times in a row, Twiligent stops calling it for 30 seconds and answers at once that it is not answering, instead of waiting on every request; scheduled posts that meet it are retried (#117, ADR-045)
 - A unique index on accounts, so adding the same account twice at the same moment stores it once; existing instances run `npm run db:push` (#116)
 - A shorter README with animated recordings of each main page, made with Flute from the real pages and made-up data, that points to the docs for everything else; the old screenshots are removed (#119)
+- `supabase/schemas/`, the schema as it stands with one file per table and function, generated from the database by the new `npm run db:schema`; the migration test checks it names the same objects as the migrations (#122, ADR-046)
+- Every migration and rollback opens with one plain sentence that says what it does, and the migration test checks real UTC versions and a verb at the start of each name; only comments changed in the applied files (#122, #124)
 
 ### Changed
 
