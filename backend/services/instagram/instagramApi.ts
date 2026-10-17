@@ -1,3 +1,4 @@
+import { createCircuitBreaker } from '../../lib/circuitBreaker.ts';
 import { UpstreamError, UpstreamTimeoutError } from '../../lib/errors.ts';
 import type { InstagramContainerStatusCode, InstagramProfile } from '../../../shared/types/instagram.ts';
 
@@ -74,8 +75,14 @@ function unreachable(err: unknown): Error {
     return new UpstreamError(`Instagram API unreachable (${(err as Error).message})`, { reason: 'unreachable', cause: err });
 }
 
+export const instagramCircuit = createCircuitBreaker('Instagram', { httpStatus: false });
+
+export function igFetch<T = unknown>(endpoint: string, params: GraphParams = {}, retries = 1, signal?: AbortSignal): Promise<T> {
+    return instagramCircuit.run(() => graphGet<T>(endpoint, params, retries, signal), signal);
+}
+
 // GET with a 15 second timeout and one retry on a network blip; a cancelled request is never retried
-export async function igFetch<T = unknown>(endpoint: string, params: GraphParams = {}, retries = 1, signal?: AbortSignal): Promise<T> {
+async function graphGet<T>(endpoint: string, params: GraphParams, retries: number, signal?: AbortSignal): Promise<T> {
     const url = buildGraphUrl(endpoint, params);
     const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
 
@@ -86,7 +93,7 @@ export async function igFetch<T = unknown>(endpoint: string, params: GraphParams
         if (signal?.aborted) throw new UpstreamTimeoutError('Instagram', err);
         if (isTransientError(err as Error) && retries > 0) {
             await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
-            return igFetch<T>(endpoint, params, retries - 1, signal);
+            return graphGet<T>(endpoint, params, retries - 1, signal);
         }
         if ((err as Error).name === 'AbortError' || (err as Error).name === 'TimeoutError') throw new UpstreamTimeoutError('Instagram', err);
         throw unreachable(err);
@@ -95,8 +102,12 @@ export async function igFetch<T = unknown>(endpoint: string, params: GraphParams
     return readGraphResponse(await response.json() as T & InstagramApiErrorBody);
 }
 
+export function igPost<T = unknown>(endpoint: string, params: GraphParams, signal?: AbortSignal): Promise<T> {
+    return instagramCircuit.run(() => graphPost<T>(endpoint, params, signal), signal);
+}
+
 // POST is never retried: a repeated media_publish could publish the post twice
-export async function igPost<T = unknown>(endpoint: string, params: GraphParams, signal?: AbortSignal): Promise<T> {
+async function graphPost<T>(endpoint: string, params: GraphParams, signal?: AbortSignal): Promise<T> {
     const url = buildGraphUrl(endpoint, params);
     const timeout = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
     let response: Response;

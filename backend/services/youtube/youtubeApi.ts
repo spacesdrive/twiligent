@@ -1,3 +1,4 @@
+import { createCircuitBreaker } from '../../lib/circuitBreaker.ts';
 import { UpstreamError, UpstreamTimeoutError, isAbortError } from '../../lib/errors.ts';
 
 export type YouTubeApiParams = Record<string, string>;
@@ -87,8 +88,14 @@ export interface YouTubeApiVideo {
     status?: { privacyStatus?: string; embeddable?: boolean; madeForKids?: boolean };
 }
 
+export const youtubeCircuit = createCircuitBreaker('YouTube');
+
 // adds the key to the caller's params object, as callers always pass a fresh one
-export async function ytFetch<T>(endpoint: string, params: YouTubeApiParams, apiKey: string, signal?: AbortSignal): Promise<T> {
+export function ytFetch<T>(endpoint: string, params: YouTubeApiParams, apiKey: string, signal?: AbortSignal): Promise<T> {
+    return youtubeCircuit.run(() => requestYouTube<T>(endpoint, params, apiKey, signal), signal);
+}
+
+async function requestYouTube<T>(endpoint: string, params: YouTubeApiParams, apiKey: string, signal?: AbortSignal): Promise<T> {
     const url = new URL(`https://www.googleapis.com/youtube/v3/${endpoint}`);
     params.key = apiKey;
     Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
@@ -97,7 +104,7 @@ export async function ytFetch<T>(endpoint: string, params: YouTubeApiParams, api
         response = await fetch(url.toString(), { signal });
     } catch (err) {
         if (isAbortError(err)) throw new UpstreamTimeoutError('YouTube', err);
-        throw new UpstreamError(`YouTube could not be reached (${(err as Error).message})`, { cause: err });
+        throw new UpstreamError(`YouTube could not be reached (${(err as Error).message})`, { reason: 'unreachable', cause: err });
     }
     const data = await response.json() as T & YouTubeApiErrorBody;
     if (data.error) {

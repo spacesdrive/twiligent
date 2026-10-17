@@ -1,4 +1,5 @@
 import type { RedditMediaType, RedditPost, RedditProfile, RedditTrackedPostData } from '../../../shared/types/reddit.ts';
+import { createCircuitBreaker } from '../../lib/circuitBreaker.ts';
 import { NotFoundError, UpstreamError, UpstreamTimeoutError, ValidationError, isAbortError } from '../../lib/errors.ts';
 
 export { computeRedditAnalytics } from './redditAnalytics.ts';
@@ -63,7 +64,13 @@ interface RedditListing<T> {
 
 type RedditCookie = string | null | undefined;
 
-async function redditFetch<T>(path: string, cookie: RedditCookie, signal?: AbortSignal): Promise<T> {
+export const redditCircuit = createCircuitBreaker('Reddit');
+
+function redditFetch<T>(path: string, cookie: RedditCookie, signal?: AbortSignal): Promise<T> {
+    return redditCircuit.run(() => requestReddit<T>(path, cookie, signal), signal);
+}
+
+async function requestReddit<T>(path: string, cookie: RedditCookie, signal?: AbortSignal): Promise<T> {
     const headers: Record<string, string> = { 'User-Agent': USER_AGENT, 'Accept': 'application/json' };
     if (cookie) headers['Cookie'] = `reddit_session=${cookie}`;
     let res: Response;
@@ -71,7 +78,7 @@ async function redditFetch<T>(path: string, cookie: RedditCookie, signal?: Abort
         res = await fetch(`${REDDIT_BASE}${path}`, { headers, signal });
     } catch (err) {
         if (isAbortError(err)) throw new UpstreamTimeoutError('Reddit', err);
-        throw new UpstreamError(`Reddit could not be reached (${(err as Error).message})`, { cause: err });
+        throw new UpstreamError(`Reddit could not be reached (${(err as Error).message})`, { reason: 'unreachable', cause: err });
     }
 
     if (res.status === 404) throw new NotFoundError('Reddit user not found - check the username');
