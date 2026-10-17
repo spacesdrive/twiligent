@@ -24,7 +24,8 @@
 │  Hono v4 app (backend/app.ts)                                   │
 │  ├── Middleware: CORS, request id, security headers, clients,   │
 │  │   per-IP rate limit                                          │
-│  ├── Public: GET /api/health, GET /api/auth/instagram/callback, │
+│  ├── Public: GET /api/health, GET /api/health/ready,            │
+│  │   GET /api/auth/instagram/callback,                          │
 │  │   POST /api/auth/email-hook (signed by Supabase Auth),       │
 │  │   GET/POST /api/webhooks/instagram (signed by Meta)          │
 │  ├── Protected (/api/*): requireAuth -> rate limits             │

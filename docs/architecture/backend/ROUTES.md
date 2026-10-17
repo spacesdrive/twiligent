@@ -34,7 +34,8 @@ Registered on `publicRoutes` in `routes/index.ts`.
 
 | Method | Path | Controller | Purpose |
 |---|---|---|---|
-| GET | `/api/health` | `healthController.getHealth` | Returns `{ status: 'ok', timestamp }` |
+| GET | `/api/health` | `healthController.getHealth` | Liveness: returns `{ status: 'ok', timestamp }` without touching the database |
+| GET | `/api/health/ready` | `healthController.getReadiness` | Readiness: the Supabase secrets are set and one database read succeeds; returns `{ status: 'ready', databaseMs, timestamp }`, or `503 NOT_CONFIGURED` naming a missing secret, or `500 DATABASE_ERROR` |
 | GET | `/api/auth/instagram/callback` | `instagramAuthController.handleInstagramCallback` | OAuth code exchange; always redirects the browser back to the accounts page with `ig_connected=true`, `ig_connected=reconnected` (the account was already connected and its token was renewed) or `ig_error=<reason>`, never a JSON error |
 | POST | `/api/auth/email-hook` | `authHookController.sendAuthEmail` (`routes/authHookRoutes.ts`) | Supabase Auth's Send Email hook: sends sign-up, password reset and other auth emails through Resend. Answers `{}` |
 | GET | `/api/webhooks/instagram` | `instagramWebhookController.verifyInstagramWebhook` (`routes/instagramWebhookRoutes.ts`) | Meta's webhook check: answers the bare `hub.challenge` as text when `hub.mode=subscribe` and `hub.verify_token` matches `INSTAGRAM_WEBHOOK_VERIFY_TOKEN`; 403 otherwise, 503 when the token is not set |

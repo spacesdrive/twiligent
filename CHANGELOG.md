@@ -23,6 +23,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Public replies: a rule can also post a public reply under the comment, or only that, with up to five wordings that rotate per comment; the private and public replies have their own status, limits, cooldown and retry, and one failing never sends the other again (#107, ADR-044)
 - A public reply whose answer was lost is looked for among the comment's replies and posted again once only when it is not there; `AUTOMATION_PUBLIC_ACCOUNT_HOURLY_LIMIT` (default 60) paces public replies, and each person gets at most one per post a day (#107)
 - New table `automation_public_replies` and new columns and functions; existing instances run `npm run db:push` before deploying (#107)
+- `GET /api/health/ready`, a readiness check for monitors: it confirms the Supabase secrets are set and the database answers, and reports how long the database took (#110)
+- A recovery runbook, `docs/workflows/RECOVERY.md`: finding a failed request, pausing automation, rolling back, and backing up and restoring the database (#114)
 
 ### Changed
 
@@ -30,12 +32,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - The Worker's publishing cron runs every 5 minutes instead of 15; posts still publish on the quarter hour, and the other runs check the reply queue (#89, #100)
 - The reply queue sends up to 10 replies a minute instead of 10 every five minutes, accounts take turns so one busy reel cannot hold back another account, and paused, cooling or limited accounts are no longer claimed and put back on every run (#99)
 - The daily retention deletes old comments in batches of 1,000 instead of one statement (#101)
+- A database call that does not answer within 15 seconds now fails as a database error, so a hung query can no longer hold a request until its deadline (#112)
+- Error and log text also hides Bearer tokens and token-like parameters, not only URLs (#113)
 
 ### Fixed
 
 - The sign-in page opens the dashboard when you are already signed in, so the public site's Sign in and Get started buttons no longer ask you to sign in again (#94)
 - The public site's home page opens the dashboard when you are signed in to the app; the docs stay readable (#96)
 - Runs claiming replies at the same moment no longer leave each other with nothing to send while jobs wait (#99)
+- A missing `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` or `SUPABASE_ANON_KEY` now answers 503 naming the secret instead of an internal error, and a cron run logs it and stops (#111)
 
 ---
 

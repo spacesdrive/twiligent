@@ -49,6 +49,7 @@ A service receives only what it uses: repositories, the cleaned `AppConfig` from
 | `automationPublicReplies` | `automationPublicReplyProcessor.ts` | public replies | `run({ ids?, subrequests?, timeBudgetMs? })` (post due public replies under their comments; webhook, public reply retry route and every minute cron) |
 | `automationReconciler` | `automationReconciler.ts` | comments, public replies | `run()` (expire overdue replies, follow-ups and public replies, look for lost replies on Instagram, log the queue's health; five minute cron, never sends or posts) |
 | `retention` | `retentionService.ts` | comments, audit | `purge(now?, { commentBatches? })` (daily cron; comments in batches of 1,000) |
+| `health` | `healthService.ts` | health | `readiness()` (`GET /api/health/ready`: one database read, timed; returns no data) |
 
 Every user-scoped method takes the verified `userId` as its first argument. Methods that need one of the user's records load it with a `...ForUser` repository method and throw `NotFoundError` when it is missing or on the wrong platform, so another user's record is never found. `scheduledPublisher`, `tokenRefresh`, `automationWebhook`, `automationProcessor`, `automationFollowups`, `automationPublicReplies`, `automationReconciler` and `retention` are the only services that use the cross-user repository methods (`listByPlatform`, `findById`, `updateById`, `listDue`, `listStale`, `claim`, and the automation queue, follow-up, review, intake and retention methods).
 

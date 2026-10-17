@@ -13,9 +13,9 @@ Every backend failure is a typed error thrown where the problem is found and for
 | `ConflictError` | `CONFLICT` | 409 | The account is already added |
 | `RateLimitedError` | `RATE_LIMITED` | 429 | A daily allowance is used up: the auth email caps in `authEmailService.ts`. Per-request limits are the rate limiter's job, not this error |
 | `UpstreamError` | `UPSTREAM_ERROR` | 502 | YouTube, Instagram, Reddit or Resend answered with an error |
-| `NotConfiguredError` | `NOT_CONFIGURED` | 503 | A Worker secret the request needs is not set |
+| `NotConfiguredError` | `NOT_CONFIGURED` | 503 | A Worker secret the request needs is not set, or a core Supabase secret is missing (thrown by `injectClients` for every request) |
 | `UpstreamTimeoutError` | `UPSTREAM_TIMEOUT` | 504 | A platform call was cancelled or timed out |
-| `DatabaseError` | `DATABASE_ERROR` | 500 | A Supabase query failed (thrown by `repositories/query.ts`) |
+| `DatabaseError` | `DATABASE_ERROR` | 500 | A Supabase query failed or passed the 15 second database timeout (thrown by `repositories/query.ts`) |
 
 An error carries a code, not a status; `middleware/errorHandler.ts` maps the code to the status. Anything that is not an `AppError` becomes `INTERNAL_ERROR` (500).
 
@@ -32,7 +32,7 @@ if (data.error) {
 }
 ```
 
-`UpstreamError` removes URLs from its message, because a platform error can echo the request URL with the API key or token in it. Cast the parsed JSON once to an interface that covers the fields the module reads (see `docs/guidelines/TYPESCRIPT.md`).
+`UpstreamError` passes its message through `redactSecrets` (`lib/redact.ts`), which removes URLs, `Bearer` tokens and token-like `name=value` pairs and JSON fields, because a platform error can echo the request URL, a header or the form body with the API key or token in it. Cast the parsed JSON once to an interface that covers the fields the module reads (see `docs/guidelines/TYPESCRIPT.md`).
 
 Pass the request's `AbortSignal` to every `fetch`. A cancelled or timed out call becomes an `UpstreamTimeoutError`; a network failure an `UpstreamError`:
 
@@ -53,7 +53,7 @@ Run every query through `execute`, `rows` or `maybeRow` in `repositories/query.t
 const found = await rows<AccountRow>('accounts.listForUser', () => db.from('accounts').select(COLUMNS).eq('user_id', userId));
 ```
 
-The client gets a plain message (`The database request failed. Try again in a moment.`); the driver's message, which can name tables and constraints, goes to the log only. A query that finds nothing is not an error: `maybeRow` returns `null` and the service decides whether that is a `NotFoundError`.
+The client gets a plain message (`The database request failed. Try again in a moment.`); the driver's message, which can name tables and constraints, goes to the log only. Every Supabase call has a 15 second timeout (`DB_TIMEOUT_MS` in `database/supabase.ts`, the client's `db.timeout`), so a query that hangs becomes a `DatabaseError` well inside the 30 second request deadline instead of holding the request. A query that finds nothing is not an error: `maybeRow` returns `null` and the service decides whether that is a `NotFoundError`.
 
 ### Cache Operations (`repositories/analyticsCacheRepository.ts`)
 
@@ -138,9 +138,13 @@ Log through `lib/logger.ts`: services use `context.log`, middleware and controll
 log.error('scheduled post failed', { postId: post.id, ...errorFields(err) });
 ```
 
-`errorFields(err)` adds the error's message and cause with URLs removed, never the stack. The error handler already logs every failed request (500 and above at `error`, 4xx at `warn`), and `requestContext` writes one access line per request, so do not log an error you are about to throw. Never call `console` directly.
+`errorFields(err)` adds the error's message and cause through `redactSecrets` (URLs, `Bearer` tokens and token-like parameters removed), never the stack. The error handler already logs every failed request (500 and above at `error`, 4xx at `warn`), and `requestContext` writes one access line per request, so do not log an error you are about to throw. Never call `console` directly.
 
-Do not log sensitive values: access tokens, API keys, cookies, user emails, Supabase URLs.
+Do not log sensitive values: access tokens, API keys, cookies, user emails, Supabase URLs. Redaction is a safety net for text you do not control, such as a platform's error message; it is not a reason to pass a secret to the logger.
+
+## Detecting and Recovering
+
+`GET /api/health` is the liveness check (the Worker answers) and `GET /api/health/ready` the readiness check (the Supabase secrets are set and the database answers, with `databaseMs`). A missing core secret is a `NOT_CONFIGURED` 503 that names it, for requests, and a `cron run skipped` log line, for cron runs. `docs/workflows/RECOVERY.md` lists what to do when production breaks: find the failing request by its id, pause automation, roll back, and back up the data.
 
 ## User-Facing Error Messages
 

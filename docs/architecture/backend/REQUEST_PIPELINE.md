@@ -23,9 +23,9 @@ Request
   2. Request context   hono/request-id + middleware/requestContext.ts
                                                      request id (X-Request-Id), deadline signal, one access log line
   3. Security headers  middleware/securityHeaders.ts deny-all CSP, no framing, no-referrer, nosniff, HSTS
-  4. Clients           middleware/clients.ts         per-request Supabase and Redis clients
+  4. Clients           middleware/clients.ts         per-request Supabase and Redis clients; 503 naming a missing Supabase secret
   5. Rate limit by IP  middleware/rateLimit.ts       before authentication, so bad tokens never reach Supabase Auth
-     Public routes     routes/index.ts               /api/health, /api/auth/instagram/callback (with its own oauth limit),
+     Public routes     routes/index.ts               /api/health, /api/health/ready, /api/auth/instagram/callback (with its own oauth limit),
                                                      /api/auth/email-hook (middleware/authHook.ts checks Supabase's signature),
                                                      /api/webhooks/instagram (middleware/metaWebhook.ts checks Meta's signature)
   6. Authentication    middleware/auth.ts            verifies the JWT and sets userId; 401 otherwise
@@ -77,9 +77,9 @@ Services and repositories throw typed errors from `lib/errors.ts`. An error carr
 | `ConflictError` | `CONFLICT` | 409 | The account is already added |
 | `RateLimitedError`, or the rate limiter | `RATE_LIMITED` | 429 | A daily allowance is used up (the auth email caps), or a rate limit rule is exceeded; the rate limiter's body adds `retryAfter` |
 | `UpstreamError` | `UPSTREAM_ERROR` | 502 | YouTube, Instagram or Reddit answered with an error; its message is kept, URLs are removed |
-| `NotConfiguredError` | `NOT_CONFIGURED` | 503 | A Worker secret the request needs is not set |
+| `NotConfiguredError` | `NOT_CONFIGURED` | 503 | A Worker secret the request needs is not set; `injectClients` throws it for every request when `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` or `SUPABASE_ANON_KEY` is missing |
 | `UpstreamTimeoutError` | `UPSTREAM_TIMEOUT` | 504 | A platform call was cancelled or timed out |
-| `DatabaseError` | `DATABASE_ERROR` | 500 | A Supabase query failed; the client gets a plain message, the log gets the driver's |
+| `DatabaseError` | `DATABASE_ERROR` | 500 | A Supabase query failed or did not answer within 15 seconds; the client gets a plain message, the log gets the driver's |
 | anything else | `INTERNAL_ERROR` | 500 | A bug; the client gets a message asking it to quote the request id |
 
 Errors of status 500 and above are logged at `error` level with the request id; 4xx errors at `warn`. The frontend's `request()` shows the message and adds the request id to 5xx messages.

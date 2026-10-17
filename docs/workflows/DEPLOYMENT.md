@@ -111,7 +111,7 @@ The CLI has no down migrations. To undo one change on a remote database:
 2. Open the matching file in `supabase/rollbacks/` (same name as the migration) and run it in the Supabase SQL editor.
 3. Mark the migration as not applied: `npx supabase migration repair --status reverted <version>`, where `<version>` is the 14 digit prefix of the file name.
 
-Roll back in reverse order when several changes are involved. The four baseline migrations have no rollback, because undoing them would drop tables with data.
+Roll back in reverse order when several changes are involved. `docs/workflows/RECOVERY.md` covers the rest of an incident: finding the failing request, pausing automation, rolling back the Worker and taking backups. The four baseline migrations have no rollback, because undoing them would drop tables with data.
 
 ### Existing instances
 
@@ -191,6 +191,9 @@ Required for `deploy-frontend.yml`, `deploy-backend.yml`, `deploy-site.yml` and 
 curl -i https://twiligent.ujjwalkrai.workers.dev/api/health
 # Expected: 200 with {"status":"ok","timestamp":"2025-..."} and an X-Request-Id header
 
+curl -i https://twiligent.ujjwalkrai.workers.dev/api/health/ready
+# Expected: 200 with {"status":"ready","databaseMs":...}; 503 NOT_CONFIGURED names a missing Supabase secret
+
 curl -i -H "Origin: https://app.twiligent.ujjwal.fyi" https://twiligent.ujjwalkrai.workers.dev/api/health
 # Expected: Access-Control-Allow-Origin: https://app.twiligent.ujjwal.fyi (the FRONTEND_URL origin)
 ```
@@ -253,7 +256,7 @@ For a fresh deployment from this repo:
 8. Set all GitHub Actions secrets (see above)
 9. Link the Supabase CLI (`npx supabase login`, then `npx supabase link --project-ref <ref>`) and run `npm run db:push` to create the tables, constraints, functions and indexes from `supabase/migrations/`
 10. `npm run typecheck`, then `cd backend && npx wrangler deploy` (first manual deploy)
-11. Verify health endpoint
+11. Verify `/api/health` and `/api/health/ready`
 12. `npm run build` at the root, then `cd frontend && npx wrangler pages deploy dist --project-name=twiligent`
 13. Verify frontend loads
 14. Add a YouTube channel via AccountManager to verify the full flow
