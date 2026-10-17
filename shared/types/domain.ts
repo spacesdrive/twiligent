@@ -312,6 +312,14 @@ export interface HealthResponse {
     timestamp: string;
 }
 
+// GET /api/health/ready; a missing secret or a failed database check answers the usual ApiFailure instead
+export interface ReadinessResponse {
+    status: 'ready';
+    // how long the database check took, so a monitor can see it slowing before it fails
+    databaseMs: number;
+    timestamp: string;
+}
+
 // body of POST /api/scheduled-posts; the route fills in defaults for the optional fields
 export interface ScheduledPostRequest {
     accountId: string;

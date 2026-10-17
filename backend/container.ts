@@ -10,6 +10,7 @@ import { createAutomationCommentRepository } from './repositories/automationComm
 import { createAutomationAccountRepository } from './repositories/automationAccountRepository.ts';
 import { createAutomationFollowupRepository } from './repositories/automationFollowupRepository.ts';
 import { createAutomationPublicReplyRepository } from './repositories/automationPublicReplyRepository.ts';
+import { createHealthRepository } from './repositories/healthRepository.ts';
 import { createAccountService } from './services/accountService.ts';
 import { createYouTubeAnalyticsService } from './services/youtubeAnalyticsService.ts';
 import { createInstagramAnalyticsService } from './services/instagramAnalyticsService.ts';
@@ -30,7 +31,9 @@ import { createAutomationFollowupProcessor } from './services/automationFollowup
 import { createAutomationPublicReplyProcessor } from './services/automationPublicReplyProcessor.ts';
 import { createAutomationReconciler } from './services/automationReconciler.ts';
 import { createRetentionService } from './services/retentionService.ts';
+import { createHealthService } from './services/healthService.ts';
 import type { AccountService } from './services/accountService.ts';
+import type { HealthService } from './services/healthService.ts';
 import type { YouTubeAnalyticsService } from './services/youtubeAnalyticsService.ts';
 import type { InstagramAnalyticsService } from './services/instagramAnalyticsService.ts';
 import type { RedditAnalyticsService } from './services/redditAnalyticsService.ts';
@@ -82,6 +85,7 @@ export interface Services {
     automationPublicReplies: AutomationPublicReplyProcessor;
     automationReconciler: AutomationReconciler;
     retention: RetentionService;
+    health: HealthService;
 }
 
 // the composition root: wires repositories into services for one request or one cron run; building them is cheap
@@ -120,5 +124,6 @@ export function createServices(clients: Clients, config: AppConfig, context: Req
         automationPublicReplies: createAutomationPublicReplyProcessor({ publicReplies, automation, context }),
         automationReconciler: createAutomationReconciler({ comments, publicReplies, context }),
         retention: createRetentionService({ comments, audit, context }),
+        health: createHealthService({ health: createHealthRepository(clients.supabase) }),
     };
 }
