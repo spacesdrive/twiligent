@@ -64,6 +64,7 @@ Stores connected YouTube channels, Instagram accounts and Reddit profiles.
 | `accounts_platform_check` | `platform in ('youtube', 'instagram', 'reddit')` |
 | `accounts_data_check` | `data` is a JSON object |
 | `accounts_id_user_id_key` | `unique (id, user_id)`, so posts can reference an account together with its owner |
+| `accounts_identity_key` | Unique index on `(user_id, platform, identity)`, where the identity is `data ->> 'channelId'` for YouTube, `data ->> 'username'` for Reddit and `data ->> 'igUserId'` for Instagram. Two adds of the same account at the same moment store one row; the other gets the usual 409 |
 
 ### `data` jsonb shape for YouTube accounts
 
@@ -468,6 +469,7 @@ An index exists because a frequent query filters or orders on its columns. Each 
 | `scheduled_posts_claimed_idx` | `scheduled_posts (claimed_at) where status = 'publishing'` | `listStale`: publishing posts whose claim is older than the lease | Partial, the same reason |
 | `tracked_posts_user_id_created_at_idx` | `tracked_posts (user_id, created_at desc)` | `trackedPosts.listForUser`: `where user_id = $1 order by created_at desc` | Replaces `tracked_posts_user_id_idx` |
 | `accounts_instagram_user_idx` | `accounts ((data ->> 'igUserId')) where platform = 'instagram'` | `automation_rules_for_ig_user`: the accounts a webhook names | An expression index, since the id lives in `data` |
+| `accounts_identity_key` | `accounts (user_id, platform, <identity>)`, unique | Not a read path: it stops a second row for the same account | An expression on `data`, chosen per platform with `case` |
 | `automation_rules_user_id_created_at_idx` | `automation_rules (user_id, created_at, id)` | `automationRules.listForUser` | |
 | `automation_rules_enabled_account_idx` | `automation_rules (account_id) where enabled` | The webhook's rule lookup | Partial: only enabled rules are read |
 | `automation_comments_due_idx` | `automation_comments (next_attempt_at) where status in ('queued', 'retry_wait')` | Due jobs by time; the queue health | Partial, so the growing history is left out |

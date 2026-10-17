@@ -968,3 +968,24 @@ New row ids come from `crypto.randomUUID()` (`newRowId()` in `backend/lib/ids.ts
 - The activity list's status filter follows the private reply; public replies count in the Needs attention and Waiting numbers, and each row shows both.
 - Twenty-three migrations, one entity each, and three more SQL functions to keep in step with the fake queue in the tests.
 - The migrations must be applied before the new Worker is deployed; the old Worker keeps working with them, since replaced functions only gain columns and keys.
+
+## ADR-045: A circuit breaker per platform, and a unique index for accounts
+
+**Date:** 2026-10-17
+**Status:** Accepted
+
+**Decision:** The YouTube, Instagram and Reddit request helpers run every call through a circuit breaker (`lib/circuitBreaker.ts`, #117). Five outages in a row (a timeout the caller did not cause, an unreachable host, a 5xx) pause calls to that platform for 30 seconds; paused calls fail at once with an `UpstreamError` of reason `unreachable`; one trial call then closes or reopens it. Accounts get a unique index on the user, the platform and the account's identity in `data` (#116); an insert that breaks it becomes the same `ConflictError` the list check gives, and a racing Instagram connect renews the stored token.
+
+**Context:** A reliability review (#109) found that a platform outage made every request wait for its error or timeout, and refreshing all accounts called the failing platform once per account. Adding an account was a check then an insert, so two adds at the same moment could store the account twice. Production held no duplicates when the index was added.
+
+**Why in memory:** The breaker lives in the Worker isolate, with no Redis or database state, so it costs nothing per call and works when Redis is absent. Each isolate learns about an outage on its own, which is enough to stop one isolate hammering a platform during a burst such as a refresh of every account.
+
+**Alternatives considered:**
+- A breaker shared through Redis. Every call would pay a Redis round trip, and Redis is optional.
+- A breaker on comment replies too. `instagramMessaging.ts` already classifies every answer, waits out rate limits with per-account cooldowns and never resends an unknown outcome; a breaker would change those rules.
+- Cloudflare Queues for platform work. The work that needs a queue (comment replies, follow-ups, public replies, scheduled posts) already has one in Postgres with claims and leases; a second queue would duplicate it.
+- A unique constraint on new columns. The identity already lives in `data`, so an expression index needs no column or backfill.
+
+**Trade-offs:**
+- A paused platform answers "try again in a minute" even if it recovered a few seconds earlier.
+- Reddit usernames are compared exactly, as the service already did, so a different capitalisation counts as a different account.
