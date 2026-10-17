@@ -1,6 +1,6 @@
 import { buildGraphUrl, igFetch, igPost } from './instagramApi.ts';
 import { UpstreamError, isAbortError } from '../../lib/errors.ts';
-import { redactUrls } from '../../lib/redact.ts';
+import { redactSecrets } from '../../lib/redact.ts';
 import { FOLLOW_CHECK_TIMEOUT_MS, SEND_TIMEOUT_MS, classifySendError } from '../../lib/automationDelivery.ts';
 import type { FollowCheck, SendResult } from '../../lib/automationDelivery.ts';
 import type { ConversationMessage } from '../../lib/automationReview.ts';
@@ -71,7 +71,7 @@ export async function postOnce<T extends InstagramApiErrorBody>(endpoint: string
         code: error.code,
         subcode: error.error_subcode,
         httpStatus: response.status,
-        message: redactUrls(error.message || body.error_message || `HTTP ${response.status}`),
+        message: redactSecrets(error.message || body.error_message || `HTTP ${response.status}`),
         usageHeader,
     };
 }
@@ -111,7 +111,7 @@ export async function readFollowStatus(igsid: string, accessToken: string): Prom
         return { kind: 'unverifiable', message: 'its answer had no follow status' };
     }
     const error = body.error ?? {};
-    const message = redactUrls(error.message || body.error_message || `HTTP ${response.status}`);
+    const message = redactSecrets(error.message || body.error_message || `HTTP ${response.status}`);
     const kind = classifySendError({ code: error.code, subcode: error.error_subcode, httpStatus: response.status, message });
     if (kind === 'rate_limited' || kind === 'blocked' || kind === 'transient') return { kind: 'retry', message };
     if (kind === 'not_authorized') return { kind: 'not_authorized', message };

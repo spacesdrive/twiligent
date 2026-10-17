@@ -1,4 +1,4 @@
-import { redactUrls } from './redact.ts';
+import { redactSecrets } from './redact.ts';
 
 export type LogFields = Record<string, unknown>;
 
@@ -30,10 +30,10 @@ export function createLogger(base: LogFields = {}): Logger {
     };
 }
 
-// the message and the message of its cause, with urls removed; never the stack, which can hold request data
+// the message and the message of its cause, with urls and tokens removed; never the stack, which can hold request data
 export function errorFields(err: unknown): LogFields {
     const error = err as Error & { cause?: unknown };
-    const fields: LogFields = { error: redactUrls(String(error?.message ?? err)), errorName: error?.name };
-    if (error?.cause !== undefined) fields.cause = redactUrls(String((error.cause as Error)?.message ?? error.cause));
+    const fields: LogFields = { error: redactSecrets(String(error?.message ?? err)), errorName: error?.name };
+    if (error?.cause !== undefined) fields.cause = redactSecrets(String((error.cause as Error)?.message ?? error.cause));
     return fields;
 }
