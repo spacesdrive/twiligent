@@ -90,6 +90,11 @@ export class DatabaseError extends AppError {
     }
 }
 
+// Postgres error 23505: the write broke a unique index, so the row already exists
+export function isUniqueViolation(err: unknown): boolean {
+    return err instanceof DatabaseError && (err.cause as { code?: string } | undefined)?.code === '23505';
+}
+
 export function isAbortError(err: unknown): boolean {
     const name = (err as Error | undefined)?.name;
     return name === 'AbortError' || name === 'TimeoutError';

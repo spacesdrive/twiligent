@@ -3,7 +3,7 @@ import { fetchRedditProfile } from './reddit/redditApi.ts';
 import { fetchInstagramProfile } from './instagram/instagramApi.ts';
 import { exchangeForLongLivedToken, refreshLongLivedToken } from './instagram/instagramTokens.ts';
 import { buildYouTubeAccount, buildRedditAccount, buildInstagramAccount } from './accountFactory.ts';
-import { ConflictError, NotConfiguredError, NotFoundError, ValidationError } from '../lib/errors.ts';
+import { ConflictError, NotConfiguredError, NotFoundError, ValidationError, isUniqueViolation } from '../lib/errors.ts';
 import type { AccountRepository } from '../repositories/accountRepository.ts';
 import type { AnalyticsCacheRepository } from '../repositories/analyticsCacheRepository.ts';
 import type { AuditRepository } from '../repositories/auditRepository.ts';
@@ -93,12 +93,26 @@ function youtubeUpdates(channelData: YouTubeChannelData, full: boolean): Partial
     };
 }
 
+const CHANNEL_ADDED = 'This channel is already added';
+const REDDIT_ADDED = 'This Reddit account is already added';
+const INSTAGRAM_ADDED = 'This Instagram account is already added';
+
 export function createAccountService({ accounts, cache, audit, config, context }: AccountServiceDeps): AccountService {
     const { signal, log } = context;
 
     function youtubeKey(): string {
         if (!config.youtubeApiKey) throw new NotConfiguredError(NO_YOUTUBE_KEY_MESSAGE);
         return config.youtubeApiKey;
+    }
+
+    // the list check misses an add made at the same moment; the unique index catches it, with the same answer
+    async function createUnlessAdded(account: NewAccount, userId: string, alreadyAdded: string): Promise<void> {
+        try {
+            await accounts.create(account, userId);
+        } catch (err) {
+            if (isUniqueViolation(err)) throw new ConflictError(alreadyAdded);
+            throw err;
+        }
     }
 
     async function findOwned(userId: string, accountId: string): Promise<Account> {
@@ -155,10 +169,10 @@ export function createAccountService({ accounts, cache, audit, config, context }
                 fetchChannelData(channelId, apiKey, signal),
                 accounts.listForUser(userId),
             ]);
-            if (existing.find(account => account.channelId === channelId)) throw new ConflictError('This channel is already added');
+            if (existing.find(account => account.channelId === channelId)) throw new ConflictError(CHANNEL_ADDED);
 
             const account = buildYouTubeAccount(channelData);
-            await accounts.create(account, userId);
+            await createUnlessAdded(account, userId, CHANNEL_ADDED);
             return account;
         },
 
@@ -166,11 +180,11 @@ export function createAccountService({ accounts, cache, audit, config, context }
             const profile = await fetchRedditProfile(username.replace(/^u\//i, '').trim(), cookie, signal);
             const existing = await accounts.listForUser(userId);
             if (existing.find(account => account.platform === 'reddit' && account.username === profile.username)) {
-                throw new ConflictError('This Reddit account is already added');
+                throw new ConflictError(REDDIT_ADDED);
             }
 
             const account = buildRedditAccount(profile, cookie);
-            await accounts.create(account, userId);
+            await createUnlessAdded(account, userId, REDDIT_ADDED);
             return account;
         },
 
@@ -182,11 +196,11 @@ export function createAccountService({ accounts, cache, audit, config, context }
             }
             const existing = await accounts.listForUser(userId);
             if (existing.find(account => account.platform === 'instagram' && account.igUserId === profile.igUserId)) {
-                throw new ConflictError('This Instagram account is already added');
+                throw new ConflictError(INSTAGRAM_ADDED);
             }
 
             const account = buildInstagramAccount(profile, token, expiresIn);
-            await accounts.create(account, userId);
+            await createUnlessAdded(account, userId, INSTAGRAM_ADDED);
             return account;
         },
 
