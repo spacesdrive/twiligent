@@ -27,6 +27,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - A recovery runbook, `docs/workflows/RECOVERY.md`: finding a failed request, pausing automation, rolling back, and backing up and restoring the database (#114)
 - When YouTube, Instagram or Reddit fails five times in a row, Twiligent stops calling it for 30 seconds and answers at once that it is not answering, instead of waiting on every request; scheduled posts that meet it are retried (#117, ADR-045)
 - A unique index on accounts, so adding the same account twice at the same moment stores it once; existing instances run `npm run db:push` (#116)
+- A shorter README with animated recordings of each main page, made with Flute from the real pages and made-up data, that points to the docs for everything else; the old screenshots are removed (#119)
 
 ### Changed
 
