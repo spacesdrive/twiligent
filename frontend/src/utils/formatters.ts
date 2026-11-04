@@ -3,13 +3,20 @@ import type { SafeAccount } from '../../../shared/types/domain.ts';
 export type NumberLike = number | string | null | undefined;
 export type DateLike = string | number | Date | null | undefined;
 
+const COMPACT_UNITS: ReadonlyArray<readonly [number, string]> = [[1e9, 'B'], [1e6, 'M'], [1e3, 'K']];
+
+// one decimal, without a trailing .0, and a value that would round up to 1000 of a unit moves to the next unit
 export function fmtNum(n: NumberLike): string {
     if (n == null) return '0';
-    n = Number(n);
-    if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
-    if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
-    if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
-    return n.toLocaleString();
+    const value = Number(n);
+    const size = Math.abs(value);
+    for (let index = 0; index < COMPACT_UNITS.length; index++) {
+        const [unit, suffix] = COMPACT_UNITS[index];
+        const smaller = COMPACT_UNITS[index + 1];
+        const roundsUp = smaller !== undefined && Math.round((size / smaller[0]) * 10) / 10 >= 1000;
+        if (size >= unit || roundsUp) return String(Number((value / unit).toFixed(1))) + suffix;
+    }
+    return value.toLocaleString('en-US');
 }
 
 // For counts a platform can hide (YouTube likes, disabled comments): null means hidden, not zero.
@@ -19,12 +26,19 @@ export function fmtCount(n: NumberLike): string {
 
 export function fmtNumFull(n: NumberLike): string {
     if (n == null) return '0';
-    return Number(n).toLocaleString();
+    return Number(n).toLocaleString('en-US');
 }
 
 export function fmtDate(d: DateLike): string {
     if (!d) return '';
     return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+export function fmtDateTime(d: DateLike): string {
+    if (!d) return '';
+    return new Date(d).toLocaleString('en-US', {
+        year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+    });
 }
 
 export function fmtDateShort(d: DateLike): string {
@@ -56,8 +70,8 @@ export function timeAgo(date: DateLike): string {
     if (hrs < 24) return `${hrs}h ago`;
     const days = Math.floor(hrs / 24);
     if (days < 30) return `${days}d ago`;
-    const months = Math.floor(days / 30);
-    return `${months}mo ago`;
+    // past a month a relative age is harder to place than the date itself
+    return fmtDate(date);
 }
 
 export const CATEGORY_MAP: Record<string, string> = {

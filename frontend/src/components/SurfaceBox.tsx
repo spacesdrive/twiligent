@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useId } from 'react';
 import { cn } from '@/lib/utils';
+import { SurfaceTitleContext } from './surfaceTitle';
 
 export interface SurfaceBoxProps extends Omit<React.ComponentProps<'section'>, 'title' | 'content'> {
   children?: React.ReactNode;
@@ -10,6 +11,7 @@ export interface SurfaceBoxProps extends Omit<React.ComponentProps<'section'>, '
   contentClassName?: string;
   className?: string;
   noPadding?: boolean;
+  headingLevel?: 'h2' | 'h3';
 }
 
 // the one container for grouped content; without a title it is a plain panel
@@ -22,27 +24,31 @@ export default function SurfaceBox({
   contentClassName = '',
   className = '',
   noPadding = false,
+  headingLevel: Heading = 'h2',
   ...props
 }: SurfaceBoxProps) {
+  const titleId = useId();
   return (
-    <section
-      className={cn('flex flex-col rounded-card border border-line bg-surface-raised text-ink', className)}
-      {...props}
-    >
-      {title && (
-        <header className="flex items-start justify-between gap-4 border-b border-divider px-5 py-4">
-          <div className="min-w-0">
-            <h3 className="font-heading text-section font-semibold">{title}</h3>
-            {subheader && <p className="mt-0.5 text-small text-ink-muted">{subheader}</p>}
-          </div>
-          {secondary && <div className="shrink-0">{secondary}</div>}
-        </header>
-      )}
-      {content ? (
-        <div className={cn('px-5 py-4', noPadding && 'p-0', contentClassName)}>{children}</div>
-      ) : (
-        children
-      )}
-    </section>
+    <SurfaceTitleContext.Provider value={title ? titleId : undefined}>
+      <section
+        className={cn('flex flex-col rounded-card border border-line bg-surface-raised text-ink', className)}
+        {...props}
+      >
+        {title && (
+          <header className="flex items-start justify-between gap-4 border-b border-divider px-5 py-4">
+            <div className="min-w-0">
+              <Heading id={titleId} className="font-heading text-section font-semibold">{title}</Heading>
+              {subheader && <div className="mt-0.5 max-w-prose text-small text-ink-muted">{subheader}</div>}
+            </div>
+            {secondary && <div className="shrink-0">{secondary}</div>}
+          </header>
+        )}
+        {content ? (
+          <div className={cn('px-5 py-4', noPadding && 'p-0', contentClassName)}>{children}</div>
+        ) : (
+          children
+        )}
+      </section>
+    </SurfaceTitleContext.Provider>
   );
 }

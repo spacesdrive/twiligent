@@ -100,6 +100,8 @@
   --control-h-sm: 2rem;
   --control-h-lg: 2.5rem;
   --nav-row-h: 2rem;
+  /* room kept above a focused element so the sticky top bar never covers it */
+  --focus-clearance: calc(var(--topbar-h) + 1rem);
 
   /* Motion */
   --duration-fast: 75ms;
@@ -198,12 +200,15 @@
   --text-section: 1rem;
   --text-section--line-height: 1.5rem;
   --text-section--letter-spacing: -0.01em;
-  --text-body: 0.875rem;
-  --text-body--line-height: 1.25rem;
+  --text-body: 1rem;
+  --text-body--line-height: 1.5rem;
   --text-small: 0.8125rem;
   --text-small--line-height: 1.21875rem;
   --text-caption: 0.75rem;
   --text-caption--line-height: 1rem;
+  --text-metric: 1.75rem;
+  --text-metric--line-height: 2.25rem;
+  --text-metric--letter-spacing: -0.02em;
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -293,6 +298,12 @@
   --animate-fold-in: fold-in var(--duration-fold) var(--ease-fold) both;
 }
 
+/* spinners wait before showing, so a fast answer does not flash one */
+@keyframes delayed-appear {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 @keyframes fold-in {
   from { opacity: 0; transform: translate(-4px, 7px); }
   to { opacity: 1; transform: none; }
@@ -311,6 +322,7 @@
   }
   html {
     @apply font-sans;
+    scroll-padding-top: var(--focus-clearance);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -324,6 +336,15 @@
   h1, h2, h3 {
     font-family: var(--font-heading);
     font-weight: 600;
+  }
+  /* a finger needs a bigger target than a pointer, so touch screens get 44 px controls */
+  @media (pointer: coarse) {
+    :root {
+      --control-h: 2.75rem;
+      --control-h-sm: 2.5rem;
+      --control-h-lg: 2.75rem;
+      --nav-row-h: 2.75rem;
+    }
   }
   :focus-visible {
     outline: 2px solid var(--focus-ring);
@@ -350,6 +371,9 @@
   }
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
+  }
+  .delayed-appear {
+    animation: delayed-appear 1ms var(--spinner-delay, 300ms) both;
   }
   .tabular {
     font-variant-numeric: tabular-nums;
