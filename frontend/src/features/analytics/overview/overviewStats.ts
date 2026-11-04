@@ -9,8 +9,6 @@ export interface OverviewAccountFields extends AccountFields {
   mediaCount?: number;
   viewCount?: number;
   videoCount?: number;
-  postKarma?: number;
-  commentKarma?: number;
 }
 
 export interface OverviewAccount extends OverviewAccountFields {
@@ -25,8 +23,6 @@ export interface AccountCacheFields {
   totalComments?: number;
   totalViews?: number;
   contentTypes?: Partial<Record<InstagramContentType, Partial<InstagramContentTypeTotals>>>;
-  fetchedPosts?: number;
-  totalScore?: number;
   fetchedAt?: string;
 }
 
@@ -47,9 +43,6 @@ export interface AccountTotals {
   videos: number;
   followers: number;
   posts: number;
-  karma: number;
-  postKarma: number;
-  commentKarma: number;
 }
 
 export interface IGTypeTotals {
@@ -63,9 +56,6 @@ export interface CacheTotals {
   igLikes: number;
   igComments: number;
   igViews: number;
-  rdPosts: number;
-  rdKarma: number;
-  rdComments: number;
   igTypes: Record<string, IGTypeTotals>;
 }
 
@@ -78,14 +68,6 @@ function addAccountTotals(totals: AccountTotals, account: OverviewAccountFields)
   if (account.platform === 'instagram') {
     return { ...totals, followers: totals.followers + (account.followersCount || 0), posts: totals.posts + (account.mediaCount || 0) };
   }
-  if (account.platform === 'reddit') {
-    return {
-      ...totals,
-      karma:        totals.karma        + (account.totalKarma   || 0),
-      postKarma:    totals.postKarma    + (account.postKarma    || 0),
-      commentKarma: totals.commentKarma + (account.commentKarma || 0),
-    };
-  }
   return {
     ...totals,
     subscribers: totals.subscribers + (account.subscriberCount || 0),
@@ -96,7 +78,7 @@ function addAccountTotals(totals: AccountTotals, account: OverviewAccountFields)
 
 export function accountTotalsOf(accounts: OverviewAccountFields[]): AccountTotals {
   return accounts.reduce<AccountTotals>(addAccountTotals, {
-    subscribers: 0, views: 0, videos: 0, followers: 0, posts: 0, karma: 0, postKarma: 0, commentKarma: 0,
+    subscribers: 0, views: 0, videos: 0, followers: 0, posts: 0,
   });
 }
 
@@ -113,7 +95,7 @@ function addInstagramCache(result: CacheTotals, cache: AccountCacheFields): void
 // only accounts saved as 'youtube' count here, unlike the platform splits
 export function cacheTotalsOf(accounts: OverviewAccount[], analyticsCache: AccountCache): CacheTotals {
   const result: CacheTotals = {
-    ytLikes: 0, ytComments: 0, igLikes: 0, igComments: 0, igViews: 0, rdPosts: 0, rdKarma: 0, rdComments: 0,
+    ytLikes: 0, ytComments: 0, igLikes: 0, igComments: 0, igViews: 0,
     igTypes: Object.fromEntries(IG_CONTENT_TYPES.map(type => [type, { count: 0, views: 0 }])),
   };
   accounts.forEach(account => {
@@ -124,10 +106,6 @@ export function cacheTotalsOf(accounts: OverviewAccount[], analyticsCache: Accou
       result.ytComments += cache.totalComments ?? 0;
     } else if (account.platform === 'instagram') {
       addInstagramCache(result, cache);
-    } else if (account.platform === 'reddit') {
-      result.rdPosts    += cache.fetchedPosts  ?? 0;
-      result.rdKarma    += cache.totalScore    ?? 0;
-      result.rdComments += cache.totalComments ?? 0;
     }
   });
   return result;
@@ -139,30 +117,26 @@ function shareOf(part: number, total: number): number {
 
 // tracked items are never the user's own, so they never overlap cache totals
 export function summaryOf(totals: AccountTotals, cacheTotals: CacheTotals, trackedStats: TrackedStats) {
-  const totalContent = totals.videos + totals.posts + cacheTotals.rdPosts + trackedStats.total;
-  const trackedViewTotal = trackedStats.ytViews + trackedStats.rdViews;
-  const ytComments = cacheTotals.ytComments + trackedStats.ytComments;
-  const rdComments = cacheTotals.rdComments + trackedStats.rdComments;
-  const totalComments = ytComments + cacheTotals.igComments + rdComments;
-  const redditKarma = totals.postKarma + trackedStats.rdKarma;
-  const ytLikes = cacheTotals.ytLikes + trackedStats.ytLikes;
-  const totalLikes = redditKarma + ytLikes + cacheTotals.igLikes;
+  const totalContent = totals.videos + totals.posts + trackedStats.total;
+  const ytComments = cacheTotals.ytComments + trackedStats.comments;
+  const totalComments = ytComments + cacheTotals.igComments;
+  const ytLikes = cacheTotals.ytLikes + trackedStats.likes;
+  const totalLikes = ytLikes + cacheTotals.igLikes;
   return {
-    totalAudience: totals.subscribers + totals.followers + totals.karma,
+    totalAudience: totals.subscribers + totals.followers,
     totalContent,
-    trackedViewTotal,
-    totalViews: totals.views + cacheTotals.igViews + trackedViewTotal,
-    ytComments, rdComments, totalComments,
-    redditKarma, ytLikes, totalLikes,
+    trackedViewTotal: trackedStats.views,
+    totalViews: totals.views + cacheTotals.igViews + trackedStats.views,
+    ytComments, totalComments,
+    ytLikes, totalLikes,
     avgCommentsPerContent: totalContent > 0 ? Math.round(totalComments / totalContent) : 0,
-    commentShare: { youtube: shareOf(ytComments, totalComments), reddit: shareOf(rdComments, totalComments) },
+    commentShare: { youtube: shareOf(ytComments, totalComments), instagram: shareOf(cacheTotals.igComments, totalComments) },
     likeShare: { youtube: shareOf(ytLikes, totalLikes), instagram: shareOf(cacheTotals.igLikes, totalLikes) },
   };
 }
 
 function contentOf(account: OverviewAccountFields): number {
   if (account.platform === 'instagram') return account.mediaCount || 0;
-  if (account.platform === 'reddit') return account.totalKarma || 0;
   return account.viewCount || 0;
 }
 

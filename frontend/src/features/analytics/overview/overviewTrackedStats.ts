@@ -1,94 +1,57 @@
 import { trackedViews } from '../../../utils/trackedContent.ts';
 import type { TrackedMetrics } from '../../../utils/trackedContent.ts';
 
-// the tracked post fields the overview reads
+// the tracked video fields the overview reads
 export interface TrackedStatsItem extends TrackedMetrics {
   category?: string;
 }
 
-export interface TrackedStats<T extends TrackedStatsItem = TrackedStatsItem> {
+export interface TrackedStats {
   total: number;
-  ytItems: T[];
-  rdItems: T[];
-  ytViews: number;
-  ytLikes: number;
-  ytComments: number;
-  rdViews: number;
-  rdKarma: number;
-  rdComments: number;
+  views: number;
+  likes: number;
+  comments: number;
 }
 
-export interface CategoryTotals {
+export interface CategoryStat {
   category: string;
   count: number;
-  ytCount: number;
-  rdCount: number;
-  ytViews: number;
-  ytLikes: number;
-  ytComments: number;
-  rdViews: number;
-  rdKarma: number;
-  rdComments: number;
-}
-
-export interface CategoryStat extends CategoryTotals {
   views: number;
+  likes: number;
+  comments: number;
 }
 
 function sumOf<T>(items: T[], valueOf: (item: T) => number): number {
   return items.reduce((sum, item) => sum + valueOf(item), 0);
 }
 
-// reddit post score is karma, so it rolls into karma totals
-export function trackedStatsOf<T extends TrackedStatsItem>(trackedContent: T[]): TrackedStats<T> {
-  const ytItems = trackedContent.filter(item => item.contentType === 'youtube');
-  const rdItems = trackedContent.filter(item => (item.contentType || 'reddit') === 'reddit');
+export function trackedStatsOf(trackedContent: TrackedStatsItem[]): TrackedStats {
   return {
-    total:      trackedContent.length,
-    ytItems,
-    rdItems,
-    ytViews:    sumOf(ytItems, trackedViews),
-    ytLikes:    sumOf(ytItems, item => item.likeCount ?? 0),
-    ytComments: sumOf(ytItems, item => item.commentCount ?? 0),
-    rdViews:    sumOf(rdItems, trackedViews),
-    rdKarma:    sumOf(rdItems, item => item.score ?? 0),
-    rdComments: sumOf(rdItems, item => item.numComments ?? 0),
+    total:    trackedContent.length,
+    views:    sumOf(trackedContent, trackedViews),
+    likes:    sumOf(trackedContent, item => item.likeCount ?? 0),
+    comments: sumOf(trackedContent, item => item.commentCount ?? 0),
   };
 }
 
-function emptyCategory(category: string): CategoryTotals {
-  return {
-    category,
-    count: 0, ytCount: 0, rdCount: 0,
-    ytViews: 0, ytLikes: 0, ytComments: 0,
-    rdViews: 0, rdKarma: 0, rdComments: 0,
-  };
+function emptyCategory(category: string): CategoryStat {
+  return { category, count: 0, views: 0, likes: 0, comments: 0 };
 }
 
-function addToCategory(stat: CategoryTotals, item: TrackedStatsItem): void {
+function addToCategory(stat: CategoryStat, item: TrackedStatsItem): void {
   stat.count++;
-  if (item.contentType === 'youtube') {
-    stat.ytCount++;
-    stat.ytViews    += trackedViews(item);
-    stat.ytLikes    += item.likeCount    ?? 0;
-    stat.ytComments += item.commentCount ?? 0;
-    return;
-  }
-  stat.rdCount++;
-  stat.rdViews    += trackedViews(item);
-  stat.rdKarma    += item.score       ?? 0;
-  stat.rdComments += item.numComments ?? 0;
+  stat.views    += trackedViews(item);
+  stat.likes    += item.likeCount    ?? 0;
+  stat.comments += item.commentCount ?? 0;
 }
 
 export function categoryStatsOf(trackedContent: TrackedStatsItem[]): CategoryStat[] {
   const withCategory = trackedContent.filter(item => item.category);
   if (!withCategory.length) return [];
-  const byCategory: Record<string, CategoryTotals> = {};
+  const byCategory: Record<string, CategoryStat> = {};
   withCategory.forEach(item => {
     if (!byCategory[item.category!]) byCategory[item.category!] = emptyCategory(item.category!);
     addToCategory(byCategory[item.category!], item);
   });
-  return Object.values(byCategory)
-    .map(stat => ({ ...stat, views: stat.ytViews + stat.rdViews }))
-    .sort((a, b) => (b.views + b.rdKarma) - (a.views + a.rdKarma));
+  return Object.values(byCategory).sort((a, b) => b.views - a.views);
 }

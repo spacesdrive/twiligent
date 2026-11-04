@@ -4,7 +4,7 @@ import Num from '@/components/Num';
 import MetricAreaChart from '@/components/MetricAreaChart';
 import { pointsOf, rankingSummary } from '@/lib/chart';
 import { METRIC_ICONS } from '@/lib/metricIcons';
-import { fmtNum, fmtNumFull } from '../../../utils/formatters';
+import { fmtNumFull } from '../../../utils/formatters';
 import { CATEGORY_SERIES } from './overviewCharts.ts';
 import { countLabel, igTypeSummary } from './overviewLabels.ts';
 import InstagramViewsTable from './InstagramViewsTable';
@@ -31,13 +31,13 @@ export default function ViewsTab({ stats, isSyncing }: ViewsTabProps) {
         <MetricBox icon={<Views />}     label="Total views"     value={<Num value={summary.totalViews} />}       period="All sources" subtitle="YouTube, Instagram and tracked content" highlight />
         <MetricBox icon={<Videos />}    label="Channel views"   value={<Num value={totals.views} />}             period="All time"    subtitle={countLabel(groups.youtube.length, 'YouTube channel')} />
         <MetricBox icon={<Instagram />} label="Instagram views" value={<Num value={cacheTotals.igViews} />}      period="Loaded posts" subtitle={instagramViewsSubtitle(stats)} />
-        <MetricBox icon={<Tracked />}   label="Tracked views"   value={<Num value={summary.trackedViewTotal} />} period="Tracked items" subtitle={`${fmtNum(trackedStats.ytViews)} YouTube, ${fmtNum(trackedStats.rdViews)} Reddit`} />
+        <MetricBox icon={<Tracked />}   label="Tracked views"   value={<Num value={summary.trackedViewTotal} />} period="Tracked items" subtitle={countLabel(trackedStats.total, 'tracked video')} />
       </div>
 
       {groups.instagram.length > 0 && <InstagramViewsTable rows={stats.igAccountRows} isSyncing={isSyncing} />}
 
       {stats.categoryStats.length > 0 && (
-        <SurfaceBox title="Views by category" subheader="YouTube video views plus Reddit post views entered by hand">
+        <SurfaceBox title="Views by category" subheader="Views across the tracked videos in each category">
           <MetricAreaChart
             data={stats.charts.categoryViews}
             dataKey="views"

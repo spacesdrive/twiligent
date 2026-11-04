@@ -10,17 +10,17 @@ import {
 import { categoryStatsOf, trackedStatsOf } from './overviewTrackedStats.ts';
 import {
   audienceChartDataOf, audienceLegendOf, categoryViewDataOf, commentByCategoryOf, commentByContentOf,
-  engagementByContentOf, karmaByAccountOf,
+  likesByCategoryOf, likesByContentOf,
 } from './overviewCharts.ts';
 
 function useOverviewCharts(groups: AccountGroups, trackedContent: TrackedContentItem[], categoryStats: CategoryStat[]) {
-  const audience = useMemo(() => audienceChartDataOf(groups, categoryStats), [groups, categoryStats]);
+  const audience = useMemo(() => audienceChartDataOf(groups), [groups]);
   const commentByContent = useMemo(() => commentByContentOf(trackedContent), [trackedContent]);
   const categoryViews = useMemo(() => categoryViewDataOf(categoryStats), [categoryStats]);
   const commentByCategory = useMemo(() => commentByCategoryOf(categoryStats), [categoryStats]);
-  const karmaByAccount = useMemo(() => karmaByAccountOf(groups.reddit), [groups.reddit]);
-  const engagementByContent = useMemo(() => engagementByContentOf(trackedContent), [trackedContent]);
-  return { audience, commentByContent, categoryViews, commentByCategory, karmaByAccount, engagementByContent };
+  const likesByContent = useMemo(() => likesByContentOf(trackedContent), [trackedContent]);
+  const likesByCategory = useMemo(() => likesByCategoryOf(categoryStats), [categoryStats]);
+  return { audience, commentByContent, categoryViews, commentByCategory, likesByContent, likesByCategory };
 }
 
 export function useOverviewStats(accounts: AppAccount[], overviewData: OverviewResponse) {
@@ -44,7 +44,7 @@ export function useOverviewStats(accounts: AppAccount[], overviewData: OverviewR
     categoryStats,
     charts,
     summary: summaryOf(totals, cacheTotals, trackedStats),
-    legend: audienceLegendOf(groups, categoryStats),
+    legend: audienceLegendOf(groups),
     igAccountRows: igAccountRowsOf(groups.instagram, analyticsCache),
     byAudience: sortedByAudience(accounts),
     byContent: sortedByContent(accounts),

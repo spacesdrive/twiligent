@@ -12,21 +12,21 @@ import { CATEGORY_SERIES } from './overviewCharts.ts';
 import { pluralWord } from './overviewLabels.ts';
 import type { OverviewStats } from './useOverviewStats';
 
-const { comments: Comments, videos: Videos, redditPosts: Reddit, median: PerItem } = METRIC_ICONS;
+const { comments: Comments, videos: Videos, instagram: Instagram, median: PerItem } = METRIC_ICONS;
 
 export interface CommentsTabProps {
   stats: OverviewStats;
 }
 
 export default function CommentsTab({ stats }: CommentsTabProps) {
-  const { summary, charts } = stats;
+  const { cacheTotals, summary, charts } = stats;
   const { totalComments, totalContent } = summary;
   return (
     <>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <MetricBox icon={<Comments />} label="Total comments"    value={<Num value={totalComments} />}                 period="Loaded content" subtitle={totalComments > 0 ? 'Across all platforms' : 'Open an analytics page to load'} highlight />
         <MetricBox icon={<Videos />}   label="YouTube comments"  value={<Num value={summary.ytComments} />}            period="Loaded videos"  subtitle={`${fmtPercent(summary.commentShare.youtube)} of all comments`} />
-        <MetricBox icon={<Reddit />}   label="Reddit comments"   value={<Num value={summary.rdComments} />}            period="Loaded posts"   subtitle={`${fmtPercent(summary.commentShare.reddit)} of all comments`} />
+        <MetricBox icon={<Instagram />} label="Instagram comments" value={<Num value={cacheTotals.igComments} />}      period="Loaded posts"   subtitle={`${fmtPercent(summary.commentShare.instagram)} of all comments`} />
         <MetricBox icon={<PerItem />}  label="Comments per item" value={<Num value={summary.avgCommentsPerContent} />} subtitle={`Average across ${fmtNum(totalContent)} ${pluralWord(totalContent, 'item')}`} />
       </div>
 
@@ -35,24 +35,24 @@ export default function CommentsTab({ stats }: CommentsTabProps) {
           <EmptyState
             icon={<Comments />}
             title="No comment data yet"
-            description="Open a channel or account analytics page to load its comments, or track individual posts and videos."
+            description="Open a channel or account analytics page to load its comments, or track individual videos."
             action={<Button size="sm" variant="outline" render={<Link to="/tracked-content" />}>Track content</Button>}
           />
         </SurfaceBox>
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <SurfaceBox title="Comments by tracked content" subheader="Top 12 tracked items ranked by comments">
+          <SurfaceBox title="Comments by tracked video" subheader="Top 12 tracked videos ranked by comments">
             <MetricAreaChart
               data={charts.commentByContent}
               dataKey="comments"
               label="Comments"
-              title="Comments by tracked content"
+              title="Comments by tracked video"
               description={rankingSummary(pointsOf(charts.commentByContent, 'name', 'comments'), fmtNumFull, 'comments')}
               color={SERIES.neutral}
               emptyMessage="Track content to compare comment volume"
             />
           </SurfaceBox>
-          <SurfaceBox title="Comments by category" subheader="Total comments across every item in each category">
+          <SurfaceBox title="Comments by category" subheader="Total comments across every video in each category">
             <MetricAreaChart
               data={charts.commentByCategory}
               dataKey="comments"

@@ -7,8 +7,8 @@ import type { CategoryStat, TrackedStats } from './overviewTrackedStats.ts';
 
 // the parts of useOverviewStats() the metric tabs read
 export interface MetricTabStats {
-  totals: Pick<AccountTotals, 'subscribers' | 'followers' | 'karma' | 'views' | 'videos' | 'posts'>;
-  cacheTotals: Pick<CacheTotals, 'igViews' | 'rdPosts'>;
+  totals: Pick<AccountTotals, 'subscribers' | 'followers' | 'views' | 'videos' | 'posts'>;
+  cacheTotals: Pick<CacheTotals, 'igViews'>;
   trackedStats: Pick<TrackedStats, 'total'>;
   summary: {
     totalAudience: number;
@@ -62,7 +62,7 @@ export function metricTabsOf(accounts: OverviewAccountFields[], stats: MetricTab
     {
       value: 'audience', label: 'Audience', figure: summary.totalAudience,
       detail: detailOf([
-        partOf(totals.subscribers, 'subscribers'), partOf(totals.followers, 'followers'), partOf(totals.karma, 'karma'),
+        partOf(totals.subscribers, 'subscribers'), partOf(totals.followers, 'followers'),
       ], 'No data yet'),
     },
     {
@@ -74,8 +74,7 @@ export function metricTabsOf(accounts: OverviewAccountFields[], stats: MetricTab
     {
       value: 'content', label: 'Content', figure: summary.totalContent,
       detail: detailOf([
-        partOf(totals.videos, 'videos'), partOf(totals.posts, 'Instagram'),
-        partOf(cacheTotals.rdPosts, 'Reddit'), partOf(trackedStats.total, 'tracked'),
+        partOf(totals.videos, 'videos'), partOf(totals.posts, 'Instagram'), partOf(trackedStats.total, 'tracked'),
       ], 'No content yet'),
     },
     { value: 'accounts', label: 'Accounts', figure: accounts.length, detail: platformSummary(accounts) },
@@ -96,31 +95,24 @@ export function igTypeSummary(igTypes: Record<string, IGTypeTotals>, field: keyo
     .join(', ');
 }
 
-export function categoryMeta(stat: Pick<CategoryStat, 'count' | 'ytCount' | 'rdCount'>): string {
-  return [
-    countLabel(stat.count, 'item'),
-    stat.ytCount > 0 && `${stat.ytCount} YouTube`,
-    stat.rdCount > 0 && `${stat.rdCount} Reddit`,
-  ].filter(Boolean).join(', ');
+export function categoryMeta(stat: Pick<CategoryStat, 'count'>): string {
+  return countLabel(stat.count, 'video');
 }
 
 export function topContentLabel(account: OverviewAccountFields): string {
   const platform = platformOf(account);
   if (platform === 'instagram') return `${fmtNum(account.mediaCount)} items`;
-  if (platform === 'reddit') return `${fmtNum(account.totalKarma)} karma`;
   return `${fmtNum(account.viewCount)} views`;
 }
 
 export function accountAudienceLabel(account: OverviewAccountFields): string {
   const platform = platformOf(account);
   if (platform === 'instagram') return `${fmtNum(account.followersCount)} followers`;
-  if (platform === 'reddit') return `${fmtNum(account.totalKarma)} karma`;
   return `${fmtNum(account.subscriberCount)} subscribers`;
 }
 
 export function accountContentLabel(account: OverviewAccountFields): string {
   const platform = platformOf(account);
   if (platform === 'instagram') return `${fmtNum(account.mediaCount)} items`;
-  if (platform === 'reddit') return `${fmtNum(account.postKarma)} post karma`;
   return `${fmtNum(account.viewCount)} views, ${fmtNum(account.videoCount)} videos`;
 }
