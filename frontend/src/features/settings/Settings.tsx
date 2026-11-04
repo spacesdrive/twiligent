@@ -44,7 +44,7 @@ export default function Settings() {
         <SchedulingSection github={github} />
         <PlatformRequirementsSection />
         <UsefulLinksSection />
-        <SettingsSection id="about" title="About Twiligent" description="Analytics and publishing for YouTube, Instagram and Reddit, run on your own infrastructure." />
+        <SettingsSection id="about" title="About Twiligent" description="Analytics and publishing for YouTube and Instagram, run on your own infrastructure." />
       </div>
     </div>
   );
