@@ -18,6 +18,10 @@ export interface ChartTableSpec {
 }
 
 export interface ChartFigureProps {
+  // the chart's name for screen readers, usually its title
+  label?: string;
+  // the takeaway in words, computed from the data and read in place of the plot
+  description?: string;
   summary?: string;
   table?: ChartTableSpec;
   children: React.ReactNode;
@@ -31,9 +35,17 @@ function cellText(column: ChartTableColumn, row: object): string {
 }
 
 // a chart with its takeaway in words and its numbers as a table, for anyone who cannot read the plot
-export default function ChartFigure({ summary, table, children, className }: ChartFigureProps) {
+export default function ChartFigure({ label, description, summary, table, children, className }: ChartFigureProps) {
   const [showTable, setShowTable] = useState(false);
   const summaryId = useId();
+  if (!summary && !table) {
+    return (
+      <figure aria-label={label} aria-describedby={description ? summaryId : undefined} className={className}>
+        {description && <p id={summaryId} className="sr-only">{description}</p>}
+        {children}
+      </figure>
+    );
+  }
   return (
     <figure className={cn('flex flex-col gap-2', className)} aria-describedby={summary ? summaryId : undefined}>
       {showTable && table ? (
