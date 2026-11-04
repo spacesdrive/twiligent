@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  TESTER_HINT, instagramErrorMessage, readOAuthReturn, accountMetrics, accountCardHandle, visibleSections, channelFieldProblem } from '../../../src/features/accounts/accountManagerData.ts';
+  TESTER_HINT, instagramErrorMessage, readInstagramCompletion, readOAuthReturn, accountMetrics, accountCardHandle, visibleSections, channelFieldProblem } from '../../../src/features/accounts/accountManagerData.ts';
 
 const params = (query: string) => new URLSearchParams(query);
 
@@ -56,4 +56,11 @@ test('only platforms with accounts get a section, in a fixed order', () => {
 test('adding a channel with nothing typed points at the channel field', () => {
   assert.equal(channelFieldProblem(' ')?.field, 'channel');
   assert.equal(channelFieldProblem('@channel'), null);
+});
+
+test('a finished Instagram sign-in is read from the fragment, and only with both the code and the state', () => {
+  assert.deepEqual(readInstagramCompletion('#ig_code=abc%23_&ig_state=s.sig'), { code: 'abc#_', state: 's.sig' });
+  assert.equal(readInstagramCompletion('#ig_code=abc'), null);
+  assert.equal(readInstagramCompletion(''), null);
+  assert.equal(readInstagramCompletion('#section'), null);
 });

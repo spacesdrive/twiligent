@@ -194,6 +194,8 @@ wording (`singleUploadMessage` in `features/publishing/publishHelpers.ts`).
 
 The `request()` function automatically attaches the JWT. Components do not need to handle auth tokens - the API layer manages this transparently. If the user is not logged in, the token will be absent and the backend will return 401, which `request()` will throw as an error.
 
+Instagram sign-in finishes through `api.completeInstagramConnection(code, state)`: the public OAuth callback hands the code back in the URL fragment, and this authenticated call lets the Worker check that the signed-in person started the sign-in before it connects anything.
+
 ## Base URL
 
 | Environment | Value |
