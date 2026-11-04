@@ -1,7 +1,7 @@
 import type { InstagramContentTypeSummary } from './instagram.ts';
 import type { YouTubeTrackedVideoData } from './youtube.ts';
 
-export type Platform = 'youtube' | 'instagram' | 'reddit';
+export type Platform = 'youtube' | 'instagram';
 
 export interface YouTubeThumbnail {
     url: string;
@@ -42,10 +42,8 @@ export interface Account {
     topicCategories?: string[];
     madeForKids?: boolean;
 
-    // instagram and reddit
-    username?: string;
-
     // instagram
+    username?: string;
     // null when neither the profile nor the request had an id
     igUserId?: string | null;
     biography?: string;
@@ -56,27 +54,19 @@ export interface Account {
     mediaCount?: number;
     accessToken?: string;
     tokenExpiresAt?: string | null;
-
-    // reddit
-    totalKarma?: number;
-    postKarma?: number;
-    commentKarma?: number;
-    iconUrl?: string;
-    createdAt?: string | number;
-    cookie?: string;
-    encryptedPassword?: string;
-    encryptedTotpSecret?: string;
-    authToken?: string;
-    ct0?: string;
 }
 
 // youtube accounts are created without a platform field; createAccount stores them as 'youtube'
 export type NewAccount = Omit<Account, 'platform'> & { platform?: Platform };
 
-// what an account looks like in a response: secrets removed, cookie presence kept
-export type SafeAccount = Omit<Account, 'accessToken' | 'cookie' | 'encryptedPassword' | 'encryptedTotpSecret' | 'authToken' | 'ct0'> & {
-    hasCookie: boolean;
-};
+// what an account looks like in a response: the access token removed
+export type SafeAccount = Omit<Account, 'accessToken'>;
+
+// how often an account posts, from its fetched posts
+export interface PostFrequency {
+    perWeek: number;
+    perMonth: number;
+}
 
 export type PostStatus = 'pending' | 'publishing' | 'published' | 'failed';
 
@@ -162,15 +152,6 @@ export interface PendingAccountSummary {
 }
 
 // fetchedAt is when the cached numbers came from the platform, so the Overview can say how old they are
-export interface RedditAccountSummary {
-    id: string;
-    cacheWarmed: true;
-    fetchedAt?: string;
-    fetchedPosts: number;
-    totalScore: number;
-    totalComments: number;
-}
-
 export interface InstagramAccountSummary {
     id: string;
     cacheWarmed: true;
@@ -189,7 +170,7 @@ export interface YouTubeAccountSummary {
     totalComments: number;
 }
 
-export type AccountSummary = PendingAccountSummary | RedditAccountSummary | InstagramAccountSummary | YouTubeAccountSummary;
+export type AccountSummary = PendingAccountSummary | InstagramAccountSummary | YouTubeAccountSummary;
 
 // the overview's analyticsCache, keyed by account id; accounts whose cache read failed are left out
 export type OverviewAnalyticsCache = Record<string, AccountSummary>;
@@ -197,7 +178,7 @@ export type OverviewAnalyticsCache = Record<string, AccountSummary>;
 // GET /api/accounts
 export type AccountListResponse = SafeAccount[];
 
-// the reddit, instagram and single refresh account routes
+// the instagram and single refresh account routes
 export interface AccountResponse {
     success: true;
     account: SafeAccount;

@@ -9,7 +9,7 @@ export interface IGContentTypeMeta {
 
 export const IG_CONTENT_TYPES: InstagramContentType[] = ['reel', 'post', 'video'];
 
-// chart series that follow the theme; the YouTube (chart-1) and Reddit (chart-4) hues are left out so a colour
+// chart series that follow the theme; the YouTube (chart-1) hue is left out so a colour
 // never names two platforms
 export const IG_CONTENT_TYPE_META: Record<InstagramContentType, IGContentTypeMeta> = {
     reel:  { label: 'Reel',  plural: 'Reels',  color: 'var(--chart-5)' },

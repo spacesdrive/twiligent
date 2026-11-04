@@ -41,18 +41,16 @@ test('errors and the add flag are read together', () => {
 test('each platform card shows its own three metrics', () => {
   assert.deepEqual(accountMetrics('youtube', { subscriberCount: 1, viewCount: 2, videoCount: 3 }), [['Subscribers', 1], ['Views', 2], ['Videos', 3]]);
   assert.deepEqual(accountMetrics('instagram', { followersCount: 4 }).map(([label]) => label), ['Followers', 'Following', 'Posts']);
-  assert.deepEqual(accountMetrics('reddit', { totalKarma: 9 })[0], ['Karma', 9]);
 });
 
-test('card handles use u/ for Reddit and the platform handle otherwise', () => {
-  assert.equal(accountCardHandle({ username: 'ribbon' }, 'reddit'), 'u/ribbon');
-  assert.equal(accountCardHandle({}, 'reddit'), 'u/');
-  assert.equal(accountCardHandle({ customUrl: '@dusk' }, 'youtube'), '@dusk');
+test('card handles use the platform handle', () => {
+  assert.equal(accountCardHandle({ platform: 'instagram', username: 'ribbon' }), '@ribbon');
+  assert.equal(accountCardHandle({ customUrl: '@dusk' }), '@dusk');
 });
 
 test('only platforms with accounts get a section, in a fixed order', () => {
-  const groups = { youtube: [], instagram: [{ id: 1 }], reddit: [{ id: 2 }] };
-  assert.deepEqual(visibleSections(groups).map(section => section.key), ['instagram', 'reddit']);
+  assert.deepEqual(visibleSections({ youtube: [], instagram: [{ id: 1 }] }).map(section => section.key), ['instagram']);
+  assert.deepEqual(visibleSections({ youtube: [{ id: 2 }], instagram: [{ id: 1 }] }).map(section => section.key), ['youtube', 'instagram']);
 });
 
 test('adding a channel with nothing typed points at the channel field', () => {

@@ -1,5 +1,4 @@
-import type { MediaType, SafeAccount, UserTag } from './domain.ts';
-import type { PostFrequency } from './reddit.ts';
+import type { MediaType, PostFrequency, SafeAccount, UserTag } from './domain.ts';
 
 export type InstagramContentType = 'reel' | 'post' | 'video';
 

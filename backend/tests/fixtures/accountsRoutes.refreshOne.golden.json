@@ -6,7 +6,7 @@
         },
         {
             "status": 200,
-            "body": "{\"success\":true,\"account\":{\"id\":\"ig1\",\"platform\":\"instagram\",\"igUserId\":\"1789\",\"username\":\"ribbon\",\"tokenExpiresAt\":\"2026-09-05T00:00:00.000Z\",\"followersCount\":2500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"followsCount\":10,\"mediaCount\":140,\"title\":\"Ribbon\",\"profilePictureUrl\":\"https://p\",\"biography\":\"Bio\",\"website\":\"https://r.example\",\"hasCookie\":false}}"
+            "body": "{\"success\":true,\"account\":{\"id\":\"ig1\",\"platform\":\"instagram\",\"igUserId\":\"1789\",\"username\":\"ribbon\",\"tokenExpiresAt\":\"2026-09-05T00:00:00.000Z\",\"followersCount\":2500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"followsCount\":10,\"mediaCount\":140,\"title\":\"Ribbon\",\"profilePictureUrl\":\"https://p\",\"biography\":\"Bio\",\"website\":\"https://r.example\"}}"
         },
         {
             "status": 400,
@@ -18,7 +18,7 @@
         },
         {
             "status": 200,
-            "body": "{\"success\":true,\"account\":{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UCaaaaaaaaaaaaaaaaaaaaaa\",\"title\":\"Channel UCaa\",\"subscriberCount\":500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"viewCount\":9000,\"videoCount\":12,\"description\":\"Desc\",\"thumbnails\":{\"default\":\"d\",\"medium\":\"m\",\"high\":\"h\"},\"customUrl\":\"@chan\",\"country\":\"GB\",\"keywords\":\"k\",\"topicCategories\":[\"t\"],\"hasCookie\":false}}"
+            "body": "{\"success\":true,\"account\":{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UCaaaaaaaaaaaaaaaaaaaaaa\",\"title\":\"Channel UCaa\",\"subscriberCount\":500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"viewCount\":9000,\"videoCount\":12,\"description\":\"Desc\",\"thumbnails\":{\"default\":\"d\",\"medium\":\"m\",\"high\":\"h\"},\"customUrl\":\"@chan\",\"country\":\"GB\",\"keywords\":\"k\",\"topicCategories\":[\"t\"]}}"
         },
         {
             "status": 503,

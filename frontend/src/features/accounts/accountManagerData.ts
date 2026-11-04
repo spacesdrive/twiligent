@@ -13,9 +13,6 @@ export interface AccountMetricFields {
   followersCount?: number;
   followsCount?: number;
   mediaCount?: number;
-  totalKarma?: number;
-  postKarma?: number;
-  commentKarma?: number;
 }
 
 export type AccountMetric = [label: string, value: number | undefined];
@@ -44,13 +41,11 @@ const IG_ERRORS: Record<string, string> = {
 const METRICS: Record<Platform, (acct: AccountMetricFields) => AccountMetric[]> = {
   youtube:   acct => [['Subscribers', acct.subscriberCount], ['Views', acct.viewCount], ['Videos', acct.videoCount]],
   instagram: acct => [['Followers', acct.followersCount], ['Following', acct.followsCount], ['Posts', acct.mediaCount]],
-  reddit:    acct => [['Karma', acct.totalKarma], ['Post karma', acct.postKarma], ['Comment karma', acct.commentKarma]],
 };
 
 const ACCOUNT_SECTIONS: AccountSectionInfo[] = [
   { key: 'youtube',   title: 'YouTube channels' },
   { key: 'instagram', title: 'Instagram accounts' },
-  { key: 'reddit',    title: 'Reddit accounts' },
 ];
 
 export function instagramErrorMessage(code: string): string {
@@ -76,8 +71,7 @@ export function accountMetrics(platform: Platform, account: AccountMetricFields)
   return METRICS[platform](account);
 }
 
-export function accountCardHandle(account: AccountFields, platform: Platform): string {
-  if (platform === 'reddit') return `u/${account.username || ''}`;
+export function accountCardHandle(account: AccountFields): string {
   return accountHandle(account);
 }
 

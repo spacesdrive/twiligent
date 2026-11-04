@@ -22,7 +22,6 @@ export interface AddAccountDialogProps {
 const STEP_DESCRIPTION: Record<Platform, string> = {
   youtube: 'Find the channel to check it is the right one, then add it.',
   instagram: 'Instagram opens so you can sign in and approve access.',
-  reddit: 'Add the username and the session cookie from your browser.',
 };
 
 // each card moves on to its platform's step, so these are plain buttons, not radios

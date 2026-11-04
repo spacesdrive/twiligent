@@ -67,7 +67,6 @@ export function audienceLegendOf(groups: AccountGroups): AudienceLegendItem[] {
 export const AUDIENCE_KIND: Record<AudiencePointType, string> = {
   youtube: 'YouTube subscribers',
   instagram: 'Instagram followers',
-  reddit: 'Reddit karma',
 };
 
 // subscribers and followers share one line, so each point is read with what it counts

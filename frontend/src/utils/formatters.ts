@@ -105,7 +105,7 @@ export type AppAccount = Omit<AccountInput, 'title' | 'thumbnail'> & {
     thumbnail: string;
 };
 
-// Normalize account data (handles YouTube, Instagram, and Reddit)
+// Normalize account data (handles YouTube and Instagram)
 export function normalizeAccount(acct: AccountInput): AppAccount {
     if (!acct) return acct;
     if (acct.platform === 'instagram') {
@@ -116,16 +116,6 @@ export function normalizeAccount(acct: AccountInput): AppAccount {
             followersCount: acct.followersCount || 0,
             followsCount: acct.followsCount || 0,
             mediaCount: acct.mediaCount || 0,
-        };
-    }
-    if (acct.platform === 'reddit') {
-        return {
-            ...acct,
-            title: acct.title || `u/${acct.username}`,
-            thumbnail: acct.iconUrl || '',
-            totalKarma: acct.totalKarma || 0,
-            postKarma: acct.postKarma || 0,
-            commentKarma: acct.commentKarma || 0,
         };
     }
     return {

@@ -1,13 +1,13 @@
 import React from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { YouTubeIcon, InstagramIcon, RedditIcon } from '@/components/brand/platform-icons';
+import { YouTubeIcon, InstagramIcon } from '@/components/brand/platform-icons';
 import type { PlatformIconProps as SvgIconProps } from '@/components/brand/platform-icons';
 import { PLATFORM_META, platformOf, accountImage, accountInitials, accountName } from '@/lib/accounts';
 import { cn } from '@/lib/utils';
 import type { AccountFields } from '@/lib/accounts';
 import type { Platform } from '@shared/types/domain.ts';
 
-const ICONS: Record<Platform, React.ComponentType<SvgIconProps>> = { youtube: YouTubeIcon, instagram: InstagramIcon, reddit: RedditIcon };
+const ICONS: Record<Platform, React.ComponentType<SvgIconProps>> = { youtube: YouTubeIcon, instagram: InstagramIcon };
 
 export type AccountAvatarSize = 'xs' | 'sm' | 'default' | 'lg' | 'xl';
 
