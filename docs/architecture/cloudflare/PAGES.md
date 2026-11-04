@@ -41,6 +41,20 @@ frontend/public/_redirects
 
 If this file is missing, direct URL navigation (e.g., visiting `/settings`) will return a 404.
 
+## Response Headers
+
+`frontend/public/_headers` and `site/public/_headers` give every page of the app and the site the same headers, which Pages reads from the build output:
+
+| Header | Value | Why |
+|---|---|---|
+| `X-Frame-Options` | `DENY` | No other site may frame the pages, so a hidden frame cannot trick a person into clicking (clickjacking) |
+| `Content-Security-Policy` | `frame-ancestors 'none'` | The same rule for browsers that read CSP; nothing else is restricted, so scripts, fonts and images load as before |
+| `X-Content-Type-Options` | `nosniff` | Browsers use the declared content type instead of guessing |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Other sites see only the origin, never a page address |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` | Neither app uses these, so no embedded script may ask for them |
+
+The Worker sets its own stricter headers on API responses (`backend/middleware/securityHeaders.ts`).
+
 ## Environment Variables
 
 The frontend accesses environment variables at **build time** via Vite's `VITE_` prefix convention:
