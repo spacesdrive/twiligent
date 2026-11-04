@@ -9,6 +9,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Documentation
 
+- A security review workflow: every change states its security effect, substantial changes get targeted checks with the Cloudflare and Trail of Bits skills and Semgrep while they are built, and pull requests carry a Security section (`docs/workflows/SECURITY_REVIEW.md`, #148)
 - Research and an implementation plan for platform v2: removing Reddit, an MCP server for Claude clients, YouTube publishing and security auditing in the workflow, in `docs/platform-v2/` (#143)
 
 ## [1.4.0] - 2026-11-05

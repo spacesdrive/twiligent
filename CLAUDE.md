@@ -149,6 +149,7 @@ docs/
     DEPLOYMENT.md          Backend deploy, frontend deploy, verification
     RECOVERY.md            Incidents: find the failure, stop the damage, roll back, back up and restore
     SCHEDULING_SETUP.md    Five-step GitHub Actions scheduling setup for self-hosters
+    SECURITY_REVIEW.md     Security checks per change size, the Cloudflare and Trail of Bits skills, commands, recording results
   features/
     NEW_ANALYTICS_PAGE.md  Add analytics view for a new platform
     NEW_API_ENDPOINT.md    Add a route to the Hono backend
@@ -306,6 +307,8 @@ This is not optional for features that touch new UI patterns, new APIs, or new i
 
 **Apply the UI/UX guide to every interface change.** Any task that adds or changes something people see or use, in `frontend/` or `site/`, follows `docs/guidelines/UI_UX.md`, including small updates such as a new button, message or column: name the users, tasks and states, pick the laws that apply, reuse the design system, design every state, and run its checks and checklist before committing. With the ProfileBox MCP available, also load the `ui-ux-design-intelligence` system for the task (`get_system_instructions_for_task`). WCAG 2.2 AA is the floor; the project's design system and brand win over any reference.
 
+**Review security as part of the change, not before a release.** Every change states its security effect, and every substantial change to a feature, service, route, authentication or token flow, database operation, integration, background job, dependency or anything that handles secrets or another person's data gets a security pass while it is built: (1) name what the change exposes and to whom; (2) apply the Cloudflare `security-audit` skill in guidance mode to the touched code; (3) apply the relevant Trail of Bits skills (`insecure-defaults`, `sharp-edges`, `supply-chain-risk-auditor` for a dependency, `variant-analysis` after a fix, `differential-review` on the pull request); (4) run Semgrep on the changed files and `npm audit` when the lockfile changed; (5) check every connected caller and dependency of the touched code; (6) confirm each input is validated and each query and action is scoped to the verified user; (7) add or update a regression test for each risk found; (8) record any risk left open in `docs/philosophy/SECURITY.md` (Known Risks). A small change runs only the targeted checks; a major change (a new platform, public endpoint or security model change) gets a full audit. The tools, commands and recording rules are in `docs/workflows/SECURITY_REVIEW.md`. Never say a scan ran unless it ran, and report each one's actual result. Confirmed vulnerabilities go into a private GitHub security advisory, never a public issue.
+
 **Always read before writing.** Read every file you will modify. Read all files in the same directory that might be affected. Read sibling files to understand conventions before adding new ones.
 
 **Match the existing pattern.** This project has established conventions for route tables, controllers, services, repositories, validators, context hooks and api.ts methods. Find the nearest existing example and follow it exactly before introducing anything new.
@@ -428,6 +431,8 @@ When anything changes, update every relevant docs file from the table below. The
 | MCP usage rule changed | `docs/mcp/OVERVIEW.md`, this file (MCP Usage Rules section) |
 | Engineering standard changed | `docs/philosophy/ARCHITECTURE.md`, this file (Engineering Standards section) |
 | Security model changed | `docs/philosophy/SECURITY.md`, `docs/architecture/database/SECURITY.md` |
+| Security review workflow, skills or scanners changed | `docs/workflows/SECURITY_REVIEW.md`, `.claude/settings.json` (and `.claude/marketplaces/`), this file (AI Operating Rules) |
+| Security risk found and left open | `docs/philosophy/SECURITY.md` (Known Risks), with the reason and what would remove it |
 | Caching strategy changed | `docs/philosophy/PERFORMANCE.md`, `docs/architecture/backend/CACHING.md` |
 | New integration (platform) | `docs/architecture/backend/SERVICES.md`, `docs/architecture/backend/ROUTES.md`, `docs/architecture/backend/CACHING.md`, `docs/architecture/frontend/FEATURES.md`, `docs/architecture/frontend/ROUTING.md`, `DECISIONS.md`, `CHANGELOG.md` |
 | Feature guide added or changed | `docs/features/` (relevant file) |

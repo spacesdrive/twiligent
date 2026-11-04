@@ -150,3 +150,11 @@ If a credential is compromised:
 7. Instagram webhook verify token: `wrangler secret put INSTAGRAM_WEBHOOK_VERIFY_TOKEN` with a new value, then enter the same value in the Meta dashboard's webhook settings and verify again
 
 There is no automated secrets rotation. This is a known gap.
+
+## Known Risks
+
+Risks found by a security review and left open on purpose, each with the reason and what would remove it. The review process is in `docs/workflows/SECURITY_REVIEW.md`.
+
+| Risk | Why it stays | What would remove it |
+|---|---|---|
+| No automated secrets rotation | Rotation needs the owner in the Meta, Google and Supabase dashboards | A rotation runbook with a reminder, or provider APIs that rotate in place |
