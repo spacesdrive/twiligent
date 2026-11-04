@@ -4,12 +4,9 @@ import { safeAccount } from '../../lib/safeAccount.ts';
 import { buildMediaParams } from '../../services/instagram/instagramPublishing.ts';
 import type { Account } from '../../../shared/types/domain.ts';
 
-test('safeAccount strips every credential and reports cookie presence', () => {
-    const out = safeAccount({
-        id: 'a1', platform: 'reddit', username: 'ribbon', cookie: 'secret', accessToken: 't',
-        encryptedPassword: 'p', encryptedTotpSecret: 's', authToken: 'x', ct0: 'y',
-    });
-    assert.deepEqual(out, { id: 'a1', platform: 'reddit', username: 'ribbon', hasCookie: true });
+test('safeAccount strips the access token and keeps every other field', () => {
+    const out = safeAccount({ id: 'a1', platform: 'instagram', username: 'ribbon', accessToken: 't', tokenExpiresAt: null });
+    assert.deepEqual(out, { id: 'a1', platform: 'instagram', username: 'ribbon', tokenExpiresAt: null });
 });
 
 test('safeAccount does not mutate its input', () => {

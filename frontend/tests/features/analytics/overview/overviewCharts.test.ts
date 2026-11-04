@@ -8,7 +8,6 @@ import {
 const groups = {
   youtube: [{ title: 'A channel with a long name', subscriberCount: 10 }],
   instagram: [{ username: 'fold', followersCount: 5 }, { title: 'Paper' }],
-  reddit: [],
 };
 const categoryStats = [
   { category: 'Technology news', views: 10, likes: 3, comments: 3 },
@@ -30,7 +29,7 @@ test('the audience description names what each point counts, in full', () => {
 });
 
 test('legend lists only platforms with data', () => {
-  const labels = audienceLegendOf({ youtube: [], instagram: [{}], reddit: [] }).map(item => item.label);
+  const labels = audienceLegendOf({ youtube: [], instagram: [{}] }).map(item => item.label);
   assert.deepEqual(labels, ['Instagram followers']);
   assert.equal(audienceDotColor('youtube'), 'var(--chart-1)');
   assert.equal(audienceDotColor('instagram'), 'var(--chart-3)');

@@ -18,7 +18,7 @@
         },
         {
             "status": 200,
-            "body": "[{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UCaaaaaaaaaaaaaaaaaaaaaa\",\"title\":\"Old title\",\"subscriberCount\":1,\"hasCookie\":false},{\"id\":\"ig1\",\"platform\":\"instagram\",\"igUserId\":\"1789\",\"username\":\"ribbon\",\"tokenExpiresAt\":\"2026-09-05T00:00:00.000Z\",\"followersCount\":1,\"hasCookie\":false},{\"id\":\"ig2\",\"platform\":\"instagram\",\"igUserId\":\"2000\",\"username\":\"notoken\",\"hasCookie\":false}]"
+            "body": "[{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UCaaaaaaaaaaaaaaaaaaaaaa\",\"title\":\"Old title\",\"subscriberCount\":1},{\"id\":\"ig1\",\"platform\":\"instagram\",\"igUserId\":\"1789\",\"username\":\"ribbon\",\"tokenExpiresAt\":\"2026-09-05T00:00:00.000Z\",\"followersCount\":1},{\"id\":\"ig2\",\"platform\":\"instagram\",\"igUserId\":\"2000\",\"username\":\"notoken\"}]"
         }
     ],
     "requests": [],

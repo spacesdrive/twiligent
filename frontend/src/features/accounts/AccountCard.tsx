@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, Lock, RefreshCw, Trash2 } from 'lucide-react';
+import { ArrowUpRight, RefreshCw, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { AccountAvatar } from '@/components/platform';
@@ -12,28 +12,12 @@ import { accountCardHandle, accountMetrics } from './accountManagerData';
 import type { Platform } from '@shared/types/domain.ts';
 import type { AppAccount } from '../../utils/formatters';
 
-interface CookieStatusProps {
-  hasCookie: boolean;
-}
-
 export interface AccountCardProps {
   acct: AppAccount;
   platform: Platform;
   refreshing: boolean;
   onRefresh: () => void;
   onDelete: () => void;
-}
-
-function CookieStatus({ hasCookie }: CookieStatusProps) {
-  if (hasCookie) {
-    return <span className="flex items-center gap-1 text-success"><Lock className="size-3" />Session cookie stored</span>;
-  }
-  return (
-    <span className="flex items-center gap-1 text-danger">
-      <Lock className="size-3" aria-hidden="true" />
-      <span><span className="sr-only">Error: </span>No session cookie is stored. Remove the account and add it again with its cookie.</span>
-    </span>
-  );
 }
 
 export default function AccountCard({ acct, platform, refreshing, onRefresh, onDelete }: AccountCardProps) {
@@ -44,7 +28,7 @@ export default function AccountCard({ acct, platform, refreshing, onRefresh, onD
         <AccountAvatar account={acct} size="lg" showPlatform decorative />
         <div className="min-w-0 flex-1">
           <Link to={accountPath(acct)} className="block truncate text-sm font-semibold text-ink hover:underline">{accountName(acct)}</Link>
-          <p className="truncate text-caption text-ink-faint">{accountCardHandle(acct, platform)}</p>
+          <p className="truncate text-caption text-ink-faint">{accountCardHandle(acct)}</p>
         </div>
         <Tooltip>
           <TooltipTrigger render={<Button variant="ghost" size="icon-sm" render={<Link to={accountPath(acct)} aria-label={`Open analytics for ${accountName(acct)}`} />} />}>
@@ -64,7 +48,6 @@ export default function AccountCard({ acct, platform, refreshing, onRefresh, onD
       </dl>
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-ink-faint">
-        {platform === 'reddit' && <CookieStatus hasCookie={acct.hasCookie} />}
         {acct.lastUpdated && <span>Updated <RelativeTime date={acct.lastUpdated} /></span>}
       </div>
 

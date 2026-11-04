@@ -1,4 +1,4 @@
-import type { PostFrequency } from '../../shared/types/reddit.ts';
+import type { PostFrequency } from '../../shared/types/domain.ts';
 
 export const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 export const DAY_MS = 86400000;
