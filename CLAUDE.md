@@ -347,10 +347,12 @@ Refs #12
 
 Every commit body ends with the issue reference: `Refs #N` for partial work, `Closes #N` for the commit that completes the issue. Pull requests list `Closes #N` for every issue they finish.
 
-Tag releases after changes or patches:
-- Bug fixes: patch version (v1.0.1, v1.0.2)
-- New features: minor version (v1.1.0)
-- Breaking changes: major version (v2.0.0)
+**Every change worth an update gets a changelog entry and a version, however small.** Any pull request that changes what the product does or shows (a fix, a feature, a changed message, a UI tweak, a dependency that changes behaviour) adds its entries to `CHANGELOG.md` under a new version heading, `## [X.Y.Z] - YYYY-MM-DD`, not under Unreleased, and sets the root `package.json` `version` to the same number. Pick the number from the largest change in the pull request:
+- Patch (v1.3.0 -> v1.3.1): a bug fix, a copy or styling change, a small UI adjustment, a performance or accessibility fix, with nothing new to learn
+- Minor (v1.3.1 -> v1.4.0): a new feature, page, setting, route, environment variable or migration; anything an instance owner must do to upgrade still counts as minor when old setups keep working
+- Major (v1.4.0 -> v2.0.0): a breaking change: an instance stops working until the owner acts, a public API or route is removed, or stored data must be migrated by hand
+
+Only pull requests that change nothing a user or an instance owner sees (docs, tests, CI, refactors with identical behaviour) take no version; their notable entries wait under Unreleased and ship with the next version. After the merge, tag the merged commit and publish its release page (`docs/workflows/GIT.md`, Release Tagging).
 
 Every tag gets a GitHub Release page with short notes that explain the release in plain words and say what an instance owner must do; the format is in `docs/workflows/GIT.md` (Release notes).
 
@@ -411,8 +413,9 @@ When anything changes, update every relevant docs file from the table below. The
 | Site icon added | The `ICONS` list in `site/build/genIcons.ts`, then `npm run icons --workspace site` to regenerate `site/src/components/icons.tsx` (never edit that file by hand) |
 | Third-party work with an attribution licence added (icons, fonts, images) | `THIRD_PARTY_NOTICES.md` (author, source, licence link, changes made) |
 | Architecture decision made | `DECISIONS.md` (append only, never delete) |
-| Any feature shipped | `CHANGELOG.md` (append to Unreleased section) |
-| Release tagged | `CHANGELOG.md` (convert Unreleased to version number with date), a GitHub Release page for the tag (`docs/workflows/GIT.md`, Release notes) |
+| Any change a user or instance owner sees (feature, fix, copy, UI) | `CHANGELOG.md` under a new version heading chosen by the size of the change (Git and Commit Standards), the root `package.json` `version`, then a tag and a GitHub Release page after the merge |
+| Docs, tests, CI or refactor-only change | `CHANGELOG.md` Unreleased section if notable; it ships with the next version |
+| Release tagged | A GitHub Release page for the tag (`docs/workflows/GIT.md`, Release notes); `CHANGELOG.md` already holds the version section |
 | Any planned feature added or changed | `ROADMAP.md` |
 | Writing or design rule changed | `docs/WRITING_STANDARDS.md`, this file (Writing and Design Standards section) |
 | UI or UX rule changed (a law applied differently, a new state rule, a reference pattern adopted) | `docs/guidelines/UI_UX.md`, `docs/architecture/frontend/DESIGN_SYSTEM.md` (Rules), this file (AI Operating Rules) |

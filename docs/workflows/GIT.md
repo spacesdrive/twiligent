@@ -140,31 +140,32 @@ Closes #42
 
 ## Release Tagging
 
-Tag releases after shipping a meaningful set of changes.
+Every pull request that changes what a user or an instance owner sees is a release, however small: a fix, a feature, a changed message, a UI adjustment. It carries its own version. Pull requests that change only docs, tests, CI or code structure with identical behaviour are not releases; their notable entries wait under `## [Unreleased]` and ship with the next version.
 
 ### Version numbering
 
+Choose the number from the largest change in the pull request.
+
 | Change type | Version bump | Example |
 |---|---|---|
-| Bug fix | Patch: x.x.N+1 | v1.0.4 -> v1.0.5 |
-| New feature | Minor: x.N+1.0 | v1.0.5 -> v1.1.0 |
-| Breaking change | Major: N+1.0.0 | v1.1.0 -> v2.0.0 |
+| Bug fix, copy or styling change, small UI adjustment, performance or accessibility fix | Patch: x.x.N+1 | v1.3.0 -> v1.3.1 |
+| New feature, page, setting, route, environment variable or migration (old setups keep working, even if the owner must run an upgrade step) | Minor: x.N+1.0 | v1.3.1 -> v1.4.0 |
+| Breaking change: an instance stops working until the owner acts, a public route or API is removed, or stored data must be migrated by hand | Major: N+1.0.0 | v1.4.0 -> v2.0.0 |
 
 ### Release process
 
-`main` only accepts pull requests (see Branch Strategy), so the release commit goes through one too, and the tag is made on `main` after the merge, because a rebase merge gives the commit a new hash.
+`main` only accepts pull requests (see Branch Strategy), so the version is set inside the change's own pull request, and the tag is made on `main` after the merge, because a rebase merge gives the commit a new hash.
 
-1. On a branch, update `CHANGELOG.md`: move the Unreleased section to the new version number with today's date
-2. Commit: `release: v1.1.0 - short description of release`, open a pull request and merge it once CI passes
+1. In the pull request, add the entries to `CHANGELOG.md` under a new heading `## [X.Y.Z] - YYYY-MM-DD` (moving anything waiting under Unreleased into it), and set the root `package.json` `version` to `X.Y.Z`
+2. The last commit of the pull request is `release: vX.Y.Z - short description of release`; merge once CI passes
 3. Tag the merged commit and push only the tag (tags are not protected)
 4. Publish a GitHub Release page for the tag, with notes in the format below
 
 ```bash
-# Example release
-git switch -c release/v1.1.0
-git add CHANGELOG.md
+# Example: the last commit on the change's own branch
+git add CHANGELOG.md package.json package-lock.json
 git commit -m "release: v1.1.0 - Reddit analytics integration"
-git push -u origin release/v1.1.0
+git push
 gh pr create --fill
 # after the pull request is merged
 git fetch origin
