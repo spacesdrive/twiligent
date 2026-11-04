@@ -1,5 +1,6 @@
 import { PLATFORM_META } from '../../../lib/accounts.ts';
 import { SERIES } from '../../../lib/chart.ts';
+import { fmtNumFull } from '../../../utils/formatters.ts';
 import type { TrackedMetrics } from '../../../utils/trackedContent.ts';
 import type { Platform } from '../../../../../shared/types/domain.ts';
 import type { OverviewAccountFields } from './overviewStats.ts';
@@ -76,23 +77,17 @@ export function audienceLegendOf(groups: AccountGroups, categoryStats: CategoryC
   ].filter(Boolean) as AudienceLegendItem[];
 }
 
-const AUDIENCE_KIND: Record<AudiencePointType, string> = {
+export const AUDIENCE_KIND: Record<AudiencePointType, string> = {
   youtube: 'YouTube subscribers',
   instagram: 'Instagram followers',
   reddit: 'Reddit karma',
   category: 'Category karma',
 };
 
-export interface AudienceRankingRow {
-  name: string;
-  value: number;
-  kind: string;
-  color: string;
-}
-
-// each bar says what it counts, because subscribers, followers and karma share one axis
-export function audienceRankingOf(points: AudiencePoint[]): AudienceRankingRow[] {
-  return points.map(point => ({ name: point.name, value: point.value, kind: AUDIENCE_KIND[point.type], color: audienceDotColor(point.type) }));
+// subscribers, followers and karma share one line, so each point is read with what it counts
+export function audienceDescription(points: AudiencePoint[]): string {
+  if (points.length === 0) return 'No data yet.';
+  return points.map(point => `${point.name}, ${AUDIENCE_KIND[point.type]}: ${fmtNumFull(point.value)}.`).join(' ');
 }
 
 export function audienceDotColor(type: AudiencePointType): string {

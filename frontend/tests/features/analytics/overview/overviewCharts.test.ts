@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  CATEGORY_SERIES, audienceChartDataOf, audienceLegendOf, audienceDotColor, commentByContentOf, engagementByContentOf,
+  CATEGORY_SERIES, audienceChartDataOf, audienceDescription, audienceLegendOf, audienceDotColor, commentByContentOf, engagementByContentOf,
   categoryViewDataOf, commentByCategoryOf, karmaByAccountOf,
 } from '../../../../src/features/analytics/overview/overviewCharts.ts';
 
@@ -20,6 +20,12 @@ test('audience chart shortens names and keeps category karma only', () => {
     { name: 'u/b', value: 0, type: 'reddit' },
     { name: 'Technology n…', value: 4, type: 'category' },
   ]);
+});
+
+test('the audience description names what each point counts, in full', () => {
+  const points = [{ name: 'Kitchen', value: 12345, type: 'youtube' as const }, { name: 'Tech', value: 40, type: 'category' as const }];
+  assert.equal(audienceDescription(points), 'Kitchen, YouTube subscribers: 12,345. Tech, Category karma: 40.');
+  assert.equal(audienceDescription([]), 'No data yet.');
 });
 
 test('legend lists only platforms with data', () => {
