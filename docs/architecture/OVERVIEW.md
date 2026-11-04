@@ -46,15 +46,15 @@
 │ Supabase │ │ Upstash │  │  External APIs                       │
 │ Postgres │ │  Redis  │  │  ├── YouTube Data API v3             │
 │          │ │ (cache, │  │  ├── Instagram Graph API v25         │
-│ tables:  │ │  rate   │  │  ├── Reddit Public JSON API          │
-│ accounts │ │  limits,│  │  ├── Cloudinary Upload API           │
-│          │ │  email  │  │  └── Resend Email API (auth emails)  │
+│ tables:  │ │  rate   │  │  ├── Cloudinary Upload API           │
+│ accounts │ │  limits,│  │  └── Resend Email API (auth emails)  │
+│          │ │  email  │  │                                      │
 │          │ │  counts)│  │                                      │
 │ settings │ │         │  └──────────────────────────────────────┘
 │ sched_   │ │ keys:   │
 │ posts    │ │ videos: │
 │ tracked_ │ │ ig:     │
-│ posts    │ │ reddit: │
+│ posts    │ │         │
 │ automa-  │ │         │
 │ tion_*   │ │         │
 │ audit_   │ │         │
@@ -181,7 +181,6 @@ The full flow, limits and failure handling are in `docs/architecture/data-flows/
 | Video/media analytics | Upstash Redis (`videos:` / `ig:` keys) | Avoids repeated heavy API calls |
 | Auth email counts | Upstash Redis (`email:day:` / `email:to:` keys, addresses hashed) | Caps verification emails at the provider's free daily quota |
 | Media files (for publishing) | Cloudinary CDN | Instagram requires public URL |
-| Tracked Reddit post images | Cloudinary CDN | Reddit's public JSON API carries no usable thumbnail |
 | API secrets | Cloudflare Worker secrets | Encrypted at rest, never in responses |
 
 ## Environment Configuration

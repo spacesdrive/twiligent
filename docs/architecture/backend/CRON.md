@@ -117,8 +117,6 @@ After the refresh, `retention.purge()` in `backend/services/retentionService.ts`
 - The daily cron refreshes any token expiring within 15 days
 - This gives a 15-day window for recovery if the cron fails for a few days
 
-Reddit sessions are not refreshed on a schedule. Reddit accounts are added with a `reddit_session` cookie copied from the browser (`POST /api/accounts/reddit` with `{ username, cookie }`); when the cookie expires, the user re-adds the account.
-
 ## The `ctx.waitUntil()` Pattern
 
 The `scheduled` handler passes the job to `ctx.waitUntil()`:

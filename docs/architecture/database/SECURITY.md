@@ -14,10 +14,10 @@ The merge functions follow the same rule: the `...ForUser` repository methods pa
 
 ## Ownership of Referenced Accounts
 
-A scheduled post names the account it publishes to, and a tracked Reddit item names the account whose cookie reads it. Both are checked twice:
+A scheduled post names the account it publishes to. It is checked twice:
 
-1. **In the service.** `scheduledPostService.create` loads the account with `accounts.findForUser(accountId, userId)` and passes it to `publishableAccount()`: another user's account, a missing one or one that is not Instagram answers 404 `Instagram account not found`, and one with no token answers 400 `No Instagram access token stored - reconnect this account`. `trackedContentService.update` refuses an account on a YouTube item (400) and answers 404 `Reddit account not found` for an account that is not one of the user's Reddit accounts.
-2. **In the database.** `scheduled_posts`, `tracked_posts` and the six automation tables reference `accounts (id, user_id)` with a composite foreign key, so a row whose `account_id` belongs to another user cannot be written, whatever the code does. A follow-up is created only by `automation_followups_for_messages`, which takes its user and account from the waiting comment, never from the message, so a message cannot reach another account's rule. A public reply is created only by `store_automation_comments`, which takes its user, account and comment from the stored comment row.
+1. **In the service.** `scheduledPostService.create` loads the account with `accounts.findForUser(accountId, userId)` and passes it to `publishableAccount()`: another user's account, a missing one or one that is not Instagram answers 404 `Instagram account not found`, and one with no token answers 400 `No Instagram access token stored - reconnect this account`.
+2. **In the database.** `scheduled_posts`, `tracked_posts` and the six automation tables reference `accounts (id, user_id)` with a composite foreign key, so a row whose `account_id` belongs to another user cannot be written, whatever the code does. Tracked items name no account: the app tracks YouTube videos only and never writes `tracked_posts.account_id`, which the cleanup in #145 drops (`docs/platform-v2/DATABASE_MIGRATION.md`). A follow-up is created only by `automation_followups_for_messages`, which takes its user and account from the waiting comment, never from the message, so a message cannot reach another account's rule. A public reply is created only by `store_automation_comments`, which takes its user, account and comment from the stored comment row.
 
 An automation rule is created only after `accounts.findForUser(accountId, userId)` returns one of the user's Instagram accounts (404 otherwise), and a rule never moves to another account. Pausing, subscribing and retrying load the account or the item with the user's id first.
 
@@ -28,7 +28,7 @@ Row ids are UUIDs from `crypto.randomUUID()` (`newRowId()` in `backend/lib/ids.t
 See `DECISIONS.md` ADR-011 and ADR-038 for the full reasoning. Summary:
 - Cron handlers (scheduler, token refresh) need to query across all users - they cannot be scoped to a single JWT
 - Using the service-role key with application-layer filtering achieves the same isolation with less complexity
-- A policy that lets a signed-in user reach their own rows would also let them read their raw Instagram tokens and Reddit cookies and write rows the API would refuse. The browser has no reason to touch the tables, so it gets no access at all
+- A policy that lets a signed-in user reach their own rows would also let them read their raw Instagram tokens and write rows the API would refuse. The browser has no reason to touch the tables, so it gets no access at all
 
 ## Key Hierarchy
 
@@ -57,7 +57,7 @@ To check a live instance, call the Data API with the anon key (`GET <SUPABASE_UR
 
 ### What was wrong before
 
-Before the migrations, production had drifted from this model. The tables had the policies `users_own_accounts`, `users_own_settings` and `users_own_posts` (`for all using (auth.uid() = user_id)`) and full table grants to `anon` and `authenticated`. A signed-in user could read their raw Instagram tokens and Reddit cookies through the Data API and write rows directly, for example a scheduled post naming another user's account, which the scheduler would then publish to. `scheduled_posts` also had no foreign key to `accounts`, and the API never checked scheduled post account ownership. The migrations removed the policies and grants and added the composite keys; the service checks above were added at the same time.
+Before the migrations, production had drifted from this model. The tables had the policies `users_own_accounts`, `users_own_settings` and `users_own_posts` (`for all using (auth.uid() = user_id)`) and full table grants to `anon` and `authenticated`. A signed-in user could read their raw Instagram tokens and other stored credentials through the Data API and write rows directly, for example a scheduled post naming another user's account, which the scheduler would then publish to. `scheduled_posts` also had no foreign key to `accounts`, and the API never checked scheduled post account ownership. The migrations removed the policies and grants and added the composite keys; the service checks above were added at the same time.
 
 ## Signups
 
@@ -110,5 +110,5 @@ When reviewing security, check these files:
 - `backend/controllers/` and `backend/services/` - the `userId` passed to a repository always comes from `c.get('userId')`, never from the body or query
 - `backend/lib/safeAccount.ts` - `safeAccount()` definition; it strips every stored credential for all platforms
 - `supabase/migrations/` - no migration grants anything to `anon` or `authenticated`, and every function revokes execute from them
-- `backend/services/scheduledPostService.ts` and `trackedContentService.ts` - an account named in a request is loaded with `findForUser` before it is stored
+- `backend/services/scheduledPostService.ts` - an account named in a request is loaded with `findForUser` before it is stored
 - All controllers in `backend/controllers/` - verify `safeAccount()` is called on every account response

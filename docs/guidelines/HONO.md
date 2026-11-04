@@ -55,11 +55,8 @@ const userId = c.get('userId');
 Input enters through a validator, never through `c.req.json()` or `c.req.query()` in a controller. `jsonBody(parse)` and `queryParams(parse)` in `backend/middleware/validate.ts` wrap Hono's `validator`; each parser lives in `backend/validators/<feature>Validators.ts`, reads fields with the helpers in `validators/fields.ts` (`requiredString`, `optionalString`, `optionalNumber`, `optionalBoolean`, `optionalArray`, `presentField`) and throws `ValidationError` with a message the user can act on:
 
 ```ts
-export function parseRedditAccount(body: Fields): RedditAccountInput {
-    return {
-        username: requiredString(body, 'username', 'Username is required'),
-        cookie: requiredString(body, 'cookie', 'Session cookie is required - ...'),
-    };
+export function parseChannelInput(body: Fields): ChannelInput {
+    return { input: requiredString(body, 'input', 'Enter a channel URL, @handle or channel ID') };
 }
 ```
 

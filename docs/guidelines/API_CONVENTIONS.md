@@ -4,7 +4,7 @@
 
 ### Success responses
 
-Every response body has a TypeScript type in `shared/types/` (`domain.ts`, `youtube.ts`, `instagram.ts`, `reddit.ts`). The controller checks the object it returns with `satisfies`, and the matching `api.ts` method returns the same type, so a change to a response shape is caught by `npm run typecheck` on both sides.
+Every response body has a TypeScript type in `shared/types/` (`domain.ts`, `youtube.ts`, `instagram.ts`, `automation.ts`). The controller checks the object it returns with `satisfies`, and the matching `api.ts` method returns the same type, so a change to a response shape is caught by `npm run typecheck` on both sides.
 
 Most endpoints return the data directly as a JSON object or array:
 
@@ -50,7 +50,7 @@ Controllers never build these bodies; services, repositories, validators and mid
 | `409` | `CONFLICT` - the resource already exists (an account that is already added) |
 | `429` | `RATE_LIMITED` - returned by the `rateLimit` middleware, with `Retry-After` and `retryAfter` in the body (see `docs/architecture/backend/RATE_LIMITING.md`), and by the Send Email hook when the day's emails are used up (`RateLimitedError`, no `retryAfter`) |
 | `500` | `DATABASE_ERROR` or `INTERNAL_ERROR` - a failed query or an unexpected error |
-| `502` | `UPSTREAM_ERROR` - YouTube, Instagram, Reddit or Resend answered with an error |
+| `502` | `UPSTREAM_ERROR` - YouTube, Instagram or Resend answered with an error |
 | `503` | `NOT_CONFIGURED` - a Worker secret the request needs is not set |
 | `504` | `UPSTREAM_TIMEOUT` - a platform call was cancelled or timed out |
 

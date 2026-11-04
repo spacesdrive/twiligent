@@ -215,7 +215,7 @@ Series order follows the brand rule: red, ink-muted, afterglow, info, oxblood.
 | `--chart-4` | `#2C5A99` | `#8DB3EC` | Brand `info` | 6.3:1 / 8.9:1 |
 | `--chart-5` | `#5E0B14` | `#B4626E` | Brand `oxblood`; dark derived lighter because oxblood is 1.4:1 on dusk | 12.4:1 / 4.5:1 |
 
-Platforms map to series: YouTube `chart-1`, Instagram `chart-3`, Reddit `chart-4`, categories `chart-2`. Platform is always also named in a label or legend, never shown by colour alone.
+Platforms map to series: YouTube `chart-1`, Instagram `chart-3`, categories `chart-2`. Platform is always also named in a label or legend, never shown by colour alone.
 
 ### Type, space, shape, elevation, motion
 

@@ -73,8 +73,8 @@ Shared components live in `frontend/src/components/`. Reach for these before wri
 | Pattern | Pages | Shape |
 |---|---|---|
 | Home | Overview | Display greeting, quick-action tiles, selectable metric tiles, detail per metric |
-| Library | Videos, Shorts, Instagram content, Reddit posts, Tracked content | Search, filter chips, quiet table or card grid, pager |
-| Detail | YouTube channel, Instagram account, Reddit account, Category | Back link, avatar header, metric grids, underline tabs or sections |
+| Library | Videos, Shorts, Instagram content, Tracked content | Search, filter chips, quiet table or card grid, pager |
+| Detail | YouTube channel, Instagram account, Category | Back link, avatar header, metric grids, underline tabs or sections |
 | Create | Accounts (add flow) | Choice cards, then a form step, then review before commit |
 | Working surface | Publish | Main editor on the left, sticky `DetailPanel` with settings and the primary action on the right |
 | Settings | Settings | Sections with a label column and content column |

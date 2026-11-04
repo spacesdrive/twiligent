@@ -71,10 +71,9 @@ The response types are imported with `import type` from `@shared/types/*.ts`, so
 
 ### Fresh reads
 
-`getVideos(id, fresh?)`, `getIGMedia(id, fresh?)` and `getRedditAnalytics(id, fresh?)` read the server's cache by
-default. Passing `fresh = true` adds `?fresh=1`, which skips the cache; pages send it only from their Refresh button,
-so opening a page never spends platform quota by itself. The Reddit posts pages read `getRedditAnalytics`, which
-carries the posts with their `fetchedAt`; the old `getRedditPosts` method was removed.
+`getVideos(id, fresh?)` and `getIGMedia(id, fresh?)` read the server's cache by default. Passing `fresh = true`
+adds `?fresh=1`, which skips the cache; pages send it only from their Refresh button, so opening a page never
+spends platform quota by itself.
 
 ## Adding a New API Method
 
@@ -149,36 +148,25 @@ The types are in `shared/types/automation.ts`. Activity and stats take their fil
 
 ## Tracked Content Methods
 
-Added to the `api` object in `api.ts`. Handles both Reddit posts and YouTube videos:
+Added to the `api` object in `api.ts`. Tracked content is YouTube videos only:
 
 ```ts
 getTrackedContent: () => request<TrackedContentItem[]>('/tracked-content'),
-addTrackedContent: (url: string, accountId: string | null, label: string, category: string) => request<TrackedContentItem>('/tracked-content', { method: 'POST', body: JSON.stringify({ url, accountId, label, category }) }),
+addTrackedContent: (url: string, label: string, category: string) => request<TrackedContentItem>('/tracked-content', { method: 'POST', body: JSON.stringify({ url, label, category }) }),
 updateTrackedContent: (id: string, updates: TrackedContentUpdateRequest) => request<TrackedContentItem>(`/tracked-content/${id}`, { method: 'PUT', body: JSON.stringify(updates) }),
 deleteTrackedContent: (id: string) => request<SuccessResponse>(`/tracked-content/${id}`, { method: 'DELETE' }),
 refreshTrackedContent: (id: string) => request<TrackedContentItem>(`/tracked-content/${id}/refresh`, { method: 'POST' }),
 ```
 
-`accountId` may be `null`. For YouTube items, `accountId` is always `null` (fetched via the server's `YOUTUBE_API_KEY`). For Reddit items, `accountId` is optional and refers to a Reddit account whose cookie improves datacenter IP access.
+The Worker reads each video with its own `YOUTUBE_API_KEY`, so an item names no account. A link that is not a YouTube
+video answers 400 `Only YouTube video links can be tracked. Paste a youtube.com or youtu.be link.`
 
 `updateTrackedContent` takes a partial object, so only the keys present are changed. Accepted
-keys are `label`, `category`, `accountId`, `manualViews`, and `imageUrl`. `manualViews` and
-`imageUrl` are Reddit-only and sending either for a YouTube item returns a 400; pass `null` to
-clear a previously set value.
-
-`imageUrl` must already be a hosted `https:` URL. The Worker never accepts binary uploads, so
-the browser posts the file straight to Cloudinary with `api.uploadImage()` (below) and
-sends only the returned `secure_url`.
+keys are `label` and `category`.
 
 ## Cloudinary Uploads
 
-These are the only calls in `api.ts` that do not go to the Worker.
-
-```ts
-uploadImage(file: File, cloudConfig: CloudinaryUploadConfig): Promise<string>
-```
-
-Used for tracked item screenshots. It posts the image with `fetch` to `https://api.cloudinary.com/v1_1/<cloudName>/image/upload` and resolves with `secure_url`. It throws an `Error` with Cloudinary's own message, or `'Cloudinary did not return an image URL'`, and network or JSON failures reject with the browser's own error. The tracked content editor shows that `(err as Error).message` after `Image upload failed.` in an error toast.
+This is the only call in `api.ts` that does not go to the Worker.
 
 ```ts
 uploadToCloudinary(file: File, cloudConfig: CloudinaryUploadConfig, { onProgress }: UploadOptions = {}): Promise<string>
@@ -200,8 +188,7 @@ Failures reject with an `UploadError` (an `Error` with a `reason` of type `Uploa
 | `rejected` | Cloudinary answered with a non-2xx status | `Upload failed` | `cloudinaryMessage` (Cloudinary's `error.message`, if any) or `parseMessage` (the body was not JSON) |
 
 The bulk upload shows the default messages. The single post flow maps the error to its own
-wording (`singleUploadMessage` in `features/publishing/publishHelpers.ts`). Tracked Content does
-not use this function: its screenshots go through `uploadImage()` above.
+wording (`singleUploadMessage` in `features/publishing/publishHelpers.ts`).
 
 ## Authentication
 

@@ -20,12 +20,11 @@ Request
 |---|---|---|---|
 | YouTube analytics | `videos:{userId}:{accountId}` | 6 hours | Versioned; old versions read as a miss |
 | Instagram analytics | `ig:{userId}:{accountId}` | 6 hours | Versioned; old versions read as a miss |
-| Reddit analytics | `reddit:{userId}:{accountId}` | 6 hours | |
 | OAuth state | none (HMAC-signed token, see `lib/oauthState.ts`) | 10 minutes | Security-critical - do not extend |
 
 Cache entries change on:
 - Expiry: every analytics key is written with a 6 hour TTL (`ANALYTICS_TTL_SECONDS` in `repositories/analyticsCacheRepository.ts`)
-- Account deletion: `cache.deleteAllForAccount()` removes the account's three keys
+- Account deletion: `cache.deleteAllForAccount()` removes the account's two keys
 - Opening YouTube or Instagram analytics: those load live and overwrite the entry
 - A cache version bump: an entry with an old `version` reads as a miss
 

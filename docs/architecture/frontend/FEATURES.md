@@ -9,7 +9,6 @@ frontend/src/
 │   ├── MetricAreaChart.tsx                 <- Shared Intent UI area chart for single-metric comparisons
 │   ├── ChartPanel.tsx, ChartFigure.tsx     <- Titled chart container with an empty state; the chart's screen-reader name and description
 │   ├── ExactTooltip.tsx, DonutChart.tsx    <- Intent's tooltip with exact values; a ring for parts of a whole
-│   ├── ImageLightbox.tsx                   <- Thumbnail that opens the full image in a Dialog
 │   ├── AccountSelect.tsx                   <- Instagram account picker with avatars (Publish, Automations)
 │   ├── RowAction.tsx                       <- Icon button with a tooltip for table and list rows (Tracked content, Automations)
 │   └── DocsRedirect.tsx                    <- The /docs/* route: replaces the location with the same page on the public docs
@@ -38,30 +37,21 @@ frontend/src/
 │   │   │   ├── useOverviewData.ts          <- Loads api.getOverview() and re-polls while accounts are syncing
 │   │   │   ├── useOverviewStats.ts         <- Memoized totals, rankings and chart rows
 │   │   │   └── overviewStats.ts, overviewTrackedStats.ts, overviewCharts.ts, overviewLabels.ts, greeting.ts   <- Pure helpers with *.test.ts
-│   │   ├── reddit/
-│   │   │   ├── RedditAnalytics.tsx         <- Page: Reddit account analytics (loads through useAccountAnalytics)
-│   │   │   ├── RedditHeader.tsx, RedditKarmaSummary.tsx, RedditKarmaCharts.tsx, RedditStatPanels.tsx
-│   │   │   ├── RedditTimingCharts.tsx, RedditSubredditTable.tsx, RedditTopPostsTable.tsx
-│   │   │   ├── redditAnalyticsData.ts      <- Pure chart rows and stat lists (redditAnalyticsData.test.ts)
-│   │   │   ├── RedditPosts.tsx             <- Per-account post explorer
-│   │   │   ├── RedditPostsAll.tsx          <- Global post explorer (all Reddit accounts)
-│   │   │   ├── RedditPostFilters.tsx, RedditPostTable.tsx   <- Filters and table shared by both post explorers
-│   │   │   └── redditPostUtils.ts          <- Shared sort options, filtering and sorting
 │   │   └── tracked/
-│   │       ├── TrackedContent.tsx          <- Page: tracked Reddit posts and YouTube videos
+│   │       ├── TrackedContent.tsx          <- Page: tracked YouTube videos
 │   │       ├── TrackedMetrics.tsx, TrackedFilters.tsx, BulkCategoryBar.tsx, TrackedTable.tsx, TrackedRow.tsx, TrackedThumbnail.tsx
-│   │       ├── AddTrackedDialog.tsx, EditTrackedDialog.tsx, TrackedImageField.tsx, CategoryPicker.tsx
+│   │       ├── AddTrackedDialog.tsx, EditTrackedDialog.tsx, CategoryPicker.tsx
 │   │       ├── useTrackedItems.ts, useTrackedFilters.ts, useTrackedSelection.ts, useBulkCategory.ts
-│   │       ├── useTrackedDelete.ts, useAddTracked.ts, useTrackedEditor.ts   <- Delete, add form, edit and image upload
+│   │       ├── useTrackedDelete.ts, useAddTracked.ts, useTrackedEditor.ts   <- Delete, add form and edit
 │   │       ├── trackedList.ts              <- Pure sort, filter, stats and form helpers (trackedList.test.ts)
 │   │       ├── TrackedCategory.tsx         <- Page: per-category analytics for tracked content
-│   │       ├── CategoryYouTubeSection.tsx, CategoryRedditSection.tsx, NumberCell.tsx, OpenLink.tsx
+│   │       ├── CategoryYouTubeSection.tsx, NumberCell.tsx, OpenLink.tsx
 │   │       └── trackedCategoryStats.ts     <- Pure per-category totals and labels (trackedCategoryStats.test.ts)
 │   ├── accounts/
 │   │   ├── AccountManager.tsx              <- Page: connected accounts by platform, refresh and remove
 │   │   ├── AccountSection.tsx, AccountCard.tsx, AccountsEmptyState.tsx
 │   │   ├── AddAccountDialog.tsx            <- Platform picker, per-platform fields and footer actions
-│   │   ├── YouTubeAccountFields.tsx, RedditAccountFields.tsx, AddAccountFooter.tsx
+│   │   ├── YouTubeAccountFields.tsx, AddAccountFooter.tsx
 │   │   ├── useAddAccount.ts                <- Add dialog state; Back keeps typed fields, Cancel clears them
 │   │   ├── useAccountRefresh.ts, useAccountDelete.ts
 │   │   ├── useInstagramOAuthReturn.ts      <- Reads ?ig_connected, ?ig_error and ?add once, then clears them
@@ -127,13 +117,9 @@ The user and self-hosting documentation is not part of the app. It lives in the 
 
 ## Metric Naming
 
-Reddit exposes a post's net upvotes as `score` in its JSON API. In the UI this is always
-labelled **karma**, never "score", so it matches the vocabulary Reddit shows its own users.
-The raw `score` field name is kept when reading API responses; every aggregate derived from
-it is named `karma` (`rdKarma`, `avgKarma`, `redditKarma`).
-
-"Virality Score" and "Consistency Score" are separate computed indices, not karma, and keep
-the word "score".
+The computed indices `viralityScore` and `consistencyScore` (YouTube and Instagram analytics) are labelled
+**Virality** and **Consistency** in the UI, with the value's unit (`2.4x`, `78 of 100`) in place of the word
+"score".
 
 ## Shared Chart Components
 
@@ -159,7 +145,7 @@ data; nothing extra is shown on screen.
 
 ## Shared Library Pieces
 
-The library pages (Videos, Shorts, Instagram content, Reddit posts, Tracked content) are built from the same parts:
+The library pages (Videos, Shorts, Instagram content, Tracked content) are built from the same parts:
 
 | Piece | Job |
 |---|---|
@@ -169,20 +155,6 @@ The library pages (Videos, Shorts, Instagram content, Reddit posts, Tracked cont
 | `ActiveFilters`, `NoResults`, `Pager` | Result count and removable filters, the no-match state that echoes the search, and the announced page range |
 | `FailedSourcesAlert`, `DataFreshness`, `RefreshButton` | Accounts that failed to load, the data's age, and the one Refresh control |
 | `lib/metricIcons.ts` | One icon per meaning (`METRIC_ICONS`, `IG_TYPE_ICONS`) |
-
-## Image Lightbox
-
-`components/ImageLightbox.tsx` renders a thumbnail that opens the full image in a shadcn
-`Dialog`. Used for tracked Reddit post images, which have no platform thumbnail:
-
-```tsx
-<ImageLightbox src={item.imageUrl} alt={item.title} thumbClassName="size-14" />
-```
-
-Base UI supports nested dialogs, so this works inside the Tracked Content edit dialog. Child
-dialogs skip the backdrop and only the topmost one responds to Escape and outside clicks.
-
-Note the Base UI composition rule: the trigger takes a `render` prop, not `asChild`.
 
 ## Feature Conventions
 
@@ -229,15 +201,12 @@ Each page manages its own loading/data/error state. Pages do not write to `AppCo
 
 | Feature | Path | Description |
 |---|---|---|
-| Overview | `/` | Aggregate KPIs across all connected accounts (YouTube, Instagram, Reddit); six metric tabs, each with area charts |
-| Accounts | `/accounts` | Connect/disconnect accounts (YouTube, Instagram, Reddit) |
+| Overview | `/` | Aggregate KPIs across all connected accounts (YouTube, Instagram); six metric tabs, each with area charts |
+| Accounts | `/accounts` | Connect/disconnect accounts (YouTube, Instagram) |
 | Channel Analytics | `/channel/:id` | YouTube analytics for one channel |
 | Instagram Analytics | `/instagram/:id` | Instagram analytics for one account |
-| Reddit Analytics | `/reddit/:id` | Reddit analytics for one account - karma breakdown, score timeline, post type distribution, day/hour analysis, subreddit breakdown, top posts |
-| Reddit Posts (global) | `/reddit-posts` | Combined post explorer across all Reddit accounts with account and subreddit filters |
-| Reddit Posts (per account) | `/reddit-posts/:id` | Searchable and sortable post list for a single Reddit account |
-| Tracked Content | `/tracked-content` | Monitor Reddit posts and YouTube videos; add by URL, assign categories, bulk edit, per-row refresh |
-| Tracked Category | `/tracked-content/category/:name` | Detailed per-category analytics; YouTube section (views, likes, comments, area chart, table) and Reddit section (karma, ratio, comments, area chart, table) rendered separately |
+| Tracked Content | `/tracked-content` | Monitor YouTube videos; add by link, assign categories, bulk edit, per-row refresh |
+| Tracked Category | `/tracked-content/category/:name` | Detailed per-category analytics for its YouTube videos: views, likes, comments, area chart, table |
 | Video Explorer | `/videos/:id` | YouTube video library with search and sort |
 | Publish | `/publish` (`/upload` redirects) | Publish or schedule to Instagram, bulk upload, and the scheduled post queue |
 | Automations | `/automations` | Keyword rules that answer Instagram comments with a private reply, a public reply under the comment or both, account pause and comment events, counts and the activity of both replies with separate retries (`docs/architecture/data-flows/AUTOMATION.md`) |

@@ -3,7 +3,7 @@
 `backend/services/` holds two kinds of module:
 
 - **Feature services** at the top level (`accountService.ts`, `publishingService.ts`, ...). Each is a factory, `createXService(deps)`, that returns an object of methods. They hold the business rules: they find the user's records through repositories, call the platform modules, use the cache and throw typed errors from `lib/errors.ts`. Controllers call them; they never see the Hono context.
-- **Platform modules** in `services/youtube/`, `services/instagram/` and `services/reddit/`. Plain functions that talk to one platform's API or compute analytics from its data. They know nothing about users, the database or the cache.
+- **Platform modules** in `services/youtube/` and `services/instagram/`. Plain functions that talk to one platform's API or compute analytics from its data. They know nothing about users, the database or the cache.
 
 Data access is not here: repositories in `backend/repositories/` own every Supabase query and Redis key (see `CACHING.md` and `docs/guidelines/SUPABASE.md`). Services never import from routes or controllers.
 
@@ -29,15 +29,14 @@ A service receives only what it uses: repositories, the cleaned `AppConfig` from
 
 | Service (key in `Services`) | File | Repositories | Methods |
 |---|---|---|---|
-| `accounts` | `accountService.ts` | accounts, cache | `list`, `resolveChannel`, `addYouTube`, `addReddit`, `addInstagram`, `refresh`, `refreshAll`, `refreshInstagramToken`, `remove` |
+| `accounts` | `accountService.ts` | accounts, cache | `list`, `resolveChannel`, `addYouTube`, `addInstagram`, `refresh`, `refreshAll`, `refreshInstagramToken`, `remove` |
 | `youtubeAnalytics` | `youtubeAnalyticsService.ts` | accounts, cache | `channelAnalytics`, `channelVideos`, `comparison`, `videoLibrary` |
 | `instagramAnalytics` | `instagramAnalyticsService.ts` | accounts, cache | `analytics`, `media` |
-| `redditAnalytics` | `redditAnalyticsService.ts` | accounts, cache | `analytics`, `posts` |
 | `publishing` | `publishingService.ts` | accounts | `cloudinaryConfig`, `publishingLimit`, `createContainer`, `containerStatus`, `publishContainer` |
 | `scheduledPosts` | `scheduledPostService.ts` | accounts, scheduled posts (and the publisher) | `list`, `create`, `update`, `remove`, `removeAll`, `publishDueNow` |
 | `scheduledPublisher` | `scheduledPublisher.ts` | accounts, scheduled posts | `publishDue` (every user's due posts; cron and manual trigger) |
 | `tokenRefresh` | `tokenRefreshService.ts` | accounts | `refreshExpiringInstagramTokens` (daily cron) |
-| `trackedContent` | `trackedContentService.ts` | accounts, tracked posts | `list`, `add`, `update`, `remove`, `refresh` |
+| `trackedContent` | `trackedContentService.ts` | tracked posts | `list`, `add`, `update`, `remove`, `refresh` |
 | `overview` | `overviewService.ts` | accounts, tracked posts, cache | `summary` |
 | `settings` | `settingsService.ts` | settings | `githubSettings`, `saveGithubSettings`, `serverKeyStatus` |
 | `instagramConnect` | `instagramConnectService.ts` | accounts | `authorizationUrl`, `userIdFromState`, `connect`, plus `configured` and `accountsPageUrl` |
@@ -75,22 +74,22 @@ The flow is in `docs/architecture/data-flows/AUTOMATION.md`. The rules the servi
 
 ### Accounts (`accountService.ts`, `accountFactory.ts`)
 
-`accountFactory.ts` holds pure builders: `tokenExpiryIso` (null without a lifetime), `buildYouTubeAccount`, `buildRedditAccount`, `buildInstagramAccount`. Each builder takes its id from `newRowId()`.
+`accountFactory.ts` holds pure builders: `tokenExpiryIso` (null without a lifetime), `buildYouTubeAccount`, `buildInstagramAccount`. Each builder takes its id from `newRowId()`.
 
 `AccountService`:
 
-- `addYouTube`, `addReddit` and `addInstagram` throw `ConflictError` (409) for an account the user already has. `addInstagram` tries the long-lived token exchange when `INSTAGRAM_APP_SECRET` is set and keeps the pasted token if it fails.
-- `refresh` and `refreshAll` check the fields the platform call needs first (an Instagram token, a Reddit username and cookie, a YouTube channel id) and throw `ValidationError` (400) when one is missing; a missing YouTube key is a `NotConfiguredError` (503). A single refresh updates more fields than refresh-all. `refreshAll` uses `Promise.allSettled`, so one failure does not stop the rest, and its `results` line up with the account list by index.
-- `remove` deletes the account row and its cache entries. The database removes the account's scheduled posts with it and clears the account from its tracked items (the foreign keys in `docs/architecture/database/SCHEMA.md`).
+- `addYouTube` and `addInstagram` throw `ConflictError` (409) for an account the user already has. `addInstagram` tries the long-lived token exchange when `INSTAGRAM_APP_SECRET` is set and keeps the pasted token if it fails.
+- `refresh` and `refreshAll` check the fields the platform call needs first (an Instagram token, a YouTube channel id) and throw `ValidationError` (400) when one is missing; a missing YouTube key is a `NotConfiguredError` (503). A single refresh updates more fields than refresh-all. `refreshAll` uses `Promise.allSettled`, so one failure does not stop the rest, and its `results` line up with the account list by index.
+- `remove` deletes the account row and its cache entries. The database removes the account's scheduled posts with it (the foreign keys in `docs/architecture/database/SCHEMA.md`).
 - Account updates go through `merge_account_data`, one statement in the database, so a token refresh and an analytics refresh on the same account never undo each other. A field passed as `undefined` keeps its stored value.
 
 `YouTubeAnalyticsService.channelAnalytics` fills channel fields for a YouTube account without `publishedAt` the first time its analytics load; a failure is logged and skipped.
 
 ### Tracked content (`trackedContentService.ts`, `trackedContentRules.ts`)
 
-`TrackedContentService.add` stores the fetched data in the same insert that creates the item. `update` checks a new `accountId` before storing it: a YouTube item answers 400 `YouTube videos are read without an account; remove the account from this item.`, and an account that is not one of the user's Reddit accounts answers 404 `Reddit account not found`. `refresh` and the manual fields merge into `data` with `merge_tracked_post_data`.
+Tracked content is YouTube videos only. `TrackedContentService.add` refuses any other link with 400 `Only YouTube video links can be tracked. Paste a youtube.com or youtu.be link.` and stores the fetched data in the same insert that creates the item, with `content_type` set to `youtube`. `update` changes only `label` and `category`. `refresh` merges the fetched data into `data` with `merge_tracked_post_data`.
 
-`trackedContentRules.ts` holds the pure rules: `detectContentType(url)` (`reddit`, `youtube` or `null`), `manualViewsPatch(value, isYouTube)` and `imageUrlPatch(value, isYouTube)`. The two patch helpers return `{ patch }` to merge into the item's `data`, or `{ error }`, which the service throws as a `ValidationError`. Empty values clear the field, YouTube items refuse both, views must be whole numbers of 0 or more, and images must be `https` URLs.
+`trackedContentRules.ts` holds the pure rule `detectContentType(url)`, which returns `youtube` for a YouTube video link and `null` for anything else.
 
 ### Overview summary (`overviewService.ts`)
 
@@ -134,7 +133,7 @@ A notice that hits a cap is skipped with a warning instead of failing, because t
 
 ## Shared analytics math (`backend/lib/analyticsMath.ts`)
 
-Pure helpers whose formulas are identical in the Instagram and Reddit analytics: `DAY_NAMES`, `DAY_MS`, `sumOf`, `roundedAverage`, `medianOf`, `countWithinDays` (inclusive `<=`), `postFrequency` (posts per week and month over the dated span), `consistencyScore` (coefficient of variation, needs 3 values), `bestToAverageRatio` (virality), `pickHighest`, `monthKey` (local time), and `reportedCount` and `percentOfReportedViews` for counts a platform may hide. YouTube keeps its own recency (strict `<`) and weekly consistency formulas: `youtubeAnalytics.ts` imports `DAY_MS`, `sumOf`, `roundedAverage`, `medianOf` and `reportedCount`, and `youtubeTrends.ts` imports `DAY_NAMES`, `DAY_MS`, `monthKey`, `reportedCount` and `percentOfReportedViews`.
+Pure helpers the Instagram analytics modules use: `DAY_NAMES`, `DAY_MS`, `sumOf`, `roundedAverage`, `medianOf`, `countWithinDays` (inclusive `<=`), `postFrequency` (posts per week and month over the dated span), `consistencyScore` (coefficient of variation, needs 3 values), `bestToAverageRatio` (virality), `pickHighest`, `monthKey` (local time), and `reportedCount` and `percentOfReportedViews` for counts a platform may hide. YouTube keeps its own recency (strict `<`) and weekly consistency formulas: `youtubeAnalytics.ts` imports `DAY_MS`, `sumOf`, `roundedAverage`, `medianOf` and `reportedCount`, and `youtubeTrends.ts` imports `DAY_NAMES`, `DAY_MS`, `monthKey`, `reportedCount` and `percentOfReportedViews`.
 
 ---
 
@@ -192,17 +191,13 @@ Views come from the media insights `views` metric (the replacement for `plays`, 
 
 ### `safeAccount(account)`
 
-`safeAccount()` lives in `backend/lib/safeAccount.ts`. It removes every field listed in `SECRET_FIELDS` (`accessToken`, `cookie`, `encryptedPassword`, `encryptedTotpSecret`, `authToken`, `ct0`) and adds `hasCookie`, returning the `SafeAccount` type from `shared/types/domain.ts`:
+`safeAccount()` lives in `backend/lib/safeAccount.ts`. It removes every field listed in `SECRET_FIELDS` (today the Instagram `accessToken`) and returns the `SafeAccount` type from `shared/types/domain.ts`:
 
 ```ts
-const SECRET_FIELDS: (keyof Account)[] = ['accessToken', 'cookie', 'encryptedPassword', 'encryptedTotpSecret', 'authToken', 'ct0'];
-
-export function safeAccount(account: Account): SafeAccount {
-    const copy: Partial<Account> & { hasCookie: boolean } = { ...account, hasCookie: !!account.cookie };
-    for (const field of SECRET_FIELDS) delete copy[field];
-    return copy as SafeAccount;
-}
+const SECRET_FIELDS: (keyof Account)[] = ['accessToken'];
 ```
+
+A new platform with its own secret field adds it to `SECRET_FIELDS` and to the `Omit` list of `SafeAccount` (`docs/features/NEW_INTEGRATION.md`, Step 3).
 
 **This function must be applied to every account object before it leaves the backend.** Repositories return full `Account` objects; controllers call `safeAccount()` on every account they put in a response, and services that return accounts inside a larger result (the comparison, Instagram analytics) apply it themselves.
 
@@ -254,28 +249,9 @@ There is no barrel: services and tests import each module directly.
 
 ---
 
-## Reddit (`backend/services/reddit/`)
+## Credentials in responses
 
-### HTTP Client
-
-`redditApi.ts` holds the API code. All Reddit public JSON API calls go through `redditFetch(path, cookie, signal)`, which runs them through the Reddit circuit breaker (`lib/circuitBreaker.ts`), and `normalizeRedditPost()` maps each submitted post to the cached post shape. Requests include a descriptive `User-Agent` header (required by Reddit). When a cookie is passed, it is sent as `Cookie: reddit_session=<value>` for private account access and higher rate limits. A 404 becomes a `NotFoundError` (the user does not exist); a 403 (expired cookie), a 429 and other failures become an `UpstreamError` with a message that says what to do.
-
-### Key Functions
-
-| Function | Purpose |
-|---|---|
-| `fetchRedditProfile(username, cookie, signal)` | Fetches profile data from `/user/{username}/about.json` |
-| `fetchRedditPosts(username, cookie, limit, signal)` | Paginates submitted posts up to `limit` (default 100) via `/user/{username}/submitted.json` |
-| `computeRedditAnalytics(profile, posts)` | Lives in `redditAnalytics.ts` (re-exported by `redditApi.ts`); computes score stats, subreddit breakdown, media type distribution, posting time patterns, monthly breakdown, virality/consistency scores using the shared helpers in `lib/analyticsMath.ts` |
-| `fetchTrackedPostData(postUrl, cookie, signal)` | Fetches score, comments, and metadata for any public Reddit post URL using the `.json` trick; optionally uses a session cookie |
-
-### Credentials in responses
-
-Account responses for every platform pass through `safeAccount()` in `backend/lib/safeAccount.ts`, which strips the Reddit `cookie` along with the Instagram `accessToken` and sets `hasCookie` so the frontend can show session status.
-
-### No Worker secrets required
-
-Reddit integration requires no Worker secrets. The session cookie is a per-user credential stored in `accounts.data.cookie` (in the Supabase DB). It is read server-side by the Worker and never returned to the frontend.
+Account responses for every platform pass through `safeAccount()` in `backend/lib/safeAccount.ts`, which strips the Instagram `accessToken`. The token is read server-side by the Worker and never returned to the frontend.
 
 ---
 
@@ -304,9 +280,9 @@ For a new feature service:
 
 ## Fresh reads
 
-`youtubeAnalytics.channelVideos`, `instagramAnalytics.media` and `redditAnalytics.analytics` take an optional
+`youtubeAnalytics.channelVideos` and `instagramAnalytics.media` take an optional
 `{ fresh }`. Without it they answer from the cache when it has the account; with `fresh: true` they fetch live and
 rewrite the cache. The controllers pass it from `?fresh=1`, parsed by `parseFreshQuery` in
-`validators/analyticsValidators.ts`. `redditAnalytics.analytics` stores `fetchedAt` with the cache entry, and
+`validators/analyticsValidators.ts`. Both store `fetchedAt` with the cache entry, and
 `overviewService` copies each cache entry's `fetchedAt` into its account summary.
 

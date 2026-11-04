@@ -32,7 +32,7 @@ Redis is optional infrastructure. The cache repository (`analyticsCacheRepositor
 
 Platform API credentials (Instagram app secret, YouTube API key) are Worker secrets - not in code, not in the database, not in the frontend. The only credential that goes near the frontend is the Supabase anon key, which is public by design.
 
-User-specific credentials (Instagram access tokens, Reddit session cookies) live in `accounts.data` in the database. They are read by the Worker and never returned to the frontend. See `ADR-004`.
+User-specific credentials (Instagram access tokens) live in `accounts.data` in the database. They are read by the Worker and never returned to the frontend. See `ADR-004`.
 
 ### 6. Schemas bend before tables multiply
 

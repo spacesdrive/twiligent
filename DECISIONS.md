@@ -1061,3 +1061,21 @@ New row ids come from `crypto.randomUUID()` (`newRowId()` in `backend/lib/ids.ts
 **Trade-offs:**
 - `react-aria-components` is a second headless library beside Base UI; it is used only inside the chart legend.
 - The charts lose the visible summary and data table added in #132; screen readers still get each chart's description.
+
+## ADR-049: Reddit is removed; Twiligent supports YouTube and Instagram
+
+**Date:** 2026-11-05
+**Status:** Accepted
+
+**Decision:** Twiligent 2.0.0 drops Reddit (#144, part of #142). The Reddit routes (`POST /api/accounts/reddit`, `GET /api/accounts/:id/reddit-analytics` and `/reddit-posts`), the Reddit API client and analytics, the Reddit pages, the Reddit account form and Reddit tracked posts are removed. `Platform` is `'youtube' | 'instagram'`, `safeAccount()` strips only the Instagram access token, and tracked content follows YouTube videos only: no typed-in views, uploaded images or linked account. The Worker reads only YouTube and Instagram accounts and YouTube tracked posts, always writes `content_type = 'youtube'` and never writes `account_id`, so existing Reddit rows stay in the database but are never read. Removing those rows, the `'reddit'` values in the checks and the identity index, the `content_type` default and `tracked_posts.account_id` is a separate data change (#145, `docs/platform-v2/DATABASE_MIGRATION.md`), made only after this release is deployed and the owner has reviewed the SQL and the row counts.
+
+**Context:** On 2026-11-05 the owner decided to focus Twiligent on YouTube and Instagram, where publishing is planned next. Reddit was analytics only, and it was the one platform that kept session cookies and, in older rows, encrypted passwords and TOTP secrets in the database; dropping it removes those secrets from what the app stores and handles.
+
+**Alternatives considered:**
+- Hiding Reddit behind a setting. The code, the stored cookies and the tests would stay to maintain for a platform nobody uses.
+- Removing the code and the data in one release. The data change cannot be undone without a backup, so it waits for the owner's review of the exact SQL, separately from the code.
+
+**Trade-offs:**
+- Removing public routes is a breaking change, so this ships as 2.0.0. Old links to the Reddit pages show Not found in the app; the public site redirects its old Reddit paths to the Overview.
+- Until #145 runs, Reddit rows and their secrets remain in the database, unread. Reddit cache keys in Redis expire on their own within 6 hours.
+- Instances that used Reddit lose its history in the app; the rows can be exported before the cleanup.

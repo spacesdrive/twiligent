@@ -1,6 +1,8 @@
 # Guide: Adding an Analytics Page for a New Platform
 
-Use this when adding a full analytics view for a new connected platform (e.g., Reddit, Twitter/X, TikTok). This guide is specific to analytics pages that follow the pattern of `ChannelAnalytics.tsx` and `InstagramAnalytics.tsx`.
+Use this when adding a full analytics view for a new connected platform (e.g., Twitter/X, TikTok). This guide is specific to analytics pages that follow the pattern of `ChannelAnalytics.tsx` and `InstagramAnalytics.tsx`. The examples use a placeholder platform called Example (`example`); replace the name with the real one. The Instagram analytics (`services/instagram/`, `instagramAnalyticsService.ts`, `getInstagramAnalytics` and `getInstagramMedia` in `analyticsController.ts`, `features/analytics/instagram/`) is the closest complete example.
+
+Adding the platform itself (the `Platform` union, the database check, adding and refreshing accounts, secrets) is covered in `docs/features/NEW_INTEGRATION.md`. Do that first.
 
 ## Architecture Impact
 
@@ -8,15 +10,14 @@ Adding a platform analytics page touches all layers:
 
 | Layer | What changes |
 |---|---|
-| **Shared types** | New `shared/types/<platform>.ts` with the profile, post, analytics and cache shapes |
+| **Shared types** | New `shared/types/<platform>.ts` with the profile, post, analytics, cache and response shapes |
 | **Backend platform modules** | New `services/<platform>/` folder with the API client and the analytics computation |
 | **Backend feature service** | New `services/<platform>AnalyticsService.ts`, wired in `container.ts` |
 | **Backend cache** | New cache methods in `repositories/analyticsCacheRepository.ts` |
-| **Backend db** | No schema change needed - `platform='reddit'` works with the existing `accounts` table and `accountRepository` |
-| **Backend controller and routes** | New `controllers/<platform>Controller.ts` and `routes/<platform>Routes.ts` (`/accounts/:id/platform-analytics`, `/accounts/:id/platform-media`) |
-| **Backend route index** | Add the route table to `protectedRoutes` in `routes/index.ts` |
+| **Backend db** | No new table: accounts of every platform live in `accounts`. The `accounts_platform_check` constraint lists the allowed platforms, so it is replaced by a migration that adds the new one (`docs/features/NEW_INTEGRATION.md`) |
+| **Backend controller and routes** | New handlers in `controllers/analyticsController.ts` and routes in `routes/analyticsRoutes.ts` (`/accounts/:id/<platform>-analytics`, `/accounts/:id/<platform>-posts`), beside the YouTube and Instagram reads |
 | **Frontend api** | New methods in `api.ts` |
-| **Frontend page** | New analytics page in `features/analytics/platform/` |
+| **Frontend page** | New analytics page in `features/analytics/<platform>/` |
 | **Frontend routing** | New route in `App.tsx` |
 | **Frontend navigation** | Platform branch in `accountPath()` and `PLATFORM_META` in `lib/accounts.ts`; the sidebar lists accounts from them |
 | **Frontend overview** | Add platform KPIs to Overview dashboard if appropriate |
@@ -25,178 +26,211 @@ Adding a platform analytics page touches all layers:
 
 ```
 shared/types/
-  reddit.ts             <- RedditProfile, RedditPost, RedditAnalytics, RedditCacheData
+  example.ts            <- ExampleProfile, ExamplePost, ExampleAnalytics, ExampleCacheData, responses
 
 backend/
   services/
-    reddit/
-      redditApi.ts                <- API client
-      redditAnalytics.ts          <- pure analytics computation
-    redditAnalyticsService.ts     <- ownership checks, cache, platform calls
+    example/
+      exampleApi.ts               <- API client
+      exampleAnalytics.ts         <- pure analytics computation
+    exampleAnalyticsService.ts    <- ownership checks, cache, platform calls
   controllers/
-    redditController.ts
+    analyticsController.ts        <- add getExampleAnalytics, getExamplePosts
   routes/
-    redditRoutes.ts               <- analytics routes
+    analyticsRoutes.ts            <- add the two routes
 
 frontend/src/
   features/
     analytics/
-      reddit/
-        RedditAnalytics.tsx
+      example/
+        ExampleAnalytics.tsx
 ```
+
+A platform that also publishes or takes other input gets its own `controllers/<platform>Controller.ts` and `routes/<platform>Routes.ts` instead (see `docs/features/NEW_INTEGRATION.md`, Step 6).
 
 ## Step 1: Shared Types
 
 Define what the API returns before writing code that produces or reads it. `shared/types/<platform>.ts` holds types only; both the Worker and the frontend import it with `import type`.
 
 ```ts
-// shared/types/reddit.ts
-export interface RedditProfile { username: string; totalKarma: number; /* ... */ }
-export interface RedditPost { id: string; title: string; score: number; /* ... */ }
-export interface RedditAnalytics { /* totals, breakdowns */ }
-export interface RedditCacheData { profile: RedditProfile; analytics: RedditAnalytics; posts: RedditPost[] }
+// shared/types/example.ts
+import type { SafeAccount } from './domain.ts';
+
+export interface ExampleProfile { username: string; followersCount: number; /* ... */ }
+export interface ExamplePost { id: string; caption: string; likeCount: number | null; /* ... */ }
+export interface ExampleAnalytics { /* totals, breakdowns */ }
+export interface ExampleCacheData { posts: ExamplePost[]; fetchedAt: string }
+
+// GET /api/accounts/:id/example-analytics
+export interface ExampleAnalyticsResponse {
+    success: true;
+    profile: ExampleProfile;
+    account: SafeAccount;
+    analytics: ExampleAnalytics;
+}
+
+// GET /api/accounts/:id/example-posts
+export interface ExamplePostsResponse {
+    success: true;
+    posts: ExamplePost[];
+    fetchedAt: string;
+}
 ```
 
 ## Step 2: Backend Platform Modules
 
-Model them after `backend/services/reddit/`. Raw upstream payloads get their own interfaces in the module, covering only the fields the code reads. Every call accepts an `AbortSignal` and turns a failure into a typed error:
+Model them after `backend/services/instagram/` (`instagramApi.ts` for the requests, `instagramMedia.ts` for paging, `instagramAnalytics.ts` for the computation). Raw upstream payloads get their own interfaces in the module, covering only the fields the code reads. Every call accepts an `AbortSignal`, runs through a circuit breaker (`lib/circuitBreaker.ts`, one per platform) and turns a failure into a typed error:
 
 ```ts
-// backend/services/reddit/redditApi.ts
+// backend/services/example/exampleApi.ts
+import { createCircuitBreaker } from '../../lib/circuitBreaker.ts';
 import { NotFoundError, UpstreamError, UpstreamTimeoutError, isAbortError } from '../../lib/errors.ts';
-import type { RedditPost, RedditProfile } from '../../../shared/types/reddit.ts';
+import type { ExamplePost, ExampleProfile } from '../../../shared/types/example.ts';
 
-async function redditFetch<T>(path: string, cookie: string | null | undefined, signal?: AbortSignal): Promise<T> {
-    const headers: Record<string, string> = { 'User-Agent': USER_AGENT, 'Accept': 'application/json' };
-    if (cookie) headers['Cookie'] = `reddit_session=${cookie}`;
+const EXAMPLE_BASE = 'https://api.example.com';
+
+export const exampleCircuit = createCircuitBreaker('Example');
+
+function exampleFetch<T>(path: string, accessToken: string, signal?: AbortSignal): Promise<T> {
+    return exampleCircuit.run(() => requestExample<T>(path, accessToken, signal), signal);
+}
+
+async function requestExample<T>(path: string, accessToken: string, signal?: AbortSignal): Promise<T> {
     let res: Response;
     try {
-        res = await fetch(`${REDDIT_BASE}${path}`, { headers, signal });
+        res = await fetch(`${EXAMPLE_BASE}${path}`, { headers: { Authorization: `Bearer ${accessToken}` }, signal });
     } catch (err) {
-        if (isAbortError(err)) throw new UpstreamTimeoutError('Reddit', err);
-        throw new UpstreamError(`Reddit could not be reached (${(err as Error).message})`, { cause: err });
+        if (isAbortError(err)) throw new UpstreamTimeoutError('Example', err);
+        throw new UpstreamError(`Example could not be reached (${(err as Error).message})`, { reason: 'unreachable', cause: err });
     }
-    if (res.status === 404) throw new NotFoundError('Reddit user not found - check the username');
-    if (!res.ok) throw new UpstreamError(`Reddit API ${res.status}: ${res.statusText}`, { status: res.status });
+    if (res.status === 404) throw new NotFoundError('Example account not found - check the username');
+    if (!res.ok) throw new UpstreamError(`Example API ${res.status}: ${res.statusText}`, { status: res.status });
     return await res.json() as T;
 }
 
-export async function fetchRedditProfile(username: string, cookie: string | null | undefined, signal?: AbortSignal): Promise<RedditProfile> { ... }
-export async function fetchRedditPosts(username: string, cookie: string | null | undefined, limit = 100, signal?: AbortSignal): Promise<RedditPost[]> { ... }
+export async function fetchExampleProfile(accessToken: string, signal?: AbortSignal): Promise<ExampleProfile> { ... }
+export async function fetchExamplePosts(accessToken: string, limit = 100, signal?: AbortSignal): Promise<ExamplePost[]> { ... }
 ```
 
 ```ts
-// backend/services/reddit/redditAnalytics.ts - pure, so it is easy to test
-export function computeRedditAnalytics(profile: RedditProfile, posts: RedditPost[] | null | undefined): RedditAnalytics {
-    // totals, best post, posting time distribution, subreddit and monthly breakdowns,
+// backend/services/example/exampleAnalytics.ts - pure, so it is easy to test
+export function computeExampleAnalytics(profile: ExampleProfile, posts: ExamplePost[] | null | undefined): ExampleAnalytics {
+    // totals, best post, posting time distribution, monthly breakdown,
     // using the shared helpers in lib/analyticsMath.ts
 }
 ```
 
 ## Step 3: Backend Cache
 
-Add the methods to `AnalyticsCacheRepository` in `backend/repositories/analyticsCacheRepository.ts`. Build them on the private `readKey` and `writeKey` helpers, which return early without Redis, swallow Redis errors and apply the analytics TTL:
+Add the methods to `AnalyticsCacheRepository` in `backend/repositories/analyticsCacheRepository.ts`. Build them on the private `readKey` and `writeKey` helpers, which return early without Redis, swallow Redis errors and apply the analytics TTL. Store a version with the entry, as `videos:` and `ig:` do, so a later change to the shape makes old entries miss:
 
 ```ts
+// beside VIDEOS_CACHE_VERSION and IG_CACHE_VERSION
+const EXAMPLE_CACHE_VERSION = 1;
+
 // in createAnalyticsCacheRepository()
-async getReddit(userId, accountId) {
-    return (await readKey<RedditCacheData>(`reddit:${userId}:${accountId}`)) || null;
+async getExamplePosts(userId, accountId) {
+    const cached = await readKey<Versioned<ExampleCacheData>>(`example:${userId}:${accountId}`);
+    return cached?.version === EXAMPLE_CACHE_VERSION ? cached : null;
 },
 
-setReddit: (userId, accountId, data) => writeKey(`reddit:${userId}:${accountId}`, data),
+setExamplePosts: (userId, accountId, data) => writeKey(`example:${userId}:${accountId}`, { ...data, version: EXAMPLE_CACHE_VERSION }),
 ```
 
 Add the key to `deleteAllForAccount()`, which `AccountService.remove()` calls when the account is deleted.
 
-## Step 4: Backend Service, Controller and Routes
+## Step 4: Backend Service and Controller
 
-The feature service checks ownership and the stored credentials, reads the cache, and fetches live on a miss:
+The feature service checks ownership and the stored credentials, reads the cache, and fetches live on a miss. Like `instagramAnalyticsService.ts`, the analytics read is always live and refreshes the cached posts, and the posts read is cache first unless the person asked for fresh data:
 
 ```ts
-// backend/services/redditAnalyticsService.ts
-export function createRedditAnalyticsService({ accounts, cache, context }: RedditAnalyticsDeps): RedditAnalyticsService {
+// backend/services/exampleAnalyticsService.ts
+export function createExampleAnalyticsService({ accounts, cache, context }: ExampleAnalyticsDeps): ExampleAnalyticsService {
     const { signal } = context;
 
-    async function credentialsFor(userId: string, accountId: string): Promise<RedditCredentials> {
+    async function findConnected(userId: string, accountId: string): Promise<ConnectedExampleAccount> {
         const account = await accounts.findForUser(accountId, userId);
-        if (!account || account.platform !== 'reddit') throw new NotFoundError('Reddit account not found');
-        if (!account.cookie) throw new ValidationError(NO_COOKIE_MESSAGE);
-        if (!account.username) throw new ValidationError('No Reddit username stored - delete this account and add it again');
-        return { username: account.username, cookie: account.cookie };
+        if (!account || account.platform !== 'example') throw new NotFoundError('Example account not found');
+        if (!account.accessToken) throw new ValidationError('No access token stored - reconnect this Example account');
+        return { ...account, accessToken: account.accessToken };
     }
 
     return {
+        // always live: the posts are cached for the posts read and the Overview
         async analytics(userId, accountId) {
-            const { username, cookie } = await credentialsFor(userId, accountId);
-            const cached = await cache.getReddit(userId, accountId);
-            if (cached) return cached;
-
+            const account = await findConnected(userId, accountId);
             const [profile, posts] = await Promise.all([
-                fetchRedditProfile(username, cookie, signal),
-                fetchRedditPosts(username, cookie, POST_LIMIT, signal),
+                fetchExampleProfile(account.accessToken, signal),
+                fetchExamplePosts(account.accessToken, POST_LIMIT, signal),
             ]);
-            const result: RedditCacheData = { profile, analytics: computeRedditAnalytics(profile, posts), posts };
-            await cache.setReddit(userId, accountId, result);
-            return result;
+            await cache.setExamplePosts(userId, accountId, { posts, fetchedAt: new Date().toISOString() });
+            return { profile, account: safeAccount(account), analytics: computeExampleAnalytics(profile, posts) };
         },
-        // ...
+
+        // cache first, unless a person asked for fresh data
+        async posts(userId, accountId, { fresh = false } = {}) {
+            if (!fresh) {
+                const cached = await cache.getExamplePosts(userId, accountId);
+                if (cached?.posts) return { posts: cached.posts, fetchedAt: cached.fetchedAt };
+            }
+            const account = await findConnected(userId, accountId);
+            const posts = await fetchExamplePosts(account.accessToken, POST_LIMIT, signal);
+            const fetchedAt = new Date().toISOString();
+            await cache.setExamplePosts(userId, accountId, { posts, fetchedAt });
+            return { posts, fetchedAt };
+        },
     };
 }
 ```
 
-Wire it in `backend/container.ts` (`redditAnalytics: createRedditAnalyticsService({ accounts, cache, context })`). The controller and route table stay thin:
+`ConnectedExampleAccount` is `Account & { accessToken: string }`, the account once the check has passed, as `ConnectedInstagramAccount` is in `instagramAnalyticsService.ts`. Wire the service in `backend/container.ts` (`exampleAnalytics: createExampleAnalyticsService({ accounts, cache, context })`). The controller handlers and routes stay thin and sit beside the Instagram ones:
 
 ```ts
-// backend/controllers/redditController.ts
-export const getRedditAnalytics = controller.createHandlers(async c => {
-    const result = await servicesFor(c).redditAnalytics.analytics(c.get('userId'), pathParam(c, 'id'));
-    return c.json(result satisfies RedditCacheData);
+// backend/controllers/analyticsController.ts
+export const getExampleAnalytics = controller.createHandlers(async c => {
+    const result = await servicesFor(c).exampleAnalytics.analytics(c.get('userId'), pathParam(c, 'id'));
+    return c.json({ success: true, ...result } satisfies ExampleAnalyticsResponse);
 });
 
-// backend/routes/redditRoutes.ts
-const router = new Hono<AppEnv>();
+export const getExamplePosts = controller.createHandlers(queryParams(parseFreshQuery), async c => {
+    const result = await servicesFor(c).exampleAnalytics.posts(c.get('userId'), pathParam(c, 'id'), c.req.valid('query'));
+    return c.json({ success: true, ...result } satisfies ExamplePostsResponse);
+});
 
-router.get('/accounts/:id/reddit-analytics', ...getRedditAnalytics);
-router.get('/accounts/:id/reddit-posts', ...getRedditPosts);
-
-export default router;
+// backend/routes/analyticsRoutes.ts
+router.get('/accounts/:id/example-analytics', ...getExampleAnalytics);
+router.get('/accounts/:id/example-posts', ...getExamplePosts);
 ```
 
-## Step 5: Register the Route Table
+`parseFreshQuery` (`validators/analyticsValidators.ts`) accepts `?fresh=1` and answers 400 for any other `fresh` value, as it does for `/videos` and `/ig-media`.
 
-```ts
-// backend/routes/index.ts
-import redditRoutes from './redditRoutes.ts';
-// ...
-for (const routes of [accountRoutes, analyticsRoutes, redditRoutes, /* ... */]) {
-    protectedRoutes.route('/', routes);
-}
-```
+## Step 5: Rate Limits
 
-Routes that call the platform on a cache miss count against the shared API limits; add them to `QUOTA_ROUTES` in `backend/lib/rateLimit/rules.ts` if they can be called often.
+`analyticsRoutes.ts` is already in `protectedRoutes` in `routes/index.ts`, so the new routes need no registration. Routes that call the platform on a cache miss count against the shared API limits; add them to `QUOTA_ROUTES` in `backend/lib/rateLimit/rules.ts` if they can be called often.
 
 ## Step 6: Frontend Page
 
-Model after `InstagramAnalytics.tsx`. Read the data as the shared type (`RedditCacheData`) that `api.ts` returns, and give each sub-component a `<Component>Props` interface. Key sections:
-- Profile header (username, follower count, karma)
-- KPI row: avg upvotes, avg comments, total posts, engagement rate
+Model after `InstagramAnalytics.tsx`. Load the data with `useAccountAnalytics(account, api.getExampleAnalytics, 'Example', { live: true })`, read it as the shared type (`ExampleAnalyticsResponse`) that `api.ts` returns, and give each sub-component a `<Component>Props` interface. Pure chart rows and stat lists go in a plain `exampleAnalyticsData.ts` beside the page, as `instagramAnalyticsData.ts` does. Design every state: account not found (`EmptyState`), first load (`PageSkeleton`), failed load (`ErrorState` with retry). Key sections:
+- Profile header (username, follower count, refresh, last fetched)
+- KPI row: avg likes, avg comments, total posts, engagement rate
 - Best performing post card
 - Monthly breakdown chart (Recharts AreaChart or BarChart)
-- Subreddit distribution (pie or bar)
+- Content type distribution (bar)
 - Posting time heatmap (if available)
 
 ## Step 7: Add to App.tsx, lib/accounts.ts, and api.ts
 
 ```tsx
 // App.tsx
-const RedditAnalytics = lazy(() => import('./features/analytics/reddit/RedditAnalytics'));
+const ExampleAnalytics = lazy(() => import('./features/analytics/example/ExampleAnalytics'));
 // route:
-{ path: 'reddit/:id', element: <RedditAnalytics /> }
+{ path: 'example/:id', element: <ExampleAnalytics /> }
 ```
 
 ```ts
 // api.ts
-getRedditAnalytics: (id: string) => request<RedditCacheData>(`/accounts/${id}/reddit-analytics`),
+getExampleAnalytics: (id: string) => request<ExampleAnalyticsResponse>(`/accounts/${id}/example-analytics`),
+getExamplePosts: (id: string, fresh = false) => request<ExamplePostsResponse>(`/accounts/${id}/example-posts${fresh ? '?fresh=1' : ''}`),
 ```
 
 ```ts
@@ -204,19 +238,19 @@ getRedditAnalytics: (id: string) => request<RedditCacheData>(`/accounts/${id}/re
 export function accountPath(account: AccountFields): string {
   const platform = platformOf(account);
   if (platform === 'instagram') return `/instagram/${account.id}`;
-  if (platform === 'reddit') return `/reddit/${account.id}`;
+  if (platform === 'example') return `/example/${account.id}`;
   return `/channel/${account.id}`;
 }
 ```
 
 ## Step 8: Type-check and Test
 
-Run `npm run typecheck`, `npm run lint` and `npm test` from the repository root. Pure analytics helpers (like `computeRedditAnalytics`) get a test in `backend/tests/services/` at the mirrored path (`backend/tests/services/reddit/redditAnalytics.test.ts`), and the route table gets one in `backend/tests/routes/redditRoutes.test.ts`.
+Run `npm run typecheck`, `npm run lint` and `npm test` from the repository root. Pure analytics helpers (like `computeExampleAnalytics`) get a test in `backend/tests/services/` at the mirrored path (`backend/tests/services/example/exampleAnalytics.test.ts`), the API client one against `fixtures/fakeFetch.ts` (`backend/tests/services/example/exampleApi.test.ts`), and the new routes get cases in `backend/tests/routes/analyticsRoutes.test.ts`. Chart row helpers get a test in `frontend/tests/features/analytics/example/`.
 
 ## Step 9: Update Documentation
 
 - `docs/architecture/backend/ROUTES.md` - new routes
 - `docs/architecture/backend/CACHING.md` - new cache keys
-- `docs/architecture/backend/SERVICES.md` - Reddit service
-- `docs/architecture/data-flows/` - create `REDDIT.md` for the analytics flow
+- `docs/architecture/backend/SERVICES.md` - the platform modules and the feature service
+- `docs/architecture/data-flows/ANALYTICS.md` - a section for the platform's analytics flow
 - `CHANGELOG.md` - feature entry

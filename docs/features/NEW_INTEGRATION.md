@@ -1,6 +1,6 @@
 # Guide: Adding a New Platform Integration
 
-A "platform integration" is a new social or content platform (e.g., Reddit, Twitter/X, TikTok, LinkedIn). This guide walks through every layer that needs to change. Read `docs/architecture/backend/REQUEST_PIPELINE.md` for the backend layers and `docs/guidelines/TYPESCRIPT.md` for the typing rules: the types for the new platform are written before the code that uses them. The Reddit integration (`services/reddit/`, `redditAnalyticsService.ts`, `redditController.ts`, `redditRoutes.ts`) is the smallest complete example.
+A "platform integration" is a new social or content platform (e.g., Twitter/X, TikTok, LinkedIn). This guide walks through every layer that needs to change. Read `docs/architecture/backend/REQUEST_PIPELINE.md` for the backend layers and `docs/guidelines/TYPESCRIPT.md` for the typing rules: the types for the new platform are written before the code that uses them. The Instagram integration (`services/instagram/`, `instagramAnalyticsService.ts`, its handlers in `analyticsController.ts` and `analyticsRoutes.ts`, `instagramConnectService.ts` for the OAuth connect) is the closest complete example.
 
 ## Decision Checklist Before Starting
 
@@ -49,7 +49,7 @@ Add the platform to the shared `Platform` union and its stored fields to `Accoun
 
 ```ts
 // shared/types/domain.ts
-export type Platform = 'youtube' | 'instagram' | 'reddit' | 'twitter';
+export type Platform = 'youtube' | 'instagram' | 'twitter';
 
 export interface Account {
     // ...existing fields
@@ -203,7 +203,7 @@ export function computeTwitterAnalytics(apiTweets: TwitterApiTweet[], profile: T
 `safeAccount()` in `backend/lib/safeAccount.ts` removes every field listed in `SECRET_FIELDS` before an account reaches the frontend. Add the new platform's secret fields there instead of writing a per-platform function:
 
 ```ts
-const SECRET_FIELDS: (keyof Account)[] = ['accessToken', 'cookie', 'encryptedPassword', 'encryptedTotpSecret', 'authToken', 'ct0', 'refreshToken'];
+const SECRET_FIELDS: (keyof Account)[] = ['accessToken', 'refreshToken'];
 ```
 
 Add the same field to the `Omit` list of `SafeAccount` in `shared/types/domain.ts`, so the frontend type does not claim the field exists.
@@ -283,7 +283,7 @@ export function createTwitterAnalyticsService({ accounts, cache, context }: Twit
 }
 ```
 
-Wire it in `backend/container.ts`: add `twitterAnalytics: TwitterAnalyticsService` to `Services` and `twitterAnalytics: createTwitterAnalyticsService({ accounts, cache, context })` to `createServices()`. Adding and refreshing accounts of the new platform goes in `AccountService` (`accountService.ts`) and a builder in `accountFactory.ts`, following the Reddit and Instagram branches.
+Wire it in `backend/container.ts`: add `twitterAnalytics: TwitterAnalyticsService` to `Services` and `twitterAnalytics: createTwitterAnalyticsService({ accounts, cache, context })` to `createServices()`. Adding and refreshing accounts of the new platform goes in `AccountService` (`accountService.ts`) and a builder in `accountFactory.ts`, following the YouTube and Instagram branches.
 
 ## Step 6: Add the Validator, Controller and Route Table
 

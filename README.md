@@ -7,7 +7,7 @@
 
 <h3>Every channel, folded into one clear picture.</h3>
 
-<p>A self-hosted dashboard for your YouTube, Instagram and Reddit numbers.<br/>
+<p>A self-hosted dashboard for your YouTube and Instagram numbers.<br/>
 Publish to Instagram, schedule posts, and answer comments automatically.<br/>
 It runs on accounts you own, mostly on free plans.</p>
 
@@ -35,7 +35,7 @@ It runs on accounts you own, mostly on free plans.</p>
 
 ## Why Twiligent
 
-If you post in more than one place, your numbers live in more than one place. YouTube Studio has some of them, Instagram has others, and Reddit keeps its own. Most tools that bring them together charge a monthly fee and ask for access to your accounts.
+If you post in more than one place, your numbers live in more than one place. YouTube Studio has some of them and Instagram keeps the rest. Most tools that bring them together charge a monthly fee and ask for access to your accounts.
 
 Twiligent puts them in one dashboard that you host yourself. Your data stays in your own database, your keys stay on your own server, and it runs mostly on free plans.
 
@@ -75,7 +75,7 @@ Twiligent puts them in one dashboard that you host yourself. Your data stays in 
     <td width="50%" valign="top">
       <img src="docs/media/accounts.webp" alt="The Accounts page with connected channels" width="100%" />
       <h4>Bring every account together</h4>
-      <p>Add YouTube channels by link or handle and Reddit profiles by username, connect Instagram with one sign-in, and refresh them all at once.</p>
+      <p>Add YouTube channels by link or handle, connect Instagram with one sign-in, and refresh them all at once.</p>
     </td>
   </tr>
 </table>
@@ -91,7 +91,7 @@ flowchart LR
     You([You, in the browser]) --> App[Dashboard<br/>Cloudflare Pages]
     App --> API[API<br/>Cloudflare Worker]
     API --> DB[(Your Supabase<br/>database)]
-    API --> Platforms[YouTube, Instagram<br/>and Reddit APIs]
+    API --> Platforms[YouTube and<br/>Instagram APIs]
     Clock([Every minute]) --> API
 ```
 

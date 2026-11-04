@@ -58,23 +58,25 @@ To change the schema, follow `docs/features/NEW_DATABASE_TABLE.md` (Write the Mi
 
 ## Table: `accounts`
 
-Stores connected YouTube channels, Instagram accounts and Reddit profiles.
+Stores connected YouTube channels and Instagram accounts.
 
 | Column | Type | Nullable | Description |
 |---|---|---|---|
 | `id` | text | NOT NULL | PK. A UUID from `newRowId()` (`crypto.randomUUID()`); older rows keep their earlier ids |
 | `user_id` | uuid | NOT NULL | FK -> `auth.users.id` ON DELETE CASCADE. All user-scoped queries filter on this |
-| `platform` | text | NOT NULL | `'youtube'`, `'instagram'` or `'reddit'` |
+| `platform` | text | NOT NULL | `'youtube'` or `'instagram'` |
 | `data` | jsonb | NOT NULL DEFAULT `'{}'` | All platform-specific fields (see below) |
 | `created_at` | timestamptz | NOT NULL DEFAULT now() | When the account was connected. The list order |
 | `updated_at` | timestamptz | NOT NULL DEFAULT now() | Set by the trigger on every update |
 
 | Constraint | Rule |
 |---|---|
-| `accounts_platform_check` | `platform in ('youtube', 'instagram', 'reddit')` |
+| `accounts_platform_check` | `platform` is `'youtube'` or `'instagram'`, or the value of the platform removed in v2.0.0 (below) |
 | `accounts_data_check` | `data` is a JSON object |
 | `accounts_id_user_id_key` | `unique (id, user_id)`, so posts can reference an account together with its owner |
-| `accounts_identity_key` | Unique index on `(user_id, platform, identity)`, where the identity is `data ->> 'channelId'` for YouTube, `data ->> 'username'` for Reddit and `data ->> 'igUserId'` for Instagram. Two adds of the same account at the same moment store one row; the other gets the usual 409 |
+| `accounts_identity_key` | Unique index on `(user_id, platform, identity)`, where the identity is `data ->> 'channelId'` for YouTube and `data ->> 'igUserId'` for Instagram. Two adds of the same account at the same moment store one row; the other gets the usual 409 |
+
+The app reads and writes only YouTube and Instagram accounts: `accountRepository` selects rows whose `platform` is `youtube` or `instagram`. The check and the identity index still allow a value from a platform removed in v2.0.0, and rows of that platform may remain in the table, unseen by the app. The cleanup in #145 removes those rows, narrows the check and rebuilds the index (see `docs/platform-v2/DATABASE_MIGRATION.md` and ADR-049 in `DECISIONS.md`).
 
 ### `data` jsonb shape for YouTube accounts
 
@@ -110,7 +112,7 @@ Stores connected YouTube channels, Instagram accounts and Reddit profiles.
 }
 ```
 
-**Critical:** `accessToken` (and a Reddit account's `cookie`) is always stripped by `safeAccount()` before being returned in any API response. It is intentionally stored server-side for use by the publishing and token-refresh pipelines.
+**Critical:** `accessToken` is always stripped by `safeAccount()` before being returned in any API response. It is intentionally stored server-side for use by the publishing and token-refresh pipelines.
 
 ---
 
@@ -217,68 +219,31 @@ A claim is one UPDATE that sets `status = 'publishing'`, `claimed_at = now()` an
 
 ## Table: `tracked_posts`
 
-Stores Reddit posts and YouTube videos the user wants to monitor. Previously Reddit-only; extended to support YouTube via the `content_type` column.
+Stores the YouTube videos the user wants to monitor. The app tracks YouTube videos only: `trackedPostRepository` reads rows whose `content_type` is `youtube`, writes `content_type: 'youtube'` on every insert and never writes `account_id`.
 
 | Column | Type | Nullable | Description |
 |---|---|---|---|
 | `id` | text | NOT NULL | PK. A UUID from `newRowId()`; older rows keep their earlier ids |
 | `user_id` | uuid | NOT NULL | FK -> `auth.users.id` ON DELETE CASCADE |
-| `account_id` | text | NULL | With `user_id`, FK -> `accounts (id, user_id)` ON DELETE SET NULL (`account_id`). Reddit only: which account's cookie to use |
-| `url` | text | NOT NULL | Full URL of the Reddit post or YouTube video |
+| `account_id` | text | NULL | With `user_id`, FK -> `accounts (id, user_id)` ON DELETE SET NULL (`account_id`). No longer written; the cleanup in #145 drops it |
+| `url` | text | NOT NULL | Full URL of the YouTube video |
 | `label` | text | NOT NULL DEFAULT '' | User-defined name for the item |
-| `category` | text | NOT NULL DEFAULT '' | User-defined grouping label; shared across Reddit and YouTube items |
-| `content_type` | text | NOT NULL DEFAULT 'reddit' | `'reddit'` or `'youtube'` |
+| `category` | text | NOT NULL DEFAULT '' | User-defined grouping label |
+| `content_type` | text | NOT NULL DEFAULT (see below) | `'youtube'`. The app always sets it, so the default, the removed platform's value, is never used |
 | `created_at` | timestamptz | NOT NULL DEFAULT now() | When the user added the item |
 | `updated_at` | timestamptz | NOT NULL DEFAULT now() | Set by the trigger on every update; the code no longer sets it |
 | `data` | jsonb | NULL | Cached data fetched from the platform API, stored in the same insert that creates the row (see below) |
 
 | Constraint | Rule |
 |---|---|
-| `tracked_posts_content_type_check` | `content_type in ('reddit', 'youtube')` |
-| `tracked_posts_account_check` | Only Reddit items have an account: `content_type = 'reddit' or account_id is null` |
+| `tracked_posts_content_type_check` | `content_type` is `'youtube'`, or the value of the platform removed in v2.0.0 |
+| `tracked_posts_account_check` | Only items of the removed platform may have an account, so a YouTube item's `account_id` is null |
 | `tracked_posts_data_check` | `data` is null or a JSON object |
 | `tracked_posts_account_fkey` | `(account_id, user_id)` -> `accounts (id, user_id)` ON DELETE SET NULL (`account_id`) |
 
 Removing an account keeps its tracked items and clears only their `account_id`. The column list on SET NULL needs Postgres 15 or later; a plain SET NULL would try to clear `user_id` too.
 
-### `data` jsonb shape for Reddit items
-
-Populated by `fetchTrackedPostData()` in `backend/services/reddit/redditApi.ts`:
-
-```json
-{
-    "contentType": "reddit",
-    "title": "Post title from Reddit",
-    "subreddit": "programming",
-    "subredditPrefixed": "r/programming",
-    "score": 1234,
-    "upvoteRatio": 0.97,
-    "numComments": 56,
-    "permalink": "https://reddit.com/r/programming/comments/abc123/...",
-    "lastFetchedAt": "2026-08-04T10:00:00Z",
-    "manualViews": 12500,
-    "imageUrl": "https://res.cloudinary.com/mycloud/image/upload/v1/abc.jpg"
-}
-```
-
-`manualViews` and `imageUrl` are the two keys in `data` that are not fetched from Reddit.
-Both are set by the user through `PUT /api/tracked-content/:id` and are `null` or absent
-until then.
-
-- `manualViews` - Reddit removed `view_count` from its API in December 2018, so view counts
-  can only be entered by hand.
-- `imageUrl` - Reddit's public JSON API carries no usable thumbnail, so the user uploads a
-  screenshot. The browser posts it directly to Cloudinary and only the returned `secure_url`
-  reaches the Worker, which stores it after checking the URL parses and uses `https:`. That
-  check matters because the value is rendered straight into an `img src`.
-
-Because of this, the refresh route calls `patchDataForUser()` rather than
-`updateForUser({ data })` - the former merges freshly fetched keys into the existing
-blob in the database (`merge_tracked_post_data`), so a manually entered view count survives
-a refresh that lands at the same moment. Anything writing to `data` for a Reddit item must
-merge, never replace.
-
-Both keys are rejected for YouTube items, which already carry a real `viewCount` and `thumbnail`.
+The default, the two checks and `account_id` are left from the platform removed in v2.0.0, and its tracked items may remain in the table, unseen by the app. The cleanup in #145 deletes those rows, makes `'youtube'` the only allowed value and the default, and drops `tracked_posts_account_check`, `tracked_posts_account_fkey` and `account_id` (see `docs/platform-v2/DATABASE_MIGRATION.md` and ADR-049 in `DECISIONS.md`).
 
 ### `data` jsonb shape for YouTube items
 
@@ -301,7 +266,7 @@ Populated by `fetchTrackedYouTubeData()` in `backend/services/youtube/youtubeTra
 }
 ```
 
-Data is fetched on create and on manual refresh only. Not re-fetched on every GET.
+Data is fetched on create and on manual refresh only. Not re-fetched on every GET. A refresh merges the fetched keys into `data` with `patchDataForUser()` (`merge_tracked_post_data`) rather than replacing the blob, so anything writing to `data` merges, never replaces.
 
 ---
 
