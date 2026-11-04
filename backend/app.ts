@@ -6,6 +6,8 @@ import { securityHeaders } from './middleware/securityHeaders.ts';
 import { injectClients } from './middleware/clients.ts';
 import { rateLimit, clientIp, userKey } from './middleware/rateLimit.ts';
 import { requireAuth } from './middleware/auth.ts';
+import { requireMcpAuth } from './middleware/mcpAuth.ts';
+import { getProtectedResourceMetadata, handleMcpMessage, refuseMcpStream } from './controllers/mcpController.ts';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.ts';
 import { RATE_LIMIT_RULES, QUOTA_ROUTES, PUBLISH_ROUTES, matchesRoute } from './lib/rateLimit/rules.ts';
 import { publicRoutes, protectedRoutes } from './routes/index.ts';
@@ -28,6 +30,14 @@ export function createApp(): Hono<AppEnv> {
     app.use('*', injectClients);
     // 5. limit per network before authentication, so a flood of bad tokens never reaches Supabase Auth
     app.use('/api/*', rateLimit(RATE_LIMIT_RULES.ip, clientIp));
+    app.use('/mcp', rateLimit(RATE_LIMIT_RULES.ip, clientIp));
+
+    // the MCP endpoint for Claude clients: its own credentials (an access token or an approved OAuth client), then a
+    // per-user limit; the metadata says where Claude's apps sign in
+    app.get('/.well-known/oauth-protected-resource', ...getProtectedResourceMetadata);
+    app.get('/.well-known/oauth-protected-resource/mcp', ...getProtectedResourceMetadata);
+    app.post('/mcp', requireMcpAuth, rateLimit(RATE_LIMIT_RULES.mcp, userKey), ...handleMcpMessage);
+    app.on(['GET', 'DELETE'], '/mcp', ...refuseMcpStream);
 
     // registered before the protected group, so these answer without authentication
     app.route('/api', publicRoutes);
