@@ -26,6 +26,13 @@ Twiligent now supports YouTube and Instagram only. What an instance owner must d
 
 ### Security
 
+- Connecting Instagram now finishes only for the person who started the sign-in: a consent link made by one Twiligent user and opened by someone else no longer connects that person's account (#148)
+- The manual "publish due posts" trigger runs only your own posts, and no longer shows other users' failed posts (#148)
+- HEAD requests count against the same rate limit as GET (#148)
+- The GitHub Actions publisher removes addresses and tokens from Instagram's error messages before they reach the run log (#148)
+- The app and the public site can no longer be framed by other sites, and send nosniff, referrer and permissions policies (#148)
+- Every workflow's GitHub token can only read the repository (#148)
+
 - Every GitHub Actions step is pinned to a full commit instead of a movable tag, so a compromised action release cannot reach the deploy secrets (#148)
 
 ### Documentation
