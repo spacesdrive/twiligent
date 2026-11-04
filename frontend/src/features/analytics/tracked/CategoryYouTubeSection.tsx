@@ -5,14 +5,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import MetricBox from '@/components/MetricBox';
 import SurfaceBox from '@/components/SurfaceBox';
 import SectionHeader from '@/components/SectionHeader';
-import RankingBarChart from '@/components/RankingBarChart';
+import MetricAreaChart from '@/components/MetricAreaChart';
 import RelativeTime from '@/components/RelativeTime';
 import Num from '@/components/Num';
 import { METRIC_ICONS } from '@/lib/metricIcons';
 import { RankNumber } from '@/components/ListRow';
 import { PlatformIcon } from '@/components/platform';
 import { PLATFORM_META } from '@/lib/accounts';
-import { fmtNum } from '../../../utils/formatters';
+import { pointsOf, rankingSummary } from '@/lib/chart';
+import { fmtNum, fmtNumFull } from '../../../utils/formatters';
 import NumberCell from './NumberCell';
 import OpenLink from './OpenLink';
 import { chartDataOf, sortedByViews } from './trackedCategoryStats.ts';
@@ -77,7 +78,15 @@ export default function CategoryYouTubeSection({ items, stats }: CategoryYouTube
       </div>
       {chartData.length > 1 && (
         <SurfaceBox title="Video views" headingLevel="h3" subheader={`Top ${chartData.length} videos in this category ranked by views`}>
-          <RankingBarChart rows={chartData.map(point => ({ name: point.name, value: Number(point.views) || 0 }))} label="Views" title="Views by video" color={PLATFORM_META.youtube.series} />
+          <MetricAreaChart
+            data={chartData}
+            dataKey="views"
+            label="Views"
+            title="Video views"
+            description={rankingSummary(pointsOf(chartData, 'name', 'views'), fmtNumFull, 'views')}
+            color={PLATFORM_META.youtube.series}
+            height={260}
+          />
         </SurfaceBox>
       )}
       <SurfaceBox title="All videos in this category" headingLevel="h3" content={false} className="overflow-hidden">
