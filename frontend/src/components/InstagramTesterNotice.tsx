@@ -33,7 +33,7 @@ export default function InstagramTesterNotice({ compact = false, className }: In
       body: (
         <>
           Email the administrator at{' '}
-          <a href={adminMailto('Instagram tester request for Twiligent', REQUEST_BODY)} className="font-medium text-brand-text underline-offset-4 hover:underline">
+          <a href={adminMailto('Instagram tester request for Twiligent', REQUEST_BODY)} className="font-medium text-brand-text underline underline-offset-4 hover:decoration-2">
             {ADMIN_EMAIL}
           </a>{' '}
           with your Instagram username. Only Business and Creator accounts can be added.
@@ -45,8 +45,8 @@ export default function InstagramTesterNotice({ compact = false, className }: In
       body: (
         <>
           Once you are added, sign in to Instagram on the web and open{' '}
-          <a href={INSTAGRAM_TESTER_INVITES_URL} target="_blank" rel="noopener noreferrer" className="font-medium text-brand-text underline-offset-4 hover:underline">
-            Apps and websites, Tester invites
+          <a href={INSTAGRAM_TESTER_INVITES_URL} target="_blank" rel="noopener noreferrer" className="font-medium text-brand-text underline underline-offset-4 hover:decoration-2">
+            Apps and websites, Tester invites<span className="sr-only"> (opens in a new tab)</span>
           </a>
           , then accept the Twiligent invite. In the Instagram app it is under Settings and privacy, Website permissions, Apps and websites, Tester invites.
         </>
@@ -61,10 +61,10 @@ export default function InstagramTesterNotice({ compact = false, className }: In
   return (
     <div className={cn('flex flex-col gap-3 rounded-field border border-info/30 bg-info-soft p-4', className)}>
       <div className="flex items-start gap-2.5">
-        <UserCheck className="mt-0.5 size-4 shrink-0 stroke-[1.75] text-info" />
+        <UserCheck className="mt-0.5 size-4 shrink-0 stroke-[1.75] text-info" aria-hidden="true" />
         <div className="flex flex-col gap-0.5">
           <p className="text-sm font-semibold text-ink">Your Instagram account needs tester access first</p>
-          <p className="text-small text-ink-muted">
+          <p className="max-w-prose text-small text-ink-muted">
             The Twiligent Meta app is in development mode, so Instagram only lets accounts that are added as testers connect. Without it, Instagram shows an error or a blank page when you sign in.
           </p>
         </div>
@@ -87,7 +87,7 @@ export default function InstagramTesterNotice({ compact = false, className }: In
           <Mail data-icon="inline-start" />Email the administrator
         </Button>
         <Button size="sm" variant="ghost" render={<a href={INSTAGRAM_TESTER_INVITES_URL} target="_blank" rel="noopener noreferrer" />}>
-          <ExternalLink data-icon="inline-start" />Open tester invites
+          <ExternalLink data-icon="inline-start" />Open tester invites<span className="sr-only"> (opens in a new tab)</span>
         </Button>
       </div>
     </div>

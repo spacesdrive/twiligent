@@ -1,9 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSmoothTheme } from '@/hooks/use-smooth-theme';
-import {
-  LayoutDashboard, PlaySquare, Scissors, Clapperboard, MessagesSquare, Bookmark, Send,
-  Users, Settings, RefreshCw, Sun, Moon, Monitor, LogOut, Tag, Plus, BookOpen } from 'lucide-react';
+import { RefreshCw, LogOut, Tag, Plus, BookOpen } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import {
   Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandShortcut,
@@ -15,13 +12,8 @@ import { accountName, accountPath, PLATFORM_META, platformOf } from '@/lib/accou
 import type { AccountFields } from '@/lib/accounts';
 import type { SearchCommand } from '@/lib/commandSearch';
 import { NAV_GROUPS } from '@/layout/navigation';
+import { APP_SHORTCUTS } from '@/layout/shortcuts';
 import { docsUrl } from '@/lib/docs';
-
-const PAGE_ICONS: Record<string, LucideIcon> = {
-  '/': LayoutDashboard, '/videos': PlaySquare, '/shorts': Scissors, '/reels': Clapperboard,
-  '/reddit-posts': MessagesSquare, '/tracked-content': Bookmark, '/upload': Send,
-  '/accounts': Users, '/settings': Settings,
-};
 
 export interface PaletteCommand extends SearchCommand {
   id: string;
@@ -43,7 +35,6 @@ export interface CommandPaletteProps {
 
 export default function CommandPalette({ open, onOpenChange, accounts, categories, onRefreshAll, onSignOut }: CommandPaletteProps) {
   const navigate = useNavigate();
-  const { setTheme } = useSmoothTheme();
   const [query, setQuery] = useState('');
 
   const handleOpenChange = (next: boolean) => {
@@ -54,7 +45,7 @@ export default function CommandPalette({ open, onOpenChange, accounts, categorie
   const commands = useMemo((): PaletteCommand[] => [
     ...NAV_GROUPS.flatMap(group => group.items.map(item => ({
       id: `page:${item.path}`, group: 'Pages', label: item.label, keywords: [group.label],
-      icon: PAGE_ICONS[item.path], run: () => navigate(item.path),
+      icon: item.icon, run: () => navigate(item.path),
     }))),
     ...accounts.map(account => ({
       id: `account:${account.id}`, group: 'Accounts', label: accountName(account),
@@ -65,14 +56,11 @@ export default function CommandPalette({ open, onOpenChange, accounts, categorie
       id: `category:${category}`, group: 'Categories', label: category, keywords: ['tracked', 'category'],
       icon: Tag, run: () => navigate(`/tracked-content/category/${encodeURIComponent(category)}`),
     })),
-    { id: 'action:add-account', group: 'Actions', label: 'Add an account', keywords: ['connect', 'youtube', 'instagram', 'reddit'], icon: Plus, run: () => navigate('/accounts?add=1') },
+    { id: 'action:add-account', group: 'Actions', label: 'Add account', keywords: ['connect', 'youtube', 'instagram', 'reddit'], icon: Plus, run: () => navigate('/accounts?add=1') },
     { id: 'action:docs', group: 'Actions', label: 'Open documentation', keywords: ['help', 'guide', 'docs', 'setup', 'self-host'], icon: BookOpen, run: () => window.open(docsUrl(), '_blank', 'noopener') },
     { id: 'action:refresh', group: 'Actions', label: 'Refresh all accounts', keywords: ['sync', 'update'], icon: RefreshCw, run: onRefreshAll },
-    { id: 'action:theme-light', group: 'Theme', label: 'Use light theme', keywords: ['appearance', 'paper'], icon: Sun, run: () => setTheme('light') },
-    { id: 'action:theme-dark', group: 'Theme', label: 'Use dark theme', keywords: ['appearance', 'dusk'], icon: Moon, run: () => setTheme('dark') },
-    { id: 'action:theme-system', group: 'Theme', label: 'Match system theme', keywords: ['appearance', 'auto'], icon: Monitor, run: () => setTheme('system') },
     { id: 'action:sign-out', group: 'Account', label: 'Sign out', keywords: ['log out', 'logout'], icon: LogOut, run: onSignOut },
-  ], [accounts, categories, navigate, onRefreshAll, onSignOut, setTheme]);
+  ], [accounts, categories, navigate, onRefreshAll, onSignOut]);
 
   const grouped = useMemo(() => groupCommands(filterCommands(commands, query)), [commands, query]);
 
@@ -83,7 +71,7 @@ export default function CommandPalette({ open, onOpenChange, accounts, categorie
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent showCloseButton={false} className="top-[18%] translate-y-0 gap-0 overflow-hidden p-0 sm:max-w-xl">
+      <DialogContent showCloseButton={false} className="inset-x-2 top-2 bottom-auto w-auto gap-0 overflow-hidden rounded-dialog p-0 sm:top-[18%] sm:max-w-xl sm:translate-y-0">
         <DialogTitle className="sr-only">Command palette</DialogTitle>
         <DialogDescription className="sr-only">Search pages, accounts and actions</DialogDescription>
         <Command shouldFilter={false} loop>
@@ -107,9 +95,11 @@ export default function CommandPalette({ open, onOpenChange, accounts, categorie
               </CommandGroup>
             ))}
           </CommandList>
-          <div className="flex items-center justify-between gap-3 border-t border-line px-4 py-2.5 text-caption text-ink-faint">
-            <span>Use arrow keys to move, Enter to open</span>
-            <kbd className="font-mono">Esc</kbd>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line px-4 py-2.5 text-caption text-ink-muted">
+            <span>Arrow keys to move, Enter to open, <kbd className="font-mono">Esc</kbd> to close</span>
+            {APP_SHORTCUTS.map(shortcut => (
+              <span key={shortcut.keys}><kbd className="font-mono">{shortcut.keys}</kbd> {shortcut.action.toLowerCase()}</span>
+            ))}
           </div>
         </Command>
       </DialogContent>

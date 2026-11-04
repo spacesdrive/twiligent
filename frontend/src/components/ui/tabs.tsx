@@ -24,7 +24,7 @@ const tabsListVariants = cva(
   {
     variants: {
       variant: {
-        default: "h-[2.625rem] gap-4 border-b border-line bg-transparent",
+        default: "h-10.5 gap-4 border-b border-line bg-transparent",
         segmented: "h-(--control-h) gap-0.5 rounded-control bg-surface-sunken p-1",
         none: "",
       },
@@ -59,7 +59,7 @@ function TabsTrigger({
       className={cn(
         "relative inline-flex items-center justify-center gap-1.5 text-sm font-medium whitespace-nowrap text-ink-muted transition-colors duration-(--duration-fast) outline-none hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-active:text-ink [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg]:stroke-[1.75] [&_svg:not([class*='size-'])]:size-4 group-data-vertical/tabs:w-full group-data-vertical/tabs:justify-start",
         "group-data-[variant=default]/tabs-list:h-full group-data-[variant=default]/tabs-list:px-0.5 after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:rounded-full after:bg-brand after:opacity-0 after:transition-opacity group-data-[variant=default]/tabs-list:data-active:after:opacity-100",
-        "group-data-[variant=segmented]/tabs-list:h-full group-data-[variant=segmented]/tabs-list:flex-1 group-data-[variant=segmented]/tabs-list:rounded-[8px] group-data-[variant=segmented]/tabs-list:px-3 group-data-[variant=segmented]/tabs-list:data-active:bg-surface-raised group-data-[variant=segmented]/tabs-list:data-active:shadow-sm",
+        "group-data-[variant=segmented]/tabs-list:h-full group-data-[variant=segmented]/tabs-list:flex-1 group-data-[variant=segmented]/tabs-list:rounded-[calc(var(--radius-control)-2px)] group-data-[variant=segmented]/tabs-list:px-3 group-data-[variant=segmented]/tabs-list:data-active:bg-surface-raised group-data-[variant=segmented]/tabs-list:data-active:shadow-sm",
         className
       )}
       {...props} />

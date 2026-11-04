@@ -2,7 +2,7 @@
 
 ## Router Configuration
 
-The app uses React Router v6 in `frontend/src/App.tsx`. The router uses `BrowserRouter` with a nested layout route.
+The app uses React Router 7 in `frontend/src/App.tsx`: a data router from `createBrowserRouter` with a nested layout route. The data router is what lets a page block navigation while it has unsaved changes (`useBlocker`).
 
 ## Route Table
 
@@ -23,10 +23,15 @@ The app uses React Router v6 in `frontend/src/App.tsx`. The router uses `Browser
 | `/reddit-tracked` | redirect | Redirects to `/tracked-content` |
 | `/videos` | `VideoExplorer.tsx` | Every video from every YouTube channel |
 | `/shorts` | `ShortsExplorer.tsx` | Videos of 60 seconds or less |
-| `/reels` | `ReelsExplorer.tsx` | Instagram reels, posts and videos |
-| `/upload` | `UploadContent.tsx` | Publish and schedule to Instagram, plus the scheduled post queue |
+| `/instagram` | `ReelsExplorer.tsx` | Instagram reels, posts and videos (the Instagram content page) |
+| `/reels` | redirect | Redirects to `/instagram`, keeping the query string and hash |
+| `/publish` | `UploadContent.tsx` | Publish and schedule to Instagram, plus the scheduled post queue |
+| `/upload` | redirect | Redirects to `/publish`, keeping the query string and hash |
 | `/automations` | `features/automations/Automations.tsx` | Comment-to-DM rules, account controls and reply activity; in the sidebar under Publishing |
+| `/automations/rules/new` | `features/automations/RuleEditorPage.tsx` | Create a rule on its own page, with a warning before leaving unsaved changes |
+| `/automations/rules/:id` | `features/automations/RuleEditorPage.tsx` | Edit the rule with that id |
 | `/settings` | `Settings.tsx` | User/platform settings |
+| `*` | `pages/NotFound.tsx` | Any other path inside the app: "Page not found" with the requested path, a link to the overview and the search shortcut. Unknown paths no longer redirect silently to `/` |
 
 ## Auth Guard
 
@@ -42,7 +47,7 @@ const ChannelAnalytics = lazy(() => import('./features/analytics/channel/Channel
 // ... etc
 ```
 
-All lazy components are wrapped in `<Suspense>` with a shared fallback.
+All lazy components are wrapped in `<Suspense>` with a shared fallback: `PageSkeleton` inside the app shell, and `LoadingState` ("Loading Twiligent") around the router. `ProtectedRoute` shows `LoadingState` ("Checking your sign-in") while the saved session is read, never a blank page.
 
 ## Adding a New Route
 
@@ -56,9 +61,11 @@ All lazy components are wrapped in `<Suspense>` with a shared fallback.
    { path: 'my-page/:id', element: <MyPage /> }
    ```
 
-3. If the page appears in the sidebar, add it to `NAV_GROUPS` in `layout/navigation.ts`. The sidebar, top bar title and command palette all read from it. Detail routes get a title in `DETAIL_ROUTES` in the same file.
+3. If the page appears in the sidebar, add it to `NAV_GROUPS` in `layout/navigation.ts` with its icon. The sidebar, top bar title, browser tab title and command palette all read from it. Detail routes get a title and a parent link in `DETAIL_ROUTES` in `layout/routes.ts` (pure, tested in `frontend/tests/layout/routes.test.ts`).
 
-4. Update the Route Table in this file.
+4. If a page moves, keep the old path as `<RedirectWithQuery to="/new-path" />` (`layout/RedirectWithQuery.tsx`) so bookmarks and shared links keep their filters.
+
+5. Update the Route Table in this file.
 
 ## URL Parameters
 
@@ -79,6 +86,24 @@ Navigation between routes uses React Router's `<Link>` component or the `useNavi
 accounts.map(account => ({ title: accountName(account), url: accountPath(account) }))
 ```
 
-The command palette (Ctrl+K or Cmd+K) searches pages, accounts, tracked categories and actions.
-
 This means the sidebar updates automatically when accounts are added or removed.
+
+The command palette (Ctrl+K or Cmd+K) searches pages, accounts, tracked categories and actions. Its footer lists the keyboard shortcuts (Ctrl+K search, Ctrl+B show or hide the sidebar), and the sidebar search button and its tooltip show the Ctrl+K shortcut.
+
+### Sidebar order and the current page
+
+The sidebar groups are Analytics, Publishing, Your accounts, Categories and Manage. Manage (Accounts, Settings) comes last, so Settings keeps its place at the end however many accounts or categories exist. Your accounts and Categories show six links each, plus the current page if it sits further down, and a "Show all N accounts" button for the rest.
+
+Only the most specific matching link is the current page (`currentNavPath()` in `layout/navigation.ts`, longest match wins): on a category page the category is current, not Tracked content as well. The current link gets `data-active` for the styling and `aria-current="page"` for screen readers. The links sit in a `<nav aria-label="Main">` landmark.
+
+### Top bar
+
+The top bar shows the page title. On a detail page it is a breadcrumb whose parent is a real link (a category links back to Tracked content, a Reddit account's posts to Reddit posts, an account page to Overview). On the right are Search (on narrow screens, where the sidebar is hidden) and Help, which opens the documentation in a new tab. Refreshing and the theme live on the pages, in the user menu and in Settings, not in the top bar.
+
+## Page titles and focus
+
+Every route names the browser tab `<page> - Twiligent`, from the same titles as the top bar (`documentTitle()` in `layout/routes.ts`, set in `AppShell`). A detail page names the tab after what it shows by calling `useDocumentTitle(name)` from `hooks/use-document-title.ts`, for example the channel title or `u/name`. The shell sets the route title in a layout effect, so the page's own effect runs after it and wins.
+
+After a client-side navigation the shell scrolls to the top, moves focus to `<main id="main-content">`, and asks the next `PageHeader` to focus its `h1` (`tabIndex={-1}`) once the page has loaded (`layout/routeFocus.ts`). A screen reader then announces the new page, as it would after a full page load. The first load does not move focus, and a page that loads late does not take focus back if the person has already moved it.
+
+The shell's landmarks are the sidebar `<nav aria-label="Main">`, the top bar `<header>` and `<main id="main-content">`, with a Skip to content link first in the tab order. The mobile sidebar drawer is named Navigation; its trigger says Show navigation or Hide navigation and reports `aria-expanded`.

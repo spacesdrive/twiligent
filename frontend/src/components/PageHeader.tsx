@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { takeHeadingFocus } from '@/layout/routeFocus';
 
 export interface PageHeaderBack {
   to: string;
@@ -30,6 +31,8 @@ export default function PageHeader({
   size = 'default',
   className,
 }: PageHeaderProps) {
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => { takeHeadingFocus(headingRef.current); }, []);
   return (
     <header className={cn('flex flex-col gap-4', className)}>
       {back && (
@@ -47,14 +50,16 @@ export default function PageHeader({
           <div className="min-w-0">
             {eyebrow && <p className="eyebrow mb-2 text-brand-text">{eyebrow}</p>}
             <h1
+              ref={headingRef}
+              tabIndex={-1}
               className={cn(
-                'font-heading font-semibold tracking-[-0.01em] text-ink',
+                'font-heading font-semibold text-ink focus-visible:outline-offset-4',
                 size === 'display' ? 'text-display' : 'text-page-title',
               )}
             >
               {title}
             </h1>
-            {description && <div className="mt-1.5 text-sm text-ink-muted">{description}</div>}
+            {description && <div className="mt-1.5 max-w-prose text-body text-ink-muted">{description}</div>}
           </div>
         </div>
         {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}
