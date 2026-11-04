@@ -27,9 +27,19 @@ export interface AccountCacheFields {
   contentTypes?: Partial<Record<InstagramContentType, Partial<InstagramContentTypeTotals>>>;
   fetchedPosts?: number;
   totalScore?: number;
+  fetchedAt?: string;
 }
 
 export type AccountCache = Record<string, AccountCacheFields>;
+
+// the Overview is only as fresh as its oldest cached account, so that is the age it shows
+export function oldestFetchedAt(cache: AccountCache): string | null {
+  const times = Object.values(cache)
+    .map(entry => (entry.cacheWarmed ? entry.fetchedAt : undefined))
+    .filter((time): time is string => typeof time === 'string' && !Number.isNaN(Date.parse(time)));
+  if (times.length === 0) return null;
+  return times.reduce((oldest, time) => (Date.parse(time) < Date.parse(oldest) ? time : oldest));
+}
 
 export interface AccountTotals {
   subscribers: number;

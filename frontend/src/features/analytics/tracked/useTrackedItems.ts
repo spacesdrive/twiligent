@@ -10,20 +10,28 @@ export type SetTrackedItems = Dispatch<SetStateAction<TrackedContentItem[]>>;
 export function useTrackedItems(showToast: ShowToast) {
   const [items, setItems] = useState<TrackedContentItem[]>([]);
   const [loading, setLoading] = useState(true);
+  // a failed load is shown as a failure, never as "nothing tracked yet"
+  const [error, setError] = useState<string | null>(null);
   const [refreshingIds, setRefreshingIds] = useState(() => new Set<string>());
 
   const load = useCallback(async () => {
     try {
       const data = await api.getTrackedContent();
       setItems(Array.isArray(data) ? data : []);
+      setError(null);
     } catch (err) {
-      showToast(`Couldn't load tracked content. ${(err as Error).message}`, 'error');
+      setError(`Couldn't load tracked content. ${(err as Error).message}`);
     } finally {
       setLoading(false);
     }
-  }, [showToast]);
+  }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const retry = useCallback(() => {
+    setLoading(true);
+    load();
+  }, [load]);
 
   const replaceItem = (id: string, updated: TrackedContentItem) => setItems(prev => prev.map(item => (item.id === id ? updated : item)));
 
@@ -32,8 +40,9 @@ export function useTrackedItems(showToast: ShowToast) {
     try {
       const updated = await api.refreshTrackedContent(id);
       replaceItem(id, updated);
+      showToast(`Refreshed "${updated.title || updated.label || 'this item'}"`);
     } catch (err) {
-      showToast(`Refresh failed. ${(err as Error).message}`, 'error');
+      showToast(`Couldn't refresh this item. ${(err as Error).message}`, 'error');
     } finally {
       setRefreshingIds(prev => {
         const next = new Set(prev);
@@ -43,5 +52,5 @@ export function useTrackedItems(showToast: ShowToast) {
     }
   };
 
-  return { items, setItems, loading, refreshingIds, replaceItem, handleRefresh };
+  return { items, setItems, loading, error, retry, refreshingIds, replaceItem, handleRefresh };
 }

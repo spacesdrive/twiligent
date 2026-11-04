@@ -1,5 +1,5 @@
-import { matchesText } from '@/lib/library';
-import type { RedditMediaType, RedditPost } from '@shared/types/reddit.ts';
+import { matchesText } from '../../../lib/library.ts';
+import type { RedditMediaType, RedditPost } from '../../../../../shared/types/reddit.ts';
 
 // Filtering and sorting shared by the per-account and all-accounts Reddit posts pages.
 
@@ -49,4 +49,25 @@ export function filterAndSortRedditPosts<T extends RedditPostRow>(posts: T[], { 
 
 export function subredditsOf(posts: Pick<RedditPost, 'subreddit'>[]): string[] {
   return [...new Set(posts.map(p => p.subreddit))].sort();
+}
+
+// a sort read from the address falls back to most karma when it is not one of the options
+export function redditSortOf(value: string): string {
+  return REDDIT_SORT_OPTIONS.some(option => option.value === value) ? value : 'score-desc';
+}
+
+// tags each post with the account it was fetched for, skipping accounts whose request failed
+export function mergeAccountPosts<A extends { id: string; username?: string; iconUrl?: string }>(
+  accounts: readonly A[],
+  results: readonly PromiseSettledResult<{ posts?: RedditPost[] }>[],
+): RedditPostRow[] {
+  const combined: RedditPostRow[] = [];
+  results.forEach((result, index) => {
+    if (result.status !== 'fulfilled') return;
+    const account = accounts[index];
+    for (const post of result.value.posts || []) {
+      combined.push({ ...post, accountId: account.id, accountUsername: account.username, accountIconUrl: account.iconUrl });
+    }
+  });
+  return combined;
 }

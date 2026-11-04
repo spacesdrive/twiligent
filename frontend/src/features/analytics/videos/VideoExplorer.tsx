@@ -1,90 +1,70 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { Eye, MessageSquare, Play, PlaySquare, Plus, RefreshCw, ThumbsUp } from 'lucide-react';
+import { PlaySquare, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import PageHeader from '@/components/PageHeader';
 import MetricBox from '@/components/MetricBox';
+import Num from '@/components/Num';
 import SurfaceBox from '@/components/SurfaceBox';
 import Pager from '@/components/Pager';
+import RefreshButton from '@/components/RefreshButton';
+import DataFreshness from '@/components/DataFreshness';
+import ActiveFilters from '@/components/ActiveFilters';
+import NoResults from '@/components/NoResults';
+import FailedSourcesAlert from '@/components/FailedSourcesAlert';
 import { EmptyState } from '@/components/StateViews';
-import { pageSlice } from '@/lib/library';
-import type { PageSlice } from '@/lib/library';
-import { cn } from '@/lib/utils';
-import { fmtNum } from '../../../utils/formatters';
+import { VIEW_TIERS, pageSlice, resultCountLabel } from '@/lib/library';
+import { METRIC_ICONS } from '@/lib/metricIcons';
 import { useChannelVideos } from './useChannelVideos';
-import { filterAndSortVideos, nextSort, videoStatsOf, videosDescription } from './videoLibrary.ts';
-import type { LibraryVideo, VideoSort, VideoSortField } from './videoLibrary.ts';
+import { useLibraryParams } from '../useLibraryParams';
+import { VIDEO_SORT_OPTIONS, filterAndSortVideos, nextSort, sortFromKey, sortKeyOf, videoStatsOf, videosDescription } from './videoLibrary.ts';
+import type { VideoSortField } from './videoLibrary.ts';
 import VideoFilters from './VideoFilters';
 import VideoListTable from './VideoListTable';
 import VideoGrid from './VideoGrid';
 import type { LayoutMode } from './LayoutToggle';
 
 const ITEMS_PER_PAGE = 25;
+const RESULTS_ID = 'video-results';
 
-interface VideoResultsProps {
-  filtered: LibraryVideo[];
-  paged: PageSlice<LibraryVideo>;
-  viewMode: LayoutMode;
-  sort: VideoSort;
-  onSort: (field: VideoSortField) => void;
-  showChannel: boolean;
-  onClearFilters: () => void;
-}
+const DEFAULTS = { q: '', channel: 'all', views: 'all', sort: 'viewCount:desc', view: 'table' };
 
-function VideoResults({ filtered, paged, viewMode, sort, onSort, showChannel, onClearFilters }: VideoResultsProps) {
-  if (filtered.length === 0) {
-    return (
-      <SurfaceBox>
-        <EmptyState
-          compact
-          icon={<PlaySquare />}
-          title="No videos match"
-          description="Clear the search or choose a different view range."
-          action={<Button variant="outline" size="sm" onClick={onClearFilters}>Clear filters</Button>}
-        />
-      </SurfaceBox>
-    );
-  }
-  if (viewMode === 'table') return <VideoListTable paged={paged} sort={sort} onSort={onSort} showChannel={showChannel} />;
-  return <VideoGrid items={paged.items} showChannel={showChannel} />;
-}
+const { videos: Videos, views: Views, likes: Likes, comments: Comments, averageViews: AverageViews } = METRIC_ICONS;
 
 export default function VideoExplorer() {
-  const { videos, channels, loading, reload } = useChannelVideos();
-  const [search, setSearch] = useState('');
-  const [channelFilter, setChannelFilter] = useState('all');
-  const [tier, setTier] = useState('all');
-  const [sort, setSort] = useState<VideoSort>({ field: 'viewCount', order: 'desc' });
-  const [viewMode, setViewMode] = useState<LayoutMode>('table');
-  const [page, setPage] = useState(1);
+  const { videos, channels, channelCount, failures, fetchedAt, loading, refreshing, refresh } = useChannelVideos();
+  const { values, page, update, clear, setPage } = useLibraryParams(DEFAULTS);
+  const sort = sortFromKey(values.sort);
+  const viewMode: LayoutMode = values.view === 'grid' ? 'grid' : 'table';
 
   const filtered = useMemo(
-    () => filterAndSortVideos(videos, { channelFilter, search, tier, sort }),
-    [videos, channelFilter, search, tier, sort],
+    () => filterAndSortVideos(videos, { channelFilter: values.channel, search: values.q, tier: values.views, sort: sortFromKey(values.sort) }),
+    [videos, values.channel, values.q, values.views, values.sort],
   );
   const paged = pageSlice(filtered, page, ITEMS_PER_PAGE);
   const stats = useMemo(() => videoStatsOf(filtered), [filtered]);
 
-  function resetPage<T>(setter: (value: T) => void) {
-    return (value: T) => {
-      setter(value);
-      setPage(1);
-    };
-  }
-  const handleSort = (field: VideoSortField) => setSort(prev => nextSort(prev, field));
-  const clearFilters = () => { setSearch(''); setTier('all'); setChannelFilter('all'); setPage(1); };
+  const handleSort = (field: VideoSortField) => update({ sort: sortKeyOf(nextSort(sort, field)) });
+  const clearFilters = () => clear(['q', 'channel', 'views']);
+  const channelTitle = channels.find(channel => channel.id === values.channel)?.title;
+  const tierLabel = VIEW_TIERS.find(tier => tier.value === values.views)?.label;
+  const activeFilters = [
+    values.q && { key: 'q', label: `"${values.q}"`, onRemove: () => update({ q: '' }) },
+    values.channel !== 'all' && channelTitle && { key: 'channel', label: channelTitle, onRemove: () => update({ channel: 'all' }) },
+    values.views !== 'all' && tierLabel && { key: 'views', label: tierLabel, onRemove: () => update({ views: 'all' }) },
+  ].filter(Boolean) as { key: string; label: string; onRemove: () => void }[];
 
   const header = (
     <PageHeader
       title="Videos"
-      description={videosDescription(loading, videos.length, channels.length)}
-      actions={
-        <Button variant="outline" size="sm" onClick={reload} disabled={loading}>
-          <RefreshCw data-icon="inline-start" className={cn(loading && 'animate-spin')} />
-          Refresh
-        </Button>
+      description={
+        <span className="flex flex-col gap-1">
+          <span>{videosDescription(loading, videos.length, channels.length)}</span>
+          {!loading && <DataFreshness fetchedAt={fetchedAt} qualifier={channels.length > 1 ? 'oldest channel' : undefined} />}
+        </span>
       }
+      actions={<RefreshButton refreshing={refreshing} onRefresh={refresh} disabled={loading || channelCount === 0} />}
     />
   );
 
@@ -101,7 +81,7 @@ export default function VideoExplorer() {
     );
   }
 
-  if (channels.length === 0) {
+  if (channelCount === 0) {
     return (
       <div className="flex flex-col gap-6">
         {header}
@@ -110,7 +90,7 @@ export default function VideoExplorer() {
             icon={<PlaySquare />}
             title="No YouTube channels yet"
             description="Add a channel to browse and compare its videos here."
-            action={<Button render={<Link to="/accounts?add=1" />}><Plus data-icon="inline-start" />Add a channel</Button>}
+            action={<Button render={<Link to="/accounts?add=1" />}><Plus data-icon="inline-start" aria-hidden="true" />Add a channel</Button>}
           />
         </SurfaceBox>
       </div>
@@ -121,37 +101,53 @@ export default function VideoExplorer() {
     <div className="flex flex-col gap-6">
       {header}
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
-        <MetricBox small icon={<Play />} label="Videos" value={fmtNum(stats.total)} />
-        <MetricBox small icon={<Eye />} label="Views" value={fmtNum(stats.views)} highlight />
-        <MetricBox small icon={<ThumbsUp />} label="Likes" value={fmtNum(stats.likes)} />
-        <MetricBox small icon={<MessageSquare />} label="Comments" value={fmtNum(stats.comments)} />
-        <MetricBox small icon={<Eye />} label="Average views" value={fmtNum(stats.avgViews)} />
+      <FailedSourcesAlert failures={failures} total={channelCount} noun="channels" onRetry={refresh} retrying={refreshing} />
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5" aria-busy={refreshing}>
+        <MetricBox small icon={<Videos />}       label="Videos"        value={<Num value={stats.total} />}    period="Matching videos" />
+        <MetricBox small icon={<Views />}        label="Views"         value={<Num value={stats.views} />}    period="Matching videos" highlight />
+        <MetricBox small icon={<Likes />}        label="Likes"         value={<Num value={stats.likes} />}    period="Matching videos" />
+        <MetricBox small icon={<Comments />}     label="Comments"      value={<Num value={stats.comments} />} period="Matching videos" />
+        <MetricBox small icon={<AverageViews />} label="Average views" value={<Num value={stats.avgViews} />} period="Per matching video" />
       </div>
 
       <VideoFilters
         channels={channels}
-        search={search}
-        onSearchChange={resetPage(setSearch)}
-        channelFilter={channelFilter}
-        onChannelChange={resetPage(setChannelFilter)}
+        search={values.q}
+        onSearchChange={value => update({ q: value }, { replace: true })}
+        channelFilter={values.channel}
+        onChannelChange={value => update({ channel: value })}
+        sortOptions={VIDEO_SORT_OPTIONS}
+        sortKey={sortKeyOf(sort)}
+        onSortChange={value => update({ sort: value })}
         viewMode={viewMode}
-        onViewModeChange={setViewMode}
-        tier={tier}
-        onTierChange={resetPage(setTier)}
+        onViewModeChange={value => update({ view: value, page: String(page) })}
+        tier={values.views}
+        onTierChange={value => update({ views: value })}
       />
 
-      <VideoResults
-        filtered={filtered}
-        paged={paged}
-        viewMode={viewMode}
-        sort={sort}
-        onSort={handleSort}
-        showChannel={channels.length > 1}
-        onClearFilters={clearFilters}
-      />
+      <ActiveFilters countLabel={resultCountLabel(filtered.length, videos.length, 'videos')} filters={activeFilters} onClearAll={clearFilters} />
 
-      <Pager page={paged.page} pageCount={paged.pageCount} onPageChange={setPage} total={filtered.length} shown={paged.items.length} noun="videos" />
+      <div id={RESULTS_ID} tabIndex={-1} className="outline-none" aria-busy={refreshing}>
+        {filtered.length === 0 ? (
+          <SurfaceBox><NoResults noun="videos" query={values.q} onClear={clearFilters} /></SurfaceBox>
+        ) : viewMode === 'table' ? (
+          <VideoListTable paged={paged} sort={sort} onSort={handleSort} showChannel={channels.length > 1} />
+        ) : (
+          <VideoGrid items={paged.items} showChannel={channels.length > 1} />
+        )}
+      </div>
+
+      <Pager
+        page={paged.page}
+        pageCount={paged.pageCount}
+        onPageChange={setPage}
+        total={filtered.length}
+        shown={paged.items.length}
+        pageSize={ITEMS_PER_PAGE}
+        noun="videos"
+        resultsId={RESULTS_ID}
+      />
     </div>
   );
 }

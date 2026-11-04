@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { shortsOf, filterAndSortShorts, shortsDescription } from '../../../../src/features/analytics/shorts/shortsLibrary.ts';
+import { shortsOf, filterAndSortShorts, shortsDescription, shortsSortOf } from '../../../../src/features/analytics/shorts/shortsLibrary.ts';
 import type { ShortsQuery } from '../../../../src/features/analytics/shorts/shortsLibrary.ts';
 import type { LibraryVideo } from '../../../../src/features/analytics/videos/videoLibrary.ts';
 
@@ -37,4 +37,9 @@ test('the description counts shorts and channels', () => {
   assert.equal(shortsDescription(true, 5, 2), 'Loading Shorts from your channels');
   assert.equal(shortsDescription(false, 1200, 1), '1.2K Shorts across 1 channel');
   assert.equal(shortsDescription(false, 0, 3), '0 Shorts across 3 channels');
+});
+
+test('a sort from the address that is not an option falls back to most viewed', () => {
+  assert.equal(shortsSortOf('likeCount'), 'likeCount');
+  assert.equal(shortsSortOf('title'), 'viewCount');
 });

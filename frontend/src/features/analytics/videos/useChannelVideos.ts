@@ -1,34 +1,30 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useMemo } from 'react';
 import { api } from '../../../services/api';
 import { useAppContext } from '../../../context/AppContext';
 import { platformOf } from '@/lib/accounts';
 import type { AppAccount } from '../../../utils/formatters';
+import { useLibrarySources } from '../useLibrarySources';
 import { mergeChannelVideos } from './videoLibrary';
-import type { LibraryChannel, LibraryVideo } from './videoLibrary';
+
+function channelName(account: AppAccount): string {
+  return account.title || 'Unknown channel';
+}
 
 // Loads every video from every YouTube channel. Shared by the Videos and Shorts pages.
 export function useChannelVideos() {
-  const { accounts, showToast } = useAppContext();
-  const [videos, setVideos] = useState<LibraryVideo[]>([]);
-  const [channels, setChannels] = useState<LibraryChannel<AppAccount>[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const channelAccounts = (accounts || []).filter(a => platformOf(a) === 'youtube');
-      const results = await Promise.allSettled(channelAccounts.map(a => api.getVideos(a.id)));
-      const merged = mergeChannelVideos(channelAccounts, results);
-      setVideos(merged.videos);
-      setChannels(merged.channels);
-    } catch (err) {
-      showToast(`Couldn't load videos. ${(err as Error).message}`, 'error');
-    } finally {
-      setLoading(false);
-    }
-  }, [accounts, showToast]);
-
-  useEffect(() => { load(); }, [load]);
-
-  return { videos, channels, loading, reload: load };
+  const { accounts } = useAppContext();
+  const channelAccounts = useMemo(() => (accounts || []).filter(account => platformOf(account) === 'youtube'), [accounts]);
+  const library = useLibrarySources(channelAccounts, api.getVideos, channelName, 'Videos');
+  const merged = useMemo(() => mergeChannelVideos(library.sources, library.results), [library.sources, library.results]);
+  return {
+    videos: merged.videos,
+    channels: merged.channels,
+    // "no channels yet" comes from the account list, not from which requests happened to succeed
+    channelCount: channelAccounts.length,
+    failures: library.failures,
+    fetchedAt: library.fetchedAt,
+    loading: library.initialLoading,
+    refreshing: library.refreshing,
+    refresh: library.refresh,
+  };
 }

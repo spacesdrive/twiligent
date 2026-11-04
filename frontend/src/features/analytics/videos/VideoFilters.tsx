@@ -1,37 +1,27 @@
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import SearchField from '@/components/SearchField';
 import FilterChips from '@/components/FilterChips';
+import SortSelect from '@/components/SortSelect';
+import type { SortOption } from '@/components/SortSelect';
 import { VIEW_TIERS } from '@/lib/library';
 import LayoutToggle from './LayoutToggle';
 import type { LayoutMode } from './LayoutToggle';
 import type { LibraryChannel } from './videoLibrary.ts';
 
-interface ChannelSelectProps {
+export interface ChannelSelectProps {
   channels: LibraryChannel[];
   value: string;
   onChange: (value: string) => void;
 }
 
-export interface VideoFiltersProps {
-  channels: LibraryChannel[];
-  search: string;
-  onSearchChange: (value: string) => void;
-  channelFilter: string;
-  onChannelChange: (value: string) => void;
-  viewMode: LayoutMode;
-  onViewModeChange: (value: LayoutMode) => void;
-  tier: string;
-  onTierChange: (value: string) => void;
-}
-
-function ChannelSelect({ channels, value, onChange }: ChannelSelectProps) {
+export function ChannelSelect({ channels, value, onChange }: ChannelSelectProps) {
   return (
     <Select
       value={value}
-      onValueChange={onChange as (value: string | null) => void}
+      onValueChange={next => { if (next) onChange(next as string); }}
       items={[{ value: 'all', label: 'All channels' }, ...channels.map(channel => ({ value: channel.id, label: channel.title }))]}
     >
-      <SelectTrigger className="w-48" aria-label="Channel"><SelectValue /></SelectTrigger>
+      <SelectTrigger className="h-(--control-h-lg) w-48" aria-label="Channel"><SelectValue /></SelectTrigger>
       <SelectContent>
         <SelectGroup>
           <SelectItem value="all">All channels</SelectItem>
@@ -42,8 +32,23 @@ function ChannelSelect({ channels, value, onChange }: ChannelSelectProps) {
   );
 }
 
+export interface VideoFiltersProps {
+  channels: LibraryChannel[];
+  search: string;
+  onSearchChange: (value: string) => void;
+  channelFilter: string;
+  onChannelChange: (value: string) => void;
+  sortOptions: readonly SortOption[];
+  sortKey: string;
+  onSortChange: (value: string) => void;
+  viewMode: LayoutMode;
+  onViewModeChange: (value: LayoutMode) => void;
+  tier: string;
+  onTierChange: (value: string) => void;
+}
+
 export default function VideoFilters({
-  channels, search, onSearchChange, channelFilter, onChannelChange, viewMode, onViewModeChange, tier, onTierChange,
+  channels, search, onSearchChange, channelFilter, onChannelChange, sortOptions, sortKey, onSortChange, viewMode, onViewModeChange, tier, onTierChange,
 }: VideoFiltersProps) {
   return (
     <div className="flex flex-col gap-3">
@@ -55,6 +60,7 @@ export default function VideoFilters({
           className="min-w-56 flex-1"
         />
         {channels.length > 1 && <ChannelSelect channels={channels} value={channelFilter} onChange={onChannelChange} />}
+        <SortSelect options={sortOptions} value={sortKey} onChange={onSortChange} />
         <LayoutToggle value={viewMode} onChange={onViewModeChange} />
       </div>
       <FilterChips label="Views" options={VIEW_TIERS} value={tier} onChange={onTierChange} />

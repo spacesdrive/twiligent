@@ -21,7 +21,8 @@ export interface InstagramViewsTableProps {
 
 function InstagramViewsRow({ account, cache, isSyncing }: InstagramViewsRowProps) {
   const warmed = cache?.cacheWarmed;
-  const pendingLabel = isSyncing ? 'Syncing' : '-';
+  // a cold account says why its figures are missing; opening it loads them
+  const pendingLabel = isSyncing ? 'Loading' : 'Not loaded yet';
   return (
     <TableRow>
       <AccountCell account={account} name={accountName(account)} />
@@ -32,11 +33,11 @@ function InstagramViewsRow({ account, cache, isSyncing }: InstagramViewsRowProps
               <p className="text-sm font-medium text-ink">{fmtNum(cache.contentTypes?.[type]?.views)}</p>
               <p className="text-caption text-ink-faint">{fmtNum(cache.contentTypes?.[type]?.count)} {IG_CONTENT_TYPE_META[type].plural.toLowerCase()}</p>
             </>
-          ) : <span className="text-ink-faint">-</span>}
+          ) : <span className="text-ink-faint"><span aria-hidden="true">-</span><span className="sr-only">Not loaded</span></span>}
         </TableCell>
       ))}
       <TableCell className="text-right font-semibold text-ink">
-        {warmed ? fmtNum(cache.totalViews) : <span className="font-normal text-ink-faint">{pendingLabel}</span>}
+        {warmed ? fmtNum(cache.totalViews) : <span className="text-small font-normal text-ink-faint">{pendingLabel}</span>}
       </TableCell>
       <TableCell>
         <OpenAnalytics account={account} name={accountName(account)} />
@@ -47,7 +48,7 @@ function InstagramViewsRow({ account, cache, isSyncing }: InstagramViewsRowProps
 
 export default function InstagramViewsTable({ rows, isSyncing }: InstagramViewsTableProps) {
   return (
-    <SurfaceBox title="Instagram views by content type" content={false} className="overflow-hidden">
+    <SurfaceBox title="Instagram views by content type" subheader="Views on loaded posts. Open an account marked Not loaded yet to load it." content={false} className="overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow>

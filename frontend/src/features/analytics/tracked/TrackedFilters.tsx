@@ -1,6 +1,7 @@
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import SearchField from '@/components/SearchField';
 import FilterChips from '@/components/FilterChips';
+import SortSelect from '@/components/SortSelect';
 import { SORT_OPTIONS, typeChipsOf } from './trackedList.ts';
 import type { TrackedFilters as TrackedFiltersState } from './useTrackedFilters';
 
@@ -17,10 +18,10 @@ export default function TrackedFilters({ filters }: TrackedFiltersProps) {
         {categories.length > 0 && (
           <Select
             value={filters.categoryFilter}
-            onValueChange={filters.setCategoryFilter as (value: string | null) => void}
+            onValueChange={next => { if (next) filters.setCategoryFilter(next as string); }}
             items={[{ value: 'all', label: 'All categories' }, ...categories.map(category => ({ value: category, label: category }))]}
           >
-            <SelectTrigger className="w-44" aria-label="Category"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-(--control-h-lg) w-48" aria-label="Category"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectGroup>
                 <SelectItem value="all">All categories</SelectItem>
@@ -29,14 +30,7 @@ export default function TrackedFilters({ filters }: TrackedFiltersProps) {
             </SelectContent>
           </Select>
         )}
-        <Select value={filters.sort} onValueChange={filters.setSort as (value: string | null) => void} items={SORT_OPTIONS}>
-          <SelectTrigger className="w-48" aria-label="Sort"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              {SORT_OPTIONS.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+        <SortSelect options={SORT_OPTIONS} value={filters.sort} onChange={filters.setSort} />
       </div>
       <FilterChips label="Content type" options={typeChipsOf(filters.stats)} value={filters.typeFilter} onChange={filters.setTypeFilter} />
     </div>

@@ -9,11 +9,12 @@ export interface IGContentTypeMeta {
 
 export const IG_CONTENT_TYPES: InstagramContentType[] = ['reel', 'post', 'video'];
 
-// Colours are brand chart series so they follow the theme
+// chart series that follow the theme; the YouTube (chart-1) and Reddit (chart-4) hues are left out so a colour
+// never names two platforms
 export const IG_CONTENT_TYPE_META: Record<InstagramContentType, IGContentTypeMeta> = {
-    reel:  { label: 'Reel',  plural: 'Reels',  color: 'var(--chart-1)' },
+    reel:  { label: 'Reel',  plural: 'Reels',  color: 'var(--chart-5)' },
     post:  { label: 'Post',  plural: 'Posts',  color: 'var(--chart-3)' },
-    video: { label: 'Video', plural: 'Videos', color: 'var(--chart-4)' },
+    video: { label: 'Video', plural: 'Videos', color: 'var(--chart-2)' },
 };
 
 export function igContentTypeMeta(type: string | null | undefined): IGContentTypeMeta {

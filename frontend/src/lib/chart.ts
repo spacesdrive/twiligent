@@ -31,3 +31,27 @@ export const tooltipStyle = {
 export const tooltipCursor = { fill: 'var(--surface-hover)' };
 
 export const legendStyle = { fontSize: 12, color: 'var(--ink-muted)' };
+
+// a figure is a category name and its value; the summary is what a sighted reader takes from the plot at a glance
+export interface ChartPoint {
+  name: string;
+  value: number;
+}
+
+export function rankingSummary(points: readonly ChartPoint[], formatValue: (value: number) => string, unit: string): string {
+  if (points.length === 0) return 'No data yet.';
+  const sorted = [...points].sort((a, b) => b.value - a.value);
+  const top = sorted[0];
+  const bottom = sorted[sorted.length - 1];
+  if (sorted.length === 1) return `${top.name}: ${formatValue(top.value)} ${unit}.`;
+  return `Highest: ${top.name}, ${formatValue(top.value)} ${unit}. Lowest: ${bottom.name}, ${formatValue(bottom.value)} ${unit}.`;
+}
+
+export function trendSummary(points: readonly ChartPoint[], formatValue: (value: number) => string, unit: string): string {
+  if (points.length === 0) return 'No data yet.';
+  const first = points[0];
+  const last = points[points.length - 1];
+  const peak = points.reduce((best, point) => (point.value > best.value ? point : best), first);
+  if (points.length === 1) return `${first.name}: ${formatValue(first.value)} ${unit}.`;
+  return `From ${first.name} to ${last.name}: ${formatValue(first.value)} to ${formatValue(last.value)} ${unit}. Peak ${formatValue(peak.value)} in ${peak.name}.`;
+}

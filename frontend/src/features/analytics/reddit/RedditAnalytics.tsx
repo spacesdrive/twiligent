@@ -1,12 +1,16 @@
 import { useParams } from 'react-router-dom';
-import { Award, MessageSquare, Star, TrendingUp, UserX } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
+import { UserX } from 'lucide-react';
+import { Alert, AlertAction, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import PageHeader from '@/components/PageHeader';
 import MetricBox from '@/components/MetricBox';
+import Num from '@/components/Num';
 import SurfaceBox from '@/components/SurfaceBox';
-import { EmptyState, PageSkeleton } from '@/components/StateViews';
+import { EmptyState, ErrorState, PageSkeleton } from '@/components/StateViews';
+import { METRIC_ICONS } from '@/lib/metricIcons';
 import { useAppContext } from '../../../context/AppContext';
 import { useAccountAnalytics } from '../../../hooks/use-account-analytics';
+import { useDocumentTitle } from '@/hooks/use-document-title';
 import { api } from '../../../services/api';
 import { fmtNum } from '../../../utils/formatters';
 import { MEDIA_TYPE_LABELS } from './redditPostUtils';
@@ -22,11 +26,16 @@ import RedditTopPostsTable from './RedditTopPostsTable';
 
 const BACK = { to: '/', label: 'Overview' };
 
+const { redditPosts: Posts, karma: Karma, comments: Comments, awards: Awards } = METRIC_ICONS;
+
 export default function RedditAnalytics() {
   const { id } = useParams();
   const { accounts } = useAppContext();
   const account = accounts.find(item => item.id === id);
-  const { loading, profile, analytics, refreshing, handleRefresh } = useAccountAnalytics(account, api.getRedditAnalytics, 'Reddit');
+  const { initialLoading, error, profile, analytics, fetchedAt, refreshing, handleRefresh, retry } = useAccountAnalytics(
+    account, api.getRedditAnalytics, 'Reddit',
+  );
+  useDocumentTitle(account ? `u/${account.username}` : null);
 
   if (!account) {
     return (
@@ -39,40 +48,60 @@ export default function RedditAnalytics() {
     );
   }
 
-  if (loading) return <PageSkeleton metrics={4} />;
+  if (initialLoading) return <PageSkeleton metrics={4} />;
 
   const profileData = profile || account;
-  const analyticsData: Partial<RedditAnalyticsData> = analytics || {};
+
+  if (!analytics) {
+    return (
+      <div className="flex flex-col gap-6">
+        <RedditHeader account={account} profile={profileData} back={BACK} refreshing={refreshing} onRefresh={handleRefresh} fetchedAt={null} />
+        <SurfaceBox>
+          <ErrorState title="Reddit analytics could not load" description={error ?? undefined} onRetry={retry} />
+        </SurfaceBox>
+      </div>
+    );
+  }
+
+  const analyticsData: Partial<RedditAnalyticsData> = analytics;
+  const postsPeriod = `Last ${analyticsData.fetchedPosts ?? 0} posts`;
 
   return (
     <div className="flex flex-col gap-6">
-      <RedditHeader account={account} profile={profileData} back={BACK} refreshing={refreshing} onRefresh={handleRefresh} />
+      <RedditHeader account={account} profile={profileData} back={BACK} refreshing={refreshing} onRefresh={handleRefresh} fetchedAt={fetchedAt} />
 
-      {refreshing && <Progress value={null} aria-label="Refreshing account" />}
-
-      <RedditKarmaSummary profile={profileData} />
-
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricBox icon={<TrendingUp />}    label="Posts fetched"   value={fmtNum(analyticsData.fetchedPosts)}     subtitle={`${analyticsData.postsLast30Days ?? 0} in the last 30 days`} />
-        <MetricBox icon={<Award />}         label="Karma from posts" value={fmtNum(analyticsData.totalScore)}      subtitle={`${fmtNum(analyticsData.avgScore)} per post on average`} highlight />
-        <MetricBox icon={<MessageSquare />} label="Comments"        value={fmtNum(analyticsData.totalComments)}    subtitle={`${fmtNum(analyticsData.avgComments)} per post on average`} />
-        <MetricBox icon={<Star />}          label="Awards received" value={fmtNum(analyticsData.totalAwards ?? 0)} subtitle={`${analyticsData.avgAwards ?? 0} per post on average`} />
-      </div>
-
-      {(analyticsData.monthlyBreakdown?.length as number) > 0 && (
-        <RedditKarmaCharts
-          monthlyBreakdown={analyticsData.monthlyBreakdown!}
-          mediaTypeData={mediaTypeDataOf(analyticsData.mediaTypeDistribution, MEDIA_TYPE_LABELS)}
-        />
+      {error && (
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>{error} The numbers below are from the last successful load.</AlertDescription>
+          <AlertAction><Button size="xs" variant="outline" onClick={retry}>Try again</Button></AlertAction>
+        </Alert>
       )}
 
-      <RedditStatPanels analytics={analyticsData} />
+      <div className="flex flex-col gap-6" aria-busy={refreshing}>
+        <RedditKarmaSummary profile={profileData} />
 
-      {(analyticsData.postsByDayOfWeek?.length as number) > 0 && <RedditTimingCharts analytics={analyticsData} />}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <MetricBox icon={<Karma />}    label="Karma from posts" value={<Num value={analyticsData.totalScore} />}    period={postsPeriod} subtitle={`${fmtNum(analyticsData.avgScore)} per post on average`} highlight />
+          <MetricBox icon={<Posts />}    label="Posts loaded"     value={<Num value={analyticsData.fetchedPosts} />}  period="Newest first" subtitle={`${analyticsData.postsLast30Days ?? 0} in the last 30 days`} />
+          <MetricBox icon={<Comments />} label="Comments"         value={<Num value={analyticsData.totalComments} />} period={postsPeriod} subtitle={`${fmtNum(analyticsData.avgComments)} per post on average`} />
+          <MetricBox icon={<Awards />}   label="Awards received"  value={<Num value={analyticsData.totalAwards ?? 0} />} period={postsPeriod} subtitle={`${analyticsData.avgAwards ?? 0} per post on average`} />
+        </div>
 
-      {(analyticsData.subredditBreakdown?.length as number) > 0 && <RedditSubredditTable subreddits={analyticsData.subredditBreakdown!} />}
+        {(analyticsData.monthlyBreakdown?.length as number) > 0 && (
+          <RedditKarmaCharts
+            monthlyBreakdown={analyticsData.monthlyBreakdown!}
+            mediaTypeData={mediaTypeDataOf(analyticsData.mediaTypeDistribution, MEDIA_TYPE_LABELS)}
+          />
+        )}
 
-      {(analyticsData.topPosts?.length as number) > 0 && <RedditTopPostsTable posts={analyticsData.topPosts!} />}
+        <RedditStatPanels analytics={analyticsData} />
+
+        {(analyticsData.postsByDayOfWeek?.length as number) > 0 && <RedditTimingCharts analytics={analyticsData} />}
+
+        {(analyticsData.subredditBreakdown?.length as number) > 0 && <RedditSubredditTable subreddits={analyticsData.subredditBreakdown!} />}
+
+        {(analyticsData.topPosts?.length as number) > 0 && <RedditTopPostsTable posts={analyticsData.topPosts!} />}
+      </div>
     </div>
   );
 }

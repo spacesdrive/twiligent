@@ -1,27 +1,16 @@
-import { Clapperboard, Film, Image } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import SearchField from '@/components/SearchField';
 import FilterChips from '@/components/FilterChips';
+import SortSelect from '@/components/SortSelect';
 import type { FilterChipOption } from '@/components/FilterChips';
 import { LIKE_TIERS } from '@/lib/library';
+import { IG_TYPE_ICONS } from '@/lib/metricIcons';
 import { IG_CONTENT_TYPES, IG_CONTENT_TYPE_META } from '../../../utils/instagramContent';
 import type { AppAccount } from '../../../utils/formatters';
 import type { InstagramContentType } from '@shared/types/instagram.ts';
+import type { LucideIcon } from 'lucide-react';
+import { MEDIA_SORT_OPTIONS } from './reelsLibrary.ts';
 import type { MediaSortField, MediaTypeTotals } from './reelsLibrary.ts';
-
-interface SelectOption<V extends string> {
-  value: V;
-  label: string;
-}
-
-interface OptionSelectProps<V extends string> {
-  value: V;
-  onChange: (value: V) => void;
-  options: SelectOption<V>[];
-  className?: string;
-  label: string;
-}
 
 export interface ReelsFilterValues {
   search: string;
@@ -35,7 +24,7 @@ export interface ReelsFilterHandlers {
   onSearchChange: (value: string) => void;
   onAccountChange: (value: string) => void;
   onTierChange: (value: string) => void;
-  onSortChange: (value: MediaSortField) => void;
+  onSortChange: (value: string) => void;
   onTypeChange: (value: string) => void;
 }
 
@@ -47,15 +36,7 @@ export interface ReelsFiltersProps {
   handlers: ReelsFilterHandlers;
 }
 
-const CONTENT_TYPE_ICONS: Record<InstagramContentType, LucideIcon> = { reel: Clapperboard, post: Image, video: Film };
-
-const SORT_OPTIONS: SelectOption<MediaSortField>[] = [
-  { value: 'viewCount',      label: 'Most viewed' },
-  { value: 'likeCount',      label: 'Most liked' },
-  { value: 'commentsCount',  label: 'Most comments' },
-  { value: 'engagementRate', label: 'Best engagement' },
-  { value: 'timestamp',      label: 'Newest first' },
-];
+const CONTENT_TYPE_ICONS: Record<InstagramContentType, LucideIcon> = IG_TYPE_ICONS;
 
 function typeChipsOf(itemCount: number, typeTotals: MediaTypeTotals): FilterChipOption[] {
   return [
@@ -64,19 +45,7 @@ function typeChipsOf(itemCount: number, typeTotals: MediaTypeTotals): FilterChip
   ];
 }
 
-function OptionSelect<V extends string>({ value, onChange, options, className, label }: OptionSelectProps<V>) {
-  return (
-    <Select value={value} onValueChange={onChange as (value: V | null) => void} items={options}>
-      <SelectTrigger className={className} aria-label={label}><SelectValue /></SelectTrigger>
-      <SelectContent>
-        <SelectGroup>
-          {options.map(option => <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>)}
-        </SelectGroup>
-      </SelectContent>
-    </Select>
-  );
-}
-
+// the same controls as the other libraries: search, account, sort, then chips for type and likes
 export default function ReelsFilters({ igAccounts, itemCount, typeTotals, filters, handlers }: ReelsFiltersProps) {
   return (
     <div className="flex flex-col gap-3">
@@ -85,10 +54,10 @@ export default function ReelsFilters({ igAccounts, itemCount, typeTotals, filter
         {igAccounts.length > 1 && (
           <Select
             value={filters.accountFilter}
-            onValueChange={handlers.onAccountChange as (value: string | null) => void}
+            onValueChange={next => { if (next) handlers.onAccountChange(next as string); }}
             items={[{ value: 'all', label: 'All accounts' }, ...igAccounts.map(account => ({ value: account.id, label: account.title || account.username }))]}
           >
-            <SelectTrigger className="w-44" aria-label="Account"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-(--control-h-lg) w-48" aria-label="Account"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectGroup>
                 <SelectItem value="all">All accounts</SelectItem>
@@ -97,10 +66,10 @@ export default function ReelsFilters({ igAccounts, itemCount, typeTotals, filter
             </SelectContent>
           </Select>
         )}
-        <OptionSelect value={filters.tier} onChange={handlers.onTierChange} options={LIKE_TIERS} className="w-36" label="Likes" />
-        <OptionSelect value={filters.sortField} onChange={handlers.onSortChange} options={SORT_OPTIONS} className="w-44" label="Sort" />
+        <SortSelect options={MEDIA_SORT_OPTIONS} value={filters.sortField} onChange={handlers.onSortChange} />
       </div>
       <FilterChips label="Content type" options={typeChipsOf(itemCount, typeTotals)} value={filters.typeFilter} onChange={handlers.onTypeChange} />
+      <FilterChips label="Likes" options={LIKE_TIERS} value={filters.tier} onChange={handlers.onTierChange} />
     </div>
   );
 }

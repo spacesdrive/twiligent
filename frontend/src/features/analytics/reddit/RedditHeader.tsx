@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
-import { FileText, RefreshCw } from 'lucide-react';
+import { FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import PageHeader from '@/components/PageHeader';
+import RefreshButton from '@/components/RefreshButton';
+import DataFreshness from '@/components/DataFreshness';
 import { AccountAvatar } from '@/components/platform';
-import { cn } from '@/lib/utils';
-import { fmtDate, timeAgo } from '../../../utils/formatters';
+import { fmtDate } from '../../../utils/formatters';
 import type { AppAccount } from '../../../utils/formatters';
 import type { PageHeaderBack } from '@/components/PageHeader';
 import type { RedditProfileFields } from './redditAnalyticsData.ts';
@@ -16,34 +17,34 @@ export interface RedditHeaderProps {
   back: PageHeaderBack;
   refreshing: boolean;
   onRefresh: () => void;
+  // when the posts were fetched; Reddit numbers are cached for up to 6 hours
+  fetchedAt: string | null;
 }
 
-export default function RedditHeader({ account, profile, back, refreshing, onRefresh }: RedditHeaderProps) {
+export default function RedditHeader({ account, profile, back, refreshing, onRefresh, fetchedAt }: RedditHeaderProps) {
   return (
     <PageHeader
       back={back}
-      media={<AccountAvatar account={{ ...account, iconUrl: profile.iconUrl || account.iconUrl }} size="xl" showPlatform />}
+      media={<AccountAvatar account={{ ...account, iconUrl: profile.iconUrl || account.iconUrl }} size="xl" showPlatform decorative />}
       title={`u/${profile.username || account.username}`}
       description={
-        <span className="flex flex-wrap items-center gap-1.5">
-          {profile.isGold && <Badge variant="warning">Gold</Badge>}
-          {profile.verified && <Badge variant="info">Verified</Badge>}
-          {profile.isMod && <Badge variant="outline">Moderator</Badge>}
-          <span>
-            {profile.createdAt ? `Joined ${fmtDate(profile.createdAt)}. ` : ''}Refreshed {timeAgo(account.lastUpdated).toLowerCase()}.
+        <span className="flex flex-col gap-1.5">
+          <span className="flex flex-wrap items-center gap-1.5">
+            {profile.isGold && <Badge variant="warning">Gold</Badge>}
+            {profile.verified && <Badge variant="info">Verified</Badge>}
+            {profile.isMod && <Badge variant="outline">Moderator</Badge>}
+            {profile.createdAt && <span>Joined {fmtDate(profile.createdAt)}</span>}
           </span>
+          <DataFreshness fetchedAt={fetchedAt} />
         </span>
       }
       actions={
         <>
-          <Button variant="outline" size="sm" render={<Link to={`/reddit-posts/${account.id}`} />}>
-            <FileText data-icon="inline-start" />
+          <Button variant="outline" render={<Link to={`/reddit-posts/${account.id}`} />}>
+            <FileText data-icon="inline-start" aria-hidden="true" />
             View posts
           </Button>
-          <Button variant="outline" size="sm" onClick={onRefresh} disabled={refreshing}>
-            <RefreshCw data-icon="inline-start" className={cn(refreshing && 'animate-spin')} />
-            {refreshing ? 'Refreshing' : 'Refresh'}
-          </Button>
+          <RefreshButton refreshing={refreshing} onRefresh={onRefresh} />
         </>
       }
     />

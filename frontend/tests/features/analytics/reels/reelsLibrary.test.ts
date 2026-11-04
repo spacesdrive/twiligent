@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  mergeAccountMedia, typeTotalsOf, viewTotalsOf, filterAndSortMedia, typeViewsSubtitle, reelsDescription,
+  mergeAccountMedia, typeTotalsOf, viewTotalsOf, filterAndSortMedia, typeViewsSubtitle, reelsDescription, mediaSortOf,
 } from '../../../../src/features/analytics/reels/reelsLibrary.ts';
 import type { AccountMediaResult, LibraryMedia, MediaAccount, MediaQuery } from '../../../../src/features/analytics/reels/reelsLibrary.ts';
 
@@ -56,4 +56,9 @@ test('labels', () => {
   assert.equal(reelsDescription(true, 5, 1), 'Loading content from your accounts');
   assert.equal(reelsDescription(false, 1, 1), '1 item across 1 account');
   assert.equal(reelsDescription(false, 2, 3), '2 items across 3 accounts');
+});
+
+test('a media sort from the address that is not an option falls back to most viewed', () => {
+  assert.equal(mediaSortOf('timestamp'), 'timestamp');
+  assert.equal(mediaSortOf('caption'), 'viewCount');
 });

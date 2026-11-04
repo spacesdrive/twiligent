@@ -16,11 +16,11 @@ test('type rows keep content types with posts, in display order', () => {
   const rows = typeRowsOf(typeStats as Partial<InstagramContentTypeStatsMap>);
   assert.deepEqual(rows.map(row => row.type), ['reel', 'video']);
   assert.equal(rows[0].name, 'Reels');
-  assert.equal(rows[0].color, 'var(--chart-1)');
+  assert.equal(rows[0].color, 'var(--chart-5)');
   assert.equal(rows[0].avgLikes, 10);
   assert.deepEqual(contentMixOf(rows), [
-    { name: 'Reels', value: 3, color: 'var(--chart-1)' },
-    { name: 'Videos', value: 1, color: 'var(--chart-4)' },
+    { name: 'Reels', value: 3, color: 'var(--chart-5)' },
+    { name: 'Videos', value: 1, color: 'var(--chart-2)' },
   ]);
 });
 

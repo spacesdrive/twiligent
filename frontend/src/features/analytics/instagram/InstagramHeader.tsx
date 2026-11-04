@@ -1,8 +1,7 @@
-import { RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import PageHeader from '@/components/PageHeader';
+import RefreshButton from '@/components/RefreshButton';
+import DataFreshness from '@/components/DataFreshness';
 import { AccountAvatar } from '@/components/platform';
-import { cn } from '@/lib/utils';
 import type { PageHeaderBack } from '@/components/PageHeader';
 import type { AppAccount } from '../../../utils/formatters';
 import type { InstagramProfileFields } from './instagramAnalyticsData.ts';
@@ -13,26 +12,23 @@ export interface InstagramHeaderProps {
   back: PageHeaderBack;
   refreshing: boolean;
   onRefresh: () => void;
+  fetchedAt: string | null;
 }
 
-export default function InstagramHeader({ account, profile, back, refreshing, onRefresh }: InstagramHeaderProps) {
+export default function InstagramHeader({ account, profile, back, refreshing, onRefresh, fetchedAt }: InstagramHeaderProps) {
   return (
     <PageHeader
       back={back}
-      media={<AccountAvatar account={{ ...account, profilePictureUrl: profile.profilePictureUrl || account.profilePictureUrl }} size="xl" showPlatform />}
+      media={<AccountAvatar account={{ ...account, profilePictureUrl: profile.profilePictureUrl || account.profilePictureUrl }} size="xl" showPlatform decorative />}
       title={profile.name || profile.username}
       description={
         <span className="flex flex-col gap-1">
           <span>@{profile.username}</span>
-          {profile.biography && <span className="line-clamp-2 max-w-xl text-small text-ink-faint">{profile.biography}</span>}
+          {profile.biography && <span className="line-clamp-2 max-w-prose text-small text-ink-faint" title={profile.biography}>{profile.biography}</span>}
+          <DataFreshness fetchedAt={fetchedAt} />
         </span>
       }
-      actions={
-        <Button variant="outline" size="sm" onClick={onRefresh} disabled={refreshing}>
-          <RefreshCw data-icon="inline-start" className={cn(refreshing && 'animate-spin')} />
-          {refreshing ? 'Refreshing' : 'Refresh'}
-        </Button>
-      }
+      actions={<RefreshButton refreshing={refreshing} onRefresh={onRefresh} />}
     />
   );
 }

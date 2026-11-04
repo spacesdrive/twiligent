@@ -1,7 +1,7 @@
-import { RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import PageHeader from '@/components/PageHeader';
-import { cn } from '@/lib/utils';
+import RefreshButton from '@/components/RefreshButton';
+import DataFreshness from '@/components/DataFreshness';
+import LiveStatus from '@/components/LiveStatus';
 import { greetingTitle } from './greeting.ts';
 import { overviewDescription } from './overviewLabels.ts';
 import type { OverviewAccountFields } from './overviewStats.ts';
@@ -10,29 +10,25 @@ export interface OverviewHeaderProps {
   accounts: OverviewAccountFields[];
   email: string | null | undefined;
   isSyncing: boolean;
-  loading: boolean;
+  refreshing: boolean;
   onRefresh: () => void;
+  fetchedAt: string | null;
 }
 
-export default function OverviewHeader({ accounts, email, isSyncing, loading, onRefresh }: OverviewHeaderProps) {
+export default function OverviewHeader({ accounts, email, isSyncing, refreshing, onRefresh, fetchedAt }: OverviewHeaderProps) {
   return (
     <PageHeader
       size="display"
       title={greetingTitle(email)}
-      description={overviewDescription(accounts)}
+      description={
+        <span className="flex flex-col gap-1">
+          <span>{overviewDescription(accounts)}</span>
+          {fetchedAt && <DataFreshness fetchedAt={fetchedAt} qualifier="oldest account" />}
+          <LiveStatus message={isSyncing ? 'Loading analytics for new accounts' : ''} visible={isSyncing} className="text-small text-ink-muted" />
+        </span>
+      }
       actions={
-        <>
-          {isSyncing && (
-            <span className="flex items-center gap-1.5 text-small text-ink-muted" role="status">
-              <RefreshCw className="size-3.5 animate-spin" />
-              Syncing analytics
-            </span>
-          )}
-          <Button onClick={onRefresh} disabled={loading || accounts.length === 0} variant="outline">
-            <RefreshCw data-icon="inline-start" className={cn(loading && 'animate-spin')} />
-            {loading ? 'Refreshing' : 'Refresh all'}
-          </Button>
-        </>
+        <RefreshButton refreshing={refreshing} onRefresh={onRefresh} disabled={accounts.length === 0} target="all accounts" />
       }
     />
   );

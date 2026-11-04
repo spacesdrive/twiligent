@@ -15,7 +15,7 @@ export default function CategoryRow({ stat, trailing }: CategoryRowProps) {
   return (
     <ListRow
       onClick={() => navigate(`/tracked-content/category/${encodeURIComponent(stat.category)}`)}
-      leading={<><span className="w-5 shrink-0" /><span className="flex size-8 items-center justify-center rounded-control bg-surface-sunken text-ink-muted"><Tag className="size-4 stroke-[1.75]" /></span></>}
+      leading={<><span className="w-5 shrink-0" /><span className="flex size-8 items-center justify-center rounded-control bg-surface-sunken text-ink-muted"><Tag className="size-4 stroke-[1.75]" aria-hidden="true" /></span></>}
       title={stat.category}
       meta={categoryMeta(stat)}
       trailing={trailing}

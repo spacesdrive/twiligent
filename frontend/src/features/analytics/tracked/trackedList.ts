@@ -46,6 +46,11 @@ export const SORT_OPTIONS: TrackedSortOption[] = [
   { value: 'views-desc',      label: 'Most views' },
 ];
 
+// a sort read from the address falls back to newest first when it is not one of the options
+export function trackedSortOf(value: string): string {
+  return SORT_OPTIONS.some(option => option.value === value) ? value : 'date-desc';
+}
+
 function compareTracked(sort: string, first: TrackedContentItem, second: TrackedContentItem): number {
   if (sort === 'engagement-desc') return trackedEngagement(second) - trackedEngagement(first);
   if (sort === 'comments-desc') return trackedComments(second) - trackedComments(first);
@@ -97,13 +102,21 @@ export function bulkCategoryMessage(succeeded: number, failed: number): BulkCate
   return { message: done, severity: 'success' };
 }
 
-// an empty field clears the views; otherwise a whole number of 0 or more
+const VIEW_SUFFIXES: Record<string, number> = { k: 1e3, m: 1e6 };
+
+export const MANUAL_VIEWS_ERROR = 'Enter views as a whole number, such as 1200, 1,200 or 1.2K.';
+
+// an empty field clears the views; otherwise the number as Reddit's insights show it: separators and a K or M
+// suffix are accepted, so a copied "12.5K" works without retyping
 export function parseManualViews(raw: string): ManualViewsResult {
-  const trimmed = raw.trim();
-  if (trimmed === '') return { value: null };
-  const views = Number(trimmed);
-  if (!Number.isInteger(views) || views < 0) return { error: 'Views must be a whole number of 0 or more.' };
-  return { value: views };
+  const compact = raw.trim().replace(/[\s,_]/g, '');
+  if (compact === '') return { value: null };
+  const match = /^(\d+(?:\.\d+)?)([km])?$/i.exec(compact);
+  if (!match) return { error: MANUAL_VIEWS_ERROR };
+  const [, digits, suffix] = match;
+  const number = Number(digits);
+  if (!suffix) return Number.isInteger(number) ? { value: number } : { error: MANUAL_VIEWS_ERROR };
+  return { value: Math.round(number * VIEW_SUFFIXES[suffix.toLowerCase()]) };
 }
 
 export function imageFileError(file: Pick<File, 'type' | 'size'>, hasCloudConfig: boolean): string {
