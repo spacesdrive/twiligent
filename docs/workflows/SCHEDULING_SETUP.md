@@ -15,6 +15,8 @@ The same steps are in the app under **Settings, Scheduled publishing**, where ty
 1. Open https://github.com/spacesdrive/twiligent/fork
 2. Choose **Create fork**. Keep it public, because GitHub runs public repositories for free.
 
+   Anyone can read the run logs of a public repository. The publisher logs only post ids, media types and times, and removes addresses and tokens from Instagram's error messages, but if other people schedule posts on your instance and you would rather keep even that private, make the fork private and change the schedule to every 30 minutes to stay within the 2,000 free minutes a month.
+
 **It worked if** you see `twiligent` under your own GitHub username.
 
 ## Step 2. Copy two values from Supabase

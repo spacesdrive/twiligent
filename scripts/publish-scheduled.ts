@@ -6,6 +6,7 @@
 import {
     MAX_PUBLISH_ATTEMPTS, containerStep, failureMessage, failureOutcome, isTransientGraphCode, staleClaimCutoff,
 } from '../backend/lib/scheduledPublishing.ts';
+import { redactSecrets } from '../backend/lib/redact.ts';
 import type { Account, Platform, PostStatus, ScheduledPost } from '../shared/types/domain.ts';
 import type { InstagramContainerStatusCode } from '../shared/types/instagram.ts';
 
@@ -169,7 +170,8 @@ async function graph(method: 'GET' | 'POST', path: string, params: Record<string
         throw new PublishError(`Instagram API unreachable (${(err as Error).name})`, true);
     }
     const data = await res.json().catch(() => ({})) as GraphResponse;
-    if (data.error) throw new PublishError(data.error.message, isTransientGraphCode(data.error.code));
+    // Instagram errors can echo the request url with its access token; the run log may be public, so they are redacted
+    if (data.error) throw new PublishError(redactSecrets(data.error.message), isTransientGraphCode(data.error.code));
     if (!res.ok) throw new PublishError(`Instagram answered with status ${res.status}`, res.status >= 500);
     return data;
 }
@@ -221,7 +223,7 @@ async function waitForContainer(post: ScheduledPost, containerId: string, token:
         await sleep(3000);
         const status = await containerStatus(containerId, token);
         if (status.status_code === 'FINISHED' || status.status_code === 'PUBLISHED') return;
-        if (status.status_code === 'ERROR') throw new PublishError('Processing failed: ' + (status.status || ''), false);
+        if (status.status_code === 'ERROR') throw new PublishError('Processing failed: ' + redactSecrets(status.status || ''), false);
         if (status.status_code === 'EXPIRED') throw new PublishError('Container expired', false);
     }
     throw new PublishError('Instagram did not finish processing the media within 3 minutes', false);
@@ -230,7 +232,7 @@ async function waitForContainer(post: ScheduledPost, containerId: string, token:
 // a container from an earlier attempt is checked first, so a post that already went out is never published again
 async function publishToInstagram(post: ScheduledPost, attempt: Attempt): Promise<string | null> {
     const account = await getAccount(post.accountId);
-    if (!account) throw new PublishError('Account not found: ' + post.accountId, false);
+    if (!account) throw new PublishError('The account this post was scheduled for was removed', false);
     if (account.platform !== 'instagram' || !account.igUserId) throw new PublishError('Scheduled posts can only publish to Instagram accounts', false);
     if (!account.accessToken) throw new PublishError('No Instagram access token stored - reconnect this account', false);
     attempt.account = account;
@@ -241,7 +243,7 @@ async function publishToInstagram(post: ScheduledPost, attempt: Attempt): Promis
         const status = await containerStatus(attempt.containerId, token);
         const step = containerStep(status.status_code ?? 'IN_PROGRESS');
         if (step === 'published') return null;
-        if (step === 'fail') throw new PublishError('Processing failed: ' + (status.status || ''), false);
+        if (step === 'fail') throw new PublishError('Processing failed: ' + redactSecrets(status.status || ''), false);
         if (step === 'recreate') attempt.containerId = null;
     }
     if (!attempt.containerId) {
@@ -356,6 +358,6 @@ async function main(): Promise<void> {
 }
 
 main().catch(err => {
-    console.error('Fatal error:', err);
+    console.error('Fatal error:', redactSecrets(err instanceof Error ? err.message : String(err)));
     process.exit(1);
 });

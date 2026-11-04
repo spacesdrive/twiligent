@@ -27,7 +27,7 @@ export default function SchedulingSetupSteps({ done, toggle, base }: SchedulingS
         onToggle={toggle('fork')}
         check="you see the twiligent repository under your own GitHub username."
       >
-        <p>Open the Twiligent repository and choose <strong>Fork</strong>, then <strong>Create fork</strong>. Keep it public: GitHub runs public repositories for free.</p>
+        <p>Open the Twiligent repository and choose <strong>Fork</strong>, then <strong>Create fork</strong>. Keep it public: GitHub runs public repositories for free. Anyone can read a public copy's run logs, so the publisher leaves tokens and addresses out of them.</p>
         <div><GuideLinkButton href={`https://github.com/${UPSTREAM_REPO}/fork`}>Fork on GitHub</GuideLinkButton></div>
       </SetupStep>
 
