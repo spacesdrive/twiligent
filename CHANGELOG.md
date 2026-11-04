@@ -7,6 +7,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-05
+
+### Added
+
+- An Uploads card on the Videos page: each month or week split into regular videos and Shorts. Run along the bars, or use the arrow keys, to read one period. It is adapted from Bencho's Stacked bars block (#140)
+- Metric tile values roll to a new number like an odometer when they change, adapted from Bencho's Rolling counter. The exact value stays on hover and for screen readers, and reduced motion stops the roll (#140)
+
+### Changed
+
+- Charts are back to the types and layout they had before 1.3.0, now drawn with Intent UI's chart components: themed tooltips with exact values, a legend that highlights one series when pressed, and responsive heights. The visible summary line and Show table button are gone, but each chart keeps a description for screen readers (#140, ADR-048)
+- Plain numbers in metric tiles are now rounded like the rest (1.2K), with the exact value on hover (#140)
+
 ## [1.3.1] - 2026-11-05
 
 ### Fixed
