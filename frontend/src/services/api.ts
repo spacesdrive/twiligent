@@ -12,7 +12,6 @@ import type {
     InstagramMediaPublishResponse, InstagramMediaResponse, InstagramPublishingLimitResponse, InstagramPublishRequest,
     InstagramPublishResponse, InstagramTokenRefreshResponse,
 } from '@shared/types/instagram.ts';
-import type { RedditCacheData } from '@shared/types/reddit.ts';
 import type {
     AutomationAccountResponse, AutomationActivityItemResponse, AutomationActivityResponse, AutomationOverviewResponse,
     AutomationRuleRequest, AutomationRuleResponse, AutomationRuleUpdateRequest, AutomationStatsResponse, AutomationTestRequest,
@@ -164,8 +163,6 @@ export const api = {
     publishIGContainer: (id: string, containerId: string) => request<InstagramMediaPublishResponse>(`/accounts/${id}/ig-media-publish`, { method: 'POST', body: JSON.stringify({ containerId }) }),
 
     addRedditAccount: (username: string, cookie: string) => request<AccountResponse>('/accounts/reddit', { method: 'POST', body: JSON.stringify({ username, cookie }) }),
-    // fresh skips the server's cache, for a person's explicit Refresh
-    getRedditAnalytics: (id: string, fresh = false) => request<RedditCacheData>(`/accounts/${id}/reddit-analytics${fresh ? '?fresh=1' : ''}`),
 
     // Overview dashboard (tracked content + per-account analytics cache)
     getOverview: () => request<OverviewResponse>('/overview'),

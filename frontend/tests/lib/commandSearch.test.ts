@@ -5,7 +5,7 @@ import { scoreCommand, filterCommands, groupCommands } from '../../src/lib/comma
 const commands = [
   { id: 'overview', group: 'Pages', label: 'Overview', keywords: ['Analytics'] },
   { id: 'videos', group: 'Pages', label: 'Videos', keywords: ['Analytics'] },
-  { id: 'reddit-posts', group: 'Pages', label: 'Reddit posts', keywords: ['Analytics'] },
+  { id: 'instagram', group: 'Pages', label: 'Instagram content', keywords: ['Analytics'] },
   { id: 'acct', group: 'Accounts', label: 'Daily Café Vlogs', keywords: ['YouTube', 'cafevlogs'] },
   { id: 'theme-dark', group: 'Theme', label: 'Use dark theme', keywords: ['appearance', 'dusk'] },
 ];
@@ -26,8 +26,8 @@ test('keywords and groups are searchable', () => {
 });
 
 test('every word in the query must match', () => {
-  assert.deepEqual(filterCommands(commands, 'reddit posts').map(c => c.id), ['reddit-posts']);
-  assert.deepEqual(filterCommands(commands, 'reddit videos'), []);
+  assert.deepEqual(filterCommands(commands, 'instagram content').map(c => c.id), ['instagram']);
+  assert.deepEqual(filterCommands(commands, 'instagram videos'), []);
 });
 
 test('matching ignores case and accents', () => {
