@@ -174,11 +174,22 @@ Trigger `publish-scheduled.yml` manually via GitHub Actions UI -> Actions -> "In
 
 Native binaries such as workerd, esbuild, rollup, lightningcss and Tailwind's oxide are optional dependencies, one package per platform. npm skips an optional package it fails to download and still reports a successful install, so a run could reach the Worker bundle without `@cloudflare/workerd-linux-64` (this happened once, on PR #81). `scripts/check-platform-packages.ts` reads the root `package-lock.json`, keeps the optional packages whose `os`, `cpu` and libc match the machine (the glibc and musl builds are told apart by name when the lockfile has no `libc` field), and exits 1 naming any that are missing. Every workflow runs it after `npm ci` and, if it fails, runs `npm ci` and the check once more; a second failure stops the job. Run it locally with `node scripts/check-platform-packages.ts`.
 
+## Pinned Actions
+
+Every third-party action is pinned to a full commit SHA, with the tag it came from in a comment (`actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4`). Whoever controls an action's repository can move a tag to different code; a commit cannot change, so a compromised action release cannot reach the deploy secrets without a change to this repository. The `@v4` mentions above name the version each pin came from.
+
+To update a pin, resolve the new tag to its commit and replace the SHA and the comment together:
+
+```bash
+gh api repos/actions/checkout/commits/v4 --jq .sha
+```
+
 ## Adding a New Workflow
 
 1. Create `.github/workflows/my-workflow.yml`
 2. Add appropriate path filters to avoid unnecessary runs
-3. If the workflow needs project dependencies, run `actions/setup-node` with Node 24, `cache-dependency-path: package-lock.json` and the install step the other workflows use (`npm ci` at the repository root, then `node scripts/check-platform-packages.ts`, installing again once if it fails); there are no lockfiles inside `backend/`, `frontend/` or `site/`
-4. If it ships code, run `npm run typecheck` (or the workspace's `typecheck` script) before the deploy step
-5. Document it in `docs/architecture/cloudflare/CI_CD.md` (this file)
-6. Add any required secrets via GitHub repo -> Settings -> Secrets -> Actions
+3. Pin every action to a full commit SHA with its tag in a comment (see Pinned Actions)
+4. If the workflow needs project dependencies, run `actions/setup-node` with Node 24, `cache-dependency-path: package-lock.json` and the install step the other workflows use (`npm ci` at the repository root, then `node scripts/check-platform-packages.ts`, installing again once if it fails); there are no lockfiles inside `backend/`, `frontend/` or `site/`
+5. If it ships code, run `npm run typecheck` (or the workspace's `typecheck` script) before the deploy step
+6. Document it in `docs/architecture/cloudflare/CI_CD.md` (this file)
+7. Add any required secrets via GitHub repo -> Settings -> Secrets -> Actions

@@ -7,6 +7,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Security
+
+- Every GitHub Actions step is pinned to a full commit instead of a movable tag, so a compromised action release cannot reach the deploy secrets (#148)
+
 ### Documentation
 
 - A security review workflow: every change states its security effect, substantial changes get targeted checks with the Cloudflare and Trail of Bits skills and Semgrep while they are built, and pull requests carry a Security section (`docs/workflows/SECURITY_REVIEW.md`, #148)
