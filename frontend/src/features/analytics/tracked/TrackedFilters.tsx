@@ -14,7 +14,7 @@ export default function TrackedFilters({ filters }: TrackedFiltersProps) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
-        <SearchField value={filters.query} onChange={filters.setQuery} placeholder="Search titles, channels, subreddits and labels" className="min-w-56 flex-1" />
+        <SearchField value={filters.query} onChange={filters.setQuery} placeholder="Search titles, channels and labels" className="min-w-56 flex-1" />
         {categories.length > 0 && (
           <Select
             value={filters.categoryFilter}
@@ -32,7 +32,7 @@ export default function TrackedFilters({ filters }: TrackedFiltersProps) {
         )}
         <SortSelect options={SORT_OPTIONS} value={filters.sort} onChange={filters.setSort} />
       </div>
-      <FilterChips label="Content type" options={typeChipsOf(filters.stats)} value={filters.typeFilter} onChange={filters.setTypeFilter} />
+      <FilterChips label="Video type" options={typeChipsOf(filters.stats)} value={filters.typeFilter} onChange={filters.setTypeFilter} />
     </div>
   );
 }

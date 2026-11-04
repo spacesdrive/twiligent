@@ -1,6 +1,6 @@
 import {
-  Award, BarChart3, BookmarkCheck, Calendar, Camera, CirclePlay, Clapperboard, Clock, Film, Flame, Gauge, Hash, Heart, Image,
-  MessageSquare, MessagesSquare, Percent, Scissors, Star, Tag, ThumbsUp, Timer, Trophy, UserPlus, Users, Video, Eye,
+  BarChart3, BookmarkCheck, Calendar, Camera, CirclePlay, Clapperboard, Clock, Film, Flame, Gauge, Hash, Heart, Image,
+  MessageSquare, Percent, Scissors, Tag, ThumbsUp, Timer, Trophy, UserPlus, Users, Video, Eye,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -11,9 +11,6 @@ export const METRIC_ICONS = {
   likes: ThumbsUp,
   instagramLikes: Heart,
   comments: MessageSquare,
-  karma: Award,
-  awards: Star,
-  upvoteRate: Percent,
   rate: Percent,
   audience: Users,
   following: UserPlus,
@@ -23,7 +20,6 @@ export const METRIC_ICONS = {
   instagram: Camera,
   reels: Clapperboard,
   posts: Image,
-  redditPosts: MessagesSquare,
   tracked: BookmarkCheck,
   category: Tag,
   tags: Hash,

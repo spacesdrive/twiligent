@@ -109,20 +109,6 @@ function uploadToCloudinary(file: File, cloudConfig: CloudinaryUploadConfig, { o
     });
 }
 
-// screenshots need no progress events and show cloudinary's own error message
-async function uploadImage(file: File, cloudConfig: CloudinaryUploadConfig): Promise<string> {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('upload_preset', cloudConfig.uploadPreset);
-
-    const res = await fetch(`${CLOUDINARY_API}/${cloudConfig.cloudName}/image/upload`, { method: 'POST', body: formData });
-    const json = await res.json() as CloudinaryUploadBody;
-    if (!res.ok || !json.secure_url) {
-        throw new Error(json.error?.message || 'Cloudinary did not return an image URL');
-    }
-    return json.secure_url;
-}
-
 export const api = {
     health: () => request<HealthResponse>('/health'),
 
@@ -154,7 +140,6 @@ export const api = {
 
     getCloudinaryConfig: () => request<CloudinaryConfigResponse>('/cloudinary-config'),
     uploadToCloudinary,
-    uploadImage,
 
     // Instagram Publishing
     getIGPublishingLimit: (id: string) => request<InstagramPublishingLimitResponse>(`/accounts/${id}/ig-publishing-limit`),
@@ -166,9 +151,9 @@ export const api = {
     // Overview dashboard (tracked content + per-account analytics cache)
     getOverview: () => request<OverviewResponse>('/overview'),
 
-    // Tracked Content (Reddit posts and YouTube videos)
+    // Tracked content (YouTube videos)
     getTrackedContent: () => request<TrackedContentItem[]>('/tracked-content'),
-    addTrackedContent: (url: string, accountId: string | null, label: string, category: string) => request<TrackedContentItem>('/tracked-content', { method: 'POST', body: JSON.stringify({ url, accountId, label, category }) }),
+    addTrackedContent: (url: string, label: string, category: string) => request<TrackedContentItem>('/tracked-content', { method: 'POST', body: JSON.stringify({ url, label, category }) }),
     updateTrackedContent: (id: string, updates: TrackedContentUpdateRequest) => request<TrackedContentItem>(`/tracked-content/${id}`, { method: 'PUT', body: JSON.stringify(updates) }),
     deleteTrackedContent: (id: string) => request<SuccessResponse>(`/tracked-content/${id}`, { method: 'DELETE' }),
     refreshTrackedContent: (id: string) => request<TrackedContentItem>(`/tracked-content/${id}/refresh`, { method: 'POST' }),

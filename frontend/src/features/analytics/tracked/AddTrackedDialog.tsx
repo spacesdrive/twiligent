@@ -3,16 +3,14 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Spinner } from '@/components/ui/spinner';
 import { FieldRow } from '@/components/DetailPanel';
 import { PlatformBadge } from '@/components/platform';
 import CategoryPicker from './CategoryPicker';
-import type { AppAccount } from '../../../utils/formatters';
 import type { AddTracked } from './useAddTracked';
 
 interface LinkStatusProps {
-  detectedType: 'reddit' | 'youtube' | null;
+  detectedType: 'youtube' | null;
 }
 
 // a found link is confirmed as soon as it is pasted; the region stays mounted so the confirmation is announced
@@ -22,7 +20,7 @@ function LinkStatus({ detectedType }: LinkStatusProps) {
       {detectedType && (
         <p className="flex items-center gap-1.5 text-small text-success">
           <PlatformBadge platform={detectedType} className="h-5" />
-          {detectedType === 'youtube' ? 'YouTube video found' : 'Reddit post found'}
+          YouTube video found
         </p>
       )}
     </div>
@@ -31,23 +29,18 @@ function LinkStatus({ detectedType }: LinkStatusProps) {
 
 export interface AddTrackedDialogProps {
   add: AddTracked;
-  redditAccounts: AppAccount[];
   categories: string[];
 }
 
-export default function AddTrackedDialog({ add, redditAccounts, categories }: AddTrackedDialogProps) {
+export default function AddTrackedDialog({ add, categories }: AddTrackedDialogProps) {
   const { draft, detectedType, adding } = add;
   const { url } = draft;
-  const accountItems = [
-    { value: 'none', label: 'No account (public posts only)' },
-    ...redditAccounts.map(account => ({ value: account.id, label: `u/${account.username}` })),
-  ];
   return (
     <Dialog open={add.open} onOpenChange={add.handleOpenChange}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Track content</DialogTitle>
-          <DialogDescription>Paste a Reddit post or a YouTube video or Shorts link.</DialogDescription>
+          <DialogDescription>Paste a YouTube video or Shorts link.</DialogDescription>
         </DialogHeader>
         <form id="track-form" onSubmit={add.handleAdd} noValidate className="flex flex-col gap-5">
           <FieldRow label="Link" htmlFor="track-url" error={add.urlError ?? undefined}>
@@ -64,20 +57,6 @@ export default function AddTrackedDialog({ add, redditAccounts, categories }: Ad
             />
           </FieldRow>
           <LinkStatus detectedType={detectedType} />
-
-          {detectedType === 'reddit' && (
-            <FieldRow label="Fetch with account" hint="A session cookie helps Reddit accept requests from the server." htmlFor="track-account">
-              <Select value={add.accountId} onValueChange={add.setAccountId as (value: string | null) => void} items={accountItems}>
-                <SelectTrigger id="track-account" className="w-full"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="none">No account (public posts only)</SelectItem>
-                    {redditAccounts.map(account => <SelectItem key={account.id} value={account.id}>u/{account.username}</SelectItem>)}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-            </FieldRow>
-          )}
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
             <FieldRow label="Label" optional htmlFor="track-label">

@@ -8,7 +8,6 @@ import NoResults from '@/components/NoResults';
 import { EmptyState, ErrorState } from '@/components/StateViews';
 import { resultCountLabel } from '@/lib/library';
 import { useAppContext } from '../../../context/AppContext';
-import { useCloudinaryConfig } from '../../../hooks/use-cloudinary-config';
 import AddTrackedDialog from './AddTrackedDialog';
 import BulkCategoryBar from './BulkCategoryBar';
 import EditTrackedDialog from './EditTrackedDialog';
@@ -27,17 +26,15 @@ import { useTrackedSelection } from './useTrackedSelection';
 const RESULTS_ID = 'tracked-results';
 
 export default function TrackedContent() {
-  const { accounts, showToast } = useAppContext();
-  const redditAccounts = accounts.filter(account => account.platform === 'reddit');
+  const { showToast } = useAppContext();
   const tracked = useTrackedItems(showToast);
   const { setItems, replaceItem } = tracked;
-  const cloudConfig = useCloudinaryConfig();
   const filters = useTrackedFilters(tracked.items);
   const selection = useTrackedSelection(filters.filtered);
   const bulk = useBulkCategory({ selection, setItems, showToast });
   const removal = useTrackedDelete({ setItems, dropSelection: selection.drop, showToast });
-  const add = useAddTracked({ redditAccounts, setItems, showToast });
-  const editor = useTrackedEditor({ cloudConfig, replaceItem, showToast });
+  const add = useAddTracked({ setItems, showToast });
+  const editor = useTrackedEditor({ replaceItem, showToast });
   const isEmpty = !tracked.loading && !tracked.error && tracked.items.length === 0;
 
   const typeLabel = typeChipsOf(filters.stats).find(chip => chip.value === filters.typeFilter && chip.value !== 'all')?.label;
@@ -51,7 +48,7 @@ export default function TrackedContent() {
   const header = (
     <PageHeader
       title="Tracked content"
-      description="Reddit posts and YouTube videos you follow, with karma, likes and comments."
+      description="YouTube videos you follow, with their views, likes and comments."
       actions={!isEmpty && (
         <Button onClick={() => add.setOpen(true)}>
           <Plus data-icon="inline-start" aria-hidden="true" />
@@ -94,7 +91,7 @@ export default function TrackedContent() {
           <EmptyState
             icon={<Bookmark />}
             title="Nothing tracked yet"
-            description="Paste a Reddit post or YouTube video link to follow its karma, likes and comments."
+            description="Paste a YouTube video or Shorts link to follow its views, likes and comments."
             action={<Button onClick={() => add.setOpen(true)}><Plus data-icon="inline-start" aria-hidden="true" />Track content</Button>}
           />
         </SurfaceBox>
@@ -102,11 +99,11 @@ export default function TrackedContent() {
         <>
           <TrackedMetrics stats={filters.stats} />
           <TrackedFilters filters={filters} />
-          <ActiveFilters countLabel={resultCountLabel(filters.filtered.length, tracked.items.length, 'items')} filters={activeFilters} onClearAll={filters.clearFilters} />
+          <ActiveFilters countLabel={resultCountLabel(filters.filtered.length, tracked.items.length, 'videos')} filters={activeFilters} onClearAll={filters.clearFilters} />
           {selection.someSelected && <BulkCategoryBar selectedCount={selection.selected.size} bulk={bulk} onClear={selection.clear} />}
           <div id={RESULTS_ID} tabIndex={-1} className="outline-none">
             {filters.filtered.length === 0 ? (
-              <SurfaceBox><NoResults noun="items" query={filters.query} onClear={filters.clearFilters} /></SurfaceBox>
+              <SurfaceBox><NoResults noun="videos" query={filters.query} onClear={filters.clearFilters} /></SurfaceBox>
             ) : (
               <TrackedTable
                 filtered={filters.filtered}
@@ -121,7 +118,7 @@ export default function TrackedContent() {
         </>
       )}
 
-      <AddTrackedDialog add={add} redditAccounts={redditAccounts} categories={filters.categories} />
+      <AddTrackedDialog add={add} categories={filters.categories} />
       <EditTrackedDialog editor={editor} categories={filters.categories} />
     </div>
   );
