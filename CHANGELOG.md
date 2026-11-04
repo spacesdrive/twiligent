@@ -7,6 +7,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-11-05
+
+The database part of removing Reddit. What an instance owner must do: deploy 2.0.0 or later first, export any Reddit rows you want to keep (the queries are in `docs/platform-v2/DATABASE_MIGRATION.md`), then run `npm run db:push` and `npm run db:schema`. Until then the app keeps working and simply ignores the Reddit rows.
+
+### Removed
+
+- Reddit accounts, including the session cookies and encrypted passwords they stored, and tracked Reddit posts are deleted from the database (#145)
+- `tracked_posts.account_id`, its foreign key and its check, which only Reddit items used (#145)
+
+### Changed
+
+- Accounts allow only YouTube and Instagram, tracked items only YouTube videos, and the one-account-per-user index no longer has a Reddit branch (#145)
+
 ## [2.0.1] - 2026-11-05
 
 Security fixes from the first full audit (`docs/platform-v2/SECURITY_AUDIT.md`). What an instance owner must do: deploy as usual. Connecting Instagram now returns to the Accounts page, which finishes the connection, so keep the app and the Worker on the same version.
