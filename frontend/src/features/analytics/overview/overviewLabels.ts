@@ -23,7 +23,8 @@ export interface MetricTabStats {
 export interface MetricTab {
   value: string;
   label: string;
-  figure: string | number;
+  // the exact figure; the tile rounds it and offers the full value
+  figure: number;
   detail: string;
 }
 
@@ -59,19 +60,19 @@ export function metricTabsOf(accounts: OverviewAccountFields[], stats: MetricTab
   const { totals, cacheTotals, trackedStats, summary } = stats;
   return [
     {
-      value: 'audience', label: 'Audience', figure: fmtNum(summary.totalAudience),
+      value: 'audience', label: 'Audience', figure: summary.totalAudience,
       detail: detailOf([
         partOf(totals.subscribers, 'subscribers'), partOf(totals.followers, 'followers'), partOf(totals.karma, 'karma'),
       ], 'No data yet'),
     },
     {
-      value: 'views', label: 'Views', figure: fmtNum(summary.totalViews),
+      value: 'views', label: 'Views', figure: summary.totalViews,
       detail: detailOf([
         partOf(totals.views, 'YouTube'), partOf(cacheTotals.igViews, 'Instagram'), partOf(summary.trackedViewTotal, 'tracked'),
       ], 'No views recorded yet'),
     },
     {
-      value: 'content', label: 'Content', figure: fmtNum(summary.totalContent),
+      value: 'content', label: 'Content', figure: summary.totalContent,
       detail: detailOf([
         partOf(totals.videos, 'videos'), partOf(totals.posts, 'Instagram'),
         partOf(cacheTotals.rdPosts, 'Reddit'), partOf(trackedStats.total, 'tracked'),
@@ -79,11 +80,11 @@ export function metricTabsOf(accounts: OverviewAccountFields[], stats: MetricTab
     },
     { value: 'accounts', label: 'Accounts', figure: accounts.length, detail: platformSummary(accounts) },
     {
-      value: 'comments', label: 'Comments', figure: fmtNum(summary.totalComments),
+      value: 'comments', label: 'Comments', figure: summary.totalComments,
       detail: syncDetail(isSyncing, summary.totalComments),
     },
     {
-      value: 'likes', label: 'Likes', figure: fmtNum(summary.totalLikes),
+      value: 'likes', label: 'Likes', figure: summary.totalLikes,
       detail: syncDetail(isSyncing, summary.totalLikes),
     },
   ];

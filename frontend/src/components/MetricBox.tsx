@@ -3,6 +3,9 @@ import { TrendingUp, TrendingDown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { trendTone } from '@/lib/library';
+import Num from './Num';
+import RollingNumber from './RollingNumber';
+import { RollingValueContext } from './rollingValue';
 
 export interface MetricBoxProps {
   icon?: React.ReactNode;
@@ -26,6 +29,13 @@ export interface MetricBoxProps {
 
 function textOf(node: React.ReactNode): string | undefined {
   return typeof node === 'string' ? node : undefined;
+}
+
+// a number or a formatted string rolls to its new value; a number also offers its exact value, as Num does
+function shownValue(value: React.ReactNode): React.ReactNode {
+  if (typeof value === 'number') return <Num value={value} />;
+  if (typeof value === 'string') return <RollingNumber text={value} />;
+  return value;
 }
 
 // Quiet metric tile: neutral icon, large tabular value, label and one line of context.
@@ -101,7 +111,7 @@ export default function MetricBox({
               small ? 'text-page-title' : 'text-metric',
             )}
           >
-            {value}
+            <RollingValueContext.Provider value>{shownValue(value)}</RollingValueContext.Provider>
           </p>
           {(period || detail) && (
             <p className="truncate text-caption text-ink-faint" title={context || undefined}>
