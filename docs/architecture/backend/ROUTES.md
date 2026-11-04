@@ -38,7 +38,7 @@ Registered on `publicRoutes` in `routes/index.ts`.
 |---|---|---|---|
 | GET | `/api/health` | `healthController.getHealth` | Liveness: returns `{ status: 'ok', timestamp }` without touching the database |
 | GET | `/api/health/ready` | `healthController.getReadiness` | Readiness: the Supabase secrets are set and one database read succeeds; returns `{ status: 'ready', databaseMs, timestamp }`, or `503 NOT_CONFIGURED` naming a missing secret, or `500 DATABASE_ERROR` |
-| GET | `/api/auth/instagram/callback` | `instagramAuthController.handleInstagramCallback` | OAuth code exchange; always redirects the browser back to the accounts page with `ig_connected=true`, `ig_connected=reconnected` (the account was already connected and its token was renewed) or `ig_error=<reason>`, never a JSON error |
+| GET | `/api/auth/instagram/callback` | `instagramAuthController.handleInstagramCallback` | Checks the signed state and redirects the browser to the accounts page with `#ig_code=<code>&ig_state=<state>` for the app to complete, or `?ig_error=<reason>`; never exchanges the code itself and never answers JSON |
 | POST | `/api/auth/email-hook` | `authHookController.sendAuthEmail` (`routes/authHookRoutes.ts`) | Supabase Auth's Send Email hook: sends sign-up, password reset and other auth emails through Resend. Answers `{}` |
 | GET | `/api/webhooks/instagram` | `instagramWebhookController.verifyInstagramWebhook` (`routes/instagramWebhookRoutes.ts`) | Meta's webhook check: answers the bare `hub.challenge` as text when `hub.mode=subscribe` and `hub.verify_token` matches `INSTAGRAM_WEBHOOK_VERIFY_TOKEN`; 403 otherwise, 503 when the token is not set |
 | POST | `/api/webhooks/instagram` | `instagramWebhookController.receiveInstagramWebhook` | Instagram comment notifications and message events (messages and postbacks), signed by Meta. Stores the comments and a follow-up for each message that answers a followers-only reply, answers `{ success: true }`, then sends the matched replies and the follow-ups |
@@ -106,6 +106,7 @@ Controllers call `YouTubeAnalyticsService` and `InstagramAnalyticsService`. Chan
 | Method | Path | File | Purpose |
 |---|---|---|---|
 | GET | `/api/auth/instagram/url` | `instagramAuthRoutes.ts`, `instagramAuthController.getInstagramAuthUrl` | Generates Instagram OAuth URL with HMAC-signed state. Returns `{ url }`; 503 when the Instagram app credentials are not set |
+| POST | `/api/auth/instagram/complete` | `instagramAuthRoutes.ts`, `instagramAuthController.completeInstagramConnection` | Body `{ code, state }` from the callback. Exchanges the code and connects or renews the account only when the state was started by the caller: `{ success, outcome: "connected" or "reconnected" }`; 400 for an expired or changed state, 403 for a state another user started, 503 when the app credentials are not set. Counts against the quota rule |
 
 ### Publishing
 
@@ -130,7 +131,7 @@ Controllers call `ScheduledPostService` (`services/scheduledPostService.ts`).
 | PUT | `/api/scheduled-posts/:id` | `scheduledPostRoutes.ts`, `scheduledPostController.updateScheduledPost` | Edit a pending post (caption, scheduled time, media, etc.); 400 for a post that is not pending |
 | DELETE | `/api/scheduled-posts/:id` | `scheduledPostRoutes.ts`, `scheduledPostController.deleteScheduledPost` | Delete a single post; 400 while it is publishing |
 | DELETE | `/api/scheduled-posts` | `scheduledPostRoutes.ts`, `scheduledPostController.deleteAllScheduledPosts` | Delete all posts except those with `status: 'publishing'`; returns `{ deleted, kept }` |
-| GET | `/api/process-scheduled` | `scheduledPostRoutes.ts`, `scheduledPostController.publishDuePosts` | Manual trigger - runs `scheduledPublisher.publishDue()` immediately for every user's due posts (dev/test) |
+| GET | `/api/process-scheduled` | `scheduledPostRoutes.ts`, `scheduledPostController.publishDuePosts` | Manual trigger - runs `scheduledPublisher.publishDueForUser()` immediately for the caller's own due and stale posts only; the cron and the GitHub Actions publisher serve everyone |
 | POST | `/api/process-scheduled` | `scheduledPostRoutes.ts`, `scheduledPostController.publishDuePosts` | Same as above |
 
 ### Overview

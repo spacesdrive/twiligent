@@ -336,7 +336,7 @@ After any change to `scripts/publish-scheduled.ts`, `backend/lib/scheduledPublis
 2. Watch the run output
 3. Verify: "No posts due for publishing" (if no scheduled posts) or successful publish
 
-If you have a test post scheduled in the near future, use `GET /api/process-scheduled` to run the Worker's publisher (`scheduledPublisher.publishDue()`) manually.
+If you have a test post scheduled in the near future, use `GET /api/process-scheduled` to run the Worker's publisher for your own due posts (`scheduledPublisher.publishDueForUser()`) manually.
 
 ## Future Test Infrastructure
 
