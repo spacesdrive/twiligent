@@ -1,20 +1,18 @@
-import React, { useId } from 'react';
-import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip as ReTooltip, ResponsiveContainer,
-} from 'recharts';
+import React from 'react';
+import { AreaChart } from '@/components/ui/area-chart';
 import { fmtNum, fmtNumFull } from '../utils/formatters';
-import type { NumberLike } from '../utils/formatters';
-import { axisProps, gridProps, tooltipStyle, trendSummary } from '@/lib/chart';
+import { trendSummary } from '@/lib/chart';
 import ChartFigure from './ChartFigure';
+import ExactTooltip from './ExactTooltip';
 
-// a value over time; for a ranking of separate things use RankingBarChart, since a line implies a sequence
 export interface MetricAreaChartProps {
-  data?: readonly object[] | null;
+  data?: readonly Record<string, unknown>[] | null;
   dataKey: string;
   label: string;
-  // names the plot and its table; defaults to the label
+  // names the plot for screen readers; defaults to the label
   title?: string;
+  // read in place of the plot; defaults to how the value moved from the first point to the last
+  description?: string;
   color?: string;
   height?: number;
   emptyMessage?: React.ReactNode;
@@ -25,61 +23,35 @@ export default function MetricAreaChart({
   dataKey,
   label,
   title = label,
+  description,
   color = 'var(--chart-1)',
   height = 240,
   emptyMessage = 'No data to display',
 }: MetricAreaChartProps) {
-  // useId keeps each instance's gradient unique; colons are invalid inside a url() reference
-  const gradientId = `metric-area-${useId().replace(/:/g, '')}`;
-
   if (!data || data.length === 0) {
     return <p className="py-8 text-center text-small text-ink-faint">{emptyMessage}</p>;
   }
 
-  const rows = data as Record<string, unknown>[];
-  const points = rows.map(row => ({ name: String(row.name ?? ''), value: Number(row[dataKey] ?? 0) }));
-  const summary = trendSummary(points, fmtNum, label.toLowerCase());
+  const points = data.map(row => ({ name: String(row.name ?? ''), value: Number(row[dataKey] ?? 0) }));
 
   return (
-    <ChartFigure
-      summary={summary}
-      table={{
-        caption: title,
-        columns: [
-          { key: 'name', label: 'Period' },
-          { key: dataKey, label, numeric: true, format: value => fmtNumFull(value as NumberLike) },
-        ],
-        rows,
-      }}
-    >
-      <ResponsiveContainer width="100%" height={height} debounce={200}>
-        <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }} title={title} desc={summary}>
-          <defs>
-            <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%"  stopColor={color} stopOpacity={0.2} />
-              <stop offset="95%" stopColor={color} stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid {...gridProps} vertical={false} />
-          <XAxis dataKey="name" {...axisProps} interval="preserveStartEnd" />
-          <YAxis {...axisProps} tickFormatter={fmtNum} width={48} allowDecimals={false} />
-          <ReTooltip
-            contentStyle={tooltipStyle}
-            cursor={{ stroke: 'var(--line-strong)' }}
-            formatter={(v) => [fmtNumFull(v as NumberLike), label]}
-          />
-          <Area
-            type="monotone"
-            dataKey={dataKey}
-            name={label}
-            stroke={color}
-            strokeWidth={2}
-            fill={`url(#${gradientId})`}
-            dot={{ r: 3, fill: color, stroke: 'var(--surface-raised)', strokeWidth: 2 }}
-            activeDot={{ r: 6 }}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
+    <ChartFigure label={title} description={description ?? trendSummary(points, fmtNumFull, label.toLowerCase())}>
+      <AreaChart
+        data={[...data]}
+        dataKey="name"
+        config={{ [dataKey]: { label, color } }}
+        containerHeight={height}
+        legend={false}
+        tooltip={<ExactTooltip />}
+        valueFormatter={fmtNum}
+        xAxisProps={{ interval: 'preserveStartEnd' }}
+        yAxisProps={{ allowDecimals: false }}
+        areaProps={{
+          type: 'monotone',
+          dot: { r: 3, fill: color, stroke: 'var(--surface-raised)', strokeWidth: 2 },
+          activeDot: { r: 6 },
+        }}
+      />
     </ChartFigure>
   );
 }
