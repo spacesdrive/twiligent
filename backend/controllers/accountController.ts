@@ -1,6 +1,6 @@
 import { controller, pathParam, servicesFor } from './http.ts';
 import { jsonBody } from '../middleware/validate.ts';
-import { parseChannelInput, parseInstagramToken, parseRedditAccount } from '../validators/accountValidators.ts';
+import { parseChannelInput, parseInstagramToken } from '../validators/accountValidators.ts';
 import { safeAccount } from '../lib/safeAccount.ts';
 import type {
     AccountListResponse, AccountRefreshAllResponse, AccountResponse, SuccessResponse, YouTubeAccountAddResponse,
@@ -23,11 +23,6 @@ export const resolveChannel = controller.createHandlers(jsonBody(parseChannelInp
 export const addYouTubeAccount = controller.createHandlers(jsonBody(parseChannelInput), async c => {
     const account = await servicesFor(c).accounts.addYouTube(c.get('userId'), c.req.valid('json').input);
     return c.json({ success: true, account } satisfies YouTubeAccountAddResponse);
-});
-
-export const addRedditAccount = controller.createHandlers(jsonBody(parseRedditAccount), async c => {
-    const account = await servicesFor(c).accounts.addReddit(c.get('userId'), c.req.valid('json'));
-    return c.json({ success: true, account: safeAccount(account) } satisfies AccountResponse);
 });
 
 export const addInstagramAccount = controller.createHandlers(jsonBody(parseInstagramToken), async c => {

@@ -24,8 +24,8 @@ const storedAccounts = [
     accountRow({ id: 'yt1', platform: 'youtube', channelId: CHANNEL_A, title: 'Old title', subscriberCount: 1 }),
     accountRow({ id: 'ig1', platform: 'instagram', igUserId: '1789', username: 'ribbon', accessToken: 'IGTOKEN', tokenExpiresAt: '2026-09-05T00:00:00.000Z', followersCount: 1 }),
     accountRow({ id: 'ig2', platform: 'instagram', igUserId: '2000', username: 'notoken' }),
-    accountRow({ id: 'rd1', platform: 'reddit', username: 'ribbon_r', cookie: 'COOKIE', totalKarma: 1 }),
-    accountRow({ id: 'rd2', platform: 'reddit', username: 'nocookie' }),
+    // a platform Twiligent no longer supports; the app never reads its rows
+    accountRow({ id: 'old1', platform: 'retired', username: 'old_profile' }),
     accountRow({ id: 'yt2', platform: 'youtube', channelId: 'UCmissingmissingmissing0' }),
     accountRow({ id: 'other', platform: 'youtube', channelId: CHANNEL_NEW }, 'user-2'),
 ];
@@ -70,11 +70,6 @@ function instagramReply(url: URL) {
 function platformServer(request: RecordedRequest) {
     const url = new URL(request.url);
     if (url.hostname === 'graph.instagram.com') return instagramReply(url);
-    if (url.hostname === 'www.reddit.com') {
-        const username = url.pathname.split('/')[2];
-        if (username === 'missing') return reply({}, 404, 'Not Found');
-        return reply({ data: { name: username === 'ribbon_r' ? 'ribbon_r' : 'NewUser', total_karma: 70, link_karma: 50, comment_karma: 20, icon_img: 'https://i?a=1&amp;b=2', created_utc: 1600000000 } });
-    }
     const params = url.searchParams;
     if (params.get('forHandle')) return reply({ items: [{ id: params.get('forHandle') === 'existing' ? CHANNEL_A : CHANNEL_NEW }] });
     if (params.get('forUsername') || params.get('q')) return reply({ items: [] });
@@ -133,16 +128,6 @@ describe('accounts routes golden output', () => {
         ]), 'accountsRoutes.addYouTube');
     });
 
-    test('adds Reddit accounts and rejects missing fields and duplicates', async () => {
-        assertGolden(await runScenario([
-            ['POST', '/accounts/reddit', { cookie: 'C' }],
-            ['POST', '/accounts/reddit', { username: 'someone' }],
-            ['POST', '/accounts/reddit', { username: 'U/NewUser ', cookie: 'NEWCOOKIE' }],
-            ['POST', '/accounts/reddit', { username: 'ribbon_r', cookie: 'C2' }],
-            ['POST', '/accounts/reddit', { username: 'missing', cookie: 'C3' }],
-        ]), 'accountsRoutes.addReddit');
-    });
-
     test('adds Instagram accounts with and without a long-lived exchange', async () => {
         assertGolden(await runScenario([
             ['POST', '/accounts/instagram', {}],
@@ -168,14 +153,13 @@ describe('accounts routes golden output', () => {
             ['POST', '/accounts/nope/refresh'],
             ['POST', '/accounts/ig1/refresh'],
             ['POST', '/accounts/ig2/refresh'],
-            ['POST', '/accounts/rd1/refresh'],
-            ['POST', '/accounts/rd2/refresh'],
+            ['POST', '/accounts/old1/refresh'],
             ['POST', '/accounts/yt1/refresh'],
             ['POST', '/accounts/yt1/refresh', undefined, {}],
             ['POST', '/accounts/yt2/refresh'],
             ['POST', '/accounts/other/refresh'],
             ['POST', '/accounts/nope/refresh-ig-token'],
-            ['POST', '/accounts/rd1/refresh-ig-token'],
+            ['POST', '/accounts/yt1/refresh-ig-token'],
             ['POST', '/accounts/ig2/refresh-ig-token'],
             ['POST', '/accounts/ig1/refresh-ig-token'],
             ['POST', '/accounts/ig1/refresh-ig-token'],
@@ -186,7 +170,8 @@ describe('accounts routes golden output', () => {
         assertGolden(await runScenario([
             ['DELETE', '/accounts/nope'],
             ['DELETE', '/accounts/other'],
-            ['DELETE', '/accounts/rd2'],
+            ['DELETE', '/accounts/old1'],
+            ['DELETE', '/accounts/yt2'],
             ['GET', '/accounts'],
         ]), 'accountsRoutes.delete');
     });
@@ -195,7 +180,6 @@ describe('accounts routes golden output', () => {
         assertGolden(await runScenario([
             ['GET', '/accounts'],
             ['POST', '/accounts', { input: '@creator' }],
-            ['POST', '/accounts/reddit', { username: 'NewUser', cookie: 'C' }],
             ['POST', '/accounts/instagram', { accessToken: 'IGTOKEN' }, {}],
             ['POST', '/accounts/refresh-all'],
             ['POST', '/accounts/ig1/refresh'],
@@ -204,21 +188,21 @@ describe('accounts routes golden output', () => {
         ], { supabase: brokenSupabase }), 'accountsRoutes.dbFailure');
     });
 
-    test('refreshing an account without a channel id or username fails before calling the platform', async () => {
+    test('refreshing an account without a channel id or token fails before calling the platform', async () => {
         const supabase = fakeSupabase([
             accountRow({ id: 'ytOld', platform: 'youtube', title: 'No id' }),
-            accountRow({ id: 'rdOld', platform: 'reddit', cookie: 'COOKIE' }),
+            accountRow({ id: 'igOld', platform: 'instagram', igUserId: '1' }),
         ]);
         const app = mountWithContext(app => app.route('/', accountsRouter), { supabase, redis: fakeRedis(), userId: 'user-1' });
         const single = async (id: string) => JSON.parse((await callRoute(app, 'POST', `/accounts/${id}/refresh`, { env: ENV })).body) as unknown;
         const failure = (message: string) => ({ success: false, code: 'VALIDATION_ERROR', message, requestId: 'req-test' });
         assert.deepEqual(await single('ytOld'), failure('No YouTube channel ID stored - delete this channel and add it again'));
-        assert.deepEqual(await single('rdOld'), failure('No Reddit username stored - delete this account and add it again'));
+        assert.deepEqual(await single('igOld'), failure('No access token stored - reconnect this Instagram account'));
 
         const all = JSON.parse((await callRoute(app, 'POST', '/accounts/refresh-all', { env: ENV })).body) as { results: unknown[] };
         assert.deepEqual(all.results, [
             { id: 'ytOld', success: false, error: 'No YouTube channel ID stored - delete this channel and add it again' },
-            { id: 'rdOld', success: false, error: 'No Reddit username stored - delete this account and add it again' },
+            { id: 'igOld', success: false, error: 'No access token stored - reconnect this Instagram account' },
         ]);
         assert.deepEqual(fetchMock!.requests, []);
     });

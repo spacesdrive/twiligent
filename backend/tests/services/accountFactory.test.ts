@@ -1,10 +1,9 @@
 import { test, describe, before, after, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-    tokenExpiryIso, buildYouTubeAccount, buildRedditAccount, buildInstagramAccount,
+    tokenExpiryIso, buildYouTubeAccount, buildInstagramAccount,
 } from '../../services/accountFactory.ts';
 import type { YouTubeChannelData } from '../../../shared/types/youtube.ts';
-import type { RedditProfile } from '../../../shared/types/reddit.ts';
 
 const FIXED_NOW = Date.parse('2026-09-01T12:00:00Z');
 const NOW_ISO = '2026-09-01T12:00:00.000Z';
@@ -37,15 +36,6 @@ describe('accountFactory', () => {
         assert.equal(account.id, ACCOUNT_ID);
         assert.equal(account.addedAt, NOW_ISO);
         assert.equal(account.lastUpdated, NOW_ISO);
-    });
-
-    test('buildRedditAccount keeps the cookie and prefixes the title', () => {
-        const profile = { username: 'ribbon', totalKarma: 3, postKarma: 2, commentKarma: 1, iconUrl: 'i', createdAt: 'c', isGold: true };
-        assert.deepStrictEqual(buildRedditAccount(profile as RedditProfile, 'COOKIE'), {
-            id: ACCOUNT_ID, platform: 'reddit', username: 'ribbon', title: 'u/ribbon',
-            totalKarma: 3, postKarma: 2, commentKarma: 1, iconUrl: 'i', createdAt: 'c', cookie: 'COOKIE',
-            addedAt: NOW_ISO, lastUpdated: NOW_ISO,
-        });
     });
 
     test('buildInstagramAccount falls back to the username as title and sets the expiry', () => {

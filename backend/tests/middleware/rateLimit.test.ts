@@ -123,7 +123,6 @@ test('quota and publish routes match the endpoints that spend platform API calls
     const quota = (method: string, path: string) => matchesRoute(QUOTA_ROUTES, method, path);
     assert.equal(quota('POST', '/api/accounts'), true);
     assert.equal(quota('GET', '/api/accounts'), false);
-    assert.equal(quota('POST', '/api/accounts/reddit'), true);
     assert.equal(quota('POST', '/api/accounts/instagram'), true);
     assert.equal(quota('POST', '/api/accounts/refresh-all'), true);
     assert.equal(quota('POST', '/api/accounts/abc123/refresh'), true);

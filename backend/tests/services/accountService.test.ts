@@ -27,23 +27,23 @@ function service(accounts: AccountRepository) {
     });
 }
 
-function redditAnswers(t: { after(fn: () => void): void }) {
-    const fetch = mock.method(globalThis, 'fetch', async () => Response.json({ data: { name: 'ribbon_r', total_karma: 3 } }));
+function instagramAnswers(t: { after(fn: () => void): void }) {
+    const fetch = mock.method(globalThis, 'fetch', async () => Response.json({ user_id: '1789', username: 'ribbon' }));
     t.after(() => fetch.mock.restore());
 }
 
 test('an add that loses a race to the same account gets the usual already added answer, not a database error', async t => {
-    redditAnswers(t);
+    instagramAnswers(t);
     const accounts = accountsFailingWith({ code: '23505', message: 'duplicate key value violates unique constraint "accounts_identity_key"' });
-    await assert.rejects(service(accounts).addReddit('user-1', { username: 'ribbon_r', cookie: '' }), (err: Error) => {
+    await assert.rejects(service(accounts).addInstagram('user-1', 'IGTOKEN'), (err: Error) => {
         assert.ok(err instanceof ConflictError);
-        assert.equal(err.message, 'This Reddit account is already added');
+        assert.equal(err.message, 'This Instagram account is already added');
         return true;
     });
 });
 
 test('any other failed insert stays a database error', async t => {
-    redditAnswers(t);
+    instagramAnswers(t);
     const accounts = accountsFailingWith({ code: '08006', message: 'connection failure' });
-    await assert.rejects(service(accounts).addReddit('user-1', { username: 'ribbon_r', cookie: '' }), DatabaseError);
+    await assert.rejects(service(accounts).addInstagram('user-1', 'IGTOKEN'), DatabaseError);
 });

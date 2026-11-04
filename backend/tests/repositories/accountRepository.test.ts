@@ -7,22 +7,22 @@ import type { SupabaseClient } from '../../types/app.ts';
 
 const ROWS = [
     accountRow({ id: 'a1', platform: 'youtube', title: 'Mine' }),
-    accountRow({ id: 'a2', platform: 'reddit', username: 'theirs' }, 'user-2'),
+    accountRow({ id: 'a2', platform: 'instagram', username: 'theirs' }, 'user-2'),
 ];
 
 describe('account repository', () => {
     test('user methods only see the user\'s rows; system methods see every row', async () => {
         const accounts = createAccountRepository(fakeSupabase(ROWS));
         assert.deepEqual((await accounts.listForUser('user-1')).map(account => account.id), ['a1']);
-        assert.deepEqual((await accounts.listByPlatform('reddit')).map(account => account.id), ['a2']);
+        assert.deepEqual((await accounts.listByPlatform('instagram')).map(account => account.id), ['a2']);
         assert.equal(await accounts.findForUser('a2', 'user-1'), null);
-        assert.deepEqual(await accounts.findById('a2'), { id: 'a2', platform: 'reddit', username: 'theirs' });
+        assert.deepEqual(await accounts.findById('a2'), { id: 'a2', platform: 'instagram', username: 'theirs' });
     });
 
     test('an update is one merge in the database that keeps the platform and the fields it does not name', async () => {
         const db = fakeSupabase(ROWS);
         const accounts = createAccountRepository(db);
-        await accounts.updateForUser('a1', { subscriberCount: 5, platform: 'reddit', title: undefined }, 'user-1');
+        await accounts.updateForUser('a1', { subscriberCount: 5, platform: 'instagram', title: undefined }, 'user-1');
         assert.deepEqual(await accounts.findForUser('a1', 'user-1'), { id: 'a1', platform: 'youtube', title: 'Mine', subscriberCount: 5 });
         assert.deepEqual(db.calls[0], {
             type: 'rpc', table: 'merge_account_data', filters: [],
@@ -32,8 +32,8 @@ describe('account repository', () => {
 
     test('the cron form of an update reaches any user\'s account', async () => {
         const db = fakeSupabase(ROWS);
-        await createAccountRepository(db).updateById('a2', { cookie: 'new' });
-        assert.equal((await createAccountRepository(db).findById('a2'))?.cookie, 'new');
+        await createAccountRepository(db).updateById('a2', { accessToken: 'new' });
+        assert.equal((await createAccountRepository(db).findById('a2'))?.accessToken, 'new');
     });
 
     test('updating an account the user does not own is not found', async () => {

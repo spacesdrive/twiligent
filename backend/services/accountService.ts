@@ -1,8 +1,7 @@
 import { resolveChannelId, fetchChannelData } from './youtube/youtubeChannels.ts';
-import { fetchRedditProfile } from './reddit/redditApi.ts';
 import { fetchInstagramProfile } from './instagram/instagramApi.ts';
 import { exchangeForLongLivedToken, refreshLongLivedToken } from './instagram/instagramTokens.ts';
-import { buildYouTubeAccount, buildRedditAccount, buildInstagramAccount } from './accountFactory.ts';
+import { buildYouTubeAccount, buildInstagramAccount } from './accountFactory.ts';
 import { ConflictError, NotConfiguredError, NotFoundError, ValidationError, isUniqueViolation } from '../lib/errors.ts';
 import type { AccountRepository } from '../repositories/accountRepository.ts';
 import type { AnalyticsCacheRepository } from '../repositories/analyticsCacheRepository.ts';
@@ -11,7 +10,6 @@ import type { AppConfig } from '../lib/config.ts';
 import type { RequestContext } from '../types/context.ts';
 import type { Account, AccountRefreshResult, NewAccount } from '../../shared/types/domain.ts';
 import type { YouTubeChannelData } from '../../shared/types/youtube.ts';
-import type { RedditProfile } from '../../shared/types/reddit.ts';
 import type { InstagramProfile } from '../../shared/types/instagram.ts';
 
 export interface AccountServiceDeps {
@@ -20,11 +18,6 @@ export interface AccountServiceDeps {
     audit: AuditRepository;
     config: AppConfig;
     context: RequestContext;
-}
-
-export interface RedditAccountInput {
-    username: string;
-    cookie: string;
 }
 
 export interface RefreshAllOutcome {
@@ -36,7 +29,6 @@ export interface AccountService {
     list(userId: string): Promise<Account[]>;
     resolveChannel(input: string): Promise<YouTubeChannelData>;
     addYouTube(userId: string, input: string): Promise<NewAccount>;
-    addReddit(userId: string, input: RedditAccountInput): Promise<Account>;
     addInstagram(userId: string, accessToken: string): Promise<Account>;
     refresh(userId: string, accountId: string): Promise<Account>;
     refreshAll(userId: string): Promise<RefreshAllOutcome>;
@@ -51,9 +43,7 @@ interface PastedToken {
 
 const DEFAULT_TOKEN_LIFETIME_S = 5184000;
 export const NO_YOUTUBE_KEY_MESSAGE = 'YouTube API key not configured on server';
-export const NO_COOKIE_MESSAGE = 'No session cookie stored - re-add this account with a session cookie from reddit.com DevTools';
 const NO_TOKEN_MESSAGE = 'No access token stored - reconnect this Instagram account';
-const NO_USERNAME_MESSAGE = 'No Reddit username stored - delete this account and add it again';
 const NO_CHANNEL_MESSAGE = 'No YouTube channel ID stored - delete this channel and add it again';
 
 // full adds the fields only a single account refresh updates
@@ -68,15 +58,6 @@ function instagramUpdates(profile: InstagramProfile, full: boolean): Partial<Acc
     };
     if (!full) return updates;
     return { ...updates, biography: profile.biography, website: profile.website };
-}
-
-function redditUpdates(profile: RedditProfile): Partial<Account> {
-    return {
-        totalKarma: profile.totalKarma,
-        postKarma: profile.postKarma,
-        commentKarma: profile.commentKarma,
-        iconUrl: profile.iconUrl,
-    };
 }
 
 function youtubeUpdates(channelData: YouTubeChannelData, full: boolean): Partial<Account> {
@@ -94,7 +75,6 @@ function youtubeUpdates(channelData: YouTubeChannelData, full: boolean): Partial
 }
 
 const CHANNEL_ADDED = 'This channel is already added';
-const REDDIT_ADDED = 'This Reddit account is already added';
 const INSTAGRAM_ADDED = 'This Instagram account is already added';
 
 export function createAccountService({ accounts, cache, audit, config, context }: AccountServiceDeps): AccountService {
@@ -140,11 +120,6 @@ export function createAccountService({ accounts, cache, audit, config, context }
             if (!account.accessToken) throw new ValidationError(NO_TOKEN_MESSAGE);
             return instagramUpdates(await fetchInstagramProfile(account.igUserId, account.accessToken, signal), full);
         }
-        if (account.platform === 'reddit') {
-            if (!account.username) throw new ValidationError(NO_USERNAME_MESSAGE);
-            if (!account.cookie) throw new ValidationError(NO_COOKIE_MESSAGE);
-            return redditUpdates(await fetchRedditProfile(account.username, account.cookie, signal));
-        }
         if (!account.channelId) throw new ValidationError(NO_CHANNEL_MESSAGE);
         return youtubeUpdates(await fetchChannelData(account.channelId, youtubeKey(), signal), full);
     }
@@ -173,18 +148,6 @@ export function createAccountService({ accounts, cache, audit, config, context }
 
             const account = buildYouTubeAccount(channelData);
             await createUnlessAdded(account, userId, CHANNEL_ADDED);
-            return account;
-        },
-
-        async addReddit(userId, { username, cookie }) {
-            const profile = await fetchRedditProfile(username.replace(/^u\//i, '').trim(), cookie, signal);
-            const existing = await accounts.listForUser(userId);
-            if (existing.find(account => account.platform === 'reddit' && account.username === profile.username)) {
-                throw new ConflictError(REDDIT_ADDED);
-            }
-
-            const account = buildRedditAccount(profile, cookie);
-            await createUnlessAdded(account, userId, REDDIT_ADDED);
             return account;
         },
 
