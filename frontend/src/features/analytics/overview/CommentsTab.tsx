@@ -3,10 +3,11 @@ import { Button } from '@/components/ui/button';
 import SurfaceBox from '@/components/SurfaceBox';
 import MetricBox from '@/components/MetricBox';
 import Num from '@/components/Num';
-import RankingBarChart from '@/components/RankingBarChart';
+import MetricAreaChart from '@/components/MetricAreaChart';
 import { EmptyState } from '@/components/StateViews';
+import { SERIES, pointsOf, rankingSummary } from '@/lib/chart';
 import { METRIC_ICONS } from '@/lib/metricIcons';
-import { fmtNum, fmtPercent } from '../../../utils/formatters';
+import { fmtNum, fmtNumFull, fmtPercent } from '../../../utils/formatters';
 import { CATEGORY_SERIES } from './overviewCharts.ts';
 import { pluralWord } from './overviewLabels.ts';
 import type { OverviewStats } from './useOverviewStats';
@@ -20,8 +21,6 @@ export interface CommentsTabProps {
 export default function CommentsTab({ stats }: CommentsTabProps) {
   const { summary, charts } = stats;
   const { totalComments, totalContent } = summary;
-  const byContent = charts.commentByContent.map(point => ({ name: point.name, value: point.comments }));
-  const byCategory = charts.commentByCategory.map(point => ({ name: point.name, value: point.comments }));
   return (
     <>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -43,10 +42,26 @@ export default function CommentsTab({ stats }: CommentsTabProps) {
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <SurfaceBox title="Comments by tracked content" subheader="Top 12 tracked items ranked by comments">
-            <RankingBarChart rows={byContent} label="Comments" title="Comments by tracked content" emptyMessage="Track content to compare comment volume" />
+            <MetricAreaChart
+              data={charts.commentByContent}
+              dataKey="comments"
+              label="Comments"
+              title="Comments by tracked content"
+              description={rankingSummary(pointsOf(charts.commentByContent, 'name', 'comments'), fmtNumFull, 'comments')}
+              color={SERIES.neutral}
+              emptyMessage="Track content to compare comment volume"
+            />
           </SurfaceBox>
           <SurfaceBox title="Comments by category" subheader="Total comments across every item in each category">
-            <RankingBarChart rows={byCategory} label="Comments" title="Comments by category" color={CATEGORY_SERIES} emptyMessage="Assign categories to tracked content to see this breakdown" />
+            <MetricAreaChart
+              data={charts.commentByCategory}
+              dataKey="comments"
+              label="Comments"
+              title="Comments by category"
+              description={rankingSummary(pointsOf(charts.commentByCategory, 'name', 'comments'), fmtNumFull, 'comments')}
+              color={CATEGORY_SERIES}
+              emptyMessage="Assign categories to tracked content to see this breakdown"
+            />
           </SurfaceBox>
         </div>
       )}

@@ -3,11 +3,12 @@ import { Button } from '@/components/ui/button';
 import SurfaceBox from '@/components/SurfaceBox';
 import MetricBox from '@/components/MetricBox';
 import Num from '@/components/Num';
-import RankingBarChart from '@/components/RankingBarChart';
+import MetricAreaChart from '@/components/MetricAreaChart';
 import { EmptyState } from '@/components/StateViews';
 import { PLATFORM_META } from '@/lib/accounts';
+import { SERIES, pointsOf, rankingSummary } from '@/lib/chart';
 import { METRIC_ICONS } from '@/lib/metricIcons';
-import { fmtNum, fmtPercent } from '../../../utils/formatters';
+import { fmtNum, fmtNumFull, fmtPercent } from '../../../utils/formatters';
 import type { OverviewStats } from './useOverviewStats';
 
 const { likes: Likes, karma: Karma, videos: Videos, instagram: Instagram } = METRIC_ICONS;
@@ -24,8 +25,6 @@ export interface LikesTabProps {
 export default function LikesTab({ stats }: LikesTabProps) {
   const { totals, cacheTotals, trackedStats, summary, charts } = stats;
   const { totalLikes } = summary;
-  const karmaRows = charts.karmaByAccount.map(point => ({ name: point.name, value: point.karma }));
-  const engagementRows = charts.engagementByContent.map(point => ({ name: point.name, value: point.engagement }));
   return (
     <>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -47,10 +46,26 @@ export default function LikesTab({ stats }: LikesTabProps) {
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <SurfaceBox title="Karma by Reddit account" subheader="Post karma earned by each connected account">
-            <RankingBarChart rows={karmaRows} label="Post karma" title="Karma by Reddit account" color={PLATFORM_META.reddit.series} emptyMessage="Connect a Reddit account to see karma" />
+            <MetricAreaChart
+              data={charts.karmaByAccount}
+              dataKey="karma"
+              label="Post karma"
+              title="Karma by Reddit account"
+              description={rankingSummary(pointsOf(charts.karmaByAccount, 'name', 'karma'), fmtNumFull, 'post karma')}
+              color={PLATFORM_META.reddit.series}
+              emptyMessage="Connect a Reddit account to see karma"
+            />
           </SurfaceBox>
-          <SurfaceBox title="Likes and karma by tracked content" subheader="YouTube likes and Reddit karma for the top 12 tracked items">
-            <RankingBarChart rows={engagementRows} label="Likes or karma" title="Likes and karma by tracked content" emptyMessage="Track content to compare engagement" />
+          <SurfaceBox title="Engagement by tracked content" subheader="YouTube likes and Reddit karma for the top 12 tracked items">
+            <MetricAreaChart
+              data={charts.engagementByContent}
+              dataKey="engagement"
+              label="Likes or karma"
+              title="Engagement by tracked content"
+              description={rankingSummary(pointsOf(charts.engagementByContent, 'name', 'engagement'), fmtNumFull, 'likes or karma')}
+              color={SERIES.neutral}
+              emptyMessage="Track content to compare engagement"
+            />
           </SurfaceBox>
         </div>
       )}

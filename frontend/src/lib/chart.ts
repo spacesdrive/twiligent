@@ -38,6 +38,11 @@ export interface ChartPoint {
   value: number;
 }
 
+// the rows a chart draws as name and value pairs, for the description read in place of the plot
+export function pointsOf<T extends object>(rows: readonly T[], nameKey: keyof T, valueKey: keyof T): ChartPoint[] {
+  return rows.map(row => ({ name: String(row[nameKey] ?? ''), value: Number(row[valueKey]) || 0 }));
+}
+
 export function rankingSummary(points: readonly ChartPoint[], formatValue: (value: number) => string, unit: string): string {
   if (points.length === 0) return 'No data yet.';
   const sorted = [...points].sort((a, b) => b.value - a.value);

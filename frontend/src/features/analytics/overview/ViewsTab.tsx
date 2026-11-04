@@ -1,9 +1,10 @@
 import SurfaceBox from '@/components/SurfaceBox';
 import MetricBox from '@/components/MetricBox';
 import Num from '@/components/Num';
-import RankingBarChart from '@/components/RankingBarChart';
+import MetricAreaChart from '@/components/MetricAreaChart';
+import { pointsOf, rankingSummary } from '@/lib/chart';
 import { METRIC_ICONS } from '@/lib/metricIcons';
-import { fmtNum } from '../../../utils/formatters';
+import { fmtNum, fmtNumFull } from '../../../utils/formatters';
 import { CATEGORY_SERIES } from './overviewCharts.ts';
 import { countLabel, igTypeSummary } from './overviewLabels.ts';
 import InstagramViewsTable from './InstagramViewsTable';
@@ -24,7 +25,6 @@ function instagramViewsSubtitle(stats: OverviewStats): string {
 
 export default function ViewsTab({ stats, isSyncing }: ViewsTabProps) {
   const { groups, totals, cacheTotals, trackedStats, summary } = stats;
-  const categoryRows = stats.charts.categoryViews.map(point => ({ name: point.name, value: point.views }));
   return (
     <>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -38,7 +38,15 @@ export default function ViewsTab({ stats, isSyncing }: ViewsTabProps) {
 
       {stats.categoryStats.length > 0 && (
         <SurfaceBox title="Views by category" subheader="YouTube video views plus Reddit post views entered by hand">
-          <RankingBarChart rows={categoryRows} label="Views" title="Views by category" color={CATEGORY_SERIES} emptyMessage="No views recorded for these categories yet" />
+          <MetricAreaChart
+            data={stats.charts.categoryViews}
+            dataKey="views"
+            label="Views"
+            title="Views by category"
+            description={rankingSummary(pointsOf(stats.charts.categoryViews, 'name', 'views'), fmtNumFull, 'views')}
+            color={CATEGORY_SERIES}
+            emptyMessage="No views recorded for these categories yet"
+          />
         </SurfaceBox>
       )}
 
