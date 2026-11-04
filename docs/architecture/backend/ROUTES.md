@@ -94,10 +94,10 @@ Controllers call `YouTubeAnalyticsService` and `InstagramAnalyticsService`. Chan
 | Method | Path | File | Purpose |
 |---|---|---|---|
 | GET | `/api/accounts/:id/analytics` | `analyticsRoutes.ts`, `analyticsController.getChannelAnalytics` | Full YouTube analytics - fetches up to 500 videos, runs `computeVideoAnalytics()`, returns 50+ metrics; 404 for an account that is not a YouTube channel, 400 when no uploads playlist is stored |
-| GET | `/api/accounts/:id/videos` | `analyticsRoutes.ts`, `analyticsController.getChannelVideos` | Returns cached video list (from Redis if available); the same 404 and 400 checks before a live fetch |
+| GET | `/api/accounts/:id/videos` | `analyticsRoutes.ts`, `analyticsController.getChannelVideos` | Returns `{ videos, fetchedAt }` from the cache when it has the channel, live otherwise; `?fresh=1` skips the cache (a person's Refresh; spends YouTube quota); the same 404 and 400 checks before a live fetch |
 | GET | `/api/videos/all` | `analyticsRoutes.ts`, `analyticsController.getVideoLibrary` | Every cached video across the user's channels, filtered and sorted by `channelId`, `search`, `minViews`, `maxViews`, `sort` and `order` query parameters |
 | GET | `/api/accounts/:id/ig-analytics` | `analyticsRoutes.ts`, `analyticsController.getInstagramAnalytics` | Instagram analytics - fetches up to 500 media with views, classifies each as reel, post, or video, runs `computeInstagramAnalytics()` |
-| GET | `/api/accounts/:id/ig-media` | `analyticsRoutes.ts`, `analyticsController.getInstagramMedia` | Returns the Instagram media list (with `contentType` and `viewCount`) from cache, fetching live on a miss |
+| GET | `/api/accounts/:id/ig-media` | `analyticsRoutes.ts`, `analyticsController.getInstagramMedia` | Returns `{ media, fetchedAt }` (each item with `contentType` and `viewCount`) from cache, fetching live on a miss; `?fresh=1` skips the cache |
 | GET | `/api/comparison` | `analyticsRoutes.ts`, `analyticsController.getComparison` | Cross-account comparison data for the Overview dashboard |
 
 ### Instagram OAuth
@@ -138,8 +138,8 @@ Controllers call `AccountService` (adding) and `RedditAnalyticsService`.
 | Method | Path | File | Purpose |
 |---|---|---|---|
 | POST | `/api/accounts/reddit` | `accountRoutes.ts`, `accountController.addRedditAccount` | Add Reddit account by username and session cookie (both required); 409 when already added |
-| GET | `/api/accounts/:id/reddit-analytics` | `redditRoutes.ts`, `redditController.getRedditAnalytics` | Fetch profile + posts + computed analytics; cached in Redis; 400 when the cookie or username is missing |
-| GET | `/api/accounts/:id/reddit-posts` | `redditRoutes.ts`, `redditController.getRedditPosts` | Returns cached post list or live-fetched posts |
+| GET | `/api/accounts/:id/reddit-analytics` | `redditRoutes.ts`, `redditController.getRedditAnalytics` | Profile, posts, computed analytics and `fetchedAt`; cached in Redis; `?fresh=1` skips the cache (any other `fresh` value is a 400); 400 when the cookie or username is missing |
+| GET | `/api/accounts/:id/reddit-posts` | `redditRoutes.ts`, `redditController.getRedditPosts` | Returns cached post list or live-fetched posts. The app no longer calls it: the posts pages read `reddit-analytics`, which carries `fetchedAt` |
 
 ### Overview
 | Method | Path | File | Purpose |

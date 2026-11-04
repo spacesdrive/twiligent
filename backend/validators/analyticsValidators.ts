@@ -11,6 +11,17 @@ function optionalCount(query: Fields, name: string): string | undefined {
     return value || undefined;
 }
 
+export interface FreshQuery {
+    fresh: boolean;
+}
+
+// ?fresh=1 on a cached read (reddit-analytics, videos, ig-media) skips the cache, for a person's explicit refresh
+export function parseFreshQuery(query: Fields): FreshQuery {
+    const fresh = optionalString(query, 'fresh');
+    if (fresh && fresh !== '1') throw new ValidationError('fresh must be 1 when given');
+    return { fresh: fresh === '1' };
+}
+
 // GET /api/videos/all?channelId=&search=&minViews=&maxViews=&sort=&order=
 export function parseVideoLibraryQuery(query: Fields): VideoLibraryQuery {
     const order = optionalString(query, 'order');

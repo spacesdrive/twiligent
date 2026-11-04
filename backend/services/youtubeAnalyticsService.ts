@@ -45,7 +45,7 @@ export interface VideoLibrary {
 
 export interface YouTubeAnalyticsService {
     channelAnalytics(userId: string, accountId: string): Promise<ChannelAnalytics>;
-    channelVideos(userId: string, accountId: string): Promise<ChannelVideos>;
+    channelVideos(userId: string, accountId: string, options?: { fresh?: boolean }): Promise<ChannelVideos>;
     comparison(userId: string): Promise<YouTubeAccountComparison<SafeAccount> | null>;
     videoLibrary(userId: string, query: VideoLibraryQuery): Promise<VideoLibrary>;
 }
@@ -109,10 +109,12 @@ export function createYouTubeAnalyticsService({ accounts, cache, config, context
             return { channel: { ...safeAccount(channel), ...channelMetrics(channel) }, analytics, videoCount: videos.length };
         },
 
-        // served from the cache when it has the channel, without spending quota
-        async channelVideos(userId, accountId) {
-            const cached = await cache.getVideos(userId, accountId);
-            if (cached?.videos) return { videos: cached.videos, fetchedAt: cached.fetchedAt };
+        // served from the cache when it has the channel, without spending quota, unless a person asked for fresh data
+        async channelVideos(userId, accountId, { fresh = false } = {}) {
+            if (!fresh) {
+                const cached = await cache.getVideos(userId, accountId);
+                if (cached?.videos) return { videos: cached.videos, fetchedAt: cached.fetchedAt };
+            }
             const apiKey = youtubeKey();
             const account = await findChannel(userId, accountId);
             return fetchAndCacheVideos(userId, accountId, account.uploadsPlaylistId, apiKey);

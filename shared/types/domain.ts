@@ -164,9 +164,11 @@ export interface PendingAccountSummary {
     syncing: boolean;
 }
 
+// fetchedAt is when the cached numbers came from the platform, so the Overview can say how old they are
 export interface RedditAccountSummary {
     id: string;
     cacheWarmed: true;
+    fetchedAt?: string;
     fetchedPosts: number;
     totalScore: number;
     totalComments: number;
@@ -175,6 +177,7 @@ export interface RedditAccountSummary {
 export interface InstagramAccountSummary {
     id: string;
     cacheWarmed: true;
+    fetchedAt?: string;
     totalLikes: number;
     totalComments: number;
     totalViews: number;
@@ -184,6 +187,7 @@ export interface InstagramAccountSummary {
 export interface YouTubeAccountSummary {
     id: string;
     cacheWarmed: true;
+    fetchedAt?: string;
     totalLikes: number;
     totalComments: number;
 }

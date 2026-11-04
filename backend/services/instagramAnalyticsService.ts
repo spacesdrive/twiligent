@@ -29,7 +29,7 @@ export interface InstagramMediaList {
 
 export interface InstagramAnalyticsService {
     analytics(userId: string, accountId: string): Promise<InstagramAccountAnalytics>;
-    media(userId: string, accountId: string): Promise<InstagramMediaList>;
+    media(userId: string, accountId: string, options?: { fresh?: boolean }): Promise<InstagramMediaList>;
 }
 
 type ConnectedInstagramAccount = Account & { igUserId: string; accessToken: string };
@@ -67,9 +67,12 @@ export function createInstagramAnalyticsService({ accounts, cache, context }: In
             return { profile, account: safeAccount(account), analytics: computeInstagramAnalytics(profile, media), mediaCount: media.length };
         },
 
-        async media(userId, accountId) {
-            const cached = await cache.getInstagramMedia(userId, accountId);
-            if (cached?.media) return { media: cached.media, fetchedAt: cached.fetchedAt };
+        // cache first, unless a person asked for fresh data
+        async media(userId, accountId, { fresh = false } = {}) {
+            if (!fresh) {
+                const cached = await cache.getInstagramMedia(userId, accountId);
+                if (cached?.media) return { media: cached.media, fetchedAt: cached.fetchedAt };
+            }
             const account = await findConnected(userId, accountId);
             const media = await fetchInstagramMedia(account.igUserId, account.accessToken, MEDIA_LIMIT, signal);
             const fetchedAt = new Date().toISOString();

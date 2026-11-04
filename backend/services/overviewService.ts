@@ -48,7 +48,9 @@ export function createOverviewService({ accounts, tracked, cache, config }: Over
                 fetchRedditProfile(username, cookie, signal),
                 fetchRedditPosts(username, cookie, 100, signal),
             ]);
-            await cache.setReddit(userId, account.id, { profile, analytics: computeRedditAnalytics(profile, posts), posts });
+            await cache.setReddit(userId, account.id, {
+                profile, analytics: computeRedditAnalytics(profile, posts), posts, fetchedAt: new Date().toISOString(),
+            });
         };
     }
 
@@ -89,6 +91,7 @@ export function createOverviewService({ accounts, tracked, cache, config }: Over
                 return {
                     id: account.id,
                     cacheWarmed: true,
+                    fetchedAt: cached.fetchedAt,
                     fetchedPosts: cached.analytics.fetchedPosts ?? 0,
                     totalScore: cached.analytics.totalScore ?? 0,
                     totalComments: cached.analytics.totalComments ?? 0,
@@ -107,6 +110,7 @@ export function createOverviewService({ accounts, tracked, cache, config }: Over
                     totalComments: sumBy(types, type => type.comments),
                     totalViews: sumBy(types, type => type.views),
                     contentTypes,
+                    fetchedAt: cached.fetchedAt,
                 };
             };
 
@@ -118,6 +122,7 @@ export function createOverviewService({ accounts, tracked, cache, config }: Over
                     cacheWarmed: true,
                     totalLikes: sumBy(cached.videos, video => video.likeCount ?? 0),
                     totalComments: sumBy(cached.videos, video => video.commentCount ?? 0),
+                    fetchedAt: cached.fetchedAt,
                 };
             };
 

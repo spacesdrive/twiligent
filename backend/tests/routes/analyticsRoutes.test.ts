@@ -143,6 +143,20 @@ describe('analytics and overview routes golden output', () => {
         assert.deepEqual(fetchMock.requests, []);
     });
 
+    test('a fresh video list skips the cache and refetches the channel, while a plain read stays on the cache', async () => {
+        const redis = cachedRedis();
+        const supabase = fakeSupabase(ROWS);
+        const app = mountWithContext(server => server.route('/', analyticsRouter), { supabase, redis, userId: 'user-1' });
+        fetchMock = installFetch(youtubeReply);
+        const cached = JSON.parse((await callRoute(app, 'GET', '/accounts/yt1/videos', { env: ENV })).body) as { fetchedAt: string };
+        assert.equal(cached.fetchedAt, 'then');
+        assert.deepEqual(fetchMock.requests, []);
+        const fresh = JSON.parse((await callRoute(app, 'GET', '/accounts/yt1/videos?fresh=1', { env: ENV })).body) as { fetchedAt: string; videos: { title: string }[] };
+        assert.notEqual(fresh.fetchedAt, 'then');
+        assert.deepEqual(fresh.videos.map(video => video.title), ['Fresh']);
+        assert.deepEqual(redis.writes.map(write => write.key), ['videos:user-1:yt1']);
+    });
+
     test('backfilling an older channel adds only stored account fields to the response', async () => {
         const supabase = fakeSupabase([accountRow({ id: 'ytNew', platform: 'youtube', channelId: 'UC3', uploadsPlaylistId: 'UU3', title: 'Gamma' })]);
         const app = mountWithContext(server => server.route('/', analyticsRouter), { supabase, redis: null, userId: 'user-1' });

@@ -1,8 +1,10 @@
 import { controller, pathParam, servicesFor } from './http.ts';
+import { queryParams } from '../middleware/validate.ts';
+import { parseFreshQuery } from '../validators/analyticsValidators.ts';
 import type { RedditCacheData, RedditPost } from '../../shared/types/reddit.ts';
 
-export const getRedditAnalytics = controller.createHandlers(async c => {
-    const result = await servicesFor(c).redditAnalytics.analytics(c.get('userId'), pathParam(c, 'id'));
+export const getRedditAnalytics = controller.createHandlers(queryParams(parseFreshQuery), async c => {
+    const result = await servicesFor(c).redditAnalytics.analytics(c.get('userId'), pathParam(c, 'id'), c.req.valid('query'));
     return c.json(result satisfies RedditCacheData);
 });
 

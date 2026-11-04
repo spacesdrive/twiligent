@@ -104,6 +104,8 @@ export interface RedditCacheData {
     profile: RedditProfile;
     analytics: RedditAnalytics;
     posts: RedditPost[];
+    // when the posts were fetched from Reddit; missing on entries cached before it was recorded
+    fetchedAt?: string;
 }
 
 // fetchTrackedPostData() output, patched into a reddit tracked post's data on add and refresh

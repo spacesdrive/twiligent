@@ -110,7 +110,8 @@ InstagramAnalytics.tsx mounts -> api.getIGAnalytics(id)
         5. Return JSON
 
 GET /api/accounts/:id/ig-media (IG Content Explorer) returns the cached media when the
-cache entry is current, otherwise fetches with the same pipeline and caches it.
+cache entry is current, otherwise fetches with the same pipeline and caches it. With ?fresh=1
+(the page's Refresh) it skips the cache. The response carries fetchedAt, shown as the data's age.
 ```
 
 ### Instagram media item (cached shape)
@@ -167,7 +168,8 @@ RedditAnalytics.tsx mounts -> api.getRedditAnalytics(id)
         1. accounts.findForUser(id, userId) - verify ownership
            -> 404 unless it is a Reddit account, 400 without a stored cookie or username
         2. cache.getReddit(userId, id): key reddit:{userId}:{accountId}
-           -> cache hit: return immediately
+           -> skipped when ?fresh=1 (the page's Refresh button)
+           -> cache hit: return immediately, with the fetchedAt it was stored with
            -> cache miss: continue
         3. Fetch from Reddit public JSON API (with the stored session cookie):
            a. GET /user/{username}/about.json
@@ -298,3 +300,39 @@ tab, where they are compared against other view figures.
 Reddit's API returns a post's net upvotes as `score`. Every aggregate the frontend derives from
 it is named and labelled **karma**. The word "score" is reserved for the computed Virality Score
 and Consistency Score indices, which are unrelated to karma.
+
+## How the analytics pages present data
+
+These rules come from the UI/UX guide (issue #132) and apply to every analytics page.
+
+- **Freshness.** Every data view shows when its numbers were fetched (`DataFreshness`): live pages (channel,
+  Instagram account) show the time of the last load; cached pages show the cache's `fetchedAt`, and pages built
+  from several accounts show the oldest. Refresh asks the server for fresh data (`?fresh=1`) instead of re-reading
+  the cache, and the Reddit page's Refresh refreshes the posts as well as the profile.
+- **Loading.** Skeletons show only before the first answer. A refresh keeps the page, its tab and its scroll
+  position, marks the content `aria-busy` and spins the Refresh button. Library hooks key their loads on the
+  account ids, so an account's fields changing elsewhere does not reload every list.
+- **Failures.** A failed load is an error with a retry (`ErrorState`), never an empty state. A reload that fails
+  keeps the last numbers with an inline alert. On library pages an account whose list fails is named in a warning
+  (`FailedSourcesAlert`) and left out of the totals; "No channels yet" is decided from the account list, not from
+  which requests succeeded. Refresh all reports the accounts it could not refresh.
+- **Metric tiles.** Each tile states its time frame (`period`: "All time", "Last 50 posts", "Matching videos"). A
+  trend is coloured by meaning (`upIsGood`) and read as "Up 12%" to screen readers. Rounded figures (`Num`) keep
+  the exact value on hover and for screen readers; `fmtNum` drops a trailing `.0` and moves to the next unit when
+  rounding would show 1000 of the smaller one. Pages lead with four to six headline tiles; supporting figures go in
+  one `MetricDetails` list, each derived score explained in a line, and no figure repeats across tabs.
+- **Charts.** Every chart has a one-sentence summary of what it shows and a Show table toggle with the same
+  numbers (`ChartFigure`, used by `ChartPanel`, `MetricAreaChart` and `RankingBarChart`). Rankings of separate
+  things (accounts, categories, videos, tags) are horizontal bars, not lines. One chart has one unit; a second
+  measure goes in the tooltip and table. Platform hues (`PLATFORM_META.series`) mean the platform on every page;
+  Instagram content types and categories use other series.
+- **Libraries.** Search (debounced), filters, sort, layout and page live in the address (`useLibraryParams`), so
+  Back, refresh and shared links keep the view. Every library uses the same controls: `SearchField`, an account
+  select, `FilterChips` for ranges and types, `SortSelect` (also in grid layout), `ActiveFilters` with the result
+  count and removable filters, `NoResults` that echoes the search, and `Pager` with the range announced. Engagement
+  rates sort as numbers.
+- **Tables.** Each table is named by its box title, has column headers with `scope`, sorts with `aria-sort` on the
+  header cell, hides secondary columns on narrow screens and keeps the identifying column sticky. Long titles
+  clamp with the full text on hover. Relative dates (`RelativeTime`) carry the exact date and time; past 30 days
+  the date is shown instead of an age.
+
