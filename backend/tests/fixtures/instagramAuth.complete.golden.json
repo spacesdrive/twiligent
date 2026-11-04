@@ -1,0 +1,380 @@
+{
+    "responses": [
+        {
+            "status": 200,
+            "body": "{\"success\":true,\"outcome\":\"connected\"}"
+        },
+        {
+            "status": 200,
+            "body": "{\"success\":true,\"outcome\":\"reconnected\"}"
+        },
+        {
+            "status": 200,
+            "body": "{\"success\":true,\"outcome\":\"connected\"}"
+        },
+        {
+            "status": 200,
+            "body": "{\"success\":true,\"outcome\":\"reconnected\"}"
+        },
+        {
+            "status": 400,
+            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"Could not get Instagram User ID. Account must be a Business or Creator account.\",\"requestId\":\"req-test\"}"
+        },
+        {
+            "status": 502,
+            "body": "{\"success\":false,\"code\":\"UPSTREAM_ERROR\",\"message\":\"Invalid authorization code\",\"requestId\":\"req-test\"}"
+        },
+        {
+            "status": 502,
+            "body": "{\"success\":false,\"code\":\"UPSTREAM_ERROR\",\"message\":\"{\\\"unexpected\\\":\\\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\\\"}\",\"requestId\":\"req-test\"}"
+        },
+        {
+            "status": 502,
+            "body": "{\"success\":false,\"code\":\"UPSTREAM_ERROR\",\"message\":\"Instagram API unreachable (getaddrinfo ENOTFOUND api.instagram.com)\",\"requestId\":\"req-test\"}"
+        },
+        {
+            "status": 503,
+            "body": "{\"success\":false,\"code\":\"NOT_CONFIGURED\",\"message\":\"Instagram App credentials not configured on server\",\"requestId\":\"req-test\"}"
+        }
+    ],
+    "requests": [
+        {
+            "url": "https://api.instagram.com/oauth/access_token",
+            "method": "POST",
+            "headers": {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "body": "client_id=APPID&client_secret=APPSECRET&grant_type=authorization_code&redirect_uri=https%3A%2F%2Fapi.example.com%2Fapi%2Fauth%2Finstagram%2Fcallback&code=good"
+        },
+        {
+            "url": "https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_id=APPID&client_secret=APPSECRET&access_token=SHORT_GOOD",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/me?access_token=LONG&fields=user_id%2Cusername%2Cname%2Cprofile_picture_url%2Cfollowers_count%2Cfollows_count%2Cmedia_count%2Cbiography%2Cwebsite",
+            "method": "GET"
+        },
+        {
+            "url": "https://api.instagram.com/oauth/access_token",
+            "method": "POST",
+            "headers": {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "body": "client_id=APPID&client_secret=APPSECRET&grant_type=authorization_code&redirect_uri=https%3A%2F%2Fapi.example.com%2Fapi%2Fauth%2Finstagram%2Fcallback&code=good"
+        },
+        {
+            "url": "https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_id=APPID&client_secret=APPSECRET&access_token=SHORT_GOOD",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/me?access_token=LONG&fields=user_id%2Cusername%2Cname%2Cprofile_picture_url%2Cfollowers_count%2Cfollows_count%2Cmedia_count%2Cbiography%2Cwebsite",
+            "method": "GET"
+        },
+        {
+            "url": "https://api.instagram.com/oauth/access_token",
+            "method": "POST",
+            "headers": {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "body": "client_id=APPID&client_secret=APPSECRET&grant_type=authorization_code&redirect_uri=https%3A%2F%2Fapi.example.com%2Fapi%2Fauth%2Finstagram%2Fcallback&code=fallback"
+        },
+        {
+            "url": "https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_id=APPID&client_secret=APPSECRET&access_token=SHORT_FALLBACK",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/me?access_token=SHORT_FALLBACK&fields=user_id%2Cusername%2Cname%2Cprofile_picture_url%2Cfollowers_count%2Cfollows_count%2Cmedia_count%2Cbiography%2Cwebsite",
+            "method": "GET"
+        },
+        {
+            "url": "https://api.instagram.com/oauth/access_token",
+            "method": "POST",
+            "headers": {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "body": "client_id=APPID&client_secret=APPSECRET&grant_type=authorization_code&redirect_uri=https%3A%2F%2Fapi.example.com%2Fapi%2Fauth%2Finstagram%2Fcallback&code=dup"
+        },
+        {
+            "url": "https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_id=APPID&client_secret=APPSECRET&access_token=SHORT_DUP",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/me?access_token=SHORT_DUP&fields=user_id%2Cusername%2Cname%2Cprofile_picture_url%2Cfollowers_count%2Cfollows_count%2Cmedia_count%2Cbiography%2Cwebsite",
+            "method": "GET"
+        },
+        {
+            "url": "https://api.instagram.com/oauth/access_token",
+            "method": "POST",
+            "headers": {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "body": "client_id=APPID&client_secret=APPSECRET&grant_type=authorization_code&redirect_uri=https%3A%2F%2Fapi.example.com%2Fapi%2Fauth%2Finstagram%2Fcallback&code=noid"
+        },
+        {
+            "url": "https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_id=APPID&client_secret=APPSECRET&access_token=SHORT_NOID",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/me?access_token=SHORT_NOID&fields=user_id%2Cusername%2Cname%2Cprofile_picture_url%2Cfollowers_count%2Cfollows_count%2Cmedia_count%2Cbiography%2Cwebsite",
+            "method": "GET"
+        },
+        {
+            "url": "https://api.instagram.com/oauth/access_token",
+            "method": "POST",
+            "headers": {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "body": "client_id=APPID&client_secret=APPSECRET&grant_type=authorization_code&redirect_uri=https%3A%2F%2Fapi.example.com%2Fapi%2Fauth%2Finstagram%2Fcallback&code=bad"
+        },
+        {
+            "url": "https://api.instagram.com/oauth/access_token",
+            "method": "POST",
+            "headers": {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "body": "client_id=APPID&client_secret=APPSECRET&grant_type=authorization_code&redirect_uri=https%3A%2F%2Fapi.example.com%2Fapi%2Fauth%2Finstagram%2Fcallback&code=weird"
+        },
+        {
+            "url": "https://api.instagram.com/oauth/access_token",
+            "method": "POST",
+            "headers": {
+                "Content-Type": "application/x-www-form-urlencoded"
+            },
+            "body": "client_id=APPID&client_secret=APPSECRET&grant_type=authorization_code&redirect_uri=https%3A%2F%2Fapi.example.com%2Fapi%2Fauth%2Finstagram%2Fcallback&code=offline"
+        }
+    ],
+    "calls": [
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "user_id",
+                    "user-1"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
+                ]
+            ]
+        },
+        {
+            "type": "insert",
+            "table": "accounts",
+            "values": {
+                "id": "00000000-0000-4000-8000-000000000001",
+                "user_id": "user-1",
+                "platform": "instagram",
+                "data": {
+                    "igUserId": "5000",
+                    "username": "longlived",
+                    "title": "Long Lived",
+                    "biography": "B",
+                    "website": "W",
+                    "profilePictureUrl": "P",
+                    "followersCount": 10,
+                    "followsCount": 2,
+                    "mediaCount": 3,
+                    "accessToken": "LONG",
+                    "tokenExpiresAt": "2026-10-31T11:59:04.000Z",
+                    "addedAt": "2026-09-01T12:00:00.000Z",
+                    "lastUpdated": "2026-09-01T12:00:00.000Z"
+                }
+            },
+            "filters": []
+        },
+        {
+            "type": "insert",
+            "table": "audit_events",
+            "values": {
+                "id": "00000000-0000-4000-8000-000000000002",
+                "user_id": "user-1",
+                "action": "account.connected",
+                "subject_type": "account",
+                "subject_id": "00000000-0000-4000-8000-000000000001",
+                "details": {
+                    "platform": "instagram"
+                }
+            },
+            "filters": []
+        },
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "user_id",
+                    "user-1"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
+                ]
+            ]
+        },
+        {
+            "type": "rpc",
+            "table": "merge_account_data",
+            "values": {
+                "p_id": "00000000-0000-4000-8000-000000000001",
+                "p_user_id": "user-1",
+                "p_patch": {
+                    "accessToken": "LONG",
+                    "tokenExpiresAt": "2026-10-31T11:59:04.000Z",
+                    "lastUpdated": "2026-09-01T12:00:00.000Z"
+                }
+            },
+            "filters": []
+        },
+        {
+            "type": "insert",
+            "table": "audit_events",
+            "values": {
+                "id": "00000000-0000-4000-8000-000000000003",
+                "user_id": "user-1",
+                "action": "account.reconnected",
+                "subject_type": "account",
+                "subject_id": "00000000-0000-4000-8000-000000000001",
+                "details": {
+                    "platform": "instagram"
+                }
+            },
+            "filters": []
+        },
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "user_id",
+                    "user-1"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
+                ]
+            ]
+        },
+        {
+            "type": "insert",
+            "table": "accounts",
+            "values": {
+                "id": "00000000-0000-4000-8000-000000000004",
+                "user_id": "user-1",
+                "platform": "instagram",
+                "data": {
+                    "igUserId": "5001",
+                    "username": "fallback",
+                    "title": "fallback",
+                    "biography": "",
+                    "website": "",
+                    "profilePictureUrl": "",
+                    "followersCount": 0,
+                    "followsCount": 0,
+                    "mediaCount": 0,
+                    "accessToken": "SHORT_FALLBACK",
+                    "tokenExpiresAt": null,
+                    "addedAt": "2026-09-01T12:00:00.000Z",
+                    "lastUpdated": "2026-09-01T12:00:00.000Z"
+                }
+            },
+            "filters": []
+        },
+        {
+            "type": "insert",
+            "table": "audit_events",
+            "values": {
+                "id": "00000000-0000-4000-8000-000000000005",
+                "user_id": "user-1",
+                "action": "account.connected",
+                "subject_type": "account",
+                "subject_id": "00000000-0000-4000-8000-000000000004",
+                "details": {
+                    "platform": "instagram"
+                }
+            },
+            "filters": []
+        },
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "user_id",
+                    "user-1"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
+                ]
+            ]
+        },
+        {
+            "type": "rpc",
+            "table": "merge_account_data",
+            "values": {
+                "p_id": "ig1",
+                "p_user_id": "user-1",
+                "p_patch": {
+                    "accessToken": "SHORT_DUP",
+                    "tokenExpiresAt": null,
+                    "lastUpdated": "2026-09-01T12:00:00.000Z"
+                }
+            },
+            "filters": []
+        },
+        {
+            "type": "insert",
+            "table": "audit_events",
+            "values": {
+                "id": "00000000-0000-4000-8000-000000000006",
+                "user_id": "user-1",
+                "action": "account.reconnected",
+                "subject_type": "account",
+                "subject_id": "ig1",
+                "details": {
+                    "platform": "instagram"
+                }
+            },
+            "filters": []
+        }
+    ],
+    "logs": [
+        [
+            "error",
+            "{\"level\":\"error\",\"message\":\"request failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"code\":\"UPSTREAM_ERROR\",\"status\":502,\"error\":\"Invalid authorization code\",\"errorName\":\"UpstreamError\"}"
+        ],
+        [
+            "error",
+            "{\"level\":\"error\",\"message\":\"request failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"code\":\"UPSTREAM_ERROR\",\"status\":502,\"error\":\"{\\\"unexpected\\\":\\\"xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\\\"}\",\"errorName\":\"UpstreamError\"}"
+        ],
+        [
+            "error",
+            "{\"level\":\"error\",\"message\":\"request failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"code\":\"UPSTREAM_ERROR\",\"status\":502,\"error\":\"Instagram API unreachable (getaddrinfo ENOTFOUND api.instagram.com)\",\"errorName\":\"UpstreamError\",\"cause\":\"getaddrinfo ENOTFOUND api.instagram.com\"}"
+        ],
+        [
+            "error",
+            "{\"level\":\"error\",\"message\":\"request failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"code\":\"NOT_CONFIGURED\",\"status\":503,\"error\":\"Instagram App credentials not configured on server\",\"errorName\":\"NotConfiguredError\"}"
+        ]
+    ]
+}

@@ -48,6 +48,7 @@ export const QUOTA_ROUTES: readonly RouteMatcher[] = [
     { methods: ['POST'], path: /^\/api\/accounts\/(instagram|refresh-all)$/ },
     { methods: ['POST'], path: /^\/api\/accounts\/[^/]+\/(refresh|refresh-ig-token)$/ },
     { methods: ['POST'], path: /^\/api\/resolve-channel$/ },
+    { methods: ['POST'], path: /^\/api\/auth\/instagram\/complete$/ },
     { methods: ['POST'], path: /^\/api\/tracked-content$/ },
     { methods: ['POST'], path: /^\/api\/tracked-content\/[^/]+\/refresh$/ },
     { methods: ['GET', 'POST'], path: /^\/api\/process-scheduled$/ },

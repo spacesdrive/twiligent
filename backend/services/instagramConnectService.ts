@@ -2,7 +2,7 @@ import { buildAuthorizationUrl, exchangeCodeForToken, isOAuthConfigured, upgrade
 import { fetchInstagramProfile } from './instagram/instagramApi.ts';
 import { buildInstagramAccount, tokenExpiryIso } from './accountFactory.ts';
 import { verifyOAuthState } from '../lib/oauthState.ts';
-import { NotConfiguredError, ValidationError, isUniqueViolation } from '../lib/errors.ts';
+import { ForbiddenError, NotConfiguredError, ValidationError, isUniqueViolation } from '../lib/errors.ts';
 import type { ConfiguredInstagramOAuth } from './instagram/instagramOAuth.ts';
 import type { AccountRepository } from '../repositories/accountRepository.ts';
 import type { AuditRepository } from '../repositories/auditRepository.ts';
@@ -25,6 +25,8 @@ export interface InstagramConnectService {
     authorizationUrl(userId: string): Promise<string>;
     userIdFromState(state: string): Promise<string | null>;
     connect(userId: string, code: string): Promise<InstagramConnectOutcome>;
+    // the signed-in person finishes a sign-in only they started, so a consent link sent by someone else connects nothing
+    completeForUser(userId: string, code: string, state: string): Promise<InstagramConnectOutcome>;
 }
 
 // connects an account through Instagram's OAuth: the user id travels in the signed state, not in a session
@@ -37,7 +39,7 @@ export function createInstagramConnectService({ accounts, audit, config, context
         return oauth;
     }
 
-    return {
+    const service: InstagramConnectService = {
         configured: isOAuthConfigured(oauth),
         accountsPageUrl: `${oauth.frontendUrl}/accounts`,
 
@@ -77,5 +79,13 @@ export function createInstagramConnectService({ accounts, audit, config, context
             await audit.recordForUser(userId, { action: 'account.connected', subjectType: 'account', subjectId: account.id, details: { platform: 'instagram' } });
             return 'connected';
         },
+
+        async completeForUser(userId, code, state) {
+            const startedBy = await verifyOAuthState(state, configured().appSecret);
+            if (!startedBy) throw new ValidationError('This Instagram sign-in expired or was changed. Connect the account again.');
+            if (startedBy !== userId) throw new ForbiddenError('This Instagram sign-in was started from a different Twiligent account. Start it again from your Accounts page.');
+            return service.connect(userId, code);
+        },
     };
+    return service;
 }

@@ -239,3 +239,15 @@ export interface InstagramTokenRefreshResponse {
 export interface InstagramAuthUrlResponse {
     url: string;
 }
+
+// body of POST /api/auth/instagram/complete: what Instagram's callback handed back to the app
+export interface InstagramConnectCompleteRequest {
+    code: string;
+    state: string;
+}
+
+// POST /api/auth/instagram/complete
+export interface InstagramConnectCompleteResponse {
+    success: true;
+    outcome: 'connected' | 'reconnected';
+}
