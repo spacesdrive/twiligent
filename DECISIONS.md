@@ -1079,3 +1079,22 @@ New row ids come from `crypto.randomUUID()` (`newRowId()` in `backend/lib/ids.ts
 - Removing public routes is a breaking change, so this ships as 2.0.0. Old links to the Reddit pages show Not found in the app; the public site redirects its old Reddit paths to the Overview.
 - Until #145 runs, Reddit rows and their secrets remain in the database, unread. Reddit cache keys in Redis expire on their own within 6 hours.
 - Instances that used Reddit lose its history in the app; the rows can be exported before the cleanup.
+
+---
+
+## ADR-050: Security review is part of every change, and OAuth sign-ins finish as the signed-in person
+
+**Date:** 2026-11-05
+**Status:** Accepted
+
+**Decision:** Every change states its security effect, and substantial changes get a security pass while they are built (`CLAUDE.md`, `docs/workflows/SECURITY_REVIEW.md`). The tools are Cloudflare's `security-audit` skill and Trail of Bits' skills, declared as Claude Code plugins in `.claude/settings.json` and referenced from their own repositories, plus Semgrep and `npm audit`. Separately, the first full audit (#148) found that the Instagram OAuth callback connected whichever user the signed state named; OAuth connections now finish through an authenticated `complete` route that checks the state was started by the caller, and the public callback only forwards the code to the app in the URL fragment.
+
+**Context:** The owner asked for security auditing inside the development workflow rather than before releases, with the two skill repositories integrated. The audit then confirmed the account-linking problem (medium) and a cross-user publish trigger (low), both fixed in 2.0.1.
+
+**Alternatives considered:**
+- Copying the skills into the repository. The Trail of Bits skills are CC-BY-SA-4.0, so changed copies would have to stay under that licence, and both would drift from their sources.
+- Binding the OAuth state to a cookie. Self-hosted apps and Workers often run on different sites, where browsers drop such cookies; an authenticated completion step works on any deployment.
+
+**Trade-offs:**
+- Contributors install the plugins once and accept the workspace trust prompt; the Trail of Bits marketplace follows `main`, the Cloudflare skill is pinned to a commit.
+- Connecting Instagram needs the app and the Worker on the same version, since the app now finishes the sign-in. The YouTube connection (#147) uses the same pattern.
