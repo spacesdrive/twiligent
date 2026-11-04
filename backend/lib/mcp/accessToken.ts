@@ -1,6 +1,6 @@
-// personal access tokens for Claude Code and scripts: shown once, stored only as a SHA-256 hash
+import type { McpPermission } from '../../../shared/types/mcp.ts';
 
-export type McpPermission = 'read' | 'write';
+// personal access tokens for Claude Code and scripts: shown once, stored only as a SHA-256 hash
 
 const PREFIX = 'twl_';
 // 32 random bytes, so guessing is hopeless and a plain hash (no salt or stretching) is enough to store it
