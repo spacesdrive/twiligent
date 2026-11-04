@@ -160,6 +160,11 @@ docs/
     ARCHITECTURE.md        Architectural principles and constraints
     SECURITY.md            Security model, key handling, isolation
     PERFORMANCE.md         Caching strategy, edge optimization
+  platform-v2/             The v2 work (#142): Reddit removed, MCP server, YouTube publishing, security auditing
+    RESEARCH.md            Findings and verified facts; full reports in research/
+    ARCHITECTURE.md        Target design, decisions and trade-offs, bottlenecks
+    IMPLEMENTATION_PLAN.md Phases, dependency map, tools, testing strategy, failure scenarios, owner actions, status
+    DATABASE_MIGRATION.md  Reddit cleanup and the new tables, with the backup and review steps
 
 site/content/docs/ Public user and self-hosting docs (MDX) served at twiligent.ujjwal.fyi/docs
 DECISIONS.md       Architectural decision log
