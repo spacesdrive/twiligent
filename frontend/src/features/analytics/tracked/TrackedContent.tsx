@@ -3,8 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import PageHeader from '@/components/PageHeader';
 import SurfaceBox from '@/components/SurfaceBox';
-import ConfirmDialog from '@/components/ConfirmDialog';
-import { EmptyState } from '@/components/StateViews';
+import ActiveFilters from '@/components/ActiveFilters';
+import NoResults from '@/components/NoResults';
+import { EmptyState, ErrorState } from '@/components/StateViews';
+import { resultCountLabel } from '@/lib/library';
 import { useAppContext } from '../../../context/AppContext';
 import { useCloudinaryConfig } from '../../../hooks/use-cloudinary-config';
 import AddTrackedDialog from './AddTrackedDialog';
@@ -13,6 +15,7 @@ import EditTrackedDialog from './EditTrackedDialog';
 import TrackedFilters from './TrackedFilters';
 import TrackedMetrics from './TrackedMetrics';
 import TrackedTable from './TrackedTable';
+import { typeChipsOf } from './trackedList.ts';
 import { useAddTracked } from './useAddTracked';
 import { useBulkCategory } from './useBulkCategory';
 import { useTrackedDelete } from './useTrackedDelete';
@@ -20,12 +23,8 @@ import { useTrackedEditor } from './useTrackedEditor';
 import { useTrackedFilters } from './useTrackedFilters';
 import { useTrackedItems } from './useTrackedItems';
 import { useTrackedSelection } from './useTrackedSelection';
-import type { TrackedContentItem } from '@shared/types/domain.ts';
 
-function deleteDescription(item: TrackedContentItem | null): string {
-  if (!item) return '';
-  return `"${item.title || item.label || item.url}" and its saved views, image and category are removed from Twiligent. The original post or video is not affected.`;
-}
+const RESULTS_ID = 'tracked-results';
 
 export default function TrackedContent() {
   const { accounts, showToast } = useAppContext();
@@ -39,17 +38,26 @@ export default function TrackedContent() {
   const removal = useTrackedDelete({ setItems, dropSelection: selection.drop, showToast });
   const add = useAddTracked({ redditAccounts, setItems, showToast });
   const editor = useTrackedEditor({ cloudConfig, replaceItem, showToast });
+  const isEmpty = !tracked.loading && !tracked.error && tracked.items.length === 0;
 
+  const typeLabel = typeChipsOf(filters.stats).find(chip => chip.value === filters.typeFilter && chip.value !== 'all')?.label;
+  const activeFilters = [
+    filters.query && { key: 'q', label: `"${filters.query}"`, onRemove: () => filters.setQuery('') },
+    typeLabel && { key: 'type', label: typeLabel, onRemove: () => filters.setTypeFilter('all') },
+    filters.categoryFilter !== 'all' && { key: 'category', label: filters.categoryFilter, onRemove: () => filters.setCategoryFilter('all') },
+  ].filter(Boolean) as { key: string; label: string; onRemove: () => void }[];
+
+  // the empty state carries the one primary action, so the header does not repeat it
   const header = (
     <PageHeader
       title="Tracked content"
       description="Reddit posts and YouTube videos you follow, with karma, likes and comments."
-      actions={
+      actions={!isEmpty && (
         <Button onClick={() => add.setOpen(true)}>
-          <Plus data-icon="inline-start" />
+          <Plus data-icon="inline-start" aria-hidden="true" />
           Track content
         </Button>
-      }
+      )}
     />
   );
 
@@ -66,49 +74,55 @@ export default function TrackedContent() {
     );
   }
 
+  if (tracked.error) {
+    return (
+      <div className="flex flex-col gap-6">
+        {header}
+        <SurfaceBox>
+          <ErrorState title="Tracked content could not load" description={tracked.error} onRetry={tracked.retry} />
+        </SurfaceBox>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6">
       {header}
 
-      <TrackedMetrics stats={filters.stats} />
-
-      {tracked.items.length === 0 ? (
+      {isEmpty ? (
         <SurfaceBox>
           <EmptyState
             icon={<Bookmark />}
             title="Nothing tracked yet"
             description="Paste a Reddit post or YouTube video link to follow its karma, likes and comments."
-            action={<Button onClick={() => add.setOpen(true)}><Plus data-icon="inline-start" />Track your first item</Button>}
+            action={<Button onClick={() => add.setOpen(true)}><Plus data-icon="inline-start" aria-hidden="true" />Track content</Button>}
           />
         </SurfaceBox>
       ) : (
         <>
+          <TrackedMetrics stats={filters.stats} />
           <TrackedFilters filters={filters} />
+          <ActiveFilters countLabel={resultCountLabel(filters.filtered.length, tracked.items.length, 'items')} filters={activeFilters} onClearAll={filters.clearFilters} />
           {selection.someSelected && <BulkCategoryBar selectedCount={selection.selected.size} bulk={bulk} onClear={selection.clear} />}
-          <TrackedTable
-            filtered={filters.filtered}
-            selection={selection}
-            refreshingIds={tracked.refreshingIds}
-            onRefresh={tracked.handleRefresh}
-            onEdit={editor.openEdit}
-            onDelete={removal.setDeleteItem}
-          />
+          <div id={RESULTS_ID} tabIndex={-1} className="outline-none">
+            {filters.filtered.length === 0 ? (
+              <SurfaceBox><NoResults noun="items" query={filters.query} onClear={filters.clearFilters} /></SurfaceBox>
+            ) : (
+              <TrackedTable
+                filtered={filters.filtered}
+                selection={selection}
+                refreshingIds={tracked.refreshingIds}
+                onRefresh={tracked.handleRefresh}
+                onEdit={editor.openEdit}
+                onDelete={removal.remove}
+              />
+            )}
+          </div>
         </>
       )}
 
       <AddTrackedDialog add={add} redditAccounts={redditAccounts} categories={filters.categories} />
       <EditTrackedDialog editor={editor} categories={filters.categories} />
-
-      <ConfirmDialog
-        open={Boolean(removal.deleteItem)}
-        onOpenChange={open => { if (!open) removal.setDeleteItem(null); }}
-        title="Stop tracking this content?"
-        description={deleteDescription(removal.deleteItem)}
-        confirmLabel="Stop tracking"
-        onConfirm={removal.handleDelete}
-        busy={removal.deleting}
-        hold
-      />
     </div>
   );
 }

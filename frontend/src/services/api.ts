@@ -12,7 +12,7 @@ import type {
     InstagramMediaPublishResponse, InstagramMediaResponse, InstagramPublishingLimitResponse, InstagramPublishRequest,
     InstagramPublishResponse, InstagramTokenRefreshResponse,
 } from '@shared/types/instagram.ts';
-import type { RedditCacheData, RedditPost } from '@shared/types/reddit.ts';
+import type { RedditCacheData } from '@shared/types/reddit.ts';
 import type {
     AutomationAccountResponse, AutomationActivityItemResponse, AutomationActivityResponse, AutomationOverviewResponse,
     AutomationRuleRequest, AutomationRuleResponse, AutomationRuleUpdateRequest, AutomationStatsResponse, AutomationTestRequest,
@@ -142,14 +142,14 @@ export const api = {
     addInstagramAccount: (accessToken: string) => request<AccountResponse>('/accounts/instagram', { method: 'POST', body: JSON.stringify({ accessToken }) }),
     refreshIGToken: (id: string) => request<InstagramTokenRefreshResponse>(`/accounts/${id}/refresh-ig-token`, { method: 'POST' }),
     getIGAnalytics: (id: string) => request<InstagramAnalyticsResponse>(`/accounts/${id}/ig-analytics`),
-    getIGMedia: (id: string) => request<InstagramMediaResponse>(`/accounts/${id}/ig-media`),
+    getIGMedia: (id: string, fresh = false) => request<InstagramMediaResponse>(`/accounts/${id}/ig-media${fresh ? '?fresh=1' : ''}`),
 
     // Channel URL/ID resolution
     resolveChannel: (input: string) => request<ResolveChannelResponse>('/resolve-channel', { method: 'POST', body: JSON.stringify({ input }) }),
 
     // Analytics (YouTube)
     getAnalytics: (id: string) => request<YouTubeAnalyticsPayload>(`/accounts/${id}/analytics`),
-    getVideos: (id: string) => request<YouTubeVideosResponse>(`/accounts/${id}/videos`),
+    getVideos: (id: string, fresh = false) => request<YouTubeVideosResponse>(`/accounts/${id}/videos${fresh ? '?fresh=1' : ''}`),
 
     getComparison: () => request<YouTubeComparisonResponse>('/comparison'),
 
@@ -164,8 +164,8 @@ export const api = {
     publishIGContainer: (id: string, containerId: string) => request<InstagramMediaPublishResponse>(`/accounts/${id}/ig-media-publish`, { method: 'POST', body: JSON.stringify({ containerId }) }),
 
     addRedditAccount: (username: string, cookie: string) => request<AccountResponse>('/accounts/reddit', { method: 'POST', body: JSON.stringify({ username, cookie }) }),
-    getRedditAnalytics: (id: string) => request<RedditCacheData>(`/accounts/${id}/reddit-analytics`),
-    getRedditPosts: (id: string) => request<RedditPost[]>(`/accounts/${id}/reddit-posts`),
+    // fresh skips the server's cache, for a person's explicit Refresh
+    getRedditAnalytics: (id: string, fresh = false) => request<RedditCacheData>(`/accounts/${id}/reddit-analytics${fresh ? '?fresh=1' : ''}`),
 
     // Overview dashboard (tracked content + per-account analytics cache)
     getOverview: () => request<OverviewResponse>('/overview'),

@@ -5,6 +5,8 @@ import { cn } from '@/lib/utils';
 
 export interface RowActionProps {
   label: string;
+  // the row's item, so every row's button has its own accessible name ("Edit Spring recipe", not just "Edit")
+  target?: string;
   onClick?: () => void;
   disabled?: boolean;
   children: ReactNode;
@@ -12,10 +14,11 @@ export interface RowActionProps {
   danger?: boolean;
 }
 
-export default function RowAction({ label, onClick, disabled, children, href, danger }: RowActionProps) {
+export default function RowAction({ label, target, onClick, disabled, children, href, danger }: RowActionProps) {
+  const name = target ? `${label}: ${target}` : label;
   const button = href
-    ? <Button variant="ghost" size="icon-xs" render={<a href={href} target="_blank" rel="noopener noreferrer" aria-label={label} />} />
-    : <Button variant="ghost" size="icon-xs" onClick={onClick} disabled={disabled} aria-label={label} className={cn(danger && 'hover:bg-danger-soft hover:text-danger')} />;
+    ? <Button variant="ghost" size="icon-xs" render={<a href={href} target="_blank" rel="noopener noreferrer" aria-label={`${name} (opens in a new tab)`} />} />
+    : <Button variant="ghost" size="icon-xs" onClick={onClick} disabled={disabled} aria-label={name} className={cn(danger && 'hover:bg-danger-soft hover:text-danger')} />;
   return (
     <Tooltip>
       <TooltipTrigger render={button}>{children}</TooltipTrigger>

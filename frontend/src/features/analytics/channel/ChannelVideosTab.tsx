@@ -1,35 +1,23 @@
-import type { TooltipValueType } from 'recharts';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, Legend } from 'recharts';
-import ChartPanel from '@/components/ChartPanel';
-import { SERIES, axisProps, axisTick, gridProps, legendStyle, tooltipCursor, tooltipStyle } from '@/lib/chart';
-import { fmtNum, fmtNumFull } from '../../../utils/formatters';
+import SurfaceBox from '@/components/SurfaceBox';
+import RankingBarChart from '@/components/RankingBarChart';
+import { PLATFORM_META } from '@/lib/accounts';
 import { topVideoRowsOf, topVideosChartOf } from './channelChartData.ts';
 import ChannelVideoTable from './ChannelVideoTable';
 import type { VideoAnalytics } from '@shared/types/youtube.ts';
-
-function fullNumber(value: TooltipValueType | undefined): string {
-  return fmtNumFull(value as number);
-}
 
 export interface ChannelVideosTabProps {
   analytics: VideoAnalytics;
 }
 
+// views alone: likes are a different scale and would hide in the same bars; they are in the table below
 export default function ChannelVideosTab({ analytics }: ChannelVideosTabProps) {
+  const rows = topVideosChartOf(analytics.top10ByViews).map(video => ({ name: video.name, value: video.views }));
   return (
     <>
-      <ChartPanel title="Top 10 videos by views" height={320}>
-        <BarChart data={topVideosChartOf(analytics.top10ByViews)}>
-          <CartesianGrid {...gridProps} vertical={false} />
-          <XAxis dataKey="name" tick={{ ...axisTick, fontSize: 10 }} angle={-15} textAnchor="end" height={70} />
-          <YAxis {...axisProps} tickFormatter={fmtNum} />
-          <ReTooltip contentStyle={tooltipStyle} cursor={tooltipCursor} formatter={fullNumber} />
-          <Bar dataKey="views" fill={SERIES.primary} radius={[4, 4, 0, 0]} name="Views" />
-          <Bar dataKey="likes" fill={SERIES.neutral} radius={[4, 4, 0, 0]} name="Likes" />
-          <Legend wrapperStyle={legendStyle} />
-        </BarChart>
-      </ChartPanel>
-      <ChannelVideoTable videos={topVideoRowsOf(analytics)} />
+      <SurfaceBox title="Top 10 videos by views">
+        <RankingBarChart rows={rows} label="Views" title="Top 10 videos by views" color={PLATFORM_META.youtube.series} />
+      </SurfaceBox>
+      <ChannelVideoTable title="Top videos by views and likes" videos={topVideoRowsOf(analytics)} />
     </>
   );
 }

@@ -71,3 +71,79 @@ export function matchesText(values: unknown[], query: string): boolean {
   if (!needle) return true;
   return values.some(value => typeof value === 'string' && value.toLowerCase().includes(needle));
 }
+
+export interface PageRangeInput {
+  page: number;
+  pageCount: number;
+  total: number;
+  shown: number;
+  pageSize?: number;
+  noun: string;
+}
+
+// "Showing 26 to 50 of 300 videos" when the page size is known, so the range is clear, not just the count
+export function pageRangeLabel({ page, pageCount, total, shown, pageSize, noun }: PageRangeInput): string {
+  if (total === 0) return `No ${noun}`;
+  if (pageCount <= 1 || !pageSize) return pageCount <= 1 ? `${total} ${noun}` : `Showing ${shown} of ${total} ${noun}`;
+  const first = (page - 1) * pageSize + 1;
+  const last = first + shown - 1;
+  return `Showing ${first} to ${last} of ${total} ${noun}`;
+}
+
+// "12 of 340 videos" once a filter narrows the list, "340 videos" otherwise
+export function resultCountLabel(matching: number, total: number, noun: string): string {
+  return matching === total ? `${total} ${noun}` : `${matching} of ${total} ${noun}`;
+}
+
+export type TrendTone = 'good' | 'bad' | 'neutral';
+
+// colour follows meaning: more followers is good, more failed replies is not
+export function trendTone(trend: number, upIsGood: boolean): TrendTone {
+  if (trend === 0) return 'neutral';
+  return (trend > 0) === upIsGood ? 'good' : 'bad';
+}
+
+// YouTube engagement above this share of views is well above typical, so the table marks it
+export const STRONG_ENGAGEMENT_PERCENT = 5;
+
+export const STRONG_ENGAGEMENT_HINT = 'Likes and comments as a share of views. Marked green above 5%, which is strong for YouTube.';
+
+export function isStrongEngagement(rate: number | string | null | undefined): boolean {
+  return Number.parseFloat(String(rate ?? 0)) > STRONG_ENGAGEMENT_PERCENT;
+}
+
+export interface SourceFailure {
+  id: string;
+  name: string;
+  message: string;
+}
+
+// the accounts whose request failed, in order, so the page can name them instead of quietly leaving them out
+export function failedSources<A extends { id: string }>(
+  accounts: readonly A[],
+  results: readonly PromiseSettledResult<unknown>[],
+  nameOf: (account: A) => string,
+): SourceFailure[] {
+  const failures: SourceFailure[] = [];
+  results.forEach((result, index) => {
+    if (result.status !== 'rejected') return;
+    const account = accounts[index];
+    const reason = result.reason as { message?: string } | undefined;
+    failures.push({ id: account.id, name: nameOf(account), message: reason?.message || 'The request failed' });
+  });
+  return failures;
+}
+
+// "2 of 5 channels could not load: Alpha (quota exceeded), Beta (not found)."
+export function failureSummary(failures: readonly SourceFailure[], total: number, noun: string): string {
+  if (failures.length === 0) return '';
+  const names = failures.map(failure => `${failure.name} (${failure.message})`).join(', ');
+  return `${failures.length} of ${total} ${noun} could not load: ${names}.`;
+}
+
+// a list built from several caches is as old as its oldest part
+export function oldestTime(times: readonly (string | null | undefined)[]): string | null {
+  const valid = times.filter((time): time is string => typeof time === 'string' && !Number.isNaN(Date.parse(time)));
+  if (valid.length === 0) return null;
+  return valid.reduce((oldest, time) => (Date.parse(time) < Date.parse(oldest) ? time : oldest));
+}

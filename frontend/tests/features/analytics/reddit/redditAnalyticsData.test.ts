@@ -17,8 +17,8 @@ test('media types use their label and a fixed colour per type', () => {
 
 test('karma summary leads with total karma', () => {
   const items = karmaSummaryOf({ totalKarma: 1500, postKarma: 1000, commentKarma: 500 });
-  assert.deepEqual(items.map(item => item.value), ['1.5K', '1.0K', '500', '0']);
-  assert.equal(items[0].sub, '1,500');
+  assert.deepEqual(items.map(item => item.value), [1500, 1000, 500, 0]);
+  assert.equal(items[0].sub, 'All time');
   assert.equal(items[0].lead, true);
 });
 

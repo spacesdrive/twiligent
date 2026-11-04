@@ -2,18 +2,30 @@ import React from 'react';
 import { TrendingUp, TrendingDown } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { trendTone } from '@/lib/library';
 
 export interface MetricBoxProps {
   icon?: React.ReactNode;
   label: React.ReactNode;
   value?: React.ReactNode;
   subtitle?: React.ReactNode;
+  // the time frame the value covers, such as "All time" or "Last 30 days", so a number is never read without one
+  period?: string;
   loading?: boolean;
   small?: boolean;
   trend?: number;
+  // what the trend compares against, such as "vs last month"
+  trendComparison?: string;
+  // shown in place of the subtitle, next to a trend
   trendLabel?: React.ReactNode;
+  // false for metrics where a rise is bad, so the colour follows the meaning, not the sign
+  upIsGood?: boolean;
   highlight?: boolean;
   className?: string;
+}
+
+function textOf(node: React.ReactNode): string | undefined {
+  return typeof node === 'string' ? node : undefined;
 }
 
 // Quiet metric tile: neutral icon, large tabular value, label and one line of context.
@@ -22,13 +34,20 @@ export default function MetricBox({
   label,
   value,
   subtitle,
+  period,
   loading,
   small,
   trend,
+  trendComparison,
   trendLabel,
+  upIsGood = true,
   highlight = false,
   className,
 }: MetricBoxProps) {
+  const tone = trend === undefined ? 'neutral' : trendTone(trend, upIsGood);
+  const detail = trendLabel ?? subtitle;
+  const comparison = trendComparison ?? textOf(trendLabel) ?? '';
+  const context = [period, textOf(detail)].filter(Boolean).join(' · ');
   return (
     <div
       className={cn(
@@ -41,6 +60,7 @@ export default function MetricBox({
         <span className="flex min-w-0 items-center gap-2 text-small font-medium text-ink-muted">
           {icon && (
             <span
+              aria-hidden="true"
               className={cn(
                 'flex shrink-0 items-center justify-center [&_svg]:size-4 [&_svg]:stroke-[1.75]',
                 highlight ? 'text-brand-text' : 'text-ink-faint',
@@ -49,12 +69,21 @@ export default function MetricBox({
               {icon}
             </span>
           )}
-          <span className="truncate">{label}</span>
+          <span className="truncate" title={textOf(label)}>{label}</span>
         </span>
         {trend !== undefined && !loading && (
-          <span className={cn('flex items-center gap-0.5 text-caption font-semibold', trend >= 0 ? 'text-success' : 'text-danger')}>
-            {trend >= 0 ? <TrendingUp className="size-3" /> : <TrendingDown className="size-3" />}
+          <span
+            className={cn(
+              'flex items-center gap-0.5 text-caption font-semibold',
+              tone === 'good' && 'text-success',
+              tone === 'bad' && 'text-danger',
+              tone === 'neutral' && 'text-ink-muted',
+            )}
+          >
+            {trend >= 0 ? <TrendingUp className="size-3" aria-hidden="true" /> : <TrendingDown className="size-3" aria-hidden="true" />}
+            <span className="sr-only">{trend >= 0 ? 'Up' : 'Down'} </span>
             {Math.abs(trend)}%
+            {comparison && <span className="sr-only"> {comparison}</span>}
           </span>
         )}
       </div>
@@ -68,14 +97,18 @@ export default function MetricBox({
         <div className="flex min-w-0 flex-col gap-1">
           <p
             className={cn(
-              'font-heading font-semibold tracking-[-0.02em] tabular-nums text-ink leading-none',
-              small ? 'text-xl' : 'text-[1.75rem]',
+              'font-heading font-semibold tabular-nums text-ink leading-none',
+              small ? 'text-page-title' : 'text-metric',
             )}
           >
             {value}
           </p>
-          {(subtitle || trendLabel) && (
-            <p className="truncate text-caption text-ink-faint">{trendLabel || subtitle}</p>
+          {(period || detail) && (
+            <p className="truncate text-caption text-ink-faint" title={context || undefined}>
+              {period && <span>{period}</span>}
+              {period && detail && <span aria-hidden="true"> · </span>}
+              {detail}
+            </p>
           )}
         </div>
       )}

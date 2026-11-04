@@ -1,7 +1,9 @@
-import { BookmarkCheck, CirclePlay, MessagesSquare, Tag } from 'lucide-react';
 import MetricBox from '@/components/MetricBox';
+import { METRIC_ICONS } from '@/lib/metricIcons';
 import { countLabel, pluralize } from './trackedList.ts';
 import type { TrackedStats } from './trackedList.ts';
+
+const { tracked: Tracked, category: Category, videos: Videos, redditPosts: Posts } = METRIC_ICONS;
 
 function categoriesSubtitle(count: number): string {
   if (count === 0) return 'None assigned yet';
@@ -20,10 +22,10 @@ export interface TrackedMetricsProps {
 export default function TrackedMetrics({ stats }: TrackedMetricsProps) {
   return (
     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      <MetricBox icon={<BookmarkCheck />}  label="Tracked items" value={stats.total}      subtitle="Across all categories" highlight />
-      <MetricBox icon={<Tag />}            label="Categories"    value={stats.categories} subtitle={categoriesSubtitle(stats.categories)} />
-      <MetricBox icon={<CirclePlay />}     label="YouTube"       value={stats.youtube}    subtitle={trackedSubtitle(stats.youtube, 'No videos tracked', 'Video')} />
-      <MetricBox icon={<MessagesSquare />} label="Reddit"        value={stats.reddit}     subtitle={trackedSubtitle(stats.reddit, 'No posts tracked', 'Post')} />
+      <MetricBox icon={<Tracked />}  label="Tracked items" value={stats.total}      subtitle="Across all categories" highlight />
+      <MetricBox icon={<Category />} label="Categories"    value={stats.categories} subtitle={categoriesSubtitle(stats.categories)} />
+      <MetricBox icon={<Videos />}   label="YouTube"       value={stats.youtube}    subtitle={trackedSubtitle(stats.youtube, 'No videos tracked', 'Video')} />
+      <MetricBox icon={<Posts />}    label="Reddit"        value={stats.reddit}     subtitle={trackedSubtitle(stats.reddit, 'No posts tracked', 'Post')} />
     </div>
   );
 }

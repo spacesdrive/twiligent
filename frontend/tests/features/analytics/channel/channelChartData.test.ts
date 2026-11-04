@@ -37,10 +37,12 @@ test('categories use their name or a numbered fallback', () => {
   assert.deepEqual(categoryDataOf({ 10: 4, 999: 1 }), [{ name: 'Music', value: 4 }, { name: 'Category 999', value: 1 }]);
 });
 
-test('top video chart truncates titles and always adds an ellipsis', () => {
-  const rows = topVideosChartOf([{ title: 'Short', viewCount: 5 }, null] as (YouTubeVideoSummary | null)[]);
-  assert.deepEqual(rows[0], { name: 'Short…', views: 5, likes: 0 });
-  assert.deepEqual(rows[1], { name: '…', views: 0, likes: 0 });
+test('top video chart adds an ellipsis only to titles it cut', () => {
+  const long = 'A video title well over twenty eight characters';
+  const rows = topVideosChartOf([{ title: 'Short', viewCount: 5 }, null, { title: long, viewCount: 1 }] as (YouTubeVideoSummary | null)[]);
+  assert.deepEqual(rows[0], { name: 'Short', views: 5, likes: 0 });
+  assert.deepEqual(rows[1], { name: '', views: 0, likes: 0 });
+  assert.equal(rows[2].name, `${long.slice(0, 28)}…`);
   assert.deepEqual(topVideosChartOf(undefined), []);
 });
 

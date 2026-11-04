@@ -44,22 +44,24 @@ export interface AccountAvatarProps {
   account: AccountFields;
   size?: AccountAvatarSize;
   showPlatform?: boolean;
+  // true when the name is already written next to the avatar, so a screen reader does not read it twice
+  decorative?: boolean;
   className?: string;
 }
 
-export function AccountAvatar({ account, size = 'default', showPlatform = false, className }: AccountAvatarProps) {
+export function AccountAvatar({ account, size = 'default', showPlatform = false, decorative = false, className }: AccountAvatarProps) {
   const platform = platformOf(account);
   const sizes: Record<AccountAvatarSize, string> = { xs: 'size-5', sm: 'size-6', default: 'size-8', lg: 'size-11', xl: 'size-16' };
   return (
     <span className={cn('relative inline-flex shrink-0', className)}>
       <Avatar className={cn(sizes[size] || sizes.default)}>
-        <AvatarImage src={accountImage(account)} alt={accountName(account)} />
-        <AvatarFallback className="bg-surface-sunken text-caption font-semibold text-ink-muted">
+        <AvatarImage src={accountImage(account)} alt={decorative ? '' : accountName(account)} />
+        <AvatarFallback aria-hidden={decorative || undefined} className="bg-surface-sunken text-caption font-semibold text-ink-muted">
           {accountInitials(account)}
         </AvatarFallback>
       </Avatar>
       {showPlatform && (
-        <span className="absolute -right-1 -bottom-1 flex size-4 items-center justify-center rounded-full bg-surface-raised text-ink-muted ring-2 ring-surface-raised">
+        <span aria-hidden="true" className="absolute -right-1 -bottom-1 flex size-4 items-center justify-center rounded-full bg-surface-raised text-ink-muted ring-2 ring-surface-raised">
           <PlatformIcon platform={platform} className="size-2.5" />
         </span>
       )}

@@ -56,8 +56,8 @@ export default function ListRow({
     >
       {leading}
       <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate text-sm font-medium text-ink">{title}</span>
-        {meta && <span className="truncate text-caption text-ink-faint">{meta}</span>}
+        <span className="truncate text-sm font-medium text-ink" title={typeof title === 'string' ? title : undefined}>{title}</span>
+        {meta && <span className="truncate text-caption text-ink-faint" title={typeof meta === 'string' ? meta : undefined}>{meta}</span>}
       </span>
       {trailing && <span className="flex shrink-0 items-center gap-2 text-small text-ink-muted tabular-nums">{trailing}</span>}
     </Element>

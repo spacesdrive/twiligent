@@ -6,6 +6,7 @@ import type { InstagramMedia } from '../../../../../shared/types/instagram.ts';
 // the fields mergeAccountMedia reads from each fulfilled media request
 export interface AccountMediaResult {
   media?: InstagramMedia[];
+  fetchedAt?: string;
 }
 
 export interface MediaAccount {
@@ -36,6 +37,19 @@ export interface MediaQuery {
   search: string;
   tier: string;
   sortField: MediaSortField;
+}
+
+export const MEDIA_SORT_OPTIONS: { value: MediaSortField; label: string }[] = [
+  { value: 'viewCount',      label: 'Most viewed' },
+  { value: 'likeCount',      label: 'Most liked' },
+  { value: 'commentsCount',  label: 'Most comments' },
+  { value: 'engagementRate', label: 'Best engagement rate' },
+  { value: 'timestamp',      label: 'Newest first' },
+];
+
+// a sort read from the address falls back to most viewed when it is not one of the options
+export function mediaSortOf(value: string): MediaSortField {
+  return MEDIA_SORT_OPTIONS.find(option => option.value === value)?.value ?? 'viewCount';
 }
 
 function engagementRateOf(item: Pick<InstagramMedia, 'viewCount' | 'likeCount' | 'commentsCount'>): number | null {

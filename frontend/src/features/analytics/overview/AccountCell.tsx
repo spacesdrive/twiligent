@@ -13,7 +13,7 @@ export default function AccountCell({ account, name }: AccountCellProps) {
   return (
     <TableCell>
       <div className="flex items-center gap-2.5">
-        <AccountAvatar account={account} />
+        <AccountAvatar account={account} decorative />
         <div>
           <p className="text-sm font-medium text-ink">{name}</p>
           <p className="text-caption text-ink-faint">{accountHandle(account)}</p>

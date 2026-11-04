@@ -3,6 +3,7 @@ import type { Dispatch, ReactNode, SetStateAction } from 'react';
 import { toast } from 'sonner';
 import { api } from '../services/api';
 import { normalizeAccount } from '../utils/formatters';
+import { accountName } from '../lib/accounts';
 import type { AppAccount } from '../utils/formatters';
 
 export type ToastSeverity = 'success' | 'error' | 'warning' | 'info';
@@ -43,10 +44,18 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     try {
       const res = await api.refreshAll();
-      setAccounts((res.accounts || []).map(normalizeAccount));
-      showToast('All accounts refreshed');
+      const refreshed = (res.accounts || []).map(normalizeAccount);
+      setAccounts(refreshed);
+      // one account failing must not read as all of them refreshing
+      const failed = (res.results || []).filter(result => !result.success);
+      if (failed.length === 0) {
+        showToast('All accounts refreshed');
+      } else {
+        const names = failed.map(result => accountName(refreshed.find(account => account.id === result.id)) || 'an account').join(', ');
+        showToast(`Refreshed ${refreshed.length - failed.length} of ${refreshed.length} accounts. Couldn't refresh ${names}. ${failed[0].error ?? ''}`.trim(), 'warning');
+      }
     } catch (err) {
-      showToast(`Refresh failed. ${(err as Error).message}`, 'error');
+      showToast(`Couldn't refresh your accounts. ${(err as Error).message}`, 'error');
     } finally {
       setLoading(false);
     }

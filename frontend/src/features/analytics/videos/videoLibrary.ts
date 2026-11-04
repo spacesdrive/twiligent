@@ -5,6 +5,7 @@ import type { YouTubeVideo } from '../../../../../shared/types/youtube.ts';
 // the fields mergeChannelVideos reads from each fulfilled GET /api/accounts/:id/videos
 export interface ChannelVideosResult {
   videos: YouTubeVideo[];
+  fetchedAt?: string;
 }
 
 export interface VideoChannelAccount {
@@ -70,8 +71,10 @@ export function watchUrl(videoId: string): string {
   return `https://www.youtube.com/watch?v=${videoId}`;
 }
 
-// engagement rates are strings, so they compare as text rather than as numbers
+// engagement rates are stored as two-decimal strings, so they are compared as numbers: "9.50" is below "12.34"
 function compareField(a: LibraryVideo, b: LibraryVideo, field: VideoSortField): number {
+  if (field === 'engagementRate') return Number.parseFloat(a.engagementRate) - Number.parseFloat(b.engagementRate);
+  if (field === 'publishedAt') return (Date.parse(a.publishedAt) || 0) - (Date.parse(b.publishedAt) || 0);
   const aValue = a[field] ?? 0;
   const bValue = b[field] ?? 0;
   if (typeof aValue === 'string' && typeof bValue === 'string') return aValue.localeCompare(bValue);
@@ -108,6 +111,32 @@ export function ariaSortOf(sort: VideoSort, field: VideoSortField): 'ascending' 
   if (sort.field !== field) return undefined;
   if (sort.order === 'asc') return 'ascending';
   return 'descending';
+}
+
+export const VIDEO_SORT_FIELDS: readonly VideoSortField[] = ['title', 'viewCount', 'likeCount', 'commentCount', 'engagementRate', 'durationSeconds', 'publishedAt'];
+
+// the same sorts as the table headers, for the grid, which has no headers to click
+export const VIDEO_SORT_OPTIONS: { value: string; label: string }[] = [
+  { value: 'viewCount:desc', label: 'Most viewed' },
+  { value: 'likeCount:desc', label: 'Most liked' },
+  { value: 'commentCount:desc', label: 'Most comments' },
+  { value: 'engagementRate:desc', label: 'Best engagement rate' },
+  { value: 'publishedAt:desc', label: 'Newest first' },
+  { value: 'publishedAt:asc', label: 'Oldest first' },
+  { value: 'durationSeconds:desc', label: 'Longest first' },
+  { value: 'title:asc', label: 'Title, A to Z' },
+];
+
+export function sortKeyOf(sort: VideoSort): string {
+  return `${sort.field}:${sort.order}`;
+}
+
+// an unknown value from the address falls back to most viewed
+export function sortFromKey(key: string): VideoSort {
+  const [field, order] = key.split(':');
+  const knownField = VIDEO_SORT_FIELDS.find(candidate => candidate === field);
+  if (!knownField || (order !== 'asc' && order !== 'desc')) return { field: 'viewCount', order: 'desc' };
+  return { field: knownField, order };
 }
 
 export function videosDescription(loading: boolean, videoCount: number, channelCount: number): string {

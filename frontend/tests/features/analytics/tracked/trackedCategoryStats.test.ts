@@ -54,7 +54,7 @@ test('overview metrics match the page wording', () => {
   const ytStats = youtubeStatsOf(videos);
   const rdStats = redditStatsOf(posts);
   assert.equal(itemsSubtitle(ytStats, rdStats), '2 YouTube videos, 2 Reddit posts');
-  assert.deepEqual(viewsMetric(ytStats, rdStats), { value: '3.5K', subtitle: '3.0K YouTube, 500 Reddit' });
+  assert.deepEqual(viewsMetric(ytStats, rdStats), { value: '3.5K', subtitle: '3K YouTube, 500 Reddit' });
   assert.deepEqual(viewsMetric(youtubeStatsOf([]), redditStatsOf([])), { value: '-', subtitle: 'No views recorded yet' });
   assert.deepEqual(karmaMetric(rdStats), { value: '100', subtitle: '50 per post on average' });
   assert.deepEqual(karmaMetric(redditStatsOf([])), { value: '-', subtitle: 'No Reddit posts in this category' });

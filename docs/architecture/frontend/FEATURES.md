@@ -85,13 +85,14 @@ frontend/src/
 │   │   ├── publishConstants.ts             <- Content types, statuses, intervals, caption limit
 │   │   └── publishHelpers.ts, scheduleHelpers.ts, queueHelpers.ts   <- Pure helpers with *.test.ts
 │   ├── automations/
-│   │   ├── Automations.tsx                 <- Page: server notices, counts, account controls, rules, activity, the rule dialog
+│   │   ├── Automations.tsx                 <- Page: server notices, counts, account controls, rules, activity
 │   │   ├── AutomationNotices.tsx           <- Webhook not set up, or replies paused on the server
 │   │   ├── AutomationMetrics.tsx, AutomationAccounts.tsx, AutomationRules.tsx, AutomationActivity.tsx
-│   │   ├── RuleDialog.tsx, RuleMediaPicker.tsx, RulePublicReplies.tsx, RulePreview.tsx   <- Rule form (private and public reply sections), post picker, public wordings, thread and message preview, keyword test
+│   │   ├── RuleEditorPage.tsx              <- The rule editor at /automations/rules/new and /automations/rules/:id: sticky Save bar, draft, leave warning
+│   │   ├── RuleMediaPicker.tsx, RulePublicReplies.tsx, RulePreview.tsx   <- Rule form (private and public reply sections), post picker, public wordings, thread and message preview, keyword test
 │   │   ├── useAutomations.ts               <- Overview and every rule and account action, with toasts
 │   │   ├── useAutomationActivity.ts        <- Filters, counts, activity pages and retry
-│   │   ├── useRuleForm.ts                  <- Rule dialog state, the account's posts, the test call
+│   │   ├── useRuleForm.ts                  <- Rule editor state, draft, field problems, the account's posts, the test call
 │   │   └── automationData.ts               <- Pure status labels, filters, summary, form conversion and checks (automationData.test.ts)
 │   ├── settings/
 │   │   ├── Settings.tsx                    <- Page: loads server settings, then renders each section; keeps the #hash scroll
@@ -133,23 +134,36 @@ it is named `karma` (`rdKarma`, `avgKarma`, `redditKarma`).
 "Virality Score" and "Consistency Score" are separate computed indices, not karma, and keep
 the word "score".
 
-## Shared Chart Component
+## Shared Chart Components
 
-`components/MetricAreaChart.tsx` renders a single-series area chart with the project's axis,
-grid, gradient, and tooltip styling. Use it instead of hand-rolling a Recharts `AreaChart`:
+Every chart sits in a `ChartFigure`: the plot, a one-sentence summary under it, and a Show table toggle with the
+same numbers. Use the shared components instead of hand-rolling a Recharts chart:
+
+| Component | Use it for |
+|---|---|
+| `ChartPanel` | A titled box around any Recharts chart; pass `summary` and `table` (`{ caption, columns, rows }`). A string title also names the focusable plot |
+| `MetricAreaChart` | One value over time (months, weeks); writes its own summary and table |
+| `RankingBarChart` | Separate things ranked by one number (accounts, categories, videos, tags): horizontal bars, largest first, an optional `kind` per bar for mixed units |
 
 ```tsx
-<MetricAreaChart
-  data={[{ name: 'Item', karma: 42 }]}
-  dataKey="karma"
-  label="Karma"
-  color={SERIES.warm}   // from @/lib/chart
-  emptyMessage="Track content to compare karma"
-/>
+<RankingBarChart rows={[{ name: 'Origami', value: 420 }]} label="Views" title="Views by category" color={CATEGORY_SERIES} />
 ```
 
-Each instance generates its own gradient id via `useId()`, so multiple charts on one page
-never collide.
+`lib/chart.ts` has `trendSummary` and `rankingSummary` for the sentence. Each `MetricAreaChart` generates its own
+gradient id via `useId()`, so multiple charts on one page never collide.
+
+## Shared Library Pieces
+
+The library pages (Videos, Shorts, Instagram content, Reddit posts, Tracked content) are built from the same parts:
+
+| Piece | Job |
+|---|---|
+| `features/analytics/useLibrarySources.ts` | Loads one list per account, keyed on the account ids; returns the results, failed accounts, the oldest `fetchedAt`, `initialLoading`, `refreshing` and a `refresh` that asks for fresh data |
+| `features/analytics/useLibraryParams.ts` | Search, filters, sort, layout and page in the address; a filter change returns to page 1 in one history step |
+| `SearchField`, `FilterChips`, `SortSelect` | The controls, in that order, with the account select between search and sort |
+| `ActiveFilters`, `NoResults`, `Pager` | Result count and removable filters, the no-match state that echoes the search, and the announced page range |
+| `FailedSourcesAlert`, `DataFreshness`, `RefreshButton` | Accounts that failed to load, the data's age, and the one Refresh control |
+| `lib/metricIcons.ts` | One icon per meaning (`METRIC_ICONS`, `IG_TYPE_ICONS`) |
 
 ## Image Lightbox
 
@@ -220,7 +234,7 @@ Each page manages its own loading/data/error state. Pages do not write to `AppCo
 | Tracked Content | `/tracked-content` | Monitor Reddit posts and YouTube videos; add by URL, assign categories, bulk edit, per-row refresh |
 | Tracked Category | `/tracked-content/category/:name` | Detailed per-category analytics; YouTube section (views, likes, comments, bar chart, table) and Reddit section (score, ratio, comments, bar chart, table) rendered separately |
 | Video Explorer | `/videos/:id` | YouTube video library with search and sort |
-| Publish | `/upload` | Publish or schedule to Instagram, bulk upload, and the scheduled post queue |
+| Publish | `/publish` (`/upload` redirects) | Publish or schedule to Instagram, bulk upload, and the scheduled post queue |
 | Automations | `/automations` | Keyword rules that answer Instagram comments with a private reply, a public reply under the comment or both, account pause and comment events, counts and the activity of both replies with separate retries (`docs/architecture/data-flows/AUTOMATION.md`) |
 | Settings | `/settings` | Theme, server key status, who sets up scheduling, the optional GitHub backup guide |
 | Documentation | `/docs/*` | Not a page in the app: `DocsRedirect` sends the visitor to the same path on the public docs at `https://twiligent.ujjwal.fyi/docs`. The Documentation item in the sidebar user menu and Open documentation in the command palette open the docs in a new tab |

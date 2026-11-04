@@ -8,8 +8,8 @@ export interface OpenLinkProps {
 
 export default function OpenLink({ href, label }: OpenLinkProps) {
   return (
-    <Button variant="ghost" size="icon-xs" render={<a href={href} target="_blank" rel="noopener noreferrer" aria-label={label} />}>
-      <ExternalLink />
+    <Button variant="ghost" size="icon-xs" render={<a href={href} target="_blank" rel="noopener noreferrer" aria-label={`${label} (opens in a new tab)`} />}>
+      <ExternalLink aria-hidden="true" />
     </Button>
   );
 }

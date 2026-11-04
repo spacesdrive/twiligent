@@ -1,20 +1,11 @@
 import { TableCell } from '@/components/ui/table';
-import { fmtNum, fmtNumFull } from '../../../utils/formatters';
-
-// fmtNum abbreviates only at 1000 and above, so the full value is redundant below that
-function showsFullValue(value: number | null | undefined): boolean {
-  return Math.abs(Number(value) || 0) >= 1000;
-}
+import Num from '@/components/Num';
 
 export interface NumberCellProps {
   value: number | null | undefined;
+  className?: string;
 }
 
-export default function NumberCell({ value }: NumberCellProps) {
-  return (
-    <TableCell className="text-right">
-      <p className="font-semibold text-ink">{fmtNum(value ?? 0)}</p>
-      {showsFullValue(value) && <p className="text-caption text-ink-faint">{fmtNumFull(value)}</p>}
-    </TableCell>
-  );
+export default function NumberCell({ value, className = 'text-right font-semibold text-ink' }: NumberCellProps) {
+  return <TableCell className={className}><Num value={value ?? 0} /></TableCell>;
 }

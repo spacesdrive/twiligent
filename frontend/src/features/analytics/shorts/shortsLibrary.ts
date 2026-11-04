@@ -18,6 +18,19 @@ export interface ShortsQuery {
 
 const SHORT_MAX_SECONDS = 60;
 
+export const SHORTS_SORT_OPTIONS: ShortsSortOption[] = [
+  { value: 'viewCount',      label: 'Most viewed' },
+  { value: 'likeCount',      label: 'Most liked' },
+  { value: 'commentCount',   label: 'Most comments' },
+  { value: 'engagementRate', label: 'Best engagement rate' },
+  { value: 'publishedAt',    label: 'Newest first' },
+];
+
+// a sort read from the address falls back to most viewed when it is not one of the options
+export function shortsSortOf(value: string): ShortsSortField {
+  return SHORTS_SORT_OPTIONS.find(option => option.value === value)?.value ?? 'viewCount';
+}
+
 export function shortsOf(videos: LibraryVideo[]): LibraryVideo[] {
   return videos.filter(video => video.durationSeconds > 0 && video.durationSeconds <= SHORT_MAX_SECONDS);
 }

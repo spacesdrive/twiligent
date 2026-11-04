@@ -3,7 +3,7 @@ import SurfaceBox from '@/components/SurfaceBox';
 import { RankNumber } from '@/components/ListRow';
 import { PlatformBadge } from '@/components/platform';
 import { accountName, platformOf } from '@/lib/accounts';
-import { timeAgo } from '../../../utils/formatters';
+import RelativeTime from '@/components/RelativeTime';
 import type { AppAccount } from '../../../utils/formatters';
 import { accountAudienceLabel, accountContentLabel } from './overviewLabels.ts';
 import AccountCell from './AccountCell';
@@ -15,16 +15,16 @@ export interface AccountsTabProps {
 
 export default function AccountsTab({ accounts }: AccountsTabProps) {
   return (
-    <SurfaceBox content={false} className="overflow-hidden">
+    <SurfaceBox title="All accounts" subheader="Ranked by audience" content={false} className="overflow-hidden">
       <Table>
         <TableHeader>
           <TableRow>
             <TableHead className="w-10 text-right">#</TableHead>
             <TableHead>Account</TableHead>
-            <TableHead>Platform</TableHead>
+            <TableHead className="hidden sm:table-cell">Platform</TableHead>
             <TableHead className="text-right">Audience</TableHead>
-            <TableHead className="text-right">Content</TableHead>
-            <TableHead className="text-right">Updated</TableHead>
+            <TableHead className="hidden text-right md:table-cell">Content</TableHead>
+            <TableHead className="hidden text-right md:table-cell">Updated</TableHead>
             <TableHead className="w-10"><span className="sr-only">Open</span></TableHead>
           </TableRow>
         </TableHeader>
@@ -33,10 +33,10 @@ export default function AccountsTab({ accounts }: AccountsTabProps) {
             <TableRow key={account.id}>
               <TableCell className="text-right"><RankNumber rank={i + 1} className="w-auto" /></TableCell>
               <AccountCell account={account} name={accountName(account)} />
-              <TableCell><PlatformBadge platform={platformOf(account)} /></TableCell>
+              <TableCell className="hidden sm:table-cell"><PlatformBadge platform={platformOf(account)} /></TableCell>
               <TableCell className="text-right text-ink">{accountAudienceLabel(account)}</TableCell>
-              <TableCell className="text-right text-ink-muted">{accountContentLabel(account)}</TableCell>
-              <TableCell className="text-right text-small text-ink-faint">{timeAgo(account.lastUpdated)}</TableCell>
+              <TableCell className="hidden text-right text-ink-muted md:table-cell">{accountContentLabel(account)}</TableCell>
+              <TableCell className="hidden text-right text-small text-ink-faint md:table-cell"><RelativeTime date={account.lastUpdated} /></TableCell>
               <TableCell><OpenAnalytics account={account} name={accountName(account)} /></TableCell>
             </TableRow>
           ))}

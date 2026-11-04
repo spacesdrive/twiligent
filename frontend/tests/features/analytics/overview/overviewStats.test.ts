@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   accountTotalsOf, cacheTotalsOf, summaryOf, sortedByAudience, sortedByContent, sortedByChannelViews, igAccountRowsOf,
+  oldestFetchedAt,
 } from '../../../../src/features/analytics/overview/overviewStats.ts';
 import { trackedStatsOf } from '../../../../src/features/analytics/overview/overviewTrackedStats.ts';
 
@@ -67,4 +68,15 @@ test('Instagram rows pair each account with its cache, most viewed first', () =>
   const rows = igAccountRowsOf([other, igAccount], cache);
   assert.deepEqual(rows.map(row => row.account.id), ['i1', 'i2']);
   assert.equal(rows[1].cache, undefined);
+});
+
+test('the overview reports the age of its oldest cached account and ignores accounts still syncing', () => {
+  const cache = {
+    y1: { cacheWarmed: true, fetchedAt: '2026-11-04T10:00:00Z' },
+    i1: { cacheWarmed: true, fetchedAt: '2026-11-04T08:30:00Z' },
+    r1: { cacheWarmed: false, syncing: true },
+    y2: { cacheWarmed: true },
+  };
+  assert.equal(oldestFetchedAt(cache), '2026-11-04T08:30:00Z');
+  assert.equal(oldestFetchedAt({ r1: { cacheWarmed: false } }), null);
 });

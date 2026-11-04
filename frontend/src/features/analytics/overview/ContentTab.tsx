@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
-import { BookmarkCheck, CirclePlay, MessagesSquare, Tag, VideoIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SurfaceBox from '@/components/SurfaceBox';
 import MetricBox from '@/components/MetricBox';
+import Num from '@/components/Num';
+import { METRIC_ICONS } from '@/lib/metricIcons';
 import { EmptyState } from '@/components/StateViews';
 import { fmtNum } from '../../../utils/formatters';
 import { IG_CONTENT_TYPES } from '../../../utils/instagramContent';
@@ -11,6 +12,8 @@ import AccountRankRow from './AccountRankRow';
 import CategoryRow from './CategoryRow';
 import type { OverviewStats } from './useOverviewStats';
 import type { CategoryStat } from './overviewTrackedStats.ts';
+
+const { videos: Videos, instagram: Instagram, redditPosts: Reddit, tracked: Tracked, category: Category } = METRIC_ICONS;
 
 function instagramContentSubtitle(stats: OverviewStats): string {
   const { igTypes } = stats.cacheTotals;
@@ -36,10 +39,10 @@ export default function ContentTab({ stats }: ContentTabProps) {
   return (
     <>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricBox icon={<CirclePlay />}     label="YouTube videos"    value={fmtNum(totals.videos)}       subtitle={countLabel(groups.youtube.length, 'channel')} />
-        <MetricBox icon={<VideoIcon />}      label="Instagram content" value={fmtNum(totals.posts)}        subtitle={instagramContentSubtitle(stats)} />
-        <MetricBox icon={<MessagesSquare />} label="Reddit posts"      value={fmtNum(cacheTotals.rdPosts)} subtitle={cacheTotals.rdPosts > 0 ? 'From the analytics cache' : 'Open Reddit analytics to load'} />
-        <MetricBox icon={<BookmarkCheck />}  label="Tracked content"   value={fmtNum(trackedStats.total)}  subtitle={`${trackedStats.ytItems.length} YouTube, ${trackedStats.rdItems.length} Reddit`} />
+        <MetricBox icon={<Videos />}    label="YouTube videos"    value={<Num value={totals.videos} />}       period="All time"     subtitle={countLabel(groups.youtube.length, 'channel')} />
+        <MetricBox icon={<Instagram />} label="Instagram content" value={<Num value={totals.posts} />}        period="All time"     subtitle={instagramContentSubtitle(stats)} />
+        <MetricBox icon={<Reddit />}    label="Reddit posts"      value={<Num value={cacheTotals.rdPosts} />} period="Loaded posts" subtitle={cacheTotals.rdPosts > 0 ? 'From the analytics cache' : 'Open Reddit analytics to load'} />
+        <MetricBox icon={<Tracked />}   label="Tracked content"   value={<Num value={trackedStats.total} />}  period="Now"          subtitle={`${trackedStats.ytItems.length} YouTube, ${trackedStats.rdItems.length} Reddit`} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -60,7 +63,7 @@ export default function ContentTab({ stats }: ContentTabProps) {
           {categoryStats.length === 0 ? (
             <EmptyState
               compact
-              icon={<Tag />}
+              icon={<Category />}
               title="No categories yet"
               description="Assign categories to tracked content to see this breakdown."
               action={<Button size="sm" variant="outline" render={<Link to="/tracked-content" />}>Open tracked content</Button>}

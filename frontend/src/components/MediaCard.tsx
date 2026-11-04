@@ -14,7 +14,7 @@ export interface MediaChipProps {
 
 export function MediaChip({ children, className }: MediaChipProps) {
   return (
-    <span className={cn('inline-flex items-center gap-1 rounded-pill bg-media-scrim/75 px-2 py-0.5 text-[0.6875rem] font-semibold text-on-media backdrop-blur-sm [&_svg]:size-3', className)}>
+    <span className={cn('inline-flex items-center gap-1 rounded-pill bg-media-scrim/75 px-2 py-0.5 text-caption font-semibold text-on-media backdrop-blur-sm [&_svg]:size-3', className)}>
       {children}
     </span>
   );
@@ -29,6 +29,8 @@ export interface MediaCardProps {
   topRight?: React.ReactNode;
   bottomRight?: React.ReactNode;
   href?: string;
+  // the link's name when the visible title is missing or shortened
+  linkLabel?: string;
   className?: string;
 }
 
@@ -41,6 +43,7 @@ export default function MediaCard({
   topRight,
   bottomRight,
   href,
+  linkLabel,
   className,
 }: MediaCardProps) {
   const Element = href ? 'a' : 'div';
@@ -49,6 +52,7 @@ export default function MediaCard({
       href={href}
       target={href ? '_blank' : undefined}
       rel={href ? 'noopener noreferrer' : undefined}
+      aria-label={href ? linkLabel : undefined}
       className={cn(
         'group flex flex-col overflow-hidden rounded-card border border-line bg-surface-raised transition-colors duration-(--duration-fast)',
         href && 'hover:border-line-strong/50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
@@ -60,7 +64,7 @@ export default function MediaCard({
           <img src={image} alt="" loading="lazy" className="size-full object-cover transition-transform duration-(--duration-slow) ease-(--ease-fold) group-hover:scale-[1.02]" />
         ) : (
           <div className="flex size-full items-center justify-center text-ink-faint">
-            <ImageOff className="size-6 stroke-[1.5]" />
+            <ImageOff className="size-6 stroke-[1.5]" aria-hidden="true" />
           </div>
         )}
         {topLeft && <div className="absolute top-2 left-2">{topLeft}</div>}
@@ -68,7 +72,7 @@ export default function MediaCard({
         {bottomRight && <div className="absolute right-2 bottom-2">{bottomRight}</div>}
       </div>
       <div className="flex flex-1 flex-col gap-1.5 p-3">
-        {title && <p className="line-clamp-2 text-small font-medium leading-snug text-ink">{title}</p>}
+        {title && <p className="line-clamp-2 text-small font-medium leading-snug text-ink" title={typeof title === 'string' ? title : undefined}>{title}</p>}
         {meta && <div className="mt-auto flex items-center gap-3 text-caption text-ink-faint tabular-nums [&_svg]:size-3 [&_svg]:stroke-[1.75]">{meta}</div>}
       </div>
     </Element>

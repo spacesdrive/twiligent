@@ -58,13 +58,13 @@ test('category meta skips empty platforms', () => {
 });
 
 test('row labels follow the account platform', () => {
-  assert.equal(topContentLabel(channel), '5.0K views');
+  assert.equal(topContentLabel(channel), '5K views');
   assert.equal(topContentLabel(igAccount), '20 items');
   assert.equal(topContentLabel(redditAccount), '70 karma');
   assert.equal(accountAudienceLabel(channel), '100 subscribers');
   assert.equal(accountAudienceLabel(igAccount), '300 followers');
   assert.equal(accountAudienceLabel(redditAccount), '70 karma');
-  assert.equal(accountContentLabel(channel), '5.0K views, 10 videos');
+  assert.equal(accountContentLabel(channel), '5K views, 10 videos');
   assert.equal(accountContentLabel(igAccount), '20 items');
   assert.equal(accountContentLabel(redditAccount), '60 post karma');
 });

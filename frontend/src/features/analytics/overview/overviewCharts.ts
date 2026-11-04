@@ -76,6 +76,25 @@ export function audienceLegendOf(groups: AccountGroups, categoryStats: CategoryC
   ].filter(Boolean) as AudienceLegendItem[];
 }
 
+const AUDIENCE_KIND: Record<AudiencePointType, string> = {
+  youtube: 'YouTube subscribers',
+  instagram: 'Instagram followers',
+  reddit: 'Reddit karma',
+  category: 'Category karma',
+};
+
+export interface AudienceRankingRow {
+  name: string;
+  value: number;
+  kind: string;
+  color: string;
+}
+
+// each bar says what it counts, because subscribers, followers and karma share one axis
+export function audienceRankingOf(points: AudiencePoint[]): AudienceRankingRow[] {
+  return points.map(point => ({ name: point.name, value: point.value, kind: AUDIENCE_KIND[point.type], color: audienceDotColor(point.type) }));
+}
+
 export function audienceDotColor(type: AudiencePointType): string {
   if (type === 'category') return CATEGORY_SERIES;
   return PLATFORM_META[type]?.series;

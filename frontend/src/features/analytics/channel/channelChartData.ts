@@ -1,4 +1,4 @@
-import { SERIES } from '../../../lib/chart.ts';
+import { SERIES, trendSummary } from '../../../lib/chart.ts';
 import { CATEGORY_MAP, fmtDate, fmtNum, fmtPercent } from '../../../utils/formatters.ts';
 import type {
   VideoAnalytics, YouTubeAnalyticsPayload, YouTubeDurationDistribution, YouTubeMonthlyViews, YouTubeVideoSummary,
@@ -68,9 +68,14 @@ export function shortsComparisonOf(analytics: Pick<VideoAnalytics, 'avgShortView
 }
 
 // every title gets the ellipsis, even short ones
+// an ellipsis only when the title was actually cut
+function shortTitle(title: string, max = 28): string {
+  return title.length > max ? `${title.slice(0, max)}…` : title;
+}
+
 export function topVideosChartOf(videos: (YouTubeVideoSummary | null)[] | null | undefined) {
   return (videos || []).map(video => ({
-    name: `${(video?.title || '').slice(0, 28)}…`, views: video?.viewCount || 0, likes: video?.likeCount || 0,
+    name: shortTitle(video?.title || ''), views: video?.viewCount || 0, likes: video?.likeCount || 0,
   }));
 }
 
@@ -117,4 +122,19 @@ export function bestVideosOf(analytics: Pick<VideoAnalytics, 'bestByViews' | 'be
 export function likesLabel(likeCount: number | null | undefined): string {
   if (likeCount == null) return 'likes hidden';
   return `${fmtNum(likeCount)} likes`;
+}
+
+export interface MonthlyPoint {
+  month: string;
+  value: number | string;
+}
+
+// the takeaway in words and the numbers as rows, for a month-by-month chart
+export function monthlyChartText(data: readonly MonthlyPoint[], unit: string, percent = false) {
+  const points = data.map(point => ({ name: point.month, value: Number(point.value) || 0 }));
+  const format = percent ? (value: number) => `${value}%` : fmtNum;
+  return {
+    summary: trendSummary(points, format, unit),
+    rows: points.map(point => ({ month: point.name, value: percent ? `${point.value}%` : point.value })),
+  };
 }

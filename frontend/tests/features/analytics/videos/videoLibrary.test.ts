@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { watchUrl, filterAndSortVideos, videoStatsOf, nextSort, ariaSortOf, videosDescription, mergeChannelVideos } from '../../../../src/features/analytics/videos/videoLibrary.ts';
+import { watchUrl, filterAndSortVideos, videoStatsOf, nextSort, ariaSortOf, videosDescription, mergeChannelVideos, sortFromKey, sortKeyOf } from '../../../../src/features/analytics/videos/videoLibrary.ts';
 import type { ChannelVideosResult, LibraryVideo, VideoChannelAccount, VideoQuery } from '../../../../src/features/analytics/videos/videoLibrary.ts';
 
 const videos = [
@@ -69,4 +69,20 @@ test('channel videos merge with their channel and skip failed channels', () => {
   assert.equal(merged.videos[1].thumbnail, 't.jpg');
   assert.equal(merged.videos[1].durationSeconds, 30);
   assert.equal(merged.videos[1].engagementRate, '0.00');
+});
+
+test('engagement sorts as a number, so 12.34 ranks above 9.50', () => {
+  const videos = [
+    { videoId: 'low', engagementRate: '9.50', channelId: 'c1', viewCount: 1 },
+    { videoId: 'high', engagementRate: '12.34', channelId: 'c1', viewCount: 1 },
+    { videoId: 'mid', engagementRate: '10.00', channelId: 'c1', viewCount: 1 },
+  ] as LibraryVideo[];
+  const sorted = filterAndSortVideos(videos, { channelFilter: 'all', search: '', tier: 'all', sort: { field: 'engagementRate', order: 'desc' } });
+  assert.deepEqual(sorted.map(video => video.videoId), ['high', 'mid', 'low']);
+});
+
+test('a sort round-trips through the address and an unknown one falls back to most viewed', () => {
+  assert.deepEqual(sortFromKey(sortKeyOf({ field: 'publishedAt', order: 'asc' })), { field: 'publishedAt', order: 'asc' });
+  assert.deepEqual(sortFromKey('password:asc'), { field: 'viewCount', order: 'desc' });
+  assert.deepEqual(sortFromKey('viewCount:sideways'), { field: 'viewCount', order: 'desc' });
 });

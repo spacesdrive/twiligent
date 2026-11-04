@@ -1,11 +1,14 @@
-import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { BarChart2, UserX } from 'lucide-react';
+import { UserX } from 'lucide-react';
+import { Alert, AlertAction, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import PageHeader from '@/components/PageHeader';
 import SurfaceBox from '@/components/SurfaceBox';
-import { EmptyState, PageSkeleton } from '@/components/StateViews';
+import { EmptyState, ErrorState, PageSkeleton } from '@/components/StateViews';
+import { useUrlChoice } from '@/hooks/use-url-state';
+import { useDocumentTitle } from '@/hooks/use-document-title';
 import { useAppContext } from '../../../context/AppContext';
 import { useChannelAnalytics } from './useChannelAnalytics';
 import ChannelHeader from './ChannelHeader';
@@ -30,16 +33,21 @@ const TABS = [
   { value: 'growth',     label: 'Growth' },
   { value: 'shorts',     label: 'Shorts and regular' },
   { value: 'tags',       label: 'Tags and SEO' },
-];
+] as const;
+
+type ChannelTab = typeof TABS[number]['value'];
+
+const TAB_VALUES = TABS.map(item => item.value);
 
 export default function ChannelAnalytics() {
   const { id } = useParams();
   const { accounts, showToast } = useAppContext();
   const account = accounts.find(item => item.id === id);
-  const { data, loading, loadAnalytics } = useChannelAnalytics(id, showToast);
-  const [tab, setTab] = useState('overview');
+  const { data, initialLoading, refreshing, error, fetchedAt, retry, refresh } = useChannelAnalytics(id, showToast);
+  const [tab, setTab] = useUrlChoice<ChannelTab>('tab', TAB_VALUES, 'overview');
+  useDocumentTitle(data?.channel.title || account?.title);
 
-  if (!account && !loading) {
+  if (!account && !initialLoading) {
     return (
       <div className="flex flex-col gap-6">
         <PageHeader title="YouTube channel" back={BACK} />
@@ -50,19 +58,14 @@ export default function ChannelAnalytics() {
     );
   }
 
-  if (loading) return <PageSkeleton metrics={4} />;
+  if (initialLoading) return <PageSkeleton metrics={4} />;
 
   if (!data) {
     return (
       <div className="flex flex-col gap-6">
         <PageHeader title={account?.title || 'YouTube channel'} back={BACK} />
         <SurfaceBox>
-          <EmptyState
-            icon={<BarChart2 />}
-            title="Analytics are unavailable"
-            description="The channel's analytics could not be loaded. Check the YouTube API key in Settings, then try again."
-            action={<Button variant="outline" size="sm" onClick={loadAnalytics}>Try again</Button>}
-          />
+          <ErrorState title="Channel analytics could not load" description={error ?? undefined} onRetry={retry} />
         </SurfaceBox>
       </div>
     );
@@ -72,17 +75,32 @@ export default function ChannelAnalytics() {
 
   return (
     <div className="flex flex-col gap-6">
-      <ChannelHeader account={account} channel={channel} back={BACK} onRefresh={loadAnalytics} />
+      <ChannelHeader account={account} channel={channel} back={BACK} refreshing={refreshing} onRefresh={refresh} fetchedAt={fetchedAt} />
+      {error && (
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>{error} The numbers below are from the last successful load.</AlertDescription>
+          <AlertAction><Button size="xs" variant="outline" onClick={refresh}>Try again</Button></AlertAction>
+        </Alert>
+      )}
       {analytics.totalVideos === 0 ? (
         <ChannelNoVideos channel={channel} />
       ) : (
-        <Tabs value={tab} onValueChange={setTab} className="gap-6">
-          <div className="scrollbar-hide -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
-            <TabsList className="w-max min-w-full">
-              {TABS.map(item => <TabsTrigger key={item.value} value={item.value}>{item.label}</TabsTrigger>)}
-            </TabsList>
+        <Tabs value={tab} onValueChange={value => setTab(value as ChannelTab)} className="gap-6" aria-busy={refreshing}>
+          {/* eight tabs do not fit a phone, so below sm the same choice is a select */}
+          <div className="sm:hidden">
+            <Select value={tab} onValueChange={value => setTab(value as ChannelTab)}>
+              <SelectTrigger className="w-full" aria-label="Section">
+                <SelectValue>{TABS.find(item => item.value === tab)?.label}</SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {TABS.map(item => <SelectItem key={item.value} value={item.value}>{item.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
-          <TabsContent value="overview" className="flex flex-col gap-3"><ChannelOverviewTab channel={channel} analytics={analytics} /></TabsContent>
+          <TabsList className="hidden w-full flex-wrap sm:flex">
+            {TABS.map(item => <TabsTrigger key={item.value} value={item.value}>{item.label}</TabsTrigger>)}
+          </TabsList>
+          <TabsContent value="overview" className="flex flex-col gap-4"><ChannelOverviewTab channel={channel} analytics={analytics} /></TabsContent>
           <TabsContent value="videos" className="flex flex-col gap-4"><ChannelVideosTab analytics={analytics} /></TabsContent>
           <TabsContent value="engagement" className="flex flex-col gap-4"><ChannelEngagementTab analytics={analytics} /></TabsContent>
           <TabsContent value="content" className="flex flex-col gap-4"><ChannelContentTab analytics={analytics} /></TabsContent>

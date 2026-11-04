@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   SORT_OPTIONS, filterAndSortTracked, categoriesOf, trackedStatsOf, typeChipsOf, pluralize, countLabel,
-  bulkCategoryMessage, parseManualViews, imageFileError, MAX_IMAGE_BYTES,
+  bulkCategoryMessage, parseManualViews, imageFileError, MAX_IMAGE_BYTES, trackedSortOf,
 } from '../../../../src/features/analytics/tracked/trackedList.ts';
 import type { TrackedFilterOptions } from '../../../../src/features/analytics/tracked/trackedList.ts';
 import type { TrackedContentItem } from '../../../../../shared/types/domain.ts';
@@ -66,7 +66,7 @@ test('manual views accept whole numbers and clear on empty', () => {
   assert.deepEqual(parseManualViews('0'), { value: 0 });
   assert.ok(parseManualViews('1.5').error);
   assert.ok(parseManualViews('-1').error);
-  assert.equal(parseManualViews('abc').error, 'Views must be a whole number of 0 or more.');
+  assert.equal(parseManualViews('abc').error, 'Enter views as a whole number, such as 1200, 1,200 or 1.2K.');
 });
 
 test('image checks run in the original order', () => {
@@ -77,3 +77,15 @@ test('image checks run in the original order', () => {
   assert.equal(imageFileError(image, true), '');
 });
 
+test('manual views accept separators and K or M suffixes as Reddit insights show them', () => {
+  assert.deepEqual(parseManualViews('12,500'), { value: 12500 });
+  assert.deepEqual(parseManualViews('1 234'), { value: 1234 });
+  assert.deepEqual(parseManualViews('12.5k'), { value: 12500 });
+  assert.deepEqual(parseManualViews('1.2M'), { value: 1200000 });
+  assert.ok(parseManualViews('12.5x').error);
+});
+
+test('a tracked sort from the address that is not an option falls back to newest first', () => {
+  assert.equal(trackedSortOf('views-desc'), 'views-desc');
+  assert.equal(trackedSortOf('title'), 'date-desc');
+});

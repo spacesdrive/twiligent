@@ -1,5 +1,5 @@
 import { seriesAt } from '../../../lib/chart.ts';
-import { fmtNum, fmtNumFull } from '../../../utils/formatters.ts';
+import { fmtNum } from '../../../utils/formatters.ts';
 import type { RedditAnalytics, RedditMediaType, RedditProfile } from '../../../../../shared/types/reddit.ts';
 
 // the page falls back to the stored account until the live profile loads, and accounts can store createdAt as a number
@@ -13,7 +13,7 @@ export interface RedditMediaSlice {
 
 export interface RedditKarmaItem {
   label: string;
-  value: string;
+  value: number;
   sub: string;
   lead?: boolean;
 }
@@ -44,10 +44,10 @@ export function mediaTypeDataOf(distribution: Partial<Record<RedditMediaType, nu
 
 export function karmaSummaryOf(profile: RedditProfileFields): RedditKarmaItem[] {
   return [
-    { label: 'Total karma',   value: fmtNum(profile.totalKarma),        sub: fmtNumFull(profile.totalKarma), lead: true },
-    { label: 'Post karma',    value: fmtNum(profile.postKarma),         sub: 'From submitted posts' },
-    { label: 'Comment karma', value: fmtNum(profile.commentKarma),      sub: 'From comments' },
-    { label: 'Awardee karma', value: fmtNum(profile.awardeeKarma ?? 0), sub: 'From awards received' },
+    { label: 'Total karma',   value: profile.totalKarma ?? 0,   sub: 'All time', lead: true },
+    { label: 'Post karma',    value: profile.postKarma ?? 0,    sub: 'From submitted posts' },
+    { label: 'Comment karma', value: profile.commentKarma ?? 0, sub: 'From comments' },
+    { label: 'Awardee karma', value: profile.awardeeKarma ?? 0, sub: 'From awards received' },
   ];
 }
 

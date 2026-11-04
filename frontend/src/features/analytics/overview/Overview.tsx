@@ -1,9 +1,13 @@
-import { useState } from 'react';
 import { Progress } from '@/components/ui/progress';
+import { Alert, AlertAction, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent } from '@/components/ui/tabs';
+import { useUrlChoice } from '@/hooks/use-url-state';
 import { useAppContext } from '../../../context/AppContext';
 import { useAuth } from '../../../context/AuthContext';
 import { metricTabsOf } from './overviewLabels.ts';
+import { oldestFetchedAt } from './overviewStats.ts';
+import type { AccountCache } from './overviewStats.ts';
 import { useOverviewData } from './useOverviewData';
 import { useOverviewStats } from './useOverviewStats';
 import OverviewHeader from './OverviewHeader';
@@ -17,26 +21,46 @@ import AccountsTab from './AccountsTab';
 import CommentsTab from './CommentsTab';
 import LikesTab from './LikesTab';
 
+const OVERVIEW_TABS = ['audience', 'views', 'content', 'accounts', 'comments', 'likes'] as const;
+
+type OverviewTab = typeof OVERVIEW_TABS[number];
+
 export default function Overview() {
-  const { accounts, loading: accountsLoading, refreshAll } = useAppContext();
+  const { accounts, loading: refreshingAll, refreshAll } = useAppContext();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('audience');
-  const { overviewData, overviewLoading, isSyncing } = useOverviewData(accounts);
+  const [activeTab, setActiveTab] = useUrlChoice<OverviewTab>('tab', OVERVIEW_TABS, 'audience');
+  const { overviewData, overviewLoading, loaded, error, retry, isSyncing } = useOverviewData(accounts);
   const stats = useOverviewStats(accounts, overviewData);
-  const loading = accountsLoading || overviewLoading;
+  const fetchedAt = oldestFetchedAt(overviewData.analyticsCache as AccountCache);
 
   return (
     <div className="flex flex-col gap-8">
-      <OverviewHeader accounts={accounts} email={user?.email} isSyncing={isSyncing} loading={loading} onRefresh={refreshAll} />
+      <OverviewHeader
+        accounts={accounts}
+        email={user?.email}
+        isSyncing={isSyncing}
+        refreshing={refreshingAll}
+        onRefresh={refreshAll}
+        fetchedAt={fetchedAt}
+      />
 
       <QuickActions />
 
-      {loading && <Progress value={null} aria-label="Loading accounts" />}
+      {overviewLoading && <Progress value={null} aria-label="Loading the overview" />}
+
+      {error && (
+        <Alert variant="destructive" role="alert">
+          <AlertDescription>
+            {error} {loaded ? 'The figures below are from the last successful load.' : 'Figures from cached analytics are missing below until it loads.'}
+          </AlertDescription>
+          <AlertAction><Button size="xs" variant="outline" onClick={retry}>Try again</Button></AlertAction>
+        </Alert>
+      )}
 
       {accounts.length === 0 ? (
         <GettingStarted />
       ) : (
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-6">
+        <Tabs value={activeTab} onValueChange={value => setActiveTab(value as OverviewTab)} className="gap-6">
           <MetricTabsList tabs={metricTabsOf(accounts, stats, isSyncing)} />
           <TabsContent value="audience" className="flex flex-col gap-4">
             <AudienceTab stats={stats} />

@@ -1,10 +1,5 @@
-import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, ResponsiveContainer,
-} from 'recharts';
-import type { DotItemDotProps, TooltipPayloadEntry, TooltipValueType } from 'recharts';
-import { axisProps, gridProps, tooltipStyle } from '@/lib/chart';
-import { fmtNum, fmtNumFull } from '../../../utils/formatters';
-import { audienceDotColor } from './overviewCharts.ts';
+import RankingBarChart from '@/components/RankingBarChart';
+import { audienceRankingOf } from './overviewCharts.ts';
 import type { AudienceLegendItem, AudiencePoint } from './overviewCharts.ts';
 
 export interface AudienceChartProps {
@@ -12,58 +7,19 @@ export interface AudienceChartProps {
   legend: AudienceLegendItem[];
 }
 
-function formatAudienceTooltip(value: TooltipValueType | undefined, name: string | number | undefined, props: TooltipPayloadEntry): [string, string] {
-  return [fmtNumFull(value as number), props.payload.type === 'category' ? 'Karma' : 'Audience'];
-}
-
-function renderAudienceDot({ cx, cy, payload, index }: DotItemDotProps) {
-  return (
-    <circle
-      key={`dot-${index}`}
-      cx={cx}
-      cy={cy}
-      r={4.5}
-      fill={audienceDotColor(payload.type)}
-      stroke="var(--surface-raised)"
-      strokeWidth={2}
-    />
-  );
-}
-
+// a ranking of separate accounts, so bars rather than a line; the legend names each colour in words
 export default function AudienceChart({ data, legend }: AudienceChartProps) {
   return (
-    <>
-      <ResponsiveContainer width="100%" height={260} debounce={200}>
-        <AreaChart data={data} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-          <defs>
-            <linearGradient id="audienceAreaGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%"  stopColor="var(--chart-1)" stopOpacity={0.22} />
-              <stop offset="95%" stopColor="var(--chart-1)" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid {...gridProps} vertical={false} />
-          <XAxis dataKey="name" {...axisProps} />
-          <YAxis {...axisProps} tickFormatter={fmtNum} width={48} />
-          <ReTooltip contentStyle={tooltipStyle} cursor={{ stroke: 'var(--line-strong)' }} formatter={formatAudienceTooltip} />
-          <Area
-            type="monotone"
-            dataKey="value"
-            stroke="var(--chart-1)"
-            strokeWidth={2}
-            fill="url(#audienceAreaGrad)"
-            dot={renderAudienceDot}
-            activeDot={{ r: 6 }}
-          />
-        </AreaChart>
-      </ResponsiveContainer>
-      <ul className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5">
+    <div className="flex flex-col gap-3">
+      <RankingBarChart rows={audienceRankingOf(data)} label="Audience" title="Audience by account" kindLabel="Counts" />
+      <ul aria-label="Colour key" className="flex flex-wrap gap-x-4 gap-y-1.5 px-2">
         {legend.map(({ color, label }) => (
           <li key={label} className="flex items-center gap-1.5 text-caption text-ink-muted">
-            <span className="size-2.5 shrink-0 rounded-full" style={{ background: color }} />
+            <span aria-hidden="true" className="size-2.5 shrink-0 rounded-full" style={{ background: color }} />
             {label}
           </li>
         ))}
       </ul>
-    </>
+    </div>
   );
 }

@@ -16,7 +16,7 @@ export default function AccountRankRow({ account, rank, trailing }: AccountRankR
   return (
     <ListRow
       onClick={() => navigate(accountPath(account))}
-      leading={<><RankNumber rank={rank} /><AccountAvatar account={account} showPlatform /></>}
+      leading={<><RankNumber rank={rank} /><AccountAvatar account={account} showPlatform decorative /></>}
       title={accountName(account)}
       meta={accountHandle(account)}
       trailing={trailing}

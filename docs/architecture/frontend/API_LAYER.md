@@ -69,6 +69,13 @@ export const api = {
 
 The response types are imported with `import type` from `@shared/types/*.ts`, so nothing from `shared/` reaches the bundle.
 
+### Fresh reads
+
+`getVideos(id, fresh?)`, `getIGMedia(id, fresh?)` and `getRedditAnalytics(id, fresh?)` read the server's cache by
+default. Passing `fresh = true` adds `?fresh=1`, which skips the cache; pages send it only from their Refresh button,
+so opening a page never spends platform quota by itself. The Reddit posts pages read `getRedditAnalytics`, which
+carries the posts with their `fetchedAt`; the old `getRedditPosts` method was removed.
+
 ## Adding a New API Method
 
 1. Add or reuse the request and response types in `shared/types/`.
