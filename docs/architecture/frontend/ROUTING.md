@@ -12,7 +12,7 @@ The app uses React Router 7 in `frontend/src/App.tsx`: a data router from `creat
 | `/docs/*` | `components/DocsRedirect.tsx` | Public. The docs live on the public site; this route replaces the location with the same path and hash under `https://twiligent.ujjwal.fyi/docs` (`docsUrl()` in `lib/docs.ts`), so old links keep working |
 | `/` (layout) | `AppLayout` (inline) | Protected - redirects to `/login` if unauthenticated |
 | `/` (index) | `Overview.tsx` | Default page after login |
-| `/accounts` | `AccountManager.tsx` | Connect and remove accounts. `?add=1` opens the add flow; `?ig_connected` (`true`, or `reconnected` when the account was already there) and `?ig_error` report the Instagram OAuth result |
+| `/accounts` | `AccountManager.tsx` | Connect and remove accounts. `?add=1` opens the add flow; Instagram sign-in returns `#ig_code=...&ig_state=...` in the fragment, which the page removes from the address and posts to `api.completeInstagramConnection` (the server connects the account only for the person who started the sign-in), or `?ig_error` when it failed or was cancelled |
 | `/channel/:id` | `ChannelAnalytics.tsx` | `:id` = account.id for YouTube accounts |
 | `/instagram/:id` | `InstagramAnalytics.tsx` | `:id` = account.id for Instagram accounts |
 | `/tracked-content` | `TrackedContent.tsx` | Tracked YouTube videos - add, manage, categorize, refresh |

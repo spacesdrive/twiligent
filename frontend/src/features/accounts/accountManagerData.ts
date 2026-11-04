@@ -52,7 +52,20 @@ export function instagramErrorMessage(code: string): string {
   return IG_ERRORS[code] || `Instagram connection failed: ${code}. ${TESTER_HINT}`;
 }
 
-// oauth returns ?ig_connected=true, ?ig_connected=reconnected or ?ig_error=...; ?add=1 opens the add flow
+export interface InstagramCompletion {
+  code: string;
+  state: string;
+}
+
+// a finished Instagram sign-in comes back as #ig_code=...&ig_state=..., in the fragment so it never reaches a server log
+export function readInstagramCompletion(hash: string): InstagramCompletion | null {
+  const params = new URLSearchParams(hash.replace(/^#/, ''));
+  const code = params.get('ig_code');
+  const state = params.get('ig_state');
+  return code && state ? { code, state } : null;
+}
+
+// a failed or cancelled sign-in returns ?ig_error=...; ?add=1 opens the add flow
 export function readOAuthReturn(searchParams: URLSearchParams): OAuthReturn | null {
   const connected = searchParams.get('ig_connected');
   const igError = searchParams.get('ig_error');

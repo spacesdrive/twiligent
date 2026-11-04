@@ -54,7 +54,7 @@ frontend/src/
 │   │   ├── YouTubeAccountFields.tsx, AddAccountFooter.tsx
 │   │   ├── useAddAccount.ts                <- Add dialog state; Back keeps typed fields, Cancel clears them
 │   │   ├── useAccountRefresh.ts, useAccountDelete.ts
-│   │   ├── useInstagramOAuthReturn.ts      <- Reads ?ig_connected, ?ig_error and ?add once, then clears them
+│   │   ├── useInstagramOAuthReturn.ts      <- Finishes a sign-in from #ig_code and #ig_state, reads ?ig_error and ?add, then clears them
 │   │   ├── platformChoices.ts              <- Platform choice titles, descriptions and icons
 │   │   └── accountManagerData.ts           <- Pure OAuth return, error text, card metrics (accountManagerData.test.ts)
 │   ├── publishing/

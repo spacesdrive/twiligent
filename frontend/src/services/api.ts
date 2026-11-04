@@ -8,7 +8,7 @@ import type {
     TrackedContentItem, TrackedContentUpdateRequest, YouTubeAccountAddResponse,
 } from '@shared/types/domain.ts';
 import type {
-    CloudinaryConfigResponse, InstagramAnalyticsResponse, InstagramAuthUrlResponse, InstagramContainerStatusResponse,
+    CloudinaryConfigResponse, InstagramAnalyticsResponse, InstagramAuthUrlResponse, InstagramConnectCompleteResponse, InstagramContainerStatusResponse,
     InstagramMediaPublishResponse, InstagramMediaResponse, InstagramPublishingLimitResponse, InstagramPublishRequest,
     InstagramPublishResponse, InstagramTokenRefreshResponse,
 } from '@shared/types/instagram.ts';
@@ -123,6 +123,8 @@ export const api = {
 
     // Instagram OAuth - gets the auth URL to redirect the browser to
     getInstagramAuthUrl: () => request<InstagramAuthUrlResponse>('/auth/instagram/url'),
+    // finishes the sign-in Instagram returned in the fragment; the server checks that this person started it
+    completeInstagramConnection: (code: string, state: string) => request<InstagramConnectCompleteResponse>('/auth/instagram/complete', { method: 'POST', body: JSON.stringify({ code, state }) }),
 
     addInstagramAccount: (accessToken: string) => request<AccountResponse>('/accounts/instagram', { method: 'POST', body: JSON.stringify({ accessToken }) }),
     refreshIGToken: (id: string) => request<InstagramTokenRefreshResponse>(`/accounts/${id}/refresh-ig-token`, { method: 'POST' }),
