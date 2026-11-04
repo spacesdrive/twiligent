@@ -335,7 +335,7 @@ This is not optional for features that touch new UI patterns, new APIs, or new i
 - Read `docs/workflows/GIT.md` for the full commit format
 - `main` is protected by the ruleset **Protect main**: no direct pushes, force pushes or deletion; every change lands through a pull request whose CI check `Type check, lint, test, build` passed, merged with rebase (linear history). Merging deploys both apps
 
-Commit after every meaningful change. Do not batch unrelated changes into one commit. Use Conventional Commits format:
+**Commit each small change as soon as it works.** Every change to a code file, however small, is committed right after it works, not saved up: one logical change per commit (the subject needs no "and"), refactors in their own commit before the change that needs them, the test and doc line for the change in the same commit, and the type check and the touched area's tests passing first, because every commit lands on `main` on its own. Stage the change's files by path, never everything at once. The research behind this (Git's `gitworkflows`, Google's "Small CLs", GitHub's "Write better commits") and examples are in `docs/workflows/GIT.md` (Commit Cadence). Use Conventional Commits format:
 
 ```
 type(scope): short imperative description

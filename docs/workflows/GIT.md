@@ -15,15 +15,31 @@ Do not add "Co-Authored-By" lines referencing AI tools. Commits should show only
 
 ## Commit Cadence
 
-Commit after every meaningful, self-contained change. Do not accumulate unrelated changes into one large commit. Do not leave work uncommitted between sessions.
+Commit as soon as one small change works, however small: a fixed message, a new prop, one renamed function, one migration. Don't wait to collect several changes; a commit made right away is easy to track, review, revert and search. This follows how experienced teams work:
+- Git's own guide (`gitworkflows`, "Separate changes"): split work into small logical steps from the start and commit each one, each working independently and passing the tests, because squashing small commits later is easier than splitting a big one.
+- Google's engineering practices ("Small CLs"): the right size is one self-contained change that does just one thing, usually part of a feature rather than all of it, and "it's better to err on the side of" too small.
+- GitHub's engineering blog ("Write better commits"): each commit small and atomic, so the repository still builds and passes its tests at that exact commit; `git bisect` and reverting both depend on it.
 
-A meaningful change is one that:
-- Adds a working feature (even a small one)
-- Fixes a bug
-- Updates documentation to reflect a real change
-- Refactors without changing behavior
+### What one commit holds
 
-Do not commit work-in-progress that breaks the build or the type check. Use a feature branch if the work spans multiple sessions.
+| Rule | In practice |
+|---|---|
+| One logical change | The subject says it in one sentence with no "and". If it needs "and", make two commits |
+| Small means focused, not few lines | A rename across 20 files is one commit; a 30-line change that fixes a bug and tidies a helper is two |
+| Refactors on their own | Moving, renaming or reshaping code that keeps the behaviour goes in its own commit, before the change that needs it. A one-word variable rename inside a fix may stay |
+| Tests and docs travel with the change | The test for the new behaviour and the doc line that describes it go in the same commit as the code |
+| Every commit works | `npm run typecheck` passes, and the tests for the touched area pass, before each commit; `main` uses rebase merges, so every commit lands there on its own |
+| Order builds up | Shared types before the backend that uses them, the backend before the screen that calls it, so each commit stands on the ones before |
+| Stage on purpose | Add the files of this change by path, never `git add -A` over unrelated edits; split a file's changes with `git add -p` when it holds two |
+
+Examples of commits that are each one change:
+- `fix(publish): use the local day for the schedule date picker`
+- `refactor(frontend): move fieldHintId and fieldErrorId to lib/fieldIds`
+- `feat(api): accept ?fresh=1 on the Reddit analytics read`
+- `test(frontend): cover engagement sorting as a number`
+- `docs(routing): describe the /publish and /instagram redirects`
+
+Never commit work that breaks the build or the type check, and never leave work uncommitted at the end of a session: commit the last working step, and note what remains in the issue. Push the branch after each few commits so the work is not only on one machine.
 
 ---
 
