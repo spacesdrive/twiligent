@@ -20,6 +20,8 @@ export interface ScheduledPublisherDeps {
 
 export interface ScheduledPublisher {
     publishDue(): Promise<ScheduledPublishRun>;
+    // the manual trigger: only the caller's own due posts, so one person never runs, settles or reads another's
+    publishDueForUser(userId: string): Promise<ScheduledPublishRun>;
 }
 
 // what one claimed post ended as; 'left' means the outcome on Instagram is unknown and the lease decides later
@@ -153,35 +155,41 @@ export function createScheduledPublisher({ accounts, posts, context }: Scheduled
         }
     }
 
-    return {
-        async publishDue() {
-            let processed = 0;
-            const errors: ScheduledPublishFailure[] = [];
-            let candidates: ScheduledPost[];
-            try {
-                const [due, stale] = await Promise.all([posts.listDue(), posts.listStale(staleClaimCutoff(Date.now()))]);
-                candidates = [...stale, ...due];
-            } catch (err) {
-                log.error('scheduler could not load due posts', errorFields(err));
-                return { processed, errors };
-            }
-
-            for (const candidate of candidates) {
-                // past the run's deadline every Instagram call fails, so a new claim would only sit out the lease
-                if (signal.aborted) break;
-                let post: ScheduledPost | null;
-                try {
-                    // null when the other scheduler claimed it first
-                    post = await posts.claim(candidate);
-                } catch (err) {
-                    log.error('scheduler could not claim a post', { postId: candidate.id, ...errorFields(err) });
-                    continue;
-                }
-                if (!post) continue;
-                if (candidate.status === 'publishing') log.warn('scheduled post taken over after its claim expired', { postId: post.id, attempts: post.attempts });
-                if (await publishClaimed(post, errors) === 'published') processed++;
-            }
+    // claims and publishes the listed posts one at a time; the cron run lists everyone's, the manual trigger only its caller's
+    async function publishCandidates(load: () => Promise<[ScheduledPost[], ScheduledPost[]]>): Promise<ScheduledPublishRun> {
+        let processed = 0;
+        const errors: ScheduledPublishFailure[] = [];
+        let candidates: ScheduledPost[];
+        try {
+            const [due, stale] = await load();
+            candidates = [...stale, ...due];
+        } catch (err) {
+            log.error('scheduler could not load due posts', errorFields(err));
             return { processed, errors };
-        },
+        }
+
+        for (const candidate of candidates) {
+            // past the run's deadline every Instagram call fails, so a new claim would only sit out the lease
+            if (signal.aborted) break;
+            let post: ScheduledPost | null;
+            try {
+                // null when the other scheduler claimed it first
+                post = await posts.claim(candidate);
+            } catch (err) {
+                log.error('scheduler could not claim a post', { postId: candidate.id, ...errorFields(err) });
+                continue;
+            }
+            if (!post) continue;
+            if (candidate.status === 'publishing') log.warn('scheduled post taken over after its claim expired', { postId: post.id, attempts: post.attempts });
+            if (await publishClaimed(post, errors) === 'published') processed++;
+        }
+        return { processed, errors };
+    }
+
+    return {
+        publishDue: () => publishCandidates(() => Promise.all([posts.listDue(), posts.listStale(staleClaimCutoff(Date.now()))])),
+        publishDueForUser: userId => publishCandidates(() => Promise.all([
+            posts.listDueForUser(userId), posts.listStaleForUser(staleClaimCutoff(Date.now()), userId),
+        ])),
     };
 }

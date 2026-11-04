@@ -32,6 +32,6 @@ export const deleteScheduledPost = controller.createHandlers(async c => {
 });
 
 export const publishDuePosts = controller.createHandlers(async c => {
-    const result = await servicesFor(c).scheduledPosts.publishDueNow();
+    const result = await servicesFor(c).scheduledPosts.publishDueNow(c.get('userId'));
     return c.json({ success: true, ...result, timestamp: new Date().toISOString() } satisfies ScheduledPublishRunResponse);
 });
