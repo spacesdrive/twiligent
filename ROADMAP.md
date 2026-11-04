@@ -10,7 +10,7 @@ Every item that is being worked on has a GitHub issue (see `docs/workflows/ISSUE
 
 What Twiligent is for, and what every change should move forward.
 
-1. **One place for a creator's numbers.** YouTube, Instagram and Reddit analytics on one dashboard, with the same metrics, terms and layout across platforms.
+1. **One place for a creator's numbers.** YouTube and Instagram analytics on one dashboard, with the same metrics, terms and layout across platforms.
 2. **Publishing that does not miss.** Scheduled Instagram posts go out on time, exactly once, even if one of the two schedulers fails.
 3. **Cheap and simple to self-host.** Runs on the free tiers of Cloudflare, Supabase, Upstash and Cloudinary. Setup is documented step by step in the public docs at `https://twiligent.ujjwal.fyi/docs`, and members of an instance need no setup at all.
 4. **Safe by default.** Secrets stay server-side, every query is scoped to the signed-in user, tokens never reach the browser, and no client can exhaust the shared API quotas.
@@ -47,7 +47,7 @@ Add Twitter/X for analytics (read-only via twitterapi.io or the official v2 API)
 - Fetch tweets, impressions and engagement through the provider's REST API
 - No OAuth popup needed for public accounts
 
-Follow `docs/features/NEW_INTEGRATION.md`; the Reddit integration is the closest template.
+Follow `docs/features/NEW_INTEGRATION.md`; the YouTube integration, which reads public data with a server key and no OAuth, is the closest template.
 
 ---
 
@@ -126,7 +126,6 @@ React Native app using the same Cloudflare Worker backend.
 
 - Redis cache TTL was never set - analytics caches now expire after 6 hours.
 - The legacy Express prototype in the root `public/` folder and its root dependencies were removed; the root `package.json` is now the npm workspaces root.
-- Reddit integration shipped (public JSON API, no cookies or OAuth).
 - Secrets with PowerShell-injected BOM characters broke the GitHub Actions publisher - it now strips non-ASCII characters from them.
 - The API had no rate limiting - every request is now limited per IP, per user and per quota-spending route (#8).
 - The codebase was JavaScript with API shapes restated on both sides - it is now strict TypeScript with shared API types (#2).

@@ -24,9 +24,11 @@ These statuses apply to every route below and are not repeated in the tables:
 | 409 | `CONFLICT` | The account is already added, or an automation item cannot be retried in its state |
 | 429 | `RATE_LIMITED` | A rate limit rule is exceeded; the body adds `retryAfter` (seconds). The email hook also answers 429 when the day's emails are used up |
 | 500 | `DATABASE_ERROR`, `INTERNAL_ERROR` | A Supabase query failed, or a bug |
-| 502 | `UPSTREAM_ERROR` | YouTube, Instagram or Reddit answered with an error; the platform's message is kept with URLs removed |
+| 502 | `UPSTREAM_ERROR` | YouTube or Instagram answered with an error; the platform's message is kept with URLs removed |
 | 503 | `NOT_CONFIGURED` | A Worker secret the route needs (YouTube key, Instagram app, Cloudinary, the email hook secrets, the Instagram webhook secrets) is not set |
 | 504 | `UPSTREAM_TIMEOUT` | A platform call was cancelled or timed out |
+
+The routes of the platform removed in v2.0.0 answer 404 like any other unknown route (ADR-049 in `DECISIONS.md`).
 
 ## Public Routes
 
@@ -131,16 +133,6 @@ Controllers call `ScheduledPostService` (`services/scheduledPostService.ts`).
 | GET | `/api/process-scheduled` | `scheduledPostRoutes.ts`, `scheduledPostController.publishDuePosts` | Manual trigger - runs `scheduledPublisher.publishDue()` immediately for every user's due posts (dev/test) |
 | POST | `/api/process-scheduled` | `scheduledPostRoutes.ts`, `scheduledPostController.publishDuePosts` | Same as above |
 
-### Reddit
-
-Controllers call `AccountService` (adding) and `RedditAnalyticsService`.
-
-| Method | Path | File | Purpose |
-|---|---|---|---|
-| POST | `/api/accounts/reddit` | `accountRoutes.ts`, `accountController.addRedditAccount` | Add Reddit account by username and session cookie (both required); 409 when already added |
-| GET | `/api/accounts/:id/reddit-analytics` | `redditRoutes.ts`, `redditController.getRedditAnalytics` | Profile, posts, computed analytics and `fetchedAt`; cached in Redis; `?fresh=1` skips the cache (any other `fresh` value is a 400); 400 when the cookie or username is missing |
-| GET | `/api/accounts/:id/reddit-posts` | `redditRoutes.ts`, `redditController.getRedditPosts` | Returns cached post list or live-fetched posts. The app no longer calls it: the posts pages read `reddit-analytics`, which carries `fetchedAt` |
-
 ### Overview
 | Method | Path | File | Purpose |
 |---|---|---|---|
@@ -148,15 +140,15 @@ Controllers call `AccountService` (adding) and `RedditAnalyticsService`.
 
 ### Tracked Content
 
-Controllers call `TrackedContentService`; link detection and the manual views and image checks live in `services/trackedContentRules.ts`.
+Controllers call `TrackedContentService`; link detection lives in `services/trackedContentRules.ts`. Tracked content is YouTube videos only.
 
 | Method | Path | File | Purpose |
 |---|---|---|---|
-| GET | `/api/tracked-content` | `trackedContentRoutes.ts`, `trackedContentController.listTrackedContent` | List all tracked items for the current user (Reddit posts and YouTube videos) |
-| POST | `/api/tracked-content` | `trackedContentRoutes.ts`, `trackedContentController.addTrackedContent` | Add a URL to track; auto-detects Reddit or YouTube; fetches live data immediately; answers `201` |
-| PUT | `/api/tracked-content/:id` | `trackedContentRoutes.ts`, `trackedContentController.updateTrackedContent` | Update `label`, `category`, `accountId`, `manualViews`, or `imageUrl` for a tracked item. `manualViews` and `imageUrl` are Reddit-only (400 for YouTube) and `null` clears either. `manualViews` must be a whole number of 0 or more; `imageUrl` must parse as an `https:` URL. An `accountId` on a YouTube item is 400, and one that is not the user's Reddit account is 404 `Reddit account not found` |
+| GET | `/api/tracked-content` | `trackedContentRoutes.ts`, `trackedContentController.listTrackedContent` | List all tracked YouTube videos for the current user |
+| POST | `/api/tracked-content` | `trackedContentRoutes.ts`, `trackedContentController.addTrackedContent` | Add a YouTube video to track from `{ url, label?, category? }`; fetches live data immediately; answers `201`. Any other link is 400 `Only YouTube video links can be tracked. Paste a youtube.com or youtu.be link.` |
+| PUT | `/api/tracked-content/:id` | `trackedContentRoutes.ts`, `trackedContentController.updateTrackedContent` | Update `label` and `category` for a tracked item (`{ label?, category? }`) |
 | DELETE | `/api/tracked-content/:id` | `trackedContentRoutes.ts`, `trackedContentController.deleteTrackedContent` | Remove a tracked item |
-| POST | `/api/tracked-content/:id/refresh` | `trackedContentRoutes.ts`, `trackedContentController.refreshTrackedContent` | Re-fetch live data from Reddit or YouTube API for one tracked item |
+| POST | `/api/tracked-content/:id/refresh` | `trackedContentRoutes.ts`, `trackedContentController.refreshTrackedContent` | Re-fetch live data from the YouTube API for one tracked item |
 
 ### Automations
 

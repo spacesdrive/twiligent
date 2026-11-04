@@ -15,12 +15,8 @@ The app uses React Router 7 in `frontend/src/App.tsx`: a data router from `creat
 | `/accounts` | `AccountManager.tsx` | Connect and remove accounts. `?add=1` opens the add flow; `?ig_connected` (`true`, or `reconnected` when the account was already there) and `?ig_error` report the Instagram OAuth result |
 | `/channel/:id` | `ChannelAnalytics.tsx` | `:id` = account.id for YouTube accounts |
 | `/instagram/:id` | `InstagramAnalytics.tsx` | `:id` = account.id for Instagram accounts |
-| `/reddit/:id` | `RedditAnalytics.tsx` | `:id` = account.id for Reddit accounts |
-| `/reddit-posts` | `RedditPostsAll.tsx` | Combined post explorer across all connected Reddit accounts |
-| `/reddit-posts/:id` | `RedditPosts.tsx` | `:id` = account.id; filterable/sortable post explorer for one account |
-| `/tracked-content` | `TrackedContent.tsx` | Tracked Reddit posts and YouTube videos - add, manage, categorize, refresh |
-| `/tracked-content/category/:name` | `TrackedCategory.tsx` | Per-category analytics page; `:name` is URL-encoded category label; shows YouTube and Reddit sections separately |
-| `/reddit-tracked` | redirect | Redirects to `/tracked-content` |
+| `/tracked-content` | `TrackedContent.tsx` | Tracked YouTube videos - add, manage, categorize, refresh |
+| `/tracked-content/category/:name` | `TrackedCategory.tsx` | Per-category analytics page; `:name` is URL-encoded category label; shows the category's YouTube videos |
 | `/videos` | `VideoExplorer.tsx` | Every video from every YouTube channel |
 | `/shorts` | `ShortsExplorer.tsx` | Videos of 60 seconds or less |
 | `/instagram` | `ReelsExplorer.tsx` | Instagram reels, posts and videos (the Instagram content page) |
@@ -31,7 +27,7 @@ The app uses React Router 7 in `frontend/src/App.tsx`: a data router from `creat
 | `/automations/rules/new` | `features/automations/RuleEditorPage.tsx` | Create a rule on its own page, with a warning before leaving unsaved changes |
 | `/automations/rules/:id` | `features/automations/RuleEditorPage.tsx` | Edit the rule with that id |
 | `/settings` | `Settings.tsx` | User/platform settings |
-| `*` | `pages/NotFound.tsx` | Any other path inside the app: "Page not found" with the requested path, a link to the overview and the search shortcut. Unknown paths no longer redirect silently to `/` |
+| `*` | `pages/NotFound.tsx` | Any other path inside the app: "Page not found" with the requested path, a link to the overview and the search shortcut. Unknown paths no longer redirect silently to `/`. The pages of the platform removed in v2.0.0 (ADR-049) land here too |
 
 ## Auth Guard
 
@@ -98,7 +94,7 @@ Only the most specific matching link is the current page (`currentNavPath()` in 
 
 ### Top bar
 
-The top bar shows the page title. On a detail page it is a breadcrumb whose parent is a real link (a category links back to Tracked content, a Reddit account's posts to Reddit posts, an account page to Overview). On the right are Search (on narrow screens, where the sidebar is hidden) and Help, which opens the documentation in a new tab. Refreshing and the theme live on the pages, in the user menu and in Settings, not in the top bar.
+The top bar shows the page title. On a detail page it is a breadcrumb whose parent is a real link (a category links back to Tracked content, an account page to Overview). On the right are Search (on narrow screens, where the sidebar is hidden) and Help, which opens the documentation in a new tab. Refreshing and the theme live on the pages, in the user menu and in Settings, not in the top bar.
 
 ## Page titles and focus
 

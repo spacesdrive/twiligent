@@ -21,7 +21,7 @@ Follow this guide when adding a route to the Hono backend. Read `docs/architectu
 
 ## Step 1: Define the Request and Response Types
 
-Add the shapes the endpoint sends and receives to `shared/types/` first. Use `domain.ts` for cross-platform data, or `youtube.ts`, `instagram.ts` or `reddit.ts` for platform data. These files hold types only and never import runtime code.
+Add the shapes the endpoint sends and receives to `shared/types/` first. Use `domain.ts` for cross-platform data, or `youtube.ts` or `instagram.ts` for platform data. These files hold types only and never import runtime code.
 
 ```ts
 // shared/types/domain.ts
@@ -129,7 +129,7 @@ export function createMyFeatureService({ resources }: MyFeatureDeps): MyFeatureS
 }
 ```
 
-If the endpoint calls a platform API, put the call in the platform module (`services/youtube/`, `services/instagram/`, `services/reddit/`) and pass it `context.signal`. A missing Worker secret is a `NotConfiguredError` (503); a record the user does not own is a `NotFoundError` (404).
+If the endpoint calls a platform API, put the call in the platform module (`services/youtube/`, `services/instagram/`) and pass it `context.signal`. A missing Worker secret is a `NotConfiguredError` (503); a record the user does not own is a `NotFoundError` (404).
 
 Wire a new repository or service in `backend/container.ts`: build the repository from `clients.supabase`, add the service to the `Services` interface, and create it in `createServices()`.
 

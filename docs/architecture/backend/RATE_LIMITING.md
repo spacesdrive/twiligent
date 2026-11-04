@@ -3,7 +3,7 @@
 Every `/api` request is rate limited inside the Worker. Cloudflare does not limit requests to a `workers.dev` Worker on its own: WAF rate limiting rules need a zone the owner controls, and the Workers rate limiting binding is per location and only supports 10 or 60 second periods. So the Worker enforces its own limits, which protect three things:
 
 - Supabase Auth, which `requireAuth` calls on every protected request
-- The shared YouTube Data API quota and the Instagram and Reddit API limits
+- The shared YouTube Data API quota and the Instagram API limits
 - Instagram publishing, which Instagram caps at 100 posts a day per account
 
 ## Request Flow
@@ -33,7 +33,7 @@ Defined in `backend/lib/rateLimit/rules.ts`.
 |---|---|---|---|---|
 | `ip` | Every `/api` request | Client IP; IPv6 by /64 | Sliding window counter | 300 per minute |
 | `user` | Every protected request | User id from the verified JWT | Token bucket | Bursts of 120, refills 2 per second |
-| `quota` | `POST /accounts`, `/accounts/reddit`, `/accounts/instagram`, `/accounts/refresh-all`, `/accounts/:id/refresh`, `/accounts/:id/refresh-ig-token`, `/resolve-channel`, `/tracked-content`, `/tracked-content/:id/refresh`, `GET` or `POST /process-scheduled`, `POST /automations/accounts/:accountId/subscribe` | User id | Sliding window log | 30 per 10 minutes |
+| `quota` | `POST /accounts`, `/accounts/instagram`, `/accounts/refresh-all`, `/accounts/:id/refresh`, `/accounts/:id/refresh-ig-token`, `/resolve-channel`, `/tracked-content`, `/tracked-content/:id/refresh`, `GET` or `POST /process-scheduled`, `POST /automations/accounts/:accountId/subscribe` | User id | Sliding window log | 30 per 10 minutes |
 | `publish` | `POST /accounts/:id/ig-media-publish`, `/accounts/:id/ig-publish` | User id | Leaking bucket | 50 deep, drains 1 every 15 seconds |
 | `oauth` | `GET /auth/instagram/callback` | Client IP | Fixed window counter | 10 per 10 minutes |
 

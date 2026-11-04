@@ -76,7 +76,7 @@ Services and repositories throw typed errors from `lib/errors.ts`. An error carr
 | `NotFoundError` | `NOT_FOUND` | 404 | The resource does not exist for this user, or the route does not exist |
 | `ConflictError` | `CONFLICT` | 409 | The account is already added |
 | `RateLimitedError`, or the rate limiter | `RATE_LIMITED` | 429 | A daily allowance is used up (the auth email caps), or a rate limit rule is exceeded; the rate limiter's body adds `retryAfter` |
-| `UpstreamError` | `UPSTREAM_ERROR` | 502 | YouTube, Instagram or Reddit answered with an error; its message is kept, URLs are removed |
+| `UpstreamError` | `UPSTREAM_ERROR` | 502 | YouTube or Instagram answered with an error; its message is kept, URLs are removed |
 | `NotConfiguredError` | `NOT_CONFIGURED` | 503 | A Worker secret the request needs is not set; `injectClients` throws it for every request when `SUPABASE_URL`, `SUPABASE_SERVICE_KEY` or `SUPABASE_ANON_KEY` is missing |
 | `UpstreamTimeoutError` | `UPSTREAM_TIMEOUT` | 504 | A platform call was cancelled or timed out |
 | `DatabaseError` | `DATABASE_ERROR` | 500 | A Supabase query failed or did not answer within 15 seconds; the client gets a plain message, the log gets the driver's |

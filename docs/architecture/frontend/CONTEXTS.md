@@ -71,7 +71,7 @@ The value is typed as `AppContextValue`, exported from `AppContext.tsx`. `useApp
 
 | Value | Type | Description |
 |---|---|---|
-| `accounts` | `AppAccount[]` | All connected accounts (YouTube, Instagram, Reddit), normalized via `normalizeAccount()` |
+| `accounts` | `AppAccount[]` | All connected accounts (YouTube, Instagram), normalized via `normalizeAccount()` |
 | `setAccounts` | `Dispatch<SetStateAction<AppAccount[]>>` | Direct setter (used by AccountManager after add/delete) |
 | `loading` | `boolean` | True during `refreshAll()` only |
 | `showToast(message, severity?)` | `(message: string, severity?: ToastSeverity) => void` | Shows a Sonner toast. `ToastSeverity`: `'success'` (default), `'error'`, `'warning'`, `'info'` |
@@ -98,7 +98,7 @@ All feature pages and layout components use `useAppContext()`:
 ```ts
 {
     id: 'account-id',
-    platform: 'youtube' | 'instagram' | 'reddit',
+    platform: 'youtube' | 'instagram',
     // YouTube fields:
     channelId: '...',
     title: '...',
@@ -112,10 +112,7 @@ All feature pages and layout components use `useAppContext()`:
     username: '...',
     followersCount: 5000,
     mediaCount: 200,
-    // Reddit fields:
-    totalKarma: 1234,
-    hasCookie: true,
-    // Note: accessToken and cookie are NEVER present - stripped by safeAccount() on the backend
+    // Note: accessToken is NEVER present - stripped by safeAccount() on the backend
 }
 ```
 
@@ -131,11 +128,11 @@ Hooks used by more than one feature. Hooks used by a single feature live in that
 | `useCommandPaletteShortcut(setOpen)` | `use-command-palette-shortcut.ts` | Ctrl+K / Cmd+K toggle for the command palette |
 | `useSmoothTheme()` | `use-smooth-theme.ts` | Theme switch as one cross-fade |
 | `useCloudinaryConfig(reloadKey)` | `use-cloudinary-config.ts` | Loads `api.getCloudinaryConfig()`; returns the config or `null` |
-| `useAccountAnalytics(account, fetchAnalytics, label)` | `use-account-analytics.ts` | Loads one account's analytics and refreshes it; used by Instagram and Reddit analytics |
+| `useAccountAnalytics(account, fetchAnalytics, label)` | `use-account-analytics.ts` | Loads one account's analytics and refreshes it; used by Instagram analytics |
 
-`useCloudinaryConfig` sets the config only when the response has `success: true`. A failed request keeps the previous value (initially `null`), and pages show a missing config as an alert or a disabled upload field. The request runs again whenever `reloadKey` changes: the Publish page passes `accounts`, Tracked Content passes nothing and loads once.
+`useCloudinaryConfig` sets the config only when the response has `success: true`. A failed request keeps the previous value (initially `null`), and pages show a missing config as an alert or a disabled upload field. The request runs again whenever `reloadKey` changes: the Publish page passes `accounts`.
 
-`useAccountAnalytics` returns `{ loading, profile, analytics, refreshing, handleRefresh }`. Pass a stable `api` method (`api.getIGAnalytics`, `api.getRedditAnalytics`), never an inline arrow: the load is keyed on the account id and that method, so a background account refresh does not refetch analytics. `label` names the platform in the toasts (`Couldn't load Instagram analytics.`, `Instagram account refreshed`). `handleRefresh` calls `api.refreshAccount()` and then loads the analytics again.
+`useAccountAnalytics` returns `{ loading, profile, analytics, refreshing, handleRefresh }`. Pass a stable `api` method (`api.getIGAnalytics`), never an inline arrow: the load is keyed on the account id and that method, so a background account refresh does not refetch analytics. `label` names the platform in the toasts (`Couldn't load Instagram analytics.`, `Instagram account refreshed`). `handleRefresh` calls `api.refreshAccount()` and then loads the analytics again.
 
 ---
 

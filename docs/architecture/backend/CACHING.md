@@ -6,12 +6,12 @@ Caching is implemented via Upstash Redis (REST API) using the `@upstash/redis` S
 
 ## Cache Layer: `backend/repositories/analyticsCacheRepository.ts`
 
-The cache is a repository like the database tables. `createAnalyticsCacheRepository(redis)` is built in `container.ts` and handed to the services that read or warm analytics (`accounts`, `youtubeAnalytics`, `instagramAnalytics`, `redditAnalytics`, `overview`). No other code touches Redis keys for analytics.
+The cache is a repository like the database tables. `createAnalyticsCacheRepository(redis)` is built in `container.ts` and handed to the services that read or warm analytics (`accounts`, `youtubeAnalytics`, `instagramAnalytics`, `overview`). No other code touches Redis keys for analytics.
 
 The repository follows this contract:
 - Every method is a no-op without Redis: reads return `null`, writes and deletes return
 - Every Redis call is wrapped in `try/catch` - a Redis failure must never break the main request
-- Reads return the cached shape from `shared/types` (`VideosCacheData`, `IGCacheData`, `RedditCacheData`), or `null` on a miss
+- Reads return the cached shape from `shared/types` (`VideosCacheData`, `IGCacheData`), or `null` on a miss
 - `enabled` is `false` without Redis, so the Overview knows not to start warming
 
 The private helpers `readKey<T>()`, `writeKey()` and `deleteKey()` implement the availability check, the `try/catch` and the TTL once; every method goes through them:
@@ -33,8 +33,7 @@ async function readKey<T>(key: string): Promise<T | null> {
 |---|---|
 | `getVideos(userId, accountId)`, `setVideos(userId, accountId, data)` | `videos:{userId}:{accountId}` |
 | `getInstagramMedia(userId, accountId)`, `setInstagramMedia(userId, accountId, data)` | `ig:{userId}:{accountId}` |
-| `getReddit(userId, accountId)`, `setReddit(userId, accountId, data)` | `reddit:{userId}:{accountId}` |
-| `deleteAllForAccount(userId, accountId)` | All three keys for the account |
+| `deleteAllForAccount(userId, accountId)` | Both keys for the account |
 
 ## When Redis Fails
 
@@ -53,7 +52,6 @@ The rate limiter uses its own client with a 1 second timeout and no retries; see
 |---|---|---|---|
 | `videos:{userId}:{accountId}` | `{ videos, fetchedAt, version }` - YouTube video objects with stats | `GET /api/accounts/:id/analytics` succeeds, `GET /api/accounts/:id/videos` fetches live on a miss, or the Overview warms it | `DELETE /api/accounts/:id`, or a `version` mismatch |
 | `ig:{userId}:{accountId}` | `{ media, fetchedAt, version }` - normalized Instagram media (see `normalizeInstagramMedia()`) | `GET /api/accounts/:id/ig-analytics` or `ig-media` succeeds, or the Overview warms it | `DELETE /api/accounts/:id`, or a `version` mismatch |
-| `reddit:{userId}:{accountId}` | Object `{ profile, analytics, posts, fetchedAt }` for Reddit account (`fetchedAt` is missing on entries written before it was stored) | `GET /api/accounts/:id/reddit-analytics` succeeds (with or without `?fresh=1`), or the Overview warms it | `DELETE /api/accounts/:id` |
 
 Rate limit state also lives in Redis under `twiligent:ratelimit:{rule}:{identifier}` keys (hashes or sorted sets, each with its own expiry). They are written only by the Lua scripts in `lib/rateLimit/scripts.ts` through a separate fast-fail client; see `RATE_LIMITING.md`.
 
@@ -74,13 +72,13 @@ One Lua script reads both counters and increments both only when neither cap is 
 
 ## Cache TTL
 
-`videos:`, `ig:` and `reddit:` keys expire after 6 hours (`ANALYTICS_TTL_SECONDS` in `analyticsCacheRepository.ts`), so counts refetch rather than going stale. They are also removed when the account is deleted.
+`videos:` and `ig:` keys expire after 6 hours (`ANALYTICS_TTL_SECONDS` in `analyticsCacheRepository.ts`), so counts refetch rather than going stale. They are also removed when the account is deleted. The removed platform's keys (ADR-049 in `DECISIONS.md`) are no longer read or written and expire within 6 hours of the upgrade to v2.0.0.
 
 `videos:` entries carry a `version` field like `ig:` entries (`VIDEOS_CACHE_VERSION`). Version 2 stores `likeCount` and `commentCount` as `null` when YouTube hides them (the owner hid likes, or comments are off), instead of `0`; the UI shows those as "Hidden".
 
 ## Overview warming
 
-`GET /api/overview` returns `{ cacheWarmed, syncing }` per account. When an account has no cache entry, `overviewService.summary()` starts a background fetch (YouTube, Instagram and Reddit) and the controller keeps it alive with `waitUntil`; the response says `syncing: true` only if that fetch actually started. Without Redis, an API key, a token or a cookie it returns `syncing: false`, so the client never waits on something that cannot load. While any account is syncing the client polls again up to three times. Each poll waits 4, 8 and then 16 seconds after the previous response (about 4, 12 and 28 seconds after the first load), then polling stops.
+`GET /api/overview` returns `{ cacheWarmed, syncing }` per account. When an account has no cache entry, `overviewService.summary()` starts a background fetch (YouTube or Instagram) and the controller keeps it alive with `waitUntil`; the response says `syncing: true` only if that fetch actually started. Without Redis, an API key or a token it returns `syncing: false`, so the client never waits on something that cannot load. While any account is syncing the client polls again up to three times. Each poll waits 4, 8 and then 16 seconds after the previous response (about 4, 12 and 28 seconds after the first load), then polling stops.
 
 ## Cache Usage in Services
 
@@ -121,7 +119,7 @@ Secret: INSTAGRAM_APP_SECRET
 Every cached analytics read returns when its data came from the platform (`fetchedAt`), and the Overview's
 per-account summaries carry the same field, so each data view in the app says how old its numbers are (the
 `DataFreshness` line under the page title, with the exact time on hover and for screen readers). The cache-first
-reads `GET /api/accounts/:id/videos`, `ig-media` and `reddit-analytics` accept `?fresh=1`, which the app sends
+reads `GET /api/accounts/:id/videos` and `ig-media` accept `?fresh=1`, which the app sends
 only when a person presses Refresh: it skips the cache, fetches live and rewrites the entry. Plain page loads
 stay on the cache, so opening a page never spends platform quota by itself.
 

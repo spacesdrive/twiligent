@@ -2,11 +2,11 @@
 
 ## Project Identity
 
-Twiligent is a self-hosted social media analytics and publishing dashboard for creators and teams managing multiple YouTube channels, Instagram accounts and Reddit profiles. It is a private deployment product - the owner runs their own instance with their own API credentials. There is no SaaS model, no multi-tenancy abstraction, and no billing system.
+Twiligent is a self-hosted social media analytics and publishing dashboard for creators and teams managing multiple YouTube channels and Instagram accounts. It is a private deployment product - the owner runs their own instance with their own API credentials. There is no SaaS model, no multi-tenancy abstraction, and no billing system.
 
 - Primary users: Small creator teams, agencies, individual power users
 - Primary value: Unified analytics, scheduled Instagram publishing, and automatic private replies to Instagram comments across multiple accounts
-- Current platforms: YouTube (analytics only), Instagram (analytics, publishing and comment-to-DM automation), Reddit (analytics only)
+- Current platforms: YouTube (analytics only) and Instagram (analytics, publishing and comment-to-DM automation)
 - Public site: https://twiligent.ujjwal.fyi is the project's own marketing site and documentation (the `site/` workspace); the app runs at https://app.twiligent.ujjwal.fyi. Self-hosters run only the app and the Worker; the site is not needed to run Twiligent
 - GitHub repository: https://github.com/spacesdrive/twiligent
 - Goals and priorities: `ROADMAP.md`
@@ -161,11 +161,11 @@ docs/
     ARCHITECTURE.md        Architectural principles and constraints
     SECURITY.md            Security model, key handling, isolation
     PERFORMANCE.md         Caching strategy, edge optimization
-  platform-v2/             The v2 work (#142): Reddit removed, MCP server, YouTube publishing, security auditing
+  platform-v2/             The v2 work (#142): platform removal (ADR-049), MCP server, YouTube publishing, security auditing
     RESEARCH.md            Findings and verified facts; full reports in research/
     ARCHITECTURE.md        Target design, decisions and trade-offs, bottlenecks
     IMPLEMENTATION_PLAN.md Phases, dependency map, tools, testing strategy, failure scenarios, owner actions, status
-    DATABASE_MIGRATION.md  Reddit cleanup and the new tables, with the backup and review steps
+    DATABASE_MIGRATION.md  Cleanup of the removed platform's data, and the new tables, with the backup and review steps
 
 site/content/docs/ Public user and self-hosting docs (MDX) served at twiligent.ujjwal.fyi/docs
 DECISIONS.md       Architectural decision log

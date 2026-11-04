@@ -104,8 +104,8 @@ frontend/src/
     use-command-palette-shortcut.ts  Ctrl+K / Cmd+K toggle
     use-smooth-theme.ts   useSmoothTheme(), theme cross-fade
     use-document-title.ts useDocumentTitle(name): a detail page names the browser tab after what it shows
-    use-cloudinary-config.ts  useCloudinaryConfig(reloadKey), shared by Publish and Tracked content
-    use-account-analytics.ts  useAccountAnalytics(account, fetchAnalytics, label), shared by Instagram and Reddit analytics
+    use-cloudinary-config.ts  useCloudinaryConfig(reloadKey), used by Publish
+    use-account-analytics.ts  useAccountAnalytics(account, fetchAnalytics, label), used by Instagram analytics
   layout/
     index.tsx             AppShell: SidebarProvider + AppSidebar + TopBar + Outlet + CommandPalette
     navigation.ts         NAV_GROUPS with icons, routeTitle() and currentNavPath() (single source for sidebar, top bar, palette)
@@ -143,7 +143,6 @@ frontend/src/
       videos/             VideoExplorer.tsx - all videos table (page; filters, table, grid and helpers beside it)
       shorts/             ShortsExplorer.tsx - shorts-filtered grid (page; filters and grid beside it)
       reels/              ReelsExplorer.tsx - Instagram media grid (page; hook, filters and helpers beside it)
-      reddit/             RedditAnalytics (page; sections and helpers beside it), RedditPosts, RedditPostsAll, shared post table
       tracked/            TrackedContent.tsx, TrackedCategory.tsx (pages; components, hooks and helpers beside them)
     publishing/
       UploadContent.tsx   Instagram publishing + schedule queue (page; components, hooks and helpers beside it)

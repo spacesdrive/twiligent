@@ -142,8 +142,8 @@ export async function requireAuth(c: AppContext, next: Next): Promise<void> {
 `jsonBody(parse)` and `queryParams(parse)` wrap Hono's `validator`. Each parser in `backend/validators/` reads fields with the helpers in `validators/fields.ts` and throws `ValidationError` (400). For a query, a repeated key keeps its first value. The controller reads the parsed result with `c.req.valid('json')` or `c.req.valid('query')`.
 
 ```ts
-export const addRedditAccount = controller.createHandlers(jsonBody(parseRedditAccount), async c => {
-    const account = await servicesFor(c).accounts.addReddit(c.get('userId'), c.req.valid('json'));
+export const addInstagramAccount = controller.createHandlers(jsonBody(parseInstagramToken), async c => {
+    const account = await servicesFor(c).accounts.addInstagram(c.get('userId'), c.req.valid('json').accessToken);
     return c.json({ success: true, account: safeAccount(account) } satisfies AccountResponse);
 });
 ```

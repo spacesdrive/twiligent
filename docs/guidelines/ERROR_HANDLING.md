@@ -12,7 +12,7 @@ Every backend failure is a typed error thrown where the problem is found and for
 | `NotFoundError` | `NOT_FOUND` | 404 | The record does not exist for this user, or is on the wrong platform |
 | `ConflictError` | `CONFLICT` | 409 | The account is already added, found by the list check or, for an add at the same moment, by the unique index (`isUniqueViolation`) |
 | `RateLimitedError` | `RATE_LIMITED` | 429 | A daily allowance is used up: the auth email caps in `authEmailService.ts`. Per-request limits are the rate limiter's job, not this error |
-| `UpstreamError` | `UPSTREAM_ERROR` | 502 | YouTube, Instagram, Reddit or Resend answered with an error |
+| `UpstreamError` | `UPSTREAM_ERROR` | 502 | YouTube, Instagram or Resend answered with an error |
 | `NotConfiguredError` | `NOT_CONFIGURED` | 503 | A Worker secret the request needs is not set, or a core Supabase secret is missing (thrown by `injectClients` for every request) |
 | `UpstreamTimeoutError` | `UPSTREAM_TIMEOUT` | 504 | A platform call was cancelled or timed out |
 | `DatabaseError` | `DATABASE_ERROR` | 500 | A Supabase query failed or passed the 15 second database timeout (thrown by `repositories/query.ts`) |
@@ -21,7 +21,7 @@ An error carries a code, not a status; `middleware/errorHandler.ts` maps the cod
 
 ## Layer-by-Layer Rules
 
-### Platform API Calls (`services/youtube/`, `services/instagram/`, `services/reddit/`)
+### Platform API Calls (`services/youtube/`, `services/instagram/`)
 
 Throw an `UpstreamError` as soon as the platform returns an error, keeping the platform's own wording (users can act on it) and its reason and status:
 
@@ -32,7 +32,7 @@ if (data.error) {
 }
 ```
 
-Each platform's request helper (`ytFetch`, `igFetch` and `igPost`, `redditFetch`) runs its call through a circuit breaker (`lib/circuitBreaker.ts`, one per platform and Worker isolate). Five outages in a row, meaning a timeout the caller did not cause, an unreachable host or a 5xx, pause calls for 30 seconds: they fail at once with an `UpstreamError` (reason `unreachable`, so a scheduled post that meets it is retried) whose message says to try again in a minute. One trial call then decides whether the platform is back. A 4xx, such as an expired token, never opens it, and Instagram's Graph error codes are not read as HTTP statuses. Comment replies (`instagramMessaging.ts`) keep their own cooldowns and do not use it.
+Each platform's request helper (`ytFetch`, `igFetch` and `igPost`) runs its call through a circuit breaker (`lib/circuitBreaker.ts`, one per platform and Worker isolate). Five outages in a row, meaning a timeout the caller did not cause, an unreachable host or a 5xx, pause calls for 30 seconds: they fail at once with an `UpstreamError` (reason `unreachable`, so a scheduled post that meets it is retried) whose message says to try again in a minute. One trial call then decides whether the platform is back. A 4xx, such as an expired token, never opens it, and Instagram's Graph error codes are not read as HTTP statuses. Comment replies (`instagramMessaging.ts`) keep their own cooldowns and do not use it.
 
 `UpstreamError` passes its message through `redactSecrets` (`lib/redact.ts`), which removes URLs, `Bearer` tokens and token-like `name=value` pairs and JSON fields, because a platform error can echo the request URL, a header or the form body with the API key or token in it. Cast the parsed JSON once to an interface that covers the fields the module reads (see `docs/guidelines/TYPESCRIPT.md`).
 
@@ -89,9 +89,9 @@ const settled = await Promise.allSettled(listed.map(account => refreshListed(use
 Controllers do not catch errors. A thrown error goes straight to the error handler:
 
 ```ts
-export const getRedditAnalytics = controller.createHandlers(async c => {
-    const result = await servicesFor(c).redditAnalytics.analytics(c.get('userId'), pathParam(c, 'id'));
-    return c.json(result satisfies RedditCacheData);
+export const getInstagramMedia = controller.createHandlers(queryParams(parseFreshQuery), async c => {
+    const result = await servicesFor(c).instagramAnalytics.media(c.get('userId'), pathParam(c, 'id'), c.req.valid('query'));
+    return c.json({ success: true, ...result } satisfies InstagramMediaResponse);
 });
 ```
 
@@ -167,4 +167,4 @@ Backend errors should be descriptive but not expose implementation details:
 - Good: `'Account not found'`, `'This channel is already added'`, `'scheduledAt must be a valid future date'`
 - Bad: `'supabase error: duplicate key value violates unique constraint accounts_pkey'`
 
-Say what went wrong and what to do (`'No session cookie stored - re-add this account with a session cookie from reddit.com DevTools'`). When the platform API returns a message that is end-user readable, `UpstreamError` passes it through. Database driver messages never reach the client.
+Say what went wrong and what to do (`'No access token stored - reconnect this Instagram account'`). When the platform API returns a message that is end-user readable, `UpstreamError` passes it through. Database driver messages never reach the client.

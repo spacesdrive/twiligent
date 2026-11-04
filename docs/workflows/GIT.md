@@ -35,7 +35,7 @@ Commit as soon as one small change works, however small: a fixed message, a new 
 Examples of commits that are each one change:
 - `fix(publish): use the local day for the schedule date picker`
 - `refactor(frontend): move fieldHintId and fieldErrorId to lib/fieldIds`
-- `feat(api): accept ?fresh=1 on the Reddit analytics read`
+- `feat(api): accept ?fresh=1 on the Instagram media read`
 - `test(frontend): cover engagement sorting as a number`
 - `docs(routing): describe the /publish and /instagram redirects`
 
@@ -98,7 +98,7 @@ Use scope to name the area affected:
 ### Examples
 
 ```
-feat(reddit): add cookie-based analytics integration
+feat(analytics): show uploads by month or week on the Videos page
 
 fix(scheduler): strip non-ASCII characters from env vars to prevent ByteString error
 
@@ -108,7 +108,7 @@ refactor(instagram): extract token refresh into standalone service function
 
 chore(deps): update @supabase/supabase-js to latest
 
-release: v1.1.0 - Reddit integration
+release: v1.4.0 - Intent UI charts and uploads card
 ```
 
 ---
@@ -180,14 +180,14 @@ Choose the number from the largest change in the pull request.
 ```bash
 # Example: the last commit on the change's own branch
 git add CHANGELOG.md package.json package-lock.json
-git commit -m "release: v1.1.0 - Reddit analytics integration"
+git commit -m "release: v1.4.0 - Intent UI charts and uploads card"
 git push
 gh pr create --fill
 # after the pull request is merged
 git fetch origin
-git tag -a v1.1.0 origin/main -m "v1.1.0 - Reddit analytics integration"
-git push origin v1.1.0
-gh release create v1.1.0 --verify-tag --title "v1.1.0 - Reddit analytics integration" --notes-file release-notes.md --latest
+git tag -a v1.4.0 origin/main -m "v1.4.0 - Intent UI charts and uploads card"
+git push origin v1.4.0
+gh release create v1.4.0 --verify-tag --title "v1.4.0 - Intent UI charts and uploads card" --notes-file release-notes.md --latest
 ```
 
 Write the notes file outside the repository; it is not committed.

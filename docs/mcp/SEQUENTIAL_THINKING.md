@@ -59,14 +59,14 @@ Consider Sequential Thinking when any of these are true:
 
 ## Examples
 
-### Planning Reddit integration
+### Planning a Twitter/X integration
 
 Sequential Thinking would work through:
-- Cookie-based auth vs OAuth (trade-offs, ToS risk)
-- Which endpoints to call (`/user/{username}/submitted.json`, etc.)
-- How to store credentials (in `accounts.data` jsonb alongside Instagram pattern)
-- Token refresh strategy (poll `Set-Cookie` header on each API call)
-- Which shapes go in `shared/types/reddit.ts` (profile, post, analytics, cache entry)
+- Third-party provider vs the official API vs OAuth (trade-offs, cost, ToS risk)
+- Which endpoints to call (`/users/{id}/tweets`, etc.)
+- How to store credentials (in `accounts.data` jsonb alongside the Instagram pattern)
+- Token refresh strategy (refresh before expiry from the daily cron, like Instagram tokens)
+- Which shapes go in `shared/types/twitter.ts` (profile, post, analytics, cache entry)
 - New cache keys to add to `repositories/analyticsCacheRepository.ts`
 - New routes to add to backend
 - New analytics page structure

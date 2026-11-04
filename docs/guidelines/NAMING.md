@@ -10,7 +10,7 @@ Start with `docs/guidelines/CODE_STYLE.md`, which shows how code reads across th
 | Backend controllers | `<feature>Controller.ts` | `accountController.ts`, `scheduledPostController.ts` |
 | Backend validators | `<feature>Validators.ts` | `accountValidators.ts`, `publishingValidators.ts` |
 | Backend feature services | `<feature>Service.ts` | `accountService.ts`, `youtubeAnalyticsService.ts` |
-| Backend platform modules | `<platform><Topic>.ts` in `services/<platform>/` | `youtube/youtubeApi.ts`, `instagram/instagramPublishing.ts`, `reddit/redditApi.ts` |
+| Backend platform modules | `<platform><Topic>.ts` in `services/<platform>/` | `youtube/youtubeApi.ts`, `instagram/instagramPublishing.ts` |
 | Backend repositories | `<table>Repository.ts` | `accountRepository.ts`, `scheduledPostRepository.ts`, `analyticsCacheRepository.ts` |
 | Backend database clients | `camelCase.ts` in `database/` | `supabase.ts`, `redis.ts` |
 | Backend lib | `camelCase.ts` | `errors.ts`, `logger.ts`, `config.ts`, `safeAccount.ts` |
@@ -93,7 +93,7 @@ Use `.tsx` only for files that contain JSX; everything else is `.ts`.
 
 ## Redis Cache Keys
 
-`{entity}:{userId}:{accountId}` - `videos:abc-123:def-456`, `ig:abc-123:def-456`, `reddit:abc-123:def-456` (defined only in `repositories/analyticsCacheRepository.ts`)
+`{entity}:{userId}:{accountId}` - `videos:abc-123:def-456`, `ig:abc-123:def-456` (defined only in `repositories/analyticsCacheRepository.ts`)
 
 ## Environment Variables
 

@@ -36,12 +36,12 @@ Because Node runs `.ts` files by removing the types, only syntax that can be era
 
 | Kind of type | Location |
 |---|---|
-| Shapes the API sends or receives: accounts, posts, analytics, request bodies, responses | `shared/types/*.ts` (`domain.ts`, `youtube.ts`, `instagram.ts`, `reddit.ts`) |
+| Shapes the API sends or receives: accounts, posts, analytics, request bodies, responses | `shared/types/*.ts` (`domain.ts`, `youtube.ts`, `instagram.ts`, `automation.ts`) |
 | Worker bindings and Hono context | `backend/types/env.ts` (`Env`), `backend/types/app.ts` (`AppEnv`, `AppContext`, `AppVariables`) |
 | Request metadata for services | `backend/types/context.ts` (`RequestContext`) |
 | Service and repository contracts | The module that implements them (`AccountService` and `AccountServiceDeps` in `services/accountService.ts`, `AccountRepository` in `repositories/accountRepository.ts`); `Services` in `backend/container.ts` |
 | Error codes | `ApiErrorCode` and `ApiFailure` in `shared/types/domain.ts`; the error classes in `backend/lib/errors.ts` |
-| Raw payloads from YouTube, Instagram and Reddit | The platform module that parses them (`YouTubeApiVideo` in `services/youtube/youtubeApi.ts`) |
+| Raw payloads from YouTube and Instagram | The platform module that parses them (`YouTubeApiVideo` in `services/youtube/youtubeApi.ts`) |
 | Props, hook results, local state | The component or hook file, exported when another file needs it |
 
 `shared/types` holds types only. It never imports runtime code, so either app can import it with `import type` and nothing from it reaches a bundle. The backend imports it by relative path (`../../shared/types/domain.ts`), the frontend by alias (`@shared/types/domain.ts`), except files that Node tests import, which use the relative path.
@@ -65,8 +65,8 @@ When a route's response changes, change its type in `shared/types` first. The ty
 
 ```ts
 // controllers: createHandlers keeps the validator's types, so c.req.valid() is typed
-export const addRedditAccount = controller.createHandlers(jsonBody(parseRedditAccount), async c => {
-    const account = await servicesFor(c).accounts.addReddit(c.get('userId'), c.req.valid('json'));
+export const addInstagramAccount = controller.createHandlers(jsonBody(parseInstagramToken), async c => {
+    const account = await servicesFor(c).accounts.addInstagram(c.get('userId'), c.req.valid('json').accessToken);
     return c.json({ success: true, account: safeAccount(account) } satisfies AccountResponse);
 });
 

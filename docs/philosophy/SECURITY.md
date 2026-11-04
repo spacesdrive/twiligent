@@ -67,7 +67,7 @@ The query filter is the first guard. The schema adds a second one that holds eve
 
 - **No browser access.** The migrations turn row level security on with no policies, revoke every grant on the tables from `anon` and `authenticated`, revoke the default privileges for new tables and functions, and let only `service_role` call the merge functions. The anon key gets 401 permission denied from the Data API.
 - **Composite foreign keys.** `scheduled_posts` and `tracked_posts` reference `accounts (id, user_id)`, so a row can only name an account that belongs to the same user.
-- **Service checks first.** Creating a scheduled post loads the account with `findForUser` and refuses another user's account with 404; changing a tracked item's account does the same for Reddit accounts. The foreign key refuses the same write if a check is ever missed.
+- **Service checks first.** Creating a scheduled post loads the account with `findForUser` and refuses another user's account with 404. The foreign key refuses the same write if a check is ever missed.
 - **Value checks.** CHECK constraints refuse an unknown platform, post status or tracked item type.
 
 Before the migrations, three tables had policies that let a signed-in user reach their own rows through the Data API, every table had full grants to the browser roles, and the API never checked a scheduled post's account. A user could read their raw tokens and cookies and write a scheduled post that named another user's Instagram account. All of these are closed; see `docs/architecture/database/SECURITY.md`.
@@ -112,7 +112,7 @@ The replies themselves are limited in the database per instance, member, account
 
 ## Rate Limiting
 
-Every `/api` request is rate limited per client IP before authentication, so a flood of invalid tokens never reaches Supabase Auth. Protected requests are also limited per user, and routes that spend the shared YouTube quota or the Instagram and Reddit limits have a tighter per-user rule. Limits are counted atomically in Redis (one Lua script per check) and fall back to per-isolate memory when Redis is absent or failing, so they never fail open entirely and never fail a request. See `docs/architecture/backend/RATE_LIMITING.md`.
+Every `/api` request is rate limited per client IP before authentication, so a flood of invalid tokens never reaches Supabase Auth. Protected requests are also limited per user, and routes that spend the shared YouTube quota or the Instagram limits have a tighter per-user rule. Limits are counted atomically in Redis (one Lua script per check) and fall back to per-isolate memory when Redis is absent or failing, so they never fail open entirely and never fail a request. See `docs/architecture/backend/RATE_LIMITING.md`.
 
 ## Input Validation
 
@@ -123,7 +123,7 @@ The backend validates every body and query string before the controller runs: a 
 - File types: Cloudinary upload accepts only image and video MIME types
 
 The backend does not validate:
-- URL formats in user-provided content (the platform API will reject invalid URLs), except tracked content links (Reddit or YouTube only) and tracked item images (`https` only)
+- URL formats in user-provided content (the platform API will reject invalid URLs), except tracked content links (YouTube only)
 - Text length in scheduled posts (the platform API enforces limits)
 
 Error responses never carry a stack trace or a database driver message: `DatabaseError` sends a plain message and logs the driver's, and `UpstreamError` removes URLs, which can carry an API key or token, from the platform's message.

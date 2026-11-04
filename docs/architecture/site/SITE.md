@@ -51,7 +51,7 @@ site/
       MarketingLayout.tsx  Skip link, Navbar, page, Footer
       Navbar.tsx, Footer.tsx, navLinks.ts, Pill.tsx, ThemeToggle.tsx, MotionToggle.tsx, ScrollManager.tsx
       brand.tsx          Logo, Mark, RibbonCrop, FoldBand (the brand graphics)
-      marks.tsx          Hand-written SVG logos for YouTube, Instagram, Reddit and GitHub
+      marks.tsx          Hand-written SVG logos for YouTube, Instagram and GitHub
       icons.tsx          Generated Solar icons; never edited by hand
       sections/          Home page sections: Story, Platforms, Faq, and the shared blocks (SectionHeader, FeatureSection, BentoCard, CtaBand)
       mockups/           Product previews drawn in React (see Mockups and Motion): OverviewWindow, AnalyticsCard,
@@ -198,7 +198,7 @@ The product previews are React components drawn with the site's tokens, never sc
 | Secrets | None in the build; the workflow needs only `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` |
 | Workflow | `.github/workflows/deploy-site.yml`, on pushes to `main` that touch `site/**`, `tsconfig.base.json`, the root `package.json` or `package-lock.json`, or the workflow itself |
 
-`site/public/_redirects` sends the app's old paths on this domain (`/login`, `/accounts`, `/settings`, `/videos`, `/shorts`, `/tracked-content`, `/reddit-posts`, `/channel/*`, `/instagram/*`, `/reddit/*` and others) to the same path on `https://app.twiligent.ujjwal.fyi` with a 301; `/upload` and `/publish` go to the app's `/publish`, and `/reels` and `/instagram` to its `/instagram`. It also rewrites `/docs` and `/docs/*` to `/` with a 200 (see Routing). In the other direction, the app's `/docs/*` route sends old docs links to the same page here. See `docs/architecture/cloudflare/PAGES.md`, `docs/architecture/cloudflare/CI_CD.md` and `docs/workflows/DEPLOYMENT.md`.
+`site/public/_redirects` sends the app's old paths on this domain (`/login`, `/accounts`, `/settings`, `/videos`, `/shorts`, `/tracked-content`, `/channel/*`, `/instagram/*` and others) to the same path on `https://app.twiligent.ujjwal.fyi` with a 301; `/upload` and `/publish` go to the app's `/publish`, and `/reels` and `/instagram` to its `/instagram`. The old pages of the platform removed in v2.0.0 (ADR-049) go to the app's Overview, and its old tracked posts path to Tracked content. It also rewrites `/docs` and `/docs/*` to `/` with a 200 (see Routing). In the other direction, the app's `/docs/*` route sends old docs links to the same page here. See `docs/architecture/cloudflare/PAGES.md`, `docs/architecture/cloudflare/CI_CD.md` and `docs/workflows/DEPLOYMENT.md`.
 
 ## TypeScript and Lint
 

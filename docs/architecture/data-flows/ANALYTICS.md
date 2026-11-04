@@ -153,93 +153,6 @@ Typed as `InstagramAnalytics` in `shared/types/instagram.ts`.
 }
 ```
 
-## Reddit Analytics Flow
-
-```
-User navigates to /reddit/:id
-    │
-    ▼
-RedditAnalytics.tsx mounts -> api.getRedditAnalytics(id)
-    -> GET /api/accounts/:id/reddit-analytics
-        │
-        ▼
-    Worker: redditRoutes -> redditController.getRedditAnalytics
-        -> redditAnalytics.analytics(userId, id)   [services/redditAnalyticsService.ts]
-        1. accounts.findForUser(id, userId) - verify ownership
-           -> 404 unless it is a Reddit account, 400 without a stored cookie or username
-        2. cache.getReddit(userId, id): key reddit:{userId}:{accountId}
-           -> skipped when ?fresh=1 (the page's Refresh button)
-           -> cache hit: return immediately, with the fetchedAt it was stored with
-           -> cache miss: continue
-        3. Fetch from Reddit public JSON API (with the stored session cookie):
-           a. GET /user/{username}/about.json
-              -> profile: totalKarma, postKarma, commentKarma, awardeeKarma, iconUrl, createdAt
-           b. GET /user/{username}/submitted.json?limit=100&sort=new
-              -> up to 100 posts
-        4. computeRedditAnalytics(profile, posts)
-           -> score stats, subreddit breakdown, timing analysis
-        5. cache.setReddit(userId, id, result)
-        6. Return { profile, analytics, posts } (RedditCacheData)
-```
-
-### computeRedditAnalytics() Output (partial)
-
-Typed as `RedditAnalytics` in `shared/types/reddit.ts`.
-
-```ts
-{
-    fetchedPosts: 100,
-    totalScore: 45000,
-    avgScore: 450,
-    medianScore: 120,
-    totalComments: 3200,
-    avgComments: 32,
-    avgUpvoteRatio: 91.4,        // percentage
-    totalAwards: 18,
-    avgAwards: 0.18,
-    topPosts: [ /* top 10 by score */ ],
-    worstPosts: [ /* bottom 5 by score */ ],
-    subredditBreakdown: [
-        { subreddit: 'programming', posts: 40, totalScore: 20000, avgScore: 500, avgComments: 45 },
-        // ...
-    ],
-    mediaTypeDistribution: { text: 60, link: 25, image: 10, video: 5 },
-    postsByDayOfWeek: [ /* 7 entries with avgScore and post count per day */ ],
-    postsByHour: [ /* 24 entries with avgScore per hour */ ],
-    bestPostingDay: 'Tuesday',
-    bestPostingHour: '14:00',
-    monthlyBreakdown: [
-        { month: '2025-06', posts: 8, score: 3600, avgScore: 450 },
-        // ...
-    ],
-    postsLast7Days: 2,
-    postsLast30Days: 8,
-    postsLast90Days: 24,
-    postFrequency: { perWeek: 1.8, perMonth: 7.6 },
-    viralityScore: 4.2,          // peak / average score ratio
-    consistencyScore: 68,        // 0-100, higher = more uniform performance
-}
-```
-
-### Per-post fields (in posts array and topPosts)
-
-Typed as `RedditPost` in `shared/types/reddit.ts`.
-
-```ts
-{
-    id, title, subreddit, subredditPrefixed,
-    score, upvoteRatio, numComments,
-    url, permalink, thumbnail,
-    mediaType,      // 'text' | 'image' | 'video' | 'link'
-    isSelf, isVideo, isNsfw,
-    createdAt,      // ISO string
-    flair,
-    awardsCount,    // total_awards_received from Reddit API
-}
-```
-
-Note: Reddit disabled `view_count` from their API in December 2018. The field always returns `null` regardless of authentication method. Views are not available for Reddit posts.
-
 ## Overview Dashboard (Cross-Account)
 
 ```
@@ -263,43 +176,27 @@ are chained: each waits 4, 8 and then 16 seconds after the previous response, so
 
 | Metric | Formula |
 |---|---|
-| Total Audience | YouTube subscribers + Instagram followers + Reddit account karma |
-| Total Views | YouTube channel views + Instagram views (cache, reels + posts + videos) + tracked YouTube video views + manually entered Reddit post views |
-| Total Content | YouTube videos + Instagram media count (profile) + Reddit account posts (cache) + tracked items |
-| Total Comments | cache comments (YouTube + Instagram + Reddit) + tracked item comments |
-| Total Likes | Reddit karma (account + tracked) + YouTube likes (cache + tracked) + Instagram likes |
+| Total Audience | YouTube subscribers + Instagram followers |
+| Total Views | YouTube channel views + Instagram views (cache, reels + posts + videos) + tracked YouTube video views |
+| Total Content | YouTube videos + Instagram media count (profile) + tracked items |
+| Total Comments | cache comments (YouTube + Instagram) + tracked item comments |
+| Total Likes | YouTube likes (cache + tracked) + Instagram likes |
 
-Tracked items are third-party URLs the user monitors, never their own connected-account
-content, so cache totals and tracked totals are disjoint and are summed rather than
-one taking precedence over the other.
-
-Tracked Reddit post karma counts toward Total Likes, not Total Audience - a monitored post is
-content, not an audience the user owns. Connected-account karma does count toward Total
-Audience as that account's reputation.
+Tracked items are YouTube videos the user monitors, not their connected accounts' own uploads, so
+cache totals and tracked totals are disjoint and are summed rather than one taking precedence over
+the other. The Likes tab shows the total, YouTube and Instagram likes, and a chart of likes by
+tracked video; the Comments tab shows YouTube and Instagram comments.
 
 ### Tracked content views
 
-Reddit removed `view_count` from its API in December 2018, so a tracked Reddit post's views are
-whatever the user typed into the edit dialog, stored as `data.manualViews`. `trackedViews()` in
-`frontend/src/utils/trackedContent.ts` is the single place that decides which field to read:
-`viewCount` for YouTube items, `manualViews` for Reddit items. Every view total in the UI goes
-through it, so a post with no manual figure contributes 0 rather than breaking the sum.
-
-`hasTrackedViews()` distinguishes "no figure recorded" from a real zero, so tables can render a
-dash and a "Set" action instead of a misleading `0`.
+Tracked items are YouTube videos only, so their views are the `viewCount` the YouTube API reports,
+fetched when the item is added and on each manual refresh.
 
 ### Audience Comparison chart
 
-Categories plot **karma only**, never karma plus views. Views are a reach metric an order of
-magnitude larger than karma; adding them would push a category far above the accounts it sits
-beside on the same axis and misrepresent its audience. Category view totals belong in the Views
-tab, where they are compared against other view figures.
-
-### Naming
-
-Reddit's API returns a post's net upvotes as `score`. Every aggregate the frontend derives from
-it is named and labelled **karma**. The word "score" is reserved for the computed Virality Score
-and Consistency Score indices, which are unrelated to karma.
+The audience chart compares subscribers and followers per connected account. Tracked categories do
+not appear on it: a category is content the user monitors, not an audience the user owns. Category
+view totals belong in the Views tab, where they are compared against other view figures.
 
 ## How the analytics pages present data
 
@@ -308,7 +205,7 @@ These rules come from the UI/UX guide (issue #132) and apply to every analytics 
 - **Freshness.** Every data view shows when its numbers were fetched (`DataFreshness`): live pages (channel,
   Instagram account) show the time of the last load; cached pages show the cache's `fetchedAt`, and pages built
   from several accounts show the oldest. Refresh asks the server for fresh data (`?fresh=1`) instead of re-reading
-  the cache, and the Reddit page's Refresh refreshes the posts as well as the profile.
+  the cache.
 - **Loading.** Skeletons show only before the first answer. A refresh keeps the page, its tab and its scroll
   position, marks the content `aria-busy` and spins the Refresh button. Library hooks key their loads on the
   account ids, so an account's fields changing elsewhere does not reload every list.

@@ -32,7 +32,7 @@ The backend is split into layers, each with one job. `REQUEST_PIPELINE.md` is th
 | `routes/` | One route table per feature (`<feature>Routes.ts`) and `index.ts`, which groups them into `publicRoutes` and `protectedRoutes` |
 | `controllers/` | One controller file per feature (`<feature>Controller.ts`) and `http.ts` with `controller`, `servicesFor(c)` and `pathParam(c, name)` |
 | `validators/` | Request body and query parsers (`<feature>Validators.ts`) and the field helpers in `fields.ts` |
-| `services/` | Feature services (`<feature>Service.ts`, `scheduledPublisher.ts`) the platform modules in `youtube/`, `instagram/` and `reddit/`, and the auth email modules in `email/` (see `SERVICES.md`) |
+| `services/` | Feature services (`<feature>Service.ts`, `scheduledPublisher.ts`) the platform modules in `youtube/` and `instagram/`, and the auth email modules in `email/` (see `SERVICES.md`) |
 | `repositories/` | Data access, one repository per table or cache (`<table>Repository.ts`), and the query helpers in `query.ts` |
 | `database/` | `supabase.ts` (`getSupabase`, `getSupabaseAuth`) and `redis.ts` (`getRedis`, `getRateLimitRedis`) |
 | `jobs/` | `scheduled.ts`: the cron entry point, `runScheduledJob(cron, env, scheduledTime)` |
