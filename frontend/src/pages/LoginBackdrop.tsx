@@ -20,7 +20,7 @@ const ACCOUNTS = [
   { platform: 'youtube', name: 'Northwind Kitchen', value: '84,213' },
   { platform: 'instagram', name: '@northwind.kitchen', value: '31,702' },
   { platform: 'youtube', name: 'Northwind Shorts', value: '22,940' },
-  { platform: 'reddit', name: 'u/northwind_cooks', value: '12,410' },
+  { platform: 'instagram', name: '@northwind.bakes', value: '12,410' },
 ];
 const WEEKS = [128, 130, 131, 134, 137, 138, 141, 144, 145, 148, 150, 151].map((value, i) => ({
   name: `W${i + 1}`,
@@ -69,7 +69,7 @@ export default function LoginBackdrop() {
           <PageHeader
             size="display"
             title="Good morning, Asha"
-            description="4 accounts across YouTube, Instagram and Reddit"
+            description="4 accounts across YouTube and Instagram"
           />
           <div className="grid grid-cols-2 gap-4 xl:grid-cols-4">
             {METRICS.map(metric => (

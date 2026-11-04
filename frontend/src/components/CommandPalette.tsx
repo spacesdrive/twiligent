@@ -56,7 +56,7 @@ export default function CommandPalette({ open, onOpenChange, accounts, categorie
       id: `category:${category}`, group: 'Categories', label: category, keywords: ['tracked', 'category'],
       icon: Tag, run: () => navigate(`/tracked-content/category/${encodeURIComponent(category)}`),
     })),
-    { id: 'action:add-account', group: 'Actions', label: 'Add account', keywords: ['connect', 'youtube', 'instagram', 'reddit'], icon: Plus, run: () => navigate('/accounts?add=1') },
+    { id: 'action:add-account', group: 'Actions', label: 'Add account', keywords: ['connect', 'youtube', 'instagram'], icon: Plus, run: () => navigate('/accounts?add=1') },
     { id: 'action:docs', group: 'Actions', label: 'Open documentation', keywords: ['help', 'guide', 'docs', 'setup', 'self-host'], icon: BookOpen, run: () => window.open(docsUrl(), '_blank', 'noopener') },
     { id: 'action:refresh', group: 'Actions', label: 'Refresh all accounts', keywords: ['sync', 'update'], icon: RefreshCw, run: onRefreshAll },
     { id: 'action:sign-out', group: 'Account', label: 'Sign out', keywords: ['log out', 'logout'], icon: LogOut, run: onSignOut },
