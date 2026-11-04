@@ -80,7 +80,8 @@ The Instagram OAuth flow uses a self-verifying HMAC state token to prevent CSRF:
 
 1. On OAuth start: state = `base64url(userId:timestamp)` + `.` + `HMAC-SHA256(secret, payload)`
 2. Nothing is stored server-side; the timestamp inside the signed payload expires the state after 10 minutes
-3. On OAuth callback: verify HMAC before accepting the `code` parameter
+3. On OAuth callback: verify HMAC, then hand `code` and `state` back to the app in the URL fragment, which never reaches a server or a referrer
+4. The signed-in app posts them to `POST /api/auth/instagram/complete`, which connects the account only when the state's user id is the caller's; a consent link made by one person and opened by another connects nothing (security audit F1)
 
 If the HMAC check fails, the callback discards the code and redirects the browser back to the accounts page with `ig_error=invalid_state`. An attacker cannot forge a valid state without the `INSTAGRAM_APP_SECRET`.
 
@@ -158,3 +159,7 @@ Risks found by a security review and left open on purpose, each with the reason 
 | Risk | Why it stays | What would remove it |
 |---|---|---|
 | No automated secrets rotation | Rotation needs the owner in the Meta, Google and Supabase dashboards | A rotation runbook with a reminder, or provider APIs that rotate in place |
+| With Supabase "Confirm email" off, someone could create a password account for another person's address before they sign up (audit L1) | Whether a later code or Google sign-in keeps that password is Supabase Auth behaviour, not visible in this code | The owner turns on email confirmation once the Send Email hook is set up, or turns off open sign-up for a private instance |
+| An Instagram account connected by two Twiligent users routes comments to whichever user's rule wins, without checking that token still works (audit L2) | Needs two users who both connected the same account with working tokens | Route only to accounts whose last token check passed, and count send limits per Instagram identity |
+| The shared YouTube API quota is counted per request, not per unit (audit L6) | The quota rule caps those routes at 30 per 10 minutes per user | The quota ledger that YouTube publishing adds |
+| The daily token refresh has no subrequest budget, one user's due posts can use the shared publisher's run, and a subrequest overrun can open shared circuit breakers (audit L7 to L9) | Each needs many accounts or posts at once on the Free plan | Per-job subrequest budgets and a per-user cap per run, and not counting the Workers subrequest limit as a platform outage |
