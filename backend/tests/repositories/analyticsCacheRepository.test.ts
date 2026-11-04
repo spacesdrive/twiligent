@@ -4,7 +4,6 @@ import { createAnalyticsCacheRepository, resetCacheState } from '../../repositor
 import type { Redis } from '../../types/app.ts';
 import type { VideosCacheData, YouTubeVideo } from '../../../shared/types/youtube.ts';
 import type { IGCacheData } from '../../../shared/types/instagram.ts';
-import type { RedditCacheData } from '../../../shared/types/reddit.ts';
 
 type MemoryRedis = Redis & { store: Map<string, unknown> };
 
@@ -31,7 +30,6 @@ test('every method is a no-op without redis', async () => {
     assert.equal(cache.enabled, false);
     assert.equal(await cache.getVideos('u', 'a'), null);
     assert.equal(await cache.getInstagramMedia('u', 'a'), null);
-    assert.equal(await cache.getReddit('u', 'a'), null);
     assert.equal(await cache.setVideos('u', 'a', {} as VideosCacheData), undefined);
     assert.equal(await cache.deleteAllForAccount('u', 'a'), undefined);
 });
@@ -39,9 +37,9 @@ test('every method is a no-op without redis', async () => {
 test('redis failures fall back silently', async () => {
     const cache = createAnalyticsCacheRepository(failingRedis);
     assert.equal(await cache.getVideos('u', 'a'), null);
-    assert.equal(await cache.getReddit('u', 'a'), null);
+    assert.equal(await cache.getInstagramMedia('u', 'a'), null);
     assert.equal(await cache.setVideos('u', 'a', { videos: [] } as unknown as VideosCacheData), undefined);
-    assert.equal(await cache.setReddit('u', 'a', {} as RedditCacheData), undefined);
+    assert.equal(await cache.setInstagramMedia('u', 'a', { media: [] } as unknown as IGCacheData), undefined);
     assert.equal(await cache.deleteAllForAccount('u', 'a'), undefined);
 });
 
@@ -69,13 +67,11 @@ test('deleting an account removes all three of its entries', async () => {
     const cache = createAnalyticsCacheRepository(redis);
     await cache.setInstagramMedia('u', 'a', { media: [] } as unknown as IGCacheData);
     await cache.setVideos('u', 'a', { videos: [] } as unknown as VideosCacheData);
-    await cache.setReddit('u', 'a', { posts: [] } as unknown as RedditCacheData);
     await cache.setVideos('u', 'other', { videos: [] } as unknown as VideosCacheData);
     await cache.deleteAllForAccount('u', 'a');
 
     assert.equal(await cache.getVideos('u', 'a'), null);
     assert.equal(await cache.getInstagramMedia('u', 'a'), null);
-    assert.equal(await cache.getReddit('u', 'a'), null);
     assert.deepEqual(await cache.getVideos('u', 'other'), { videos: [], version: 2 });
 });
 

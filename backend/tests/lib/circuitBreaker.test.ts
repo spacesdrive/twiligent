@@ -85,13 +85,13 @@ test('a call the caller cancelled says nothing about the platform', async () => 
 });
 
 test('timeouts, unreachable hosts and server errors are outages; client errors and other failures are not', () => {
-    assert.equal(isOutage(new UpstreamTimeoutError('Reddit')), true);
+    assert.equal(isOutage(new UpstreamTimeoutError('Instagram')), true);
     assert.equal(isOutage(new UpstreamError('down', { reason: 'unreachable' })), true);
-    assert.equal(isOutage(new UpstreamError('Reddit API 503: Service Unavailable', { status: 503 })), true);
-    assert.equal(isOutage(new UpstreamError('Reddit rate limit hit', { status: 429 })), false);
+    assert.equal(isOutage(new UpstreamError('Instagram API 503: Service Unavailable', { status: 503 })), true);
+    assert.equal(isOutage(new UpstreamError('Instagram rate limit hit', { status: 429 })), false);
     assert.equal(isOutage(new UpstreamError('Invalid OAuth access token', { status: 190 })), false);
-    assert.equal(isOutage(new NotFoundError('Reddit user not found')), false);
-    assert.equal(isOutage(new UpstreamTimeoutError('Reddit'), AbortSignal.abort()), false);
+    assert.equal(isOutage(new NotFoundError('Instagram user not found')), false);
+    assert.equal(isOutage(new UpstreamTimeoutError('Instagram'), AbortSignal.abort()), false);
 });
 
 test('for Instagram a Graph error code above 500, such as 506 for a duplicate post, is not mistaken for a server error', async () => {

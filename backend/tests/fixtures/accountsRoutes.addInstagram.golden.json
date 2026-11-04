@@ -72,6 +72,14 @@
                 [
                     "user_id",
                     "user-1"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
                 ]
             ]
         },
@@ -108,6 +116,14 @@
                 [
                     "user_id",
                     "user-1"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
                 ]
             ]
         },
@@ -144,6 +160,14 @@
                 [
                     "user_id",
                     "user-1"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
                 ]
             ]
         },
@@ -155,6 +179,14 @@
                 [
                     "user_id",
                     "user-1"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
                 ]
             ]
         }

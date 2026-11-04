@@ -9,22 +9,22 @@
             {
                 "call": "GET /videos/all",
                 "status": 200,
-                "body": "{\"success\":true,\"videos\":[{\"videoId\":\"b\",\"title\":\"Travel diary\",\"tags\":[\"Trip\",\"pasta\"],\"viewCount\":50,\"likeCount\":null,\"commentCount\":4,\"publishedAt\":\"2026-02-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"},{\"videoId\":\"c\",\"title\":\"Zebra facts\",\"viewCount\":300,\"likeCount\":2,\"commentCount\":1,\"publishedAt\":\"2025-12-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"},{\"videoId\":\"d\",\"title\":\"Another pasta\",\"tags\":[],\"viewCount\":300,\"likeCount\":1,\"commentCount\":1,\"publishedAt\":\"2026-03-01T00:00:00Z\",\"channelTitle\":\"Beta\",\"channelId\":\"yt2\",\"channelThumbnail\":\"\"},{\"videoId\":\"a\",\"title\":\"Cooking pasta\",\"tags\":[\"food\"],\"viewCount\":900,\"likeCount\":10,\"commentCount\":null,\"publishedAt\":\"2026-01-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"}],\"total\":4,\"channels\":[{\"id\":\"yt1\",\"title\":\"Alpha\"},{\"id\":\"yt2\",\"title\":\"Beta\"},{\"id\":\"yt3\",\"title\":\"Gamma\"},{\"id\":\"ig1\"},{\"id\":\"rd1\"},{\"id\":\"rd2\"}]}"
+                "body": "{\"success\":true,\"videos\":[{\"videoId\":\"b\",\"title\":\"Travel diary\",\"tags\":[\"Trip\",\"pasta\"],\"viewCount\":50,\"likeCount\":null,\"commentCount\":4,\"publishedAt\":\"2026-02-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"},{\"videoId\":\"c\",\"title\":\"Zebra facts\",\"viewCount\":300,\"likeCount\":2,\"commentCount\":1,\"publishedAt\":\"2025-12-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"},{\"videoId\":\"d\",\"title\":\"Another pasta\",\"tags\":[],\"viewCount\":300,\"likeCount\":1,\"commentCount\":1,\"publishedAt\":\"2026-03-01T00:00:00Z\",\"channelTitle\":\"Beta\",\"channelId\":\"yt2\",\"channelThumbnail\":\"\"},{\"videoId\":\"a\",\"title\":\"Cooking pasta\",\"tags\":[\"food\"],\"viewCount\":900,\"likeCount\":10,\"commentCount\":null,\"publishedAt\":\"2026-01-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"}],\"total\":4,\"channels\":[{\"id\":\"yt1\",\"title\":\"Alpha\"},{\"id\":\"yt2\",\"title\":\"Beta\"},{\"id\":\"yt3\",\"title\":\"Gamma\"},{\"id\":\"ig1\"}]}"
             },
             {
                 "call": "GET /videos/all?search=PASTA&sort=title&order=asc",
                 "status": 200,
-                "body": "{\"success\":true,\"videos\":[{\"videoId\":\"d\",\"title\":\"Another pasta\",\"tags\":[],\"viewCount\":300,\"likeCount\":1,\"commentCount\":1,\"publishedAt\":\"2026-03-01T00:00:00Z\",\"channelTitle\":\"Beta\",\"channelId\":\"yt2\",\"channelThumbnail\":\"\"},{\"videoId\":\"a\",\"title\":\"Cooking pasta\",\"tags\":[\"food\"],\"viewCount\":900,\"likeCount\":10,\"commentCount\":null,\"publishedAt\":\"2026-01-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"},{\"videoId\":\"b\",\"title\":\"Travel diary\",\"tags\":[\"Trip\",\"pasta\"],\"viewCount\":50,\"likeCount\":null,\"commentCount\":4,\"publishedAt\":\"2026-02-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"}],\"total\":3,\"channels\":[{\"id\":\"yt1\",\"title\":\"Alpha\"},{\"id\":\"yt2\",\"title\":\"Beta\"},{\"id\":\"yt3\",\"title\":\"Gamma\"},{\"id\":\"ig1\"},{\"id\":\"rd1\"},{\"id\":\"rd2\"}]}"
+                "body": "{\"success\":true,\"videos\":[{\"videoId\":\"d\",\"title\":\"Another pasta\",\"tags\":[],\"viewCount\":300,\"likeCount\":1,\"commentCount\":1,\"publishedAt\":\"2026-03-01T00:00:00Z\",\"channelTitle\":\"Beta\",\"channelId\":\"yt2\",\"channelThumbnail\":\"\"},{\"videoId\":\"a\",\"title\":\"Cooking pasta\",\"tags\":[\"food\"],\"viewCount\":900,\"likeCount\":10,\"commentCount\":null,\"publishedAt\":\"2026-01-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"},{\"videoId\":\"b\",\"title\":\"Travel diary\",\"tags\":[\"Trip\",\"pasta\"],\"viewCount\":50,\"likeCount\":null,\"commentCount\":4,\"publishedAt\":\"2026-02-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"}],\"total\":3,\"channels\":[{\"id\":\"yt1\",\"title\":\"Alpha\"},{\"id\":\"yt2\",\"title\":\"Beta\"},{\"id\":\"yt3\",\"title\":\"Gamma\"},{\"id\":\"ig1\"}]}"
             },
             {
                 "call": "GET /videos/all?channelId=yt1&minViews=100&maxViews=899",
                 "status": 200,
-                "body": "{\"success\":true,\"videos\":[{\"videoId\":\"c\",\"title\":\"Zebra facts\",\"viewCount\":300,\"likeCount\":2,\"commentCount\":1,\"publishedAt\":\"2025-12-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"}],\"total\":1,\"channels\":[{\"id\":\"yt1\",\"title\":\"Alpha\"},{\"id\":\"yt2\",\"title\":\"Beta\"},{\"id\":\"yt3\",\"title\":\"Gamma\"},{\"id\":\"ig1\"},{\"id\":\"rd1\"},{\"id\":\"rd2\"}]}"
+                "body": "{\"success\":true,\"videos\":[{\"videoId\":\"c\",\"title\":\"Zebra facts\",\"viewCount\":300,\"likeCount\":2,\"commentCount\":1,\"publishedAt\":\"2025-12-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"}],\"total\":1,\"channels\":[{\"id\":\"yt1\",\"title\":\"Alpha\"},{\"id\":\"yt2\",\"title\":\"Beta\"},{\"id\":\"yt3\",\"title\":\"Gamma\"},{\"id\":\"ig1\"}]}"
             },
             {
                 "call": "GET /videos/all?sort=likeCount",
                 "status": 200,
-                "body": "{\"success\":true,\"videos\":[{\"videoId\":\"b\",\"title\":\"Travel diary\",\"tags\":[\"Trip\",\"pasta\"],\"viewCount\":50,\"likeCount\":null,\"commentCount\":4,\"publishedAt\":\"2026-02-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"},{\"videoId\":\"d\",\"title\":\"Another pasta\",\"tags\":[],\"viewCount\":300,\"likeCount\":1,\"commentCount\":1,\"publishedAt\":\"2026-03-01T00:00:00Z\",\"channelTitle\":\"Beta\",\"channelId\":\"yt2\",\"channelThumbnail\":\"\"},{\"videoId\":\"c\",\"title\":\"Zebra facts\",\"viewCount\":300,\"likeCount\":2,\"commentCount\":1,\"publishedAt\":\"2025-12-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"},{\"videoId\":\"a\",\"title\":\"Cooking pasta\",\"tags\":[\"food\"],\"viewCount\":900,\"likeCount\":10,\"commentCount\":null,\"publishedAt\":\"2026-01-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"}],\"total\":4,\"channels\":[{\"id\":\"yt1\",\"title\":\"Alpha\"},{\"id\":\"yt2\",\"title\":\"Beta\"},{\"id\":\"yt3\",\"title\":\"Gamma\"},{\"id\":\"ig1\"},{\"id\":\"rd1\"},{\"id\":\"rd2\"}]}"
+                "body": "{\"success\":true,\"videos\":[{\"videoId\":\"b\",\"title\":\"Travel diary\",\"tags\":[\"Trip\",\"pasta\"],\"viewCount\":50,\"likeCount\":null,\"commentCount\":4,\"publishedAt\":\"2026-02-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"},{\"videoId\":\"d\",\"title\":\"Another pasta\",\"tags\":[],\"viewCount\":300,\"likeCount\":1,\"commentCount\":1,\"publishedAt\":\"2026-03-01T00:00:00Z\",\"channelTitle\":\"Beta\",\"channelId\":\"yt2\",\"channelThumbnail\":\"\"},{\"videoId\":\"c\",\"title\":\"Zebra facts\",\"viewCount\":300,\"likeCount\":2,\"commentCount\":1,\"publishedAt\":\"2025-12-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"},{\"videoId\":\"a\",\"title\":\"Cooking pasta\",\"tags\":[\"food\"],\"viewCount\":900,\"likeCount\":10,\"commentCount\":null,\"publishedAt\":\"2026-01-01T00:00:00Z\",\"channelTitle\":\"Alpha\",\"channelId\":\"yt1\",\"channelThumbnail\":\"a.jpg\"}],\"total\":4,\"channels\":[{\"id\":\"yt1\",\"title\":\"Alpha\"},{\"id\":\"yt2\",\"title\":\"Beta\"},{\"id\":\"yt3\",\"title\":\"Gamma\"},{\"id\":\"ig1\"}]}"
             },
             {
                 "call": "GET /accounts/yt1/analytics",
@@ -56,6 +56,14 @@
                     [
                         "user_id",
                         "user-1"
+                    ],
+                    [
+                        "platform",
+                        [
+                            "youtube",
+                            "instagram"
+                        ],
+                        "in"
                     ]
                 ]
             },
@@ -67,6 +75,14 @@
                     [
                         "user_id",
                         "user-1"
+                    ],
+                    [
+                        "platform",
+                        [
+                            "youtube",
+                            "instagram"
+                        ],
+                        "in"
                     ]
                 ]
             },
@@ -78,6 +94,14 @@
                     [
                         "user_id",
                         "user-1"
+                    ],
+                    [
+                        "platform",
+                        [
+                            "youtube",
+                            "instagram"
+                        ],
+                        "in"
                     ]
                 ]
             },
@@ -89,6 +113,14 @@
                     [
                         "user_id",
                         "user-1"
+                    ],
+                    [
+                        "platform",
+                        [
+                            "youtube",
+                            "instagram"
+                        ],
+                        "in"
                     ]
                 ]
             },
@@ -100,6 +132,14 @@
                     [
                         "user_id",
                         "user-1"
+                    ],
+                    [
+                        "platform",
+                        [
+                            "youtube",
+                            "instagram"
+                        ],
+                        "in"
                     ]
                 ]
             },
@@ -111,6 +151,14 @@
                     [
                         "id",
                         "yt1"
+                    ],
+                    [
+                        "platform",
+                        [
+                            "youtube",
+                            "instagram"
+                        ],
+                        "in"
                     ],
                     [
                         "user_id",
@@ -128,6 +176,14 @@
                         "yt2"
                     ],
                     [
+                        "platform",
+                        [
+                            "youtube",
+                            "instagram"
+                        ],
+                        "in"
+                    ],
+                    [
                         "user_id",
                         "user-1"
                     ]
@@ -143,6 +199,14 @@
                         "yt3"
                     ],
                     [
+                        "platform",
+                        [
+                            "youtube",
+                            "instagram"
+                        ],
+                        "in"
+                    ],
+                    [
                         "user_id",
                         "user-1"
                     ]
@@ -156,6 +220,14 @@
                     [
                         "id",
                         "missing"
+                    ],
+                    [
+                        "platform",
+                        [
+                            "youtube",
+                            "instagram"
+                        ],
+                        "in"
                     ],
                     [
                         "user_id",

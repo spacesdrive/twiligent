@@ -1,15 +1,13 @@
 import { fetchAllVideos } from './youtube/youtubeVideos.ts';
 import { fetchInstagramMedia } from './instagram/instagramMedia.ts';
 import { summarizeContentTypes } from './instagram/instagramContentTypes.ts';
-import { fetchRedditProfile, fetchRedditPosts } from './reddit/redditApi.ts';
-import { computeRedditAnalytics } from './reddit/redditAnalytics.ts';
 import type { AccountRepository } from '../repositories/accountRepository.ts';
 import type { AnalyticsCacheRepository } from '../repositories/analyticsCacheRepository.ts';
 import type { TrackedPostRepository } from '../repositories/trackedPostRepository.ts';
 import type { AppConfig } from '../lib/config.ts';
 import type {
-    Account, AccountSummary, InstagramAccountSummary, OverviewAnalyticsCache, PendingAccountSummary, RedditAccountSummary,
-    TrackedPost, YouTubeAccountSummary,
+    Account, AccountSummary, InstagramAccountSummary, OverviewAnalyticsCache, PendingAccountSummary, TrackedPost,
+    YouTubeAccountSummary,
 } from '../../shared/types/domain.ts';
 
 export interface OverviewDeps {
@@ -40,20 +38,6 @@ function sumBy<T>(items: T[], pick: (item: T) => number): number {
 }
 
 export function createOverviewService({ accounts, tracked, cache, config }: OverviewDeps): OverviewService {
-    function redditWarmTask(userId: string, account: Account): WarmTask | null {
-        const { username, cookie } = account;
-        if (!username || !cookie) return null;
-        return async signal => {
-            const [profile, posts] = await Promise.all([
-                fetchRedditProfile(username, cookie, signal),
-                fetchRedditPosts(username, cookie, 100, signal),
-            ]);
-            await cache.setReddit(userId, account.id, {
-                profile, analytics: computeRedditAnalytics(profile, posts), posts, fetchedAt: new Date().toISOString(),
-            });
-        };
-    }
-
     function instagramWarmTask(userId: string, account: Account): WarmTask | null {
         const { igUserId, accessToken } = account;
         if (!igUserId || !accessToken) return null;
@@ -85,19 +69,6 @@ export function createOverviewService({ accounts, tracked, cache, config }: Over
                 return { id: accountId, cacheWarmed: false, syncing: true };
             };
 
-            const summarizeReddit = async (account: Account): Promise<RedditAccountSummary | PendingAccountSummary> => {
-                const cached = await cache.getReddit(userId, account.id);
-                if (!cached?.analytics) return startWarm(account.id, redditWarmTask(userId, account));
-                return {
-                    id: account.id,
-                    cacheWarmed: true,
-                    fetchedAt: cached.fetchedAt,
-                    fetchedPosts: cached.analytics.fetchedPosts ?? 0,
-                    totalScore: cached.analytics.totalScore ?? 0,
-                    totalComments: cached.analytics.totalComments ?? 0,
-                };
-            };
-
             const summarizeInstagram = async (account: Account): Promise<InstagramAccountSummary | PendingAccountSummary> => {
                 const cached = await cache.getInstagramMedia(userId, account.id);
                 if (!cached?.media) return startWarm(account.id, instagramWarmTask(userId, account));
@@ -127,7 +98,6 @@ export function createOverviewService({ accounts, tracked, cache, config }: Over
             };
 
             const summarize = (account: Account): Promise<AccountSummary> => {
-                if (account.platform === 'reddit') return summarizeReddit(account);
                 if (account.platform === 'instagram') return summarizeInstagram(account);
                 return summarizeYouTube(account);
             };

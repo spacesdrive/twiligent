@@ -1,7 +1,6 @@
 import type { Redis } from '../types/app.ts';
 import type { VideosCacheData } from '../../shared/types/youtube.ts';
 import type { IGCacheData } from '../../shared/types/instagram.ts';
-import type { RedditCacheData } from '../../shared/types/reddit.ts';
 
 // stats change constantly, so cached analytics expire instead of going stale
 const ANALYTICS_TTL_SECONDS = 6 * 60 * 60;
@@ -28,8 +27,6 @@ export interface AnalyticsCacheRepository {
     setVideos(userId: string, accountId: string, data: VideosCacheData): Promise<void>;
     getInstagramMedia(userId: string, accountId: string): Promise<Versioned<IGCacheData> | null>;
     setInstagramMedia(userId: string, accountId: string, data: IGCacheData): Promise<void>;
-    getReddit(userId: string, accountId: string): Promise<RedditCacheData | null>;
-    setReddit(userId: string, accountId: string, data: RedditCacheData): Promise<void>;
     deleteAllForAccount(userId: string, accountId: string): Promise<void>;
 }
 
@@ -87,17 +84,10 @@ export function createAnalyticsCacheRepository(redis: Redis | null): AnalyticsCa
 
         setInstagramMedia: (userId, accountId, data) => writeKey(`ig:${userId}:${accountId}`, { ...data, version: IG_CACHE_VERSION }),
 
-        async getReddit(userId, accountId) {
-            return (await readKey<RedditCacheData>(`reddit:${userId}:${accountId}`)) || null;
-        },
-
-        setReddit: (userId, accountId, data) => writeKey(`reddit:${userId}:${accountId}`, data),
-
         async deleteAllForAccount(userId, accountId) {
             await Promise.all([
                 deleteKey(`videos:${userId}:${accountId}`),
                 deleteKey(`ig:${userId}:${accountId}`),
-                deleteKey(`reddit:${userId}:${accountId}`),
             ]);
         },
     };

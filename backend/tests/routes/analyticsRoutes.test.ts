@@ -37,8 +37,8 @@ const ACCOUNT_ROWS = [
     accountRow({ id: 'yt2', platform: 'youtube', channelId: 'UC2', uploadsPlaylistId: 'UU2', title: 'Beta', subscriberCount: 300, viewCount: 1000, videoCount: 0 }),
     accountRow({ id: 'yt3', platform: 'youtube', channelId: 'UC3', title: 'Gamma' }),
     accountRow({ id: 'ig1', platform: 'instagram', igUserId: 'IG1', accessToken: 'T1', username: 'ribbon' }),
-    accountRow({ id: 'rd1', platform: 'reddit', username: 'ribbon', cookie: 'COOKIE' }),
-    accountRow({ id: 'rd2', platform: 'reddit', username: 'nocookie' }),
+    // a platform Twiligent no longer supports; the overview never reads its rows
+    accountRow({ id: 'old1', platform: 'retired', username: 'old_profile' }),
 ];
 
 const ROWS = [
@@ -60,7 +60,6 @@ function cachedRedis() {
         'videos:user-1:yt1': { videos: CACHED_VIDEOS.yt1, fetchedAt: 'then', version: 2 },
         'videos:user-1:yt2': { videos: CACHED_VIDEOS.yt2, fetchedAt: 'then', version: 2 },
         'ig:user-1:ig1': { media: [{ id: 'm1', contentType: 'reel', likeCount: 5, commentsCount: 2, viewCount: 90 }, { id: 'm2', contentType: 'post', likeCount: 1, commentsCount: 0, viewCount: null }], version: 2 },
-        'reddit:user-1:rd1': { analytics: { fetchedPosts: 4, totalScore: 40 } },
     };
     return fakeStore(store);
 }
