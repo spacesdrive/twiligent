@@ -14,7 +14,6 @@ import { createHealthRepository } from './repositories/healthRepository.ts';
 import { createAccountService } from './services/accountService.ts';
 import { createYouTubeAnalyticsService } from './services/youtubeAnalyticsService.ts';
 import { createInstagramAnalyticsService } from './services/instagramAnalyticsService.ts';
-import { createRedditAnalyticsService } from './services/redditAnalyticsService.ts';
 import { createPublishingService } from './services/publishingService.ts';
 import { createScheduledPublisher } from './services/scheduledPublisher.ts';
 import { createScheduledPostService } from './services/scheduledPostService.ts';
@@ -36,7 +35,6 @@ import type { AccountService } from './services/accountService.ts';
 import type { HealthService } from './services/healthService.ts';
 import type { YouTubeAnalyticsService } from './services/youtubeAnalyticsService.ts';
 import type { InstagramAnalyticsService } from './services/instagramAnalyticsService.ts';
-import type { RedditAnalyticsService } from './services/redditAnalyticsService.ts';
 import type { PublishingService } from './services/publishingService.ts';
 import type { ScheduledPublisher } from './services/scheduledPublisher.ts';
 import type { ScheduledPostService } from './services/scheduledPostService.ts';
@@ -68,7 +66,6 @@ export interface Services {
     accounts: AccountService;
     youtubeAnalytics: YouTubeAnalyticsService;
     instagramAnalytics: InstagramAnalyticsService;
-    redditAnalytics: RedditAnalyticsService;
     publishing: PublishingService;
     scheduledPosts: ScheduledPostService;
     scheduledPublisher: ScheduledPublisher;
@@ -107,7 +104,6 @@ export function createServices(clients: Clients, config: AppConfig, context: Req
         accounts: createAccountService({ accounts, cache, audit, config, context }),
         youtubeAnalytics: createYouTubeAnalyticsService({ accounts, cache, config, context }),
         instagramAnalytics: createInstagramAnalyticsService({ accounts, cache, context }),
-        redditAnalytics: createRedditAnalyticsService({ accounts, cache, context }),
         publishing: createPublishingService({ accounts, config, context }),
         scheduledPosts: createScheduledPostService({ accounts, posts, publisher: scheduledPublisher }),
         scheduledPublisher,

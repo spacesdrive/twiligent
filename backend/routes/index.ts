@@ -7,7 +7,6 @@ import instagramAuthRoutes from './instagramAuthRoutes.ts';
 import instagramWebhookRoutes from './instagramWebhookRoutes.ts';
 import overviewRoutes from './overviewRoutes.ts';
 import publishingRoutes from './publishingRoutes.ts';
-import redditRoutes from './redditRoutes.ts';
 import scheduledPostRoutes from './scheduledPostRoutes.ts';
 import settingsRoutes from './settingsRoutes.ts';
 import trackedContentRoutes from './trackedContentRoutes.ts';
@@ -29,7 +28,7 @@ publicRoutes.route('/', instagramWebhookRoutes);
 // mounted behind requireAuth and the per-user rate limits in app.ts
 export const protectedRoutes = new Hono<AppEnv>();
 for (const routes of [
-    accountRoutes, analyticsRoutes, redditRoutes, publishingRoutes, scheduledPostRoutes, trackedContentRoutes,
+    accountRoutes, analyticsRoutes, publishingRoutes, scheduledPostRoutes, trackedContentRoutes,
     overviewRoutes, settingsRoutes, instagramAuthRoutes, automationRoutes,
 ]) {
     protectedRoutes.route('/', routes);
