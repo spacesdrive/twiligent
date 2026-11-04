@@ -6,7 +6,8 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['**/dist', '**/.wrangler', '**/node_modules']),
+  // .claude holds Claude Code's local worktrees: whole copies of the repository with their own node_modules
+  globalIgnores(['**/dist', '**/.wrangler', '**/node_modules', '.claude']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [js.configs.recommended, tseslint.configs.recommended],
