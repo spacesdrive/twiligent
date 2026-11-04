@@ -377,6 +377,58 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
+  /* StackedBars (adapted from Bencho, MIT): segments grow with a stagger along the row, the others step back by mixing
+     toward the card instead of fading, and the ring and tooltip glide to the column under the pointer */
+  .stb-bar {
+    position: absolute;
+    inset-inline: 0;
+    border-radius: 2.5px;
+    background-color: var(--c);
+    transition:
+      height 600ms var(--ease-fold) calc(var(--i) * 14ms),
+      bottom 600ms var(--ease-fold) calc(var(--i) * 14ms),
+      background-color var(--duration-base) ease;
+  }
+  .stb[data-scrub] .stb-col:not([data-on]) .stb-bar {
+    background-color: color-mix(in srgb, var(--c) 38%, var(--surface-raised));
+  }
+  .stb-ring {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border: 1.5px solid var(--ink-muted);
+    border-radius: 5.5px;
+    pointer-events: none;
+    transition: transform var(--duration-overlay) var(--ease-fold), height var(--duration-overlay) var(--ease-fold);
+  }
+  .stb-tip {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 10px;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-control);
+    background: var(--surface-overlay);
+    box-shadow: var(--shadow-md);
+    font-size: var(--text-caption);
+    line-height: var(--text-caption--line-height);
+    pointer-events: none;
+    transition: transform var(--duration-overlay) var(--ease-fold);
+  }
+  /* RollingNumber: each digit is a 0 to 9 strip seen through a one-line window; the ones column moves first */
+  .roll { display: inline-block; }
+  .roll-row { display: inline-flex; }
+  .roll-window { display: inline-block; height: 1lh; overflow: hidden; }
+  .roll-strip {
+    display: flex;
+    flex-direction: column;
+    transform: translateY(calc(var(--roll-digit) * -1lh));
+    transition: transform 600ms var(--ease-fold) calc(var(--roll-order) * 40ms);
+  }
+  .roll-strip > span { height: 1lh; }
   .delayed-appear {
     animation: delayed-appear 1ms var(--spinner-delay, 300ms) both;
   }
