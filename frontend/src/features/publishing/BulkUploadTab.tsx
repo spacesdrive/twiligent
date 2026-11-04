@@ -33,6 +33,7 @@ export default function BulkUploadTab({ bulk, queue, bulkPublish, igAccounts }: 
         onStart={bulkPublish.handleBulkProcess}
         onStop={bulkPublish.stopBulk}
         onApplyCaption={queue.applySharedCaption}
+        errorFor={bulkPublish.errorFor}
       />
     </div>
   );

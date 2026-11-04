@@ -10,7 +10,7 @@ export interface AccountSectionProps {
   section: AccountSectionInfo;
   accounts: AppAccount[];
   refreshingId: string | null;
-  onRefresh: (id: string) => void;
+  onRefresh: (acct: AppAccount) => void;
   onDelete: (acct: AppAccount) => void;
 }
 
@@ -33,7 +33,7 @@ export default function AccountSection({ section, accounts, refreshingId, onRefr
             acct={acct}
             platform={section.key}
             refreshing={refreshingId === acct.id}
-            onRefresh={() => onRefresh(acct.id)}
+            onRefresh={() => onRefresh(acct)}
             onDelete={() => onDelete(acct)}
           />
         ))}

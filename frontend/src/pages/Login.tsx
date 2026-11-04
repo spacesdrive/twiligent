@@ -1,4 +1,4 @@
-import { Suspense, lazy, useState } from 'react';
+import { Suspense, lazy, useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -11,16 +11,19 @@ import { GOOGLE_CLIENT_ID } from '@/lib/googleIdentity';
 import { emailErrorNotice, isExistingAccount, passwordErrorMessage } from '@/lib/authErrors';
 import type { AuthErrorLike } from '@/lib/authErrors';
 import { PASSWORD_MIN_LENGTH, newPasswordProblem } from '@/lib/passwords';
+import { CODE_LENGTH } from '@/lib/authErrors';
+import { looksLikeEmail } from '@/lib/emailAddress';
 import { signInPageOutcome } from '@/lib/signInPage';
 import { FieldRow } from '@/components/DetailPanel';
+import { useDocumentTitle } from '@/hooks/use-document-title';
 import { useCountdown } from './useCountdown';
 import LoginEmailStart from './LoginEmailStart';
 import LoginPasswordForm from './LoginPasswordForm';
 import LoginCodeForm from './LoginCodeForm';
 import LoginEmailForm from './LoginEmailForm';
 import PasswordInput from './PasswordInput';
-import { LOGIN_COPY, PRIVACY_URL, SIGN_UP_TITLE } from './loginCopy';
-import type { LoginView } from './loginCopy';
+import { FAILURE_FIELD, LOGIN_COPY, PRIVACY_URL, SIGN_UP_TITLE } from './loginCopy';
+import type { LoginField, LoginView } from './loginCopy';
 
 // the dashboard picture behind the card is decoration, so it loads after the card and never delays signing in
 const LoginBackdrop = lazy(() => import('./LoginBackdrop'));
@@ -59,7 +62,37 @@ function OrDivider() {
 }
 
 const QUIET_LINK =
-  'rounded-sm text-caption text-ink-muted transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
+  'inline-flex min-h-6 items-center rounded-sm text-small text-ink-muted transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
+
+const VIEWS_WITH_EMAIL: LoginView[] = ['start', 'password', 'signup', 'forgot'];
+const VIEWS_WITH_CODE: LoginView[] = ['code', 'verify', 'reset'];
+
+export interface LoginProblem {
+  field: LoginField;
+  message: string;
+}
+
+// what is missing before a view can be sent, or null; checked on submit so the button never greys out silently
+function loginProblem(view: LoginView, email: string, code: string, password: string): LoginProblem | null {
+  if (VIEWS_WITH_EMAIL.includes(view) && !looksLikeEmail(email)) {
+    return { field: 'email', message: 'Enter your full email address, such as you@example.com.' };
+  }
+  if ((view === 'password' || view === 'signup') && !password) return { field: 'password', message: 'Enter your password.' };
+  if (view === 'signup') {
+    const problem = newPasswordProblem(password, password);
+    if (problem) return { field: 'password', message: problem };
+  }
+  if (VIEWS_WITH_CODE.includes(view) && code.length !== CODE_LENGTH) {
+    return { field: 'code', message: `Enter the ${CODE_LENGTH}-digit code from the email.` };
+  }
+  if (view === 'reset') {
+    const problem = newPasswordProblem(password, password);
+    if (problem) return { field: 'password', message: problem };
+  }
+  return null;
+}
+
+const FIELD_IDS: Record<LoginField, string> = { email: 'email', code: 'code', password: 'password' };
 
 // the Activepieces sign-in in Twiligent's brand: one card over a blurred picture of the app, Google first,
 // then an email that receives a sign-in code, with the password behind a quiet link
@@ -81,13 +114,51 @@ export default function Login() {
   const [resendIn, startResendWait] = useCountdown();
   const [emailLimitMessage, setEmailLimitMessage] = useState<string | null>(null);
   const [signingIn, setSigningIn] = useState(false);
+  const [problem, setProblem] = useState<LoginProblem | null>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const firstView = useRef(true);
   const copy = LOGIN_COPY[view];
+  const errorFor = (field: LoginField) => (problem?.field === field ? problem.message : undefined);
+
+  // the button that changed the view is gone; when the new view does not focus a field itself, its title takes focus
+  useEffect(() => {
+    if (firstView.current) {
+      firstView.current = false;
+      return;
+    }
+    const frame = requestAnimationFrame(() => {
+      if (!document.activeElement || document.activeElement === document.body) titleRef.current?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [view]);
+
+  function changeEmail(value: string) {
+    setEmail(value);
+    if (problem?.field === 'email') setProblem(null);
+  }
+
+  function changePassword(value: string) {
+    setPassword(value);
+    if (problem?.field === 'password') setProblem(null);
+  }
+
+  function changeCode(value: string) {
+    setCode(value);
+    if (problem?.field === 'code') setProblem(null);
+  }
+
+  function showProblem(found: LoginProblem) {
+    setProblem(found);
+    requestAnimationFrame(() => document.getElementById(FIELD_IDS[found.field])?.focus());
+  }
   const title = view === 'start' && signingUp ? SIGN_UP_TITLE : copy.title;
+  useDocumentTitle(view === 'start' ? (signingUp ? 'Create an account' : 'Sign in') : copy.title);
   const back = BACK_TO[view];
 
   function showView(next: LoginView) {
     setView(next);
     setShowPassword(false);
+    setProblem(null);
   }
 
   function openCodeStep(next: 'code' | 'verify' | 'reset') {
@@ -96,14 +167,15 @@ export default function Login() {
     showView(next);
   }
 
-  function showEmailError(prefix: string, err: unknown) {
+  // a failure is shown under the field it concerns and stays there until that field changes
+  function showEmailError(prefix: string, err: unknown, field: LoginField) {
     const notice = emailErrorNotice(err as AuthErrorLike, !!GOOGLE_CLIENT_ID);
     // the warning on the first view says it already, next to the ways in that still work
     if (notice.emailLimitReached) {
       setEmailLimitMessage(notice.message);
       showView('start');
     } else {
-      toast.error(`${prefix} ${notice.message}`);
+      showProblem({ field, message: `${prefix} ${notice.message}` });
     }
   }
 
@@ -142,8 +214,8 @@ export default function Login() {
       return;
     }
     if (isExistingAccount(data.user)) {
-      toast.error('This email already has an account. Sign in instead.');
       showView('password');
+      showProblem({ field: 'password', message: 'This email already has an account. Enter its password to sign in.' });
       return;
     }
     openCodeStep('verify');
@@ -193,18 +265,26 @@ export default function Login() {
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (loading) return;
+    const found = loginProblem(view, email.trim(), code, password);
+    if (found) {
+      showProblem(found);
+      return;
+    }
+    setProblem(null);
     setSigningIn(true);
     setLoading(true);
     try {
       await SUBMIT[view]();
     } catch (err) {
-      showEmailError(FAILURE_PREFIX[view], err);
+      showEmailError(FAILURE_PREFIX[view], err, FAILURE_FIELD[view]);
     } finally {
       setLoading(false);
     }
   }
 
   async function handleResend() {
+    if (resending) return;
     setResending(true);
     try {
       const address = email.trim();
@@ -218,7 +298,7 @@ export default function Login() {
       startResendWait(RESEND_WAIT_SECONDS);
       toast.success('New code sent');
     } catch (err) {
-      showEmailError("Couldn't send a new code.", err);
+      showEmailError("Couldn't send a new code.", err, 'code');
     } finally {
       setResending(false);
     }
@@ -232,7 +312,7 @@ export default function Login() {
       if (error) throw error;
       navigate('/');
     } catch (err) {
-      toast.error(`Couldn't sign in with Google. ${(err as Error).message}`);
+      setProblem({ field: 'email', message: `Couldn't sign in with Google. ${(err as Error).message}` });
     } finally {
       setLoading(false);
     }
@@ -240,7 +320,7 @@ export default function Login() {
 
   // the public site's Sign in and Get started buttons land here, so a stored session opens the dashboard
   const outcome = signInPageOutcome(session === undefined ? undefined : !!session, signingIn);
-  if (outcome === 'wait') return null;
+  if (outcome === 'wait') return <p role="status" className="sr-only">Checking whether you are signed in</p>;
   if (outcome === 'dashboard') return <Navigate to="/" replace />;
 
   return (
@@ -263,8 +343,10 @@ export default function Login() {
               </button>
             )}
             <h1
+              ref={titleRef}
               id="login-title"
-              className="mt-6 mb-6 text-center font-heading text-[1.375rem] leading-snug font-semibold tracking-[-0.02em] text-balance text-ink"
+              tabIndex={-1}
+              className="mt-6 mb-6 text-center font-heading text-page-title font-semibold text-balance text-ink outline-none"
             >
               {title}
             </h1>
@@ -272,7 +354,7 @@ export default function Login() {
             {view === 'start' && (
               <>
                 {emailLimitMessage && (
-                  <Alert variant="warning" className="mb-5">
+                  <Alert variant="warning" className="mb-5" role="alert">
                     <MailWarning />
                     <AlertTitle>Email codes are paused until tomorrow</AlertTitle>
                     <AlertDescription>{emailLimitMessage}</AlertDescription>
@@ -283,16 +365,16 @@ export default function Login() {
                     <GoogleSignInButton
                       text={signingUp ? 'signup_with' : 'continue_with'}
                       onCredential={handleGoogleCredential}
-                      onError={err => toast.error(err.message)}
+                      onError={err => setProblem({ field: 'email', message: `Couldn't sign in with Google. ${err.message}` })}
                     />
                     <OrDivider />
                   </>
                 )}
-                <LoginEmailStart email={email} onEmailChange={setEmail} loading={loading} onSubmit={handleSubmit} />
+                <LoginEmailStart email={email} onEmailChange={changeEmail} loading={loading} onSubmit={handleSubmit} error={errorFor('email')} />
                 <button type="button" onClick={() => showView('password')} className={`mx-auto mt-5 ${QUIET_LINK}`}>
                   Use password
                 </button>
-                <p className="mt-8 border-t border-line-strong/60 pt-5 text-center text-[0.6875rem] leading-relaxed text-ink-muted">
+                <p className="mt-8 border-t border-line-strong/60 pt-5 text-center text-caption text-ink-muted">
                   By continuing, you agree to the{' '}
                   <a href={PRIVACY_URL} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4 hover:text-ink">
                     privacy policy
@@ -308,8 +390,10 @@ export default function Login() {
                 copy={copy}
                 email={email}
                 password={password}
-                onEmailChange={setEmail}
-                onPasswordChange={setPassword}
+                onEmailChange={changeEmail}
+                onPasswordChange={changePassword}
+                emailError={errorFor('email')}
+                passwordError={errorFor('password')}
                 showPassword={showPassword}
                 onTogglePassword={() => setShowPassword(visible => !visible)}
                 loading={loading}
@@ -320,7 +404,7 @@ export default function Login() {
             )}
 
             {view === 'forgot' && (
-              <LoginEmailForm copy={copy} email={email} onEmailChange={setEmail} loading={loading} onSubmit={handleSubmit} />
+              <LoginEmailForm copy={copy} email={email} onEmailChange={changeEmail} loading={loading} onSubmit={handleSubmit} error={errorFor('email')} />
             )}
 
             {(view === 'code' || view === 'verify' || view === 'reset') && (
@@ -328,20 +412,20 @@ export default function Login() {
                 copy={copy}
                 email={email.trim()}
                 code={code}
-                onCodeChange={setCode}
+                onCodeChange={changeCode}
+                error={errorFor('code')}
                 loading={loading}
                 onSubmit={handleSubmit}
                 resendIn={resendIn}
                 resending={resending}
                 onResend={handleResend}
-                ready={view !== 'reset' || password.length >= PASSWORD_MIN_LENGTH}
               >
                 {view === 'reset' && (
-                  <FieldRow label="New password" htmlFor="password">
+                  <FieldRow label="New password" htmlFor="password" hint={`At least ${PASSWORD_MIN_LENGTH} characters.`} error={errorFor('password')}>
                     <PasswordInput
                       id="password"
                       value={password}
-                      onChange={setPassword}
+                      onChange={changePassword}
                       placeholder={`At least ${PASSWORD_MIN_LENGTH} characters`}
                       autoComplete="new-password"
                       showPassword={showPassword}

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   ACTIVITY_FILTERS, DEFAULT_FOLLOW_PROMPT, DEFAULT_NOT_FOLLOWING, DEFAULT_PUBLIC_REPLY, MAX_MESSAGE_BYTES, accountStatus, canRetry, canRetryPublic,
   composeReply, emptyRuleForm, formToRequest, gateDetail, matchModeLabel, messageBytes, needsMessageEvents, parseKeywords, periodStart,
-  publicReplyTexts, publicStatusDisplay, ruleFormProblem, ruleScopeLabel, ruleToForm, statusDisplay, summarizeStats,
+  publicReplyTexts, publicStatusDisplay, ruleFormProblem, ruleFormError, normalizeLink, ruleScopeLabel, ruleToForm, statusDisplay, summarizeStats,
 } from '../../../src/features/automations/automationData.ts';
 import type { RuleForm } from '../../../src/features/automations/automationData.ts';
 import type { AutomationAccountState, AutomationRule } from '../../../../shared/types/automation.ts';
@@ -143,7 +143,8 @@ test('the form names the first thing to fix, in the order of the fields', () => 
   assert.equal(ruleFormProblem(form({ scope: 'selected' })), 'Choose at least one post, or answer comments on every post');
   assert.equal(ruleFormProblem(form({ replyText: '' })), 'Write the reply to send');
   assert.equal(ruleFormProblem(form({ linkUrl: 'http://e.com' })), 'The link must start with https://');
-  assert.equal(ruleFormProblem(form({ linkUrl: 'e.com' })), 'The link must be a full address starting with https://');
+  assert.equal(ruleFormProblem(form({ linkUrl: 'e.com' })), null);
+  assert.equal(ruleFormProblem(form({ linkUrl: 'guide' })), 'The link must be a full address, such as https://example.com/guide');
   assert.equal(ruleFormProblem(form({ hourlyLimit: '0' })), 'The hourly limit must be a whole number from 1 to 750');
   assert.equal(ruleFormProblem(form({ hourlyLimit: '2.5' })), 'The hourly limit must be a whole number from 1 to 750');
   assert.match(ruleFormProblem(form({ replyText: 'é'.repeat(MAX_MESSAGE_BYTES / 2 + 1) }))!, /is 1002 bytes; Instagram accepts at most 1000/);
@@ -204,4 +205,22 @@ test('an account needs message events only while one of its followers-only rules
   ];
   assert.equal(needsMessageEvents(rules, 'ig1'), false);
   assert.equal(needsMessageEvents(rules, 'ig2'), true);
+});
+
+test('a link typed without a scheme is saved as an https address', () => {
+  assert.equal(normalizeLink(' example.com/guide '), 'https://example.com/guide');
+  assert.equal(normalizeLink('//example.com'), 'https://example.com');
+  assert.equal(normalizeLink('https://example.com'), 'https://example.com');
+  assert.equal(normalizeLink(''), '');
+  assert.equal(formToRequest(form({ linkUrl: 'example.com/guide' })).linkUrl, 'https://example.com/guide');
+});
+
+test('each rule problem names the field it belongs to', () => {
+  assert.deepEqual(ruleFormError(form({ name: '' })), { field: 'name', message: 'Give the rule a name' });
+  assert.equal(ruleFormError(form({ keywordsText: '' }))?.field, 'keywordsText');
+  assert.equal(ruleFormError(form({ linkUrl: 'http://e.com' }))?.field, 'linkUrl');
+  assert.equal(ruleFormError(form({ hourlyLimit: '0' }))?.field, 'hourlyLimit');
+  assert.equal(ruleFormError(form({ privateReplyEnabled: false, publicReplyEnabled: false }))?.field, 'replies');
+  assert.equal(ruleFormError(form({ requireFollow: true, notFollowingText: '' }))?.field, 'notFollowingText');
+  assert.equal(ruleFormError(form()), null);
 });

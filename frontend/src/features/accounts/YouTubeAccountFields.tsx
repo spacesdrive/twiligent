@@ -18,16 +18,17 @@ export interface YouTubeAccountFieldsProps {
   onResolve: () => void;
   resolving: boolean;
   resolved: YouTubeChannelData | null;
+  error?: string;
 }
 
 function ResolvedChannel({ channel }: ResolvedChannelProps) {
   return (
     <div className="flex items-center gap-3 rounded-card border border-success/30 bg-success-soft p-3">
-      <AccountAvatar account={{ platform: 'youtube', title: channel.title, thumbnail: channel.thumbnails?.medium || channel.thumbnails?.default }} size="lg" />
+      <AccountAvatar account={{ platform: 'youtube', title: channel.title, thumbnail: channel.thumbnails?.medium || channel.thumbnails?.default }} size="lg" decorative />
       <div className="min-w-0 flex-1">
         <p className="flex items-center gap-1.5 text-sm font-semibold text-ink">
           <span className="truncate">{channel.title}</span>
-          <CheckCircle2 className="size-4 shrink-0 text-success" aria-label="Channel found" />
+          <CheckCircle2 className="size-4 shrink-0 text-success" aria-hidden="true" />
         </p>
         <p className="text-caption text-ink-muted">{channel.customUrl}</p>
         {channel.subscriberCount != null && (
@@ -40,31 +41,35 @@ function ResolvedChannel({ channel }: ResolvedChannelProps) {
   );
 }
 
-export default function YouTubeAccountFields({ input, onInputChange, onResolve, resolving, resolved }: YouTubeAccountFieldsProps) {
+// Enter or Find looks the channel up; the dialog's Add channel button adds it
+export default function YouTubeAccountFields({ input, onInputChange, onResolve, resolving, resolved, error }: YouTubeAccountFieldsProps) {
   return (
-    <div className="flex flex-col gap-4">
-      <FieldRow label="Channel" hint="A channel URL, an @handle or a channel ID that starts with UC." htmlFor="yt-channel">
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Link2 className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-faint" />
-            <Input
-              id="yt-channel"
-              className="h-(--control-h-lg) pl-9"
-              value={input}
-              onChange={e => onInputChange(e.target.value)}
-              placeholder="youtube.com/@channel"
-              onKeyDown={e => e.key === 'Enter' && onResolve()}
-              autoFocus
-            />
-          </div>
-          <Button variant="outline" size="lg" onClick={onResolve} disabled={resolving || !input.trim()}>
-            {resolving ? <Spinner className="size-4" /> : <Search data-icon="inline-start" />}
-            Find
-          </Button>
+    <form noValidate onSubmit={e => { e.preventDefault(); onResolve(); }} className="flex flex-col gap-4">
+      <FieldRow label="Channel" hint="A channel link, an @handle or a channel ID that starts with UC." htmlFor="yt-channel" error={error}>
+        <div className="relative">
+          <Link2 className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-ink-faint" aria-hidden="true" />
+          <Input
+            id="yt-channel"
+            className="h-(--control-h-lg) pl-9"
+            value={input}
+            onChange={e => onInputChange(e.target.value)}
+            placeholder="youtube.com/@channel"
+            autoComplete="off"
+            spellCheck={false}
+            autoFocus
+          />
         </div>
       </FieldRow>
+      <Button type="submit" variant="outline" className="self-start" disabled={resolving}>
+        {resolving ? <Spinner className="size-4" /> : <Search data-icon="inline-start" />}
+        {resolving ? 'Finding the channel' : 'Find the channel'}
+      </Button>
 
-      {resolved && <ResolvedChannel channel={resolved} />}
-    </div>
+      {/* mounted before a result, so finding the channel is announced */}
+      <div role="status" aria-live="polite">
+        {resolved && <ResolvedChannel channel={resolved} />}
+        {resolved && <span className="sr-only">Found {resolved.title}. Add it with the Add channel button.</span>}
+      </div>
+    </form>
   );
 }

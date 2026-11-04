@@ -8,28 +8,38 @@ export interface RedditAccountFieldsProps {
   username: string;
   cookie: string;
   onUsernameChange: (value: string) => void;
+  onUsernameBlur: () => void;
   onCookieChange: (value: string) => void;
   onSubmit: () => void;
+  usernameError?: string;
+  cookieError?: string;
 }
 
-export default function RedditAccountFields({ username, cookie, onUsernameChange, onCookieChange, onSubmit }: RedditAccountFieldsProps) {
+// a real form, so Enter submits once and the busy guard in the add step stops a second request
+export default function RedditAccountFields({
+  username, cookie, onUsernameChange, onUsernameBlur, onCookieChange, onSubmit, usernameError, cookieError,
+}: RedditAccountFieldsProps) {
   return (
-    <div className="flex flex-col gap-4">
-      <FieldRow label="Username" htmlFor="reddit-user">
-        <div className="relative">
-          <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-sm font-medium text-ink-faint">u/</span>
-          <Input
-            id="reddit-user"
-            className="h-(--control-h-lg) pl-8"
-            value={username}
-            onChange={e => onUsernameChange(e.target.value)}
-            placeholder="username"
-            onKeyDown={e => e.key === 'Enter' && onSubmit()}
-            autoFocus
-          />
-        </div>
+    <form
+      id="add-account-form"
+      noValidate
+      onSubmit={e => { e.preventDefault(); onSubmit(); }}
+      className="flex flex-col gap-4"
+    >
+      <FieldRow label="Username" htmlFor="reddit-user" hint="The name, u/name or the address of the profile." error={usernameError}>
+        <Input
+          id="reddit-user"
+          className="h-(--control-h-lg)"
+          value={username}
+          onChange={e => onUsernameChange(e.target.value)}
+          onBlur={onUsernameBlur}
+          placeholder="u/username"
+          autoComplete="off"
+          spellCheck={false}
+          autoFocus
+        />
       </FieldRow>
-      <FieldRow label="Session cookie" hint="We store it on the server and never show it again." htmlFor="reddit-cookie">
+      <FieldRow label="Session cookie" hint="Stored on the server and never shown again." htmlFor="reddit-cookie" error={cookieError}>
         <Input
           id="reddit-cookie"
           type="password"
@@ -37,7 +47,7 @@ export default function RedditAccountFields({ username, cookie, onUsernameChange
           value={cookie}
           onChange={e => onCookieChange(e.target.value)}
           placeholder="reddit_session value"
-          onKeyDown={e => e.key === 'Enter' && onSubmit()}
+          autoComplete="off"
         />
       </FieldRow>
       <Alert>
@@ -47,6 +57,8 @@ export default function RedditAccountFields({ username, cookie, onUsernameChange
           <strong className="font-semibold text-ink">reddit_session</strong>.
         </AlertDescription>
       </Alert>
-    </div>
+      {/* lets Enter in either field submit the form */}
+      <button type="submit" hidden aria-hidden="true" tabIndex={-1} />
+    </form>
   );
 }

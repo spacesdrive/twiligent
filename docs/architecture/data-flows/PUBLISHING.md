@@ -32,9 +32,11 @@ User selects account + uploads media + fills caption
    -> Poll every 3 seconds, up to 30 times (about 90 seconds); after that the post fails
       with a "took too long" message, in single and bulk publishing alike, because
       publishing an unfinished container fails anyway
-   -> Wait for status_code = 'FINISHED'
-   -> ERROR -> throw error, mark as failed
-   -> EXPIRED -> throw error
+   -> Wait for status_code = 'FINISHED'; while waiting the page shows the seconds waited
+      against the usual minute, and a single post offers Stop waiting (an AbortSignal that
+      ends the wait; the container is left unpublished)
+   -> ERROR -> ContainerFailedError with a plain message (try a shorter H.264 MP4), mark as failed
+   -> EXPIRED -> ContainerFailedError: publish again
         │
         ▼
 4. Frontend: Publish the container
@@ -45,7 +47,9 @@ User selects account + uploads media + fills caption
    -> Returns { mediaId }
         │
         ▼
-5. Frontend: Show success toast with mediaId
+5. Frontend: Show the result screen (Published, Post scheduled or the failure with Try again,
+   which keeps the file and fields); its heading takes focus. Problems found before upload
+   (account, type, file, schedule) are shown under their field, not in a toast
 ```
 
 ## Scheduled Publishing
@@ -103,7 +107,7 @@ The full failure table is in `docs/architecture/data-flows/SCHEDULING.md`.
 | Type | Container params | Status polling | Notes |
 |---|---|---|---|
 | IMAGE | `image_url`, optional `alt_text`, `location_id`, `user_tags` | No | Publishes immediately |
-| REELS | `video_url`, `media_type=REELS`, optional `share_to_feed`, `cover_url`, `audio_name`, `thumb_offset`, `collaborators` | Yes | Requires FINISHED before publish |
+| REELS | `video_url`, `media_type=REELS`, optional `share_to_feed`, `cover_url`, `audio_name`, `thumb_offset`, `collaborators` | Yes | Requires FINISHED before publish; the form takes the thumbnail time in seconds and sends `thumb_offset` in milliseconds |
 | STORIES | `video_url` or `image_url`, `media_type=STORIES`, optional `user_tags` | Yes (for video) | Images publish immediately |
 
 ## Error States

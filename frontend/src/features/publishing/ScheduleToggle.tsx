@@ -1,7 +1,8 @@
 import { Calendar, Send } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import SegmentedChoice from '@/components/SegmentedChoice';
 
 interface ScheduleToggleProps {
+  name: string;
   scheduled: boolean;
   onChange: (scheduled: boolean) => void;
   disabled?: boolean;
@@ -9,13 +10,21 @@ interface ScheduleToggleProps {
   laterLabel?: string;
 }
 
-export default function ScheduleToggle({ scheduled, onChange, disabled, nowLabel = 'Publish now', laterLabel = 'Schedule' }: ScheduleToggleProps) {
+type When = 'now' | 'later';
+
+// a choice between two values, so it is a pair of radio buttons rather than tabs without panels
+export default function ScheduleToggle({ name, scheduled, onChange, disabled, nowLabel = 'Publish now', laterLabel = 'Schedule' }: ScheduleToggleProps) {
   return (
-    <Tabs value={scheduled ? 'later' : 'now'} onValueChange={value => onChange(value === 'later')}>
-      <TabsList variant="segmented" className="w-full">
-        <TabsTrigger value="now" disabled={disabled}><Send />{nowLabel}</TabsTrigger>
-        <TabsTrigger value="later" disabled={disabled}><Calendar />{laterLabel}</TabsTrigger>
-      </TabsList>
-    </Tabs>
+    <SegmentedChoice<When>
+      name={name}
+      className="sm:w-full"
+      options={[
+        { value: 'now', label: nowLabel, icon: <Send /> },
+        { value: 'later', label: laterLabel, icon: <Calendar /> },
+      ]}
+      value={scheduled ? 'later' : 'now'}
+      onChange={value => onChange(value === 'later')}
+      disabled={disabled}
+    />
   );
 }

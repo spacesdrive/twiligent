@@ -9,7 +9,7 @@ export default function PlatformRequirementsSection() {
       <SurfaceBox content={false} className="divide-y divide-divider">
         <div className="flex flex-col gap-1 px-5 py-4">
           <p className="text-sm font-medium text-ink">YouTube</p>
-          <p className="text-sm text-ink-muted">Add a channel link or @handle in Accounts. The API key is already set on the server.</p>
+          <p className="max-w-prose text-body text-ink-muted">Add a channel link or @handle in Accounts. The API key is already set on the server.</p>
         </div>
         <div className="flex flex-col gap-2 px-5 py-4">
           <p className="text-sm font-medium text-ink">Instagram</p>
@@ -23,7 +23,7 @@ export default function PlatformRequirementsSection() {
         </div>
         <div className="flex flex-col gap-1 px-5 py-4">
           <p className="text-sm font-medium text-ink">Cloudinary</p>
-          <p className="text-sm text-ink-muted">Instagram needs every file at a public URL before publishing. Cloudinary hosts uploads for that; its cloud name and upload preset are set on the server.</p>
+          <p className="max-w-prose text-body text-ink-muted">Instagram needs every file at a public URL before publishing. Cloudinary hosts uploads for that; its cloud name and upload preset are set on the server.</p>
         </div>
       </SurfaceBox>
     </SettingsSection>

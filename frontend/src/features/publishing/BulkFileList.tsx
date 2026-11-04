@@ -17,11 +17,11 @@ export default function BulkFileList({ queue, bulkType }: BulkFileListProps) {
   const actions = (
     <div className="flex gap-2">
       {files.length > 0 && !processing && (
-        <Button size="sm" variant="ghost" onClick={queue.clearFiles} className="hover:bg-danger-soft hover:text-danger">
+        <Button size="sm" variant="ghost" onClick={queue.clearFiles} className="mr-2 hover:bg-danger-soft hover:text-danger">
           <Trash2 data-icon="inline-start" />Clear all
         </Button>
       )}
-      <Button size="sm" variant="outline" onClick={openPicker} disabled={processing}>
+      <Button id={files.length > 0 ? 'bulk-add-files' : undefined} size="sm" variant="outline" onClick={openPicker} disabled={processing}>
         <Plus data-icon="inline-start" />Add files
       </Button>
     </div>
@@ -31,13 +31,14 @@ export default function BulkFileList({ queue, bulkType }: BulkFileListProps) {
       <input ref={fileInputRef} type="file" hidden multiple accept={bulkType?.accept || '*'} onChange={queue.handleFilesSelect} aria-label="Files to upload" />
       {files.length === 0 ? (
         <button
+          id="bulk-add-files"
           type="button"
           onClick={openPicker}
           className="flex w-full flex-col items-center gap-2 rounded-card border border-dashed border-line-strong/50 p-10 text-center transition-colors duration-(--duration-fast) hover:border-brand hover:bg-brand-soft/30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
         >
-          <FolderUp className="size-8 stroke-[1.5] text-ink-faint" />
+          <FolderUp className="size-8 stroke-[1.5] text-ink-faint" aria-hidden="true" />
           <span className="text-sm font-medium text-ink">Choose several files</span>
-          <span className="text-caption text-ink-faint">Each file becomes its own post, published or scheduled in order.</span>
+          <span className="text-small text-ink-muted">Each file becomes its own post, published or scheduled in order.</span>
         </button>
       ) : (
         <ul className="flex max-h-[34rem] flex-col gap-2 overflow-y-auto pr-1">

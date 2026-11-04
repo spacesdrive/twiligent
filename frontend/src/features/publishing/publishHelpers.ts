@@ -91,8 +91,21 @@ export function parseUserTags(text: string): UserTag[] {
   }).filter(tag => tag.username);
 }
 
+// a name may be typed as @name or pasted as a profile address; Instagram wants the bare user name
+export function instagramUsername(text: string): string {
+  const name = text.trim();
+  const fromUrl = name.match(/instagram\.com\/([^/?#\s]+)/i);
+  return (fromUrl ? fromUrl[1] : name).replace(/^@/, '').trim();
+}
+
 export function parseCollaborators(text: string): string[] {
-  return text.split(',').map(name => name.trim()).filter(Boolean);
+  return text.split(',').map(instagramUsername).filter(Boolean);
+}
+
+// the field takes seconds, as people think of a video, with a dot or a comma; Instagram takes milliseconds
+export function thumbOffsetMs(seconds: string | undefined): number | null {
+  const value = Number.parseFloat((seconds ?? '').trim().replace(',', '.'));
+  return Number.isFinite(value) && value >= 0 ? Math.round(value * 1000) : null;
 }
 
 export function buildScheduledPostPayload(post: ScheduledPostDetails): ScheduledPostRequest {
@@ -108,7 +121,7 @@ export function buildScheduledPostPayload(post: ScheduledPostDetails): Scheduled
     shareToFeed: mediaType === 'REELS' ? shareToFeed : true,
     collaborators: collaborators ? parseCollaborators(collaborators) : [],
     audioName: audioName || '',
-    thumbOffset: thumbOffset ? parseInt(thumbOffset, 10) : null,
+    thumbOffset: thumbOffsetMs(thumbOffset),
     locationId: locationId || '',
     userTags: userTags ? parseUserTags(userTags) : [],
     altText: (mediaType === 'IMAGE' && altText) ? altText : '',
@@ -127,7 +140,7 @@ export function buildContainerPayload(post: PostDetails): InstagramPublishReques
     shareToFeed: mediaType === 'REELS' ? shareToFeed : undefined,
     collaborators: collaborators ? parseCollaborators(collaborators) : undefined,
     audioName: audioName || undefined,
-    thumbOffset: thumbOffset ? parseInt(thumbOffset, 10) : undefined,
+    thumbOffset: thumbOffsetMs(thumbOffset) ?? undefined,
     locationId: locationId || undefined,
     userTags: userTags ? parseUserTags(userTags) : undefined,
     altText: (mediaType === 'IMAGE' && altText) ? altText : undefined,
@@ -152,6 +165,45 @@ export function singleUploadMessage(err: UploadFailure): string {
   if (err.reason === 'network') return 'The upload lost its network connection. Check your connection and try again.';
   if (err.reason === 'rejected') return err.cloudinaryMessage || 'Upload failed';
   return err.message;
+}
+
+export type SinglePostField = 'account' | 'contentType' | 'file' | 'server' | 'schedule';
+export type BulkField = 'account' | 'contentType' | 'files' | 'server' | 'schedule';
+export type EditPostField = 'date' | 'time';
+
+export interface FieldProblem<F extends string> {
+  field: F;
+  message: string;
+}
+
+// the first thing missing before a single post can go out and the field it belongs to, or null
+export function singlePostProblem({ selectedAccount, file, contentType, hasCloudConfig, fields, now }: SinglePostCheck): FieldProblem<SinglePostField> | null {
+  if (!selectedAccount) return { field: 'account', message: 'Choose the Instagram account to post to.' };
+  if (!contentType) return { field: 'contentType', message: 'Choose what you are posting: a photo, a Reel or a Story.' };
+  if (!file) return { field: 'file', message: 'Choose the file to post.' };
+  if (!hasCloudConfig) return { field: 'server', message: 'Uploads are not set up on this server yet. The administrator needs to add the Cloudinary settings.' };
+  if (!fields.scheduleMode) return null;
+  if (!fields.scheduleDate || !fields.scheduleTime) return { field: 'schedule', message: 'Set the date and time to publish the post.' };
+  if (new Date(`${fields.scheduleDate}T${fields.scheduleTime}`) <= now) return { field: 'schedule', message: 'Pick a time in the future.' };
+  return null;
+}
+
+export function bulkStartProblem({ settings, fileCount, hasCloudConfig, now }: BulkStartCheck): FieldProblem<BulkField> | null {
+  if (fileCount === 0) return { field: 'files', message: 'Add at least one file.' };
+  if (!settings.account) return { field: 'account', message: 'Choose the Instagram account to post to.' };
+  if (!settings.contentType) return { field: 'contentType', message: 'Choose what you are posting: photos, Reels or Stories.' };
+  if (!hasCloudConfig) return { field: 'server', message: 'Uploads are not set up on this server yet. The administrator needs to add the Cloudinary settings.' };
+  if (settings.scheduleMode && (!settings.startDate || !settings.startTime)) return { field: 'schedule', message: 'Set the date and time of the first post.' };
+  const baseTime = bulkBaseTime(settings);
+  if (baseTime && baseTime <= now) return { field: 'schedule', message: 'Pick a start time in the future.' };
+  return null;
+}
+
+export function editPostProblem({ postId, date, time, now }: EditPostCheck): FieldProblem<EditPostField> | null {
+  if (!postId || !date) return { field: 'date', message: 'Set the date.' };
+  if (!time) return { field: 'time', message: 'Set the time.' };
+  if (new Date(`${date}T${time}`) <= now) return { field: 'time', message: 'Pick a time in the future.' };
+  return null;
 }
 
 export function singlePostError({ selectedAccount, file, contentType, hasCloudConfig, fields, now }: SinglePostCheck): string {

@@ -33,6 +33,7 @@ export default function LoginBackdrop() {
   return (
     <div
       aria-hidden="true"
+      inert
       className="pointer-events-none fixed inset-0 flex animate-in overflow-hidden duration-500 select-none fade-in"
     >
       <aside className="hidden w-(--sidebar-w) shrink-0 flex-col gap-5 border-r border-sidebar-border bg-sidebar px-3 py-4 md:flex">
@@ -64,7 +65,7 @@ export default function LoginBackdrop() {
         <div className="flex h-(--topbar-h) shrink-0 items-center border-b border-line px-6 text-sm font-medium text-ink">
           Overview
         </div>
-        <main className="flex flex-col gap-6 p-8">
+        <div className="flex flex-col gap-6 p-8">
           <PageHeader
             size="display"
             title="Good morning, Asha"
@@ -103,7 +104,7 @@ export default function LoginBackdrop() {
               ))}
             </SurfaceBox>
           </div>
-        </main>
+        </div>
       </div>
     </div>
   );

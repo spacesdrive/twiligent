@@ -11,7 +11,7 @@ interface CaptionBoxProps {
 export default function CaptionBox({ caption, onChange }: CaptionBoxProps) {
   const nearLimit = caption.length > CAPTION_LIMIT * 0.9;
   return (
-    <SurfaceBox title="Caption">
+    <SurfaceBox title="Caption" subheader="Kept in this tab as you type, so a reload does not lose it.">
       <Textarea
         value={caption}
         onChange={e => onChange(e.target.value)}
@@ -19,10 +19,11 @@ export default function CaptionBox({ caption, onChange }: CaptionBoxProps) {
         rows={7}
         maxLength={CAPTION_LIMIT}
         aria-label="Caption"
-        className="min-h-40 border-0 bg-transparent px-0 text-base leading-6 shadow-none hover:border-0 focus-visible:outline-none md:text-base"
+        aria-describedby="caption-count"
+        className="min-h-40 rounded-control border-0 bg-transparent px-1 text-base leading-6 shadow-none hover:border-0"
       />
-      <p className={cn('mt-2 text-right text-caption tabular-nums', nearLimit ? 'text-warning' : 'text-ink-faint')}>
-        {caption.length.toLocaleString()} / {CAPTION_LIMIT.toLocaleString()}
+      <p id="caption-count" className={cn('mt-2 text-right text-caption tabular-nums', nearLimit ? 'text-warning' : 'text-ink-faint')}>
+        {caption.length.toLocaleString()} of {CAPTION_LIMIT.toLocaleString()} characters
       </p>
     </SurfaceBox>
   );

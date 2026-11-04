@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { api } from '../../services/api';
+import { deleteWithUndo } from '@/lib/undoToast';
 import { formToRequest } from './automationData.ts';
 import type { RuleForm } from './automationData.ts';
 import type { AutomationAccountState, AutomationOverviewResponse, AutomationRule } from '@shared/types/automation.ts';
@@ -51,16 +52,16 @@ export function useAutomations() {
     }
   }, [load, replaceRule, showToast]);
 
+  // the switch moves at once and moves back if the server refuses
   const setRuleEnabled = useCallback(async (rule: AutomationRule, enabled: boolean) => {
-    setBusyId(rule.id);
+    replaceRule({ ...rule, enabled });
     try {
       replaceRule((await api.updateAutomationRule(rule.id, { enabled })).rule);
       showToast(enabled ? `${rule.name} turned on` : `${rule.name} turned off`);
       if (enabled) load();
     } catch (err) {
-      showToast(`Couldn't ${enabled ? 'turn on' : 'turn off'} the rule. ${(err as Error).message}`, 'error');
-    } finally {
-      setBusyId(null);
+      replaceRule(rule);
+      showToast(`Couldn't ${enabled ? 'turn on' : 'turn off'} ${rule.name}. ${(err as Error).message}`, 'error');
     }
   }, [load, replaceRule, showToast]);
 
@@ -76,30 +77,36 @@ export function useAutomations() {
     }
   }, [replaceRule, showToast]);
 
-  const deleteRule = useCallback(async (rule: AutomationRule): Promise<boolean> => {
-    setBusyId(rule.id);
-    try {
-      await api.deleteAutomationRule(rule.id);
-      setOverview(current => current && { ...current, rules: current.rules.filter(item => item.id !== rule.id) });
-      showToast('Rule deleted');
-      return true;
-    } catch (err) {
-      showToast(`Couldn't delete the rule. ${(err as Error).message}`, 'error');
-      return false;
-    } finally {
-      setBusyId(null);
-    }
-  }, [showToast]);
+  // the rule leaves the list at once; the server delete waits out the Undo window, so Undo needs no restore call
+  const deleteRule = useCallback((rule: AutomationRule) => {
+    const position = overview?.rules.findIndex(item => item.id === rule.id) ?? -1;
+    const restore = () => setOverview(current => {
+      if (!current || current.rules.some(item => item.id === rule.id)) return current;
+      const rules = [...current.rules];
+      rules.splice(position < 0 ? rules.length : Math.min(position, rules.length), 0, rule);
+      return { ...current, rules };
+    });
+    setOverview(current => current && { ...current, rules: current.rules.filter(item => item.id !== rule.id) });
+    deleteWithUndo({
+      id: `rule:${rule.id}`,
+      message: `${rule.name} deleted`,
+      commit: () => api.deleteAutomationRule(rule.id).then(() => undefined),
+      onUndo: restore,
+      onFailure: err => {
+        restore();
+        showToast(`Couldn't delete ${rule.name}. ${err.message}`, 'error');
+      },
+    });
+  }, [overview, showToast]);
 
   const setAccountPaused = useCallback(async (account: AutomationAccountState, paused: boolean) => {
-    setBusyId(account.accountId);
+    replaceAccount({ ...account, paused });
     try {
       replaceAccount((await api.setAutomationAccountPaused(account.accountId, paused)).account);
       showToast(paused ? `Replies paused for @${account.username}` : `Replies resumed for @${account.username}`);
     } catch (err) {
-      showToast(`Couldn't ${paused ? 'pause' : 'resume'} replies. ${(err as Error).message}`, 'error');
-    } finally {
-      setBusyId(null);
+      replaceAccount(account);
+      showToast(`Couldn't ${paused ? 'pause' : 'resume'} replies for @${account.username}. ${(err as Error).message}`, 'error');
     }
   }, [replaceAccount, showToast]);
 

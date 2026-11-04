@@ -1,11 +1,12 @@
+import { useState } from 'react';
 import { api } from '../../services/api';
 import { waitUntilReady, wait } from './containerPolling.ts';
 import {
-  buildContainerPayload, buildScheduledPostPayload, bulkBaseTime, bulkPostDetails, bulkScheduledTime, bulkStartError,
+  buildContainerPayload, buildScheduledPostPayload, bulkBaseTime, bulkPostDetails, bulkScheduledTime, bulkStartProblem,
 } from './publishHelpers.ts';
 import type { CloudinaryUploadConfig } from '../../services/api';
 import type { AppContextValue } from '../../context/AppContext';
-import type { BulkSettings } from './publishHelpers.ts';
+import type { BulkField, BulkSettings } from './publishHelpers.ts';
 import type { QueueItem, QueueItemPatch } from './queueHelpers.ts';
 import type { BulkQueue } from './useBulkQueue';
 
@@ -17,7 +18,12 @@ export interface BulkPublishOptions {
   onScheduled: () => void;
 }
 
-// cloudConfig is set and baseTime is set in schedule mode once bulkStartError passes
+// where focus goes for each problem
+const BULK_FIELD_IDS: Record<BulkField, string> = {
+  files: 'bulk-add-files', account: 'bulk-account', contentType: 'bulk-type', server: 'bulk-start', schedule: 'bulk-date',
+};
+
+// cloudConfig is set and baseTime is set in schedule mode once bulkStartProblem passes
 interface BulkRun {
   settings: BulkSettings;
   cloudConfig: CloudinaryUploadConfig | null;
@@ -93,14 +99,22 @@ async function runQueue(run: BulkRun, pendingFiles: QueueItem[]): Promise<QueueT
 
 export function useBulkPublish({ queue, settings, cloudConfig, showToast, onScheduled }: BulkPublishOptions) {
   const { cancelRef } = queue;
+  const [tried, setTried] = useState(false);
+  const pendingCount = queue.files.filter(item => item.status === 'pending').length;
+  // shown once a start was tried, then it follows the settings so it clears as soon as they are right
+  const problem = tried ? bulkStartProblem({ settings, fileCount: pendingCount, hasCloudConfig: Boolean(cloudConfig), now: new Date() }) : null;
+  const errorFor = (field: BulkField) => (problem?.field === field ? problem.message : undefined);
 
   // the queue and settings are read once, as they are at the moment of the click
   const handleBulkProcess = async () => {
-    const error = bulkStartError({ settings, fileCount: queue.files.length, hasCloudConfig: Boolean(cloudConfig), now: new Date() });
-    if (error) {
-      showToast(error, 'error');
+    if (queue.processing) return;
+    setTried(true);
+    const found = bulkStartProblem({ settings, fileCount: pendingCount, hasCloudConfig: Boolean(cloudConfig), now: new Date() });
+    if (found) {
+      document.getElementById(BULK_FIELD_IDS[found.field])?.focus();
       return;
     }
+    setTried(false);
     const baseTime = bulkBaseTime(settings);
     queue.setProcessing(true);
     cancelRef.current = false;
@@ -120,7 +134,7 @@ export function useBulkPublish({ queue, settings, cloudConfig, showToast, onSche
     cancelRef.current = true;
   };
 
-  return { handleBulkProcess, stopBulk };
+  return { handleBulkProcess, stopBulk, errorFor };
 }
 
 export type BulkPublish = ReturnType<typeof useBulkPublish>;

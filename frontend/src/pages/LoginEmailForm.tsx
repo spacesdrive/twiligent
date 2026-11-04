@@ -11,12 +11,13 @@ export interface LoginEmailFormProps {
   onEmailChange: (value: string) => void;
   loading: boolean;
   onSubmit: (e: FormEvent<HTMLFormElement>) => void;
+  error?: string;
 }
 
-export default function LoginEmailForm({ copy, email, onEmailChange, loading, onSubmit }: LoginEmailFormProps) {
+export default function LoginEmailForm({ copy, email, onEmailChange, loading, onSubmit, error }: LoginEmailFormProps) {
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      <FieldRow label="Email" htmlFor="email">
+    <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+      <FieldRow label="Email" htmlFor="email" error={error}>
         <Input
           id="email"
           type="email"

@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { Copy, ListChecks, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,7 @@ interface AutomationRulesProps {
   rules: AutomationRule[];
   accounts: AutomationAccountState[];
   automations: AutomationsState;
-  onNew: () => void;
+  newRulePath: string;
   onEdit: (rule: AutomationRule) => void;
   onDelete: (rule: AutomationRule) => void;
 }
@@ -36,7 +37,7 @@ function RuleRow({ rule, username, busy, automations, onEdit, onDelete }: RuleRo
           <span className="text-sm font-semibold text-ink">{rule.name}</span>
           <span className="text-caption text-ink-faint">@{username}</span>
         </div>
-        <div className="flex flex-wrap gap-1.5" aria-label="Keywords">
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label={`Keywords and replies of ${rule.name}`}>
           {rule.matchMode === 'any'
             ? <Badge variant="warning">Any comment</Badge>
             : rule.keywords.map(keyword => <Badge key={keyword} variant="secondary">{keyword}</Badge>)}
@@ -55,19 +56,27 @@ function RuleRow({ rule, username, busy, automations, onEdit, onDelete }: RuleRo
         )}
       </div>
       <div className="flex shrink-0 items-center gap-1">
-        <label htmlFor={switchId} className="mr-2 flex items-center gap-2 text-small text-ink-muted">
-          {rule.enabled ? 'On' : 'Off'}
-          <Switch id={switchId} checked={rule.enabled} disabled={busy} onCheckedChange={checked => automations.setRuleEnabled(rule, checked)} />
-        </label>
-        <RowAction label="Edit rule" onClick={() => onEdit(rule)} disabled={busy}><Pencil /></RowAction>
-        <RowAction label="Copy rule" onClick={() => automations.duplicateRule(rule)} disabled={busy}><Copy /></RowAction>
-        <RowAction label="Delete rule" onClick={() => onDelete(rule)} disabled={busy} danger><Trash2 /></RowAction>
+        <div className="mr-2 flex items-center gap-2 text-small text-ink-muted">
+          <span aria-hidden="true">{rule.enabled ? 'On' : 'Off'}</span>
+          <Switch
+            id={switchId}
+            aria-label={`Rule ${rule.name}`}
+            checked={rule.enabled}
+            disabled={busy}
+            onCheckedChange={checked => automations.setRuleEnabled(rule, checked)}
+          />
+        </div>
+        <RowAction label={`Edit ${rule.name}`} onClick={() => onEdit(rule)} disabled={busy}><Pencil /></RowAction>
+        <RowAction label={`Copy ${rule.name}`} onClick={() => automations.duplicateRule(rule)} disabled={busy}><Copy /></RowAction>
+        <span className="ml-2 border-l border-divider pl-2">
+          <RowAction label={`Delete ${rule.name}`} onClick={() => onDelete(rule)} disabled={busy} danger><Trash2 /></RowAction>
+        </span>
       </div>
     </li>
   );
 }
 
-export default function AutomationRules({ rules, accounts, automations, onNew, onEdit, onDelete }: AutomationRulesProps) {
+export default function AutomationRules({ rules, accounts, automations, newRulePath, onEdit, onDelete }: AutomationRulesProps) {
   const username = (accountId: string) => accounts.find(account => account.accountId === accountId)?.username ?? 'removed account';
   return (
     <SurfaceBox
@@ -80,7 +89,7 @@ export default function AutomationRules({ rules, accounts, automations, onNew, o
           icon={<ListChecks />}
           title="No rules yet"
           description="Create a rule with a keyword, such as GUIDE, and how to answer anyone who comments it: a private reply, a public reply or both."
-          action={<Button size="sm" onClick={onNew}><Plus data-icon="inline-start" />New rule</Button>}
+          action={<Button render={<Link to={newRulePath} />}><Plus data-icon="inline-start" />New rule</Button>}
         />
       ) : (
         <ul className="flex flex-col divide-y divide-divider">

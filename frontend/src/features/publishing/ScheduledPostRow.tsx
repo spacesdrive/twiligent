@@ -8,6 +8,7 @@ import ScheduledPostEditRow from './ScheduledPostEditRow';
 import StatusBadge from './StatusBadge';
 import { POST_STATUS, contentTypeOf } from './publishConstants';
 import { formatScheduleDate, isPastDue, isRetrying } from './scheduleHelpers.ts';
+import { editButtonId } from './useScheduledPostEdit';
 import type { ScheduledPost } from '@shared/types/domain.ts';
 import type { AppAccount } from '../../utils/formatters';
 import type { ScheduledPostEditor } from './useScheduledPostEdit';
@@ -27,21 +28,23 @@ interface ScheduledPostRowProps {
   onDelete: (post: ScheduledPost) => void;
 }
 
+// every row has the same buttons, so each name says which post it acts on
 function PostActions({ post, isEditing, editor, onDelete }: PostActionsProps) {
   const canEdit = post.status === 'pending';
-  const deleteLabel = post.status === 'published' ? 'Remove record' : 'Delete scheduled post';
+  const when = formatScheduleDate(post.scheduledAt);
+  const deleteLabel = post.status === 'published' ? `Remove the record of the post published ${formatScheduleDate(post.publishedAt)}` : `Delete the post scheduled for ${when}`;
   return (
     <TableCell className="text-right whitespace-nowrap">
       {canEdit && !isEditing && (
         <Tooltip>
-          <TooltipTrigger render={<Button variant="ghost" size="icon-xs" onClick={() => editor.startEditPost(post)} aria-label="Edit scheduled post" />}><Pencil /></TooltipTrigger>
+          <TooltipTrigger render={<Button id={editButtonId(post.id)} variant="ghost" size="icon-sm" onClick={() => editor.startEditPost(post)} aria-label={`Edit the post scheduled for ${when}`} />}><Pencil /></TooltipTrigger>
           <TooltipContent>Edit</TooltipContent>
         </Tooltip>
       )}
-      {isEditing && <Button variant="ghost" size="icon-xs" onClick={editor.cancelEdit} aria-label="Cancel editing"><X /></Button>}
+      {isEditing && <Button variant="ghost" size="icon-sm" onClick={editor.cancelEdit} aria-label="Cancel editing"><X /></Button>}
       {post.status !== 'publishing' && (
         <Tooltip>
-          <TooltipTrigger render={<Button variant="ghost" size="icon-xs" onClick={() => onDelete(post)} aria-label={deleteLabel} className="hover:bg-danger-soft hover:text-danger" />}><Trash2 /></TooltipTrigger>
+          <TooltipTrigger render={<Button variant="ghost" size="icon-sm" onClick={() => onDelete(post)} aria-label={deleteLabel} className="ml-2 hover:bg-danger-soft hover:text-danger" />}><Trash2 /></TooltipTrigger>
           <TooltipContent>{post.status === 'published' ? 'Remove record' : 'Delete'}</TooltipContent>
         </Tooltip>
       )}
@@ -60,45 +63,37 @@ export default function ScheduledPostRow({ post, position, account, editor, onDe
         <TableCell className="text-right font-mono text-caption text-ink-faint">{position}</TableCell>
         <TableCell>
           <span className="flex items-center gap-2">
-            {account && <AccountAvatar account={account} size="xs" />}
+            {account && <AccountAvatar account={account} size="xs" decorative />}
             <span className="text-small font-medium text-ink">{account?.username ? `@${account.username}` : post.accountId}</span>
           </span>
         </TableCell>
         <TableCell>
-          <span className="flex items-center gap-1.5 text-small text-ink-muted"><TypeIcon className="size-3.5" />{typeInfo?.label || post.mediaType}</span>
+          <span className="flex items-center gap-1.5 text-small text-ink-muted"><TypeIcon className="size-3.5" aria-hidden="true" />{typeInfo?.label || post.mediaType}</span>
         </TableCell>
-        <TableCell>
-          <Tooltip>
-            <TooltipTrigger render={<p className="max-w-48 cursor-default truncate text-small text-ink-muted" />}>{post.caption || 'No caption'}</TooltipTrigger>
-            <TooltipContent className="max-w-sm">{post.caption || 'No caption'}</TooltipContent>
-          </Tooltip>
+        <TableCell className="whitespace-normal">
+          <p className="line-clamp-3 max-w-64 text-small break-words text-ink-muted" title={post.caption || undefined}>{post.caption || 'No caption'}</p>
         </TableCell>
         <TableCell>
           <span className={cn('text-small', pastDue ? 'text-warning' : 'text-ink-muted')}>{formatScheduleDate(post.scheduledAt)}</span>
           {pastDue && <p className="text-caption text-warning">Overdue</p>}
         </TableCell>
         <TableCell>
-          <span className="flex items-center gap-1 text-small text-ink-muted">
-            {formatScheduleDate(post.publishedAt)}
-            {post.publishedMediaId && (
-              <Tooltip>
-                <TooltipTrigger render={<span className="text-success" />}><CheckCircle2 className="size-3.5" /></TooltipTrigger>
-                <TooltipContent>Media ID {post.publishedMediaId}</TooltipContent>
-              </Tooltip>
-            )}
+          <span className="flex flex-col text-small text-ink-muted">
+            <span className="flex items-center gap-1">
+              {formatScheduleDate(post.publishedAt)}
+              {post.publishedMediaId && <CheckCircle2 className="size-3.5 text-success" aria-hidden="true" />}
+            </span>
+            {post.publishedMediaId && <span className="font-mono text-caption text-ink-faint">Media ID {post.publishedMediaId}</span>}
           </span>
         </TableCell>
         <TableCell>
           <StatusBadge status={post.status} map={POST_STATUS} />
           {isRetrying(post) && <p className="mt-1 text-caption text-ink-faint">Trying again on the next run</p>}
         </TableCell>
-        <TableCell>
-          {post.error ? (
-            <Tooltip>
-              <TooltipTrigger render={<p className="max-w-40 cursor-help truncate text-small text-danger" />}>{post.error}</TooltipTrigger>
-              <TooltipContent className="max-w-sm">{post.error}</TooltipContent>
-            </Tooltip>
-          ) : <span className="text-ink-faint">-</span>}
+        <TableCell className="whitespace-normal">
+          {post.error
+            ? <p className="max-w-64 text-small break-words text-danger"><span className="sr-only">Error: </span>{post.error}</p>
+            : <span className="text-ink-faint">-</span>}
         </TableCell>
         <PostActions post={post} isEditing={isEditing} editor={editor} onDelete={onDelete} />
       </TableRow>

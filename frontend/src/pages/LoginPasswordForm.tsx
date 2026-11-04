@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { FieldRow } from '@/components/DetailPanel';
+import { fieldErrorId } from '@/lib/fieldIds';
 import { PASSWORD_MIN_LENGTH } from '@/lib/passwords';
 import PasswordInput from './PasswordInput';
 import type { LoginCopy } from './loginCopy';
@@ -15,6 +16,8 @@ export interface LoginPasswordFormProps {
   password: string;
   onEmailChange: (value: string) => void;
   onPasswordChange: (value: string) => void;
+  emailError?: string;
+  passwordError?: string;
   showPassword: boolean;
   onTogglePassword: () => void;
   loading: boolean;
@@ -31,6 +34,8 @@ export default function LoginPasswordForm({
   password,
   onEmailChange,
   onPasswordChange,
+  emailError,
+  passwordError,
   showPassword,
   onTogglePassword,
   loading,
@@ -39,10 +44,10 @@ export default function LoginPasswordForm({
   onSwitch,
 }: LoginPasswordFormProps) {
   const quietLink =
-    'rounded-sm text-caption text-ink-muted transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
+    'inline-flex min-h-6 items-center rounded-sm text-small text-ink-muted transition-colors hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring';
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      <FieldRow label="Email" htmlFor="email">
+    <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+      <FieldRow label="Email" htmlFor="email" error={emailError}>
         <Input
           id="email"
           type="email"
@@ -74,13 +79,17 @@ export default function LoginPasswordForm({
           autoComplete={isSignUp ? 'new-password' : 'current-password'}
           showPassword={showPassword}
           onTogglePassword={onTogglePassword}
+          error={passwordError}
         />
+        {passwordError && (
+          <p id={fieldErrorId('password')} className="text-sm text-danger"><span className="sr-only">Error: </span>{passwordError}</p>
+        )}
       </div>
       <Button type="submit" size="lg" className="mt-1 w-full" disabled={loading}>
         {loading && <Spinner className="size-4" />}
         {loading ? copy.busy : copy.submit}
       </Button>
-      <p className="text-center text-caption text-ink-muted">
+      <p className="text-center text-small text-ink-muted">
         {isSignUp ? 'Already have an account?' : 'No account yet?'}{' '}
         <button type="button" onClick={onSwitch} className={`font-medium text-ink ${quietLink}`}>
           {isSignUp ? 'Sign in' : 'Create one with a password'}

@@ -1,9 +1,12 @@
-import { Calendar, RefreshCw, Trash2 } from 'lucide-react';
+import { AlertCircle, Calendar, RefreshCw, Trash2 } from 'lucide-react';
+import { Alert, AlertAction, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import SurfaceBox from '@/components/SurfaceBox';
 import FilterChips from '@/components/FilterChips';
 import { EmptyState } from '@/components/StateViews';
+import LiveStatus from '@/components/LiveStatus';
+import { cn } from '@/lib/utils';
 import OverdueAlert from './OverdueAlert';
 import ScheduledPostRow from './ScheduledPostRow';
 import { filterScheduledPosts, overduePostsOf, scheduledStatusChips } from './scheduleHelpers.ts';
@@ -46,17 +49,28 @@ export default function ScheduledPostsSection({ schedule, editor, removal, igAcc
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="font-heading text-section font-semibold text-ink">Scheduled posts</h2>
-          <p className="text-small text-ink-muted">Posts waiting to go out, and the history of ones that already did.</p>
+          <p className="max-w-prose text-small text-ink-muted">Posts waiting to go out, and the history of ones that already did.</p>
         </div>
         <div className="flex gap-2">
-          <Button size="sm" variant="ghost" onClick={schedule.loadScheduledPosts}><RefreshCw data-icon="inline-start" />Refresh</Button>
-          <Button size="sm" variant="outline" onClick={() => removal.setConfirmDeleteAll(true)} className="hover:bg-danger-soft hover:text-danger"><Trash2 data-icon="inline-start" />Delete all</Button>
+          <Button size="sm" variant="outline" onClick={schedule.loadScheduledPosts} disabled={schedule.loading}>
+            <RefreshCw data-icon="inline-start" className={cn(schedule.loading && 'animate-spin')} />
+            {schedule.loading ? 'Refreshing' : 'Refresh'}
+          </Button>
+          <Button size="sm" variant="ghost" onClick={() => removal.setConfirmDeleteAll(true)} className="ml-3 hover:bg-danger-soft hover:text-danger"><Trash2 data-icon="inline-start" />Delete all</Button>
         </div>
       </div>
+      {schedule.loadError && (
+        <Alert variant="destructive" role="alert">
+          <AlertCircle />
+          <AlertDescription><span className="sr-only">Error: </span>{schedule.loadError}</AlertDescription>
+          <AlertAction><Button size="sm" variant="outline" onClick={schedule.loadScheduledPosts}>Try again</Button></AlertAction>
+        </Alert>
+      )}
+      <LiveStatus message={`${filteredScheduled.length} ${filteredScheduled.length === 1 ? 'post' : 'posts'} shown`} />
       {overdueCount > 0 && <OverdueAlert count={overdueCount} />}
       <FilterChips label="Status" options={scheduledStatusChips(scheduledPosts)} value={statusFilter} onChange={schedule.setStatusFilter} />
       <SurfaceBox content={false} className="overflow-hidden">
-        <Table>
+        <Table aria-label="Scheduled posts">
           <ScheduledPostsHeader />
           <TableBody>
             {filteredScheduled.map((post, index) => (
@@ -66,13 +80,19 @@ export default function ScheduledPostsSection({ schedule, editor, removal, igAcc
                 position={index + 1}
                 account={igAccounts.find(account => account.id === post.accountId)}
                 editor={editor}
-                onDelete={removal.setPendingDelete}
+                onDelete={removal.deleteScheduled}
               />
             ))}
             {filteredScheduled.length === 0 && (
               <TableRow className="hover:bg-transparent">
                 <TableCell colSpan={9}>
-                  <EmptyState compact icon={<Calendar />} title={`No ${statusFilter} posts`} description="Choose a different status to see other posts." />
+                  <EmptyState
+                    compact
+                    icon={<Calendar />}
+                    title={`No ${statusFilter} posts`}
+                    description="Choose another status to see other posts."
+                    action={<Button size="sm" variant="outline" onClick={() => schedule.setStatusFilter('all')}>Show all posts</Button>}
+                  />
                 </TableCell>
               </TableRow>
             )}

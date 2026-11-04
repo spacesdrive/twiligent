@@ -6,7 +6,8 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { AccountAvatar } from '@/components/platform';
 import { accountName, accountPath } from '@/lib/accounts';
 import { cn } from '@/lib/utils';
-import { fmtNum, timeAgo } from '../../utils/formatters';
+import Num from '@/components/Num';
+import RelativeTime from '@/components/RelativeTime';
 import { accountCardHandle, accountMetrics } from './accountManagerData';
 import type { Platform } from '@shared/types/domain.ts';
 import type { AppAccount } from '../../utils/formatters';
@@ -27,7 +28,12 @@ function CookieStatus({ hasCookie }: CookieStatusProps) {
   if (hasCookie) {
     return <span className="flex items-center gap-1 text-success"><Lock className="size-3" />Session cookie stored</span>;
   }
-  return <span className="flex items-center gap-1 text-danger"><Lock className="size-3" />Error: no session cookie. Remove and add the account again.</span>;
+  return (
+    <span className="flex items-center gap-1 text-danger">
+      <Lock className="size-3" aria-hidden="true" />
+      <span><span className="sr-only">Error: </span>No session cookie is stored. Remove the account and add it again with its cookie.</span>
+    </span>
+  );
 }
 
 export default function AccountCard({ acct, platform, refreshing, onRefresh, onDelete }: AccountCardProps) {
@@ -35,7 +41,7 @@ export default function AccountCard({ acct, platform, refreshing, onRefresh, onD
   return (
     <article className="flex flex-col gap-4 rounded-card border border-line bg-surface-raised p-4">
       <div className="flex items-center gap-3">
-        <AccountAvatar account={acct} size="lg" showPlatform />
+        <AccountAvatar account={acct} size="lg" showPlatform decorative />
         <div className="min-w-0 flex-1">
           <Link to={accountPath(acct)} className="block truncate text-sm font-semibold text-ink hover:underline">{accountName(acct)}</Link>
           <p className="truncate text-caption text-ink-faint">{accountCardHandle(acct, platform)}</p>
@@ -52,23 +58,23 @@ export default function AccountCard({ acct, platform, refreshing, onRefresh, onD
         {metrics.map(([label, value]) => (
           <div key={label} className="flex flex-col items-center gap-0.5 px-2 text-center">
             <dt className="text-caption text-ink-faint">{label}</dt>
-            <dd className="font-heading text-base font-semibold text-ink tabular-nums">{fmtNum(value)}</dd>
+            <dd className="font-heading text-base font-semibold text-ink tabular-nums"><Num value={value} /></dd>
           </div>
         ))}
       </dl>
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-ink-faint">
         {platform === 'reddit' && <CookieStatus hasCookie={acct.hasCookie} />}
-        {acct.lastUpdated && <span>Updated {timeAgo(acct.lastUpdated).toLowerCase()}</span>}
+        {acct.lastUpdated && <span>Updated <RelativeTime date={acct.lastUpdated} /></span>}
       </div>
 
       <div className="mt-auto flex gap-2">
         <Button variant="outline" size="sm" className="flex-1" onClick={onRefresh} disabled={refreshing}>
           <RefreshCw data-icon="inline-start" className={cn(refreshing && 'animate-spin')} />
-          {refreshing ? 'Refreshing' : 'Refresh'}
+          {refreshing ? 'Refreshing' : 'Refresh'}<span className="sr-only"> {accountName(acct)}</span>
         </Button>
         <Tooltip>
-          <TooltipTrigger render={<Button variant="ghost" size="icon-sm" onClick={onDelete} aria-label={`Remove ${accountName(acct)}`} className="text-ink-muted hover:bg-danger-soft hover:text-danger" />}>
+          <TooltipTrigger render={<Button variant="ghost" size="icon-sm" onClick={onDelete} aria-label={`Remove ${accountName(acct)}`} className="ml-2 text-ink-muted hover:bg-danger-soft hover:text-danger" />}>
             <Trash2 />
           </TooltipTrigger>
           <TooltipContent>Remove account</TooltipContent>

@@ -41,7 +41,7 @@ export default function RulePreview({ rule }: RulePreviewProps) {
     .filter(Boolean)
     .join(' and ');
   return (
-    <div className="flex flex-col gap-4 self-start rounded-card border border-line bg-surface-sunken p-4 md:sticky md:top-0">
+    <div className="flex flex-col gap-4 self-start rounded-card border border-line bg-surface-sunken p-4 lg:sticky lg:top-[calc(var(--topbar-h)+1.5rem)]">
       {form.publicReplyEnabled && (
         <div className="flex flex-col gap-2">
           <p className="text-small font-medium text-ink">Under the comment</p>
@@ -74,16 +74,15 @@ export default function RulePreview({ rule }: RulePreviewProps) {
           <Input id="rule-test" value={rule.sampleComment} onChange={e => rule.setSampleComment(e.target.value)} placeholder="Send me the guide" />
           <Button type="button" variant="outline" onClick={rule.runTest} disabled={rule.testing || !canTest}>
             {rule.testing ? <Spinner className="size-4" /> : <FlaskConical data-icon="inline-start" />}
-            Test
+            {rule.testing ? 'Testing' : 'Test'}
           </Button>
         </div>
-        {testResult && (
-          <p role="status" className={cn('text-small', testResult.matched ? 'text-success' : 'text-ink-muted')}>
-            {testResult.matched
-              ? `${testResult.keyword ? `Matches the keyword ${testResult.keyword}.` : 'This rule answers any comment.'} This comment would get ${answers || 'no answer'}.`
-              : 'No keyword matches this comment, so it would get no answer.'}
-          </p>
-        )}
+        {/* mounted before any result, so a new result is announced */}
+        <p role="status" className={cn('text-small', testResult?.matched ? 'text-success' : 'text-ink-muted')}>
+          {testResult && (testResult.matched
+            ? `${testResult.keyword ? `Matches the keyword ${testResult.keyword}.` : 'This rule answers any comment.'} This comment would get ${answers || 'no answer'}.`
+            : 'No keyword matches this comment, so it would get no answer.')}
+        </p>
         <p className="text-caption text-ink-faint">The test checks the match only. Nothing is sent or posted.</p>
       </div>
     </div>

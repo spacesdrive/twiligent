@@ -1,8 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  TESTER_HINT, instagramErrorMessage, readOAuthReturn, accountMetrics, accountCardHandle, visibleSections,
-} from '../../../src/features/accounts/accountManagerData.ts';
+  TESTER_HINT, instagramErrorMessage, readOAuthReturn, accountMetrics, accountCardHandle, visibleSections, redditUsername, redditFieldsProblem, channelFieldProblem } from '../../../src/features/accounts/accountManagerData.ts';
 
 const params = (query: string) => new URLSearchParams(query);
 
@@ -54,4 +53,18 @@ test('card handles use u/ for Reddit and the platform handle otherwise', () => {
 test('only platforms with accounts get a section, in a fixed order', () => {
   const groups = { youtube: [], instagram: [{ id: 1 }], reddit: [{ id: 2 }] };
   assert.deepEqual(visibleSections(groups).map(section => section.key), ['instagram', 'reddit']);
+});
+
+test('a Reddit username is taken from u/name, @name or a pasted profile address', () => {
+  assert.equal(redditUsername(' u/spez '), 'spez');
+  assert.equal(redditUsername('@spez'), 'spez');
+  assert.equal(redditUsername('https://www.reddit.com/user/spez/'), 'spez');
+});
+
+test('adding an account names the missing field first', () => {
+  assert.equal(redditFieldsProblem('u/', 'abc')?.field, 'username');
+  assert.equal(redditFieldsProblem('spez', ' ')?.field, 'cookie');
+  assert.equal(redditFieldsProblem('spez', 'abc'), null);
+  assert.equal(channelFieldProblem(' ')?.field, 'channel');
+  assert.equal(channelFieldProblem('@channel'), null);
 });
