@@ -1,4 +1,4 @@
-import { Bookmark, Chart, Checklist, Layers, Library, Plane, Server, ShieldCheck, UsersGroup } from './icons';
+import { Bookmark, Chart, ChatDots, Checklist, Layers, Library, Plane, Server, ShieldCheck, UsersGroup } from './icons';
 import type { Icon } from './icons';
 import { GitHubIcon } from './marks';
 import { GITHUB_URL } from '@/lib/links';
@@ -59,6 +59,12 @@ export const MENUS: Menu[] = [
             description: 'Many files at once, spaced out',
             href: '/docs/use/publishing',
             icon: Layers,
+          },
+          {
+            title: 'Comment automation',
+            description: 'Private replies to Instagram comments',
+            href: '/docs/use/automations',
+            icon: ChatDots,
           },
         ],
       },

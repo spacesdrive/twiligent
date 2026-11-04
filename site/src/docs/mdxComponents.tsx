@@ -26,7 +26,7 @@ export const MDX_COMPONENTS: MDXComponents = {
   code: InlineCode,
   hr: () => <hr className="my-10 border-line" />,
   table: props => (
-    <div className="my-6 overflow-x-auto rounded-lg border border-line">
+    <div tabIndex={0} role="region" aria-label="Table" className="my-6 overflow-x-auto rounded-lg border border-line">
       <table className="w-full min-w-[34rem] text-left text-sm leading-6" {...props} />
     </div>
   ),

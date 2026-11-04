@@ -7,6 +7,7 @@ import { Logo } from '@/components/brand';
 import { Bookmark, CalendarMark, Chart, Home, Library, Plane, Plug, UsersGroup } from '@/components/icons';
 import type { Icon } from '@/components/icons';
 import { PlatformMark } from '@/components/mockups/kit';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 import {
   CalendarWindow,
   FilesWindow,
@@ -486,7 +487,7 @@ function MovingStory() {
   const endY = useTransform(progress, [0.62, 0.66], [14, 0], { ease: easeOut });
 
   return (
-    <div ref={sectionRef} className="relative h-[420vh]">
+    <div ref={sectionRef} className="relative h-[250vh]">
       <div className="sticky top-0 h-svh overflow-hidden">
         <Ring progress={progress} />
         <div aria-hidden="true">
@@ -519,11 +520,15 @@ function MovingStory() {
   );
 }
 
+// the pinned stage needs a wide, tall window; anything smaller would clip the closing words
+const ROOM_FOR_STAGE = '(min-width: 1024px) and (min-height: 701px)';
+
 export function Story() {
   const reduce = useReducedMotion();
+  const roomy = useMediaQuery(ROOM_FOR_STAGE);
   return (
     <section id="story" aria-labelledby="story-heading" className="relative bg-surface">
-      {reduce ? <StillStory /> : <MovingStory />}
+      {reduce || !roomy ? <StillStory /> : <MovingStory />}
     </section>
   );
 }

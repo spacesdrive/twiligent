@@ -1,4 +1,5 @@
 import { MotionConfig } from 'motion/react';
+import { useMotionPaused } from '@/lib/motion';
 import { GITHUB_URL, SIGN_UP_URL } from '@/lib/links';
 import { Story } from '@/components/sections/Story';
 import { BentoCard, CtaBand, FeatureSection, SectionHeader } from '@/components/sections/blocks';
@@ -19,15 +20,16 @@ import { TrackedMock } from '@/components/mockups/bento/TrackedMock';
 
 // the home page below the hero, in the order of the Activepieces home page
 export default function HomeBelow() {
+  const [paused] = useMotionPaused();
   return (
-    // every animation below follows the reader's reduced motion setting
-    <MotionConfig reducedMotion="user">
+    // every animation below follows the reader's reduced motion setting and the site's pause control
+    <MotionConfig reducedMotion={paused ? 'always' : 'user'}>
       <Story />
 
       <CtaBand
         title="See every account in one place."
         text="Sign in with Google or email, add a channel link or connect Instagram. The Overview fills in within a minute or two."
-        primary={{ label: 'Get started', href: SIGN_UP_URL }}
+        primary={{ label: 'Create an account', href: SIGN_UP_URL }}
         secondary={{ label: 'Read the docs', href: '/docs' }}
       />
 
@@ -53,7 +55,7 @@ export default function HomeBelow() {
       <FeatureSection
         id="publishing"
         title="Post now, or at the hour you pick."
-        lead="Publish photos, Reels and Stories to Instagram, schedule them for later, or upload many files at once."
+        lead="Publish photos, Reels and Stories to Instagram, schedule them for later, upload many files at once, and answer comments with a private reply."
         placement="bottom-left"
         tone="dusk"
         notes={[
@@ -62,7 +64,10 @@ export default function HomeBelow() {
             text: 'The server publishes within 15 minutes of the time you pick, even with your browser closed.',
           },
           { title: 'Bulk upload', text: 'Add many files, give each its own caption or share one, and space them out.' },
-          { title: 'Status you can read', text: 'Every post shows Pending, Published or Failed, with the reason.' },
+          {
+            title: 'Replies to comments',
+            text: 'Someone comments a keyword such as GUIDE, and your link reaches them in a private message.',
+          },
         ]}
       >
         <ScheduleCard />

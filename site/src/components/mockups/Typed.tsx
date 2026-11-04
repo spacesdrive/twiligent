@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { useReducedMotion } from 'motion/react';
+import { useStillMotion } from '@/hooks/useStillMotion';
 
 export interface TypedProps {
   text: string;
@@ -15,7 +15,7 @@ export interface TypedProps {
 
 // text typed out a few characters at a time, with a blinking caret while it types
 export function Typed({ text, active, speed = 18, caret = true, render }: TypedProps) {
-  const reduce = useReducedMotion();
+  const reduce = useStillMotion();
   const [count, setCount] = useState(0);
 
   useEffect(() => {

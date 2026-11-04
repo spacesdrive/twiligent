@@ -87,7 +87,7 @@ function PlatformCard({ read, index }: { read: Read; index: number }) {
       <div className="mt-auto rounded-md border border-line bg-surface-sunken/40 p-3.5">
         <div className="flex items-end justify-between gap-3">
           <div>
-            <p className="text-[11px] text-ink-muted">{read.metric}, last 12 weeks</p>
+            <p className="text-[11px] text-ink-muted">Example: {read.metric.toLowerCase()}, last 12 weeks</p>
             <p className="mt-0.5 font-display text-lg font-semibold text-ink tabular-nums">{formatNumber(latest)}</p>
           </div>
           <span className="font-mono text-[11px] text-success">+{formatNumber(latest - read.weeks[0])}</span>
@@ -115,7 +115,7 @@ export function Platforms() {
       <SectionHeader
         id="platforms-heading"
         title="Three platforms. One dashboard."
-        lead="YouTube and Reddit for analytics. Instagram for analytics and publishing."
+        lead="YouTube and Reddit for analytics. Instagram for analytics, publishing and comment replies."
       />
       <FoldBand placement="bottom-left" className="rounded-[32px] p-4 sm:p-8 lg:p-12">
         <ul className="grid gap-4 lg:grid-cols-3">

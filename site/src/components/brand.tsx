@@ -9,10 +9,19 @@ export interface LogoProps {
 export function Logo({ className }: LogoProps) {
   return (
     <span className={cn('relative inline-flex items-center', className ?? 'h-7')}>
-      <img src="/brand/twiligent-lockup-horizontal.svg" alt="Twiligent" className="h-full w-auto dark:hidden" />
+      {/* the intrinsic size reserves the logo's width before the file arrives, so the bar does not shift */}
+      <img
+        src="/brand/twiligent-lockup-horizontal.svg"
+        alt="Twiligent"
+        width={4090}
+        height={1000}
+        className="h-full w-auto dark:hidden"
+      />
       <img
         src="/brand/twiligent-lockup-horizontal-reversed.svg"
         alt="Twiligent"
+        width={4090}
+        height={1000}
         className="hidden h-full w-auto dark:block"
       />
     </span>
@@ -20,7 +29,15 @@ export function Logo({ className }: LogoProps) {
 }
 
 export function Mark({ className }: LogoProps) {
-  return <img src="/brand/twiligent-mark-color.svg" alt="" className={cn('w-auto', className ?? 'h-10')} />;
+  return (
+    <img
+      src="/brand/twiligent-mark-color.svg"
+      alt=""
+      width={1921}
+      height={1663}
+      className={cn('w-auto', className ?? 'h-10')}
+    />
+  );
 }
 
 export type RibbonPlacement = 'bottom-right' | 'top-right' | 'bottom-left' | 'top-left';
@@ -68,7 +85,7 @@ export interface FoldBandProps {
 // a panel in the fold gradient or deep dusk with a ribbon crop; mockups sit on it the way Activepieces sets them on a painted scene
 export function FoldBand({ tone = 'fold', placement = 'bottom-right', className, children }: FoldBandProps) {
   return (
-    <div className={cn('relative isolate overflow-hidden', tone === 'fold' ? 'bg-fold' : 'bg-dusk-panel', className)}>
+    <div className={cn('on-band relative isolate overflow-hidden', tone === 'fold' ? 'bg-fold' : 'bg-dusk-panel', className)}>
       <RibbonCrop placement={placement} className="-z-10" />
       {children}
     </div>

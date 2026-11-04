@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { animate, motion, useMotionValue, useReducedMotion, useTransform } from 'motion/react';
+import { animate, motion, useMotionValue, useTransform } from 'motion/react';
+import { useStillMotion } from '@/hooks/useStillMotion';
 import { cn } from '@/lib/cn';
 import { formatNumber } from '@/lib/format';
 import type { NumberStyle } from '@/lib/format';
@@ -16,7 +17,7 @@ export interface CountUpProps {
 
 // a number that counts up to its value, in fixed-width digits so the text around it never shifts
 export function CountUp({ value, active, from = 0, style = 'number', duration = 1.4, className }: CountUpProps) {
-  const reduce = useReducedMotion();
+  const reduce = useStillMotion();
   const current = useMotionValue(reduce ? value : from);
   const text = useTransform(current, v => formatNumber(v, style));
 

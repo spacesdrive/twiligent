@@ -80,6 +80,7 @@ export default function DocPage() {
         ) : (
           <div className="mt-3 h-7" aria-hidden="true" />
         )}
+        <Toc article={article} pageKey={`${file}:${module ? 'ready' : 'loading'}`} variant="inline" />
         <div className="mt-8" aria-busy={!Content}>
           {Content ? (
             <MDXProvider components={MDX_COMPONENTS}>
@@ -108,6 +109,7 @@ export default function DocPage() {
               >
                 <Pen className="size-4" />
                 Suggest edits
+                <span className="sr-only"> (opens GitHub in a new tab)</span>
               </a>
               <a
                 href={`${ISSUES_URL}?title=${encodeURIComponent(`Docs: ${entry?.title ?? slug}`)}`}
@@ -117,6 +119,7 @@ export default function DocPage() {
               >
                 <DangerTriangleLine className="size-4" />
                 Raise issue
+                <span className="sr-only"> (opens GitHub in a new tab)</span>
               </a>
             </div>
 

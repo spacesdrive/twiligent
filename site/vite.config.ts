@@ -6,6 +6,7 @@ import mdx from '@mdx-js/rollup';
 import remarkGfm from 'remark-gfm';
 import rehypeShiki from '@shikijs/rehype';
 import { docsPlugin } from './build/docsPlugin.ts';
+import { notFoundPage } from './build/notFoundPage.ts';
 
 export default defineConfig({
   plugins: [
@@ -22,6 +23,7 @@ export default defineConfig({
     react({ include: /\.(mdx|tsx|ts)$/ }),
     tailwindcss(),
     docsPlugin(path.resolve(__dirname, 'content/docs')),
+    notFoundPage(),
   ],
   resolve: {
     alias: { '@': path.resolve(__dirname, './src') },
