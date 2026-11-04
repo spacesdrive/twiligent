@@ -7,6 +7,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.0.1] - 2026-11-05
+
+Security fixes from the first full audit (`docs/platform-v2/SECURITY_AUDIT.md`). What an instance owner must do: deploy as usual. Connecting Instagram now returns to the Accounts page, which finishes the connection, so keep the app and the Worker on the same version.
+
+### Security
+
+- Connecting Instagram now finishes only for the person who started the sign-in: a consent link made by one Twiligent user and opened by someone else no longer connects that person's account (#148)
+- The manual "publish due posts" trigger runs only your own posts, and no longer shows other users' failed posts (#148)
+- HEAD requests count against the same rate limit as GET (#148)
+- The GitHub Actions publisher removes addresses and tokens from Instagram's error messages before they reach the run log (#148)
+- The app and the public site can no longer be framed by other sites, and send nosniff, referrer and permissions policies (#148)
+- Every workflow's GitHub token can only read the repository (#148)
+
 ## [2.0.0] - 2026-11-05
 
 Twiligent now supports YouTube and Instagram only. What an instance owner must do: nothing for the code; deploy as usual. Reddit accounts and tracked Reddit posts stay in the database, unused and hidden, until the database cleanup in #145, so export them first if you want to keep them. The Reddit pages are gone.
@@ -25,13 +38,6 @@ Twiligent now supports YouTube and Instagram only. What an instance owner must d
 - Add account offers YouTube and Instagram, and the app, README and public site describe those two platforms (#144)
 
 ### Security
-
-- Connecting Instagram now finishes only for the person who started the sign-in: a consent link made by one Twiligent user and opened by someone else no longer connects that person's account (#148)
-- The manual "publish due posts" trigger runs only your own posts, and no longer shows other users' failed posts (#148)
-- HEAD requests count against the same rate limit as GET (#148)
-- The GitHub Actions publisher removes addresses and tokens from Instagram's error messages before they reach the run log (#148)
-- The app and the public site can no longer be framed by other sites, and send nosniff, referrer and permissions policies (#148)
-- Every workflow's GitHub token can only read the repository (#148)
 
 - Every GitHub Actions step is pinned to a full commit instead of a movable tag, so a compromised action release cannot reach the deploy secrets (#148)
 
