@@ -2,7 +2,8 @@
 process.removeAllListeners('warning');
 
 import { test, describe, before, after, beforeEach, afterEach, mock } from 'node:test';
-import { getInstagramAuthUrl, handleInstagramCallback } from '../../controllers/instagramAuthController.ts';
+import assert from 'node:assert/strict';
+import { completeInstagramConnection, getInstagramAuthUrl, handleInstagramCallback } from '../../controllers/instagramAuthController.ts';
 import { createOAuthState } from '../../lib/oauthState.ts';
 import { assertGolden } from '../fixtures/golden.ts';
 import { installFetch, reply } from '../fixtures/fakeFetch.ts';
@@ -66,11 +67,12 @@ afterEach(() => {
     mock.restoreAll();
 });
 
-function buildApp(supabase: FakeSupabase) {
+function buildApp(supabase: FakeSupabase, userId = 'user-1') {
     return mountWithContext(app => {
         app.get('/url', ...getInstagramAuthUrl);
         app.get('/callback', ...handleInstagramCallback);
-    }, { supabase, userId: 'user-1' });
+        app.post('/complete', ...completeInstagramConnection);
+    }, { supabase, userId });
 }
 
 describe('instagram oauth golden output', () => {
@@ -85,7 +87,7 @@ describe('instagram oauth golden output', () => {
         assertGolden({ responses, logs: logLines }, 'instagramAuth.url');
     });
 
-    test('handles every callback outcome', async () => {
+    test('the callback only checks the state and hands the code to the app, connecting nothing itself', async () => {
         const supabase = fakeSupabase([accountRow({ id: 'ig1', platform: 'instagram', igUserId: '1789', username: 'ribbon' })]);
         const app = buildApp(supabase);
         const validState = encodeURIComponent(await createOAuthState('user-1', 'APPSECRET'));
@@ -103,16 +105,41 @@ describe('instagram oauth golden output', () => {
             '/callback?code=good&state=no-separator',
             `/callback?code=good&state=${validState}x`,
             `/callback?code=good%23_&state=${validState}`,
-            `/callback?code=fallback&state=${validState}`,
-            `/callback?code=dup&state=${validState}`,
-            `/callback?code=noid&state=${validState}`,
-            `/callback?code=bad&state=${validState}`,
-            `/callback?code=weird&state=${validState}`,
-            `/callback?code=offline&state=${validState}`,
         ];
         const responses = [];
         for (const path of paths) responses.push(await callRoute(app, 'GET', path, { env: ENV }));
         responses.push(await callRoute(app, 'GET', `/callback?code=good&state=${validState}`, { env: {} }));
         assertGolden({ responses, requests: fetchMock!.requests, calls: supabase.calls, logs: logLines }, 'instagramAuth.callback');
+    });
+
+    test('the signed-in person who started the sign-in completes it, through every exchange outcome', async () => {
+        const supabase = fakeSupabase([accountRow({ id: 'ig1', platform: 'instagram', igUserId: '1789', username: 'ribbon' })]);
+        const app = buildApp(supabase);
+        const state = await createOAuthState('user-1', 'APPSECRET');
+        const responses = [];
+        for (const code of ['good', 'good#_', 'fallback', 'dup', 'noid', 'bad', 'weird', 'offline']) {
+            responses.push(await callRoute(app, 'POST', '/complete', { json: { code, state }, env: ENV }));
+        }
+        responses.push(await callRoute(app, 'POST', '/complete', { json: { code: 'good', state }, env: {} }));
+        assertGolden({ responses, requests: fetchMock!.requests, calls: supabase.calls, logs: logLines }, 'instagramAuth.complete');
+    });
+});
+
+describe('instagram sign-in started by someone else', () => {
+    test('a consent link made by one person and completed by another connects nothing and calls Instagram never', async () => {
+        const supabase = fakeSupabase();
+        const attackersState = await createOAuthState('attacker', 'APPSECRET');
+        const victim = buildApp(supabase, 'victim');
+        const response = await callRoute(victim, 'POST', '/complete', { json: { code: 'good', state: attackersState }, env: ENV });
+        assert.equal(response.status, 403);
+        assert.equal(fetchMock!.requests.length, 0);
+        assert.equal(supabase.table.length, 0);
+    });
+
+    test('a tampered or expired state is refused before any exchange', async () => {
+        const app = buildApp(fakeSupabase());
+        const response = await callRoute(app, 'POST', '/complete', { json: { code: 'good', state: 'forged.state' }, env: ENV });
+        assert.equal(response.status, 400);
+        assert.equal(fetchMock!.requests.length, 0);
     });
 });
