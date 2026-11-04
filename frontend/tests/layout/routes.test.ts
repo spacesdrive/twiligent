@@ -13,8 +13,8 @@ test('the overview link matches only the overview itself', () => {
 });
 
 test('a section link matches its own pages but not a path that only starts with the same letters', () => {
-  assert.equal(matchesPath('/reddit', '/reddit/abc'), true);
-  assert.equal(matchesPath('/reddit', '/reddit-posts'), false);
+  assert.equal(matchesPath('/automations', '/automations/rules'), true);
+  assert.equal(matchesPath('/automations', '/automations-old'), false);
 });
 
 test('only the most specific matching link is active', () => {

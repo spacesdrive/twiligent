@@ -25,8 +25,6 @@ export interface DetailRoute {
 export const DETAIL_ROUTES: DetailRoute[] = [
   { prefix: '/channel/',                  label: 'YouTube channel',   parent: { path: '/', label: 'Overview' } },
   { prefix: '/instagram/',                label: 'Instagram account', parent: { path: '/', label: 'Overview' } },
-  { prefix: '/reddit/',                   label: 'Reddit account',    parent: { path: '/', label: 'Overview' } },
-  { prefix: '/reddit-posts/',             label: 'Reddit posts',      parent: { path: '/reddit-posts', label: 'Reddit posts' } },
   { prefix: '/tracked-content/category/', label: 'Category',          parent: { path: '/tracked-content', label: 'Tracked content' } },
   { prefix: '/automations/rules/new',     label: 'New rule',          parent: { path: '/automations', label: 'Automations' } },
   { prefix: '/automations/rules/',        label: 'Edit rule',         parent: { path: '/automations', label: 'Automations' } },

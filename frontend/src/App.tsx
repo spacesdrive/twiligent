@@ -1,5 +1,5 @@
 import React, { lazy, Suspense } from 'react';
-import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
+import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { ThemeProvider } from 'next-themes';
 import { Toaster } from '@/components/ui/sonner';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -23,9 +23,6 @@ const Automations        = lazy(() => import('./features/automations/Automations
 const RuleEditorPage     = lazy(() => import('./features/automations/RuleEditorPage'));
 const AccountManager     = lazy(() => import('./features/accounts/AccountManager'));
 const Settings           = lazy(() => import('./features/settings/Settings'));
-const RedditAnalytics    = lazy(() => import('./features/analytics/reddit/RedditAnalytics'));
-const RedditPosts        = lazy(() => import('./features/analytics/reddit/RedditPosts'));
-const RedditPostsAll     = lazy(() => import('./features/analytics/reddit/RedditPostsAll'));
 const TrackedContent     = lazy(() => import('./features/analytics/tracked/TrackedContent'));
 const TrackedCategory    = lazy(() => import('./features/analytics/tracked/TrackedCategory'));
 const NotFound           = lazy(() => import('./pages/NotFound'));
@@ -63,12 +60,8 @@ const router = createBrowserRouter([
       { path: 'automations/rules/:id', element: <RuleEditorPage /> },
       { path: 'accounts',           element: <AccountManager /> },
       { path: 'settings',           element: <Settings /> },
-      { path: 'reddit/:id',         element: <RedditAnalytics /> },
-      { path: 'reddit-posts',         element: <RedditPostsAll /> },
-      { path: 'reddit-posts/:id',   element: <RedditPosts /> },
       { path: 'tracked-content',                  element: <TrackedContent /> },
       { path: 'tracked-content/category/:name', element: <TrackedCategory /> },
-      { path: 'reddit-tracked',                 element: <Navigate to="/tracked-content" replace /> },
       { path: '*',             element: <NotFound /> },
     ],
   },

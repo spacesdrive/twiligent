@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, PlaySquare, Scissors, Clapperboard, MessagesSquare, Bookmark, Send, MessageSquareReply, Users, Settings,
+  LayoutDashboard, PlaySquare, Scissors, Clapperboard, Bookmark, Send, MessageSquareReply, Users, Settings,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { activeNavPath, routeTitle as titleForRoute } from './routes';
@@ -27,7 +27,6 @@ export const NAV_GROUPS: NavGroup[] = [
       { path: '/videos',          label: 'Videos',            icon: PlaySquare },
       { path: '/shorts',          label: 'Shorts',            icon: Scissors },
       { path: '/instagram',       label: 'Instagram content', icon: Clapperboard },
-      { path: '/reddit-posts',    label: 'Reddit posts',      icon: MessagesSquare },
       { path: '/tracked-content', label: 'Tracked content',   icon: Bookmark },
     ],
   },
