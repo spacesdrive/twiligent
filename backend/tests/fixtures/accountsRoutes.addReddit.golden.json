@@ -2,7 +2,7 @@
     "responses": [
         {
             "status": 400,
-            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"Username is required\",\"requestId\":\"req-test\"}"
+            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"Enter the Reddit username, such as u/name\",\"requestId\":\"req-test\"}"
         },
         {
             "status": 400,
