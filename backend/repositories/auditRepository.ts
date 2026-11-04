@@ -2,7 +2,10 @@ import { execute, rows } from './query.ts';
 import { newRowId } from '../lib/ids.ts';
 import type { SupabaseClient } from '../types/app.ts';
 
-export type AuditSubjectType = 'account' | 'automation_rule' | 'automation_account' | 'automation_comment';
+export type AuditSubjectType =
+    | 'account' | 'automation_rule' | 'automation_account' | 'automation_comment'
+    | 'mcp_access_token' | 'mcp_client' | 'scheduled_post' | 'tracked_post' | 'media_asset'
+    | 'youtube_connection' | 'youtube_upload' | 'settings';
 
 // action is "<subject>.<verb>", such as account.removed or automation_rule.updated
 export interface AuditEvent {

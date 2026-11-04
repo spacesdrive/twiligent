@@ -11,7 +11,8 @@ CREATE TABLE "public"."audit_events" (
   CONSTRAINT "audit_events_details_check" CHECK ((jsonb_typeof(details) = 'object'::text)),
   CONSTRAINT "audit_events_pkey" PRIMARY KEY (id),
   CONSTRAINT "audit_events_subject_type_check"
-    CHECK ((subject_type = ANY (ARRAY['account'::text, 'automation_rule'::text, 'automation_account'::text, 'automation_comment'::text]))),
+    CHECK ((subject_type = ANY (ARRAY['account'::text, 'automation_rule'::text, 'automation_account'::text, 'automation_comment'::text, 'mcp_access_token'::text, 'mcp_client'::text, 'scheduled_post'::text,
+    'tracked_post'::text, 'media_asset'::text, 'youtube_connection'::text, 'youtube_upload'::text, 'settings'::text]))),
   CONSTRAINT "audit_events_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 );
 
