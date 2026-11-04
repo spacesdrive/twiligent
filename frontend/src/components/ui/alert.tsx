@@ -21,6 +21,7 @@ const alertVariants = cva(
   }
 )
 
+// static notes stay silent; pass role="alert" only for a message that appears in response to something
 function Alert({
   className,
   variant,
@@ -29,7 +30,6 @@ function Alert({
   return (
     <div
       data-slot="alert"
-      role="alert"
       className={cn(alertVariants({ variant }), className)}
       {...props} />
   );
@@ -43,7 +43,7 @@ function AlertTitle({
     <div
       data-slot="alert-title"
       className={cn(
-        "font-medium group-has-[>svg]/alert:col-start-2 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground",
+        "font-medium group-has-[>svg]/alert:col-start-2 [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-ink",
         className
       )}
       {...props} />
@@ -58,7 +58,7 @@ function AlertDescription({
     <div
       data-slot="alert-description"
       className={cn(
-        "text-sm text-balance text-muted-foreground md:text-pretty [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-foreground [&_p:not(:last-child)]:mb-4",
+        "text-sm text-balance text-ink-muted md:text-pretty [&_a]:underline [&_a]:underline-offset-3 [&_a]:hover:text-ink [&_p:not(:last-child)]:mb-4",
         className
       )}
       {...props} />

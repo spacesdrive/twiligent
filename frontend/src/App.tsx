@@ -74,7 +74,7 @@ export default function App() {
           <Suspense fallback={null}>
             <RouterProvider router={router} />
           </Suspense>
-          <Toaster position="bottom-right" richColors />
+          <Toaster position="bottom-right" richColors closeButton duration={6000} />
         </AuthProvider>
       </TooltipProvider>
     </ThemeProvider>

@@ -1,16 +1,46 @@
 import * as React from "react"
 
 import { cn } from "@/lib/utils"
+import { useSurfaceTitleId } from "@/components/surfaceTitle"
+
+// a table wider than its box scrolls inside it, and the scroll box must then be reachable by keyboard
+function useOverflows(ref: React.RefObject<HTMLDivElement | null>): boolean {
+  const [overflows, setOverflows] = React.useState(false)
+  React.useEffect(() => {
+    const node = ref.current
+    if (!node) return
+    const measure = () => setOverflows(node.scrollWidth > node.clientWidth + 1)
+    measure()
+    const observer = new ResizeObserver(measure)
+    observer.observe(node)
+    if (node.firstElementChild) observer.observe(node.firstElementChild)
+    return () => observer.disconnect()
+  }, [ref])
+  return overflows
+}
 
 function Table({
   className,
+  containerClassName,
   ...props
-}: React.ComponentProps<"table">) {
+}: React.ComponentProps<"table"> & { containerClassName?: string }) {
+  const containerRef = React.useRef<HTMLDivElement>(null)
+  const overflows = useOverflows(containerRef)
+  const surfaceTitleId = useSurfaceTitleId()
+  const labelledBy = props["aria-label"] ? undefined : (props["aria-labelledby"] ?? surfaceTitleId)
   return (
-    <div data-slot="table-container" className="relative w-full overflow-x-auto">
+    <div
+      ref={containerRef}
+      data-slot="table-container"
+      className={cn("relative w-full overflow-x-auto", containerClassName)}
+      {...(overflows
+        ? { tabIndex: 0, role: "region", "aria-labelledby": labelledBy, "aria-label": props["aria-label"] }
+        : {})}
+    >
       <table
         data-slot="table"
         className={cn("w-full caption-bottom text-sm", className)}
+        aria-labelledby={labelledBy}
         {...props} />
     </div>
   );
@@ -69,11 +99,13 @@ function TableRow({
 
 function TableHead({
   className,
+  scope = "col",
   ...props
 }: React.ComponentProps<"th">) {
   return (
     <th
       data-slot="table-head"
+      scope={scope}
       className={cn(
         "h-10 px-3 text-left align-middle text-caption font-medium whitespace-nowrap text-ink-muted [&:has([role=checkbox])]:pr-0",
         className
@@ -104,7 +136,7 @@ function TableCaption({
   return (
     <caption
       data-slot="table-caption"
-      className={cn("mt-4 text-sm text-muted-foreground", className)}
+      className={cn("mt-4 text-sm text-ink-muted", className)}
       {...props} />
   );
 }

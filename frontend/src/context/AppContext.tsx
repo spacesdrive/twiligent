@@ -23,7 +23,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
 
   const showToast = useCallback((message: string, severity: ToastSeverity = 'success') => {
-    if (severity === 'error') toast.error(message);
+    // an error stays until it is closed, because reading it and acting on it takes longer than a confirmation
+    if (severity === 'error') toast.error(message, { duration: Infinity });
     else if (severity === 'warning') toast.warning(message);
     else if (severity === 'info') toast.info(message);
     else toast.success(message);
