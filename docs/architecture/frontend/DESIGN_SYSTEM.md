@@ -32,19 +32,26 @@ Shared components live in `frontend/src/components/`. Reach for these before wri
 |---|---|
 | `PageHeader` | The one title block per page: optional back link, eyebrow, avatar media, description and actions |
 | `SurfaceBox` | Any grouped content. Optional title row with `subheader` and `secondary` actions. The title is an `h2` (pass `headingLevel="h3"` inside a section), and a `Table` inside takes its accessible name from it |
-| `MetricBox` | A single metric: icon, label, tabular value, one line of context. `highlight` marks the page's lead metric |
+| `MetricBox` | A single metric: icon, label, tabular value, one line of context. `highlight` marks the page's lead metric, `period` states the time frame, and `upIsGood` colours a trend by whether it is good (read aloud as "Up 12%"). Icons come from `lib/metricIcons.ts`, one meaning each |
+| `MetricDetails` | The secondary figures of a page as a compact list, so the tile row keeps a few headline numbers |
 | `SectionHeader` | A heading between groups of boxes |
 | `ListRow`, `RankNumber` | Dense clickable rows and mono rank numbers |
 | `RowAction` | An icon button with a tooltip at the end of a table or list row; `danger` for removal |
 | `AccountSelect` | Choosing one Instagram account, with its avatar and handle |
-| `SearchField`, `FilterChips` | Library search and single-select filters |
+| `SearchField`, `FilterChips`, `SortSelect` | Library search, single-select filters (a radio group with arrow keys, from `useRovingRadio`) and sort, the same on every library |
+| `ActiveFilters`, `NoResults` | The result count and the active filters as removable chips with Clear all; the no-results state that repeats the query and clears the filters |
+| `RefreshButton`, `DataFreshness` | The one Refresh button (outline, "Refreshing" while busy, sends `?fresh=1`) and the age of the shown data with the exact time on hover |
+| `FailedSourcesAlert` | Names the accounts that did not load, with Retry, above the results that did |
 | `Pager` | Previous and next with a count |
 | `MediaCard`, `MediaChip` | Thumbnail cards for videos, Shorts and Instagram media |
-| `ChartPanel` | A titled Recharts container with an empty state |
+| `ChartPanel`, `ChartFigure` | A titled Recharts container with an empty state, a one-line summary and a Show table toggle; the plot is named for screen readers |
+| `RankingBarChart` | Horizontal bars for rankings (accounts, categories, tracked items), never a line |
 | `MetricAreaChart` | A single-series area chart |
 | `ChoiceCard` | Large selectable cards in creation flows |
-| `DetailPanel`, `FieldRow` | The settings side panel of a working surface, and label plus hint plus control plus error rows. `FieldRow` wires `hint` and `error` to its control (`aria-describedby`, `aria-invalid`), marks `optional` fields, and renders a `fieldset` with `group` |
-| `ConfirmDialog` | Confirmation for removing an account and deleting everything. Pass `hold`; it also offers a way to confirm without holding |
+| `DetailPanel`, `FieldRow` | The settings side panel of a working surface, and label plus hint plus control plus error rows. `FieldRow` wires `hint` and `error` to its control (`aria-describedby`, `aria-invalid`), marks `optional` fields, and renders a `fieldset` with `group`. A control that is not its direct child takes the ids from `fieldHintId` and `fieldErrorId` in `lib/fieldIds.ts` |
+| `ConfirmDialog` | Confirmation for removing an account and deleting everything. Pass `hold`: the button confirms by holding it or by pressing it twice, and Escape disarms it. `busyLabel` names the action in progress ("Removing") |
+| `SegmentedChoice` | A choice from two to five options as native radio buttons, inside a `FieldRow group` (Theme, When to publish) |
+| `lib/sessionDraft.ts`, `hooks/use-unsaved-changes.ts` | Typed work kept as a draft in the tab's session storage, and a Discard changes question before leaving a form with unsaved work or while an upload runs |
 | `deleteWithUndo` (`lib/undoToast.ts`) | Small, frequent deletes: hide the item, show an Undo toast for 8 seconds, then send the delete |
 | `Num` | A rounded figure (12.4K) with the exact value on hover and for screen readers |
 | `RelativeTime` | "2h ago" in a `<time>` with the exact date and time on hover and for screen readers; dates older than a month show as dates |
@@ -66,18 +73,20 @@ Shared components live in `frontend/src/components/`. Reach for these before wri
 | Create | Accounts (add flow) | Choice cards, then a form step, then review before commit |
 | Working surface | Publish | Main editor on the left, sticky `DetailPanel` with settings and the primary action on the right |
 | Settings | Settings | Sections with a label column and content column |
+| Editor page | Rule editor (`/automations/rules/new`, `/automations/rules/:id`) | A long form on its own page: back link, sections of `FieldRow`s, a live preview, a sticky bar with Cancel and the primary action, a draft and a leave warning |
 | Sign-in | Login | One centred card in the dialog styling (`rounded-dialog`, `border-line`, `bg-popover`, `shadow-lg`) over a blurred picture of the dashboard (`LoginBackdrop`, the shared components with sample figures under a `bg-surface/70` blur); logo, Back link when not on the first view, one headline, then the view's form |
 
 ## Rules
 
 The interface follows the UI/UX Design Intelligence system: the Laws of UX, WCAG 2.2 AA and its practical guidelines (ADR-047). How to work a UI task, the full rules, the reference dashboard patterns and the checks are in `docs/guidelines/UI_UX.md`; the rules below are the short version.
 
+- Focus: text boxes (`Input`, `Textarea`, `SelectTrigger`, `InputGroup`, `SearchField`) show it quietly, as the border in the focus colour with a faint halo (`focus-visible:border-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/15`); buttons, links and every other control keep the global 2 px outline. Copy the box style for any new text box.
 - WCAG 2.2 AA is the floor: every action works by keyboard with a visible focus ring, every control has a name that contains its visible label, colour is never the only signal (status, trend, links in text, chart series), and status changes are announced (`LiveStatus`, `role="alert"` for a message that appears after an action; static `Alert` notes stay silent).
 - Each page has a title in the browser tab (detail pages name the item with `useDocumentTitle(name)`), focus moves to the `PageHeader` heading after navigation (add no other focus target), and the view (tab, search, filters, sort, page, layout) lives in the address through `useUrlState`, so Back, refresh and a shared link show the same view.
 - One primary (default) button per view. An empty state's action replaces the header action, it does not repeat it.
 - Every data view designs loading, empty, error, partial failure and stale states, and says how old cached data is. Refreshing keeps the data on screen with a progress bar; skeletons are only for the first load.
 - Metric tiles say what period they cover, show the exact value behind a rounded one, and colour a change by whether it is good, with the direction in words for screen readers.
-- Charts have a one-line summary and a table of the same data; a chart never mixes two units on one axis.
+- Charts have a one-line summary and a table of the same data; a chart never mixes two units on one axis; rankings are horizontal bars; platform colours mean platforms only.
 - Field errors appear under the field and keep the input; buttons stay enabled and explain what is missing when pressed; leaving a form with unsaved work asks first.
 - Help text and descriptions are short, in the user's words, and next to the thing they explain.
 - Dialogs become full-width bottom sheets below `sm`. Link-styled buttons are always underlined, and a link that opens a new tab says so to screen readers.

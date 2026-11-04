@@ -81,6 +81,7 @@ Don't cite these as rules: "7 plus or minus 2" as a menu limit, the 400 ms figur
 ### Accessibility
 
 - Native elements first (`button`, `a href`, `label`, `table`, `fieldset`); ARIA only when nothing native fits, and composite widgets follow the WAI-ARIA keyboard patterns (arrow keys inside a radio group or tabs).
+- Focus is always visible. Text boxes show it quietly (the border turns the focus colour with a faint halo); buttons and links keep the 2 px outline. Don't add a second outline around a box.
 - Every control has an accessible name that contains its visible label, and row actions name their row ("Edit rule Giveaway").
 - Status changes are announced without moving focus (`LiveStatus`; `role="alert"` only for a message that appears after an action).
 - Targets are at least 24 by 24 px, 44 px on touch screens (the tokens grow under `pointer: coarse`). Nothing works on hover only.

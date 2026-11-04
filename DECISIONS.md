@@ -1033,6 +1033,8 @@ New row ids come from `crypto.randomUUID()` (`newRowId()` in `backend/lib/ids.ts
 - Keeping the rule editor as a dialog with a discard warning. A 15-field form with a preview and a test is long work, and a page gives it Back, a shareable address and room on a phone.
 - Hold-to-confirm for every delete. Frequent confirmations teach people to push through them, and voice-control and switch users often cannot hold.
 
+**Fresh data on Refresh:** `GET /accounts/:id/reddit-analytics`, `/videos` and `/ig-media` accept `?fresh=1`, which skips the 6-hour cache and stores the new answer. The app sends it only from a Refresh button, so a page load still reads the cache. Reddit cache entries and the Overview account summaries carry `fetchedAt`, and every analytics page shows how old its data is. Before this, Refresh on a Reddit page renewed only the profile and the page said "Refreshed just now" over data up to 6 hours old.
+
 **Site specifics:** the public site's previews loop for as long as they are on screen, so it has its own Pause animations control (a `data-motion` attribute on the root, saved in `localStorage`), as WCAG 2.2.2 requires beyond the operating system's reduced-motion setting. Unknown paths get a real 404: the build writes `dist/404.html`, and `_redirects` rewrites `/docs` and `/docs/*` to `index.html` because a top-level `404.html` turns off Pages' single-page fallback.
 
 **Trade-offs:**
