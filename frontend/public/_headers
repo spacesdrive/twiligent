@@ -1,0 +1,8 @@
+# Cloudflare Pages response headers: no other site may frame these pages (clickjacking), and browsers must not
+# guess content types or send full addresses to other sites
+/*
+  X-Frame-Options: DENY
+  Content-Security-Policy: frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
