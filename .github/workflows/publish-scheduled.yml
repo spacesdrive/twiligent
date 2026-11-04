@@ -25,6 +25,10 @@ concurrency:
   group: publish-scheduled
   cancel-in-progress: false
 
+# the GITHUB_TOKEN only reads the repository; the publisher reaches Supabase and Instagram with its own secrets
+permissions:
+  contents: read
+
 jobs:
   publish:
     runs-on: ubuntu-latest

@@ -11,6 +11,10 @@ on:
       - '.github/workflows/deploy-site.yml'
   workflow_dispatch:
 
+# the GITHUB_TOKEN only reads the repository; deploys authenticate to Cloudflare with their own secrets
+permissions:
+  contents: read
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
