@@ -31,12 +31,15 @@ function toPost(row: ScheduledPostRow): ScheduledPost {
     };
 }
 
-// methods named ...ForUser filter by the verified user id; listDue, listStale, claim and updateById serve the schedulers across all users
+// methods named ...ForUser filter by the verified user id; listDue, listStale, claim and updateById serve the schedulers across all users,
+// and the manual trigger lists only its caller's posts through listDueForUser and listStaleForUser
 export interface ScheduledPostRepository {
     listForUser(userId: string): Promise<ScheduledPost[]>;
     findForUser(id: string, userId: string): Promise<ScheduledPost | null>;
     listDue(): Promise<ScheduledPost[]>;
     listStale(claimedBefore: string): Promise<ScheduledPost[]>;
+    listDueForUser(userId: string): Promise<ScheduledPost[]>;
+    listStaleForUser(claimedBefore: string, userId: string): Promise<ScheduledPost[]>;
     claim(post: ScheduledPost): Promise<ScheduledPost | null>;
     create(post: ScheduledPost, userId: string): Promise<void>;
     updatePendingForUser(id: string, updates: Partial<ScheduledPost>, userId: string): Promise<boolean>;
@@ -95,6 +98,26 @@ export function createScheduledPostRepository(db: SupabaseClient): ScheduledPost
                 .select(COLUMNS)
                 .eq('status', 'publishing')
                 .lt('claimed_at', claimedBefore));
+            return found.map(toPost);
+        },
+
+        async listDueForUser(userId) {
+            const found = await rows<ScheduledPostRow>('scheduledPosts.listDueForUser', () => db
+                .from('scheduled_posts')
+                .select(COLUMNS)
+                .eq('status', 'pending')
+                .lte('scheduled_at', new Date().toISOString())
+                .eq('user_id', userId));
+            return found.map(toPost);
+        },
+
+        async listStaleForUser(claimedBefore, userId) {
+            const found = await rows<ScheduledPostRow>('scheduledPosts.listStaleForUser', () => db
+                .from('scheduled_posts')
+                .select(COLUMNS)
+                .eq('status', 'publishing')
+                .lt('claimed_at', claimedBefore)
+                .eq('user_id', userId));
             return found.map(toPost);
         },
 
