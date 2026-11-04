@@ -50,6 +50,17 @@ export interface AutomationConfig {
     batchSize: number;
 }
 
+// the MCP endpoint: where Claude clients reach it, who signs them in, and the secret behind its confirmation tokens
+export interface McpConfig {
+    serverUrl: string;
+    resourceMetadataUrl: string;
+    // Supabase Auth's issuer, named in the protected resource metadata as the authorization server
+    authorizationServer: string;
+    // undefined when TOKEN_ENCRYPTION_KEY is missing or too short; tools that need a confirmation then refuse
+    signingSecret: string | undefined;
+    oauthEnabled: boolean;
+}
+
 export interface AppConfig {
     youtubeApiKey: string | undefined;
     instagram: InstagramOAuthConfig;
@@ -57,6 +68,7 @@ export interface AppConfig {
     allowedOrigins: string[];
     authEmail: AuthEmailConfig;
     automation: AutomationConfig;
+    mcp: McpConfig;
 }
 
 // pasted secrets can carry a byte order mark or stray whitespace
@@ -162,6 +174,22 @@ export function readAutomationConfig(env: Env): AutomationConfig {
     };
 }
 
+// a shorter key could be guessed, so it counts as not set
+const MIN_SIGNING_SECRET_LENGTH = 32;
+const MCP_PATH = '/mcp';
+
+export function readMcpConfig(env: Env): McpConfig {
+    const backendUrl = cleanUrl(env.BACKEND_URL, DEFAULT_BACKEND_URL).replace(/\/$/, '');
+    const secret = cleanSecret(env.TOKEN_ENCRYPTION_KEY);
+    return {
+        serverUrl: `${backendUrl}${MCP_PATH}`,
+        resourceMetadataUrl: `${backendUrl}/.well-known/oauth-protected-resource${MCP_PATH}`,
+        authorizationServer: `${cleanUrl(env.SUPABASE_URL, '').replace(/\/$/, '')}/auth/v1`,
+        signingSecret: secret && secret.length >= MIN_SIGNING_SECRET_LENGTH ? secret : undefined,
+        oauthEnabled: cleanSecret(env.MCP_OAUTH_ENABLED)?.toLowerCase() === 'true',
+    };
+}
+
 export function readConfig(env: Env): AppConfig {
     const cloudName = cleanSecret(env.CLOUDINARY_CLOUD_NAME);
     const uploadPreset = cleanSecret(env.CLOUDINARY_UPLOAD_PRESET);
@@ -172,5 +200,6 @@ export function readConfig(env: Env): AppConfig {
         allowedOrigins: allowedOrigins(env),
         authEmail: readAuthEmailConfig(env),
         automation: readAutomationConfig(env),
+        mcp: readMcpConfig(env),
     };
 }
