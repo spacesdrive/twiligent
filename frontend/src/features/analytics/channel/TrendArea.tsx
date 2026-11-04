@@ -1,47 +1,32 @@
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip } from 'recharts';
-import type { TooltipValueType } from 'recharts';
-import { axisProps, gridProps, tooltipStyle } from '@/lib/chart';
-import { fmtNum, fmtNumFull } from '../../../utils/formatters';
+import { AreaChart } from '@/components/ui/area-chart';
+import ExactTooltip from '@/components/ExactTooltip';
+import { fmtNum } from '../../../utils/formatters';
 import type { YouTubeMonthlyRate, YouTubeMonthlyViews } from '@shared/types/youtube.ts';
 
 export interface TrendAreaProps {
   data: (YouTubeMonthlyViews | YouTubeMonthlyRate)[];
-  dataKey?: string;
   color: string;
   name: string;
   percent?: boolean;
-  gradientId: string;
-  // ChartPanel passes these on to the svg so the focusable plot has a name
-  title?: string;
-  desc?: string;
+  height?: number;
 }
 
-function percentTick(value: number | string): string {
+function percentTick(value: number): string {
   return `${value}%`;
 }
 
-function fullNumber(value: TooltipValueType | undefined): string {
-  return fmtNumFull(value as number);
-}
-
-function percentValue(value: TooltipValueType | undefined): string {
-  return `${value}%`;
-}
-
-export default function TrendArea({ data, dataKey = 'value', color, name, percent = false, gradientId, title, desc }: TrendAreaProps) {
+export default function TrendArea({ data, color, name, percent = false, height = 280 }: TrendAreaProps) {
+  const rows = data.map(point => ({ month: point.month, value: Number(point.value) || 0 }));
   return (
-    <AreaChart data={data} title={title} desc={desc}>
-      <defs>
-        <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="5%" stopColor={color} stopOpacity={0.2} />
-          <stop offset="95%" stopColor={color} stopOpacity={0} />
-        </linearGradient>
-      </defs>
-      <CartesianGrid {...gridProps} vertical={false} />
-      <XAxis dataKey="month" {...axisProps} />
-      <YAxis {...axisProps} tickFormatter={percent ? percentTick : fmtNum} width={48} />
-      <ReTooltip contentStyle={tooltipStyle} cursor={{ stroke: 'var(--line-strong)' }} formatter={percent ? percentValue : fullNumber} />
-      <Area type="monotone" dataKey={dataKey} stroke={color} fill={`url(#${gradientId})`} strokeWidth={2} name={name} />
-    </AreaChart>
+    <AreaChart
+      data={rows}
+      dataKey="month"
+      config={{ value: { label: name, color } }}
+      containerHeight={height}
+      legend={false}
+      tooltip={<ExactTooltip format={percent ? percentTick : undefined} />}
+      valueFormatter={percent ? percentTick : fmtNum}
+      areaProps={{ type: 'monotone' }}
+    />
   );
 }

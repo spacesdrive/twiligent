@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
   watchUrl, channelMeta, dayDataOf, hourDataOf, durationDataOf, categoryDataOf, splitDataOf, shortsComparisonOf,
   topVideosChartOf, topVideoRowsOf, viewRangeDataOf, uploadsByMonthOf, rateOf, likesPerComment, peakHourLabel,
-  bestVideosOf, likesLabel,
+  bestVideosOf, likesLabel, monthlySummary,
 } from '../../../../src/features/analytics/channel/channelChartData.ts';
 import type { VideoAnalytics, YouTubeVideoSummary } from '../../../../../shared/types/youtube.ts';
 
@@ -81,4 +81,11 @@ test('best videos and like labels', () => {
   assert.equal(likesLabel(undefined), 'likes hidden');
   assert.equal(likesLabel(null), 'likes hidden');
   assert.equal(likesLabel(1500), '1.5K likes');
+});
+
+test('a monthly description reads the trend in full numbers, or as rates', () => {
+  const views = [{ month: 'Jan 2026', value: 1200 }, { month: 'Feb 2026', value: 5400 }];
+  assert.equal(monthlySummary(views, 'views'), 'From Jan 2026 to Feb 2026: 1,200 to 5,400 views. Peak 5,400 in Feb 2026.');
+  const rates = [{ month: 'Jan 2026', value: '4.5' }, { month: 'Feb 2026', value: '3.1' }];
+  assert.equal(monthlySummary(rates, 'like rate', true), 'From Jan 2026 to Feb 2026: 4.5% to 3.1% like rate. Peak 4.5% in Jan 2026.');
 });

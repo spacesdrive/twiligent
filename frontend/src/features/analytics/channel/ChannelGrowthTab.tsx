@@ -1,13 +1,13 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip } from 'recharts';
+import { BarChart } from '@/components/ui/bar-chart';
 import MetricBox from '@/components/MetricBox';
 import ChartPanel from '@/components/ChartPanel';
+import ExactTooltip from '@/components/ExactTooltip';
 import Num from '@/components/Num';
 import { PLATFORM_META } from '@/lib/accounts';
-import { SERIES, axisProps, gridProps, tooltipCursor, tooltipStyle, trendSummary } from '@/lib/chart';
+import { SERIES, pointsOf, trendSummary } from '@/lib/chart';
 import { METRIC_ICONS } from '@/lib/metricIcons';
 import { fmtNum, fmtNumFull } from '../../../utils/formatters';
-import type { NumberLike } from '../../../utils/formatters';
-import { monthlyChartText, uploadsByMonthOf } from './channelChartData.ts';
+import { monthlySummary, uploadsByMonthOf } from './channelChartData.ts';
 import MetricGrid from './MetricGrid';
 import TrendArea from './TrendArea';
 import type { VideoAnalytics } from '@shared/types/youtube.ts';
@@ -15,7 +15,7 @@ import type { ChannelDetails } from './channelChartData.ts';
 
 const { views: Views, audience: Audience, period: Estimate } = METRIC_ICONS;
 
-const full = (value: unknown) => fmtNumFull(value as NumberLike);
+const UPLOADS = { uploads: { label: 'Uploads', color: SERIES.neutral } };
 
 export interface ChannelGrowthTabProps {
   channel: ChannelDetails;
@@ -23,7 +23,6 @@ export interface ChannelGrowthTabProps {
 }
 
 export default function ChannelGrowthTab({ channel, analytics }: ChannelGrowthTabProps) {
-  const views = monthlyChartText(analytics.viewsTrend || [], 'views');
   const uploads = uploadsByMonthOf(analytics.viewsTrend);
   return (
     <>
@@ -33,36 +32,20 @@ export default function ChannelGrowthTab({ channel, analytics }: ChannelGrowthTa
         <MetricBox small icon={<Estimate />} label="Views in a year"        value={<Num value={channel.estimatedYearlyViews} />} period="Estimate" subtitle={`About ${fmtNum(channel.estimatedMonthlyViews)} a month at the daily average`} />
         <MetricBox small icon={<Estimate />} label="Subscribers in a year"  value={<Num value={channel.estimatedYearlySubGain} />} period="Estimate" subtitle={`About ${fmtNum(channel.estimatedMonthlySubGain)} a month at the daily average`} />
       </MetricGrid>
-      <ChartPanel
-        title="Lifetime views of videos, by upload month"
-        subheader="Every view a video has had so far, counted in the month it was published"
-        height={300}
-        summary={views.summary}
-        table={{
-          caption: 'Lifetime views of videos, by upload month',
-          columns: [{ key: 'month', label: 'Upload month' }, { key: 'value', label: 'Views', numeric: true, format: full }],
-          rows: views.rows,
-        }}
-      >
-        <TrendArea data={analytics.viewsTrend || []} color={PLATFORM_META.youtube.series} name="Views" gradientId="viewGrad" />
+      <ChartPanel title="Views by month" height={300} description={monthlySummary(analytics.viewsTrend || [], 'views')}>
+        <TrendArea data={analytics.viewsTrend || []} color={PLATFORM_META.youtube.series} name="Views" height={300} />
       </ChartPanel>
-      <ChartPanel
-        title="Uploads by month"
-        height={240}
-        summary={trendSummary(uploads.map(point => ({ name: point.month, value: point.uploads })), fmtNum, 'uploads')}
-        table={{
-          caption: 'Uploads by month',
-          columns: [{ key: 'month', label: 'Month' }, { key: 'uploads', label: 'Uploads', numeric: true, format: full }],
-          rows: uploads,
-        }}
-      >
-        <BarChart data={uploads}>
-          <CartesianGrid {...gridProps} vertical={false} />
-          <XAxis dataKey="month" {...axisProps} />
-          <YAxis {...axisProps} allowDecimals={false} />
-          <ReTooltip contentStyle={tooltipStyle} cursor={tooltipCursor} />
-          <Bar dataKey="uploads" fill={SERIES.neutral} radius={[4, 4, 0, 0]} name="Uploads" />
-        </BarChart>
+      <ChartPanel title="Uploads by month" height={240} description={trendSummary(pointsOf(uploads, 'month', 'uploads'), fmtNumFull, 'uploads')}>
+        <BarChart
+          data={uploads}
+          dataKey="month"
+          config={UPLOADS}
+          containerHeight={240}
+          legend={false}
+          tooltip={<ExactTooltip />}
+          valueFormatter={fmtNum}
+          yAxisProps={{ allowDecimals: false }}
+        />
       </ChartPanel>
     </>
   );

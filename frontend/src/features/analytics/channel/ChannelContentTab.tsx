@@ -1,15 +1,18 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, PieChart, Pie, Cell, Legend } from 'recharts';
+import { BarChart } from '@/components/ui/bar-chart';
 import MetricBox from '@/components/MetricBox';
 import ChartPanel from '@/components/ChartPanel';
-import SurfaceBox from '@/components/SurfaceBox';
-import RankingBarChart from '@/components/RankingBarChart';
-import { SERIES, axisProps, axisTick, gridProps, legendStyle, rankingSummary, tooltipCursor, tooltipStyle } from '@/lib/chart';
+import DonutChart from '@/components/DonutChart';
+import ExactTooltip from '@/components/ExactTooltip';
+import { SERIES, pointsOf, rankingSummary } from '@/lib/chart';
 import { METRIC_ICONS } from '@/lib/metricIcons';
-import { fmtNum, fmtPercent } from '../../../utils/formatters';
+import { fmtNum, fmtNumFull, fmtPercent } from '../../../utils/formatters';
 import { categoryDataOf, durationDataOf, viewRangeDataOf } from './channelChartData.ts';
 import type { VideoAnalytics } from '@shared/types/youtube.ts';
 
 const { quality: Quality, comments: Captions, consistency: Licensed, regularVideos: Embeddable, audience: Kids, duration: Duration } = METRIC_ICONS;
+
+const BY_CATEGORY = { value: { label: 'Videos', color: SERIES.neutral } };
+const BY_VIEW_RANGE = { count: { label: 'Videos', color: SERIES.neutral } };
 
 export interface ChannelContentTabProps {
   analytics: VideoAnalytics;
@@ -31,37 +34,34 @@ export default function ChannelContentTab({ analytics }: ChannelContentTabProps)
         <MetricBox small icon={<Duration />}   label="Average length" value={analytics.avgDurationFormatted} period={period} />
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <ChartPanel
-          title="Videos by length"
-          empty={durationData.length === 0}
-          summary={rankingSummary(durationData, fmtNum, 'videos')}
-          table={{ caption: 'Videos by length', columns: [{ key: 'name', label: 'Length' }, { key: 'value', label: 'Videos', numeric: true }], rows: durationData }}
-        >
-          <PieChart>
-            <Pie data={durationData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={95} innerRadius={55} paddingAngle={2} strokeWidth={0}>
-              {durationData.map(slice => <Cell key={slice.name} fill={slice.color} />)}
-            </Pie>
-            <ReTooltip contentStyle={tooltipStyle} />
-            <Legend iconType="circle" iconSize={8} wrapperStyle={legendStyle} />
-          </PieChart>
+        <ChartPanel title="Length distribution" empty={durationData.length === 0} description={rankingSummary(durationData, fmtNumFull, 'videos')}>
+          <DonutChart data={durationData} height={280} />
         </ChartPanel>
-        <SurfaceBox title="Videos by category">
-          <RankingBarChart rows={categoryData} label="Videos" title="Videos by category" emptyMessage="No category information on these videos" />
-        </SurfaceBox>
+        <ChartPanel title="Videos by category" empty={categoryData.length === 0} description={rankingSummary(categoryData, fmtNumFull, 'videos')}>
+          <BarChart
+            data={categoryData}
+            dataKey="name"
+            layout="vertical"
+            config={BY_CATEGORY}
+            containerHeight={280}
+            legend={false}
+            tooltip={<ExactTooltip />}
+            xAxisProps={{ type: 'number', allowDecimals: false, tickFormatter: fmtNum }}
+            yAxisProps={{ width: 120 }}
+          />
+        </ChartPanel>
       </div>
-      <ChartPanel
-        title="Videos by view range"
-        height={240}
-        summary={rankingSummary(viewRanges.map(row => ({ name: row.range, value: row.count })), fmtNum, 'videos')}
-        table={{ caption: 'Videos by view range', columns: [{ key: 'range', label: 'Views' }, { key: 'count', label: 'Videos', numeric: true }], rows: viewRanges }}
-      >
-        <BarChart data={viewRanges}>
-          <CartesianGrid {...gridProps} vertical={false} />
-          <XAxis dataKey="range" tick={{ ...axisTick, fontSize: 10 }} angle={-15} textAnchor="end" height={60} />
-          <YAxis {...axisProps} allowDecimals={false} />
-          <ReTooltip contentStyle={tooltipStyle} cursor={tooltipCursor} />
-          <Bar dataKey="count" fill={SERIES.neutral} radius={[4, 4, 0, 0]} name="Videos" />
-        </BarChart>
+      <ChartPanel title="Videos by view range" height={240} description={rankingSummary(pointsOf(viewRanges, 'range', 'count'), fmtNumFull, 'videos')}>
+        <BarChart
+          data={viewRanges}
+          dataKey="range"
+          config={BY_VIEW_RANGE}
+          containerHeight={240}
+          legend={false}
+          tooltip={<ExactTooltip />}
+          xAxisProps={{ angle: -15, textAnchor: 'end', height: 60 }}
+          yAxisProps={{ allowDecimals: false }}
+        />
       </ChartPanel>
     </>
   );

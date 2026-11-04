@@ -1,22 +1,36 @@
-import SurfaceBox from '@/components/SurfaceBox';
-import RankingBarChart from '@/components/RankingBarChart';
-import { PLATFORM_META } from '@/lib/accounts';
+import { BarChart } from '@/components/ui/bar-chart';
+import ChartPanel from '@/components/ChartPanel';
+import ExactTooltip from '@/components/ExactTooltip';
+import { SERIES, pointsOf, rankingSummary } from '@/lib/chart';
+import { fmtNum, fmtNumFull } from '../../../utils/formatters';
 import { topVideoRowsOf, topVideosChartOf } from './channelChartData.ts';
 import ChannelVideoTable from './ChannelVideoTable';
 import type { VideoAnalytics } from '@shared/types/youtube.ts';
+
+const TOP_VIDEOS = {
+  views: { label: 'Views', color: SERIES.primary },
+  likes: { label: 'Likes', color: SERIES.neutral },
+};
 
 export interface ChannelVideosTabProps {
   analytics: VideoAnalytics;
 }
 
-// views alone: likes are a different scale and would hide in the same bars; they are in the table below
 export default function ChannelVideosTab({ analytics }: ChannelVideosTabProps) {
-  const rows = topVideosChartOf(analytics.top10ByViews).map(video => ({ name: video.name, value: video.views }));
+  const topVideos = topVideosChartOf(analytics.top10ByViews);
   return (
     <>
-      <SurfaceBox title="Top 10 videos by views">
-        <RankingBarChart rows={rows} label="Views" title="Top 10 videos by views" color={PLATFORM_META.youtube.series} />
-      </SurfaceBox>
+      <ChartPanel title="Top 10 videos by views" height={320} description={rankingSummary(pointsOf(topVideos, 'name', 'views'), fmtNumFull, 'views')}>
+        <BarChart
+          data={topVideos}
+          dataKey="name"
+          config={TOP_VIDEOS}
+          containerHeight={320}
+          tooltip={<ExactTooltip />}
+          valueFormatter={fmtNum}
+          xAxisProps={{ angle: -15, textAnchor: 'end', height: 70 }}
+        />
+      </ChartPanel>
       <ChannelVideoTable title="Top videos by views and likes" videos={topVideoRowsOf(analytics)} />
     </>
   );

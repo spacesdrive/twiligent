@@ -4,7 +4,7 @@ import Num from '@/components/Num';
 import { SERIES } from '@/lib/chart';
 import { METRIC_ICONS } from '@/lib/metricIcons';
 import { fmtPercent } from '../../../utils/formatters';
-import { likesPerComment, monthlyChartText, rateOf } from './channelChartData.ts';
+import { likesPerComment, monthlySummary, rateOf } from './channelChartData.ts';
 import ChannelVideoTable from './ChannelVideoTable';
 import TrendArea from './TrendArea';
 import type { VideoAnalytics } from '@shared/types/youtube.ts';
@@ -17,8 +17,6 @@ export interface ChannelEngagementTabProps {
 
 export default function ChannelEngagementTab({ analytics }: ChannelEngagementTabProps) {
   const period = `Last ${analytics.totalVideos} videos`;
-  const engagement = monthlyChartText(analytics.engagementTrend || [], 'engagement rate', true);
-  const likeRate = monthlyChartText(analytics.likeRateTrend || [], 'like rate', true);
   return (
     <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
@@ -30,21 +28,11 @@ export default function ChannelEngagementTab({ analytics }: ChannelEngagementTab
         <MetricBox small icon={<Ratio />}    label="Likes per comment" value={likesPerComment(analytics)} period={period} />
       </div>
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <ChartPanel
-          title="Engagement rate by upload month"
-          subheader="Likes and comments per view for the videos published each month"
-          summary={engagement.summary}
-          table={{ caption: 'Engagement rate by upload month', columns: [{ key: 'month', label: 'Month' }, { key: 'value', label: 'Engagement rate', numeric: true }], rows: engagement.rows }}
-        >
-          <TrendArea data={analytics.engagementTrend || []} color={SERIES.primary} name="Engagement rate" percent gradientId="egGrad" />
+        <ChartPanel title="Engagement rate by month" description={monthlySummary(analytics.engagementTrend || [], 'engagement rate', true)}>
+          <TrendArea data={analytics.engagementTrend || []} color={SERIES.primary} name="Engagement rate" percent />
         </ChartPanel>
-        <ChartPanel
-          title="Like rate by upload month"
-          subheader="Likes per view for the videos published each month"
-          summary={likeRate.summary}
-          table={{ caption: 'Like rate by upload month', columns: [{ key: 'month', label: 'Month' }, { key: 'value', label: 'Like rate', numeric: true }], rows: likeRate.rows }}
-        >
-          <TrendArea data={analytics.likeRateTrend || []} color={SERIES.neutral} name="Like rate" percent gradientId="lrGrad" />
+        <ChartPanel title="Like rate by month" description={monthlySummary(analytics.likeRateTrend || [], 'like rate', true)}>
+          <TrendArea data={analytics.likeRateTrend || []} color={SERIES.neutral} name="Like rate" percent />
         </ChartPanel>
       </div>
       <ChannelVideoTable title="Top 10 by engagement rate" videos={analytics.top10ByEngagement} />
