@@ -11,7 +11,7 @@ export function useAccountDelete({ showToast, loadAccounts }: AccountActionDeps)
   const [deleting, setDeleting] = useState(false);
 
   const handleDelete = async () => {
-    if (!pendingDelete) return;
+    if (!pendingDelete || deleting) return;
     setDeleting(true);
     try {
       await api.deleteAccount(pendingDelete.id);
@@ -19,7 +19,7 @@ export function useAccountDelete({ showToast, loadAccounts }: AccountActionDeps)
       setPendingDelete(null);
       loadAccounts();
     } catch (err) {
-      showToast(`Couldn't remove the account. ${(err as Error).message}`, 'error');
+      showToast(`Couldn't remove ${accountName(pendingDelete)}. ${(err as Error).message}`, 'error');
     } finally {
       setDeleting(false);
     }

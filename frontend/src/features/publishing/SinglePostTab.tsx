@@ -26,6 +26,7 @@ export default function SinglePostTab({ form, publish, igAccounts, onReset }: Si
         selectedAcct={selectedAcct}
         scheduleMode={form.fields.scheduleMode}
         onReset={onReset}
+        onStopWaiting={publish.stopWaiting}
       />
     );
   }
@@ -33,7 +34,7 @@ export default function SinglePostTab({ form, publish, igAccounts, onReset }: Si
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_28rem]">
       <div className="flex min-w-0 flex-col gap-4">
-        <MediaPicker form={form} selectedType={selectedType} />
+        <MediaPicker form={form} selectedType={selectedType} typeError={publish.errorFor('contentType')} fileError={publish.errorFor('file')} />
         <CaptionBox caption={form.fields.caption} onChange={caption => form.setField('caption', caption)} />
       </div>
       <SinglePostSettings

@@ -1,4 +1,6 @@
 import { Check, ImageOff } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import type { InstagramMedia } from '@shared/types/instagram.ts';
@@ -8,14 +10,36 @@ interface RuleMediaPickerProps {
   loading: boolean;
   selected: string[];
   onToggle: (id: string) => void;
+  error: string | null;
+  onRetry: () => void;
+  id?: string;
+  'aria-describedby'?: string;
+  'aria-invalid'?: boolean;
 }
 
 // the account's recent posts and reels as a grid of toggles
-export default function RuleMediaPicker({ media, loading, selected, onToggle }: RuleMediaPickerProps) {
-  if (loading) return <div className="flex justify-center py-6"><Spinner className="size-5" /></div>;
-  if (media.length === 0) return <p className="text-small text-ink-muted">No posts found on this account yet.</p>;
+// a failed load is an error with a retry, never an empty list
+export default function RuleMediaPicker({ media, loading, selected, onToggle, error, onRetry, id, ...aria }: RuleMediaPickerProps) {
+  if (loading) {
+    return (
+      <div role="status" className="flex items-center justify-center gap-2 py-6 text-small text-ink-muted">
+        <Spinner className="size-5" />Loading posts
+      </div>
+    );
+  }
+  if (error) {
+    return (
+      <Alert variant="destructive" role="alert">
+        <AlertDescription className="flex flex-wrap items-center justify-between gap-2">
+          <span><span className="sr-only">Error: </span>{error}</span>
+          <Button type="button" size="sm" variant="outline" onClick={onRetry}>Try again</Button>
+        </AlertDescription>
+      </Alert>
+    );
+  }
+  if (media.length === 0) return <p className="text-small text-ink-muted">This account has no posts or reels yet. Answer comments on every post instead.</p>;
   return (
-    <div className="grid max-h-64 grid-cols-3 gap-2 overflow-y-auto sm:grid-cols-4" role="group" aria-label="Posts and reels">
+    <div id={id} tabIndex={-1} className="grid max-h-64 grid-cols-3 gap-2 overflow-y-auto rounded-control sm:grid-cols-4" role="group" aria-label={`Posts and reels, ${selected.length} chosen`} {...aria}>
       {media.map(item => {
         const active = selected.includes(item.id);
         const image = item.thumbnailUrl || item.mediaUrl;

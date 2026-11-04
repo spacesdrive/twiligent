@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { readChoice, withParam } from '@/lib/urlState';
 import { useAppContext } from '../../context/AppContext';
 import { api } from '../../services/api';
 import { ACTIVITY_FILTERS, periodStart, summarizeStats } from './automationData.ts';
@@ -26,10 +28,22 @@ function query(filters: ActivityFilters, before?: string): URLSearchParams {
   return params;
 }
 
-// the counts and the activity list share the period, account and rule filters
+const FILTER_KEYS = Object.keys(ACTIVITY_FILTERS) as ActivityFilter[];
+const PERIOD_KEYS: StatsPeriod[] = ['24h', '7d', '30d'];
+const PARAM: Record<keyof ActivityFilters, string> = { filter: 'status', period: 'period', accountId: 'account', ruleId: 'rule' };
+const DEFAULTS: ActivityFilters = { filter: 'all', period: '7d', accountId: '', ruleId: '' };
+
+// the counts and the activity list share the period, account and rule filters, kept in the address so a refresh
+// or a shared link shows the same view
 export function useAutomationActivity() {
   const { showToast } = useAppContext();
-  const [filters, setFilters] = useState<ActivityFilters>({ filter: 'all', period: '7d', accountId: '', ruleId: '' });
+  const [params, setParams] = useSearchParams();
+  const filter = readChoice(params, PARAM.filter, FILTER_KEYS, DEFAULTS.filter);
+  const period = readChoice(params, PARAM.period, PERIOD_KEYS, DEFAULTS.period);
+  const accountId = params.get(PARAM.accountId) ?? '';
+  const ruleId = params.get(PARAM.ruleId) ?? '';
+  const filters = useMemo<ActivityFilters>(() => ({ filter, period, accountId, ruleId }), [filter, period, accountId, ruleId]);
+  const [error, setError] = useState<string | null>(null);
   const [items, setItems] = useState<AutomationActivityItem[]>([]);
   const [nextBefore, setNextBefore] = useState<string | null>(null);
   const [summary, setSummary] = useState<AutomationSummary | null>(null);
@@ -44,7 +58,7 @@ export function useAutomationActivity() {
   const load = useCallback(async () => {
     const current = ++generation.current;
     setLoading(true);
-    setNextBefore(null);
+    setError(null);
     try {
       const statsQuery = query({ ...filters, filter: 'all' });
       statsQuery.delete('status');
@@ -56,14 +70,16 @@ export function useAutomationActivity() {
       if (current !== generation.current) return;
       setItems(page.items);
       setNextBefore(page.nextBefore);
+      setError(null);
       setSummary(summarizeStats(stats.stats));
       setCheckedAt(Date.now());
     } catch (err) {
-      if (current === generation.current) showToast(`Couldn't load the reply activity. ${(err as Error).message}`, 'error');
+      // the last good list stays on screen, with the failure shown above it
+      if (current === generation.current) setError(`Couldn't load the reply activity. ${(err as Error).message}`);
     } finally {
       if (current === generation.current) setLoading(false);
     }
-  }, [filters, showToast]);
+  }, [filters]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -101,10 +117,10 @@ export function useAutomationActivity() {
   const retryPublic = useCallback((item: AutomationActivityItem) => retryAction(item, 'public'), [retryAction]);
 
   const setFilter = useCallback(<K extends keyof ActivityFilters>(key: K, value: ActivityFilters[K]) => {
-    setFilters(current => ({ ...current, [key]: value }));
-  }, []);
+    setParams(current => withParam(current, PARAM[key], value, DEFAULTS[key]), { replace: true });
+  }, [setParams]);
 
-  return { filters, setFilter, items, nextBefore, summary, loading, loadingMore, retrying, checkedAt, load, loadMore, retry, retryPublic };
+  return { filters, setFilter, items, nextBefore, summary, loading, loadingMore, retrying, checkedAt, error, load, loadMore, retry, retryPublic };
 }
 
 export type AutomationActivityState = ReturnType<typeof useAutomationActivity>;

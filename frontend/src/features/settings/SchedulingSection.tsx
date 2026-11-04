@@ -47,7 +47,7 @@ function Steps({ steps }: StepsProps) {
 export default function SchedulingSection({ github }: SchedulingSectionProps) {
   const pendingStep: HowItWorksStep = {
     title: 'If a post stays Pending',
-    body: <>A post still Pending 30 minutes after its time, or still Publishing 50 minutes after it started, means the scheduler on this server is not running. Email the administrator at <a href={adminMailto('Scheduled posts are not publishing on Twiligent')}>{ADMIN_EMAIL}</a> with the time of the post. You can edit or delete a Pending post at any time.</>,
+    body: <>A post still Pending 30 minutes after its time, or still Publishing 50 minutes after it started, means the scheduler on this server is not running. Email the administrator at <a href={adminMailto('Scheduled posts are not publishing on Twiligent')} className="font-medium text-brand-text underline underline-offset-4">{ADMIN_EMAIL}</a> with the time of the post. You can edit or delete a Pending post at any time.</>,
   };
 
   return (
@@ -60,13 +60,13 @@ export default function SchedulingSection({ github }: SchedulingSectionProps) {
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="flex flex-col gap-2 rounded-field border border-line p-4">
             <p className="flex items-center gap-2 text-sm font-semibold text-ink"><Users className="size-4 stroke-[1.75] text-ink-faint" />You sign in to this Twiligent</p>
-            <p className="text-sm text-ink-muted">Nothing to set up. The server publishes your scheduled posts. You do not need GitHub, Supabase or any keys.</p>
+            <p className="max-w-prose text-body text-ink-muted">Nothing to set up. The server publishes your scheduled posts. You do not need GitHub, Supabase or any keys.</p>
           </div>
           <div className="flex flex-col gap-2 rounded-field border border-line p-4">
             <p className="flex items-center gap-2 text-sm font-semibold text-ink"><Server className="size-4 stroke-[1.75] text-ink-faint" />You run your own Twiligent</p>
-            <p className="text-sm text-ink-muted">Deploying the backend is enough; scheduling starts with it. The GitHub backup below is optional.</p>
-            <a href={docsUrl('/self-host')} target="_blank" rel="noopener noreferrer" className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-brand-text underline-offset-4 hover:underline">
-              Self-hosting guide<ArrowRight className="size-3.5" />
+            <p className="max-w-prose text-body text-ink-muted">Deploying the backend is enough; scheduling starts with it. The GitHub backup below is optional.</p>
+            <a href={docsUrl('/self-host')} target="_blank" rel="noopener noreferrer" className="mt-auto inline-flex items-center gap-1 text-sm font-medium text-brand-text underline underline-offset-4">
+              Self-hosting guide<span className="sr-only"> (opens in a new tab)</span><ArrowRight className="size-3.5" aria-hidden="true" />
             </a>
           </div>
         </div>
@@ -83,7 +83,12 @@ export default function SchedulingSection({ github }: SchedulingSectionProps) {
       <SchedulingSetupGuide
         owner={github.owner}
         repo={github.repo}
+        savedOwner={github.savedOwner}
+        savedRepo={github.savedRepo}
+        unsaved={github.unsaved}
+        ownerError={github.ownerError}
         onOwnerChange={github.setOwner}
+        onOwnerBlur={github.tidyOwner}
         onRepoChange={github.setRepo}
         onSave={github.handleSave}
         saving={github.saving}

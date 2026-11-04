@@ -90,7 +90,7 @@ export interface AutomationSummary {
 
 export type RuleScope = 'all' | 'selected';
 
-// the rule dialog's fields, as typed; keywords and the limit stay text until saved
+// the rule editor's fields, as typed; keywords and the limit stay text until saved
 export interface RuleForm {
   accountId: string;
   name: string;
@@ -109,6 +109,16 @@ export interface RuleForm {
   requireFollow: boolean;
   followPromptText: string;
   notFollowingText: string;
+}
+
+// the field a problem belongs to, so the editor can show it under that field and move focus there
+export type RuleField =
+  | 'accountId' | 'name' | 'keywordsText' | 'mediaIds' | 'replies' | 'replyText' | 'linkUrl' | 'hourlyLimit'
+  | 'publicReplyTexts' | 'requireFollow' | 'followPromptText' | 'notFollowingText';
+
+export interface RuleFieldProblem {
+  field: RuleField;
+  message: string;
 }
 
 export function periodStart(period: StatsPeriod, now: number): string {
@@ -272,7 +282,7 @@ export function formToRequest(form: RuleForm): AutomationRuleRequest {
     mediaIds: form.scope === 'selected' ? form.mediaIds : [],
     privateReplyEnabled: form.privateReplyEnabled,
     replyText: form.replyText.trim(),
-    linkUrl: form.linkUrl.trim() || null,
+    linkUrl: normalizeLink(form.linkUrl) || null,
     publicReplyEnabled: form.publicReplyEnabled,
     // texts kept while the public reply is off come back when it is turned on again
     publicReplyTexts: publicReplyTexts(form.publicReplyTexts),
@@ -284,56 +294,77 @@ export function formToRequest(form: RuleForm): AutomationRuleRequest {
   };
 }
 
-function linkProblem(linkUrl: string): string | null {
+// people paste "example.com/guide" as often as the full address, so a link without a scheme is taken as https
+export function normalizeLink(linkUrl: string): string {
   const link = linkUrl.trim();
+  if (!link || /^[a-z][a-z0-9+.-]*:/i.test(link)) return link;
+  return `https://${link.replace(/^\/\//, '')}`;
+}
+
+function linkProblem(linkUrl: string): string | null {
+  const link = normalizeLink(linkUrl);
   if (!link) return null;
   try {
     const url = new URL(link);
     if (url.protocol !== 'https:') return 'The link must start with https://';
     if (url.username || url.password) return 'The link cannot contain a user name or password';
+    if (!url.hostname.includes('.')) return 'The link must be a full address, such as https://example.com/guide';
   } catch {
-    return 'The link must be a full address starting with https://';
+    return 'The link must be a full address, such as https://example.com/guide';
   }
   return null;
 }
 
-// the first thing to fix before the rule can be saved, or null; the Worker checks the same rules again
-export function ruleFormProblem(form: RuleForm): string | null {
-  if (!form.accountId) return 'Choose the Instagram account';
-  if (!form.name.trim()) return 'Give the rule a name';
+// the first thing to fix before the rule can be saved and the field it belongs to, or null; the Worker checks the same
+export function ruleFormError(form: RuleForm): RuleFieldProblem | null {
+  const problem = (field: RuleField, message: string): RuleFieldProblem => ({ field, message });
+  if (!form.accountId) return problem('accountId', 'Choose the Instagram account');
+  if (!form.name.trim()) return problem('name', 'Give the rule a name');
   if (form.matchMode !== 'any') {
     const keywords = parseKeywords(form.keywordsText, form.caseSensitive);
-    if (keywords.length === 0) return 'Add at least one keyword';
-    if (keywords.length > MAX_KEYWORDS) return `A rule can have at most ${MAX_KEYWORDS} keywords`;
+    if (keywords.length === 0) return problem('keywordsText', 'Add at least one keyword');
+    if (keywords.length > MAX_KEYWORDS) return problem('keywordsText', `A rule can have at most ${MAX_KEYWORDS} keywords`);
   }
-  if (form.scope === 'selected' && form.mediaIds.length === 0) return 'Choose at least one post, or answer comments on every post';
-  if (!form.privateReplyEnabled && !form.publicReplyEnabled) return 'Turn on the private reply, the public reply, or both';
-  if (form.privateReplyEnabled && !form.replyText.trim()) return 'Write the reply to send';
+  if (form.scope === 'selected' && form.mediaIds.length === 0) return problem('mediaIds', 'Choose at least one post, or answer comments on every post');
+  if (!form.privateReplyEnabled && !form.publicReplyEnabled) return problem('replies', 'Turn on the private reply, the public reply, or both');
+  if (form.privateReplyEnabled && !form.replyText.trim()) return problem('replyText', 'Write the reply to send');
   const link = linkProblem(form.linkUrl);
-  if (link) return link;
+  if (link) return problem('linkUrl', link);
   const limit = form.hourlyLimit.trim();
   if (limit && !(/^\d+$/.test(limit) && Number(limit) >= 1 && Number(limit) <= MAX_HOURLY_LIMIT)) {
-    return `The hourly limit must be a whole number from 1 to ${MAX_HOURLY_LIMIT}`;
+    return problem('hourlyLimit', `The hourly limit must be a whole number from 1 to ${MAX_HOURLY_LIMIT}`);
   }
-  const bytes = messageBytes(composeReply(form.replyText, form.linkUrl));
-  if (form.privateReplyEnabled && bytes > MAX_MESSAGE_BYTES) return `The reply with its link is ${bytes} bytes; Instagram accepts at most ${MAX_MESSAGE_BYTES}`;
+  const bytes = messageBytes(composeReply(form.replyText, normalizeLink(form.linkUrl)));
+  if (form.privateReplyEnabled && bytes > MAX_MESSAGE_BYTES) {
+    return problem('replyText', `The reply with its link is ${bytes} bytes; Instagram accepts at most ${MAX_MESSAGE_BYTES}`);
+  }
   if (form.publicReplyEnabled) {
     const texts = publicReplyTexts(form.publicReplyTexts);
-    if (texts.length === 0) return 'Write at least one public reply';
-    if (texts.length > MAX_PUBLIC_REPLY_TEXTS) return `A rule can have at most ${MAX_PUBLIC_REPLY_TEXTS} public replies`;
+    if (texts.length === 0) return problem('publicReplyTexts', 'Write at least one public reply');
+    if (texts.length > MAX_PUBLIC_REPLY_TEXTS) return problem('publicReplyTexts', `A rule can have at most ${MAX_PUBLIC_REPLY_TEXTS} public replies`);
     for (const text of texts) {
-      const problem = publicReplyTextProblem(text);
-      if (problem) return problem;
+      const textProblem = publicReplyTextProblem(text);
+      if (textProblem) return problem('publicReplyTexts', textProblem);
     }
   }
-  if (form.requireFollow && !form.privateReplyEnabled) return 'Sending the link only to followers needs the private reply. Turn it on, or turn off the followers-only option';
+  if (form.requireFollow && !form.privateReplyEnabled) {
+    return problem('requireFollow', 'Sending the link only to followers needs the private reply. Turn it on, or turn off the followers-only option');
+  }
   if (form.requireFollow) {
-    if (!form.followPromptText.trim()) return 'Write the message that asks people to follow you and reply';
-    if (!form.notFollowingText.trim()) return 'Write the reminder for people who do not follow you yet';
-    const longest = Math.max(messageBytes(form.followPromptText.trim()), messageBytes(form.notFollowingText.trim()));
-    if (longest > MAX_MESSAGE_BYTES) return `A followers-only message is ${longest} bytes; Instagram accepts at most ${MAX_MESSAGE_BYTES}`;
+    if (!form.followPromptText.trim()) return problem('followPromptText', 'Write the message that asks people to follow you and reply');
+    if (!form.notFollowingText.trim()) return problem('notFollowingText', 'Write the reminder for people who do not follow you yet');
+    const prompt = messageBytes(form.followPromptText.trim());
+    const reminder = messageBytes(form.notFollowingText.trim());
+    if (Math.max(prompt, reminder) > MAX_MESSAGE_BYTES) {
+      return problem(prompt >= reminder ? 'followPromptText' : 'notFollowingText', `A followers-only message is ${Math.max(prompt, reminder)} bytes; Instagram accepts at most ${MAX_MESSAGE_BYTES}`);
+    }
   }
   return null;
+}
+
+// the message of the first problem, or null
+export function ruleFormProblem(form: RuleForm): string | null {
+  return ruleFormError(form)?.message ?? null;
 }
 
 // a followers-only rule that is on needs Instagram to send the account's messages as well as its comments

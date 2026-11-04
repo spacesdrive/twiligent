@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { api } from '../../services/api';
-import { editPostError } from './publishHelpers.ts';
+import { editPostProblem } from './publishHelpers.ts';
 import { toLocalDateInput, toLocalTimeInput } from './scheduleHelpers.ts';
 import type { ScheduledPost } from '@shared/types/domain.ts';
-import type { ScheduledPostActionOptions } from './useScheduledPostDelete';
+import type { AppContextValue } from '../../context/AppContext';
+import type { EditPostField, FieldProblem } from './publishHelpers.ts';
 
 export interface EditDraft {
   postId: string | null;
@@ -12,43 +13,81 @@ export interface EditDraft {
   time: string;
 }
 
+interface ScheduledPostEditOptions {
+  showToast: AppContextValue['showToast'];
+  loadScheduledPosts: () => Promise<void>;
+}
+
 const EMPTY_DRAFT: EditDraft = { postId: null, caption: '', date: '', time: '' };
 
-export function useScheduledPostEdit({ showToast, loadScheduledPosts }: ScheduledPostActionOptions) {
-  const [draft, setDraft] = useState(EMPTY_DRAFT);
-  const [savingEdit, setSavingEdit] = useState(false);
+export function editButtonId(postId: string): string {
+  return `edit-post-${postId}`;
+}
 
-  const setDraftField = <K extends keyof EditDraft>(name: K, value: EditDraft[K]) => setDraft(prev => ({ ...prev, [name]: value }));
+// focus goes back to the row's Edit button once the editor closes, so keyboard users keep their place
+function returnFocus(postId: string | null) {
+  if (!postId) return;
+  requestAnimationFrame(() => document.getElementById(editButtonId(postId))?.focus());
+}
+
+export function useScheduledPostEdit({ showToast, loadScheduledPosts }: ScheduledPostEditOptions) {
+  const [draft, setDraft] = useState(EMPTY_DRAFT);
+  const [original, setOriginal] = useState(EMPTY_DRAFT);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [problem, setProblem] = useState<FieldProblem<EditPostField> | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const dirty = draft.postId !== null && JSON.stringify(draft) !== JSON.stringify(original);
+
+  const setDraftField = <K extends keyof EditDraft>(name: K, value: EditDraft[K]) => {
+    setDraft(prev => ({ ...prev, [name]: value }));
+    setProblem(null);
+  };
 
   const startEditPost = (post: ScheduledPost) => {
     const scheduledAt = new Date(post.scheduledAt);
-    const date = toLocalDateInput(scheduledAt);
-    setDraft({ postId: post.id, caption: post.caption || '', date, time: toLocalTimeInput(scheduledAt) });
+    const next = { postId: post.id, caption: post.caption || '', date: toLocalDateInput(scheduledAt), time: toLocalTimeInput(scheduledAt) };
+    setDraft(next);
+    setOriginal(next);
+    setProblem(null);
+    setSaveError(null);
   };
 
-  const cancelEdit = () => setDraft(EMPTY_DRAFT);
+  const cancelEdit = () => {
+    const postId = draft.postId;
+    setDraft(EMPTY_DRAFT);
+    setOriginal(EMPTY_DRAFT);
+    setProblem(null);
+    setSaveError(null);
+    returnFocus(postId);
+  };
 
   const handleSaveEdit = async () => {
-    const error = editPostError({ ...draft, now: new Date() });
-    if (error) {
-      showToast(error, 'error');
+    if (savingEdit) return;
+    const found = editPostProblem({ ...draft, now: new Date() });
+    if (found) {
+      setProblem(found);
+      document.getElementById(found.field === 'date' ? 'edit-post-date' : 'edit-post-time')?.focus();
       return;
     }
     const scheduledAt = new Date(`${draft.date}T${draft.time}`);
     setSavingEdit(true);
+    setSaveError(null);
     try {
       await api.updateScheduledPost(draft.postId as string, { caption: draft.caption, scheduledAt: scheduledAt.toISOString() });
       showToast('Scheduled post updated');
       cancelEdit();
       loadScheduledPosts();
     } catch (err) {
-      showToast(`Couldn't update the post. ${(err as Error).message}`, 'error');
+      setSaveError(`Couldn't update the post. ${(err as Error).message}`);
     } finally {
       setSavingEdit(false);
     }
   };
 
-  return { draft, setDraftField, savingEdit, startEditPost, cancelEdit, handleSaveEdit };
+  const errorFor = (field: EditPostField) => (problem?.field === field ? problem.message : undefined);
+
+  return { draft, setDraftField, savingEdit, startEditPost, cancelEdit, handleSaveEdit, dirty, errorFor, saveError };
 }
 
 export type ScheduledPostEditor = ReturnType<typeof useScheduledPostEdit>;

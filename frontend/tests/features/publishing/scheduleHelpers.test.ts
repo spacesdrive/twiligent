@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   OVERDUE_MS, PUBLISH_LEASE_MS, isRetrying, scheduledStatusChips, filterScheduledPosts, overduePostsOf, isPastDue, overdueLead, deleteAllMessage,
-  formatScheduleDate, toLocalDateInput, toLocalTimeInput, utcDateInput, defaultBulkStartDate, goesLiveLabel,
+  formatScheduleDate, toLocalDateInput, toLocalTimeInput, todayInput, defaultBulkStartDate, goesLiveLabel,
 } from '../../../src/features/publishing/scheduleHelpers.ts';
 import type { ScheduleTiming } from '../../../src/features/publishing/scheduleHelpers.ts';
 
@@ -68,11 +68,10 @@ test('local inputs use the local calendar and clock', () => {
   assert.equal(toLocalTimeInput(date), '07:03');
 });
 
-test('the default bulk start is the next day in UTC', () => {
-  const now = new Date(2030, 0, 5, 12, 0);
-  const tomorrow = new Date(2030, 0, 6, 12, 0);
-  assert.equal(defaultBulkStartDate(now), tomorrow.toISOString().split('T')[0]);
-  assert.equal(utcDateInput(now), now.toISOString().split('T')[0]);
+test('the default bulk start and the earliest day follow the local calendar, even late in the evening', () => {
+  const lateEvening = new Date(2030, 0, 5, 23, 30);
+  assert.equal(defaultBulkStartDate(lateEvening), '2030-01-06');
+  assert.equal(todayInput(lateEvening), '2030-01-05');
 });
 
 test('the goes live label follows the schedule fields', () => {

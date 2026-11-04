@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   parseUserTags, parseCollaborators, buildScheduledPostPayload, buildContainerPayload, bulkPostDetails,
   singleUploadMessage, singlePostError, bulkStartError, bulkBaseTime, editPostError, bulkScheduledTime,
+  singlePostProblem, bulkStartProblem, editPostProblem, thumbOffsetMs, instagramUsername,
 } from '../../../src/features/publishing/publishHelpers.ts';
 import type { AccountPostDetails, BulkSettings, UploadFailure } from '../../../src/features/publishing/publishHelpers.ts';
 import type { ScheduleFieldValues } from '../../../src/features/publishing/scheduleHelpers.ts';
@@ -10,7 +11,7 @@ import type { ScheduleFieldValues } from '../../../src/features/publishing/sched
 const scheduledAt = new Date('2030-05-01T08:00:00Z');
 const fullPost: AccountPostDetails = {
   accountId: 'ig1', mediaType: 'REELS', mediaUrl: 'https://cdn/x.mp4', caption: 'Hello', coverUrl: 'https://cdn/c.jpg',
-  shareToFeed: false, collaborators: 'one, two ,', audioName: 'Song', thumbOffset: '1500', locationId: '42',
+  shareToFeed: false, collaborators: 'one, two ,', audioName: 'Song', thumbOffset: '1.5', locationId: '42',
   userTags: '@ann 0.2 0.3, bob', altText: 'Alt',
 };
 const bulkSettings: BulkSettings = {
@@ -117,4 +118,35 @@ test('editing a scheduled post needs a future date and time', () => {
 test('bulk posts are spaced by the interval', () => {
   const base = new Date('2030-05-01T08:00:00Z');
   assert.equal(bulkScheduledTime(base, 2, 720).toISOString(), '2030-05-02T08:00:00.000Z');
+});
+
+test('collaborators may be typed with an @ or pasted as a profile address', () => {
+  assert.deepEqual(parseCollaborators('@one, https://www.instagram.com/two/'), ['one', 'two']);
+  assert.equal(instagramUsername(' @three '), 'three');
+});
+
+test('the thumbnail offset is typed in seconds and sent in milliseconds', () => {
+  assert.equal(thumbOffsetMs('1.5'), 1500);
+  assert.equal(thumbOffsetMs('2,25'), 2250);
+  assert.equal(thumbOffsetMs(''), null);
+  assert.equal(thumbOffsetMs('-1'), null);
+});
+
+test('each publishing problem names the field to fix, in the order of the form', () => {
+  const now = new Date('2030-05-01T00:00:00');
+  const fields = { scheduleMode: true, scheduleDate: '2030-05-02', scheduleTime: '08:00' } as ScheduleFieldValues;
+  const file = {} as File;
+  const base = { selectedAccount: 'ig1', file, contentType: 'IMAGE', hasCloudConfig: true, fields, now };
+  assert.equal(singlePostProblem({ ...base, selectedAccount: '' })?.field, 'account');
+  assert.equal(singlePostProblem({ ...base, contentType: '' })?.field, 'contentType');
+  assert.equal(singlePostProblem({ ...base, file: null })?.field, 'file');
+  assert.equal(singlePostProblem({ ...base, hasCloudConfig: false })?.field, 'server');
+  assert.equal(singlePostProblem({ ...base, fields: { ...fields, scheduleDate: '2030-04-30' } })?.field, 'schedule');
+  assert.equal(singlePostProblem(base), null);
+  assert.equal(bulkStartProblem({ settings: bulkSettings, fileCount: 0, hasCloudConfig: true, now })?.field, 'files');
+  assert.equal(bulkStartProblem({ settings: { ...bulkSettings, account: '' }, fileCount: 2, hasCloudConfig: true, now })?.field, 'account');
+  assert.equal(bulkStartProblem({ settings: bulkSettings, fileCount: 2, hasCloudConfig: true, now }), null);
+  assert.equal(editPostProblem({ postId: 'p', date: '2030-05-02', time: '', now })?.field, 'time');
+  assert.equal(editPostProblem({ postId: 'p', date: '', time: '08:00', now })?.field, 'date');
+  assert.equal(editPostProblem({ postId: 'p', date: '2030-05-02', time: '08:00', now }), null);
 });

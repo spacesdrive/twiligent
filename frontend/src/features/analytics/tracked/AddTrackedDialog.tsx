@@ -1,3 +1,5 @@
+import { AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -10,21 +12,21 @@ import type { AppAccount } from '../../../utils/formatters';
 import type { AddTracked } from './useAddTracked';
 
 interface LinkStatusProps {
-  url: string;
   detectedType: 'reddit' | 'youtube' | null;
 }
 
-function LinkStatus({ url, detectedType }: LinkStatusProps) {
-  if (detectedType) {
-    return (
-      <p className="flex items-center gap-1.5 text-caption text-success">
-        <PlatformBadge platform={detectedType} className="h-5" />
-        {detectedType === 'youtube' ? 'YouTube video found' : 'Reddit post found'}
-      </p>
-    );
-  }
-  if (!url.trim()) return null;
-  return <p className="text-caption text-danger">Error: only Reddit posts and YouTube videos can be tracked.</p>;
+// a found link is confirmed as soon as it is pasted; the region stays mounted so the confirmation is announced
+function LinkStatus({ detectedType }: LinkStatusProps) {
+  return (
+    <div role="status" aria-live="polite">
+      {detectedType && (
+        <p className="flex items-center gap-1.5 text-small text-success">
+          <PlatformBadge platform={detectedType} className="h-5" />
+          {detectedType === 'youtube' ? 'YouTube video found' : 'Reddit post found'}
+        </p>
+      )}
+    </div>
+  );
 }
 
 export interface AddTrackedDialogProps {
@@ -47,11 +49,21 @@ export default function AddTrackedDialog({ add, redditAccounts, categories }: Ad
           <DialogTitle>Track content</DialogTitle>
           <DialogDescription>Paste a Reddit post or a YouTube video or Shorts link.</DialogDescription>
         </DialogHeader>
-        <form id="track-form" onSubmit={add.handleAdd} className="flex flex-col gap-5">
-          <FieldRow label="Link" htmlFor="track-url">
-            <Input id="track-url" className="h-(--control-h-lg)" placeholder="https://" value={url} onChange={e => add.setDraftField('url', e.target.value)} autoFocus />
-            <LinkStatus url={url} detectedType={detectedType} />
+        <form id="track-form" onSubmit={add.handleAdd} noValidate className="flex flex-col gap-5">
+          <FieldRow label="Link" htmlFor="track-url" error={add.urlError ?? undefined}>
+            <Input
+              id="track-url"
+              type="url"
+              inputMode="url"
+              className="h-(--control-h-lg)"
+              placeholder="https://"
+              value={url}
+              onChange={e => add.setDraftField('url', e.target.value)}
+              onBlur={add.checkUrl}
+              autoFocus
+            />
           </FieldRow>
+          <LinkStatus detectedType={detectedType} />
 
           {detectedType === 'reddit' && (
             <FieldRow label="Fetch with account" hint="A session cookie helps Reddit accept requests from the server." htmlFor="track-account">
@@ -68,20 +80,27 @@ export default function AddTrackedDialog({ add, redditAccounts, categories }: Ad
           )}
 
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            <FieldRow label="Label" hint="Optional" htmlFor="track-label">
+            <FieldRow label="Label" optional htmlFor="track-label">
               <Input id="track-label" placeholder="Launch teaser" value={draft.label} onChange={e => add.setDraftField('label', e.target.value)} />
             </FieldRow>
-            <FieldRow label="Category" hint="Optional" htmlFor="track-category">
+            <FieldRow label="Category" optional htmlFor="track-category">
               <Input id="track-category" placeholder="Campaign A" value={draft.category} onChange={e => add.setDraftField('category', e.target.value)} />
               <CategoryPicker categories={categories} onPick={category => add.setDraftField('category', category)} />
             </FieldRow>
           </div>
+
+          {add.submitError && (
+            <Alert variant="destructive" role="alert">
+              <AlertCircle />
+              <AlertDescription><span className="sr-only">Error: </span>{add.submitError}</AlertDescription>
+            </Alert>
+          )}
         </form>
         <DialogFooter>
-          <Button variant="outline" onClick={() => add.setOpen(false)} disabled={adding}>Cancel</Button>
-          <Button type="submit" form="track-form" disabled={adding || !url.trim() || !detectedType}>
+          <Button variant="outline" onClick={() => add.handleOpenChange(false)} disabled={adding}>Cancel</Button>
+          <Button type="submit" form="track-form" disabled={adding}>
             {adding && <Spinner className="size-4" />}
-            {adding ? 'Fetching details' : 'Track'}
+            {adding ? 'Fetching details' : 'Track content'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -9,8 +9,9 @@ export interface AddAccountFooterProps {
   flow: AddAccountFlow;
 }
 
+// the main button stays enabled: pressing it with a field missing says which one, instead of greying out silently
 export default function AddAccountFooter({ flow }: AddAccountFooterProps) {
-  const { platform, channel, reddit, channelAdd, redditAdd, instagram } = flow;
+  const { platform, channelAdd, redditAdd, instagram } = flow;
   const { adding } = channelAdd;
   const { connecting } = instagram;
   const { addingReddit } = redditAdd;
@@ -25,19 +26,19 @@ export default function AddAccountFooter({ flow }: AddAccountFooterProps) {
       ) : null}
       <Button variant="outline" onClick={flow.closeDialog}>Cancel</Button>
       {platform === 'youtube' && (
-        <Button onClick={channelAdd.handleAdd} disabled={!channel.input.trim() || adding}>
+        <Button onClick={channelAdd.handleAdd} disabled={adding}>
           {adding && <Spinner className="size-4" />}
           {adding ? 'Adding channel' : 'Add channel'}
         </Button>
       )}
       {platform === 'instagram' && (
-        <Button onClick={instagram.handleConnectInstagram} disabled={connecting}>
+        <Button id="add-account-primary" onClick={instagram.handleConnectInstagram} disabled={connecting}>
           {connecting ? <Spinner className="size-4" /> : <ExternalLink data-icon="inline-start" />}
           {connecting ? 'Opening Instagram' : 'Continue to Instagram'}
         </Button>
       )}
       {platform === 'reddit' && (
-        <Button onClick={redditAdd.handleAddReddit} disabled={!reddit.username.trim() || !reddit.cookie.trim() || addingReddit}>
+        <Button type="submit" form="add-account-form" disabled={addingReddit}>
           {addingReddit && <Spinner className="size-4" />}
           {addingReddit ? 'Adding account' : 'Add Reddit account'}
         </Button>

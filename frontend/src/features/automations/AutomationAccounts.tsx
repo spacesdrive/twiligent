@@ -32,7 +32,7 @@ function AccountRow({ account, needsMessages, appAccount, busy, automations }: A
   return (
     <li className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between">
       <div className="flex min-w-0 items-start gap-3">
-        {appAccount && <AccountAvatar account={appAccount} size="sm" />}
+        {appAccount && <AccountAvatar account={appAccount} size="sm" decorative />}
         <div className="flex min-w-0 flex-col gap-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="truncate text-sm font-semibold text-ink">@{account.username}</span>
@@ -45,12 +45,18 @@ function AccountRow({ account, needsMessages, appAccount, busy, automations }: A
         {(!account.subscribedAt || missingMessages) && (
           <Button size="sm" variant="outline" onClick={() => automations.subscribeAccount(account)} disabled={busy}>
             {busy ? <Spinner className="size-4" /> : <Radio data-icon="inline-start" />}
-            {missingMessages ? 'Turn on message events' : 'Turn on comment events'}
+            {busy ? 'Turning on' : missingMessages ? 'Turn on message events' : 'Turn on comment events'}
           </Button>
         )}
         <label htmlFor={switchId} className="flex items-center gap-2 text-small text-ink-muted">
-          Replies
-          <Switch id={switchId} checked={!account.paused} disabled={busy} onCheckedChange={checked => automations.setAccountPaused(account, !checked)} />
+          <span aria-hidden="true">Replies</span>
+          <Switch
+            id={switchId}
+            aria-label={`Replies for @${account.username}`}
+            checked={!account.paused}
+            disabled={busy}
+            onCheckedChange={checked => automations.setAccountPaused(account, !checked)}
+          />
         </label>
       </div>
     </li>

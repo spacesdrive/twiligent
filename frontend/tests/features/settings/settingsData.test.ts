@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  loadServerSettings, githubSettingsPayload, healthCheckResult, healthCheckFailure,
+  loadServerSettings, githubSettingsPayload, healthCheckResult, healthCheckFailure, githubOwner, githubRepoFromUrl,
 } from '../../../src/features/settings/settingsData.ts';
 import type { ServerSettingsClient } from '../../../src/features/settings/settingsData.ts';
 import type { GitHubSettingsResponse, KeysStatusResponse } from '../../../../shared/types/domain.ts';
@@ -95,4 +95,13 @@ test('health results explain what to check', () => {
   assert.equal(healthCheckResult({ status: 'degraded' }).message, 'The API answered with status "degraded". Check the Worker logs.');
   assert.equal(healthCheckFailure(new Error('timeout')).success, false);
   assert.ok(healthCheckFailure(new Error('timeout')).message.startsWith('The API could not be reached: timeout.'));
+});
+
+test('a GitHub user name is taken from an @name or a pasted profile or repository address', () => {
+  assert.equal(githubOwner(' @octocat '), 'octocat');
+  assert.equal(githubOwner('https://github.com/octocat'), 'octocat');
+  assert.equal(githubOwner('github.com/octocat/twiligent'), 'octocat');
+  assert.equal(githubOwner('octocat'), 'octocat');
+  assert.equal(githubRepoFromUrl('https://github.com/octocat/my-twiligent.git'), 'my-twiligent');
+  assert.equal(githubRepoFromUrl('octocat'), null);
 });

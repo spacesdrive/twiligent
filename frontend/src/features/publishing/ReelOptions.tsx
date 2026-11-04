@@ -12,12 +12,12 @@ interface ReelOptionsProps {
 function CoverPicker({ form }: ReelOptionsProps) {
   const { coverFile, coverInputRef } = form;
   return (
-    <FieldRow label="Cover image" hint="Optional JPEG.">
+    <FieldRow label="Cover image" optional hint="A JPEG shown before the Reel plays.">
       {coverFile ? (
         <div className="flex items-center gap-3 rounded-control border border-line p-2">
-          <img src={form.coverPreview as string} alt="Cover preview" className="size-10 rounded-sm object-cover" />
-          <span className="min-w-0 flex-1 truncate text-small text-ink">{coverFile.name}</span>
-          <Button variant="ghost" size="icon-xs" onClick={form.clearCover} aria-label="Remove cover"><X /></Button>
+          <img src={form.coverPreview as string} alt="Chosen cover" className="size-10 rounded-sm object-cover" />
+          <span className="min-w-0 flex-1 truncate text-small text-ink" title={coverFile.name}>{coverFile.name}</span>
+          <Button variant="ghost" size="icon-sm" onClick={form.clearCover} aria-label={`Remove the cover ${coverFile.name}`}><X /></Button>
         </div>
       ) : (
         <Button variant="outline" onClick={() => coverInputRef.current?.click()} className="justify-start">
@@ -35,16 +35,24 @@ export default function ReelOptions({ form }: ReelOptionsProps) {
     <div className="flex flex-col gap-5 border-t border-divider pt-5">
       <div className="flex items-center justify-between gap-3">
         <div>
-          <p className="text-sm font-medium text-ink">Share to feed</p>
-          <p className="text-caption text-ink-faint">Show the Reel on the profile grid as well.</p>
+          <label htmlFor="share-to-feed" className="text-sm font-medium text-ink">Share to feed</label>
+          <p id="share-to-feed-hint" className="text-small text-ink-muted">Show the Reel on the profile grid as well.</p>
         </div>
-        <Switch checked={fields.shareToFeed} onCheckedChange={checked => setField('shareToFeed', checked)} aria-label="Share to feed" />
+        <Switch id="share-to-feed" checked={fields.shareToFeed} onCheckedChange={checked => setField('shareToFeed', checked)} aria-describedby="share-to-feed-hint" />
       </div>
-      <FieldRow label="Audio name" hint="Optional" htmlFor="audio-name">
+      <FieldRow label="Audio name" optional htmlFor="audio-name">
         <IconInput id="audio-name" icon={Music} value={fields.audioName} onChange={e => setField('audioName', e.target.value)} placeholder="Original audio" />
       </FieldRow>
-      <FieldRow label="Thumbnail offset" hint="Milliseconds into the video to use as the thumbnail." htmlFor="thumb-offset">
-        <IconInput id="thumb-offset" icon={Clock} type="number" min="0" value={fields.thumbOffset} onChange={e => setField('thumbOffset', e.target.value)} placeholder="0" />
+      <FieldRow label="Thumbnail time" optional hint="Seconds into the video for the frame shown as the thumbnail, such as 2.5." htmlFor="thumb-offset">
+        <IconInput
+          id="thumb-offset"
+          icon={Clock}
+          type="text"
+          inputMode="decimal"
+          value={fields.thumbOffset}
+          onChange={e => setField('thumbOffset', e.target.value)}
+          placeholder="0"
+        />
       </FieldRow>
       <CoverPicker form={form} />
     </div>

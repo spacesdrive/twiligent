@@ -62,9 +62,9 @@ export default function ServerKeysSection({ serverStatus, refreshAll, refreshing
         </Button>
       </div>
       {testResult && (
-        <Alert variant={testResult.success ? 'success' : 'destructive'}>
+        <Alert variant={testResult.success ? 'success' : 'destructive'} role={testResult.success ? 'status' : 'alert'}>
           {testResult.success ? <CheckCircle2 /> : <AlertTriangle />}
-          <AlertDescription>{testResult.success ? '' : 'Error: '}{testResult.message}</AlertDescription>
+          <AlertDescription>{!testResult.success && <span className="sr-only">Error: </span>}{testResult.message}</AlertDescription>
         </Alert>
       )}
     </SettingsSection>

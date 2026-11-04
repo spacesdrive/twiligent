@@ -16,17 +16,19 @@ export interface ConfirmDialogProps {
   cancelLabel?: React.ReactNode;
   onConfirm: () => void;
   busy?: boolean;
+  busyLabel?: string;
   hold?: boolean;
   icon?: React.ReactNode;
 }
 
-// destructive actions use `hold` so a stray click cannot confirm them
+// destructive actions use `hold` so a stray click cannot confirm them; the button also confirms on a second press
 export default function ConfirmDialog({
   open,
   onOpenChange,
   title,
   description,
   confirmLabel = 'Confirm',
+  busyLabel = 'Working',
   cancelLabel = 'Cancel',
   onConfirm,
   busy = false,
@@ -40,18 +42,19 @@ export default function ConfirmDialog({
           {hold && <AlertDialogMedia>{icon}</AlertDialogMedia>}
           <AlertDialogTitle>{title}</AlertDialogTitle>
           {description && <AlertDialogDescription>{description}</AlertDialogDescription>}
+          {hold && <p className="text-small text-ink-muted">Hold the button, or press it twice, to confirm.</p>}
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel disabled={busy}>{cancelLabel}</AlertDialogCancel>
           {hold ? (
             <HoldToConfirmButton onConfirm={onConfirm} disabled={busy}>
               {busy ? <Spinner className="size-4" /> : null}
-              {busy ? 'Working' : `Hold to ${confirmLabel.toLowerCase()}`}
+              {busy ? busyLabel : confirmLabel}
             </HoldToConfirmButton>
           ) : (
             <AlertDialogAction onClick={onConfirm} disabled={busy}>
               {busy && <Spinner className="size-4" />}
-              {confirmLabel}
+              {busy ? busyLabel : confirmLabel}
             </AlertDialogAction>
           )}
         </AlertDialogFooter>

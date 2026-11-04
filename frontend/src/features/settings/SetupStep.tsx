@@ -29,11 +29,11 @@ export default function SetupStep({ number, icon, title, done, onToggle, childre
         <div className="flex flex-wrap items-start justify-between gap-2">
           <p className="text-sm font-semibold text-ink"><span className="text-ink-faint">Step {number}. </span>{title}</p>
           <label className="flex cursor-pointer items-center gap-2 text-small text-ink-muted select-none">
-            <input type="checkbox" checked={done} onChange={onToggle} className="size-4 accent-[var(--brand)]" />
-            Done
+            <input type="checkbox" checked={done} onChange={onToggle} aria-label={`Step ${number} done`} className="size-4 accent-[var(--brand)]" />
+            <span aria-hidden="true">Done</span>
           </label>
         </div>
-        <div className="flex flex-col gap-3 text-sm text-ink-muted [&_strong]:font-semibold [&_strong]:text-ink">{children}</div>
+        <div className="flex max-w-prose flex-col gap-3 text-body text-ink-muted [&_strong]:font-semibold [&_strong]:text-ink">{children}</div>
         {check && (
           <p className="flex items-start gap-1.5 text-small text-success">
             <Check className="mt-0.5 size-3.5 shrink-0" />

@@ -15,7 +15,7 @@ export default function NoInstagramAccount() {
           icon={<InstagramIcon />}
           title="Connect an Instagram account to publish"
           description="Publishing works with Instagram Business and Creator accounts. YouTube publishing is not available yet."
-          action={<Button render={<Link to="/accounts?add=1" />}><Plus data-icon="inline-start" />Add an account</Button>}
+          action={<Button render={<Link to="/accounts?add=1" />}><Plus data-icon="inline-start" />Add account</Button>}
         />
       </SurfaceBox>
     </div>

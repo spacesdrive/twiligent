@@ -69,7 +69,8 @@ export default function AccountManager() {
         onOpenChange={open => { if (!open) setPendingDelete(null); }}
         title={pendingDelete ? `Remove ${accountName(pendingDelete)}?` : 'Remove account?'}
         description="Its cached analytics are deleted. Scheduled posts for this account are removed with it. You can add the account again later."
-        confirmLabel="Remove"
+        confirmLabel="Remove account"
+        busyLabel="Removing"
         onConfirm={handleDelete}
         busy={deleting}
         hold

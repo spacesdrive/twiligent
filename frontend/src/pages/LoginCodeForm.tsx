@@ -20,16 +20,16 @@ export interface LoginCodeFormProps {
   onResend: () => void;
   // more fields after the code, such as the new password on the reset step
   children?: ReactNode;
-  // false while those fields are not ready; the code length is checked here
-  ready?: boolean;
+  error?: string;
 }
 
+// the button stays enabled: a short code is explained under the field instead of a silent grey button
 export default function LoginCodeForm({
-  copy, email, code, onCodeChange, loading, onSubmit, resendIn, resending, onResend, children, ready = true,
+  copy, email, code, onCodeChange, loading, onSubmit, resendIn, resending, onResend, children, error,
 }: LoginCodeFormProps) {
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-4">
-      <FieldRow label="Verification code" htmlFor="code">
+    <form onSubmit={onSubmit} noValidate className="flex flex-col gap-4">
+      <FieldRow label="Verification code" htmlFor="code" error={error}>
         <Input
           id="code"
           className="h-(--control-h-lg) text-center font-mono text-lg tracking-[0.4em]"
@@ -39,7 +39,6 @@ export default function LoginCodeForm({
           required
           inputMode="numeric"
           autoComplete="one-time-code"
-          pattern={`\\d{${CODE_LENGTH}}`}
           maxLength={CODE_LENGTH + 4}
           aria-describedby="code-help"
           autoFocus
@@ -49,14 +48,15 @@ export default function LoginCodeForm({
         Sent to <span className="font-medium text-ink">{email}</span>. If it has not arrived, check your spam folder.
       </p>
       {children}
-      <Button type="submit" size="lg" className="mt-2 w-full" disabled={loading || !ready || code.length !== CODE_LENGTH}>
+      <Button type="submit" size="lg" className="mt-2 w-full" disabled={loading}>
         {loading && <Spinner className="size-4" />}
         {loading ? copy.busy : copy.submit}
       </Button>
       <Button type="button" variant="ghost" size="sm" className="self-center" onClick={onResend} disabled={resending || resendIn > 0}>
         {resending ? <Spinner className="size-4" /> : <RotateCw data-icon="inline-start" />}
-        {resendIn > 0 ? `Send a new code in ${resendIn}s` : 'Send a new code'}
+        {resending ? 'Sending a new code' : resendIn > 0 ? `Send a new code in ${resendIn}s` : 'Send a new code'}
       </Button>
+      {resendIn > 0 && <p className="-mt-2 text-center text-small text-ink-muted">Email providers allow one code a minute.</p>}
     </form>
   );
 }

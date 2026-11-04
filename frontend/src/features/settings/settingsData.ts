@@ -76,6 +76,19 @@ export async function loadServerSettings(
   }
 }
 
+// people paste "@name" or the address of their profile or repository; only the user name is kept
+export function githubOwner(input: string): string {
+  const text = input.trim();
+  const fromUrl = text.match(/^(?:https?:\/\/)?(?:www\.)?github\.com\/([^/?#\s]+)/i);
+  return (fromUrl ? fromUrl[1] : text).replace(/^@/, '').trim();
+}
+
+// a pasted repository address also names the repository, which the guide links need
+export function githubRepoFromUrl(input: string): string | null {
+  const match = input.trim().match(/^(?:https?:\/\/)?(?:www\.)?github\.com\/[^/?#\s]+\/([^/?#\s]+)/i);
+  return match ? match[1].replace(/\.git$/i, '') : null;
+}
+
 // only the repository is kept; it fills the guide links and needs no token
 export function githubSettingsPayload(owner: string, repo: string): GitHubSettingsRequest {
   return { repoOwner: owner.trim(), repoName: (repo || 'twiligent').trim(), branch: 'main' };

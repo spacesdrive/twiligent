@@ -87,15 +87,15 @@ export function toLocalTimeInput(date: Date): string {
   return `${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
-// known issue: date inputs use the UTC calendar day, not the local one
-export function utcDateInput(date: Date = new Date()): string {
-  return date.toISOString().split('T')[0];
+// the earliest day a date input allows; the time is read as local time, so the day must be the local one too
+export function todayInput(now: Date = new Date()): string {
+  return toLocalDateInput(now);
 }
 
 export function defaultBulkStartDate(now: Date = new Date()): string {
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
-  return utcDateInput(tomorrow);
+  return toLocalDateInput(tomorrow);
 }
 
 export function goesLiveLabel({ scheduleMode, scheduleDate, scheduleTime }: ScheduleFieldValues): string {

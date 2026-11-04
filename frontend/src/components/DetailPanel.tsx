@@ -1,6 +1,7 @@
 import React from 'react';
 import { AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { fieldErrorId, fieldHintId } from '@/lib/fieldIds';
 
 // sticky on wide screens, stacked below the main area on narrow ones
 export interface DetailPanelProps {
@@ -29,14 +30,6 @@ export default function DetailPanel({ title, description, children, footer, clas
       {footer && <div className="border-t border-divider px-5 py-4">{footer}</div>}
     </aside>
   );
-}
-
-export function fieldHintId(htmlFor: string): string {
-  return `${htmlFor}-hint`;
-}
-
-export function fieldErrorId(htmlFor: string): string {
-  return `${htmlFor}-error`;
 }
 
 // Label, hint, error and control in one settings-style row. With htmlFor, the hint and error are wired to a single

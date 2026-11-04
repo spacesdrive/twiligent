@@ -13,12 +13,26 @@ export interface LoginCopy {
 
 export const LOGIN_COPY: Record<LoginView, LoginCopy> = {
   start: { title: 'Every channel, folded into one clear picture.', submit: 'Continue', busy: 'Sending code' },
-  code: { title: 'Check your email', submit: 'Continue', busy: 'Checking' },
+  code: { title: 'Check your email', submit: 'Sign in', busy: 'Signing in' },
   password: { title: 'Sign in with password', submit: 'Sign in', busy: 'Signing in' },
   signup: { title: 'Create an account with a password', submit: 'Create account', busy: 'Creating account' },
   verify: { title: 'Confirm your email', submit: 'Confirm email', busy: 'Confirming' },
   forgot: { title: 'Reset your password', submit: 'Send code', busy: 'Sending' },
   reset: { title: 'Choose a new password', submit: 'Save password and sign in', busy: 'Saving' },
+};
+
+// the field a sign-in problem belongs to, shown under that field
+export type LoginField = 'email' | 'code' | 'password';
+
+// where a failure from the server is shown on each view
+export const FAILURE_FIELD: Record<LoginView, LoginField> = {
+  start: 'email',
+  code: 'code',
+  password: 'password',
+  signup: 'password',
+  verify: 'code',
+  forgot: 'email',
+  reset: 'code',
 };
 
 // the public site's Get started buttons open /login?mode=signup; the same code creates the account

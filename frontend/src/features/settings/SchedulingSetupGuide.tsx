@@ -10,14 +10,14 @@ import SchedulingSetupSteps from './SchedulingSetupSteps';
 import type { GithubRepoFormProps } from './GithubRepoForm';
 import { docsUrl } from '@/lib/docs';
 
-export type SchedulingSetupGuideProps = Omit<GithubRepoFormProps, 'canSave'>;
+export type SchedulingSetupGuideProps = GithubRepoFormProps;
 
 function SetupNotes() {
   return (
     <div className="flex flex-col gap-2 rounded-field border border-line p-4">
       <p className="text-sm font-semibold text-ink">That is it</p>
-      <p className="text-sm text-ink-muted">GitHub now asks for a run every 15 minutes, and you do not need to keep anything open. Three things to know:</p>
-      <ul className="flex list-disc flex-col gap-1 pl-5 text-sm text-ink-muted marker:text-ink-faint">
+      <p className="max-w-prose text-body text-ink-muted">GitHub now asks for a run every 15 minutes, and you do not need to keep anything open. Three things to know:</p>
+      <ul className="flex max-w-prose list-disc flex-col gap-1 pl-5 text-body text-ink-muted marker:text-ink-faint">
         <li>GitHub starts scheduled runs when it has room, often hours late and sometimes not at all, so this backup catches posts the server missed later, not within 15 minutes.</li>
         <li>If nothing changes in your copy for 60 days, GitHub pauses the schedule and emails you. Repeat step 4 to switch it back on.</li>
         <li>If you made your copy private, GitHub's free minutes run out. Keep it public, or change the schedule in <code className="font-mono text-small text-ink">.github/workflows/publish-scheduled.yml</code> to <code className="font-mono text-small text-ink">'7,37 * * * *'</code>, every 30 minutes.</li>
@@ -26,7 +26,9 @@ function SetupNotes() {
   );
 }
 
-export default function SchedulingSetupGuide({ owner, repo, onOwnerChange, onRepoChange, onSave, saving }: SchedulingSetupGuideProps) {
+export default function SchedulingSetupGuide({
+  owner, repo, savedOwner, savedRepo, unsaved, ownerError, onOwnerChange, onOwnerBlur, onRepoChange, onSave, saving,
+}: SchedulingSetupGuideProps) {
   const [done, setDone] = useState<SetupProgress>(() => readProgress(browserStorage));
 
   useEffect(() => {
@@ -34,8 +36,8 @@ export default function SchedulingSetupGuide({ owner, repo, onOwnerChange, onRep
   }, [done]);
 
   const toggle = (key: string) => () => setDone(prev => ({ ...prev, [key]: !prev[key] }));
-  const user = owner.trim();
-  const base = repoBaseUrl(owner, repo);
+  const user = savedOwner.trim() || owner.trim();
+  const base = repoBaseUrl(savedOwner, savedRepo);
   const completed = completedSteps(done);
   // members never need these steps; the guide opens only once someone has started
   const [open, setOpen] = useState(() => completed > 0 || Boolean(user));
@@ -52,7 +54,7 @@ export default function SchedulingSetupGuide({ owner, repo, onOwnerChange, onRep
       )}
     >
       <div className="flex flex-col gap-5">
-        <p className="text-sm text-ink-muted">
+        <p className="max-w-prose text-body text-ink-muted">
           A second copy of the publisher that runs on GitHub for free, so posts still go out if the server is ever paused, though later: GitHub often starts these runs hours after their time. Step 2 needs the secret key of the Supabase project behind this Twiligent, which only its administrator has. If you only sign in here, skip this: the server already publishes your posts.
         </p>
         <div className="flex flex-wrap items-center gap-2">
@@ -68,11 +70,13 @@ export default function SchedulingSetupGuide({ owner, repo, onOwnerChange, onRep
             <GithubRepoForm
               owner={owner}
               repo={repo}
+              unsaved={unsaved}
+              ownerError={ownerError}
               onOwnerChange={onOwnerChange}
+              onOwnerBlur={onOwnerBlur}
               onRepoChange={onRepoChange}
               onSave={onSave}
               saving={saving}
-              canSave={Boolean(user)}
             />
             <SchedulingSetupSteps done={done} toggle={toggle} base={base} />
             <SetupNotes />

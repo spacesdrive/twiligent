@@ -60,18 +60,19 @@ export async function scheduleSinglePost(
 }
 
 export async function publishSinglePost(
-  form: SinglePostInput, cloudConfig: CloudinaryUploadConfig | null, progress: PublishProgressSetters,
+  form: SinglePostInput, cloudConfig: CloudinaryUploadConfig | null, progress: PublishProgressSetters, signal?: AbortSignal,
 ): Promise<string> {
   const uploaded = await uploadPostMedia(form, cloudConfig, progress);
   progress.setPublishStatus('creating-container');
-  progress.setStatusMessage('Creating the Instagram media container');
+  progress.setStatusMessage('Sending the post to Instagram');
   const { containerId } = await api.createIGContainer(form.selectedAccount, buildContainerPayload(postDetails(form, uploaded)));
   await waitUntilReady(form.contentType, containerId, form.selectedAccount, {
     tolerant: true,
+    signal,
     onStatus: progress.setStatusMessage,
     onProcessing: () => {
       progress.setPublishStatus('processing');
-      progress.setStatusMessage('Instagram is processing the media');
+      progress.setStatusMessage('Instagram is processing the media. Videos usually take under a minute.');
     },
   });
   progress.setPublishStatus('publishing');

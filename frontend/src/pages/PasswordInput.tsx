@@ -11,9 +11,15 @@ export interface PasswordInputProps {
   autoComplete: 'current-password' | 'new-password';
   showPassword: boolean;
   onTogglePassword: () => void;
+  error?: string;
+  'aria-describedby'?: string;
+  'aria-invalid'?: boolean;
 }
 
-export default function PasswordInput({ id, value, onChange, placeholder, autoComplete, showPassword, onTogglePassword }: PasswordInputProps) {
+// the error text is rendered by the caller (FieldRow or the password form); this wires the input to it
+export default function PasswordInput({
+  id, value, onChange, placeholder, autoComplete, showPassword, onTogglePassword, error, ...aria
+}: PasswordInputProps) {
   return (
     <div className="relative">
       <Input
@@ -26,6 +32,8 @@ export default function PasswordInput({ id, value, onChange, placeholder, autoCo
         required
         minLength={PASSWORD_MIN_LENGTH}
         autoComplete={autoComplete}
+        aria-invalid={error || aria['aria-invalid'] ? true : undefined}
+        aria-describedby={aria['aria-describedby'] ?? (error ? `${id}-error` : undefined)}
       />
       <Button
         type="button"

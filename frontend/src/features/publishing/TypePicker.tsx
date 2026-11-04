@@ -1,38 +1,31 @@
-import { cn } from '@/lib/utils';
+import SegmentedChoice from '@/components/SegmentedChoice';
 import { CONTENT_TYPES } from './publishConstants';
 import type { ContentTypeValue } from './publishHelpers.ts';
 
 interface TypePickerProps {
+  id: string;
+  name: string;
   value: ContentTypeValue | '';
   onChange: (value: ContentTypeValue) => void;
   disabled?: boolean;
+  'aria-describedby'?: string;
 }
 
-export default function TypePicker({ value, onChange, disabled }: TypePickerProps) {
+// native radios: one tab stop, arrow keys between the types, and the legend of the surrounding fieldset names it
+export default function TypePicker({ id, name, value, onChange, disabled, ...aria }: TypePickerProps) {
   return (
-    <div role="radiogroup" aria-label="Content type" className="grid grid-cols-3 gap-2">
-      {CONTENT_TYPES.map(type => {
+    <SegmentedChoice<ContentTypeValue | ''>
+      id={id}
+      name={name}
+      variant="tiles"
+      options={CONTENT_TYPES.map(type => {
         const Icon = type.icon;
-        const active = value === type.value;
-        return (
-          <button
-            key={type.value}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            disabled={disabled}
-            onClick={() => onChange(type.value)}
-            className={cn(
-              'flex flex-col items-center gap-1.5 rounded-field border px-2 py-3 text-center transition-colors duration-(--duration-fast)',
-              'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50',
-              active ? 'border-brand bg-brand-soft/50 text-brand-text' : 'border-line-control text-ink-muted hover:bg-surface-hover hover:text-ink',
-            )}
-          >
-            <Icon className="size-5 stroke-[1.75]" />
-            <span className="text-small font-semibold">{type.label}</span>
-          </button>
-        );
+        return { value: type.value, label: type.label, icon: <Icon /> };
       })}
-    </div>
+      value={value}
+      onChange={next => { if (next) onChange(next); }}
+      disabled={disabled}
+      {...aria}
+    />
   );
 }
