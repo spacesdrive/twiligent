@@ -14,7 +14,11 @@
         },
         {
             "status": 200,
-            "body": "[{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UCaaaaaaaaaaaaaaaaaaaaaa\",\"title\":\"Old title\",\"subscriberCount\":1,\"hasCookie\":false},{\"id\":\"ig1\",\"platform\":\"instagram\",\"igUserId\":\"1789\",\"username\":\"ribbon\",\"tokenExpiresAt\":\"2026-09-05T00:00:00.000Z\",\"followersCount\":1,\"hasCookie\":false},{\"id\":\"ig2\",\"platform\":\"instagram\",\"igUserId\":\"2000\",\"username\":\"notoken\",\"hasCookie\":false},{\"id\":\"rd1\",\"platform\":\"reddit\",\"username\":\"ribbon_r\",\"totalKarma\":1,\"hasCookie\":true},{\"id\":\"yt2\",\"platform\":\"youtube\",\"channelId\":\"UCmissingmissingmissing0\",\"hasCookie\":false}]"
+            "body": "{\"success\":true}"
+        },
+        {
+            "status": 200,
+            "body": "[{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UCaaaaaaaaaaaaaaaaaaaaaa\",\"title\":\"Old title\",\"subscriberCount\":1,\"hasCookie\":false},{\"id\":\"ig1\",\"platform\":\"instagram\",\"igUserId\":\"1789\",\"username\":\"ribbon\",\"tokenExpiresAt\":\"2026-09-05T00:00:00.000Z\",\"followersCount\":1,\"hasCookie\":false},{\"id\":\"ig2\",\"platform\":\"instagram\",\"igUserId\":\"2000\",\"username\":\"notoken\",\"hasCookie\":false}]"
         }
     ],
     "requests": [],
@@ -56,7 +60,7 @@
             "filters": [
                 [
                     "id",
-                    "rd2"
+                    "old1"
                 ],
                 [
                     "user_id",
@@ -70,7 +74,7 @@
             "filters": [
                 [
                     "id",
-                    "rd2"
+                    "old1"
                 ],
                 [
                     "user_id",
@@ -86,9 +90,53 @@
                 "user_id": "user-1",
                 "action": "account.removed",
                 "subject_type": "account",
-                "subject_id": "rd2",
+                "subject_id": "old1",
                 "details": {
-                    "platform": "reddit"
+                    "platform": "retired"
+                }
+            },
+            "filters": []
+        },
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "id",
+                    "yt2"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "delete",
+            "table": "accounts",
+            "filters": [
+                [
+                    "id",
+                    "yt2"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "insert",
+            "table": "audit_events",
+            "values": {
+                "id": "00000000-0000-4000-8000-000000000002",
+                "user_id": "user-1",
+                "action": "account.removed",
+                "subject_type": "account",
+                "subject_id": "yt2",
+                "details": {
+                    "platform": "youtube"
                 }
             },
             "filters": []
@@ -106,9 +154,12 @@
         }
     ],
     "redis": [
-        "videos:user-1:rd2",
-        "ig:user-1:rd2",
-        "reddit:user-1:rd2"
+        "videos:user-1:old1",
+        "ig:user-1:old1",
+        "reddit:user-1:old1",
+        "videos:user-1:yt2",
+        "ig:user-1:yt2",
+        "reddit:user-1:yt2"
     ],
     "logs": []
 }

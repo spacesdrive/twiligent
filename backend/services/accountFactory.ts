@@ -1,7 +1,6 @@
 import { newRowId } from '../lib/ids.ts';
 import type { Account, NewAccount } from '../../shared/types/domain.ts';
 import type { YouTubeChannelData } from '../../shared/types/youtube.ts';
-import type { RedditProfile } from '../../shared/types/reddit.ts';
 import type { InstagramProfile } from '../../shared/types/instagram.ts';
 
 // a token without a known lifetime is stored with no expiry
@@ -29,23 +28,6 @@ export function buildYouTubeAccount(channelData: YouTubeChannelData): NewAccount
         keywords: channelData.keywords,
         topicCategories: channelData.topicCategories,
         madeForKids: channelData.madeForKids,
-        addedAt: new Date().toISOString(),
-        lastUpdated: new Date().toISOString(),
-    };
-}
-
-export function buildRedditAccount(profile: RedditProfile, cookie: string): Account {
-    return {
-        id: newRowId(),
-        platform: 'reddit',
-        username: profile.username,
-        title: `u/${profile.username}`,
-        totalKarma: profile.totalKarma,
-        postKarma: profile.postKarma,
-        commentKarma: profile.commentKarma,
-        iconUrl: profile.iconUrl,
-        createdAt: profile.createdAt,
-        cookie,
         addedAt: new Date().toISOString(),
         lastUpdated: new Date().toISOString(),
     };

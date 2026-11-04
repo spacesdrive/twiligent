@@ -13,12 +13,8 @@
             "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"No access token stored - reconnect this Instagram account\",\"requestId\":\"req-test\"}"
         },
         {
-            "status": 200,
-            "body": "{\"success\":true,\"account\":{\"id\":\"rd1\",\"platform\":\"reddit\",\"username\":\"ribbon_r\",\"totalKarma\":70,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"postKarma\":50,\"commentKarma\":20,\"iconUrl\":\"https://i?a=1&b=2\",\"hasCookie\":true}}"
-        },
-        {
             "status": 400,
-            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"No session cookie stored - re-add this account with a session cookie from reddit.com DevTools\",\"requestId\":\"req-test\"}"
+            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"No YouTube channel ID stored - delete this channel and add it again\",\"requestId\":\"req-test\"}"
         },
         {
             "status": 200,
@@ -61,15 +57,6 @@
         {
             "url": "https://graph.instagram.com/v25.0/1789?access_token=IGTOKEN&fields=user_id%2Cusername%2Cname%2Cprofile_picture_url%2Cfollowers_count%2Cfollows_count%2Cmedia_count%2Cbiography%2Cwebsite",
             "method": "GET"
-        },
-        {
-            "url": "https://www.reddit.com/user/ribbon_r/about.json",
-            "method": "GET",
-            "headers": {
-                "User-Agent": "script:twiligent:v1.0 (by /u/spacesdrive)",
-                "Accept": "application/json",
-                "Cookie": "reddit_session=COOKIE"
-            }
         },
         {
             "url": "https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics%2CcontentDetails%2CbrandingSettings%2Cstatus%2CtopicDetails&id=UCaaaaaaaaaaaaaaaaaaaaaa&key=YTKEY",
@@ -161,38 +148,7 @@
             "filters": [
                 [
                     "id",
-                    "rd1"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "rpc",
-            "table": "merge_account_data",
-            "values": {
-                "p_id": "rd1",
-                "p_user_id": "user-1",
-                "p_patch": {
-                    "lastUpdated": "2026-09-01T12:00:00.000Z",
-                    "totalKarma": 70,
-                    "postKarma": 50,
-                    "commentKarma": 20,
-                    "iconUrl": "https://i?a=1&b=2"
-                }
-            },
-            "filters": []
-        },
-        {
-            "type": "select",
-            "table": "accounts",
-            "columns": "id, platform, data",
-            "filters": [
-                [
-                    "id",
-                    "rd2"
+                    "old1"
                 ],
                 [
                     "user_id",
@@ -310,7 +266,7 @@
             "filters": [
                 [
                     "id",
-                    "rd1"
+                    "yt1"
                 ],
                 [
                     "user_id",

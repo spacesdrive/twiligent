@@ -2,15 +2,15 @@
     "responses": [
         {
             "status": 200,
-            "body": "{\"success\":true,\"accounts\":[{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UCaaaaaaaaaaaaaaaaaaaaaa\",\"title\":\"Channel UCaa\",\"subscriberCount\":500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"viewCount\":9000,\"videoCount\":12,\"thumbnails\":{\"default\":\"d\",\"medium\":\"m\",\"high\":\"h\"},\"hasCookie\":false},{\"id\":\"ig1\",\"platform\":\"instagram\",\"igUserId\":\"1789\",\"username\":\"ribbon\",\"tokenExpiresAt\":\"2026-09-05T00:00:00.000Z\",\"followersCount\":2500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"followsCount\":10,\"mediaCount\":140,\"title\":\"Ribbon\",\"profilePictureUrl\":\"https://p\",\"hasCookie\":false},{\"id\":\"ig2\",\"platform\":\"instagram\",\"igUserId\":\"2000\",\"username\":\"notoken\",\"hasCookie\":false},{\"id\":\"rd1\",\"platform\":\"reddit\",\"username\":\"ribbon_r\",\"totalKarma\":70,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"postKarma\":50,\"commentKarma\":20,\"iconUrl\":\"https://i?a=1&b=2\",\"hasCookie\":true},{\"id\":\"rd2\",\"platform\":\"reddit\",\"username\":\"nocookie\",\"hasCookie\":false},{\"id\":\"yt2\",\"platform\":\"youtube\",\"channelId\":\"UCmissingmissingmissing0\",\"hasCookie\":false}],\"results\":[{\"id\":\"yt1\",\"success\":true},{\"id\":\"ig1\",\"success\":true},{\"id\":\"ig2\",\"success\":false,\"error\":\"No access token stored - reconnect this Instagram account\"},{\"id\":\"rd1\",\"success\":true},{\"id\":\"rd2\",\"success\":false,\"error\":\"No session cookie stored - re-add this account with a session cookie from reddit.com DevTools\"},{\"id\":\"yt2\",\"success\":false,\"error\":\"Channel not found\"}],\"updatedAt\":\"2026-09-01T12:00:00.000Z\"}"
+            "body": "{\"success\":true,\"accounts\":[{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UCaaaaaaaaaaaaaaaaaaaaaa\",\"title\":\"Channel UCaa\",\"subscriberCount\":500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"viewCount\":9000,\"videoCount\":12,\"thumbnails\":{\"default\":\"d\",\"medium\":\"m\",\"high\":\"h\"},\"hasCookie\":false},{\"id\":\"ig1\",\"platform\":\"instagram\",\"igUserId\":\"1789\",\"username\":\"ribbon\",\"tokenExpiresAt\":\"2026-09-05T00:00:00.000Z\",\"followersCount\":2500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"followsCount\":10,\"mediaCount\":140,\"title\":\"Ribbon\",\"profilePictureUrl\":\"https://p\",\"hasCookie\":false},{\"id\":\"ig2\",\"platform\":\"instagram\",\"igUserId\":\"2000\",\"username\":\"notoken\",\"hasCookie\":false},{\"id\":\"old1\",\"platform\":\"retired\",\"username\":\"old_profile\",\"hasCookie\":false},{\"id\":\"yt2\",\"platform\":\"youtube\",\"channelId\":\"UCmissingmissingmissing0\",\"hasCookie\":false}],\"results\":[{\"id\":\"yt1\",\"success\":true},{\"id\":\"ig1\",\"success\":true},{\"id\":\"ig2\",\"success\":false,\"error\":\"No access token stored - reconnect this Instagram account\"},{\"id\":\"old1\",\"success\":false,\"error\":\"No YouTube channel ID stored - delete this channel and add it again\"},{\"id\":\"yt2\",\"success\":false,\"error\":\"Channel not found\"}],\"updatedAt\":\"2026-09-01T12:00:00.000Z\"}"
         },
         {
             "status": 200,
-            "body": "{\"success\":true,\"accounts\":[{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UCaaaaaaaaaaaaaaaaaaaaaa\",\"title\":\"Channel UCaa\",\"subscriberCount\":500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"viewCount\":9000,\"videoCount\":12,\"thumbnails\":{\"default\":\"d\",\"medium\":\"m\",\"high\":\"h\"},\"hasCookie\":false},{\"id\":\"ig1\",\"platform\":\"instagram\",\"igUserId\":\"1789\",\"username\":\"ribbon\",\"tokenExpiresAt\":\"2026-09-05T00:00:00.000Z\",\"followersCount\":2500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"followsCount\":10,\"mediaCount\":140,\"title\":\"Ribbon\",\"profilePictureUrl\":\"https://p\",\"hasCookie\":false},{\"id\":\"ig2\",\"platform\":\"instagram\",\"igUserId\":\"2000\",\"username\":\"notoken\",\"hasCookie\":false},{\"id\":\"rd1\",\"platform\":\"reddit\",\"username\":\"ribbon_r\",\"totalKarma\":70,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"postKarma\":50,\"commentKarma\":20,\"iconUrl\":\"https://i?a=1&b=2\",\"hasCookie\":true},{\"id\":\"rd2\",\"platform\":\"reddit\",\"username\":\"nocookie\",\"hasCookie\":false},{\"id\":\"yt2\",\"platform\":\"youtube\",\"channelId\":\"UCmissingmissingmissing0\",\"hasCookie\":false}],\"results\":[{\"id\":\"yt1\",\"success\":false,\"error\":\"YouTube API key not configured on server\"},{\"id\":\"ig1\",\"success\":true},{\"id\":\"ig2\",\"success\":false,\"error\":\"No access token stored - reconnect this Instagram account\"},{\"id\":\"rd1\",\"success\":true},{\"id\":\"rd2\",\"success\":false,\"error\":\"No session cookie stored - re-add this account with a session cookie from reddit.com DevTools\"},{\"id\":\"yt2\",\"success\":false,\"error\":\"YouTube API key not configured on server\"}],\"updatedAt\":\"2026-09-01T12:00:00.000Z\"}"
+            "body": "{\"success\":true,\"accounts\":[{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UCaaaaaaaaaaaaaaaaaaaaaa\",\"title\":\"Channel UCaa\",\"subscriberCount\":500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"viewCount\":9000,\"videoCount\":12,\"thumbnails\":{\"default\":\"d\",\"medium\":\"m\",\"high\":\"h\"},\"hasCookie\":false},{\"id\":\"ig1\",\"platform\":\"instagram\",\"igUserId\":\"1789\",\"username\":\"ribbon\",\"tokenExpiresAt\":\"2026-09-05T00:00:00.000Z\",\"followersCount\":2500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"followsCount\":10,\"mediaCount\":140,\"title\":\"Ribbon\",\"profilePictureUrl\":\"https://p\",\"hasCookie\":false},{\"id\":\"ig2\",\"platform\":\"instagram\",\"igUserId\":\"2000\",\"username\":\"notoken\",\"hasCookie\":false},{\"id\":\"old1\",\"platform\":\"retired\",\"username\":\"old_profile\",\"hasCookie\":false},{\"id\":\"yt2\",\"platform\":\"youtube\",\"channelId\":\"UCmissingmissingmissing0\",\"hasCookie\":false}],\"results\":[{\"id\":\"yt1\",\"success\":false,\"error\":\"YouTube API key not configured on server\"},{\"id\":\"ig1\",\"success\":true},{\"id\":\"ig2\",\"success\":false,\"error\":\"No access token stored - reconnect this Instagram account\"},{\"id\":\"old1\",\"success\":false,\"error\":\"No YouTube channel ID stored - delete this channel and add it again\"},{\"id\":\"yt2\",\"success\":false,\"error\":\"YouTube API key not configured on server\"}],\"updatedAt\":\"2026-09-01T12:00:00.000Z\"}"
         },
         {
             "status": 200,
-            "body": "{\"success\":true,\"accounts\":[{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UCaaaaaaaaaaaaaaaaaaaaaa\",\"title\":\"Channel UCaa\",\"subscriberCount\":500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"viewCount\":9000,\"videoCount\":12,\"thumbnails\":{\"default\":\"d\",\"medium\":\"m\",\"high\":\"h\"},\"hasCookie\":false},{\"id\":\"ig1\",\"platform\":\"instagram\",\"igUserId\":\"1789\",\"username\":\"ribbon\",\"tokenExpiresAt\":\"2026-09-05T00:00:00.000Z\",\"followersCount\":2500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"followsCount\":10,\"mediaCount\":140,\"title\":\"Ribbon\",\"profilePictureUrl\":\"https://p\",\"hasCookie\":false},{\"id\":\"ig2\",\"platform\":\"instagram\",\"igUserId\":\"2000\",\"username\":\"notoken\",\"hasCookie\":false},{\"id\":\"rd1\",\"platform\":\"reddit\",\"username\":\"ribbon_r\",\"totalKarma\":70,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"postKarma\":50,\"commentKarma\":20,\"iconUrl\":\"https://i?a=1&b=2\",\"hasCookie\":true},{\"id\":\"rd2\",\"platform\":\"reddit\",\"username\":\"nocookie\",\"hasCookie\":false},{\"id\":\"yt2\",\"platform\":\"youtube\",\"channelId\":\"UCmissingmissingmissing0\",\"hasCookie\":false}],\"results\":[{\"id\":\"yt1\",\"success\":true},{\"id\":\"ig1\",\"success\":true},{\"id\":\"ig2\",\"success\":false,\"error\":\"No access token stored - reconnect this Instagram account\"},{\"id\":\"rd1\",\"success\":true},{\"id\":\"rd2\",\"success\":false,\"error\":\"No session cookie stored - re-add this account with a session cookie from reddit.com DevTools\"},{\"id\":\"yt2\",\"success\":false,\"error\":\"Channel not found\"}],\"updatedAt\":\"2026-09-01T12:00:00.000Z\"}"
+            "body": "{\"success\":true,\"accounts\":[{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UCaaaaaaaaaaaaaaaaaaaaaa\",\"title\":\"Channel UCaa\",\"subscriberCount\":500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"viewCount\":9000,\"videoCount\":12,\"thumbnails\":{\"default\":\"d\",\"medium\":\"m\",\"high\":\"h\"},\"hasCookie\":false},{\"id\":\"ig1\",\"platform\":\"instagram\",\"igUserId\":\"1789\",\"username\":\"ribbon\",\"tokenExpiresAt\":\"2026-09-05T00:00:00.000Z\",\"followersCount\":2500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"followsCount\":10,\"mediaCount\":140,\"title\":\"Ribbon\",\"profilePictureUrl\":\"https://p\",\"hasCookie\":false},{\"id\":\"ig2\",\"platform\":\"instagram\",\"igUserId\":\"2000\",\"username\":\"notoken\",\"hasCookie\":false},{\"id\":\"old1\",\"platform\":\"retired\",\"username\":\"old_profile\",\"hasCookie\":false},{\"id\":\"yt2\",\"platform\":\"youtube\",\"channelId\":\"UCmissingmissingmissing0\",\"hasCookie\":false}],\"results\":[{\"id\":\"yt1\",\"success\":true},{\"id\":\"ig1\",\"success\":true},{\"id\":\"ig2\",\"success\":false,\"error\":\"No access token stored - reconnect this Instagram account\"},{\"id\":\"old1\",\"success\":false,\"error\":\"No YouTube channel ID stored - delete this channel and add it again\"},{\"id\":\"yt2\",\"success\":false,\"error\":\"Channel not found\"}],\"updatedAt\":\"2026-09-01T12:00:00.000Z\"}"
         }
     ],
     "requests": [
@@ -23,15 +23,6 @@
             "method": "GET"
         },
         {
-            "url": "https://www.reddit.com/user/ribbon_r/about.json",
-            "method": "GET",
-            "headers": {
-                "User-Agent": "script:twiligent:v1.0 (by /u/spacesdrive)",
-                "Accept": "application/json",
-                "Cookie": "reddit_session=COOKIE"
-            }
-        },
-        {
             "url": "https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics%2CcontentDetails%2CbrandingSettings%2Cstatus%2CtopicDetails&id=UCmissingmissingmissing0&key=YTKEY",
             "method": "GET"
         },
@@ -40,30 +31,12 @@
             "method": "GET"
         },
         {
-            "url": "https://www.reddit.com/user/ribbon_r/about.json",
-            "method": "GET",
-            "headers": {
-                "User-Agent": "script:twiligent:v1.0 (by /u/spacesdrive)",
-                "Accept": "application/json",
-                "Cookie": "reddit_session=COOKIE"
-            }
-        },
-        {
             "url": "https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics%2CcontentDetails%2CbrandingSettings%2Cstatus%2CtopicDetails&id=UCaaaaaaaaaaaaaaaaaaaaaa&key=PLAINKEY",
             "method": "GET"
         },
         {
             "url": "https://graph.instagram.com/v25.0/1789?access_token=IGTOKEN&fields=user_id%2Cusername%2Cname%2Cprofile_picture_url%2Cfollowers_count%2Cfollows_count%2Cmedia_count%2Cbiography%2Cwebsite",
             "method": "GET"
-        },
-        {
-            "url": "https://www.reddit.com/user/ribbon_r/about.json",
-            "method": "GET",
-            "headers": {
-                "User-Agent": "script:twiligent:v1.0 (by /u/spacesdrive)",
-                "Accept": "application/json",
-                "Cookie": "reddit_session=COOKIE"
-            }
         },
         {
             "url": "https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics%2CcontentDetails%2CbrandingSettings%2Cstatus%2CtopicDetails&id=UCmissingmissingmissing0&key=PLAINKEY",
@@ -122,22 +95,6 @@
             "filters": []
         },
         {
-            "type": "rpc",
-            "table": "merge_account_data",
-            "values": {
-                "p_id": "rd1",
-                "p_user_id": "user-1",
-                "p_patch": {
-                    "lastUpdated": "2026-09-01T12:00:00.000Z",
-                    "totalKarma": 70,
-                    "postKarma": 50,
-                    "commentKarma": 20,
-                    "iconUrl": "https://i?a=1&b=2"
-                }
-            },
-            "filters": []
-        },
-        {
             "type": "select",
             "table": "accounts",
             "columns": "id, platform, data",
@@ -173,22 +130,6 @@
                     "title": "Ribbon",
                     "username": "ribbon",
                     "profilePictureUrl": "https://p"
-                }
-            },
-            "filters": []
-        },
-        {
-            "type": "rpc",
-            "table": "merge_account_data",
-            "values": {
-                "p_id": "rd1",
-                "p_user_id": "user-1",
-                "p_patch": {
-                    "lastUpdated": "2026-09-01T12:00:00.000Z",
-                    "totalKarma": 70,
-                    "postKarma": 50,
-                    "commentKarma": 20,
-                    "iconUrl": "https://i?a=1&b=2"
                 }
             },
             "filters": []
@@ -250,22 +191,6 @@
                     "title": "Ribbon",
                     "username": "ribbon",
                     "profilePictureUrl": "https://p"
-                }
-            },
-            "filters": []
-        },
-        {
-            "type": "rpc",
-            "table": "merge_account_data",
-            "values": {
-                "p_id": "rd1",
-                "p_user_id": "user-1",
-                "p_patch": {
-                    "lastUpdated": "2026-09-01T12:00:00.000Z",
-                    "totalKarma": 70,
-                    "postKarma": 50,
-                    "commentKarma": 20,
-                    "iconUrl": "https://i?a=1&b=2"
                 }
             },
             "filters": []

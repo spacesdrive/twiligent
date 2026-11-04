@@ -17,7 +17,7 @@ export const RATE_LIMIT_RULES = {
         label: 'Too many requests',
         config: { algorithm: 'tokenBucket', capacity: 120, refillPerSecond: 2 },
     },
-    // these spend the shared YouTube quota and Instagram and Reddit API calls, so the count is exact
+    // these spend the shared YouTube quota and Instagram API calls, so the count is exact
     quota: {
         name: 'quota',
         label: 'Too many account changes and refreshes',
@@ -45,7 +45,7 @@ interface RouteMatcher {
 // paths are matched on the full request path, after the /api prefix
 export const QUOTA_ROUTES: readonly RouteMatcher[] = [
     { methods: ['POST'], path: /^\/api\/accounts$/ },
-    { methods: ['POST'], path: /^\/api\/accounts\/(reddit|instagram|refresh-all)$/ },
+    { methods: ['POST'], path: /^\/api\/accounts\/(instagram|refresh-all)$/ },
     { methods: ['POST'], path: /^\/api\/accounts\/[^/]+\/(refresh|refresh-ig-token)$/ },
     { methods: ['POST'], path: /^\/api\/resolve-channel$/ },
     { methods: ['POST'], path: /^\/api\/tracked-content$/ },

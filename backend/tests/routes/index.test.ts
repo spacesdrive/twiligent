@@ -20,4 +20,8 @@ describe('The protected route table', () => {
             assert.deepEqual(await call('GET', path), notFound('GET', path));
         }
     });
+
+    test('no longer answers the removed Reddit account route', async () => {
+        assert.deepEqual(await call('POST', '/accounts/reddit', { username: 'someone', cookie: 'C' }), notFound('POST', '/accounts/reddit'));
+    });
 });
