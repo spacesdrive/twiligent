@@ -7,6 +7,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-04
+
 ### Added
 
 - Automations: a private reply on Instagram to anyone who comments a keyword on your posts or reels, from rules with keywords, a reply and a link, aimed at every post or chosen ones, with a preview and a test that sends nothing (#87, #90)
@@ -35,8 +37,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - The app and the public site follow the Laws of UX and WCAG 2.2 AA (#132, ADR-047): reading text and inputs are 16 px, controls are 44 px on touch screens, every page has its own tab title, focus moves to the page heading after navigation, and tabs, searches, filters, sort and page live in the address so Back, refresh and shared links keep the view
 - Field errors show under the field and keep what was typed; error toasts stay until closed; a failed load shows what failed with Try again instead of an empty list
+- Text boxes (inputs, text areas, selects, search and the sign-in email box) show focus with a quiet border and faint halo; buttons and links keep the outline
+- The sign-in page names its browser tab after the step, such as Sign in or Check your email
 - Small deletes act at once with an Undo toast for 8 seconds; removing an account or deleting everything confirms with a choice that needs no press and hold
 - `/upload` is now `/publish` and `/reels` is now `/instagram`; the old addresses redirect
+- Every analytics page shows how old its data is, and Refresh fetches fresh data instead of the 6-hour cache (`?fresh=1` on the Reddit analytics, videos and Instagram media reads); refreshing keeps the page on screen
+- Charts have a one-line summary, a Show table toggle and a name for screen readers; rankings are bars, mixed units are split, and platform colours mean only platforms
+- The libraries share one toolbar: search, filters as removable chips with Clear all, sort in every layout, the result count, and a no-results state with the query; an account that failed to load is named with Retry instead of being left out
+- Metric tiles say their time frame, colour a change by whether it is good, and show the exact value behind a rounded one; relative times show the date on hover
+- The automation rule editor is a page (`/automations/rules/new`), with a draft and a leave warning; Publish keeps a draft too, shows how long Instagram has been processing, and can stop waiting
+- Input is accepted as people paste it: `u/name`, `@name` and profile links, `12,500` and `12.5K` views, links without `https://`
 - Public site: a plain headline ("YouTube, Instagram and Reddit analytics in one dashboard") and buttons that name what they do, comment automation named on the home page and in the Product menu, a Pause animations control for the looping previews, keyboard and screen reader fixes (white focus on red bands, the phone docs menu as a real dialog, announced search results and copy status, focus on the new page heading, focusable code and table scroll boxes, an outline on phones), and a real 404 status for unknown paths
 - An unknown address shows a Page not found page with links back, the sidebar lists Your accounts and Categories before Manage with a Show all toggle, Help sits in the top bar, and the theme switch and second Refresh left the top bar
 - The README recordings are animated WebP instead of GIF: 8.3 MB for all seven instead of 35.5 MB, so the repository page loads in a fraction of the time, with smoother motion and full colour (#129)
@@ -49,6 +59,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- Sorting the Videos table by engagement compared the rates as text, so 9.50% ranked above 12.34% (#132)
+- The date picker for scheduling used the UTC day, so west of UTC a post could not be scheduled for the same evening (#132)
 - The sign-in page opens the dashboard when you are already signed in, so the public site's Sign in and Get started buttons no longer ask you to sign in again (#94)
 - The public site's home page opens the dashboard when you are signed in to the app; the docs stay readable (#96)
 - Runs claiming replies at the same moment no longer leave each other with nothing to send while jobs wait (#99)
