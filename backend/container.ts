@@ -11,6 +11,8 @@ import { createAutomationAccountRepository } from './repositories/automationAcco
 import { createAutomationFollowupRepository } from './repositories/automationFollowupRepository.ts';
 import { createAutomationPublicReplyRepository } from './repositories/automationPublicReplyRepository.ts';
 import { createHealthRepository } from './repositories/healthRepository.ts';
+import { createMcpAccessTokenRepository } from './repositories/mcpAccessTokenRepository.ts';
+import { createMcpClientGrantRepository } from './repositories/mcpClientGrantRepository.ts';
 import { createAccountService } from './services/accountService.ts';
 import { createYouTubeAnalyticsService } from './services/youtubeAnalyticsService.ts';
 import { createInstagramAnalyticsService } from './services/instagramAnalyticsService.ts';
@@ -31,6 +33,10 @@ import { createAutomationPublicReplyProcessor } from './services/automationPubli
 import { createAutomationReconciler } from './services/automationReconciler.ts';
 import { createRetentionService } from './services/retentionService.ts';
 import { createHealthService } from './services/healthService.ts';
+import { createMcpAccessService } from './services/mcpAccessService.ts';
+import { createMcpService } from './services/mcpService.ts';
+import { MCP_TOOLS, mcpServerIdentity } from './mcp/registry.ts';
+import { APP_VERSION } from './lib/version.ts';
 import type { AccountService } from './services/accountService.ts';
 import type { HealthService } from './services/healthService.ts';
 import type { YouTubeAnalyticsService } from './services/youtubeAnalyticsService.ts';
@@ -51,6 +57,8 @@ import type { AutomationFollowupProcessor } from './services/automationFollowupP
 import type { AutomationPublicReplyProcessor } from './services/automationPublicReplyProcessor.ts';
 import type { AutomationReconciler } from './services/automationReconciler.ts';
 import type { RetentionService } from './services/retentionService.ts';
+import type { McpAccessService, McpPrincipal } from './services/mcpAccessService.ts';
+import type { McpService } from './services/mcpService.ts';
 import type { AppConfig } from './lib/config.ts';
 import type { RequestContext } from './types/context.ts';
 import type { Redis, SupabaseClient } from './types/app.ts';
@@ -83,6 +91,9 @@ export interface Services {
     automationReconciler: AutomationReconciler;
     retention: RetentionService;
     health: HealthService;
+    mcpAccess: McpAccessService;
+    // the MCP endpoint for one verified caller; built per request because it is bound to that caller
+    mcpFor(principal: McpPrincipal): McpService;
 }
 
 // the composition root: wires repositories into services for one request or one cron run; building them is cheap
@@ -99,8 +110,10 @@ export function createServices(clients: Clients, config: AppConfig, context: Req
     const followups = createAutomationFollowupRepository(clients.supabase);
     const publicReplies = createAutomationPublicReplyRepository(clients.supabase);
     const { automation } = config;
+    const mcpTokens = createMcpAccessTokenRepository(clients.supabase);
+    const mcpGrants = createMcpClientGrantRepository(clients.supabase);
     const scheduledPublisher = createScheduledPublisher({ accounts, posts, context });
-    return {
+    const services: Services = {
         accounts: createAccountService({ accounts, cache, audit, config, context }),
         youtubeAnalytics: createYouTubeAnalyticsService({ accounts, cache, config, context }),
         instagramAnalytics: createInstagramAnalyticsService({ accounts, cache, context }),
@@ -121,5 +134,10 @@ export function createServices(clients: Clients, config: AppConfig, context: Req
         automationReconciler: createAutomationReconciler({ comments, publicReplies, context }),
         retention: createRetentionService({ comments, audit, context }),
         health: createHealthService({ health: createHealthRepository(clients.supabase) }),
+        mcpAccess: createMcpAccessService({ tokens: mcpTokens, grants: mcpGrants, audit, context }),
+        mcpFor: principal => createMcpService({
+            tools: MCP_TOOLS, services, principal, audit, config: config.mcp, server: mcpServerIdentity(APP_VERSION), context,
+        }),
     };
+    return services;
 }
