@@ -88,3 +88,19 @@ test('the missing secrets message names each secret and says how to set it', () 
     assert.equal(coreSecretsMessage(['SUPABASE_URL']), 'The server is not set up: the SUPABASE_URL Worker secret is missing or invalid. Set it with wrangler secret put, then deploy again.');
     assert.match(coreSecretsMessage(['SUPABASE_URL', 'SUPABASE_ANON_KEY']), /the SUPABASE_URL, SUPABASE_ANON_KEY Worker secrets are missing or invalid\. Set them with/);
 });
+
+test('the MCP endpoint and its metadata live on the Worker, and Supabase Auth is the authorization server', () => {
+    const { mcp } = config({ BACKEND_URL: 'https://api.example.com/', SUPABASE_URL: 'https://ref.supabase.co/' });
+    assert.equal(mcp.serverUrl, 'https://api.example.com/mcp');
+    assert.equal(mcp.resourceMetadataUrl, 'https://api.example.com/.well-known/oauth-protected-resource/mcp');
+    assert.equal(mcp.authorizationServer, 'https://ref.supabase.co/auth/v1');
+    assert.equal(mcp.oauthEnabled, false);
+});
+
+test('the MCP signing secret counts as unset below 32 characters, and only "true" turns OAuth on', () => {
+    assert.equal(config({ TOKEN_ENCRYPTION_KEY: 'short' }).mcp.signingSecret, undefined);
+    const key = 'k'.repeat(32);
+    assert.equal(config({ TOKEN_ENCRYPTION_KEY: ` ${key} ` }).mcp.signingSecret, key);
+    assert.equal(config({ MCP_OAUTH_ENABLED: 'TRUE' }).mcp.oauthEnabled, true);
+    assert.equal(config({ MCP_OAUTH_ENABLED: 'yes' }).mcp.oauthEnabled, false);
+});

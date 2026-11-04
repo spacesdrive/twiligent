@@ -36,4 +36,8 @@ export interface Env {
     AUTOMATION_PUBLIC_ACCOUNT_HOURLY_LIMIT?: string;
     // replies sent by one webhook request or one sweep
     AUTOMATION_BATCH_SIZE?: string;
+    // at least 32 random characters; keys derived from it sign MCP confirmations and encrypt stored platform tokens
+    TOKEN_ENCRYPTION_KEY?: string;
+    // "true" once the owner has turned on Supabase Auth's OAuth 2.1 server, so Claude's apps can sign in to /mcp
+    MCP_OAUTH_ENABLED?: string;
 }
