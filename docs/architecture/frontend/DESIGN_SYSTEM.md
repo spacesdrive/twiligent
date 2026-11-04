@@ -32,7 +32,7 @@ Shared components live in `frontend/src/components/`. Reach for these before wri
 |---|---|
 | `PageHeader` | The one title block per page: optional back link, eyebrow, avatar media, description and actions |
 | `SurfaceBox` | Any grouped content. Optional title row with `subheader` and `secondary` actions. The title is an `h2` (pass `headingLevel="h3"` inside a section), and a `Table` inside takes its accessible name from it |
-| `MetricBox` | A single metric: icon, label, tabular value, one line of context. `highlight` marks the page's lead metric, `period` states the time frame, and `upIsGood` colours a trend by whether it is good (read aloud as "Up 12%"). Icons come from `lib/metricIcons.ts`, one meaning each |
+| `MetricBox` | A single metric: icon, label, tabular value, one line of context. `highlight` marks the page's lead metric, `period` states the time frame, and `upIsGood` colours a trend by whether it is good (read aloud as "Up 12%"). A number, a formatted string or a `Num` as the value rolls with `RollingNumber` when it changes. Icons come from `lib/metricIcons.ts`, one meaning each |
 | `MetricDetails` | The secondary figures of a page as a compact list, so the tile row keeps a few headline numbers |
 | `SectionHeader` | A heading between groups of boxes |
 | `ListRow`, `RankNumber` | Dense clickable rows and mono rank numbers |
@@ -44,9 +44,14 @@ Shared components live in `frontend/src/components/`. Reach for these before wri
 | `FailedSourcesAlert` | Names the accounts that did not load, with Retry, above the results that did |
 | `Pager` | Previous and next with a count |
 | `MediaCard`, `MediaChip` | Thumbnail cards for videos, Shorts and Instagram media |
-| `ChartPanel`, `ChartFigure` | A titled Recharts container with an empty state, a one-line summary and a Show table toggle; the plot is named for screen readers |
-| `RankingBarChart` | Horizontal bars for rankings (accounts, categories, tracked items), never a line |
-| `MetricAreaChart` | A single-series area chart |
+| `ChartPanel` | The titled card around a chart, with an empty state and an optional `description`: the chart's takeaway in words, read by screen readers in place of the plot (`trendSummary`, `rankingSummary` and `pointsOf` in `lib/chart.ts` write it from the data) |
+| `ChartFigure` | The figure inside `ChartPanel`, `MetricAreaChart` and `AudienceChart`: the chart's screen-reader name and its hidden description |
+| `AreaChart`, `BarChart`, `LineChart` (`components/ui`) | Intent UI's Recharts charts (ADR-048): pass `data`, the category `dataKey`, a `config` of series with labels and `SERIES` or `PLATFORM_META` colours, `containerHeight`, `valueFormatter={fmtNum}` for the axis, and `legend={false}` for a single series; the legend highlights one series when pressed |
+| `ExactTooltip` | Intent's tooltip with every value in full (`tooltip={<ExactTooltip />}`); `format` for rates, `labelOf` when one series mixes kinds |
+| `DonutChart` | Parts of a whole as a ring inside Intent's chart frame, with the exact tooltip and a legend |
+| `MetricAreaChart` | A single-series Intent area chart with its own screen-reader name and description |
+| `StackedBars` | A card of counts per day or week broken into parts, with a view switch; not used yet, since no page receives counts per period split into parts |
+| `RollingNumber` | A formatted number whose digits roll like an odometer when it changes; screen readers get the text. Used through `MetricBox` and the Overview metric tabs (`RollingValueContext` makes a `Num` inside a tile roll) |
 | `ChoiceCard` | Large selectable cards in creation flows |
 | `DetailPanel`, `FieldRow` | The settings side panel of a working surface, and label plus hint plus control plus error rows. `FieldRow` wires `hint` and `error` to its control (`aria-describedby`, `aria-invalid`), marks `optional` fields, and renders a `fieldset` with `group`. A control that is not its direct child takes the ids from `fieldHintId` and `fieldErrorId` in `lib/fieldIds.ts` |
 | `ConfirmDialog` | Confirmation for removing an account and deleting everything. Pass `hold`: the button confirms by holding it or by pressing it twice, and Escape disarms it. `busyLabel` names the action in progress ("Removing") |
@@ -86,7 +91,7 @@ The interface follows the UI/UX Design Intelligence system: the Laws of UX, WCAG
 - One primary (default) button per view. An empty state's action replaces the header action, it does not repeat it.
 - Every data view designs loading, empty, error, partial failure and stale states, and says how old cached data is. Refreshing keeps the data on screen with a progress bar; skeletons are only for the first load.
 - Metric tiles say what period they cover, show the exact value behind a rounded one, and colour a change by whether it is good, with the direction in words for screen readers.
-- Charts have a one-line summary and a table of the same data; a chart never mixes two units on one axis; rankings are horizontal bars; platform colours mean platforms only.
+- Charts are built from Intent UI's components in `components/ui` (ADR-048); each has a screen-reader name and description, tooltips show exact values, and platform colours mean platforms only.
 - Field errors appear under the field and keep the input; buttons stay enabled and explain what is missing when pressed; leaving a form with unsaved work asks first.
 - Help text and descriptions are short, in the user's words, and next to the thing they explain.
 - Dialogs become full-width bottom sheets below `sm`. Link-styled buttons are always underlined, and a link that opens a new tab says so to screen readers.

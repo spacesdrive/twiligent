@@ -91,7 +91,7 @@ Don't cite these as rules: "7 plus or minus 2" as a menu limit, the 400 ms figur
 
 - Each element answers a question someone asks. The top row holds the few figures that matter, each with its period and a comparison, colouring a change by whether it is good.
 - Rounded figures offer the exact value (`Num`); relative times offer the date (`RelativeTime`).
-- Charts have a one-line summary and a table of the same data, and never put two units on one axis.
+- Charts are built from Intent UI's components in `components/ui` (ADR-048); each has a screen-reader name and description, tooltips show exact values, and platform colours mean platforms only.
 - Libraries share one toolbar: search, filters shown as removable chips with Clear all, sort, a result count, and a no-results state that repeats the query.
 - A part that failed says so above the parts that loaded, with Retry.
 

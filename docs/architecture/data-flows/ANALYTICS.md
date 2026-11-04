@@ -321,11 +321,13 @@ These rules come from the UI/UX guide (issue #132) and apply to every analytics 
   the exact value on hover and for screen readers; `fmtNum` drops a trailing `.0` and moves to the next unit when
   rounding would show 1000 of the smaller one. Pages lead with four to six headline tiles; supporting figures go in
   one `MetricDetails` list, each derived score explained in a line, and no figure repeats across tabs.
-- **Charts.** Every chart has a one-sentence summary of what it shows and a Show table toggle with the same
-  numbers (`ChartFigure`, used by `ChartPanel`, `MetricAreaChart` and `RankingBarChart`). Rankings of separate
-  things (accounts, categories, videos, tags) are horizontal bars, not lines. One chart has one unit; a second
-  measure goes in the tooltip and table. Platform hues (`PLATFORM_META.series`) mean the platform on every page;
-  Instagram content types and categories use other series.
+- **Charts.** The charts keep the types, series, titles and layout they had before #132 and are drawn with Intent
+  UI's area and bar charts (ADR-048), with `DonutChart` for parts of a whole. Each chart is a figure with a
+  screen-reader name and a hidden description computed from its data (`trendSummary`, `rankingSummary`,
+  `monthlySummary`); there is no visible summary line or table. Tooltips show exact values (`ExactTooltip`) and the
+  axis shows rounded ones. A legend appears where a chart has more than one series. Platform hues
+  (`PLATFORM_META.series`) mean the platform on every page; Instagram content types and categories use other
+  series. The big value of a metric tile rolls to its new value (`RollingNumber`) and keeps its exact value.
 - **Libraries.** Search (debounced), filters, sort, layout and page live in the address (`useLibraryParams`), so
   Back, refresh and shared links keep the view. Every library uses the same controls: `SearchField`, an account
   select, `FilterChips` for ranges and types, `SortSelect` (also in grid layout), `ActiveFilters` with the result
