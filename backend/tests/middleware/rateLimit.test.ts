@@ -132,6 +132,8 @@ test('quota and publish routes match the endpoints that spend platform API calls
     assert.equal(quota('PUT', '/api/tracked-content/abc'), false);
     assert.equal(quota('POST', '/api/tracked-content/abc/refresh'), true);
     assert.equal(quota('GET', '/api/process-scheduled'), true);
+    // Hono answers HEAD with the GET handler, so HEAD cannot slip past the rule
+    assert.equal(quota('HEAD', '/api/process-scheduled'), true);
     assert.equal(quota('POST', '/api/automations/accounts/ig1/subscribe'), true);
     assert.equal(quota('PUT', '/api/automations/accounts/ig1'), false);
     assert.equal(quota('GET', '/api/accounts/abc123/analytics'), false);
