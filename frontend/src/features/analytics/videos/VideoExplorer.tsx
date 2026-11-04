@@ -13,9 +13,11 @@ import DataFreshness from '@/components/DataFreshness';
 import ActiveFilters from '@/components/ActiveFilters';
 import NoResults from '@/components/NoResults';
 import FailedSourcesAlert from '@/components/FailedSourcesAlert';
+import StackedBars from '@/components/StackedBars';
 import { EmptyState } from '@/components/StateViews';
 import { VIEW_TIERS, pageSlice, resultCountLabel } from '@/lib/library';
 import { METRIC_ICONS } from '@/lib/metricIcons';
+import { SERIES } from '@/lib/chart';
 import { useChannelVideos } from './useChannelVideos';
 import { useLibraryParams } from '../useLibraryParams';
 import { VIDEO_SORT_OPTIONS, filterAndSortVideos, nextSort, sortFromKey, sortKeyOf, videoStatsOf, videosDescription } from './videoLibrary.ts';
@@ -24,9 +26,16 @@ import VideoFilters from './VideoFilters';
 import VideoListTable from './VideoListTable';
 import VideoGrid from './VideoGrid';
 import type { LayoutMode } from './LayoutToggle';
+import { uploadsByPeriod } from './uploadsChart.ts';
 
 const ITEMS_PER_PAGE = 25;
 const RESULTS_ID = 'video-results';
+
+// a year by month and a quarter by week show the publishing rhythm without crowding the bars
+const UPLOAD_MONTHS = 12;
+const UPLOAD_WEEKS = 13;
+// both kinds are YouTube, so they share its red family and leave the other hues to the other platforms
+const UPLOAD_SERIES = [{ label: 'Videos', color: SERIES.primary }, { label: 'Shorts', color: SERIES.deep }];
 
 const DEFAULTS = { q: '', channel: 'all', views: 'all', sort: 'viewCount:desc', view: 'table' };
 
@@ -44,6 +53,14 @@ export default function VideoExplorer() {
   );
   const paged = pageSlice(filtered, page, ITEMS_PER_PAGE);
   const stats = useMemo(() => videoStatsOf(filtered), [filtered]);
+  // the rhythm follows the channel filter only; a search or a view tier would hide uploads, not explain them
+  const uploadViews = useMemo(() => {
+    const channelVideos = values.channel === 'all' ? videos : videos.filter(video => video.channelId === values.channel);
+    return [
+      { id: 'month', label: 'Month', points: uploadsByPeriod(channelVideos, 'month', UPLOAD_MONTHS) },
+      { id: 'week', label: 'Week', points: uploadsByPeriod(channelVideos, 'week', UPLOAD_WEEKS) },
+    ];
+  }, [videos, values.channel]);
 
   const handleSort = (field: VideoSortField) => update({ sort: sortKeyOf(nextSort(sort, field)) });
   const clearFilters = () => clear(['q', 'channel', 'views']);
@@ -110,6 +127,14 @@ export default function VideoExplorer() {
         <MetricBox small icon={<Comments />}     label="Comments"      value={<Num value={stats.comments} />} period="Matching videos" />
         <MetricBox small icon={<AverageViews />} label="Average views" value={<Num value={stats.avgViews} />} period="Per matching video" />
       </div>
+
+      <StackedBars
+        title="Uploads"
+        subtitle={`Videos and Shorts published${channelTitle ? ` on ${channelTitle}` : ''}, newest on the right`}
+        unit="uploads"
+        series={UPLOAD_SERIES}
+        views={uploadViews}
+      />
 
       <VideoFilters
         channels={channels}

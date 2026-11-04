@@ -328,6 +328,9 @@ These rules come from the UI/UX guide (issue #132) and apply to every analytics 
   axis shows rounded ones. A legend appears where a chart has more than one series. Platform hues
   (`PLATFORM_META.series`) mean the platform on every page; Instagram content types and categories use other
   series. The big value of a metric tile rolls to its new value (`RollingNumber`) and keeps its exact value.
+  The Videos page has an Uploads card (`StackedBars`): the channel's uploads in each of the last 12 months or 13
+  weeks, split into regular videos and Shorts by the Shorts page's 60-second rule (`uploadsChart.ts`). It follows the
+  channel filter only, and counts the up to 500 newest videos the library loads per channel.
 - **Libraries.** Search (debounced), filters, sort, layout and page live in the address (`useLibraryParams`), so
   Back, refresh and shared links keep the view. Every library uses the same controls: `SearchField`, an account
   select, `FilterChips` for ranges and types, `SortSelect` (also in grid layout), `ActiveFilters` with the result

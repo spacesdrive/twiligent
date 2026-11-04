@@ -50,7 +50,7 @@ Shared components live in `frontend/src/components/`. Reach for these before wri
 | `ExactTooltip` | Intent's tooltip with every value in full (`tooltip={<ExactTooltip />}`); `format` for rates, `labelOf` when one series mixes kinds |
 | `DonutChart` | Parts of a whole as a ring inside Intent's chart frame, with the exact tooltip and a legend |
 | `MetricAreaChart` | A single-series Intent area chart with its own screen-reader name and description |
-| `StackedBars` | A card of counts per day or week broken into parts, with a view switch; not used yet, since no page receives counts per period split into parts |
+| `StackedBars` | A card of counts per period broken into parts, with a view switch (adapted from Bencho, MIT): run along the bars or use the arrow keys to read one, announced in a status line. Used for Uploads on the Videos page (videos and Shorts by month or week, `uploadsChart.ts`) |
 | `RollingNumber` | A formatted number whose digits roll like an odometer when it changes; screen readers get the text. Used through `MetricBox` and the Overview metric tabs (`RollingValueContext` makes a `Num` inside a tile roll) |
 | `ChoiceCard` | Large selectable cards in creation flows |
 | `DetailPanel`, `FieldRow` | The settings side panel of a working surface, and label plus hint plus control plus error rows. `FieldRow` wires `hint` and `error` to its control (`aria-describedby`, `aria-invalid`), marks `optional` fields, and renders a `fieldset` with `group`. A control that is not its direct child takes the ids from `fieldHintId` and `fieldErrorId` in `lib/fieldIds.ts` |
