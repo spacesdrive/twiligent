@@ -66,4 +66,25 @@ describe('Reddit analytics routes', () => {
         assert.deepEqual(redis.writes, ['reddit:user-1:rd1']);
         assert.deepEqual(fetchMock.requests.map(request => (request.headers as Record<string, string>).Cookie), ['reddit_session=COOKIE', 'reddit_session=COOKIE']);
     });
+
+    test('a fresh load skips the cache, fetches from Reddit and records when it fetched', async () => {
+        fetchMock = installFetch(request => (request.url.includes('/about.json')
+            ? reply({ data: { name: 'ribbon', total_karma: 9 } })
+            : reply({ data: { children: [], after: null } })));
+        const redis = storeRedis({ 'reddit:user-1:rd1': CACHED });
+        const { status, body } = await call('/accounts/rd1/reddit-analytics?fresh=1', redis);
+        assert.equal(status, 200);
+        const fresh = body as { profile: { totalKarma: number }; fetchedAt: string };
+        assert.equal(fresh.profile.totalKarma, 9);
+        assert.ok(!Number.isNaN(Date.parse(fresh.fetchedAt)));
+        assert.deepEqual(redis.writes, ['reddit:user-1:rd1']);
+        assert.equal(fetchMock.requests.length, 2);
+    });
+
+    test('a fresh value other than 1 is refused before any Reddit call', async () => {
+        fetchMock = installFetch(() => reply({}));
+        const { status } = await call('/accounts/rd1/reddit-analytics?fresh=yes', storeRedis({}));
+        assert.equal(status, 400);
+        assert.deepEqual(fetchMock.requests, []);
+    });
 });

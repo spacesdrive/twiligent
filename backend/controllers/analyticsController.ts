@@ -1,6 +1,6 @@
 import { controller, pathParam, servicesFor } from './http.ts';
 import { queryParams } from '../middleware/validate.ts';
-import { parseVideoLibraryQuery } from '../validators/analyticsValidators.ts';
+import { parseFreshQuery, parseVideoLibraryQuery } from '../validators/analyticsValidators.ts';
 import type {
     YouTubeAnalyticsPayload, YouTubeComparisonResponse, YouTubeLibraryResponse, YouTubeVideosResponse,
 } from '../../shared/types/youtube.ts';
@@ -11,8 +11,8 @@ export const getChannelAnalytics = controller.createHandlers(async c => {
     return c.json({ success: true, ...result } satisfies YouTubeAnalyticsPayload);
 });
 
-export const getChannelVideos = controller.createHandlers(async c => {
-    const result = await servicesFor(c).youtubeAnalytics.channelVideos(c.get('userId'), pathParam(c, 'id'));
+export const getChannelVideos = controller.createHandlers(queryParams(parseFreshQuery), async c => {
+    const result = await servicesFor(c).youtubeAnalytics.channelVideos(c.get('userId'), pathParam(c, 'id'), c.req.valid('query'));
     return c.json({ success: true, ...result } satisfies YouTubeVideosResponse);
 });
 
@@ -31,7 +31,7 @@ export const getInstagramAnalytics = controller.createHandlers(async c => {
     return c.json({ success: true, ...result } satisfies InstagramAnalyticsResponse);
 });
 
-export const getInstagramMedia = controller.createHandlers(async c => {
-    const result = await servicesFor(c).instagramAnalytics.media(c.get('userId'), pathParam(c, 'id'));
+export const getInstagramMedia = controller.createHandlers(queryParams(parseFreshQuery), async c => {
+    const result = await servicesFor(c).instagramAnalytics.media(c.get('userId'), pathParam(c, 'id'), c.req.valid('query'));
     return c.json({ success: true, ...result } satisfies InstagramMediaResponse);
 });

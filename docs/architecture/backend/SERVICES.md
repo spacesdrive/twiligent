@@ -301,3 +301,12 @@ For a new feature service:
 3. Throw typed errors from `lib/errors.ts`; never return error objects
 4. Add it to `Services` and `createServices()` in `backend/container.ts`
 5. Update `docs/architecture/backend/SERVICES.md` (this file)
+
+## Fresh reads
+
+`youtubeAnalytics.channelVideos`, `instagramAnalytics.media` and `redditAnalytics.analytics` take an optional
+`{ fresh }`. Without it they answer from the cache when it has the account; with `fresh: true` they fetch live and
+rewrite the cache. The controllers pass it from `?fresh=1`, parsed by `parseFreshQuery` in
+`validators/analyticsValidators.ts`. `redditAnalytics.analytics` stores `fetchedAt` with the cache entry, and
+`overviewService` copies each cache entry's `fetchedAt` into its account summary.
+

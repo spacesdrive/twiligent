@@ -14,7 +14,7 @@ export interface RedditAnalyticsDeps {
 }
 
 export interface RedditAnalyticsService {
-    analytics(userId: string, accountId: string): Promise<RedditCacheData>;
+    analytics(userId: string, accountId: string, options?: { fresh?: boolean }): Promise<RedditCacheData>;
     posts(userId: string, accountId: string): Promise<RedditPost[]>;
 }
 
@@ -37,16 +37,24 @@ export function createRedditAnalyticsService({ accounts, cache, context }: Reddi
     }
 
     return {
-        async analytics(userId, accountId) {
+        // a fresh load is what a person's Refresh asks for; without it the cache answers and its age is shown
+        async analytics(userId, accountId, { fresh = false } = {}) {
             const { username, cookie } = await credentialsFor(userId, accountId);
-            const cached = await cache.getReddit(userId, accountId);
-            if (cached) return cached;
+            if (!fresh) {
+                const cached = await cache.getReddit(userId, accountId);
+                if (cached) return cached;
+            }
 
             const [profile, posts] = await Promise.all([
                 fetchRedditProfile(username, cookie, signal),
                 fetchRedditPosts(username, cookie, POST_LIMIT, signal),
             ]);
-            const result: RedditCacheData = { profile, analytics: computeRedditAnalytics(profile, posts), posts };
+            const result: RedditCacheData = {
+                profile,
+                analytics: computeRedditAnalytics(profile, posts),
+                posts,
+                fetchedAt: new Date().toISOString(),
+            };
             await cache.setReddit(userId, accountId, result);
             return result;
         },

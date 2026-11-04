@@ -53,7 +53,7 @@ The rate limiter uses its own client with a 1 second timeout and no retries; see
 |---|---|---|---|
 | `videos:{userId}:{accountId}` | `{ videos, fetchedAt, version }` - YouTube video objects with stats | `GET /api/accounts/:id/analytics` succeeds, `GET /api/accounts/:id/videos` fetches live on a miss, or the Overview warms it | `DELETE /api/accounts/:id`, or a `version` mismatch |
 | `ig:{userId}:{accountId}` | `{ media, fetchedAt, version }` - normalized Instagram media (see `normalizeInstagramMedia()`) | `GET /api/accounts/:id/ig-analytics` or `ig-media` succeeds, or the Overview warms it | `DELETE /api/accounts/:id`, or a `version` mismatch |
-| `reddit:{userId}:{accountId}` | Object `{ profile, analytics, posts }` for Reddit account | `GET /api/accounts/:id/reddit-analytics` succeeds, or the Overview warms it | `DELETE /api/accounts/:id` |
+| `reddit:{userId}:{accountId}` | Object `{ profile, analytics, posts, fetchedAt }` for Reddit account (`fetchedAt` is missing on entries written before it was stored) | `GET /api/accounts/:id/reddit-analytics` succeeds (with or without `?fresh=1`), or the Overview warms it | `DELETE /api/accounts/:id` |
 
 Rate limit state also lives in Redis under `twiligent:ratelimit:{rule}:{identifier}` keys (hashes or sorted sets, each with its own expiry). They are written only by the Lua scripts in `lib/rateLimit/scripts.ts` through a separate fast-fail client; see `RATE_LIMITING.md`.
 
@@ -115,3 +115,13 @@ State format: base64url(userId:timestamp).base64url(HMAC-SHA256-signature)
 Expiry: 10 minutes (checked by comparing embedded timestamp to Date.now())
 Secret: INSTAGRAM_APP_SECRET
 ```
+
+## Freshness and explicit refresh
+
+Every cached analytics read returns when its data came from the platform (`fetchedAt`), and the Overview's
+per-account summaries carry the same field, so each data view in the app says how old its numbers are (the
+`DataFreshness` line under the page title, with the exact time on hover and for screen readers). The cache-first
+reads `GET /api/accounts/:id/videos`, `ig-media` and `reddit-analytics` accept `?fresh=1`, which the app sends
+only when a person presses Refresh: it skips the cache, fetches live and rewrites the entry. Plain page loads
+stay on the cache, so opening a page never spends platform quota by itself.
+
