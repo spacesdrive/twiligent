@@ -15,7 +15,7 @@ export interface FreshQuery {
     fresh: boolean;
 }
 
-// ?fresh=1 on a cached read (reddit-analytics, videos, ig-media) skips the cache, for a person's explicit refresh
+// ?fresh=1 on a cached read (videos, ig-media) skips the cache, for a person's explicit refresh
 export function parseFreshQuery(query: Fields): FreshQuery {
     const fresh = optionalString(query, 'fresh');
     if (fresh && fresh !== '1') throw new ValidationError('fresh must be 1 when given');
