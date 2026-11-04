@@ -1,6 +1,6 @@
 {
     "status": 200,
-    "body": "{\"tracked\":[{\"id\":\"t1\",\"accountId\":null,\"url\":\"https://youtu.be/x\",\"label\":\"\",\"category\":\"\",\"contentType\":\"youtube\",\"createdAt\":\"2026-08-01T00:00:00Z\",\"updatedAt\":\"2026-08-01T00:00:00Z\",\"title\":\"Tracked\"}],\"analyticsCache\":{\"yt1\":{\"id\":\"yt1\",\"cacheWarmed\":false,\"syncing\":true},\"yt2\":{\"id\":\"yt2\",\"cacheWarmed\":false,\"syncing\":true},\"yt3\":{\"id\":\"yt3\",\"cacheWarmed\":false,\"syncing\":false},\"ig1\":{\"id\":\"ig1\",\"cacheWarmed\":false,\"syncing\":true},\"rd1\":{\"id\":\"rd1\",\"cacheWarmed\":false,\"syncing\":true},\"rd2\":{\"id\":\"rd2\",\"cacheWarmed\":false,\"syncing\":false}}}",
+    "body": "{\"tracked\":[{\"id\":\"t1\",\"url\":\"https://youtu.be/x\",\"label\":\"\",\"category\":\"\",\"contentType\":\"youtube\",\"createdAt\":\"2026-08-01T00:00:00Z\",\"updatedAt\":\"2026-08-01T00:00:00Z\",\"title\":\"Tracked\"}],\"analyticsCache\":{\"yt1\":{\"id\":\"yt1\",\"cacheWarmed\":false,\"syncing\":true},\"yt2\":{\"id\":\"yt2\",\"cacheWarmed\":false,\"syncing\":true},\"yt3\":{\"id\":\"yt3\",\"cacheWarmed\":false,\"syncing\":false},\"ig1\":{\"id\":\"ig1\",\"cacheWarmed\":false,\"syncing\":true},\"rd1\":{\"id\":\"rd1\",\"cacheWarmed\":false,\"syncing\":true},\"rd2\":{\"id\":\"rd2\",\"cacheWarmed\":false,\"syncing\":false}}}",
     "waitUntilCalls": 1,
     "settled": [
         [

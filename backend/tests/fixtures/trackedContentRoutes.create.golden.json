@@ -9,32 +9,22 @@
             {
                 "call": "POST /tracked-content",
                 "status": 400,
-                "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"Only Reddit and YouTube URLs are supported\",\"requestId\":\"req-test\"}"
+                "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"Only YouTube video links can be tracked. Paste a youtube.com or youtu.be link.\",\"requestId\":\"req-test\"}"
+            },
+            {
+                "call": "POST /tracked-content",
+                "status": 400,
+                "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"Only YouTube video links can be tracked. Paste a youtube.com or youtu.be link.\",\"requestId\":\"req-test\"}"
             },
             {
                 "call": "POST /tracked-content",
                 "status": 201,
-                "body": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"accountId\":null,\"url\":\"https://www.youtube.com/watch?v=abc\",\"label\":\"Video\",\"category\":\"Music\",\"contentType\":\"youtube\",\"title\":\"Watch\",\"channelTitle\":\"Ribbon\",\"channelId\":\"UC1\",\"thumbnail\":\"m\",\"publishedAt\":\"2026-08-01T10:00:00Z\",\"viewCount\":1500,\"likeCount\":40,\"commentCount\":3,\"isShort\":false,\"permalink\":\"https://www.youtube.com/watch?v=abc\",\"lastFetchedAt\":\"2026-09-01T12:00:00.000Z\"}"
-            },
-            {
-                "call": "POST /tracked-content",
-                "status": 404,
-                "body": "{\"success\":false,\"code\":\"NOT_FOUND\",\"message\":\"Reddit account not found\",\"requestId\":\"req-test\"}"
-            },
-            {
-                "call": "POST /tracked-content",
-                "status": 404,
-                "body": "{\"success\":false,\"code\":\"NOT_FOUND\",\"message\":\"Reddit account not found\",\"requestId\":\"req-test\"}"
+                "body": "{\"id\":\"00000000-0000-4000-8000-000000000001\",\"url\":\"https://www.youtube.com/watch?v=abc\",\"label\":\"Video\",\"category\":\"Music\",\"contentType\":\"youtube\",\"title\":\"Watch\",\"channelTitle\":\"Ribbon\",\"channelId\":\"UC1\",\"thumbnail\":\"m\",\"publishedAt\":\"2026-08-01T10:00:00Z\",\"viewCount\":1500,\"likeCount\":40,\"commentCount\":3,\"isShort\":false,\"permalink\":\"https://www.youtube.com/watch?v=abc\",\"lastFetchedAt\":\"2026-09-01T12:00:00.000Z\"}"
             },
             {
                 "call": "POST /tracked-content",
                 "status": 201,
-                "body": "{\"id\":\"00000000-0000-4000-8000-000000000002\",\"accountId\":\"rd1\",\"url\":\"https://www.reddit.com/r/webdev/comments/p1/tracked/\",\"label\":\"Mine\",\"category\":\"\",\"contentType\":\"reddit\",\"createdAt\":\"2026-07-25T17:20:00.000Z\",\"postId\":\"p1\",\"title\":\"Tracked\",\"subreddit\":\"webdev\",\"subredditPrefixed\":\"r/webdev\",\"author\":\"[deleted]\",\"score\":77,\"upvoteRatio\":0.93,\"numComments\":8,\"permalink\":\"https://reddit.com/r/webdev/comments/p1/tracked/\",\"isNsfw\":false,\"lastFetchedAt\":\"2026-09-01T12:00:00.000Z\"}"
-            },
-            {
-                "call": "POST /tracked-content",
-                "status": 201,
-                "body": "{\"id\":\"00000000-0000-4000-8000-000000000003\",\"accountId\":null,\"url\":\"https://www.reddit.com/r/webdev/comments/p1/tracked/\",\"label\":\"\",\"category\":\"\",\"contentType\":\"reddit\",\"createdAt\":\"2026-07-25T17:20:00.000Z\",\"postId\":\"p1\",\"title\":\"Tracked\",\"subreddit\":\"webdev\",\"subredditPrefixed\":\"r/webdev\",\"author\":\"[deleted]\",\"score\":77,\"upvoteRatio\":0.93,\"numComments\":8,\"permalink\":\"https://reddit.com/r/webdev/comments/p1/tracked/\",\"isNsfw\":false,\"lastFetchedAt\":\"2026-09-01T12:00:00.000Z\"}"
+                "body": "{\"id\":\"00000000-0000-4000-8000-000000000002\",\"url\":\"https://youtu.be/abc\",\"label\":\"Mine\",\"category\":\"\",\"contentType\":\"youtube\",\"title\":\"Watch\",\"channelTitle\":\"Ribbon\",\"channelId\":\"UC1\",\"thumbnail\":\"m\",\"publishedAt\":\"2026-08-01T10:00:00Z\",\"viewCount\":1500,\"likeCount\":40,\"commentCount\":3,\"isShort\":false,\"permalink\":\"https://www.youtube.com/watch?v=abc\",\"lastFetchedAt\":\"2026-09-01T12:00:00.000Z\"}"
             }
         ],
         "queries": [
@@ -44,7 +34,6 @@
                 "values": {
                     "id": "00000000-0000-4000-8000-000000000001",
                     "user_id": "user-1",
-                    "account_id": null,
                     "url": "https://www.youtube.com/watch?v=abc",
                     "label": "Video",
                     "category": "Music",
@@ -69,7 +58,7 @@
             {
                 "type": "select",
                 "table": "tracked_posts",
-                "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+                "columns": "id, url, label, category, content_type, created_at, updated_at, data",
                 "filters": [
                     [
                         "id",
@@ -78,51 +67,10 @@
                     [
                         "user_id",
                         "user-1"
-                    ]
-                ]
-            },
-            {
-                "type": "select",
-                "table": "accounts",
-                "columns": "id, platform, data",
-                "filters": [
-                    [
-                        "id",
-                        "yt1"
                     ],
                     [
-                        "user_id",
-                        "user-1"
-                    ]
-                ]
-            },
-            {
-                "type": "select",
-                "table": "accounts",
-                "columns": "id, platform, data",
-                "filters": [
-                    [
-                        "id",
-                        "missing"
-                    ],
-                    [
-                        "user_id",
-                        "user-1"
-                    ]
-                ]
-            },
-            {
-                "type": "select",
-                "table": "accounts",
-                "columns": "id, platform, data",
-                "filters": [
-                    [
-                        "id",
-                        "rd1"
-                    ],
-                    [
-                        "user_id",
-                        "user-1"
+                        "content_type",
+                        "youtube"
                     ]
                 ]
             },
@@ -132,23 +80,22 @@
                 "values": {
                     "id": "00000000-0000-4000-8000-000000000002",
                     "user_id": "user-1",
-                    "account_id": "rd1",
-                    "url": "https://www.reddit.com/r/webdev/comments/p1/tracked/",
+                    "url": "https://youtu.be/abc",
                     "label": "Mine",
                     "category": "",
-                    "content_type": "reddit",
+                    "content_type": "youtube",
                     "data": {
-                        "postId": "p1",
-                        "title": "Tracked",
-                        "subreddit": "webdev",
-                        "subredditPrefixed": "r/webdev",
-                        "author": "[deleted]",
-                        "score": 77,
-                        "upvoteRatio": 0.93,
-                        "numComments": 8,
-                        "permalink": "https://reddit.com/r/webdev/comments/p1/tracked/",
-                        "isNsfw": false,
-                        "createdAt": "2026-07-25T17:20:00.000Z",
+                        "contentType": "youtube",
+                        "title": "Watch",
+                        "channelTitle": "Ribbon",
+                        "channelId": "UC1",
+                        "thumbnail": "m",
+                        "publishedAt": "2026-08-01T10:00:00Z",
+                        "viewCount": 1500,
+                        "likeCount": 40,
+                        "commentCount": 3,
+                        "isShort": false,
+                        "permalink": "https://www.youtube.com/watch?v=abc",
                         "lastFetchedAt": "2026-09-01T12:00:00.000Z"
                     }
                 },
@@ -157,7 +104,7 @@
             {
                 "type": "select",
                 "table": "tracked_posts",
-                "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+                "columns": "id, url, label, category, content_type, created_at, updated_at, data",
                 "filters": [
                     [
                         "id",
@@ -166,49 +113,10 @@
                     [
                         "user_id",
                         "user-1"
-                    ]
-                ]
-            },
-            {
-                "type": "insert",
-                "table": "tracked_posts",
-                "values": {
-                    "id": "00000000-0000-4000-8000-000000000003",
-                    "user_id": "user-1",
-                    "account_id": null,
-                    "url": "https://www.reddit.com/r/webdev/comments/p1/tracked/",
-                    "label": "",
-                    "category": "",
-                    "content_type": "reddit",
-                    "data": {
-                        "postId": "p1",
-                        "title": "Tracked",
-                        "subreddit": "webdev",
-                        "subredditPrefixed": "r/webdev",
-                        "author": "[deleted]",
-                        "score": 77,
-                        "upvoteRatio": 0.93,
-                        "numComments": 8,
-                        "permalink": "https://reddit.com/r/webdev/comments/p1/tracked/",
-                        "isNsfw": false,
-                        "createdAt": "2026-07-25T17:20:00.000Z",
-                        "lastFetchedAt": "2026-09-01T12:00:00.000Z"
-                    }
-                },
-                "filters": []
-            },
-            {
-                "type": "select",
-                "table": "tracked_posts",
-                "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
-                "filters": [
-                    [
-                        "id",
-                        "00000000-0000-4000-8000-000000000003"
                     ],
                     [
-                        "user_id",
-                        "user-1"
+                        "content_type",
+                        "youtube"
                     ]
                 ]
             }
@@ -219,21 +127,8 @@
                 "method": "GET"
             },
             {
-                "url": "https://www.reddit.com/r/webdev/comments/p1/tracked.json",
-                "method": "GET",
-                "headers": {
-                    "User-Agent": "script:twiligent:v1.0 (by /u/spacesdrive)",
-                    "Accept": "application/json",
-                    "Cookie": "reddit_session=COOKIE"
-                }
-            },
-            {
-                "url": "https://www.reddit.com/r/webdev/comments/p1/tracked.json",
-                "method": "GET",
-                "headers": {
-                    "User-Agent": "script:twiligent:v1.0 (by /u/spacesdrive)",
-                    "Accept": "application/json"
-                }
+                "url": "https://www.googleapis.com/youtube/v3/videos?part=snippet%2Cstatistics&id=abc&key=YTKEY",
+                "method": "GET"
             }
         ],
         "logLines": []

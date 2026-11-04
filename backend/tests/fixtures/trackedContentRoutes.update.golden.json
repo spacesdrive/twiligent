@@ -6,71 +6,36 @@
             "body": "{\"success\":false,\"code\":\"NOT_FOUND\",\"message\":\"Tracked content not found\",\"requestId\":\"req-test\"}"
         },
         {
-            "call": "PUT /tracked-content/t-youtube",
-            "status": 400,
-            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"YouTube view counts are fetched automatically and cannot be set by hand\",\"requestId\":\"req-test\"}"
+            "call": "PUT /tracked-content/t-theirs",
+            "status": 404,
+            "body": "{\"success\":false,\"code\":\"NOT_FOUND\",\"message\":\"Tracked content not found\",\"requestId\":\"req-test\"}"
         },
         {
-            "call": "PUT /tracked-content/t-youtube",
-            "status": 400,
-            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"Images can only be attached to Reddit posts\",\"requestId\":\"req-test\"}"
-        },
-        {
-            "call": "PUT /tracked-content/t-reddit",
-            "status": 200,
-            "body": "{\"id\":\"t-reddit\",\"accountId\":\"rd1\",\"url\":\"https://www.reddit.com/r/webdev/comments/p1/tracked/\",\"label\":\"\",\"category\":\"\",\"contentType\":\"reddit\",\"createdAt\":\"2026-08-01T00:00:00Z\",\"updatedAt\":\"2026-09-01T12:00:00.000Z\",\"title\":\"Old\",\"manualViews\":null}"
-        },
-        {
-            "call": "PUT /tracked-content/t-reddit",
-            "status": 200,
-            "body": "{\"id\":\"t-reddit\",\"accountId\":\"rd1\",\"url\":\"https://www.reddit.com/r/webdev/comments/p1/tracked/\",\"label\":\"\",\"category\":\"\",\"contentType\":\"reddit\",\"createdAt\":\"2026-08-01T00:00:00Z\",\"updatedAt\":\"2026-09-01T12:00:00.000Z\",\"title\":\"Old\",\"manualViews\":12}"
-        },
-        {
-            "call": "PUT /tracked-content/t-reddit",
-            "status": 400,
-            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"Views must be a whole number of 0 or more\",\"requestId\":\"req-test\"}"
-        },
-        {
-            "call": "PUT /tracked-content/t-reddit",
-            "status": 400,
-            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"Views must be a whole number of 0 or more\",\"requestId\":\"req-test\"}"
-        },
-        {
-            "call": "PUT /tracked-content/t-reddit",
-            "status": 200,
-            "body": "{\"id\":\"t-reddit\",\"accountId\":\"rd1\",\"url\":\"https://www.reddit.com/r/webdev/comments/p1/tracked/\",\"label\":\"\",\"category\":\"\",\"contentType\":\"reddit\",\"createdAt\":\"2026-08-01T00:00:00Z\",\"updatedAt\":\"2026-09-01T12:00:00.000Z\",\"title\":\"Old\",\"manualViews\":12,\"imageUrl\":\"https://img/a%20b.png\"}"
-        },
-        {
-            "call": "PUT /tracked-content/t-reddit",
-            "status": 200,
-            "body": "{\"id\":\"t-reddit\",\"accountId\":\"rd1\",\"url\":\"https://www.reddit.com/r/webdev/comments/p1/tracked/\",\"label\":\"\",\"category\":\"\",\"contentType\":\"reddit\",\"createdAt\":\"2026-08-01T00:00:00Z\",\"updatedAt\":\"2026-09-01T12:00:00.000Z\",\"title\":\"Old\",\"manualViews\":12,\"imageUrl\":null}"
-        },
-        {
-            "call": "PUT /tracked-content/t-reddit",
-            "status": 400,
-            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"Image must be an https URL returned by the uploader\",\"requestId\":\"req-test\"}"
-        },
-        {
-            "call": "PUT /tracked-content/t-reddit",
-            "status": 400,
-            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"Image must be an https URL returned by the uploader\",\"requestId\":\"req-test\"}"
-        },
-        {
-            "call": "PUT /tracked-content/t-reddit",
-            "status": 200,
-            "body": "{\"id\":\"t-reddit\",\"accountId\":null,\"url\":\"https://www.reddit.com/r/webdev/comments/p1/tracked/\",\"label\":\"New\",\"category\":\"Cat\",\"contentType\":\"reddit\",\"createdAt\":\"2026-08-01T00:00:00Z\",\"updatedAt\":\"2026-09-01T12:00:00.000Z\",\"title\":\"Old\",\"manualViews\":7,\"imageUrl\":null}"
+            "call": "PUT /tracked-content/t-retired",
+            "status": 404,
+            "body": "{\"success\":false,\"code\":\"NOT_FOUND\",\"message\":\"Tracked content not found\",\"requestId\":\"req-test\"}"
         },
         {
             "call": "PUT /tracked-content/t-youtube",
             "status": 200,
-            "body": "{\"id\":\"t-youtube\",\"accountId\":null,\"url\":\"https://www.youtube.com/watch?v=abc\",\"label\":\"Only label\",\"category\":\"\",\"contentType\":\"youtube\",\"createdAt\":\"2026-08-01T00:00:00Z\",\"updatedAt\":\"2026-09-01T12:00:00.000Z\",\"title\":\"Video\"}"
+            "body": "{\"id\":\"t-youtube\",\"url\":\"https://www.youtube.com/watch?v=abc\",\"label\":\"New\",\"category\":\"Cat\",\"contentType\":\"youtube\",\"createdAt\":\"2026-08-01T00:00:00Z\",\"updatedAt\":\"2026-09-01T12:00:00.000Z\",\"title\":\"Video\"}"
+        },
+        {
+            "call": "PUT /tracked-content/t-short",
+            "status": 200,
+            "body": "{\"id\":\"t-short\",\"url\":\"https://www.youtube.com/shorts/def\",\"label\":\"\",\"category\":\"\",\"contentType\":\"youtube\",\"createdAt\":\"2026-08-01T00:00:00Z\",\"updatedAt\":\"2026-09-01T12:00:00.000Z\",\"title\":\"Short\",\"viewCount\":9}"
+        },
+        {
+            "call": "PUT /tracked-content/t-short",
+            "status": 200,
+            "body": "{\"id\":\"t-short\",\"url\":\"https://www.youtube.com/shorts/def\",\"label\":\"\",\"category\":\"\",\"contentType\":\"youtube\",\"createdAt\":\"2026-08-01T00:00:00Z\",\"updatedAt\":\"2026-09-01T12:00:00.000Z\",\"title\":\"Short\",\"viewCount\":9}"
         }
     ],
     "queries": [
         {
             "type": "select",
             "table": "tracked_posts",
-            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+            "columns": "id, url, label, category, content_type, created_at, updated_at, data",
             "filters": [
                 [
                     "id",
@@ -79,13 +44,55 @@
                 [
                     "user_id",
                     "user-1"
+                ],
+                [
+                    "content_type",
+                    "youtube"
                 ]
             ]
         },
         {
             "type": "select",
             "table": "tracked_posts",
-            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+            "columns": "id, url, label, category, content_type, created_at, updated_at, data",
+            "filters": [
+                [
+                    "id",
+                    "t-theirs"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ],
+                [
+                    "content_type",
+                    "youtube"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "id, url, label, category, content_type, created_at, updated_at, data",
+            "filters": [
+                [
+                    "id",
+                    "t-retired"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ],
+                [
+                    "content_type",
+                    "youtube"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "id, url, label, category, content_type, created_at, updated_at, data",
             "filters": [
                 [
                     "id",
@@ -94,276 +101,10 @@
                 [
                     "user_id",
                     "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "select",
-            "table": "tracked_posts",
-            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
-            "filters": [
-                [
-                    "id",
-                    "t-youtube"
                 ],
                 [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "select",
-            "table": "tracked_posts",
-            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
-            "filters": [
-                [
-                    "id",
-                    "t-reddit"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "rpc",
-            "table": "merge_tracked_post_data",
-            "values": {
-                "p_id": "t-reddit",
-                "p_user_id": "user-1",
-                "p_patch": {
-                    "manualViews": null
-                }
-            },
-            "filters": []
-        },
-        {
-            "type": "select",
-            "table": "tracked_posts",
-            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
-            "filters": [
-                [
-                    "id",
-                    "t-reddit"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "select",
-            "table": "tracked_posts",
-            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
-            "filters": [
-                [
-                    "id",
-                    "t-reddit"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "rpc",
-            "table": "merge_tracked_post_data",
-            "values": {
-                "p_id": "t-reddit",
-                "p_user_id": "user-1",
-                "p_patch": {
-                    "manualViews": 12
-                }
-            },
-            "filters": []
-        },
-        {
-            "type": "select",
-            "table": "tracked_posts",
-            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
-            "filters": [
-                [
-                    "id",
-                    "t-reddit"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "select",
-            "table": "tracked_posts",
-            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
-            "filters": [
-                [
-                    "id",
-                    "t-reddit"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "select",
-            "table": "tracked_posts",
-            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
-            "filters": [
-                [
-                    "id",
-                    "t-reddit"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "select",
-            "table": "tracked_posts",
-            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
-            "filters": [
-                [
-                    "id",
-                    "t-reddit"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "rpc",
-            "table": "merge_tracked_post_data",
-            "values": {
-                "p_id": "t-reddit",
-                "p_user_id": "user-1",
-                "p_patch": {
-                    "imageUrl": "https://img/a%20b.png"
-                }
-            },
-            "filters": []
-        },
-        {
-            "type": "select",
-            "table": "tracked_posts",
-            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
-            "filters": [
-                [
-                    "id",
-                    "t-reddit"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "select",
-            "table": "tracked_posts",
-            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
-            "filters": [
-                [
-                    "id",
-                    "t-reddit"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "rpc",
-            "table": "merge_tracked_post_data",
-            "values": {
-                "p_id": "t-reddit",
-                "p_user_id": "user-1",
-                "p_patch": {
-                    "imageUrl": null
-                }
-            },
-            "filters": []
-        },
-        {
-            "type": "select",
-            "table": "tracked_posts",
-            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
-            "filters": [
-                [
-                    "id",
-                    "t-reddit"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "select",
-            "table": "tracked_posts",
-            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
-            "filters": [
-                [
-                    "id",
-                    "t-reddit"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "select",
-            "table": "tracked_posts",
-            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
-            "filters": [
-                [
-                    "id",
-                    "t-reddit"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "rpc",
-            "table": "merge_tracked_post_data",
-            "values": {
-                "p_id": "t-reddit",
-                "p_user_id": "user-1",
-                "p_patch": {
-                    "manualViews": 7
-                }
-            },
-            "filters": []
-        },
-        {
-            "type": "select",
-            "table": "tracked_posts",
-            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
-            "filters": [
-                [
-                    "id",
-                    "t-reddit"
-                ],
-                [
-                    "user_id",
-                    "user-1"
+                    "content_type",
+                    "youtube"
                 ]
             ]
         },
@@ -372,39 +113,8 @@
             "table": "tracked_posts",
             "values": {
                 "label": "New",
-                "category": "Cat",
-                "account_id": null
+                "category": "Cat"
             },
-            "filters": [
-                [
-                    "id",
-                    "t-reddit"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "select",
-            "table": "tracked_posts",
-            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
-            "filters": [
-                [
-                    "id",
-                    "t-reddit"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "select",
-            "table": "tracked_posts",
-            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
             "filters": [
                 [
                     "id",
@@ -413,6 +123,44 @@
                 [
                     "user_id",
                     "user-1"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "id, url, label, category, content_type, created_at, updated_at, data",
+            "filters": [
+                [
+                    "id",
+                    "t-youtube"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ],
+                [
+                    "content_type",
+                    "youtube"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "id, url, label, category, content_type, created_at, updated_at, data",
+            "filters": [
+                [
+                    "id",
+                    "t-short"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ],
+                [
+                    "content_type",
+                    "youtube"
                 ]
             ]
         },
@@ -420,12 +168,12 @@
             "type": "update",
             "table": "tracked_posts",
             "values": {
-                "label": "Only label"
+                "category": ""
             },
             "filters": [
                 [
                     "id",
-                    "t-youtube"
+                    "t-short"
                 ],
                 [
                     "user_id",
@@ -436,15 +184,57 @@
         {
             "type": "select",
             "table": "tracked_posts",
-            "columns": "id, account_id, url, label, category, content_type, created_at, updated_at, data",
+            "columns": "id, url, label, category, content_type, created_at, updated_at, data",
             "filters": [
                 [
                     "id",
-                    "t-youtube"
+                    "t-short"
                 ],
                 [
                     "user_id",
                     "user-1"
+                ],
+                [
+                    "content_type",
+                    "youtube"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "id, url, label, category, content_type, created_at, updated_at, data",
+            "filters": [
+                [
+                    "id",
+                    "t-short"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ],
+                [
+                    "content_type",
+                    "youtube"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "tracked_posts",
+            "columns": "id, url, label, category, content_type, created_at, updated_at, data",
+            "filters": [
+                [
+                    "id",
+                    "t-short"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ],
+                [
+                    "content_type",
+                    "youtube"
                 ]
             ]
         }

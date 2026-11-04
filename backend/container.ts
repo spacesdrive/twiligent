@@ -108,7 +108,7 @@ export function createServices(clients: Clients, config: AppConfig, context: Req
         scheduledPosts: createScheduledPostService({ accounts, posts, publisher: scheduledPublisher }),
         scheduledPublisher,
         tokenRefresh: createTokenRefreshService({ accounts, context }),
-        trackedContent: createTrackedContentService({ accounts, tracked, config, context }),
+        trackedContent: createTrackedContentService({ tracked, config, context }),
         overview: createOverviewService({ accounts, tracked, cache, config }),
         settings: createSettingsService({ settings, config }),
         instagramConnect: createInstagramConnectService({ accounts, audit, config, context }),

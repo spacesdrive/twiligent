@@ -1,5 +1,4 @@
 import type { InstagramContentTypeSummary } from './instagram.ts';
-import type { RedditTrackedPostData } from './reddit.ts';
 import type { YouTubeTrackedVideoData } from './youtube.ts';
 
 export type Platform = 'youtube' | 'instagram' | 'reddit';
@@ -139,11 +138,9 @@ export interface ScheduledPublishRun {
 // one row of `tracked_posts`; fields refreshed from the platform live in the data jsonb
 export interface TrackedPost {
     id: string;
-    accountId: string | null;
     url: string;
     label: string;
     category: string;
-    // 'reddit' unless the row says otherwise
     contentType: string;
     createdAt: string;
     updatedAt: string;
@@ -346,29 +343,18 @@ export interface ScheduledPostRequest {
 export type ScheduledPostUpdateRequest = Partial<Pick<ScheduledPost,
     'caption' | 'scheduledAt' | 'shareToFeed' | 'collaborators' | 'audioName' | 'thumbOffset' | 'locationId' | 'userTags' | 'altText' | 'coverUrl'>>;
 
-// fields the user types in for a reddit post, kept in the data jsonb next to the fetched ones
-export interface TrackedPostManualFields {
-    manualViews?: number | null;
-    imageUrl?: string | null;
-}
-
-// a tracked post with the fetched fields of whichever platform it tracks
-export type TrackedContentItem = TrackedPost
-    & Partial<RedditTrackedPostData>
-    & Partial<Omit<YouTubeTrackedVideoData, 'contentType'>>
-    & TrackedPostManualFields;
+// a tracked video with the fields fetched from YouTube
+export type TrackedContentItem = TrackedPost & Partial<Omit<YouTubeTrackedVideoData, 'contentType'>>;
 
 // body of POST /api/tracked-content
 export interface TrackedContentAddRequest {
     url: string;
-    accountId?: string | null;
     label?: string;
     category?: string;
 }
 
-// body of PUT /api/tracked-content/:id; null clears manualViews or imageUrl
-export interface TrackedContentUpdateRequest extends TrackedPostManualFields {
+// body of PUT /api/tracked-content/:id
+export interface TrackedContentUpdateRequest {
     label?: string;
     category?: string;
-    accountId?: string | null;
 }
