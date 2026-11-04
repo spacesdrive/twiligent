@@ -3,7 +3,7 @@ import type { SupabaseClient } from '../../types/app.ts';
 
 export type Row = Record<string, unknown>;
 
-type Filter = [column: string, value: unknown, operator?: 'lte' | 'lt' | 'neq' | 'gte' | 'gt' | 'in' | 'or'];
+type Filter = [column: string, value: unknown, operator?: 'lte' | 'lt' | 'neq' | 'gte' | 'gt' | 'in' | 'or' | 'is'];
 
 interface Action {
     type: 'select' | 'update' | 'insert' | 'upsert' | 'delete' | 'rpc';
@@ -31,6 +31,7 @@ interface FakeQuery {
     gt(column: string, value: unknown): FakeQuery;
     in(column: string, values: unknown[]): FakeQuery;
     or(expression: string): FakeQuery;
+    is(column: string, value: null): FakeQuery;
     order(): FakeQuery;
     limit(count: number): FakeQuery;
     single(): Promise<QueryResult>;
@@ -89,6 +90,8 @@ function matchesFilter(row: Row, [column, value, operator]: Filter): boolean {
     if (operator === 'gt') return row[column] != null && (row[column] as string) > (value as string);
     if (operator === 'in') return (value as unknown[]).includes(row[column]);
     if (operator === 'or') return matchesOr(row, value as string);
+    // is(column, null): a column the row never set counts as null, as in the database
+    if (operator === 'is') return (row[column] ?? null) === value;
     return row[column] === value;
 }
 
@@ -165,6 +168,10 @@ function queryBuilder(action: Action, run: Run): FakeQuery {
         },
         or(expression: string) {
             filters.push(['', expression, 'or']);
+            return query;
+        },
+        is(column: string, value: null) {
+            filters.push([column, value, 'is']);
             return query;
         },
         // rows come back in the order they were stored; tests that page seed rows newest first
