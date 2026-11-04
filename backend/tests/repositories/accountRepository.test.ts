@@ -8,6 +8,8 @@ import type { SupabaseClient } from '../../types/app.ts';
 const ROWS = [
     accountRow({ id: 'a1', platform: 'youtube', title: 'Mine' }),
     accountRow({ id: 'a2', platform: 'instagram', username: 'theirs' }, 'user-2'),
+    // a platform Twiligent no longer supports; its rows stay in the table until they are cleaned up
+    accountRow({ id: 'a3', platform: 'retired', username: 'old' }),
 ];
 
 describe('account repository', () => {
@@ -17,6 +19,13 @@ describe('account repository', () => {
         assert.deepEqual((await accounts.listByPlatform('instagram')).map(account => account.id), ['a2']);
         assert.equal(await accounts.findForUser('a2', 'user-1'), null);
         assert.deepEqual(await accounts.findById('a2'), { id: 'a2', platform: 'instagram', username: 'theirs' });
+    });
+
+    test('rows of a platform Twiligent no longer supports are never read', async () => {
+        const accounts = createAccountRepository(fakeSupabase(ROWS));
+        assert.deepEqual((await accounts.listForUser('user-1')).map(account => account.id), ['a1']);
+        assert.equal(await accounts.findForUser('a3', 'user-1'), null);
+        assert.equal(await accounts.findById('a3'), null);
     });
 
     test('an update is one merge in the database that keeps the platform and the fields it does not name', async () => {

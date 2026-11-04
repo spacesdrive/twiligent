@@ -11,6 +11,9 @@ interface AccountRow {
 
 const COLUMNS = 'id, platform, data';
 
+// rows of a platform Twiligent no longer supports stay in the table until they are cleaned up, so reads leave them out
+const SUPPORTED_PLATFORMS: Platform[] = ['youtube', 'instagram'];
+
 function toAccount(row: AccountRow): Account {
     return { id: row.id, platform: row.platform, ...row.data };
 }
@@ -30,7 +33,7 @@ export interface AccountRepository {
 export function createAccountRepository(db: SupabaseClient): AccountRepository {
     async function find(id: string, userId: string | null): Promise<Account | null> {
         const row = await maybeRow<AccountRow>('accounts.find', () => {
-            const query = db.from('accounts').select(COLUMNS).eq('id', id);
+            const query = db.from('accounts').select(COLUMNS).eq('id', id).in('platform', SUPPORTED_PLATFORMS);
             return (userId ? query.eq('user_id', userId) : query).maybeSingle();
         });
         return row ? toAccount(row) : null;
@@ -50,6 +53,7 @@ export function createAccountRepository(db: SupabaseClient): AccountRepository {
                 .from('accounts')
                 .select(COLUMNS)
                 .eq('user_id', userId)
+                .in('platform', SUPPORTED_PLATFORMS)
                 .order('created_at', { ascending: true })
                 .order('id', { ascending: true }));
             return found.map(toAccount);

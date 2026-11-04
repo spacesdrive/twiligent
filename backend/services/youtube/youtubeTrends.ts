@@ -63,7 +63,7 @@ export function buildTagFrequency(videos: YouTubeVideo[]): YouTubeTagCount[] {
         .map(([tag, count]) => ({ tag, count }));
 }
 
-// strict < unlike instagram and reddit (inclusive), to match stored analytics
+// strict < unlike instagram (inclusive), to match stored analytics
 export function countRecentUploads(videos: YouTubeVideo[], now: Date): YouTubeRecentUploads {
     const uploadedWithin = (days: number) => videos.filter(video => (now.getTime() - new Date(video.publishedAt).getTime()) < days * DAY_MS).length;
     return {

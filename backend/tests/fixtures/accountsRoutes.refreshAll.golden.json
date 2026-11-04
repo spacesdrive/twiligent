@@ -2,15 +2,15 @@
     "responses": [
         {
             "status": 200,
-            "body": "{\"success\":true,\"accounts\":[{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UCaaaaaaaaaaaaaaaaaaaaaa\",\"title\":\"Channel UCaa\",\"subscriberCount\":500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"viewCount\":9000,\"videoCount\":12,\"thumbnails\":{\"default\":\"d\",\"medium\":\"m\",\"high\":\"h\"},\"hasCookie\":false},{\"id\":\"ig1\",\"platform\":\"instagram\",\"igUserId\":\"1789\",\"username\":\"ribbon\",\"tokenExpiresAt\":\"2026-09-05T00:00:00.000Z\",\"followersCount\":2500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"followsCount\":10,\"mediaCount\":140,\"title\":\"Ribbon\",\"profilePictureUrl\":\"https://p\",\"hasCookie\":false},{\"id\":\"ig2\",\"platform\":\"instagram\",\"igUserId\":\"2000\",\"username\":\"notoken\",\"hasCookie\":false},{\"id\":\"old1\",\"platform\":\"retired\",\"username\":\"old_profile\",\"hasCookie\":false},{\"id\":\"yt2\",\"platform\":\"youtube\",\"channelId\":\"UCmissingmissingmissing0\",\"hasCookie\":false}],\"results\":[{\"id\":\"yt1\",\"success\":true},{\"id\":\"ig1\",\"success\":true},{\"id\":\"ig2\",\"success\":false,\"error\":\"No access token stored - reconnect this Instagram account\"},{\"id\":\"old1\",\"success\":false,\"error\":\"No YouTube channel ID stored - delete this channel and add it again\"},{\"id\":\"yt2\",\"success\":false,\"error\":\"Channel not found\"}],\"updatedAt\":\"2026-09-01T12:00:00.000Z\"}"
+            "body": "{\"success\":true,\"accounts\":[{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UCaaaaaaaaaaaaaaaaaaaaaa\",\"title\":\"Channel UCaa\",\"subscriberCount\":500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"viewCount\":9000,\"videoCount\":12,\"thumbnails\":{\"default\":\"d\",\"medium\":\"m\",\"high\":\"h\"},\"hasCookie\":false},{\"id\":\"ig1\",\"platform\":\"instagram\",\"igUserId\":\"1789\",\"username\":\"ribbon\",\"tokenExpiresAt\":\"2026-09-05T00:00:00.000Z\",\"followersCount\":2500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"followsCount\":10,\"mediaCount\":140,\"title\":\"Ribbon\",\"profilePictureUrl\":\"https://p\",\"hasCookie\":false},{\"id\":\"ig2\",\"platform\":\"instagram\",\"igUserId\":\"2000\",\"username\":\"notoken\",\"hasCookie\":false},{\"id\":\"yt2\",\"platform\":\"youtube\",\"channelId\":\"UCmissingmissingmissing0\",\"hasCookie\":false}],\"results\":[{\"id\":\"yt1\",\"success\":true},{\"id\":\"ig1\",\"success\":true},{\"id\":\"ig2\",\"success\":false,\"error\":\"No access token stored - reconnect this Instagram account\"},{\"id\":\"yt2\",\"success\":false,\"error\":\"Channel not found\"}],\"updatedAt\":\"2026-09-01T12:00:00.000Z\"}"
         },
         {
             "status": 200,
-            "body": "{\"success\":true,\"accounts\":[{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UCaaaaaaaaaaaaaaaaaaaaaa\",\"title\":\"Channel UCaa\",\"subscriberCount\":500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"viewCount\":9000,\"videoCount\":12,\"thumbnails\":{\"default\":\"d\",\"medium\":\"m\",\"high\":\"h\"},\"hasCookie\":false},{\"id\":\"ig1\",\"platform\":\"instagram\",\"igUserId\":\"1789\",\"username\":\"ribbon\",\"tokenExpiresAt\":\"2026-09-05T00:00:00.000Z\",\"followersCount\":2500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"followsCount\":10,\"mediaCount\":140,\"title\":\"Ribbon\",\"profilePictureUrl\":\"https://p\",\"hasCookie\":false},{\"id\":\"ig2\",\"platform\":\"instagram\",\"igUserId\":\"2000\",\"username\":\"notoken\",\"hasCookie\":false},{\"id\":\"old1\",\"platform\":\"retired\",\"username\":\"old_profile\",\"hasCookie\":false},{\"id\":\"yt2\",\"platform\":\"youtube\",\"channelId\":\"UCmissingmissingmissing0\",\"hasCookie\":false}],\"results\":[{\"id\":\"yt1\",\"success\":false,\"error\":\"YouTube API key not configured on server\"},{\"id\":\"ig1\",\"success\":true},{\"id\":\"ig2\",\"success\":false,\"error\":\"No access token stored - reconnect this Instagram account\"},{\"id\":\"old1\",\"success\":false,\"error\":\"No YouTube channel ID stored - delete this channel and add it again\"},{\"id\":\"yt2\",\"success\":false,\"error\":\"YouTube API key not configured on server\"}],\"updatedAt\":\"2026-09-01T12:00:00.000Z\"}"
+            "body": "{\"success\":true,\"accounts\":[{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UCaaaaaaaaaaaaaaaaaaaaaa\",\"title\":\"Channel UCaa\",\"subscriberCount\":500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"viewCount\":9000,\"videoCount\":12,\"thumbnails\":{\"default\":\"d\",\"medium\":\"m\",\"high\":\"h\"},\"hasCookie\":false},{\"id\":\"ig1\",\"platform\":\"instagram\",\"igUserId\":\"1789\",\"username\":\"ribbon\",\"tokenExpiresAt\":\"2026-09-05T00:00:00.000Z\",\"followersCount\":2500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"followsCount\":10,\"mediaCount\":140,\"title\":\"Ribbon\",\"profilePictureUrl\":\"https://p\",\"hasCookie\":false},{\"id\":\"ig2\",\"platform\":\"instagram\",\"igUserId\":\"2000\",\"username\":\"notoken\",\"hasCookie\":false},{\"id\":\"yt2\",\"platform\":\"youtube\",\"channelId\":\"UCmissingmissingmissing0\",\"hasCookie\":false}],\"results\":[{\"id\":\"yt1\",\"success\":false,\"error\":\"YouTube API key not configured on server\"},{\"id\":\"ig1\",\"success\":true},{\"id\":\"ig2\",\"success\":false,\"error\":\"No access token stored - reconnect this Instagram account\"},{\"id\":\"yt2\",\"success\":false,\"error\":\"YouTube API key not configured on server\"}],\"updatedAt\":\"2026-09-01T12:00:00.000Z\"}"
         },
         {
             "status": 200,
-            "body": "{\"success\":true,\"accounts\":[{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UCaaaaaaaaaaaaaaaaaaaaaa\",\"title\":\"Channel UCaa\",\"subscriberCount\":500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"viewCount\":9000,\"videoCount\":12,\"thumbnails\":{\"default\":\"d\",\"medium\":\"m\",\"high\":\"h\"},\"hasCookie\":false},{\"id\":\"ig1\",\"platform\":\"instagram\",\"igUserId\":\"1789\",\"username\":\"ribbon\",\"tokenExpiresAt\":\"2026-09-05T00:00:00.000Z\",\"followersCount\":2500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"followsCount\":10,\"mediaCount\":140,\"title\":\"Ribbon\",\"profilePictureUrl\":\"https://p\",\"hasCookie\":false},{\"id\":\"ig2\",\"platform\":\"instagram\",\"igUserId\":\"2000\",\"username\":\"notoken\",\"hasCookie\":false},{\"id\":\"old1\",\"platform\":\"retired\",\"username\":\"old_profile\",\"hasCookie\":false},{\"id\":\"yt2\",\"platform\":\"youtube\",\"channelId\":\"UCmissingmissingmissing0\",\"hasCookie\":false}],\"results\":[{\"id\":\"yt1\",\"success\":true},{\"id\":\"ig1\",\"success\":true},{\"id\":\"ig2\",\"success\":false,\"error\":\"No access token stored - reconnect this Instagram account\"},{\"id\":\"old1\",\"success\":false,\"error\":\"No YouTube channel ID stored - delete this channel and add it again\"},{\"id\":\"yt2\",\"success\":false,\"error\":\"Channel not found\"}],\"updatedAt\":\"2026-09-01T12:00:00.000Z\"}"
+            "body": "{\"success\":true,\"accounts\":[{\"id\":\"yt1\",\"platform\":\"youtube\",\"channelId\":\"UCaaaaaaaaaaaaaaaaaaaaaa\",\"title\":\"Channel UCaa\",\"subscriberCount\":500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"viewCount\":9000,\"videoCount\":12,\"thumbnails\":{\"default\":\"d\",\"medium\":\"m\",\"high\":\"h\"},\"hasCookie\":false},{\"id\":\"ig1\",\"platform\":\"instagram\",\"igUserId\":\"1789\",\"username\":\"ribbon\",\"tokenExpiresAt\":\"2026-09-05T00:00:00.000Z\",\"followersCount\":2500,\"lastUpdated\":\"2026-09-01T12:00:00.000Z\",\"followsCount\":10,\"mediaCount\":140,\"title\":\"Ribbon\",\"profilePictureUrl\":\"https://p\",\"hasCookie\":false},{\"id\":\"ig2\",\"platform\":\"instagram\",\"igUserId\":\"2000\",\"username\":\"notoken\",\"hasCookie\":false},{\"id\":\"yt2\",\"platform\":\"youtube\",\"channelId\":\"UCmissingmissingmissing0\",\"hasCookie\":false}],\"results\":[{\"id\":\"yt1\",\"success\":true},{\"id\":\"ig1\",\"success\":true},{\"id\":\"ig2\",\"success\":false,\"error\":\"No access token stored - reconnect this Instagram account\"},{\"id\":\"yt2\",\"success\":false,\"error\":\"Channel not found\"}],\"updatedAt\":\"2026-09-01T12:00:00.000Z\"}"
         }
     ],
     "requests": [
@@ -52,6 +52,14 @@
                 [
                     "user_id",
                     "user-1"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
                 ]
             ]
         },
@@ -102,6 +110,14 @@
                 [
                     "user_id",
                     "user-1"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
                 ]
             ]
         },
@@ -113,6 +129,14 @@
                 [
                     "user_id",
                     "user-1"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
                 ]
             ]
         },
@@ -142,6 +166,14 @@
                 [
                     "user_id",
                     "user-1"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
                 ]
             ]
         },
@@ -153,6 +185,14 @@
                 [
                     "user_id",
                     "user-1"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
                 ]
             ]
         },
@@ -203,6 +243,14 @@
                 [
                     "user_id",
                     "user-1"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
                 ]
             ]
         }

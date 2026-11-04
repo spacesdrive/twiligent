@@ -13,8 +13,8 @@
             "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"No access token stored - reconnect this Instagram account\",\"requestId\":\"req-test\"}"
         },
         {
-            "status": 400,
-            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"No YouTube channel ID stored - delete this channel and add it again\",\"requestId\":\"req-test\"}"
+            "status": 404,
+            "body": "{\"success\":false,\"code\":\"NOT_FOUND\",\"message\":\"Account not found\",\"requestId\":\"req-test\"}"
         },
         {
             "status": 200,
@@ -86,6 +86,14 @@
                     "nope"
                 ],
                 [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
+                ],
+                [
                     "user_id",
                     "user-1"
                 ]
@@ -99,6 +107,14 @@
                 [
                     "id",
                     "ig1"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
                 ],
                 [
                     "user_id",
@@ -136,6 +152,14 @@
                     "ig2"
                 ],
                 [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
+                ],
+                [
                     "user_id",
                     "user-1"
                 ]
@@ -151,6 +175,14 @@
                     "old1"
                 ],
                 [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
+                ],
+                [
                     "user_id",
                     "user-1"
                 ]
@@ -164,6 +196,14 @@
                 [
                     "id",
                     "yt1"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
                 ],
                 [
                     "user_id",
@@ -209,6 +249,14 @@
                     "yt1"
                 ],
                 [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
+                ],
+                [
                     "user_id",
                     "user-1"
                 ]
@@ -222,6 +270,14 @@
                 [
                     "id",
                     "yt2"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
                 ],
                 [
                     "user_id",
@@ -239,6 +295,14 @@
                     "other"
                 ],
                 [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
+                ],
+                [
                     "user_id",
                     "user-1"
                 ]
@@ -252,6 +316,14 @@
                 [
                     "id",
                     "nope"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
                 ],
                 [
                     "user_id",
@@ -269,6 +341,14 @@
                     "yt1"
                 ],
                 [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
+                ],
+                [
                     "user_id",
                     "user-1"
                 ]
@@ -284,6 +364,14 @@
                     "ig2"
                 ],
                 [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
+                ],
+                [
                     "user_id",
                     "user-1"
                 ]
@@ -297,6 +385,14 @@
                 [
                     "id",
                     "ig1"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
                 ],
                 [
                     "user_id",
@@ -325,6 +421,14 @@
                 [
                     "id",
                     "ig1"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
                 ],
                 [
                     "user_id",

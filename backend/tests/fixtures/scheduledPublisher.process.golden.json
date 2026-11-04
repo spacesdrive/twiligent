@@ -510,6 +510,14 @@
                 [
                     "id",
                     "ig1"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
                 ]
             ]
         },
@@ -576,6 +584,14 @@
                 [
                     "id",
                     "ig1"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
                 ]
             ]
         },
@@ -642,6 +658,14 @@
                 [
                     "id",
                     "igErr"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
                 ]
             ]
         },
@@ -706,6 +730,14 @@
                 [
                     "id",
                     "igExp"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
                 ]
             ]
         },
@@ -771,6 +803,14 @@
                 [
                     "id",
                     "gone"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
                 ]
             ]
         },
@@ -820,6 +860,14 @@
                 [
                     "id",
                     "igBad"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
                 ]
             ]
         },
@@ -869,6 +917,14 @@
                 [
                     "id",
                     "igPub"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
                 ]
             ]
         },
@@ -933,6 +989,14 @@
                 [
                     "id",
                     "igSlow"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
                 ]
             ]
         },
@@ -997,6 +1061,14 @@
                 [
                     "id",
                     "ig1"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
                 ]
             ]
         },
