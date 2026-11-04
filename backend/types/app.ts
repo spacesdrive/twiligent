@@ -2,6 +2,7 @@ import type { Context } from 'hono';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Redis } from '@upstash/redis';
 import type { Env } from './env.ts';
+import type { McpPrincipal } from '../services/mcpAccessService.ts';
 
 export type { SupabaseClient, Redis };
 
@@ -19,6 +20,8 @@ export interface AppVariables {
     // set by requireAuth on protected routes, from the verified JWT only
     userId: string;
     userEmail: string | undefined;
+    // set by requireMcpAuth on /mcp: who is calling through a Claude client and what they may do
+    mcpPrincipal: McpPrincipal;
 }
 
 export interface AppEnv {

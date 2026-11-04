@@ -5,6 +5,7 @@ import automationRoutes from './automationRoutes.ts';
 import analyticsRoutes from './analyticsRoutes.ts';
 import instagramAuthRoutes from './instagramAuthRoutes.ts';
 import instagramWebhookRoutes from './instagramWebhookRoutes.ts';
+import mcpRoutes from './mcpRoutes.ts';
 import overviewRoutes from './overviewRoutes.ts';
 import publishingRoutes from './publishingRoutes.ts';
 import scheduledPostRoutes from './scheduledPostRoutes.ts';
@@ -29,7 +30,7 @@ publicRoutes.route('/', instagramWebhookRoutes);
 export const protectedRoutes = new Hono<AppEnv>();
 for (const routes of [
     accountRoutes, analyticsRoutes, publishingRoutes, scheduledPostRoutes, trackedContentRoutes,
-    overviewRoutes, settingsRoutes, instagramAuthRoutes, automationRoutes,
+    overviewRoutes, settingsRoutes, instagramAuthRoutes, automationRoutes, mcpRoutes,
 ]) {
     protectedRoutes.route('/', routes);
 }

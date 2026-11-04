@@ -29,6 +29,12 @@ export const RATE_LIMIT_RULES = {
         label: 'Too many publishing requests',
         config: { algorithm: 'leakingBucket', capacity: 50, leakPerSecond: 1 / 15 },
     },
+    // calls from Claude clients to /mcp, per user: an agent may chain many tool calls, but never flood the services
+    mcp: {
+        name: 'mcp',
+        label: 'Too many requests from Claude',
+        config: { algorithm: 'tokenBucket', capacity: 60, refillPerSecond: 1 },
+    },
     // the public OAuth callback, per IP
     oauth: {
         name: 'oauth',
