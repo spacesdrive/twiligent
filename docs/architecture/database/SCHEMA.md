@@ -71,12 +71,12 @@ Stores connected YouTube channels and Instagram accounts.
 
 | Constraint | Rule |
 |---|---|
-| `accounts_platform_check` | `platform` is `'youtube'` or `'instagram'`, or the value of the platform removed in v2.0.0 (below) |
+| `accounts_platform_check` | `platform` is `'youtube'` or `'instagram'` |
 | `accounts_data_check` | `data` is a JSON object |
 | `accounts_id_user_id_key` | `unique (id, user_id)`, so posts can reference an account together with its owner |
 | `accounts_identity_key` | Unique index on `(user_id, platform, identity)`, where the identity is `data ->> 'channelId'` for YouTube and `data ->> 'igUserId'` for Instagram. Two adds of the same account at the same moment store one row; the other gets the usual 409 |
 
-The app reads and writes only YouTube and Instagram accounts: `accountRepository` selects rows whose `platform` is `youtube` or `instagram`. The check and the identity index still allow a value from a platform removed in v2.0.0, and rows of that platform may remain in the table, unseen by the app. The cleanup in #145 removes those rows, narrows the check and rebuilds the index (see `docs/platform-v2/DATABASE_MIGRATION.md` and ADR-049 in `DECISIONS.md`).
+`accountRepository` still selects only `youtube` and `instagram` rows, which the check now guarantees. The rows, check value and index branch of the platform removed in v2.0.0 were deleted by the cleanup migrations of #145 (`docs/platform-v2/DATABASE_MIGRATION.md`, ADR-049 in `DECISIONS.md`).
 
 ### `data` jsonb shape for YouTube accounts
 
@@ -219,31 +219,26 @@ A claim is one UPDATE that sets `status = 'publishing'`, `claimed_at = now()` an
 
 ## Table: `tracked_posts`
 
-Stores the YouTube videos the user wants to monitor. The app tracks YouTube videos only: `trackedPostRepository` reads rows whose `content_type` is `youtube`, writes `content_type: 'youtube'` on every insert and never writes `account_id`.
+Stores the YouTube videos the user wants to monitor. `trackedPostRepository` writes `content_type: 'youtube'` on every insert and reads only `youtube` rows, which the check now guarantees.
 
 | Column | Type | Nullable | Description |
 |---|---|---|---|
 | `id` | text | NOT NULL | PK. A UUID from `newRowId()`; older rows keep their earlier ids |
 | `user_id` | uuid | NOT NULL | FK -> `auth.users.id` ON DELETE CASCADE |
-| `account_id` | text | NULL | With `user_id`, FK -> `accounts (id, user_id)` ON DELETE SET NULL (`account_id`). No longer written; the cleanup in #145 drops it |
 | `url` | text | NOT NULL | Full URL of the YouTube video |
 | `label` | text | NOT NULL DEFAULT '' | User-defined name for the item |
 | `category` | text | NOT NULL DEFAULT '' | User-defined grouping label |
-| `content_type` | text | NOT NULL DEFAULT (see below) | `'youtube'`. The app always sets it, so the default, the removed platform's value, is never used |
+| `content_type` | text | NOT NULL DEFAULT 'youtube' | `'youtube'`; kept as a column so another kind of tracked item can be added with one check change |
 | `created_at` | timestamptz | NOT NULL DEFAULT now() | When the user added the item |
 | `updated_at` | timestamptz | NOT NULL DEFAULT now() | Set by the trigger on every update; the code no longer sets it |
 | `data` | jsonb | NULL | Cached data fetched from the platform API, stored in the same insert that creates the row (see below) |
 
 | Constraint | Rule |
 |---|---|
-| `tracked_posts_content_type_check` | `content_type` is `'youtube'`, or the value of the platform removed in v2.0.0 |
-| `tracked_posts_account_check` | Only items of the removed platform may have an account, so a YouTube item's `account_id` is null |
+| `tracked_posts_content_type_check` | `content_type` is `'youtube'` |
 | `tracked_posts_data_check` | `data` is null or a JSON object |
-| `tracked_posts_account_fkey` | `(account_id, user_id)` -> `accounts (id, user_id)` ON DELETE SET NULL (`account_id`) |
 
-Removing an account keeps its tracked items and clears only their `account_id`. The column list on SET NULL needs Postgres 15 or later; a plain SET NULL would try to clear `user_id` too.
-
-The default, the two checks and `account_id` are left from the platform removed in v2.0.0, and its tracked items may remain in the table, unseen by the app. The cleanup in #145 deletes those rows, makes `'youtube'` the only allowed value and the default, and drops `tracked_posts_account_check`, `tracked_posts_account_fkey` and `account_id` (see `docs/platform-v2/DATABASE_MIGRATION.md` and ADR-049 in `DECISIONS.md`).
+The cleanup migrations of #145 deleted the tracked items of the platform removed in v2.0.0 and dropped `account_id` with its foreign key and check, which only that platform used (`docs/platform-v2/DATABASE_MIGRATION.md`, ADR-049 in `DECISIONS.md`).
 
 ### `data` jsonb shape for YouTube items
 

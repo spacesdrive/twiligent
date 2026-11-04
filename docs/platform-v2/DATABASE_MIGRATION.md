@@ -45,10 +45,27 @@ Each runs in its own transaction (the Supabase CLI wraps every file), so a file 
 
 | File (verb first) | What it does | Rollback |
 |---|---|---|
-| `alter_tracked_posts_youtube_only` | Deletes tracked posts with `content_type = 'reddit'`, drops `tracked_posts_account_check`, replaces `tracked_posts_content_type_check` with `content_type = 'youtube'`, sets the default to `'youtube'` | Restores both checks as they were and the `'reddit'` default; the rows come back from the backup |
-| `drop_tracked_posts_account_id` | Drops `tracked_posts_account_fkey` and the `account_id` column | Adds the nullable column and the foreign key back (`on delete set null (account_id)`) |
-| `alter_accounts_without_reddit` | Deletes accounts with `platform = 'reddit'` and replaces `accounts_platform_check` with `('youtube', 'instagram')` | Restores the three-platform check; the rows come back from the backup |
-| `replace_accounts_identity_index` | Drops `accounts_identity_key` and creates it again without the Reddit branch | Creates the index with the Reddit branch again |
+| `20261104222452_alter_tracked_posts_youtube_only` | Deletes tracked posts with `content_type = 'reddit'`, drops `tracked_posts_account_check`, replaces `tracked_posts_content_type_check` with `content_type = 'youtube'`, sets the default to `'youtube'` | Restores both checks as they were and the `'reddit'` default; the rows come back from the backup |
+| `20261104222455_drop_tracked_posts_account_id` | Drops `tracked_posts_account_fkey` and the `account_id` column | Adds the nullable column and the foreign key back (`on delete set null (account_id)`) |
+| `20261104222458_alter_accounts_without_reddit` | Deletes accounts with `platform = 'reddit'` and replaces `accounts_platform_check` with `('youtube', 'instagram')` | Restores the three-platform check; the rows come back from the backup |
+| `20261104222501_replace_accounts_identity_index` | Drops `accounts_identity_key` and creates it again without the Reddit branch | Creates the index with the Reddit branch again |
+
+The files are in `supabase/migrations/` with their rollbacks in `supabase/rollbacks/`, and `supabase/schemas/` already shows the result.
+
+### Queries for the review (read only, in the Supabase SQL editor)
+
+```sql
+-- how many rows the cleanup deletes
+select 'accounts' as rows, count(*) from public.accounts where platform = 'reddit'
+union all
+select 'tracked_posts', count(*) from public.tracked_posts where content_type = 'reddit'
+union all
+select 'tracked_posts with an account', count(*) from public.tracked_posts where account_id is not null;
+
+-- the backup: run each, then Download, CSV, and keep the files outside the repository
+select * from public.accounts where platform = 'reddit';
+select * from public.tracked_posts where content_type = 'reddit' or account_id is not null;
+```
 
 A rollback restores the schema; Reddit rows are restored by loading the backup CSV into the tables with the Supabase table editor or `\copy`, after the rollback has run.
 
