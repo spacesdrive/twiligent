@@ -1,0 +1,27 @@
+{
+  "enabledPlugins": {
+    "security-audit@cloudflare-security": true,
+    "differential-review@trailofbits": true,
+    "insecure-defaults@trailofbits": true,
+    "sharp-edges@trailofbits": true,
+    "static-analysis@trailofbits": true,
+    "supply-chain-risk-auditor@trailofbits": true,
+    "variant-analysis@trailofbits": true,
+    "audit-context-building@trailofbits": true
+  },
+  "extraKnownMarketplaces": {
+    "trailofbits": {
+      "source": {
+        "source": "github",
+        "repo": "trailofbits/skills",
+        "ref": "main"
+      }
+    },
+    "cloudflare-security": {
+      "source": {
+        "source": "directory",
+        "path": "./.claude/marketplaces/cloudflare-security"
+      }
+    }
+  }
+}
