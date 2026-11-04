@@ -20,7 +20,7 @@ export interface ScheduledPostService {
     update(userId: string, postId: string, changes: ScheduledPostUpdateRequest): Promise<ScheduledPost | null>;
     remove(userId: string, postId: string): Promise<void>;
     removeAll(userId: string): Promise<DeleteAllResult>;
-    publishDueNow(): Promise<ScheduledPublishRun>;
+    publishDueNow(userId: string): Promise<ScheduledPublishRun>;
 }
 
 function futureDate(value: string): string {
@@ -91,6 +91,6 @@ export function createScheduledPostService({ accounts, posts, publisher }: Sched
         removeAll: userId => posts.deleteAllForUser(userId),
 
         // the manual trigger runs the same publisher the cron uses, for every user's due posts
-        publishDueNow: () => publisher.publishDue(),
+        publishDueNow: userId => publisher.publishDueForUser(userId),
     };
 }
