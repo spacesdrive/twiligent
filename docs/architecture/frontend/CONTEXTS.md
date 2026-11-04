@@ -52,7 +52,7 @@ useEffect(() => {
 - `ProtectedRoute` - reads `session` to decide whether to redirect to `/login`
 - `Login.tsx` - calls `sendSignInCode()` and `verifySignInCode()` (the default email sign-in), `signIn()`, `signUp()`, `verifySignUpCode()`, `resendSignUpCode()`, `sendPasswordReset()`, `verifyPasswordResetCode()`, `updatePassword()` and `signInWithGoogle()`
 - `features/settings/PasswordSection.tsx` - calls `updatePassword()` and reads `user.email` for password managers
-- `Header.tsx` - calls `signOut()`, shows `user.email`
+- `layout/index.tsx` and `layout/Sidebar.tsx` - the shell calls `signOut()`; the sidebar user menu shows `user.email`
 - Do **not** use in page/feature components - they should never need auth state directly
 
 ---
@@ -80,7 +80,7 @@ The value is typed as `AppContextValue`, exported from `AppContext.tsx`. `useApp
 
 ### Loading behavior
 
-`loadAccounts()` is called automatically on mount. It does not set `loading = true` - it's a background load. Only `refreshAll()` sets `loading = true` (used to show a spinner in the Header).
+`loadAccounts()` is called automatically on mount. It does not set `loading = true` - it's a background load. Only `refreshAll()` sets `loading = true` (pages that offer Refresh all, such as the Overview, show it as a busy state).
 
 ### Where to use it
 

@@ -67,7 +67,7 @@ ThemeProvider (next-themes)          <- OS/user theme preference
               AppProvider            <- accounts[], loading, showToast
                 AppShell (layout/index.tsx)
                   AppSidebar         <- navigation, accounts, categories, user menu
-                  TopBar             <- breadcrumb, refresh, theme
+                  TopBar             <- page title or breadcrumb, search, help
                   (lazy page)
                   CommandPalette     <- Ctrl+K / Cmd+K
       Toaster (Sonner, bottom-right) <- toast notifications
@@ -102,13 +102,19 @@ frontend/src/
     use-mobile.ts         useIsMobile()
     use-command-palette-shortcut.ts  Ctrl+K / Cmd+K toggle
     use-smooth-theme.ts   useSmoothTheme(), theme cross-fade
+    use-document-title.ts useDocumentTitle(name): a detail page names the browser tab after what it shows
     use-cloudinary-config.ts  useCloudinaryConfig(reloadKey), shared by Publish and Tracked content
     use-account-analytics.ts  useAccountAnalytics(account, fetchAnalytics, label), shared by Instagram and Reddit analytics
   layout/
     index.tsx             AppShell: SidebarProvider + AppSidebar + TopBar + Outlet + CommandPalette
-    navigation.ts         NAV_GROUPS and route titles (single source for sidebar, top bar, palette)
-    Sidebar.tsx           Collapsible sidebar: logo, search, nav groups, accounts, categories, user menu
-    Header.tsx            TopBar: breadcrumb, refresh all, theme toggle
+    navigation.ts         NAV_GROUPS with icons, routeTitle() and currentNavPath() (single source for sidebar, top bar, palette)
+    routes.ts             Pure route matching: DETAIL_ROUTES, longest-match active link, tab titles (tested)
+    routeFocus.ts         Moves focus to the new page's heading after a navigation
+    shortcuts.ts          Keyboard shortcut labels (Ctrl or Cmd) for the sidebar, palette and tooltips
+    shellContext.ts       What the shell passes to pages through the outlet (openPalette)
+    RedirectWithQuery.tsx Redirect from a moved path, keeping the query string and hash
+    Sidebar.tsx           Collapsible sidebar: logo, search, nav groups, capped account and category lists, user menu
+    Header.tsx            TopBar: page title or breadcrumb with a parent link, search, help
   components/
     ProtectedRoute.tsx    Auth guard component
     DocsRedirect.tsx      /docs/* route: sends old docs links to the same page on the public site
@@ -122,6 +128,7 @@ frontend/src/
                           figures; aria-hidden and loaded with React.lazy so it never delays the card
     LoginEmailStart.tsx   The first view's email field, with a mail icon and the Continue arrow inside it
     LoginPasswordForm.tsx Email and password form, for signing in and for creating a password account
+    NotFound.tsx          The page for any unknown path inside the app: the path, a link to the overview, the search shortcut
     LoginCodeForm.tsx     The 6-digit email code step (code sign-in, sign-up confirmation, and password reset with a new-password field), with Send a new code
     LoginEmailForm.tsx    The email-only Forgot password step
     PasswordInput.tsx     Password field with its show or hide button, used by the sign-in, sign-up and reset forms
