@@ -134,7 +134,7 @@ One ESLint run from the root covers the whole repository. The shared config is `
 - `backend/tests/**`, `frontend/tests/**`, `frontend/vite.config.ts`, `site/vite.config.ts`, `site/build/**`, `site/tests/**` and `scripts/**`: Node globals
 - Root `*.js` and `*.mjs` config files: the ESLint recommended rules with Node globals
 
-Lint must report 0 problems; the CI workflow fails on any error. The shadcn files that export their cva variants next to the component (`badgeVariants`, `buttonVariants`, `tabsListVariants`, `toggleVariants`, `useSidebar`) and the contexts that export their hooks (`useAppContext`, `useAuth`) are listed in `allowExportNames` for `react-refresh/only-export-components` in `eslint.config.mjs`; editing one of those files reloads the page instead of hot-updating it. Add a name there only for the same pattern.
+Lint must report 0 problems; the CI workflow fails on any error. The shadcn files that export their cva variants next to the component (`badgeVariants`, `buttonVariants`, `tabsListVariants`, `toggleVariants`, `useSidebar`), Intent UI's chart file with its helpers (`useChart`, `valueToPercent`, `constructCategoryColors`, `getColorValue`) and the contexts that export their hooks (`useAppContext`, `useAuth`) are listed in `allowExportNames` for `react-refresh/only-export-components` in `eslint.config.mjs`; editing one of those files reloads the page instead of hot-updating it. Add a name there only for the same pattern.
 
 ### Formatting
 

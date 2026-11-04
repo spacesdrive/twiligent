@@ -10,7 +10,8 @@
 | Build tool | Vite | 7 |
 | UI components | shadcn/ui (base-nova style) | - |
 | Styling | Tailwind CSS | 4 |
-| Charts | Recharts | 3 |
+| Charts | Recharts, through Intent UI's chart components (`components/ui/chart.tsx` and the area, bar and line charts; ADR-048) | 3 |
+| Chart legend toggles | react-aria-components | 1 |
 | Theming | next-themes | - |
 | Toasts | Sonner | - |
 | Icons | Lucide React | - |

@@ -118,6 +118,9 @@
   --card: var(--surface-raised);
   --card-foreground: var(--ink);
   --popover: var(--surface-overlay);
+  /* Intent UI's chart tooltip reads overlay colours; they are the popover surface here */
+  --overlay: var(--surface-overlay);
+  --overlay-foreground: var(--ink);
   --popover-foreground: var(--ink);
   --primary: var(--brand);
   --primary-foreground: var(--on-brand);
@@ -216,6 +219,8 @@
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
+  --color-overlay: var(--overlay);
+  --color-overlay-foreground: var(--overlay-foreground);
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);

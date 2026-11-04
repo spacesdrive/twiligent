@@ -1042,3 +1042,22 @@ New row ids come from `crypto.randomUUID()` (`newRowId()` in `backend/lib/ids.ts
 - A mistyped docs address still answers 200, and a new top-level page on the site needs a rewrite line.
 - A delete reaches the server 8 seconds late; leaving the page sends any waiting delete at once.
 - Old `/upload` and `/reels` links keep working only through the redirects.
+
+## ADR-048: Charts are built with Intent UI's Recharts components, and react-aria-components joins the app
+
+**Date:** 2026-11-05
+**Status:** Accepted
+
+**Decision:** Charts in the app use Intent UI's chart components (`components/ui/chart.tsx`, `area-chart.tsx`, `bar-chart.tsx`, `line-chart.tsx`), copied from its shadcn registry and credited in `THIRD_PARTY_NOTICES.md` (#140). They wrap the Recharts the app already uses, so the data stays the same; they add a themed tooltip, a legend that highlights one series when pressed, and responsive heights. `react-aria-components` is added to the frontend for the legend's toggle buttons. The chart types and layout return to how they were before #132; the visible summary line and Show table button go, and each chart keeps its screen-reader name and description. Daily and weekly counts may use a stacked bar card adapted from Bencho's free Stacked bars block (MIT), and metric values roll like an odometer when they change, adapted from Bencho's Rolling counter.
+
+**Context:** The owner asked for the earlier charts back, built with Intent UI, and for elements from bencho.dev.
+
+**Why install by hand:** the shadcn CLI would run `npm install` inside `frontend/`, which this repository forbids, would overwrite `hooks/use-mobile.ts`, and would add neutral overlay colours outside the brand. The files were taken from the registry, adapted, and the one package installed from the root.
+
+**Alternatives considered:**
+- The `cn` package and the `tailwindcss-react-aria-components` plugin, as the registry lists. The app's own `cn()` knows its token sizes, and React Aria's `data-selected` attribute does what the plugin's variant does, so neither is needed.
+- `framer-motion` for the stacked bar ring and tooltip, as the Bencho block uses. CSS transitions on transform do the same glide without a dependency.
+
+**Trade-offs:**
+- `react-aria-components` is a second headless library beside Base UI; it is used only inside the chart legend.
+- The charts lose the visible summary and data table added in #132; screen readers still get each chart's description.
