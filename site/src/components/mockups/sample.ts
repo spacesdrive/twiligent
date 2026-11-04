@@ -12,7 +12,7 @@ export const ACCOUNTS: SampleAccount[] = [
   { platform: 'youtube', name: 'Northwind Kitchen', audience: 84_213 },
   { platform: 'instagram', name: '@northwind.kitchen', audience: 31_702 },
   { platform: 'youtube', name: 'Northwind Shorts', audience: 22_940 },
-  { platform: 'reddit', name: 'u/northwind_cooks', audience: 12_410 },
+  { platform: 'instagram', name: '@northwind.bakes', audience: 12_410 },
 ];
 
 // weekly subscribers of the main channel and followers of the Instagram account, last 12 weeks

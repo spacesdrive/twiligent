@@ -25,31 +25,30 @@ const READS: Read[] = [
   {
     platform: 'youtube',
     role: 'Analytics',
-    items: ['Subscribers and views', 'Likes and comments', 'Shorts against long videos', 'Tags and SEO'],
+    items: [
+      'Subscribers and views',
+      'Likes and comments',
+      'Shorts against long videos',
+      'Tags and SEO',
+      'Any video, tracked by its link',
+    ],
     metric: 'Subscribers',
     weeks: YOUTUBE_WEEKS,
     tone: 'accent',
   },
   {
     platform: 'instagram',
-    role: 'Analytics and publishing',
+    role: 'Analytics, publishing and comment replies',
     items: [
       'Followers and engagement',
       'Best day and hour to post',
       'Content types and hashtags',
       'Photos, Reels and Stories',
+      'Private replies to comments',
     ],
     metric: 'Followers',
     weeks: INSTAGRAM_WEEKS,
     tone: 'afterglow',
-  },
-  {
-    platform: 'reddit',
-    role: 'Analytics',
-    items: ['Karma', 'Posts', 'Comments', 'Any post, tracked by its link'],
-    metric: 'Karma',
-    weeks: [9_800, 10_050, 10_120, 10_400, 10_760, 10_900, 11_200, 11_380, 11_650, 11_900, 12_180, 12_410],
-    tone: 'accent',
   },
 ];
 
@@ -104,7 +103,7 @@ function PlatformCard({ read, index }: { read: Read; index: number }) {
   );
 }
 
-// the integrations wall from Activepieces, told honestly: three platforms, and what Twiligent reads from each
+// the integrations wall from Activepieces, told honestly: two platforms, and what Twiligent reads from each
 export function Platforms() {
   return (
     <section
@@ -114,11 +113,11 @@ export function Platforms() {
     >
       <SectionHeader
         id="platforms-heading"
-        title="Three platforms. One dashboard."
-        lead="YouTube and Reddit for analytics. Instagram for analytics, publishing and comment replies."
+        title="Two platforms. One dashboard."
+        lead="YouTube for analytics. Instagram for analytics, publishing and comment replies."
       />
       <FoldBand placement="bottom-left" className="rounded-[32px] p-4 sm:p-8 lg:p-12">
-        <ul className="grid gap-4 lg:grid-cols-3">
+        <ul className="mx-auto grid w-full max-w-[56rem] gap-4 md:grid-cols-2">
           {READS.map((read, i) => (
             <PlatformCard key={read.platform} read={read} index={i} />
           ))}
@@ -126,10 +125,10 @@ export function Platforms() {
       </FoldBand>
       <FeatureNotes
         notes={[
-          { title: 'Libraries', text: 'Every video, Short, reel, post and Reddit post, searchable and filterable.' },
+          { title: 'Libraries', text: 'Every video, Short, reel and post, searchable and filterable.' },
           {
             title: 'Tracked content',
-            text: 'Follow any Reddit post or YouTube video by its link, and group them into categories.',
+            text: 'Follow any YouTube video or Short by its link, and group them into categories.',
           },
           { title: 'Open source', text: 'MIT licensed. Read every line on GitHub.' },
         ]}

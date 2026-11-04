@@ -15,8 +15,8 @@ const QUESTIONS: { q: string; a: ReactNode }[] = [
     a: 'Data is fetched when you open a page or choose Refresh, and cached for a short time when Redis is set up. Instagram tokens are renewed nightly.',
   },
   {
-    q: 'Does Twiligent publish to YouTube or Reddit?',
-    a: 'No. Publishing is Instagram only. YouTube and Reddit are analytics only.',
+    q: 'Does Twiligent publish to YouTube?',
+    a: 'No. Publishing is Instagram only. YouTube is analytics only.',
   },
   {
     q: 'Do I need my own Supabase project?',

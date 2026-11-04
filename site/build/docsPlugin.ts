@@ -87,7 +87,7 @@ function llmsTxt(files: DocFile[]): string {
         `- [${pageTitle(file.source, file.slug || 'Docs')}](${SITE_URL}/docs${file.slug ? `/${file.slug}` : ''}): ${pageDescription(file.source)}`,
     );
   const summary =
-    'Twiligent puts YouTube, Instagram and Reddit analytics side by side, publishes and schedules Instagram posts, and runs on accounts you own. It is open source under the MIT licence.';
+    'Twiligent puts YouTube and Instagram analytics side by side, publishes and schedules Instagram posts, answers Instagram comments with a private reply, and runs on accounts you own. It is open source under the MIT licence.';
   return `# Twiligent\n\n> ${summary}\n\n## Docs\n\n${lines.join('\n')}\n`;
 }
 

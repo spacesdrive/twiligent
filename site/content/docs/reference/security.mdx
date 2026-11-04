@@ -3,12 +3,12 @@ export const meta = { title: 'Security', description: 'How member data is kept a
 ## What members can rely on
 
 - Other members cannot see your accounts, scheduled posts or tracked content.
-- Instagram access tokens and Reddit cookies are stored on the server and never sent to any browser, including yours.
+- Instagram access tokens are stored on the server and never sent to any browser, including yours.
 - No member, including you, ever handles the instance's API keys.
 
 ## How isolation works
 
-The browser signs in with Supabase and sends its token with every request. The Worker verifies the token and takes the member's ID from it, never from anything the browser sends. Every database query is limited to that ID. A scheduled post or tracked item can only use one of the member's own accounts: the Worker checks it, and the database refuses it too. Responses are stripped of tokens and cookies before they leave the Worker.
+The browser signs in with Supabase and sends its token with every request. The Worker verifies the token and takes the member's ID from it, never from anything the browser sends. Every database query is limited to that ID. A scheduled post or tracked item can only use one of the member's own accounts: the Worker checks it, and the database refuses it too. Responses are stripped of access tokens before they leave the Worker.
 
 ## Administrator responsibilities
 

@@ -36,7 +36,7 @@ export default function HomeBelow() {
       <FeatureSection
         id="analytics"
         title="Every number, side by side."
-        lead="Subscribers, followers, karma, views, likes and comments across YouTube, Instagram and Reddit, with a detail page for each account."
+        lead="Subscribers, followers, views, likes and comments across YouTube and Instagram, with a detail page for each account."
         notes={[
           {
             title: 'YouTube in depth',
@@ -46,7 +46,7 @@ export default function HomeBelow() {
             title: 'Instagram in depth',
             text: 'Engagement, the best day and hour to post, consistency, content types and hashtags.',
           },
-          { title: 'Reddit too', text: 'Karma, posts and comments for every profile you add.' },
+          { title: 'Tracked content', text: 'Follow any YouTube video or Short by its link, even ones you did not make.' },
         ]}
       >
         <AnalyticsCard />

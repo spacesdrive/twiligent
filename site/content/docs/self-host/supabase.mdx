@@ -75,4 +75,4 @@ If a check stops the push because of an old row, the error names the rule. Fix t
 
 The backend uses the secret key, which bypasses row level security, and limits every query to the signed-in user itself. The browser never reads the tables; it only signs in with Supabase. So the migrations turn security on with no policies and also remove every permission the publishable key's roles had on the tables and on Twiligent's database functions. The public publishable key, which ships in the frontend, cannot read or change any table directly, and neither can a signed-in member's own token.
 
-A policy that let members reach their own rows would still expose their raw Instagram tokens and Reddit cookies to the browser, and would let them write rows the backend refuses, such as a post on another member's account. Older setups had such policies; the migrations remove them.
+A policy that let members reach their own rows would still expose their raw Instagram tokens to the browser, and would let them write rows the backend refuses, such as a post on another member's account. Older setups had such policies; the migrations remove them.
