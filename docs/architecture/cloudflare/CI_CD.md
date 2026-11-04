@@ -178,6 +178,8 @@ Native binaries such as workerd, esbuild, rollup, lightningcss and Tailwind's ox
 
 Every third-party action is pinned to a full commit SHA, with the tag it came from in a comment (`actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4`). Whoever controls an action's repository can move a tag to different code; a commit cannot change, so a compromised action release cannot reach the deploy secrets without a change to this repository. The `@v4` mentions above name the version each pin came from.
 
+Every workflow also sets `permissions: contents: read`, so the `GITHUB_TOKEN` a step receives can read the repository and nothing else; the deploys and the publisher reach Cloudflare, Supabase and Instagram with their own secrets.
+
 To update a pin, resolve the new tag to its commit and replace the SHA and the comment together:
 
 ```bash
