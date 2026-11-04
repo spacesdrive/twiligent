@@ -4,7 +4,6 @@ import { formatNumber } from '@/lib/format';
 import {
   Bookmark,
   CalendarMark,
-  Chart,
   ClockCircle,
   Gallery,
   Home,
@@ -25,7 +24,6 @@ const NAV = [
   { label: 'Videos', icon: Videocamera },
   { label: 'Shorts', icon: Widget },
   { label: 'Instagram content', icon: Gallery },
-  { label: 'Reddit posts', icon: Chart },
   { label: 'Tracked content', icon: Bookmark },
 ];
 
@@ -82,7 +80,7 @@ export function OverviewWindow({ className }: { className?: string }) {
   return (
     <div
       role="img"
-      aria-label="The Twiligent Overview: audience totals, a growth chart, the top accounts across YouTube, Instagram and Reddit, and the next scheduled post."
+      aria-label="The Twiligent Overview: audience totals, a growth chart, the top accounts across YouTube and Instagram, and the next scheduled post."
       className={className}
     >
       <Window url="app.twiligent.ujjwal.fyi" bodyClassName="flex h-[30rem] md:h-[34rem]">
@@ -121,7 +119,7 @@ export function OverviewWindow({ className }: { className?: string }) {
           <div className="flex items-center justify-between gap-3">
             <div>
               <p className="font-display text-lg font-semibold text-ink md:text-xl">Overview</p>
-              <p className="text-xs text-ink-muted">{ACCOUNTS.length} accounts across YouTube, Instagram and Reddit</p>
+              <p className="text-xs text-ink-muted">{ACCOUNTS.length} accounts across YouTube and Instagram</p>
             </div>
             <div className="hidden items-center gap-2 sm:flex">
               <span className="rounded-full bg-surface-sunken px-3 py-1.5 text-xs font-medium text-ink-muted">

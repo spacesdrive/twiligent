@@ -23,7 +23,7 @@ export function LeaderboardMock() {
   return (
     <Frame
       ref={ref}
-      label="The Overview leaderboard ranking four accounts across YouTube, Instagram and Reddit by audience, with each one's gain this week."
+      label="The Overview leaderboard ranking four accounts across YouTube and Instagram by audience, with each one's gain this week."
       icon={<Chart className="size-5" />}
       title="Top accounts"
       meta={

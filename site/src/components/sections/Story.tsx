@@ -13,8 +13,8 @@ import {
   FilesWindow,
   InstagramWindow,
   NotesWindow,
-  RedditWindow,
   SheetWindow,
+  ShortsWindow,
   YouTubeStudioWindow,
 } from './storyWindows';
 
@@ -43,7 +43,7 @@ const WINDOWS: FlyingWindowSpec[] = [
   { Comp: FilesWindow, at: [21, 71], tilt: 5, from: [-89, 63, 10], start: 0.345, front: true },
   { Comp: NotesWindow, at: [40, 68], tilt: -2, from: [-26, 100, -4], start: 0.37, front: true },
   { Comp: CalendarWindow, at: [67, 60], tilt: 6, from: [73, 13, 12], start: 0.35, front: true },
-  { Comp: RedditWindow, at: [80, 72], tilt: -5, from: [73, 58, -10], start: 0.385, front: true },
+  { Comp: ShortsWindow, at: [80, 72], tilt: -5, from: [73, 58, -10], start: 0.385, front: true },
 ];
 const FLY_IN = 0.14;
 const LEAVE = 0.605;
@@ -307,7 +307,7 @@ function NodeCard({ node }: { node: RingNodeSpec }) {
   if (node.id === 'platforms') {
     return (
       <div className="flex">
-        {(['youtube', 'instagram', 'reddit'] as const).map((platform, i) => (
+        {(['youtube', 'instagram'] as const).map((platform, i) => (
           <span
             key={platform}
             className={cn(

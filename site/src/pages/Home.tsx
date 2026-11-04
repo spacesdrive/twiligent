@@ -12,7 +12,7 @@ import type { Platform } from '@/components/mockups/platforms';
 // everything below the hero loads after it, so the first screen paints from the smallest bundle
 const HomeBelow = lazy(() => import('./HomeBelow'));
 
-const PLATFORMS: Platform[] = ['youtube', 'instagram', 'reddit'];
+const PLATFORMS: Platform[] = ['youtube', 'instagram'];
 
 function Hero() {
   return (
@@ -23,11 +23,11 @@ function Hero() {
           id="hero-heading"
           className="display fold-in mt-5 max-w-[17ch] text-[40px] leading-[44px] tracking-[-0.03em] text-ink sm:text-[52px] sm:leading-[56px] lg:text-[64px] lg:leading-[68px]"
         >
-          YouTube, Instagram and Reddit analytics in one dashboard.
+          YouTube and Instagram analytics in one dashboard.
         </h1>
         <p className="fold-in mt-6 max-w-[40rem] text-lg leading-7 text-balance text-ink-muted">
-          Twiligent puts your YouTube, Instagram and Reddit numbers side by side, publishes and schedules your Instagram
-          posts, answers Instagram comments with a private reply, and runs on accounts you own.
+          Twiligent puts your YouTube and Instagram numbers side by side, publishes and schedules your Instagram posts,
+          answers Instagram comments with a private reply, and runs on accounts you own.
         </p>
         <div className="fold-in mt-9 flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row">
           <Pill href={SIGN_UP_URL} size="lg" className="w-full sm:w-auto">
@@ -64,9 +64,9 @@ function Hero() {
 
 export default function Home() {
   usePageMeta({
-    title: 'YouTube, Instagram and Reddit analytics in one dashboard',
+    title: 'YouTube and Instagram analytics in one dashboard',
     description:
-      'Twiligent puts your YouTube, Instagram and Reddit numbers side by side, publishes and schedules your Instagram posts, answers Instagram comments with a private reply, and runs on accounts you own.',
+      'Twiligent puts your YouTube and Instagram numbers side by side, publishes and schedules your Instagram posts, answers Instagram comments with a private reply, and runs on accounts you own.',
     path: '/',
   });
   return (

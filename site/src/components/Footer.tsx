@@ -95,7 +95,7 @@ export function Footer() {
               <div className="flex flex-col gap-3">
                 <Logo className="h-7" />
                 <p className="max-w-xs text-[15px] leading-6 text-ink-muted">
-                  YouTube, Instagram and Reddit in one dashboard you can run yourself.
+                  YouTube and Instagram in one dashboard you can run yourself.
                 </p>
               </div>
               {COLUMNS.map(column => (

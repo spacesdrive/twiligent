@@ -19,10 +19,10 @@ const PEOPLE: Person[] = [
     name: 'Asha',
     email: 'asha@northwind.kitchen',
     role: 'Administrator',
-    accounts: ['youtube', 'instagram', 'youtube', 'reddit'],
+    accounts: ['youtube', 'instagram', 'youtube', 'instagram'],
   },
-  { name: 'Ben', email: 'ben@northwind.kitchen', role: 'Member', accounts: ['youtube', 'reddit'] },
-  { name: 'Chloe', email: 'chloe@northwind.kitchen', role: 'Member', accounts: ['instagram', 'reddit'] },
+  { name: 'Ben', email: 'ben@northwind.kitchen', role: 'Member', accounts: ['youtube', 'instagram'] },
+  { name: 'Chloe', email: 'chloe@northwind.kitchen', role: 'Member', accounts: ['instagram', 'youtube'] },
 ];
 
 const STEPS = [0.3, 7];

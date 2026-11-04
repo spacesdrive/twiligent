@@ -1,4 +1,4 @@
-export const meta = { title: 'Connect your accounts', description: 'How to add YouTube channels, Instagram professional accounts and Reddit profiles.' }
+export const meta = { title: 'Connect your accounts', description: 'How to add YouTube channels and Instagram professional accounts.' }
 
 ## YouTube
 
@@ -33,20 +33,5 @@ In Twiligent, open **Accounts**, choose **Add account**, then **Instagram accoun
 <Callout type="note" title="Access lasts 60 days and renews itself">
 
 Instagram access tokens last 60 days. Twiligent renews them automatically every night, so you only reconnect if you remove access in Instagram or change your password.
-
-</Callout>
-
-## Reddit
-
-Reddit blocks most requests from servers, so Twiligent uses your browser session cookie to read your profile and posts.
-
-1. Sign in to reddit.com in your browser.
-2. Open the browser's developer tools (F12), then **Application**, then **Cookies**, then `https://www.reddit.com`.
-3. Find the cookie named `reddit_session` and copy its value.
-4. In Twiligent choose **Add account**, **Reddit account**, enter your username (`name`, `u/name` or the address of your profile all work) and paste the cookie.
-
-<Callout type="warning" title="Treat the cookie like a password">
-
-It signs in as you. Twiligent stores it on the server and never shows it again. If Reddit signs you out, the cookie stops working: remove the account and add it again with a fresh cookie.
 
 </Callout>

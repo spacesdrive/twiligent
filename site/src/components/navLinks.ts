@@ -33,7 +33,7 @@ export const MENUS: Menu[] = [
         items: [
           {
             title: 'Analytics',
-            description: 'YouTube, Instagram and Reddit side by side',
+            description: 'YouTube and Instagram side by side',
             href: '/#analytics',
             icon: Chart,
           },

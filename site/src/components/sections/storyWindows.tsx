@@ -77,14 +77,14 @@ export function InstagramWindow() {
   );
 }
 
-export function RedditWindow() {
+export function ShortsWindow() {
   return (
-    <Window url="reddit.com/user/northwind_cooks" className={BOX} bodyClassName="p-5">
+    <Window url="youtube.com/@northwindshorts/shorts" className={BOX} bodyClassName="p-5">
       <div className="flex items-center gap-3">
-        <PlatformMark platform="reddit" className="size-6" />
-        <p className="font-display text-base font-semibold text-ink">u/northwind_cooks</p>
+        <PlatformMark platform="youtube" className="size-6" />
+        <p className="font-display text-base font-semibold text-ink">Northwind Shorts</p>
         <span className="ml-auto rounded-full bg-surface-sunken px-2.5 py-1 font-mono text-[11px] text-ink">
-          12,410 karma
+          22,940 subscribers
         </span>
       </div>
       <ul className="mt-4 flex flex-col gap-2.5">
@@ -95,8 +95,8 @@ export function RedditWindow() {
         ].map((title, i) => (
           <li key={title} className="flex items-center gap-3 rounded-md border border-line p-3">
             <span className="flex w-10 flex-col items-center font-mono text-[11px] text-ink">
-              {[2400, 1100, 870][i]}
-              <span className="text-ink-muted">up</span>
+              {['41K', '23K', '37K'][i]}
+              <span className="text-ink-muted">views</span>
             </span>
             <span className="min-w-0 flex-1">
               <span className="block truncate text-[13px] font-medium text-ink">{title}</span>
@@ -111,17 +111,17 @@ export function RedditWindow() {
 
 export function SheetWindow() {
   const rows = [
-    ['Week 1', '81,960', '30,120', '11,880'],
-    ['Week 2', '82,700', '30,640', '12,010'],
-    ['Week 3', '83,310', '31,050', '12,190'],
-    ['Week 4', '84,213', '31,702', '12,410'],
+    ['Week 1', '81,960', '30,120', '21,870'],
+    ['Week 2', '82,700', '30,640', '22,210'],
+    ['Week 3', '83,310', '31,050', '22,580'],
+    ['Week 4', '84,213', '31,702', '22,940'],
   ];
   return (
     <Window url="sheets: weekly numbers" className={BOX} bodyClassName="p-0">
       <table className="w-full text-left font-mono text-[12px]">
         <thead className="bg-surface-sunken text-ink-muted">
           <tr>
-            {['', 'YouTube', 'Instagram', 'Reddit'].map(h => (
+            {['', 'YouTube', 'Instagram', 'Shorts'].map(h => (
               <th key={h} className="border-r border-b border-line px-3 py-2 font-medium last:border-r-0">
                 {h}
               </th>
@@ -231,7 +231,7 @@ export function NotesWindow() {
       <ul className="mt-4 flex list-disc flex-col gap-2 pl-5 text-[13px] text-ink">
         <li>Reels after 6 pm do better? Check again</li>
         <li>Shorts views up, long videos flat</li>
-        <li>Which Reddit post brought the new subscribers?</li>
+        <li>Which Short brought the new subscribers?</li>
       </ul>
       <div className="mt-4 space-y-2.5">
         <Bar className="w-2/3" />

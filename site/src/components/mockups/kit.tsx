@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 import { LockKeyhole } from '@/components/icons';
-import { InstagramIcon, RedditIcon, YouTubeIcon } from '@/components/marks';
+import { InstagramIcon, YouTubeIcon } from '@/components/marks';
 import type { Platform } from './platforms';
 
 export interface WindowProps {
@@ -56,7 +56,6 @@ export function Bar({ className }: { className?: string }) {
 const PLATFORM_STYLE: Record<Platform, { icon: typeof YouTubeIcon; tint: string }> = {
   youtube: { icon: YouTubeIcon, tint: 'text-youtube' },
   instagram: { icon: InstagramIcon, tint: 'text-instagram' },
-  reddit: { icon: RedditIcon, tint: 'text-reddit' },
 };
 
 // a platform's own mark in its own colour, the one place colours outside the palette appear, as each platform asks

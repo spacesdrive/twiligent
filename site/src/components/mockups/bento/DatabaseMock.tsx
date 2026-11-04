@@ -17,10 +17,10 @@ interface Row {
 const ROWS: Row[] = [
   { platform: 'youtube', name: 'Northwind Kitchen', member: 'Asha', updated: '2 min ago' },
   { platform: 'instagram', name: '@northwind.kitchen', member: 'Asha', updated: '2 min ago' },
-  { platform: 'reddit', name: 'u/northwind_cooks', member: 'Ben', updated: '9 min ago' },
+  { platform: 'instagram', name: '@ben.bakes', member: 'Ben', updated: '9 min ago' },
   { platform: 'youtube', name: 'Ben Bakes', member: 'Ben', updated: '14 min ago' },
   { platform: 'instagram', name: '@chloe.plates', member: 'Chloe', updated: '1 h ago' },
-  { platform: 'reddit', name: 'u/chloe_cooks', member: 'Chloe', updated: '1 h ago' },
+  { platform: 'youtube', name: 'Chloe Plates', member: 'Chloe', updated: '1 h ago' },
 ];
 const ADDED: Row = { platform: 'youtube', name: 'Northwind Shorts', member: 'Asha', updated: 'just now' };
 

@@ -17,19 +17,19 @@ interface Tracked {
 }
 
 const ITEMS: Tracked[] = [
-  { platform: 'reddit', title: 'One-pan lemon orzo, 20 minutes', stat: '2,400 upvotes' },
+  { platform: 'youtube', title: 'One-pan lemon orzo, 20 minutes', stat: '41K views' },
   { platform: 'youtube', title: 'Bread every day for a month', stat: '118K views' },
   { platform: 'youtube', title: 'Knife skills in 60 seconds', stat: '64K views' },
-  { platform: 'reddit', title: 'Weeknight dinners that reheat well', stat: '1,100 upvotes' },
+  { platform: 'youtube', title: 'Weeknight dinners that reheat well', stat: '23K views' },
 ];
-const ADDED: Tracked = { platform: 'reddit', title: 'Cast iron care, the short version', stat: '870 upvotes' };
-const LINK = 'reddit.com/r/Cooking/comments/cast_iron';
+const ADDED: Tracked = { platform: 'youtube', title: 'Cast iron care, the short version', stat: '37K views' };
+const LINK = 'youtube.com/shorts/cast-iron-care';
 
 const STEPS = [0.8, 0.7, 2.1, 0.7, 1.2, 3.4];
 const PHASE = { atLink: 1, link: 2, atTrack: 3, track: 4, done: 5 } as const;
 const ENTER = [0.16, 1, 0.3, 1] as const;
 
-// tracking a post by its link: the link typed, Track clicked, the post fetched into the Recipes category,
+// tracking a video by its link: the link typed, Track clicked, the video fetched into the Recipes category,
 // and the category's combined numbers going up
 export function TrackedMock() {
   const ref = useRef<HTMLDivElement>(null);
@@ -49,7 +49,7 @@ export function TrackedMock() {
   return (
     <Frame
       ref={ref}
-      label="Tracked content: a Reddit post link is pasted and tracked, the post joins the Recipes category, and the category's combined karma and comments go up."
+      label="Tracked content: a YouTube Shorts link is pasted and tracked, the video joins the Recipes category, and the category's combined views, likes and comments go up."
       icon={<Bookmark className="size-5" />}
       title="Recipes"
       meta={<span className="font-mono text-[11px] text-ink-muted">category</span>}
@@ -57,8 +57,8 @@ export function TrackedMock() {
     >
       <div className="grid grid-cols-3 border-b border-line">
         {[
-          { label: 'Views', value: 182_000, to: 182_000, style: 'compact' as const },
-          { label: 'Karma', value: 3_500, to: 4_370, style: 'number' as const },
+          { label: 'Views', value: 246_000, to: 283_000, style: 'compact' as const },
+          { label: 'Likes', value: 9_800, to: 11_270, style: 'number' as const },
           { label: 'Comments', value: 412, to: 498, style: 'number' as const },
         ].map((stat, i) => (
           <div key={stat.label} className={cn('px-4 py-2.5', i > 0 && 'border-l border-line')}>
@@ -86,7 +86,7 @@ export function TrackedMock() {
           {phase >= PHASE.link && !added ? (
             <Typed key={loop} text={LINK} active speed={30} />
           ) : (
-            'Paste a Reddit or YouTube link'
+            'Paste a YouTube video or Shorts link'
           )}
         </span>
         <span
