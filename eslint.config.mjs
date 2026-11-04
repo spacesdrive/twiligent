@@ -22,10 +22,10 @@ export default defineConfig([
     },
     rules: {
       '@typescript-eslint/no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
-      // shadcn files export their cva variants and contexts export their hooks; editing those files reloads the page
+      // shadcn files export their cva variants, Intent UI's chart its helpers, and contexts their hooks; editing those files reloads the page
       'react-refresh/only-export-components': ['error', {
         allowConstantExport: true,
-        allowExportNames: ['badgeVariants', 'buttonVariants', 'tabsListVariants', 'toggleVariants', 'useSidebar', 'useAppContext', 'useAuth'],
+        allowExportNames: ['badgeVariants', 'buttonVariants', 'tabsListVariants', 'toggleVariants', 'useSidebar', 'useAppContext', 'useAuth', 'useChart', 'valueToPercent', 'constructCategoryColors', 'getColorValue'],
       }],
     },
   },
