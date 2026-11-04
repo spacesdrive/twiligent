@@ -13,7 +13,7 @@ import CategoryRow from './CategoryRow';
 import type { OverviewStats } from './useOverviewStats';
 import type { CategoryStat } from './overviewTrackedStats.ts';
 
-const { videos: Videos, instagram: Instagram, redditPosts: Reddit, tracked: Tracked, category: Category } = METRIC_ICONS;
+const { videos: Videos, instagram: Instagram, tracked: Tracked, category: Category } = METRIC_ICONS;
 
 function instagramContentSubtitle(stats: OverviewStats): string {
   const { igTypes } = stats.cacheTotals;
@@ -23,10 +23,7 @@ function instagramContentSubtitle(stats: OverviewStats): string {
 
 function CategoryTrailing({ stat }: { stat: CategoryStat }) {
   return (
-    <span className="flex flex-col items-end gap-0.5 text-caption">
-      {stat.views > 0 && <span className="font-medium text-ink">{fmtNum(stat.views)} views</span>}
-      {stat.rdCount > 0 && <span className="text-ink-faint">{fmtNum(stat.rdKarma)} karma</span>}
-    </span>
+    <span className="text-caption font-medium text-ink">{fmtNum(stat.views)} views</span>
   );
 }
 
@@ -35,14 +32,13 @@ export interface ContentTabProps {
 }
 
 export default function ContentTab({ stats }: ContentTabProps) {
-  const { groups, totals, cacheTotals, trackedStats, categoryStats } = stats;
+  const { groups, totals, trackedStats, categoryStats } = stats;
   return (
     <>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <MetricBox icon={<Videos />}    label="YouTube videos"    value={<Num value={totals.videos} />}       period="All time"     subtitle={countLabel(groups.youtube.length, 'channel')} />
         <MetricBox icon={<Instagram />} label="Instagram content" value={<Num value={totals.posts} />}        period="All time"     subtitle={instagramContentSubtitle(stats)} />
-        <MetricBox icon={<Reddit />}    label="Reddit posts"      value={<Num value={cacheTotals.rdPosts} />} period="Loaded posts" subtitle={cacheTotals.rdPosts > 0 ? 'From the analytics cache' : 'Open Reddit analytics to load'} />
-        <MetricBox icon={<Tracked />}   label="Tracked content"   value={<Num value={trackedStats.total} />}  period="Now"          subtitle={`${trackedStats.ytItems.length} YouTube, ${trackedStats.rdItems.length} Reddit`} />
+        <MetricBox icon={<Tracked />}   label="Tracked content"   value={<Num value={trackedStats.total} />}  period="Now"          subtitle={countLabel(categoryStats.length, 'category')} />
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -65,7 +61,7 @@ export default function ContentTab({ stats }: ContentTabProps) {
               compact
               icon={<Category />}
               title="No categories yet"
-              description="Assign categories to tracked content to see this breakdown."
+              description="Assign categories to tracked videos to see this breakdown."
               action={<Button size="sm" variant="outline" render={<Link to="/tracked-content" />}>Open tracked content</Button>}
             />
           ) : (

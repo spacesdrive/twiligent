@@ -1,56 +1,57 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  CATEGORY_SERIES, audienceChartDataOf, audienceDescription, audienceLegendOf, audienceDotColor, commentByContentOf, engagementByContentOf,
-  categoryViewDataOf, commentByCategoryOf, karmaByAccountOf,
+  audienceChartDataOf, audienceDescription, audienceLegendOf, audienceDotColor, commentByContentOf, likesByContentOf,
+  categoryViewDataOf, commentByCategoryOf, likesByCategoryOf,
 } from '../../../../src/features/analytics/overview/overviewCharts.ts';
 
 const groups = {
   youtube: [{ title: 'A channel with a long name', subscriberCount: 10 }],
-  instagram: [{ username: 'fold', followersCount: 5 }],
-  reddit: [{ username: 'averyverylongname', totalKarma: 3, postKarma: 2 }, { username: 'b', postKarma: 9 }],
+  instagram: [{ username: 'fold', followersCount: 5 }, { title: 'Paper' }],
+  reddit: [],
 };
-const categoryStats = [{ category: 'Technology news', rdKarma: 4, views: 10, ytComments: 1, rdComments: 2 }];
+const categoryStats = [
+  { category: 'Technology news', views: 10, likes: 3, comments: 3 },
+  { category: 'Art', views: 4, likes: 7, comments: 1 },
+];
 
-test('audience chart shortens names and keeps category karma only', () => {
-  assert.deepEqual(audienceChartDataOf(groups, categoryStats), [
+test('audience chart shortens names and counts subscribers and followers', () => {
+  assert.deepEqual(audienceChartDataOf(groups), [
     { name: 'A channel wi…', value: 10, type: 'youtube' },
     { name: 'fold', value: 5, type: 'instagram' },
-    { name: 'u/averyveryl', value: 3, type: 'reddit' },
-    { name: 'u/b', value: 0, type: 'reddit' },
-    { name: 'Technology n…', value: 4, type: 'category' },
+    { name: 'Paper', value: 0, type: 'instagram' },
   ]);
 });
 
 test('the audience description names what each point counts, in full', () => {
-  const points = [{ name: 'Kitchen', value: 12345, type: 'youtube' as const }, { name: 'Tech', value: 40, type: 'category' as const }];
-  assert.equal(audienceDescription(points), 'Kitchen, YouTube subscribers: 12,345. Tech, Category karma: 40.');
+  const points = [{ name: 'Kitchen', value: 12345, type: 'youtube' as const }, { name: 'Fold', value: 40, type: 'instagram' as const }];
+  assert.equal(audienceDescription(points), 'Kitchen, YouTube subscribers: 12,345. Fold, Instagram followers: 40.');
   assert.equal(audienceDescription([]), 'No data yet.');
 });
 
 test('legend lists only platforms with data', () => {
-  const labels = audienceLegendOf({ youtube: [], instagram: [{}], reddit: [] }, []).map(item => item.label);
+  const labels = audienceLegendOf({ youtube: [], instagram: [{}], reddit: [] }).map(item => item.label);
   assert.deepEqual(labels, ['Instagram followers']);
-  assert.equal(audienceDotColor('category'), CATEGORY_SERIES);
-  assert.equal(audienceDotColor('reddit'), 'var(--chart-4)');
+  assert.equal(audienceDotColor('youtube'), 'var(--chart-1)');
+  assert.equal(audienceDotColor('instagram'), 'var(--chart-3)');
 });
 
-test('tracked content charts rank the top items', () => {
+test('tracked video charts rank the top items', () => {
   const tracked = [
     { contentType: 'youtube', title: 'Video', commentCount: 3, likeCount: 8 },
-    { url: 'https://reddit.com/r/x/comments/abc', numComments: 7, score: 1 },
+    { contentType: 'youtube', url: 'https://youtu.be/abcdefghijk', commentCount: 7, likeCount: 1 },
   ];
   assert.deepEqual(commentByContentOf(tracked), [
-    { name: 'https://reddit.c', comments: 7 },
+    { name: 'https://youtu.be', comments: 7 },
     { name: 'Video', comments: 3 },
   ]);
-  assert.deepEqual(engagementByContentOf(tracked).map(row => row.engagement), [8, 1]);
-  const many = Array.from({ length: 20 }, (_, i) => ({ title: `Post ${i}`, numComments: i }));
+  assert.deepEqual(likesByContentOf(tracked).map(row => row.likes), [8, 1]);
+  const many = Array.from({ length: 20 }, (_, i) => ({ title: `Video ${i}`, commentCount: i }));
   assert.equal(commentByContentOf(many).length, 12);
 });
 
-test('category and karma charts', () => {
-  assert.deepEqual(categoryViewDataOf(categoryStats), [{ name: 'Technology news', views: 10 }]);
-  assert.deepEqual(commentByCategoryOf(categoryStats), [{ name: 'Technology news', comments: 3 }]);
-  assert.deepEqual(karmaByAccountOf(groups.reddit), [{ name: 'u/b', karma: 9 }, { name: 'u/averyverylongn', karma: 2 }]);
+test('category charts rank categories by views, comments and likes', () => {
+  assert.deepEqual(categoryViewDataOf(categoryStats), [{ name: 'Technology news', views: 10 }, { name: 'Art', views: 4 }]);
+  assert.deepEqual(commentByCategoryOf(categoryStats), [{ name: 'Technology news', comments: 3 }, { name: 'Art', comments: 1 }]);
+  assert.deepEqual(likesByCategoryOf(categoryStats), [{ name: 'Art', likes: 7 }, { name: 'Technology news', likes: 3 }]);
 });

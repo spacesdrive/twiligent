@@ -1,12 +1,10 @@
 import { Users } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import SurfaceBox from '@/components/SurfaceBox';
 import { EmptyState } from '@/components/StateViews';
 import { PlatformBadge } from '@/components/platform';
 import { platformOf } from '@/lib/accounts';
 import AudienceChart from './AudienceChart';
 import AccountRankRow from './AccountRankRow';
-import CategoryRow from './CategoryRow';
 import type { OverviewStats } from './useOverviewStats';
 
 export interface AudienceTabProps {
@@ -17,7 +15,7 @@ export default function AudienceTab({ stats }: AudienceTabProps) {
   const audienceData = stats.charts.audience;
   return (
     <>
-      <SurfaceBox title="Audience by account" subheader="Subscribers, followers and karma, plus karma earned by each tracked category">
+      <SurfaceBox title="Audience by account" subheader="Subscribers for each YouTube channel and followers for each Instagram account">
         {audienceData.length === 0 ? (
           <EmptyState compact icon={<Users />} title="No audience data yet" description="Refresh your accounts to load subscriber and follower counts." />
         ) : (
@@ -29,9 +27,6 @@ export default function AudienceTab({ stats }: AudienceTabProps) {
         <div className="flex flex-col">
           {stats.byAudience.map((account, i) => (
             <AccountRankRow key={account.id} account={account} rank={i + 1} trailing={<PlatformBadge platform={platformOf(account)} />} />
-          ))}
-          {stats.categoryStats.map(stat => (
-            <CategoryRow key={stat.category} stat={stat} trailing={<Badge variant="outline">Category</Badge>} />
           ))}
         </div>
       </SurfaceBox>

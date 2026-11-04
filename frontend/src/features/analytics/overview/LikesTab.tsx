@@ -5,13 +5,13 @@ import MetricBox from '@/components/MetricBox';
 import Num from '@/components/Num';
 import MetricAreaChart from '@/components/MetricAreaChart';
 import { EmptyState } from '@/components/StateViews';
-import { PLATFORM_META } from '@/lib/accounts';
 import { SERIES, pointsOf, rankingSummary } from '@/lib/chart';
 import { METRIC_ICONS } from '@/lib/metricIcons';
-import { fmtNum, fmtNumFull, fmtPercent } from '../../../utils/formatters';
+import { fmtNumFull, fmtPercent } from '../../../utils/formatters';
+import { CATEGORY_SERIES } from './overviewCharts.ts';
 import type { OverviewStats } from './useOverviewStats';
 
-const { likes: Likes, karma: Karma, videos: Videos, instagram: Instagram } = METRIC_ICONS;
+const { likes: Likes, videos: Videos, instagram: Instagram } = METRIC_ICONS;
 
 function instagramLikesSubtitle(stats: OverviewStats): string {
   if (stats.groups.instagram.length > 0) return `${fmtPercent(stats.summary.likeShare.instagram)} of all likes`;
@@ -23,13 +23,12 @@ export interface LikesTabProps {
 }
 
 export default function LikesTab({ stats }: LikesTabProps) {
-  const { totals, cacheTotals, trackedStats, summary, charts } = stats;
+  const { cacheTotals, summary, charts } = stats;
   const { totalLikes } = summary;
   return (
     <>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <MetricBox icon={<Likes />}     label="Total likes"     value={<Num value={totalLikes} />}          period="Loaded content" subtitle={totalLikes > 0 ? 'YouTube likes, Instagram likes, Reddit karma' : 'Open an analytics page to load'} highlight />
-        <MetricBox icon={<Karma />}     label="Reddit karma"    value={<Num value={summary.redditKarma} />} period="All time"       subtitle={`${fmtNum(totals.postKarma)} account, ${fmtNum(trackedStats.rdKarma)} tracked`} />
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+        <MetricBox icon={<Likes />}     label="Total likes"     value={<Num value={totalLikes} />}          period="Loaded content" subtitle={totalLikes > 0 ? 'YouTube and Instagram likes' : 'Open an analytics page to load'} highlight />
         <MetricBox icon={<Videos />}    label="YouTube likes"   value={<Num value={summary.ytLikes} />}     period="Loaded videos"  subtitle={`${fmtPercent(summary.likeShare.youtube)} of all likes`} />
         <MetricBox icon={<Instagram />} label="Instagram likes" value={<Num value={cacheTotals.igLikes} />} period="Loaded posts"   subtitle={instagramLikesSubtitle(stats)} />
       </div>
@@ -39,32 +38,32 @@ export default function LikesTab({ stats }: LikesTabProps) {
           <EmptyState
             icon={<Likes />}
             title="No engagement data yet"
-            description="Open a channel or account analytics page to load its likes, or track individual posts and videos."
+            description="Open a channel or account analytics page to load its likes, or track individual videos."
             action={<Button size="sm" variant="outline" render={<Link to="/tracked-content" />}>Track content</Button>}
           />
         </SurfaceBox>
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <SurfaceBox title="Karma by Reddit account" subheader="Post karma earned by each connected account">
+          <SurfaceBox title="Likes by tracked video" subheader="Top 12 tracked videos ranked by likes">
             <MetricAreaChart
-              data={charts.karmaByAccount}
-              dataKey="karma"
-              label="Post karma"
-              title="Karma by Reddit account"
-              description={rankingSummary(pointsOf(charts.karmaByAccount, 'name', 'karma'), fmtNumFull, 'post karma')}
-              color={PLATFORM_META.reddit.series}
-              emptyMessage="Connect a Reddit account to see karma"
+              data={charts.likesByContent}
+              dataKey="likes"
+              label="Likes"
+              title="Likes by tracked video"
+              description={rankingSummary(pointsOf(charts.likesByContent, 'name', 'likes'), fmtNumFull, 'likes')}
+              color={SERIES.neutral}
+              emptyMessage="Track videos to compare likes"
             />
           </SurfaceBox>
-          <SurfaceBox title="Engagement by tracked content" subheader="YouTube likes and Reddit karma for the top 12 tracked items">
+          <SurfaceBox title="Likes by category" subheader="Total likes across every video in each category">
             <MetricAreaChart
-              data={charts.engagementByContent}
-              dataKey="engagement"
-              label="Likes or karma"
-              title="Engagement by tracked content"
-              description={rankingSummary(pointsOf(charts.engagementByContent, 'name', 'engagement'), fmtNumFull, 'likes or karma')}
-              color={SERIES.neutral}
-              emptyMessage="Track content to compare engagement"
+              data={charts.likesByCategory}
+              dataKey="likes"
+              label="Likes"
+              title="Likes by category"
+              description={rankingSummary(pointsOf(charts.likesByCategory, 'name', 'likes'), fmtNumFull, 'likes')}
+              color={CATEGORY_SERIES}
+              emptyMessage="Assign categories to tracked videos to see this breakdown"
             />
           </SurfaceBox>
         </div>

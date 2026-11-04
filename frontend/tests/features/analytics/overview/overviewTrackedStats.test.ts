@@ -4,28 +4,22 @@ import { trackedStatsOf, categoryStatsOf } from '../../../../src/features/analyt
 
 const tracked = [
   { contentType: 'youtube', viewCount: 1000, likeCount: 10, commentCount: 4, category: 'Tech' },
-  { contentType: 'reddit', manualViews: 200, score: 30, numComments: 5, category: 'Tech' },
-  { score: 8, numComments: 1, category: 'Art' },
+  { contentType: 'youtube', viewCount: 200, likeCount: 30, commentCount: 5, category: 'Tech' },
+  { contentType: 'youtube', viewCount: 3000, likeCount: 8, commentCount: 1, category: 'Art' },
   { contentType: 'youtube', viewCount: 50 },
 ];
 
-test('tracked stats treat a missing content type as Reddit', () => {
+test('tracked stats add up the views, likes and comments of every tracked video', () => {
   const stats = trackedStatsOf(tracked);
   assert.equal(stats.total, 4);
-  assert.equal(stats.ytItems.length, 2);
-  assert.equal(stats.rdItems.length, 2);
-  assert.equal(stats.ytViews, 1050);
-  assert.equal(stats.rdViews, 200);
-  assert.equal(stats.rdKarma, 38);
-  assert.equal(stats.rdComments, 6);
+  assert.equal(stats.views, 4250);
+  assert.equal(stats.likes, 48);
+  assert.equal(stats.comments, 10);
 });
 
-test('category stats are ranked by views plus karma', () => {
+test('category stats are ranked by views and leave out videos without a category', () => {
   const stats = categoryStatsOf(tracked);
-  assert.deepEqual(stats.map(stat => stat.category), ['Tech', 'Art']);
-  assert.equal(stats[0].views, 1200);
-  assert.equal(stats[0].ytCount, 1);
-  assert.equal(stats[0].rdCount, 1);
-  assert.equal(stats[1].rdKarma, 8);
+  assert.deepEqual(stats.map(stat => stat.category), ['Art', 'Tech']);
+  assert.deepEqual(stats[1], { category: 'Tech', count: 2, views: 1200, likes: 40, comments: 9 });
   assert.deepEqual(categoryStatsOf([{ contentType: 'youtube' }]), []);
 });

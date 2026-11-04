@@ -9,7 +9,7 @@ export default function GettingStarted() {
       <div className="relative flex max-w-xl flex-col gap-4 p-8">
         <p className="eyebrow text-brand-text">Getting started</p>
         <h2 id="getting-started-title" className="font-heading text-page-title font-semibold text-ink">Bring your channels into one picture.</h2>
-        <p className="max-w-prose text-ink-muted">Add a YouTube channel, connect an Instagram Business or Creator account, or add a Reddit profile. Analytics start filling in as soon as an account is added.</p>
+        <p className="max-w-prose text-ink-muted">Add a YouTube channel or connect an Instagram Business or Creator account. Analytics start filling in as soon as an account is added.</p>
         <div><Button render={<Link to="/accounts?add=1" />}><Plus data-icon="inline-start" aria-hidden="true" />Add account</Button></div>
       </div>
     </section>
