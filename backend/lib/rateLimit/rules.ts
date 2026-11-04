@@ -58,6 +58,8 @@ export const PUBLISH_ROUTES: readonly RouteMatcher[] = [
     { methods: ['POST'], path: /^\/api\/accounts\/[^/]+\/(ig-publish|ig-media-publish)$/ },
 ];
 
+// Hono answers HEAD with the GET handler, so a HEAD request counts against the same rule as GET
 export function matchesRoute(routes: readonly RouteMatcher[], method: string, path: string): boolean {
-    return routes.some(route => route.methods.includes(method) && route.path.test(path));
+    const routed = method === 'HEAD' ? 'GET' : method;
+    return routes.some(route => route.methods.includes(routed) && route.path.test(path));
 }
