@@ -2,22 +2,17 @@ import { useMemo } from 'react';
 import { CirclePlay } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import MetricBox from '@/components/MetricBox';
 import SurfaceBox from '@/components/SurfaceBox';
-import SectionHeader from '@/components/SectionHeader';
 import MetricAreaChart from '@/components/MetricAreaChart';
 import RelativeTime from '@/components/RelativeTime';
 import Num from '@/components/Num';
-import { METRIC_ICONS } from '@/lib/metricIcons';
 import { RankNumber } from '@/components/ListRow';
-import { PlatformIcon } from '@/components/platform';
 import { PLATFORM_META } from '@/lib/accounts';
 import { pointsOf, rankingSummary } from '@/lib/chart';
-import { fmtNum, fmtNumFull } from '../../../utils/formatters';
+import { fmtNumFull } from '../../../utils/formatters';
 import NumberCell from './NumberCell';
 import OpenLink from './OpenLink';
 import { chartDataOf, sortedByViews } from './trackedCategoryStats.ts';
-import type { YouTubeCategoryStats } from './trackedCategoryStats.ts';
 import type { TrackedContentItem } from '@shared/types/domain.ts';
 
 interface VideoRowProps {
@@ -57,27 +52,15 @@ function VideoRow({ item, rank }: VideoRowProps) {
 
 export interface CategoryYouTubeSectionProps {
   items: TrackedContentItem[];
-  stats: YouTubeCategoryStats;
 }
 
-export default function CategoryYouTubeSection({ items, stats }: CategoryYouTubeSectionProps) {
+export default function CategoryYouTubeSection({ items }: CategoryYouTubeSectionProps) {
   const sorted = useMemo(() => sortedByViews(items), [items]);
   const chartData = chartDataOf(sorted, 'views', item => item.viewCount ?? 0);
   return (
     <section className="flex flex-col gap-4">
-      <SectionHeader
-        className="mt-2"
-        title={<span className="flex items-center gap-2"><PlatformIcon platform="youtube" className="text-ink-muted" />YouTube videos</span>}
-        actions={<span className="text-small text-ink-faint">{items.length} video{items.length !== 1 ? 's' : ''}</span>}
-      />
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <MetricBox small icon={<METRIC_ICONS.views />} label="Video views" value={<Num value={stats.views} />} subtitle={`${fmtNum(stats.avgViews)} per video on average`} />
-        <MetricBox small icon={<METRIC_ICONS.likes />} label="Video likes" value={<Num value={stats.likes} />} subtitle={`${fmtNum(stats.avgLikes)} per video on average`} />
-        <MetricBox small icon={<METRIC_ICONS.comments />} label="Video comments" value={<Num value={stats.comments} />} subtitle={`${fmtNum(stats.avgComments)} per video on average`} />
-        <MetricBox small icon={<METRIC_ICONS.rate />} label="Likes per view" value={`${stats.likeRatio}%`} subtitle="Likes as a share of views" />
-      </div>
       {chartData.length > 1 && (
-        <SurfaceBox title="Video views" headingLevel="h3" subheader={`Top ${chartData.length} videos in this category ranked by views`}>
+        <SurfaceBox title="Video views" subheader={`Top ${chartData.length} videos in this category ranked by views`}>
           <MetricAreaChart
             data={chartData}
             dataKey="views"
@@ -89,7 +72,7 @@ export default function CategoryYouTubeSection({ items, stats }: CategoryYouTube
           />
         </SurfaceBox>
       )}
-      <SurfaceBox title="All videos in this category" headingLevel="h3" content={false} className="overflow-hidden">
+      <SurfaceBox title="All videos in this category" content={false} className="overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
