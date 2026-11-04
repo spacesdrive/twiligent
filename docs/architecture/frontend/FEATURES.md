@@ -6,8 +6,9 @@
 frontend/src/
 ├── components/
 │   ├── SurfaceBox.tsx, MetricBox.tsx, PageHeader.tsx, ...   <- Shared components, see DESIGN_SYSTEM.md
-│   ├── MetricAreaChart.tsx                 <- Shared Recharts area chart for single-metric comparisons
-│   ├── ChartPanel.tsx                      <- Titled chart container with an empty state
+│   ├── MetricAreaChart.tsx                 <- Shared Intent UI area chart for single-metric comparisons
+│   ├── ChartPanel.tsx, ChartFigure.tsx     <- Titled chart container with an empty state; the chart's screen-reader name and description
+│   ├── ExactTooltip.tsx, DonutChart.tsx    <- Intent's tooltip with exact values; a ring for parts of a whole
 │   ├── ImageLightbox.tsx                   <- Thumbnail that opens the full image in a Dialog
 │   ├── AccountSelect.tsx                   <- Instagram account picker with avatars (Publish, Automations)
 │   ├── RowAction.tsx                       <- Icon button with a tooltip for table and list rows (Tracked content, Automations)
@@ -136,21 +137,25 @@ the word "score".
 
 ## Shared Chart Components
 
-Every chart sits in a `ChartFigure`: the plot, a one-sentence summary under it, and a Show table toggle with the
-same numbers. Use the shared components instead of hand-rolling a Recharts chart:
+Charts are drawn with Intent UI's components in `components/ui` (`AreaChart`, `BarChart`, `LineChart`; ADR-048)
+inside the shared pieces below. Each chart is a figure with a screen-reader name and a hidden description of its
+data; nothing extra is shown on screen.
 
 | Component | Use it for |
 |---|---|
-| `ChartPanel` | A titled box around any Recharts chart; pass `summary` and `table` (`{ caption, columns, rows }`). A string title also names the focusable plot |
-| `MetricAreaChart` | One value over time (months, weeks); writes its own summary and table |
-| `RankingBarChart` | Separate things ranked by one number (accounts, categories, videos, tags): horizontal bars, largest first, an optional `kind` per bar for mixed units |
+| `ChartPanel` | A titled box around an Intent chart; pass the same `height` as the chart's `containerHeight` and a `description`. A string title names the figure |
+| `MetricAreaChart` | One value across months, weeks or items; names itself and writes its own description unless given one |
+| `DonutChart` | Parts of a whole as a ring, with the exact tooltip and a legend |
+| `ExactTooltip` | The tooltip for every chart: `tooltip={<ExactTooltip />}` shows values in full |
 
 ```tsx
-<RankingBarChart rows={[{ name: 'Origami', value: 420 }]} label="Views" title="Views by category" color={CATEGORY_SERIES} />
+<ChartPanel title="Uploads by month" height={240} description={trendSummary(pointsOf(rows, 'month', 'uploads'), fmtNumFull, 'uploads')}>
+  <BarChart data={rows} dataKey="month" config={{ uploads: { label: 'Uploads', color: SERIES.neutral } }} containerHeight={240} legend={false} tooltip={<ExactTooltip />} />
+</ChartPanel>
 ```
 
-`lib/chart.ts` has `trendSummary` and `rankingSummary` for the sentence. Each `MetricAreaChart` generates its own
-gradient id via `useId()`, so multiple charts on one page never collide.
+`lib/chart.ts` has `pointsOf`, `trendSummary` and `rankingSummary` for the description. Intent's charts take
+`data` as plain records, so rows typed by an interface are spread first (`rows.map(row => ({ ...row }))`).
 
 ## Shared Library Pieces
 
@@ -232,7 +237,7 @@ Each page manages its own loading/data/error state. Pages do not write to `AppCo
 | Reddit Posts (global) | `/reddit-posts` | Combined post explorer across all Reddit accounts with account and subreddit filters |
 | Reddit Posts (per account) | `/reddit-posts/:id` | Searchable and sortable post list for a single Reddit account |
 | Tracked Content | `/tracked-content` | Monitor Reddit posts and YouTube videos; add by URL, assign categories, bulk edit, per-row refresh |
-| Tracked Category | `/tracked-content/category/:name` | Detailed per-category analytics; YouTube section (views, likes, comments, bar chart, table) and Reddit section (score, ratio, comments, bar chart, table) rendered separately |
+| Tracked Category | `/tracked-content/category/:name` | Detailed per-category analytics; YouTube section (views, likes, comments, area chart, table) and Reddit section (karma, ratio, comments, area chart, table) rendered separately |
 | Video Explorer | `/videos/:id` | YouTube video library with search and sort |
 | Publish | `/publish` (`/upload` redirects) | Publish or schedule to Instagram, bulk upload, and the scheduled post queue |
 | Automations | `/automations` | Keyword rules that answer Instagram comments with a private reply, a public reply under the comment or both, account pause and comment events, counts and the activity of both replies with separate retries (`docs/architecture/data-flows/AUTOMATION.md`) |
