@@ -85,25 +85,11 @@ export function visibleSections(groups: Record<Platform, unknown[]>): AccountSec
   return ACCOUNT_SECTIONS.filter(section => groups[section.key].length > 0);
 }
 
-// people paste "u/name", "@name" or their profile address; the Worker keeps the same name
-export function redditUsername(input: string): string {
-  const text = input.trim();
-  const fromUrl = text.match(/reddit\.com\/(?:user|u)\/([^/?#\s]+)/i);
-  return (fromUrl ? fromUrl[1] : text).replace(/^\/?u\//i, '').replace(/^@/, '').trim();
-}
-
-export type AddAccountField = 'channel' | 'username' | 'cookie';
+export type AddAccountField = 'channel';
 
 export interface AddAccountProblem {
   field: AddAccountField;
   message: string;
-}
-
-// what is missing before an account can be added, or null
-export function redditFieldsProblem(username: string, cookie: string): AddAccountProblem | null {
-  if (!redditUsername(username)) return { field: 'username', message: 'Enter the Reddit username, such as u/name.' };
-  if (!cookie.trim()) return { field: 'cookie', message: 'Paste the reddit_session cookie value. The steps below show where to find it.' };
-  return null;
 }
 
 export function channelFieldProblem(input: string): AddAccountProblem | null {

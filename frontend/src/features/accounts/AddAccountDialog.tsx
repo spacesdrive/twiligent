@@ -7,7 +7,6 @@ import InstagramTesterNotice from '@/components/InstagramTesterNotice';
 import { PLATFORM_META } from '@/lib/accounts';
 import { PLATFORM_CHOICES, platformChoiceTitle } from './platformChoices';
 import YouTubeAccountFields from './YouTubeAccountFields';
-import RedditAccountFields from './RedditAccountFields';
 import AddAccountFooter from './AddAccountFooter';
 import type { AddAccountFlow } from './useAddAccount';
 import type { Platform } from '@shared/types/domain.ts';
@@ -29,7 +28,7 @@ const STEP_DESCRIPTION: Record<Platform, string> = {
 // each card moves on to its platform's step, so these are plain buttons, not radios
 function PlatformPicker({ onSelect }: PlatformPickerProps) {
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" data-platform-picker>
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2" data-platform-picker>
       {PLATFORM_CHOICES.map(choice => (
         <ChoiceCard
           key={choice.value}
@@ -44,7 +43,7 @@ function PlatformPicker({ onSelect }: PlatformPickerProps) {
 }
 
 export default function AddAccountDialog({ flow }: AddAccountDialogProps) {
-  const { platform, channel, reddit } = flow;
+  const { platform, channel } = flow;
   const contentRef = useRef<HTMLDivElement>(null);
   const firstStep = useRef(true);
 
@@ -93,19 +92,6 @@ export default function AddAccountDialog({ flow }: AddAccountDialogProps) {
             </p>
             <InstagramTesterNotice />
           </div>
-        )}
-
-        {platform === 'reddit' && (
-          <RedditAccountFields
-            username={reddit.username}
-            cookie={reddit.cookie}
-            onUsernameChange={reddit.setUsername}
-            onUsernameBlur={reddit.tidyUsername}
-            onCookieChange={reddit.setCookie}
-            onSubmit={flow.redditAdd.handleAddReddit}
-            usernameError={flow.errorFor('username')}
-            cookieError={flow.errorFor('cookie')}
-          />
         )}
 
         {flow.submitError && (

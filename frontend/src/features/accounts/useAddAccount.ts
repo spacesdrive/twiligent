@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { api } from '../../services/api';
-import { channelFieldProblem, redditFieldsProblem, redditUsername } from './accountManagerData';
+import { channelFieldProblem } from './accountManagerData';
 import type { AddAccountField, AddAccountProblem } from './accountManagerData';
 import type { AppContextValue } from '../../context/AppContext';
 import type { Platform } from '@shared/types/domain.ts';
@@ -9,7 +9,7 @@ import type { AccountActionDeps } from './useAccountDelete';
 
 type ShowToast = AppContextValue['showToast'];
 
-const FIELD_IDS: Record<AddAccountField, string> = { channel: 'yt-channel', username: 'reddit-user', cookie: 'reddit-cookie' };
+const FIELD_IDS: Record<AddAccountField, string> = { channel: 'yt-channel' };
 
 interface AddStepDeps {
   showToast: ShowToast;
@@ -66,29 +66,6 @@ function useChannelLookup(setProblem: AddStepDeps['setProblem']) {
   return { input, resolving, resolved, changeInput, handleResolve, clearResolved, reset };
 }
 
-function useRedditFields(setProblem: AddStepDeps['setProblem']) {
-  const [username, setUsernameValue] = useState('');
-  const [cookie, setCookieValue] = useState('');
-
-  const setUsername = (value: string) => {
-    setUsernameValue(value);
-    setProblem(null);
-  };
-  const setCookie = (value: string) => {
-    setCookieValue(value);
-    setProblem(null);
-  };
-  // a pasted profile address or u/name is shown as the plain name once the field is left
-  const tidyUsername = () => setUsernameValue(current => redditUsername(current));
-
-  const reset = () => {
-    setUsernameValue('');
-    setCookieValue('');
-  };
-
-  return { username, cookie, setUsername, setCookie, tidyUsername, reset };
-}
-
 function useChannelAdd({ input, showToast, finishAdding, setProblem, setSubmitError }: AddStepDeps & { input: string }) {
   const [adding, setAdding] = useState(false);
 
@@ -114,34 +91,6 @@ function useChannelAdd({ input, showToast, finishAdding, setProblem, setSubmitEr
   };
 
   return { adding, handleAdd };
-}
-
-function useRedditAdd({ username, cookie, showToast, finishAdding, setProblem, setSubmitError }: AddStepDeps & { username: string; cookie: string }) {
-  const [addingReddit, setAddingReddit] = useState(false);
-
-  const handleAddReddit = async () => {
-    if (addingReddit) return;
-    const problem = redditFieldsProblem(username, cookie);
-    if (problem) {
-      setProblem(problem);
-      focusProblem(problem);
-      return;
-    }
-    setAddingReddit(true);
-    setSubmitError(null);
-    const name = redditUsername(username);
-    try {
-      await api.addRedditAccount(name, cookie.trim());
-      showToast(`u/${name} added`);
-      finishAdding();
-    } catch (err) {
-      setSubmitError(`Couldn't add u/${name}. ${(err as Error).message}`);
-    } finally {
-      setAddingReddit(false);
-    }
-  };
-
-  return { addingReddit, handleAddReddit };
 }
 
 function useInstagramConnect(setSubmitError: AddStepDeps['setSubmitError']) {
@@ -170,7 +119,6 @@ export function useAddAccount({ showToast, loadAccounts }: AccountActionDeps) {
   const [problem, setProblem] = useState<AddAccountProblem | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const channel = useChannelLookup(setProblem);
-  const reddit = useRedditFields(setProblem);
 
   const setPlatform = (value: Platform | null) => {
     setPlatformValue(value);
@@ -182,7 +130,6 @@ export function useAddAccount({ showToast, loadAccounts }: AccountActionDeps) {
     setDialogOpen(false);
     setPlatform(null);
     channel.reset();
-    reddit.reset();
   };
 
   const finishAdding = () => {
@@ -190,7 +137,7 @@ export function useAddAccount({ showToast, loadAccounts }: AccountActionDeps) {
     loadAccounts();
   };
 
-  // back keeps typed channel and reddit fields; only platform and lookup reset
+  // back keeps the typed channel; only platform and lookup reset
   const goBack = () => {
     setPlatform(null);
     channel.clearResolved();
@@ -203,13 +150,12 @@ export function useAddAccount({ showToast, loadAccounts }: AccountActionDeps) {
 
   const deps = { showToast, finishAdding, setProblem, setSubmitError };
   const channelAdd = useChannelAdd({ input: channel.input, ...deps });
-  const redditAdd = useRedditAdd({ username: reddit.username, cookie: reddit.cookie, ...deps });
   const instagram = useInstagramConnect(setSubmitError);
   const errorFor = (field: AddAccountField) => (problem?.field === field ? problem.message : undefined);
 
   return {
     dialogOpen, setDialogOpen, platform, setPlatform, closeDialog, goBack, openWithPlatform,
-    channel, reddit, channelAdd, redditAdd, instagram, errorFor, submitError,
+    channel, channelAdd, instagram, errorFor, submitError,
   };
 }
 
