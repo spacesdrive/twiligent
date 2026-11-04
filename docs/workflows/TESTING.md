@@ -296,16 +296,20 @@ Open browser DevTools -> Console. Navigate through all changed pages.
 
 ### 7. Accessibility Verification
 
-For any new UI:
+For any new or changed UI, run the checks in `docs/guidelines/UI_UX.md` (Checking the work). At least:
 - Tab through all interactive elements - all must be reachable
 - Press Enter on buttons - they should activate
 - Press Space on buttons and checkboxes - they should activate
 - Check for visible focus ring on focused elements
 - Use Chrome's built-in Accessibility tab (DevTools -> Elements -> Accessibility) to verify ARIA structure
+- Run axe or Lighthouse on the changed pages in both themes
+- Confirm focus moves to the page heading after navigation and back to the opener after a dialog closes
+- Turn on reduced motion and check that nothing moves or loops
 
 ### 8. Responsive Layout Verification
 
 Resize the browser to test at:
+- 320px (the WCAG reflow width, also 1280px at 400 percent zoom)
 - 375px (iPhone SE - smallest common mobile)
 - 768px (tablet)
 - 1280px (laptop)

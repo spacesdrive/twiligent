@@ -71,10 +71,11 @@ Before implementing any feature or fix, read these documents in this exact order
 4. `docs/architecture/OVERVIEW.md` - system topology and request flow
 5. `docs/guidelines/TYPESCRIPT.md` - code standards and typing rules (always apply)
 6. `docs/guidelines/CODE_STYLE.md` - how code reads here: layer shapes, comments, naming, messages, tests (always apply; its checklist runs before every commit)
-7. Relevant architecture doc - backend, frontend, site, database, or cloudflare
-8. Relevant feature guide - if one exists in `docs/features/`
-9. Relevant engineering guideline - if the task touches a specific layer
-10. `ROADMAP.md` - if the task is a planned item, link its issue there
+7. `docs/guidelines/UI_UX.md` - the UI and UX rules: Laws of UX, WCAG 2.2 AA, every state, the reference dashboard patterns (always apply when the task touches anything people see or use, in the app or the site, however small; its checklist runs before every such commit)
+8. Relevant architecture doc - backend, frontend, site, database, or cloudflare
+9. Relevant feature guide - if one exists in `docs/features/`
+10. Relevant engineering guideline - if the task touches a specific layer
+11. `ROADMAP.md` - if the task is a planned item, link its issue there
 
 For MCP usage, read `docs/mcp/OVERVIEW.md` before using any MCP server.
 
@@ -122,6 +123,7 @@ docs/
       AUTOMATION.md        Comment webhook, keyword rules, reply queue, limits and failure handling
   guidelines/
     CODE_STYLE.md          How code reads: the shapes to copy per layer, comments, naming, messages, tests, pre-commit checklist
+    UI_UX.md               UI and UX rules for every interface change: sources, how to work a UI task, laws, states, reference dashboard patterns, checks, checklist
     TYPESCRIPT.md          Compiler settings, typing rules, where types live, code style, comments policy
     REACT.md               Component rules, hooks, JSX conventions
     HONO.md                Route handlers, middleware, context usage
@@ -180,6 +182,7 @@ Read `docs/WRITING_STANDARDS.md` for the full specification. The non-negotiable 
 - One comment per non-obvious logic block, maximum - never restate what the code does
 - Every page must feel like it belongs to the same application: consistent padding, cards, skeletons, toasts, icons
 - All styling goes through the design tokens in `frontend/src/index.css` and the shared components listed in `docs/architecture/frontend/DESIGN_SYSTEM.md`; no hex or Tailwind palette colours in components
+- The interface follows the Laws of UX and WCAG 2.2 AA (ADR-047): keyboard and screen reader access, 16 px reading text, 44 px touch targets, view state in the address, every data state designed (loading, empty, error, partial, stale), one primary action per view; the rules are in `docs/architecture/frontend/DESIGN_SYSTEM.md` (Rules)
 - Brand assets (logos, fonts, tokens, guidelines) live in `frontend/public/` (the public site keeps copies in `site/public/brand/` and `site/public/fonts/`, and `docs/brand-notes.md` records what it takes from the kit); sentence case in UI copy, no exclamation marks
 
 ---
@@ -207,7 +210,7 @@ Read `docs/guidelines/CODE_STYLE.md` before writing code and run its checklist b
 - Match the nearest existing file of the same kind before inventing a shape: open a sibling and copy its imports, exports, naming and comment density
 - One job per file and per layer: route tables map, controllers translate HTTP, services decide, repositories query, components render, `lib/` helpers compute; services are `createXService(deps)` factories with an `XService` and an `XDeps` interface
 - Comments explain why in one lowercase line above the code; never restate the code, reference a task, or write JSDoc or multi-line blocks; a constant with a number in it gets its reason
-- Backend failures are typed errors from `lib/errors.ts` with a message a person can act on; frontend failures are toasts that start with what failed (`Couldn't save the password.`) and add the reason; success toasts confirm in past tense (`Password saved`)
+- Backend failures are typed errors from `lib/errors.ts` with a message a person can act on; a field the person can fix shows its error under the field (`FieldRow error`), a failed load shows `ErrorState`, and a failed request is a toast that starts with what failed (`Couldn't save the password.`) and adds the reason; success toasts confirm in past tense (`Password saved`)
 - Formatting follows the file: 4 spaces in `backend/`, 2 elsewhere, single quotes, semicolons, trailing commas
 - Pure logic goes in a plain `.ts` helper (`lib/`) so Node can test it; markup used twice becomes a component; copy that changes by mode lives in a typed table
 - `scripts/` stays free of npm packages but may import a `backend/lib/` helper that imports nothing at runtime, so both schedulers share one set of rules (`scheduledPublishing.ts`)
@@ -295,6 +298,8 @@ This is not optional for features that touch new UI patterns, new APIs, or new i
 ## AI Operating Rules
 
 **Open the issue first.** No task starts without a GitHub issue, and no task is reported as done while its issue is still open. See Issue Tracking above and `docs/workflows/ISSUES.md`.
+
+**Apply the UI/UX guide to every interface change.** Any task that adds or changes something people see or use, in `frontend/` or `site/`, follows `docs/guidelines/UI_UX.md`, including small updates such as a new button, message or column: name the users, tasks and states, pick the laws that apply, reuse the design system, design every state, and run its checks and checklist before committing. With the ProfileBox MCP available, also load the `ui-ux-design-intelligence` system for the task (`get_system_instructions_for_task`). WCAG 2.2 AA is the floor; the project's design system and brand win over any reference.
 
 **Always read before writing.** Read every file you will modify. Read all files in the same directory that might be affected. Read sibling files to understand conventions before adding new ones.
 
@@ -410,6 +415,7 @@ When anything changes, update every relevant docs file from the table below. The
 | Release tagged | `CHANGELOG.md` (convert Unreleased to version number with date), a GitHub Release page for the tag (`docs/workflows/GIT.md`, Release notes) |
 | Any planned feature added or changed | `ROADMAP.md` |
 | Writing or design rule changed | `docs/WRITING_STANDARDS.md`, this file (Writing and Design Standards section) |
+| UI or UX rule changed (a law applied differently, a new state rule, a reference pattern adopted) | `docs/guidelines/UI_UX.md`, `docs/architecture/frontend/DESIGN_SYSTEM.md` (Rules), this file (AI Operating Rules) |
 | Code style or a layer's shape changed (a new pattern to copy, a naming, comment or message rule) | `docs/guidelines/CODE_STYLE.md`, the guideline it details (`TYPESCRIPT.md`, `REACT.md`, `HONO.md`, `NAMING.md`), this file (Code Style section) |
 | MCP usage rule changed | `docs/mcp/OVERVIEW.md`, this file (MCP Usage Rules section) |
 | Engineering standard changed | `docs/philosophy/ARCHITECTURE.md`, this file (Engineering Standards section) |
