@@ -242,7 +242,7 @@ Open the app in a browser. For each changed area, test:
 - [ ] `curl -i "<worker>/api/webhooks/instagram?hub.mode=subscribe&hub.verify_token=<token>&hub.challenge=123"` answers `123`; a wrong token answers 403
 - [ ] `curl -i -X POST -H "Content-Type: application/json" -d '{"object":"instagram","entry":[]}' <worker>/api/webhooks/instagram` without a signature answers 401 and stores nothing
 - [ ] Create a rule on the Automations page, turn it on, and the account shows Receiving comments (or Turn on comment events succeeds)
-- [ ] Test a comment in the rule dialog: a matching sample says it matches, a non-matching one says no reply, and nothing is sent
+- [ ] Test a comment on the rule editor page: a matching sample says it matches, a non-matching one says no reply, and nothing is sent
 - [ ] From another Instagram account, comment the keyword on a covered post: the private reply arrives within seconds, Activity shows Accepted by Instagram, and `npx wrangler tail` shows `instagram webhook stored` and `automation reply settled` with no token or comment text in any line
 - [ ] Comment the same keyword again on a post the rule does not cover: Activity shows No match without the words
 - [ ] Turn off Replies for the account, comment again: Activity shows Held; turn it back on and the reply goes out on the next run
@@ -254,7 +254,13 @@ Open the app in a browser. For each changed area, test:
 - [ ] Comment twice on the same post from the tester account: the second comment gets no second public reply (Skipped)
 - [ ] Turn off the rule's private reply: the next comment gets only the public reply, its private reply shows Off and offers no retry
 - [ ] Retry a failed public reply from Activity: only the public reply goes out again, and the private reply's status does not change
-- [ ] At 375 px and 1280 px in both themes, the page, the rule dialog and the activity table fit, and the table scrolls inside its box
+- [ ] At 375 px and 1280 px in both themes, the page, the rule editor page and the activity table fit, and the table scrolls inside its box
+
+**Forms and deletes (if a form or a delete changed):**
+- [ ] Submit a form with a field missing or wrong: the message shows under the field, focus moves to it, and what was typed stays
+- [ ] Type in the rule editor or the Publish form, then click a sidebar link: a Discard changes question appears; reload the page and the draft is back
+- [ ] Delete a rule or a scheduled post: it disappears at once with an Undo toast; Undo brings it back, and without Undo it is gone after a reload 8 seconds later
+- [ ] Remove an account: the confirm works by holding the button and by pressing it twice
 
 **Scheduling (if changed):**
 - [ ] Create a scheduled post -> appears in queue
