@@ -1,0 +1,17 @@
+{
+  "name": "cloudflare-security",
+  "owner": { "name": "spacesdrive" },
+  "description": "Points at Cloudflare's security-audit skill (MIT), pinned to a reviewed commit; no files are copied into this repository",
+  "plugins": [
+    {
+      "name": "security-audit",
+      "description": "Cloudflare's multi-phase security audit skill",
+      "source": {
+        "source": "github",
+        "repo": "cloudflare/security-audit-skill",
+        "sha": "c1c8a8c1471069fb0e188eeaff69b8e8db6564a8"
+      },
+      "strict": false
+    }
+  ]
+}
