@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, Outlet, useLocation } from 'react-router';
 import { cn } from '@/lib/cn';
 import { GITHUB_URL, SIGN_UP_URL } from '@/lib/links';
@@ -18,17 +18,26 @@ export default function DocsLayout() {
   const entry = docEntry(slugFromPath(pathname));
   const tab = entry?.tab ?? DOC_TABS[0];
   const [drawer, setDrawer] = useState(false);
+  const dialog = useRef<HTMLDialogElement>(null);
+  const menuButton = useRef<HTMLButtonElement>(null);
 
-  // the phone drawer closes on Escape like any dialog
+  // a native modal dialog keeps focus inside the drawer, makes the page behind it inert and closes on Escape
   useEffect(() => {
-    if (!drawer) return;
-    const onKey = (event: KeyboardEvent) => event.key === 'Escape' && setDrawer(false);
-    document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    const node = dialog.current;
+    if (!node) return;
+    if (drawer && !node.open) node.showModal();
+    if (!drawer && node.open) node.close();
   }, [drawer]);
 
+  // focus goes back to the menu button, unless a link already moved it to the new page
+  const onDialogClose = () => {
+    setDrawer(false);
+    const active = document.activeElement;
+    if (!active || active === document.body || dialog.current?.contains(active)) menuButton.current?.focus();
+  };
+
   return (
-    <div className="min-h-svh bg-surface">
+    <div data-docs-layout className="min-h-svh bg-surface">
       <ScrollManager />
       <a
         href="#doc-content"
@@ -63,7 +72,7 @@ export default function DocsLayout() {
             </Link>
             <span className="ml-1 hidden sm:inline-flex">
               <Pill href={SIGN_UP_URL} size="sm" className="pr-3">
-                Get started
+                Create account
                 <AltArrowRight className="size-4" />
               </Pill>
             </span>
@@ -93,10 +102,12 @@ export default function DocsLayout() {
         </nav>
         <div className="flex h-12 items-center gap-3 border-t border-line px-4 md:hidden">
           <button
+            ref={menuButton}
             type="button"
             onClick={() => setDrawer(true)}
             aria-label="Open the docs menu"
             aria-expanded={drawer}
+            aria-controls="docs-menu"
             className="flex size-9 items-center justify-center rounded-md text-ink hover:bg-surface-sunken"
           >
             <HamburgerMenu className="size-5" />
@@ -109,19 +120,22 @@ export default function DocsLayout() {
         </div>
       </header>
 
-      {drawer && (
-        <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true" aria-label="Docs menu">
-          <button
-            type="button"
-            aria-label="Close the docs menu"
-            className="absolute inset-0 bg-dusk/60"
-            onClick={() => setDrawer(false)}
-          />
-          <div className="relative flex h-full w-[min(20rem,85vw)] flex-col gap-6 overflow-y-auto bg-surface px-3 py-4 shadow-lg">
+      <dialog
+        ref={dialog}
+        id="docs-menu"
+        aria-label="Docs menu"
+        onClose={onDialogClose}
+        // a click on the dimmed backdrop lands on the dialog itself, outside the drawer panel
+        onClick={event => event.target === event.currentTarget && setDrawer(false)}
+        className="m-0 h-dvh max-h-dvh w-[min(20rem,85vw)] max-w-none bg-surface p-0 text-ink shadow-lg backdrop:bg-dusk/60 md:hidden"
+      >
+        {drawer && (
+          <div className="flex h-full flex-col gap-6 overflow-y-auto px-3 py-4">
             <div className="flex items-center justify-between px-3">
               <Logo className="h-6" />
               <button
                 type="button"
+                autoFocus
                 onClick={() => setDrawer(false)}
                 aria-label="Close the docs menu"
                 className="flex size-9 items-center justify-center rounded-md text-ink hover:bg-surface-sunken"
@@ -138,6 +152,7 @@ export default function DocsLayout() {
                     key={t.id}
                     to={first.slug ? `/docs/${first.slug}` : '/docs'}
                     onClick={() => setDrawer(false)}
+                    aria-current={t.id === tab.id ? 'true' : undefined}
                     className={cn(
                       'rounded-full px-3 py-1 text-sm',
                       t.id === tab.id
@@ -152,8 +167,8 @@ export default function DocsLayout() {
             </nav>
             <DocsSidebar tab={tab} current={entry} onNavigate={() => setDrawer(false)} />
           </div>
-        </div>
-      )}
+        )}
+      </dialog>
 
       <div className="mx-auto flex max-w-[1440px] gap-10 px-4 md:px-8">
         <aside className="sticky top-28 hidden h-[calc(100svh-7rem)] w-64 shrink-0 overflow-y-auto py-8 pr-2 md:block">

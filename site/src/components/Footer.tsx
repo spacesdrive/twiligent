@@ -15,6 +15,7 @@ const COLUMNS: { heading: string; links: FooterLink[] }[] = [
     links: [
       { label: 'Analytics', href: '/#analytics' },
       { label: 'Publishing', href: '/#publishing' },
+      { label: 'Comment automation', href: '/docs/use/automations' },
       { label: 'Tracked content', href: '/docs/use/tracked-content' },
       { label: 'Libraries', href: '/docs/use/analytics' },
     ],
@@ -52,6 +53,7 @@ function FooterAnchor({ link }: { link: FooterLink }) {
   return (
     <a href={link.href} target="_blank" rel="noopener noreferrer" className={cls}>
       {link.label}
+      <span className="sr-only"> (opens in a new tab)</span>
     </a>
   );
 }
@@ -59,21 +61,20 @@ function FooterAnchor({ link }: { link: FooterLink }) {
 export function Footer() {
   return (
     <footer className="mt-24">
-      <div className="relative isolate overflow-hidden bg-fold">
+      <div className="on-band relative isolate overflow-hidden bg-fold">
         <RibbonCrop placement="bottom-left" size="w-[40rem]" className="-z-10" />
         <RibbonCrop placement="bottom-right" size="w-[30rem]" className="-z-10" />
         <div className="container-page flex flex-col items-center py-24 text-center text-white md:py-32">
-          <p className="eyebrow text-white/80">Intelligence, folded into everything</p>
-          <h2 className="display mt-4 max-w-[16ch] text-[40px] leading-[46px] md:text-[56px] md:leading-[62px]">
+          <h2 className="display max-w-[16ch] text-[40px] leading-[46px] md:text-[56px] md:leading-[62px]">
             Bring every channel into view.
           </h2>
           <p className="mt-4 max-w-xl text-lg leading-7 text-white/85">Start on our instance, or run your own.</p>
           <div className="mt-8 flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row">
             <Pill href={SIGN_UP_URL} variant="dusk" size="lg" className="w-full sm:w-auto">
-              Get started
+              Create an account
             </Pill>
             <Pill href="/docs/self-host" variant="white" size="lg" className="w-full sm:w-auto">
-              Run your own
+              Read the self-hosting guide
             </Pill>
           </div>
           <ul className="mt-6 flex flex-wrap justify-center gap-x-5 gap-y-2 text-sm text-white/85">

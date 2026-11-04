@@ -53,6 +53,7 @@ export function Pill({ href, variant = 'accent', size = 'md', className, childre
       {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
     >
       {children}
+      {external && <span className="sr-only"> (opens in a new tab)</span>}
     </a>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import type { RefObject } from 'react';
-import { useInView, useReducedMotion } from 'motion/react';
+import { useInView } from 'motion/react';
+import { useStillMotion } from './useStillMotion';
 
 export interface Autoplay {
   phase: number;
@@ -11,9 +12,10 @@ export interface Autoplay {
 }
 
 // steps a mockup through its phases while it is on screen: durations[n] is how long phase n holds, in seconds;
-// the last phase holds, then the story loops; under reduced motion the mockup shows its last phase and stays there
+// the last phase holds, then the story loops; under reduced motion or the site's pause control the mockup shows its
+// last phase and stays there
 export function useAutoplay(ref: RefObject<Element | null>, durations: number[]): Autoplay {
-  const reduce = useReducedMotion() ?? false;
+  const reduce = useStillMotion();
   const inView = useInView(ref, { amount: 0.35 });
   const last = durations.length - 1;
   const [state, setState] = useState({ phase: 0, loop: 0 });

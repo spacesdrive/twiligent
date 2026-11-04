@@ -28,13 +28,14 @@ The site does not use shadcn/ui, next-themes or Lucide; those belong to the app.
 site/
   index.html             Meta tags, favicons, font preloads, the inline script that opens the app for a signed-in visitor
                          on the home page, and the inline script that sets data-theme before paint
-  vite.config.ts         MDX (before the React plugin), React, Tailwind, docsPlugin; @ alias to src/
+  vite.config.ts         MDX (before the React plugin), React, Tailwind, docsPlugin, notFoundPage; @ alias to src/
   build/
     docsPlugin.ts        Vite plugin: search index as virtual:docs-search, sitemap.xml and llms.txt in closeBundle
     genIcons.ts          Writes src/components/icons.tsx from @iconify-json/solar (npm run icons --workspace site)
+    notFoundPage.ts      Vite plugin: copies dist/index.html to dist/404.html, so unknown paths get a real 404 status
   content/docs/          One .mdx file per docs page; folders match the URL (self-host/redis.mdx is /docs/self-host/redis)
   public/
-    _redirects           301s from the app's old paths to app.twiligent.ujjwal.fyi
+    _redirects           301s from the app's old paths to app.twiligent.ujjwal.fyi, and the docs routes rewritten to index.html
     robots.txt           Allows every crawler; points at the sitemap
     brand/               Logos, favicon, app icons and the share image, copied from the brand kit
     fonts/               Latin woff2 files for the three brand families
@@ -48,7 +49,7 @@ site/
       NotFound.tsx       Marketing 404
     components/
       MarketingLayout.tsx  Skip link, Navbar, page, Footer
-      Navbar.tsx, Footer.tsx, navLinks.ts, Pill.tsx, ThemeToggle.tsx, ScrollManager.tsx
+      Navbar.tsx, Footer.tsx, navLinks.ts, Pill.tsx, ThemeToggle.tsx, MotionToggle.tsx, ScrollManager.tsx
       brand.tsx          Logo, Mark, RibbonCrop, FoldBand (the brand graphics)
       marks.tsx          Hand-written SVG logos for YouTube, Instagram, Reddit and GitHub
       icons.tsx          Generated Solar icons; never edited by hand
@@ -67,13 +68,15 @@ site/
       mdx.tsx            Heading, DocLink, CodeBlock, InlineCode, Callout, Steps, Step, Cards, Card, Badge
       mdxComponents.tsx  MDX_COMPONENTS: maps Markdown elements and the custom tags to the components above
       virtual.d.ts       Types the virtual:docs-search module
-    hooks/               useAutoplay, useElementSize, usePrefersReducedMotion
+    hooks/               useAutoplay, useElementSize, useMediaQuery, usePrefersReducedMotion, useStillMotion
     lib/
       chart.ts           Chart geometry: seriesRange, chartPoints, smoothPath (monotone cubic), areaPath
       format.ts          formatNumber(): 84,213, 18.4K, 5.2%
       links.ts           App, GitHub, edit, issue, changelog, licence and privacy URLs
       seo.ts             usePageMeta(): title, description, canonical URL, Open Graph and Twitter tags
       theme.ts           useTheme(): reads and toggles data-theme and saves the choice
+      motion.ts          useMotionPaused(): the Pause animations choice, kept in data-motion and localStorage
+      motionPreference.ts  isPausedValue(): reads the stored choice (pure, tested)
       cn.ts              Class name joiner
   tests/                 Node tests in docs/ and lib/ (see Tests)
 ```
@@ -88,7 +91,7 @@ site/
 | `*` | `MarketingLayout` > `NotFound` | Lazy |
 | `/docs`, `/docs/*` | `DocsLayout` > `DocPage` | Both lazy; `DocPage` reads the slug from the path. `/docs` itself needs the index child, because React Router 7 does not match an empty remainder to the `*` child |
 
-Fallback: the build has no top-level `404.html`, so Cloudflare Pages serves `index.html` for any path that is not a file, and the router decides. A docs path with no content file shows a docs 404 inside the docs frame.
+Fallback: `build/notFoundPage.ts` copies the built `index.html` to `dist/404.html`. Cloudflare Pages then answers any path that is not a file with that page and a real 404 status, instead of treating the site as a single-page application, and the router draws `NotFound`. Because of that, `public/_redirects` rewrites `/docs` and `/docs/*` to `/index.html` with status 200, so every docs page still loads with a 200. A new top-level marketing page needs the same rewrite line, or it would load with a 404 status. A docs path with no content file shows a docs 404 inside the docs frame (with a 200 status, since the rewrite cannot know which slugs exist).
 
 Links to the app use the constants in `src/lib/links.ts`: `SIGN_IN_URL` (`https://app.twiligent.ujjwal.fyi/login`) and `SIGN_UP_URL` (the same with `?mode=signup`, which shows the app's sign-up headline and Sign up with Google; an emailed code creates the account). Sign-up and sign-in only exist in the app.
 
@@ -138,7 +141,22 @@ The site uses the Solar icon set (480 Design, CC BY 4.0, credited in `THIRD_PART
 2. Run `npm run icons --workspace site`.
 3. Import it from `@/components/icons`.
 
-Each icon draws in `currentColor` at `1em`, so it takes its colour and size from the text beside it. Platform logos are not icons: they are hand-written SVG in `src/components/marks.tsx`.
+Each icon draws in `currentColor` at `1em`, so it takes its colour and size from the text beside it.
+
+## Accessibility
+
+The site targets WCAG 2.2 AA. The rules a change must keep:
+
+- **Landmarks and skip links:** each layout has a skip link (`#main`, `#doc-content`), one `h1` per page, and named navigation landmarks. Doc headings nest: a `<Steps>` block that follows a `##` heading takes `level={3}`, so its step titles render as `h3`.
+- **Route changes:** `ScrollManager` scrolls to the top and, after the first page, focuses the new page's `h1` (given `tabindex="-1"`) so a screen reader announces where the reader landed. A link with a hash scrolls to its section instead.
+- **Focus:** the global ring is the accent red; inside the fold and dusk bands (`FoldBand`, the footer band, both carry `on-band`) it is white, because red on red is invisible. `html` has `scroll-padding-top` (6rem, 7.5rem under the docs header) so a focused element is never hidden behind the fixed navbar.
+- **Menus:** every navbar menu remembers the button that opened it and returns focus there on Escape or an outside click when focus was inside. The phone docs menu is a native modal `<dialog>` (`showModal()`), so focus moves in, stays in, Escape closes it and focus returns to the menu button.
+- **Search:** the combobox owns an always-rendered listbox with ids from `useId()` (two search boxes exist), options are not focusable, and a polite status line reads the result count. The first Escape closes the results, the second clears the query.
+- **Live messages:** the code copy button reports Copied, or the failure with what to do, in a status line.
+- **Scroll boxes:** wide code blocks and docs tables scroll inside a focusable `role="region"` with a label, so the keyboard can scroll them.
+- **New tabs:** every link that opens a new tab carries a visually hidden "(opens in a new tab)"; the brand bans diagonal arrows, so there is no visible icon.
+- **Below `xl`:** the docs outline shows as a closed "On this page" disclosure under the page description.
+- **Example figures:** numbers in the platform cards are labelled as examples. Platform logos are not icons: they are hand-written SVG in `src/components/marks.tsx`.
 
 ## Adding a Docs Page
 
@@ -159,13 +177,15 @@ When a page moves or is renamed, update links to it in other pages and in the ap
 
 The product previews are React components drawn with the site's tokens, never screenshots, and every number in them comes from `mockups/sample.ts` (one made-up creator, Northwind Kitchen) so the pictures agree with each other. Each preview is one `role="img"` with an `aria-label` that describes what it shows.
 
-- **Loops:** `useAutoplay(ref, durations)` steps a preview through numbered phases while at least 35% of it is on screen, then loops. It returns `phase`, `loop` (finished loops, used as a `key` to restart typing, counting and charts) and `reduce`. Under reduced motion the preview shows its last phase and stays there.
+- **Loops:** `useAutoplay(ref, durations)` steps a preview through numbered phases while at least 35% of it is on screen, then loops. It returns `phase`, `loop` (finished loops, used as a `key` to restart typing, counting and charts) and `reduce`. Under reduced motion, or after the reader presses Pause animations, the preview shows its last phase and stays there.
 - **Cursor:** `Cursor` glides between elements marked `data-cursor="<name>"` inside its stage (the element passed as `stage`, which must also be the cursor's positioned parent), and clicks when its `clicks` count goes up. Timings follow the Activepieces previews: a 0.72s glide on `cubic-bezier(.5,.02,.2,1)`, a 0.26s fade, a press to 0.82 scale and a ring that grows from 0.35 to 1.9 while fading over 0.48s. In a bento card, pass it as the `Frame`'s `overlay`.
 - **Charts:** `AreaChart` measures its box and draws at real pixels (no stretched SVG), with a monotone curve from `lib/chart.ts` that never overshoots its data, a gradient fill, a dot on the latest point, optional `focus` with a guide line and tooltip, and `anchors` (`data-cursor="point-<n>"`) for a cursor to move along the line. It animates in CSS only (`chart-play`, `chart-line`, `chart-fill`, `chart-dot` in `index.css`), so the hero uses it without loading motion.
 - **Text and numbers:** `Typed` types text with a blinking caret; `CountUp` counts a number up in fixed-width digits. Numbers never fade in blurred.
 - **Hero:** `OverviewWindow` uses CSS animations only (`rise-in`, `grow-x`, the chart classes) with `--delay` for the stagger, because the hero is in the first bundle and motion is not.
 - **Bento cards:** `bento/Frame` is a small app window that fills its panel and is cut off by the panel's lower edge. Its body is laid out on its own, so a long list never makes the grid row taller. Each card has one live detail (a row arriving, a log streaming, a run completing, a filter clicked).
 - **Reduced motion:** `HomeBelow` wraps the page in `MotionConfig reducedMotion="user"`; `useAutoplay` holds the last phase; the CSS animations switch off under `prefers-reduced-motion`; cursors stay hidden.
+- **Pause control:** the previews loop for as long as they are on screen, so WCAG 2.2.2 needs a way to stop them on the page itself. `MotionToggle` (in the navbar from `sm`, and in the phone menu as Animations) flips `data-motion="paused"` on `<html>` and saves it in `localStorage` under `twiligent-motion`; `main.tsx` applies the saved choice before the first render. `useStillMotion()` is true under reduced motion or the pause, and `useAutoplay`, `Typed` and `CountUp` use it; `HomeBelow` switches `MotionConfig` to `always`; the CSS loops (`.ping-soft`, `.caret`) stop under `:root[data-motion='paused']`.
+- **Story:** the pinned scroll story (`MovingStory`, 250vh) needs a window at least 1024 px wide and 701 px tall (`useMediaQuery`); smaller windows, landscape phones and zoomed pages get `StillStory`, so the closing words are never clipped.
 
 ## Deploy
 
@@ -174,11 +194,11 @@ The product previews are React components drawn with the site's tokens, never sc
 | Pages project | `twiligent-site` |
 | Address | `https://twiligent.ujjwal.fyi` |
 | Build | `npm run build --workspace site` (after `npm ci` at the root) |
-| Output | `site/dist` (the Vite build plus `sitemap.xml` and `llms.txt`) |
+| Output | `site/dist` (the Vite build plus `404.html`, `sitemap.xml` and `llms.txt`) |
 | Secrets | None in the build; the workflow needs only `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` |
 | Workflow | `.github/workflows/deploy-site.yml`, on pushes to `main` that touch `site/**`, `tsconfig.base.json`, the root `package.json` or `package-lock.json`, or the workflow itself |
 
-`site/public/_redirects` sends the app's old paths on this domain (`/login`, `/accounts`, `/settings`, `/upload`, `/videos`, `/shorts`, `/reels`, `/tracked-content`, `/reddit-posts`, `/channel/*`, `/instagram/*`, `/reddit/*` and others) to the same path on `https://app.twiligent.ujjwal.fyi` with a 301. In the other direction, the app's `/docs/*` route sends old docs links to the same page here. See `docs/architecture/cloudflare/PAGES.md`, `docs/architecture/cloudflare/CI_CD.md` and `docs/workflows/DEPLOYMENT.md`.
+`site/public/_redirects` sends the app's old paths on this domain (`/login`, `/accounts`, `/settings`, `/videos`, `/shorts`, `/tracked-content`, `/reddit-posts`, `/channel/*`, `/instagram/*`, `/reddit/*` and others) to the same path on `https://app.twiligent.ujjwal.fyi` with a 301; `/upload` and `/publish` go to the app's `/publish`, and `/reels` and `/instagram` to its `/instagram`. It also rewrites `/docs` and `/docs/*` to `/index.html` with a 200 (see Routing). In the other direction, the app's `/docs/*` route sends old docs links to the same page here. See `docs/architecture/cloudflare/PAGES.md`, `docs/architecture/cloudflare/CI_CD.md` and `docs/workflows/DEPLOYMENT.md`.
 
 ## TypeScript and Lint
 
@@ -196,7 +216,8 @@ The product previews are React components drawn with the site's tokens, never sc
 | Test | Checks |
 |---|---|
 | `tests/docs/content.test.ts` | Every page in `nav.ts` has a content file and every content file is in `nav.ts`; slugs are unique; every page starts with a `meta` export with a title and description; every `/docs/...` link points at a page that exists; no page uses an em or en dash |
-| `tests/docs/searchShared.test.ts` | `slugify()` turns headings into anchor ids |
+| `tests/docs/searchShared.test.ts` | `slugify()` turns headings into anchor ids; `resultCountText()` reads the result count for none, one and many |
+| `tests/lib/motionPreference.test.ts` | Only the stored word `paused` pauses the previews |
 | `tests/lib/chart.test.ts` | The value range is padded; points spread across the box; the smooth path passes through every point and never overshoots between two; the area closes to the baseline |
 | `tests/lib/format.test.ts` | Full numbers get separators, short numbers use K and M and drop a zero decimal, rates keep one decimal |
 | `tests/homeRedirect.test.ts` | Runs the signed-in script from `index.html`: the home page opens the app only with `twiligent_signed_in=1`, and docs and other paths never redirect |

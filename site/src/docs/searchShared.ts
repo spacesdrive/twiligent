@@ -25,3 +25,9 @@ export function slugify(text: string): string {
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-');
 }
+
+// what a screen reader hears after each search, since the results appear without moving focus
+export function resultCountText(count: number): string {
+  if (count === 0) return 'No pages match';
+  return count === 1 ? '1 result' : `${count} results`;
+}

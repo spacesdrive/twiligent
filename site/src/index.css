@@ -182,6 +182,16 @@
   html {
     background-color: var(--surface);
     -webkit-text-size-adjust: 100%;
+    /* keeps a focused link or a jumped-to heading clear of the fixed navbar */
+    scroll-padding-top: 6rem;
+  }
+  /* the docs header is taller: the top bar plus the row of tabs */
+  html:has([data-docs-layout]) {
+    scroll-padding-top: 7.5rem;
+  }
+  /* a page heading takes focus after a route change only so screen readers announce it; it is not a control */
+  h1[tabindex='-1']:focus {
+    outline: none;
   }
   body {
     margin: 0;
@@ -196,6 +206,10 @@
   :focus-visible {
     outline: 2px solid var(--focus-ring);
     outline-offset: 2px;
+  }
+  /* the accent ring vanishes on the red fold and the dark dusk panels, so focus inside a band is white */
+  .on-band :focus-visible {
+    outline-color: #fff;
   }
   ::selection {
     background: var(--accent-soft);
@@ -361,6 +375,12 @@
 }
 .caret {
   animation: caret-blink 1s step-end infinite;
+}
+
+/* the site's pause control stops every loop the way the system setting does */
+:root[data-motion='paused'] .ping-soft,
+:root[data-motion='paused'] .caret {
+  animation: none;
 }
 
 @media (prefers-reduced-motion: reduce) {

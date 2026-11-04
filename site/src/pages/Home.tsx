@@ -18,24 +18,24 @@ function Hero() {
   return (
     <section aria-labelledby="hero-heading" className="relative overflow-hidden pt-32 md:pt-40">
       <div className="container-page flex flex-col items-center text-center">
-        <p className="eyebrow fold-in text-accent-text">YouTube, Instagram and Reddit, in one dashboard</p>
+        <p className="eyebrow fold-in text-accent-text">Analytics, publishing and comment replies</p>
         <h1
           id="hero-heading"
           className="display fold-in mt-5 max-w-[17ch] text-[40px] leading-[44px] tracking-[-0.03em] text-ink sm:text-[52px] sm:leading-[56px] lg:text-[64px] lg:leading-[68px]"
         >
-          Every channel, folded into one clear picture.
+          YouTube, Instagram and Reddit analytics in one dashboard.
         </h1>
         <p className="fold-in mt-6 max-w-[40rem] text-lg leading-7 text-balance text-ink-muted">
           Twiligent puts your YouTube, Instagram and Reddit numbers side by side, publishes and schedules your Instagram
-          posts, and runs on accounts you own.
+          posts, answers Instagram comments with a private reply, and runs on accounts you own.
         </p>
         <div className="fold-in mt-9 flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row">
           <Pill href={SIGN_UP_URL} size="lg" className="w-full sm:w-auto">
-            Get started
+            Create an account
             <AltArrowRight className="size-5 transition-transform group-hover:translate-x-0.5" />
           </Pill>
           <Pill href="/docs/self-host" variant="soft" size="lg" className="w-full sm:w-auto">
-            Run your own
+            Read the self-hosting guide
           </Pill>
         </div>
         <p className="mt-5 text-sm text-ink-muted">Free and open source under the MIT licence.</p>
@@ -64,9 +64,9 @@ function Hero() {
 
 export default function Home() {
   usePageMeta({
-    title: 'Twiligent',
+    title: 'YouTube, Instagram and Reddit analytics in one dashboard',
     description:
-      'Twiligent puts your YouTube, Instagram and Reddit numbers side by side, publishes and schedules your Instagram posts, and runs on accounts you own.',
+      'Twiligent puts your YouTube, Instagram and Reddit numbers side by side, publishes and schedules your Instagram posts, answers Instagram comments with a private reply, and runs on accounts you own.',
     path: '/',
   });
   return (

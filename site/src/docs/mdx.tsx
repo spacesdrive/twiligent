@@ -1,4 +1,4 @@
-import { Children, isValidElement, useRef, useState } from 'react';
+import { Children, createContext, isValidElement, useContext, useRef, useState } from 'react';
 import type { ComponentPropsWithoutRef, ReactNode } from 'react';
 import { Link } from 'react-router';
 import {
@@ -66,6 +66,7 @@ export function DocLink({ href = '', children, ...props }: ComponentPropsWithout
   return (
     <a href={href} target="_blank" rel="noopener noreferrer" className={cls} {...props}>
       {children}
+      <span className="sr-only"> (opens in a new tab)</span>
     </a>
   );
 }
@@ -73,20 +74,24 @@ export function DocLink({ href = '', children, ...props }: ComponentPropsWithout
 // shiki's highlighted block with a copy button in its corner
 export function CodeBlock(props: ComponentPropsWithoutRef<'pre'>) {
   const ref = useRef<HTMLPreElement>(null);
-  const [copied, setCopied] = useState(false);
-  async function copy() {
+  const [copy, setCopy] = useState<'idle' | 'copied' | 'failed'>('idle');
+  async function copyCode() {
     try {
       await navigator.clipboard.writeText(ref.current?.textContent ?? '');
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+      setCopy('copied');
+      setTimeout(() => setCopy('idle'), 1500);
     } catch {
-      setCopied(false);
+      setCopy('failed');
     }
   }
   return (
     <div className="group relative my-6">
+      {/* a wide block scrolls inside itself, so it takes keyboard focus for the arrow keys */}
       <pre
         ref={ref}
+        tabIndex={0}
+        role="region"
+        aria-label="Code"
         {...props}
         className={cn(
           props.className,
@@ -95,12 +100,16 @@ export function CodeBlock(props: ComponentPropsWithoutRef<'pre'>) {
       />
       <button
         type="button"
-        onClick={copy}
-        aria-label={copied ? 'Copied' : 'Copy code'}
+        onClick={copyCode}
+        aria-label="Copy code"
         className="absolute top-2.5 right-2.5 inline-flex size-8 items-center justify-center rounded-md border border-line bg-surface-raised text-ink-muted transition-colors hover:text-ink"
       >
-        {copied ? <CheckCircle className="size-4 text-success" /> : <Copy className="size-4" />}
+        {copy === 'copied' ? <CheckCircle className="size-4 text-success" /> : <Copy className="size-4" />}
       </button>
+      <p role="status" className={cn(copy === 'failed' ? 'mt-2 text-sm text-ink-muted' : 'sr-only')}>
+        {copy === 'copied' && 'Copied'}
+        {copy === 'failed' && "Couldn't copy. Select the code and copy it by hand."}
+      </p>
     </div>
   );
 }
@@ -157,8 +166,21 @@ export function Callout({ type = 'note', title, children }: CalloutProps) {
   );
 }
 
-export function Steps({ children }: { children?: ReactNode }) {
-  return <ol className="my-8 flex flex-col [counter-reset:step]">{children}</ol>;
+// a step heading sits one level below the heading the steps follow
+const StepLevel = createContext<2 | 3>(2);
+
+export interface StepsProps {
+  // 3 when the steps sit under a ## heading, so the outline nests them there
+  level?: 2 | 3;
+  children?: ReactNode;
+}
+
+export function Steps({ level = 2, children }: StepsProps) {
+  return (
+    <StepLevel.Provider value={level}>
+      <ol className="my-8 flex flex-col [counter-reset:step]">{children}</ol>
+    </StepLevel.Provider>
+  );
 }
 
 export interface StepProps {
@@ -167,6 +189,8 @@ export interface StepProps {
 }
 
 export function Step({ title, children }: StepProps) {
+  const level = useContext(StepLevel);
+  const Tag = level === 2 ? 'h2' : 'h3';
   return (
     <li className="relative flex gap-4 pb-8 [counter-increment:step] before:absolute before:top-10 before:bottom-1 before:left-4 before:w-px before:bg-line last:pb-0 last:before:hidden">
       <span
@@ -174,9 +198,9 @@ export function Step({ title, children }: StepProps) {
         className="flex size-8 shrink-0 items-center justify-center rounded-full border border-line bg-surface-raised font-mono text-sm font-medium text-ink before:content-[counter(step)]"
       />
       <div className="flex min-w-0 flex-1 flex-col pt-1">
-        <h2 id={slugify(title)} data-toc="2" className="display scroll-mt-32 text-[17px] leading-7 text-ink">
+        <Tag id={slugify(title)} data-toc={level} className="display scroll-mt-32 text-[17px] leading-7 text-ink">
           {title}
-        </h2>
+        </Tag>
         <div className="text-base leading-7 text-ink-muted [&>*:first-child]:mt-2 [&_p]:my-3 [&_strong]:font-semibold [&_strong]:text-ink">
           {children}
         </div>

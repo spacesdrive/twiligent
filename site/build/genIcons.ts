@@ -62,6 +62,8 @@ const ICONS: Record<string, string> = {
   List: 'list-linear',
   Add: 'add-linear',
   Hashtag: 'hashtag-linear',
+  Pause: 'pause-linear',
+  Play: 'play-linear',
 };
 
 interface IconSet {

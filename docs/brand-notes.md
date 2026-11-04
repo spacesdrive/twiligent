@@ -99,7 +99,7 @@ Semantic tokens (light / dark), each with its contrast note from `tokens.json`:
 - Sentence case; no exclamation marks, emoji or hype words ("revolutionary", "magic", "10x").
 - At most one light metaphor per screen (dusk, glow, fold, edge).
 - Errors say what happened and what to do.
-- **Tagline:** "Intelligence, folded into everything." for the site hero, covers and social; never in product UI.
+- **Tagline:** "Intelligence, folded into everything." for covers and social; never in product UI. Since 2026-11-04 the site's pages do not use it: the owner chose headlines and buttons that say plainly what the product does and what a button leads to ("YouTube, Instagram and Reddit analytics in one dashboard", "Create an account").
 - **Promise:** clarity from many sources, folded into one picture.
 - **Personality:** sharp, not cold; calm, not quiet; warm, not cute.
 - The project rules also ban em dashes, en dashes and diagonal arrows.

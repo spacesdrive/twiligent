@@ -13,10 +13,12 @@ export interface TocProps {
   article: HTMLElement | null;
   // changes with each page, so the list is read again
   pageKey: string;
+  // the sticky side column on wide screens, or a closed disclosure under the page title on narrower ones
+  variant?: 'aside' | 'inline';
 }
 
 // "On this page": the h2 and h3 headings, with the one being read lit as the reader scrolls
-export function Toc({ article, pageKey }: TocProps) {
+export function Toc({ article, pageKey, variant = 'aside' }: TocProps) {
   const [items, setItems] = useState<TocItem[]>([]);
   const [active, setActive] = useState('');
 
@@ -39,17 +41,13 @@ export function Toc({ article, pageKey }: TocProps) {
   }, [article, pageKey]);
 
   if (items.length === 0) return null;
-  return (
-    <nav aria-label="On this page" className="flex flex-col gap-3">
-      <p className="flex items-center gap-2 text-sm font-semibold text-ink">
-        <List className="size-4" />
-        On this page
-      </p>
-      <ul className="flex flex-col gap-2.5 text-sm">
+  const list = (
+    <ul className="flex flex-col gap-2.5 text-sm">
         {items.map(item => (
           <li key={item.id} className={cn(item.level === 3 && 'pl-4')}>
             <a
               href={`#${item.id}`}
+              aria-current={active === item.id ? 'location' : undefined}
               className={cn(
                 'transition-colors',
                 active === item.id ? 'font-medium text-accent-text' : 'text-ink-muted hover:text-ink',
@@ -59,7 +57,28 @@ export function Toc({ article, pageKey }: TocProps) {
             </a>
           </li>
         ))}
-      </ul>
+    </ul>
+  );
+  if (variant === 'inline') {
+    return (
+      <nav aria-label="On this page" className="mt-6 xl:hidden">
+        <details className="group rounded-lg border border-line bg-surface-raised">
+          <summary className="flex min-h-11 cursor-pointer items-center gap-2 px-4 text-sm font-semibold text-ink">
+            <List className="size-4" />
+            On this page
+          </summary>
+          <div className="border-t border-line px-4 py-3">{list}</div>
+        </details>
+      </nav>
+    );
+  }
+  return (
+    <nav aria-label="On this page" className="flex flex-col gap-3">
+      <p className="flex items-center gap-2 text-sm font-semibold text-ink">
+        <List className="size-4" />
+        On this page
+      </p>
+      {list}
     </nav>
   );
 }

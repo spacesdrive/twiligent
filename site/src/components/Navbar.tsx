@@ -10,6 +10,7 @@ import type { MenuColumn, MenuItem as MenuItemData } from './navLinks';
 import { Logo } from './brand';
 import { Pill } from './Pill';
 import { ThemeToggle } from './ThemeToggle';
+import { MotionToggle } from './MotionToggle';
 
 const TRIGGER =
   'flex items-center gap-1 rounded-full px-3.5 py-2 text-[15px] font-medium text-ink transition-colors duration-150 hover:bg-surface-sunken';
@@ -54,6 +55,7 @@ function MenuItem({ item, onDone, onHover }: MenuItemProps) {
   return (
     <a href={item.href} target="_blank" rel="noopener noreferrer" className={cls} onClick={onDone} {...events}>
       {body}
+      <span className="sr-only"> (opens in a new tab)</span>
     </a>
   );
 }
@@ -135,24 +137,32 @@ export function Navbar() {
 
   const close = useCallback(() => setOpen(null), []);
 
-  // a menu opened from the keyboard takes focus to its first item, and Escape hands focus back to its button
+  // every open remembers its button; a menu opened from the keyboard takes focus to its first item, and closing hands
+  // focus back to the button whenever focus was inside the island, because the panel turns inert as it closes
   const trigger = useRef<HTMLButtonElement | null>(null);
-  const openFromKeyboard = (id: string, button: HTMLButtonElement) => {
+  const openMenu = (id: string, button: HTMLButtonElement, fromKeyboard: boolean) => {
     trigger.current = button;
     setOpen(id);
-    window.requestAnimationFrame(() => document.querySelector<HTMLElement>('#nav-panel a')?.focus());
+    if (fromKeyboard) {
+      window.requestAnimationFrame(() => document.querySelector<HTMLElement>('#nav-panel a')?.focus());
+    }
   };
 
   useEffect(() => {
     if (!open) return;
+    const closeAndRefocus = () => {
+      const focusInPanel = document.getElementById('nav-panel')?.contains(document.activeElement) ?? false;
+      setOpen(null);
+      if (focusInPanel) trigger.current?.focus();
+    };
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== 'Escape') return;
+      const focusInIsland = island.current?.contains(document.activeElement) ?? false;
       setOpen(null);
-      trigger.current?.focus();
-      trigger.current = null;
+      if (focusInIsland) trigger.current?.focus();
     };
     const onDown = (event: globalThis.PointerEvent) => {
-      if (!island.current?.contains(event.target as Node)) setOpen(null);
+      if (!island.current?.contains(event.target as Node)) closeAndRefocus();
     };
     document.addEventListener('keydown', onKey);
     document.addEventListener('pointerdown', onDown);
@@ -207,7 +217,7 @@ export function Navbar() {
             aria-label="Main"
             className="flex h-16 items-center justify-between gap-3 px-4 md:h-[68px] md:px-6 lg:grid lg:grid-cols-[1fr_auto_1fr]"
           >
-            <Link to="/" aria-label="Twiligent home" className="flex min-h-11 shrink-0 items-center justify-self-start">
+            <Link to="/" aria-label="Twiligent home" className="flex min-h-11 min-w-0 items-center justify-self-start">
               <Logo className="h-6 md:h-7" />
             </Link>
 
@@ -218,11 +228,14 @@ export function Navbar() {
                     type="button"
                     aria-expanded={open === m.id}
                     aria-controls="nav-panel"
-                    onPointerEnter={hoverOpen(m.id)}
+                    onPointerEnter={event => {
+                      trigger.current = event.currentTarget;
+                      hoverOpen(m.id)(event);
+                    }}
                     onClick={event => {
                       // detail is 0 when Enter or Space pressed the button rather than a pointer
-                      if (event.detail === 0 && open !== m.id) openFromKeyboard(m.id, event.currentTarget);
-                      else setOpen(current => (current === m.id ? null : m.id));
+                      if (open === m.id) setOpen(null);
+                      else openMenu(m.id, event.currentTarget, event.detail === 0);
                     }}
                     className={cn(TRIGGER, open === m.id && 'bg-surface-sunken')}
                   >
@@ -243,22 +256,29 @@ export function Navbar() {
             </ul>
 
             <div className="flex items-center gap-2 justify-self-end">
+              <MotionToggle className="hidden sm:flex" />
               <ThemeToggle className="hidden sm:flex" />
               <span className="hidden md:inline-flex">
                 <Pill href={SIGN_IN_URL} variant="soft" size="sm">
                   Sign in
                 </Pill>
               </span>
-              <Pill href={SIGN_UP_URL} size="sm" className="pr-3">
-                Get started
-                <AltArrowRight className="-mr-0.5 size-4 transition-transform group-hover:translate-x-0.5" />
-              </Pill>
+              {/* below sm the bar has no room for it; the menu panel carries the same link */}
+              <span className="hidden sm:inline-flex">
+                <Pill href={SIGN_UP_URL} size="sm" className="pr-3">
+                  Create account
+                  <AltArrowRight className="-mr-0.5 size-4 transition-transform group-hover:translate-x-0.5" />
+                </Pill>
+              </span>
               <button
                 type="button"
                 aria-expanded={open === 'mobile'}
                 aria-controls="nav-panel"
                 aria-label={open === 'mobile' ? 'Close menu' : 'Open menu'}
-                onClick={() => setOpen(current => (current === 'mobile' ? null : 'mobile'))}
+                onClick={event => {
+                  if (open === 'mobile') setOpen(null);
+                  else openMenu('mobile', event.currentTarget, event.detail === 0);
+                }}
                 className="flex size-10 items-center justify-center rounded-full text-ink hover:bg-surface-sunken lg:hidden"
               >
                 {open === 'mobile' ? <CloseCircle className="size-6" /> : <HamburgerMenu className="size-6" />}
@@ -296,7 +316,7 @@ export function Navbar() {
                         ))}
                         <div className="mt-2 flex flex-col gap-2 sm:flex-row">
                           <Pill href={SIGN_UP_URL} className="w-full sm:w-auto">
-                            Get started
+                            Create an account
                           </Pill>
                           <Pill href={SIGN_IN_URL} variant="soft" className="w-full sm:w-auto">
                             Sign in
@@ -305,6 +325,10 @@ export function Navbar() {
                         <div className="flex items-center justify-between px-3 pt-2 text-sm text-ink-muted">
                           Theme
                           <ThemeToggle />
+                        </div>
+                        <div className="flex items-center justify-between px-3 text-sm text-ink-muted">
+                          Animations
+                          <MotionToggle />
                         </div>
                       </div>
                     </div>
