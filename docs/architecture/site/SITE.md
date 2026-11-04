@@ -35,7 +35,7 @@ site/
     notFoundPage.ts      Vite plugin: copies dist/index.html to dist/404.html, so unknown paths get a real 404 status
   content/docs/          One .mdx file per docs page; folders match the URL (self-host/redis.mdx is /docs/self-host/redis)
   public/
-    _redirects           301s from the app's old paths to app.twiligent.ujjwal.fyi, and the docs routes rewritten to index.html
+    _redirects           301s from the app's old paths to app.twiligent.ujjwal.fyi, and the docs routes rewritten to / (the home page's index.html)
     robots.txt           Allows every crawler; points at the sitemap
     brand/               Logos, favicon, app icons and the share image, copied from the brand kit
     fonts/               Latin woff2 files for the three brand families
@@ -91,7 +91,7 @@ site/
 | `*` | `MarketingLayout` > `NotFound` | Lazy |
 | `/docs`, `/docs/*` | `DocsLayout` > `DocPage` | Both lazy; `DocPage` reads the slug from the path. `/docs` itself needs the index child, because React Router 7 does not match an empty remainder to the `*` child |
 
-Fallback: `build/notFoundPage.ts` copies the built `index.html` to `dist/404.html`. Cloudflare Pages then answers any path that is not a file with that page and a real 404 status, instead of treating the site as a single-page application, and the router draws `NotFound`. Because of that, `public/_redirects` rewrites `/docs` and `/docs/*` to `/index.html` with status 200, so every docs page still loads with a 200. A new top-level marketing page needs the same rewrite line, or it would load with a 404 status. A docs path with no content file shows a docs 404 inside the docs frame (with a 200 status, since the rewrite cannot know which slugs exist).
+Fallback: `build/notFoundPage.ts` copies the built `index.html` to `dist/404.html`. Cloudflare Pages then answers any path that is not a file with that page and a real 404 status, instead of treating the site as a single-page application, and the router draws `NotFound`. Because of that, `public/_redirects` rewrites `/docs` and `/docs/*` to `/` with status 200, so every docs page still loads with a 200. The target must be `/`, not `/index.html`: Pages answers `/index.html` with its own 308 to `/`, so a rewrite to it never applies (#138). Check a change to these lines with `npx wrangler pages dev dist` from `site/` after a build. A new top-level marketing page needs the same rewrite line, or it would load with a 404 status. A docs path with no content file shows a docs 404 inside the docs frame (with a 200 status, since the rewrite cannot know which slugs exist).
 
 Links to the app use the constants in `src/lib/links.ts`: `SIGN_IN_URL` (`https://app.twiligent.ujjwal.fyi/login`) and `SIGN_UP_URL` (the same with `?mode=signup`, which shows the app's sign-up headline and Sign up with Google; an emailed code creates the account). Sign-up and sign-in only exist in the app.
 
@@ -198,7 +198,7 @@ The product previews are React components drawn with the site's tokens, never sc
 | Secrets | None in the build; the workflow needs only `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` |
 | Workflow | `.github/workflows/deploy-site.yml`, on pushes to `main` that touch `site/**`, `tsconfig.base.json`, the root `package.json` or `package-lock.json`, or the workflow itself |
 
-`site/public/_redirects` sends the app's old paths on this domain (`/login`, `/accounts`, `/settings`, `/videos`, `/shorts`, `/tracked-content`, `/reddit-posts`, `/channel/*`, `/instagram/*`, `/reddit/*` and others) to the same path on `https://app.twiligent.ujjwal.fyi` with a 301; `/upload` and `/publish` go to the app's `/publish`, and `/reels` and `/instagram` to its `/instagram`. It also rewrites `/docs` and `/docs/*` to `/index.html` with a 200 (see Routing). In the other direction, the app's `/docs/*` route sends old docs links to the same page here. See `docs/architecture/cloudflare/PAGES.md`, `docs/architecture/cloudflare/CI_CD.md` and `docs/workflows/DEPLOYMENT.md`.
+`site/public/_redirects` sends the app's old paths on this domain (`/login`, `/accounts`, `/settings`, `/videos`, `/shorts`, `/tracked-content`, `/reddit-posts`, `/channel/*`, `/instagram/*`, `/reddit/*` and others) to the same path on `https://app.twiligent.ujjwal.fyi` with a 301; `/upload` and `/publish` go to the app's `/publish`, and `/reels` and `/instagram` to its `/instagram`. It also rewrites `/docs` and `/docs/*` to `/` with a 200 (see Routing). In the other direction, the app's `/docs/*` route sends old docs links to the same page here. See `docs/architecture/cloudflare/PAGES.md`, `docs/architecture/cloudflare/CI_CD.md` and `docs/workflows/DEPLOYMENT.md`.
 
 ## TypeScript and Lint
 
