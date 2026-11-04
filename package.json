@@ -1,6 +1,6 @@
 {
   "name": "twiligent",
-  "version": "1.0.0",
+  "version": "1.3.0",
   "private": true,
   "description": "Self-hosted social media analytics and publishing dashboard",
   "workspaces": [
