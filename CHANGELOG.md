@@ -7,6 +7,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-05
+
+Twiligent now supports YouTube and Instagram only. What an instance owner must do: nothing for the code; deploy as usual. Reddit accounts and tracked Reddit posts stay in the database, unused and hidden, until the database cleanup in #145, so export them first if you want to keep them. The Reddit pages are gone.
+
+### Removed
+
+- Reddit: adding a Reddit account with a session cookie, the Reddit account and Reddit posts pages, Reddit on the Overview, and Reddit posts in tracked content (#144, ADR-049)
+- The API routes `POST /api/accounts/reddit`, `GET /api/accounts/:id/reddit-analytics` and `GET /api/accounts/:id/reddit-posts`; they now answer 404 (#144)
+- Typed-in view counts, uploaded images and the linked account on tracked items, which only Reddit posts used (#144)
+- `hasCookie` from account responses (#144)
+
+### Changed
+
+- Tracked content follows YouTube videos and Shorts only; any other link is refused with a message that says so, the filter chips split videos from Shorts, and category pages lead with video, view, like and comment totals (#144)
+- The Overview counts YouTube and Instagram only: Comments splits between YouTube and Instagram, Likes compares tracked videos and categories, and Audience shows subscribers and followers (#144)
+- Add account offers YouTube and Instagram, and the app, README and public site describe those two platforms (#144)
+
 ### Security
 
 - Every GitHub Actions step is pinned to a full commit instead of a movable tag, so a compromised action release cannot reach the deploy secrets (#148)
