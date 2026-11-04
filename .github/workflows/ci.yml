@@ -7,6 +7,10 @@ on:
     branches-ignore: [main]
   workflow_dispatch:
 
+# the GITHUB_TOKEN only reads the repository; deploys authenticate to Cloudflare with their own secrets
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-latest
