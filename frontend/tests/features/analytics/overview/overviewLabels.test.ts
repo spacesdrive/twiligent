@@ -36,7 +36,7 @@ test('metric tabs list present parts or a fallback', () => {
   };
   const tabs = metricTabsOf([channel, redditAccount], stats, false);
   assert.deepEqual(tabs.map(tab => tab.value), ['audience', 'views', 'content', 'accounts', 'comments', 'likes']);
-  assert.equal(tabs[0].figure, '1.5K');
+  assert.equal(tabs[0].figure, 1520);
   assert.equal(tabs[0].detail, '1.5K subscribers, 20 karma');
   assert.equal(tabs[1].detail, 'No views recorded yet');
   assert.equal(tabs[2].detail, '3 videos, 2 tracked');

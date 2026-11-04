@@ -1,4 +1,6 @@
 import { TabsList, TabsTrigger } from '@/components/ui/tabs';
+import Num from '@/components/Num';
+import { RollingValueContext } from '@/components/rollingValue';
 import type { MetricTab } from './overviewLabels.ts';
 
 export interface MetricTabsListProps {
@@ -19,7 +21,9 @@ export default function MetricTabsList({ tabs }: MetricTabsListProps) {
           className="h-auto min-w-0 flex-col items-start justify-start gap-1 rounded-card border border-line bg-surface-raised p-4 text-left after:hidden hover:border-line-strong/40 data-active:border-brand data-active:bg-brand-soft/40"
         >
           <span className="text-small font-medium text-ink-muted">{tab.label}</span>
-          <span className="font-heading text-page-title font-semibold text-ink tabular-nums">{tab.figure}</span>
+          <span className="font-heading text-page-title font-semibold text-ink tabular-nums">
+            <RollingValueContext.Provider value><Num value={tab.figure} /></RollingValueContext.Provider>
+          </span>
           <span className="w-full truncate text-caption font-normal text-ink-faint" title={typeof tab.detail === 'string' ? tab.detail : undefined}>{tab.detail}</span>
         </TabsTrigger>
       ))}
