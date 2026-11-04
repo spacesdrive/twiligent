@@ -7,6 +7,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [1.3.1] - 2026-11-05
+
+### Fixed
+
+- Docs pages on the public site load with a 200 status again; since 1.3.0 they drew correctly but answered 404, which search engines treat as missing (#138)
+
 ## [1.3.0] - 2026-11-04
 
 ### Added
