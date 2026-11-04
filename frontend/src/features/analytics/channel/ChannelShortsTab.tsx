@@ -1,23 +1,22 @@
-import type { TooltipValueType } from 'recharts';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip, PieChart, Pie, Cell, Legend } from 'recharts';
+import { BarChart } from '@/components/ui/bar-chart';
 import MetricBox from '@/components/MetricBox';
 import ChartPanel from '@/components/ChartPanel';
+import DonutChart from '@/components/DonutChart';
+import ExactTooltip from '@/components/ExactTooltip';
 import Num from '@/components/Num';
-import { SERIES, axisProps, gridProps, legendStyle, rankingSummary, tooltipCursor, tooltipStyle } from '@/lib/chart';
+import { SERIES, rankingSummary } from '@/lib/chart';
 import { METRIC_ICONS } from '@/lib/metricIcons';
 import { fmtNum, fmtNumFull } from '../../../utils/formatters';
-import type { NumberLike } from '../../../utils/formatters';
 import { shortsComparisonOf, splitDataOf } from './channelChartData.ts';
 import MetricGrid from './MetricGrid';
 import type { VideoAnalytics } from '@shared/types/youtube.ts';
 
 const { shorts: Shorts, regularVideos: Regular, averageViews: AverageViews } = METRIC_ICONS;
 
-function fullNumber(value: TooltipValueType | undefined): string {
-  return fmtNumFull(value as number);
-}
-
-const full = (value: unknown) => fmtNumFull(value as NumberLike);
+const COMPARISON = {
+  Shorts: { label: 'Shorts', color: SERIES.primary },
+  Regular: { label: 'Regular videos', color: SERIES.neutral },
+};
 
 export interface ChannelShortsTabProps {
   analytics: VideoAnalytics;
@@ -40,40 +39,23 @@ export default function ChannelShortsTab({ analytics }: ChannelShortsTabProps) {
           title="Content split"
           className="md:col-span-2"
           empty={splitData.length === 0}
-          summary={rankingSummary(splitData, fmtNum, 'videos')}
-          table={{ caption: 'Content split', columns: [{ key: 'name', label: 'Kind' }, { key: 'value', label: 'Videos', numeric: true, format: full }], rows: splitData }}
+          description={rankingSummary(splitData, fmtNumFull, 'videos')}
         >
-          <PieChart>
-            <Pie data={splitData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={95} innerRadius={55} paddingAngle={2} strokeWidth={0}>
-              {splitData.map(slice => <Cell key={slice.name} fill={slice.color} />)}
-            </Pie>
-            <ReTooltip contentStyle={tooltipStyle} />
-            <Legend iconType="circle" iconSize={8} wrapperStyle={legendStyle} />
-          </PieChart>
+          <DonutChart data={splitData} height={280} />
         </ChartPanel>
         <ChartPanel
           title="Shorts compared with regular videos"
           className="md:col-span-3"
-          summary={`${viewsLead} get more views on average: ${fmtNum(analytics.avgShortViews)} per Short against ${fmtNum(analytics.avgRegularViews)} per regular video.`}
-          table={{
-            caption: 'Shorts compared with regular videos',
-            columns: [
-              { key: 'metric', label: 'Average' },
-              { key: 'Shorts', label: 'Shorts', numeric: true, format: full },
-              { key: 'Regular', label: 'Regular videos', numeric: true, format: full },
-            ],
-            rows: comparison,
-          }}
+          description={`${viewsLead} get more views on average: ${fmtNumFull(analytics.avgShortViews)} per Short against ${fmtNumFull(analytics.avgRegularViews)} per regular video.`}
         >
-          <BarChart data={comparison}>
-            <CartesianGrid {...gridProps} vertical={false} />
-            <XAxis dataKey="metric" {...axisProps} />
-            <YAxis {...axisProps} tickFormatter={fmtNum} />
-            <ReTooltip contentStyle={tooltipStyle} cursor={tooltipCursor} formatter={fullNumber} />
-            <Bar dataKey="Shorts" fill={SERIES.primary} radius={[4, 4, 0, 0]} />
-            <Bar dataKey="Regular" name="Regular videos" fill={SERIES.neutral} radius={[4, 4, 0, 0]} />
-            <Legend wrapperStyle={legendStyle} />
-          </BarChart>
+          <BarChart
+            data={comparison}
+            dataKey="metric"
+            config={COMPARISON}
+            containerHeight={280}
+            tooltip={<ExactTooltip />}
+            valueFormatter={fmtNum}
+          />
         </ChartPanel>
       </div>
     </>
