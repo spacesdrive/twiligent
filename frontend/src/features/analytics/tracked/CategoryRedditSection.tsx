@@ -3,7 +3,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import MetricBox from '@/components/MetricBox';
 import SurfaceBox from '@/components/SurfaceBox';
 import SectionHeader from '@/components/SectionHeader';
-import RankingBarChart from '@/components/RankingBarChart';
+import MetricAreaChart from '@/components/MetricAreaChart';
 import RelativeTime from '@/components/RelativeTime';
 import Num from '@/components/Num';
 import { METRIC_ICONS } from '@/lib/metricIcons';
@@ -12,7 +12,8 @@ import ColumnHint from '@/components/ColumnHint';
 import { RankNumber } from '@/components/ListRow';
 import { PlatformIcon } from '@/components/platform';
 import { PLATFORM_META } from '@/lib/accounts';
-import { fmtNum } from '../../../utils/formatters';
+import { pointsOf, rankingSummary } from '@/lib/chart';
+import { fmtNum, fmtNumFull } from '../../../utils/formatters';
 import { hasTrackedViews, trackedViews } from '../../../utils/trackedContent';
 import NumberCell from './NumberCell';
 import OpenLink from './OpenLink';
@@ -75,7 +76,15 @@ export default function CategoryRedditSection({ items, stats }: CategoryRedditSe
       </div>
       {chartData.length > 1 && (
         <SurfaceBox title="Post karma" headingLevel="h3" subheader={`Top ${chartData.length} posts in this category ranked by karma`}>
-          <RankingBarChart rows={chartData.map(point => ({ name: point.name, value: Number(point.karma) || 0 }))} label="Karma" title="Karma by post" color={PLATFORM_META.reddit.series} />
+          <MetricAreaChart
+            data={chartData}
+            dataKey="karma"
+            label="Karma"
+            title="Post karma"
+            description={rankingSummary(pointsOf(chartData, 'name', 'karma'), fmtNumFull, 'karma')}
+            color={PLATFORM_META.reddit.series}
+            height={260}
+          />
         </SurfaceBox>
       )}
       <SurfaceBox title="All posts in this category" headingLevel="h3" content={false} className="overflow-hidden">
