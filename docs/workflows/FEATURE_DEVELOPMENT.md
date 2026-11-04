@@ -69,6 +69,9 @@ Determine:
 - What new frontend pages or components are needed
 - What security implications exist
 
+**Step 9b - Design the interface (any UI change)**  
+Follow `docs/guidelines/UI_UX.md`: name the users, the 3 to 5 primary tasks and every state (loading, empty, no results, error, partial, stale, success), pick the laws that apply with their trade-offs, and choose the shared components that carry them. Record the non-obvious decisions in the pull request.
+
 **Step 10 - Identify reuse opportunities**  
 Before creating new patterns, check:
 - Is there a repository method that almost does what you need? Extend it.

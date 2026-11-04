@@ -90,6 +90,7 @@ Write from the user's perspective, not the system's internals.
 - Error messages explain what went wrong and what to do: "Instagram token expired - reconnect your account" not "Authentication error"
 - No apologies in error messages
 - No vague messages like "Something went wrong"
+- A link that opens a new tab carries a screen-reader-only "(opens in a new tab)"
 
 ---
 
@@ -115,10 +116,10 @@ Maintain:
 - One `PageHeader` per page; the app shell provides page padding
 - Consistent vertical rhythm (`flex flex-col gap-6` between sections)
 - Consistent containers (`SurfaceBox`, `MetricBox`) and design tokens only, no palette colours
-- Consistent loading states (`PageSkeleton`, `Skeleton`), empty states (`EmptyState`) and error display (toasts via `showToast`)
+- Consistent loading states (`PageSkeleton`, `Skeleton`), empty states (`EmptyState`), field errors under their field (`FieldRow error`), load failures in place (`ErrorState`) and request failures in toasts (`showToast`)
 - Consistent icon usage (Lucide, 1.75 stroke)
 - Consistent button variants (default for the main action, outline for secondary, ghost for tertiary)
-- Destructive actions confirmed with `ConfirmDialog` and `hold`
+- Small, frequent deletes act at once with an Undo toast (`deleteWithUndo`); removing an account and deleting everything confirm with `ConfirmDialog`, with a way to confirm that needs no press and hold
 - Sentence case in all UI copy, and no exclamation marks
 
 See `docs/architecture/frontend/DESIGN_SYSTEM.md` and `docs/design-reference.md`.

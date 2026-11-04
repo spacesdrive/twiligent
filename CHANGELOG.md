@@ -33,6 +33,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- The app and the public site follow the Laws of UX and WCAG 2.2 AA (#132, ADR-047): reading text and inputs are 16 px, controls are 44 px on touch screens, every page has its own tab title, focus moves to the page heading after navigation, and tabs, searches, filters, sort and page live in the address so Back, refresh and shared links keep the view
+- Field errors show under the field and keep what was typed; error toasts stay until closed; a failed load shows what failed with Try again instead of an empty list
+- Small deletes act at once with an Undo toast for 8 seconds; removing an account or deleting everything confirms with a choice that needs no press and hold
+- `/upload` is now `/publish` and `/reels` is now `/instagram`; the old addresses redirect
+- Public site: a plain headline ("YouTube, Instagram and Reddit analytics in one dashboard") and buttons that name what they do, comment automation named on the home page and in the Product menu, a Pause animations control for the looping previews, keyboard and screen reader fixes (white focus on red bands, the phone docs menu as a real dialog, announced search results and copy status, focus on the new page heading, focusable code and table scroll boxes, an outline on phones), and a real 404 status for unknown paths
+- An unknown address shows a Page not found page with links back, the sidebar lists Your accounts and Categories before Manage with a Show all toggle, Help sits in the top bar, and the theme switch and second Refresh left the top bar
 - The README recordings are animated WebP instead of GIF: 8.3 MB for all seven instead of 35.5 MB, so the repository page loads in a fraction of the time, with smoother motion and full colour (#129)
 - Connecting an Instagram account that is already connected renews its token instead of answering that it is already added, so a revoked token can be fixed without removing the account (#89)
 - The Worker's publishing cron runs every 5 minutes instead of 15; posts still publish on the quarter hour, and the other runs check the reply queue (#89, #100)

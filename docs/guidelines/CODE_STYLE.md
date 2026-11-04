@@ -91,7 +91,7 @@ The layers are in `docs/architecture/backend/REQUEST_PIPELINE.md`; the recipes a
 Messages are UI copy. Follow `docs/WRITING_STANDARDS.md` (UI Copy) and `docs/guidelines/ERROR_HANDLING.md`.
 
 - Backend: throw the typed error whose code matches the failure (`ValidationError`, `NotFoundError`, `RateLimitedError`, `NotConfiguredError`, `UpstreamError`), with a message a person can act on: `'This address has received the most codes allowed today. Use the latest code you received, or try again tomorrow.'` A missing secret names the secret: `'Email sending is not set up: the RESEND_API_KEY and EMAIL_FROM Worker secrets are required'`.
-- Frontend failures: a toast that starts with what failed and adds the reason: `` `Couldn't save the password. ${reason}` ``. Map provider error codes to plain sentences in a `lib/` helper (`lib/authErrors.ts`) and keep the provider's own message when it already says what to do.
+- Frontend failures: a field the person can fix shows its message under the field through `FieldRow error`; a request failure is a toast that starts with what failed and adds the reason: `` `Couldn't save the password. ${reason}` ``; a failed load shows `ErrorState`, never an empty state. See `docs/guidelines/ERROR_HANDLING.md`. Map provider error codes to plain sentences in a `lib/` helper (`lib/authErrors.ts`) and keep the provider's own message when it already says what to do.
 - Frontend success: confirm what happened in past tense, sentence case, no exclamation mark: `'Password saved'`, `'New code sent'`.
 - Never reveal more than the user should know: the password reset message reads `If an account uses <email>, a code is on its way.` because the server does not say whether the account exists.
 
@@ -150,6 +150,7 @@ Rules in `docs/workflows/TESTING.md`.
 ## Before Every Commit
 
 - [ ] The new file looks like its nearest sibling: imports, exports, naming, comments
+- [ ] Interface changes pass the checklist in `docs/guidelines/UI_UX.md`
 - [ ] Comments only explain why; no restated code, no task references
 - [ ] Errors are typed (backend) or toasts with a reason (frontend), and every message says what to do
 - [ ] No `any`, enums, `@ts-ignore`, hex colours, emoji, em dashes or exclamation marks

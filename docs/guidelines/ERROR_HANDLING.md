@@ -109,9 +109,22 @@ It also maps Hono's own `HTTPException` (such as a malformed JSON body) by statu
 
 `authHookErrorHandler`, in the same file, is used only by `routes/authHookRoutes.ts` (`router.onError`). It logs and maps statuses exactly like `errorHandler`, but writes the body Supabase Auth reads from a hook, `{ "error": { "http_code": 429, "message": "..." } }`; Supabase passes the message to the sign-in page, so it is written for the person signing in or up; for the daily cap the page shows its own wording (`emailErrorNotice` in `frontend/src/lib/authErrors.ts`).
 
+### Where the Frontend Shows a Failure
+
+Put the message next to its cause, so it is still there when the person looks for it (WCAG 3.3.1, 3.3.3):
+
+| Failure | Where it shows |
+|---|---|
+| A field the person can fix (empty, wrong format, too short, a date in the past) | Under the field, through `FieldRow error`, which sets `aria-invalid` and `aria-describedby`; on submit, focus moves to the first invalid field. Validators return the field and the message, not only a message |
+| A load that failed | `ErrorState` with Try again in place of the content, or an inline `Alert` above the last good data; never an empty state |
+| Part of a load that failed (one channel of five) | An inline `Alert` naming what did not load, with Retry, above the results that did |
+| A request that failed after submit (network, server, a platform refusing) | A toast; error toasts stay until closed |
+
+A toast is never the only copy of an error the person has to act on. Success toasts confirm in past tense and close on their own.
+
 ### Frontend API Calls
 
-Catch in the component or handler, show a toast, and handle loading state:
+Catch in the component or handler, show a toast for a request failure, and handle loading state:
 
 ```tsx
 const [loading, setLoading] = useState(false);

@@ -1012,3 +1012,31 @@ New row ids come from `crypto.randomUUID()` (`newRowId()` in `backend/lib/ids.ts
 - The tree is a snapshot, so it is right only after `db:push` and `db:schema`; the test catches a missing object, not a changed column.
 - The tree is exported from the linked database, so a self-hoster refreshing it needs the CLI linked to their project.
 - Changing only the comments of applied files leaves their SQL byte for byte the same, which the CLI does not compare, so production is unaffected.
+
+## ADR-047: The interface follows the Laws of UX and WCAG 2.2 AA, with 16 px reading text
+
+**Date:** 2026-11-04
+**Status:** Accepted
+
+**Decision:** The app and the public site follow the UI/UX Design Intelligence system: the Laws of UX, WCAG 2.2 AA, heuristic evaluation and its guidelines for dashboards, forms, interaction, navigation, responsive layouts and data views (#132). An audit of both found 131 problems, and they were fixed in one change. The owner made four calls where the system and earlier choices differed:
+- Reading text (page descriptions, help, settings copy) and inputs are 16 px. Tables, navigation, chips and labels stay at the measured 14 px.
+- The automation rule editor is a page with its own address, not a dialog.
+- Small, frequent deletes (stop tracking, delete a rule, remove a scheduled post record) act at once with an Undo toast. Removing an account and deleting everything still confirm, with a way to confirm that needs no press and hold.
+- `/upload` became `/publish` and `/reels` became `/instagram`, with redirects, so the address matches the label.
+
+**Context:** The design reference chose 14 px body text for density, and errors were shown in toasts that closed after four seconds. Several pages lost their view on refresh, showed a failed load as an empty list, and showed cached data as current. A code audit against the system's checklists found these, with a severity for each.
+
+**Why:** WCAG 2.2 AA is a floor, not a preference: errors tied to fields, status messages announced, keyboard and touch targets, and colour never the only signal. The laws are used as reasons where their evidence fits the task, for example Fitts's Law for touch targets and Working Memory for keeping view state and exact values visible.
+
+**Alternatives considered:**
+- Keeping 14 px everywhere. It reads well on a desktop monitor, but help text at 12 to 13 px was hard to read and 16 px is the web default for reading.
+- Keeping the rule editor as a dialog with a discard warning. A 15-field form with a preview and a test is long work, and a page gives it Back, a shareable address and room on a phone.
+- Hold-to-confirm for every delete. Frequent confirmations teach people to push through them, and voice-control and switch users often cannot hold.
+
+**Site specifics:** the public site's previews loop for as long as they are on screen, so it has its own Pause animations control (a `data-motion` attribute on the root, saved in `localStorage`), as WCAG 2.2.2 requires beyond the operating system's reduced-motion setting. Unknown paths get a real 404: the build writes `dist/404.html`, and `_redirects` rewrites `/docs` and `/docs/*` to `index.html` because a top-level `404.html` turns off Pages' single-page fallback.
+
+**Trade-offs:**
+- The app is a little less dense where reading text sits.
+- A mistyped docs address still answers 200, and a new top-level page on the site needs a rewrite line.
+- A delete reaches the server 8 seconds late; leaving the page sends any waiting delete at once.
+- Old `/upload` and `/reels` links keep working only through the redirects.
