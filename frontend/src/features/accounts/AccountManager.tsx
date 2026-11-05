@@ -14,6 +14,7 @@ import { useInstagramOAuthReturn } from './useInstagramOAuthReturn';
 import AccountsEmptyState from './AccountsEmptyState';
 import AccountSection from './AccountSection';
 import AddAccountDialog from './AddAccountDialog';
+import YouTubePublishingSection from './YouTubePublishingSection';
 
 export default function AccountManager() {
   const { accounts, showToast, loadAccounts } = useAppContext();
@@ -61,6 +62,8 @@ export default function AccountManager() {
           />
         ))
       )}
+
+      <YouTubePublishingSection />
 
       <AddAccountDialog flow={addFlow} />
 

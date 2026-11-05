@@ -19,6 +19,7 @@ const VideoExplorer      = lazy(() => import('./features/analytics/videos/VideoE
 const ShortsExplorer     = lazy(() => import('./features/analytics/shorts/ShortsExplorer'));
 const ReelsExplorer      = lazy(() => import('./features/analytics/reels/ReelsExplorer'));
 const UploadContent      = lazy(() => import('./features/publishing/UploadContent'));
+const YouTubeUploads     = lazy(() => import('./features/youtube/YouTubeUploads'));
 const Automations        = lazy(() => import('./features/automations/Automations'));
 const RuleEditorPage     = lazy(() => import('./features/automations/RuleEditorPage'));
 const AccountManager     = lazy(() => import('./features/accounts/AccountManager'));
@@ -61,6 +62,7 @@ const router = createBrowserRouter([
       { path: 'reels',         element: <RedirectWithQuery to="/instagram" /> },
       { path: 'publish',       element: <UploadContent /> },
       { path: 'upload',        element: <RedirectWithQuery to="/publish" /> },
+      { path: 'youtube-uploads', element: <YouTubeUploads /> },
       { path: 'automations',   element: <Automations /> },
       { path: 'automations/rules/new', element: <RuleEditorPage /> },
       { path: 'automations/rules/:id', element: <RuleEditorPage /> },
