@@ -61,6 +61,7 @@ The auth email counters are not cache either. `repositories/emailQuotaRepository
 |---|---|---|---|
 | `email:day:{YYYY-MM-DD}` | Emails sent on that UTC day, all users together | Each email the hook sends | 2 days after the last write |
 | `email:to:{sha256 of the lowercased address}:{YYYY-MM-DD}` | Emails sent to one address that day; the key holds a hash, never the address | Each email the hook sends | 2 days after the last write |
+| `ytunits:{YYYY-MM-DD}:{userId}` | YouTube Data API units one member spent on that Pacific day (`youtubeQuotaRepository`, on the fail-fast client the rate limits use) | Once at the end of each YouTube operation, with the units of all its calls (search 100, every list call 1), in one pipelined request | 2 days after the last write |
 
 One Lua script reads both counters and increments both only when neither cap is reached, so two calls at once cannot both take the last email, and a refused send counts nothing. When Redis is missing or fails, the repository answers `unknown` and the email is sent; Resend's own daily quota is then the cap.
 

@@ -1,4 +1,5 @@
 import { ytFetch, optionalCount } from './youtubeApi.ts';
+import type { YouTubeKey } from './youtubeApi.ts';
 import { UpstreamError } from '../../lib/errors.ts';
 import type { YouTubeApiListResponse, YouTubeApiParams, YouTubeApiPlaylistItem, YouTubeApiVideo } from './youtubeApi.ts';
 import type { YouTubeVideo } from '../../../shared/types/youtube.ts';
@@ -37,7 +38,7 @@ export function normalizeYouTubeVideo(video: YouTubeApiVideo): YouTubeVideo {
 }
 
 async function fetchPlaylistPage(
-    playlistId: string, pageToken: string, apiKey: string, signal?: AbortSignal,
+    playlistId: string, pageToken: string, apiKey: YouTubeKey, signal?: AbortSignal,
 ): Promise<YouTubeApiListResponse<YouTubeApiPlaylistItem> | null> {
     const params: YouTubeApiParams = { part: 'snippet,contentDetails', playlistId, maxResults: '50' };
     if (pageToken) params.pageToken = pageToken;
@@ -50,7 +51,7 @@ async function fetchPlaylistPage(
     }
 }
 
-async function fetchVideoDetails(playlistItems: YouTubeApiPlaylistItem[], apiKey: string, signal?: AbortSignal): Promise<YouTubeVideo[]> {
+async function fetchVideoDetails(playlistItems: YouTubeApiPlaylistItem[], apiKey: YouTubeKey, signal?: AbortSignal): Promise<YouTubeVideo[]> {
     const videoIds = playlistItems.map(item => item.snippet.resourceId.videoId).join(',');
     const statsData = await ytFetch<YouTubeApiListResponse<YouTubeApiVideo>>('videos', {
         part: 'statistics,contentDetails,snippet,status',
@@ -59,7 +60,7 @@ async function fetchVideoDetails(playlistItems: YouTubeApiPlaylistItem[], apiKey
     return statsData.items ? statsData.items.map(normalizeYouTubeVideo) : [];
 }
 
-export async function fetchAllVideos(playlistId: string, apiKey: string, maxPages = 10, signal?: AbortSignal): Promise<YouTubeVideo[]> {
+export async function fetchAllVideos(playlistId: string, apiKey: YouTubeKey, maxPages = 10, signal?: AbortSignal): Promise<YouTubeVideo[]> {
     const allVideos: YouTubeVideo[] = [];
     let pageToken = '';
     let page = 0;

@@ -46,6 +46,8 @@ The limits are sized for the dashboard: an Overview load sends about 20 requests
 
 The client IP comes from `CF-Connecting-IP`, which Cloudflare always sets and which a client cannot override. Locally, `wrangler dev` does not set it, so the IP rule only applies when a test sends the header. IPv4-mapped IPv6 addresses (`::ffff:203.0.113.7`) are limited as the IPv4 address.
 
+The rules above count requests. The instance's YouTube Data API quota is counted in units instead, per member and Pacific day, by `youtubeQuotaService` (`SERVICES.md`): a member who spent 2,500 units gets 429 with a message that says it resets at midnight Pacific time, so one person can never use up the allowance every other member's analytics depend on.
+
 ## Algorithms
 
 `backend/lib/rateLimit/algorithms.ts` implements the five standard algorithms as pure functions: given the saved state, the time and the config, each returns the new state and a decision `{ allowed, limit, remaining, resetMs, retryAfterMs }`.

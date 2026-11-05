@@ -4,6 +4,8 @@ import { createScheduledPostRepository } from './repositories/scheduledPostRepos
 import { createTrackedPostRepository } from './repositories/trackedPostRepository.ts';
 import { createSettingsRepository } from './repositories/settingsRepository.ts';
 import { createEmailQuotaRepository } from './repositories/emailQuotaRepository.ts';
+import { createYouTubeQuotaRepository } from './repositories/youtubeQuotaRepository.ts';
+import { createYouTubeQuotaService } from './services/youtubeQuotaService.ts';
 import { createAuditRepository } from './repositories/auditRepository.ts';
 import { createAutomationRuleRepository } from './repositories/automationRuleRepository.ts';
 import { createAutomationCommentRepository } from './repositories/automationCommentRepository.ts';
@@ -113,16 +115,18 @@ export function createServices(clients: Clients, config: AppConfig, context: Req
     const mcpTokens = createMcpAccessTokenRepository(clients.supabase);
     const mcpGrants = createMcpClientGrantRepository(clients.supabase);
     const scheduledPublisher = createScheduledPublisher({ accounts, posts, context });
+    // counters on the fail-fast client the rate limits use: without Redis nothing is metered
+    const youtubeQuota = createYouTubeQuotaService({ quota: createYouTubeQuotaRepository(clients.rateLimitRedis) });
     const services: Services = {
-        accounts: createAccountService({ accounts, cache, audit, config, context }),
-        youtubeAnalytics: createYouTubeAnalyticsService({ accounts, cache, config, context }),
+        accounts: createAccountService({ accounts, cache, audit, config, context, youtubeQuota }),
+        youtubeAnalytics: createYouTubeAnalyticsService({ accounts, cache, config, context, youtubeQuota }),
         instagramAnalytics: createInstagramAnalyticsService({ accounts, cache, context }),
         publishing: createPublishingService({ accounts, config, context }),
         scheduledPosts: createScheduledPostService({ accounts, posts }),
         scheduledPublisher,
         tokenRefresh: createTokenRefreshService({ accounts, context }),
-        trackedContent: createTrackedContentService({ tracked, config, context }),
-        overview: createOverviewService({ accounts, tracked, cache, config }),
+        trackedContent: createTrackedContentService({ tracked, config, context, youtubeQuota }),
+        overview: createOverviewService({ accounts, tracked, cache, config, youtubeQuota }),
         settings: createSettingsService({ settings, config }),
         instagramConnect: createInstagramConnectService({ accounts, audit, config, context }),
         authEmail: createAuthEmailService({ quota: createEmailQuotaRepository(clients.rateLimitRedis), config, context }),

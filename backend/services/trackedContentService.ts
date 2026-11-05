@@ -2,6 +2,8 @@ import { fetchTrackedYouTubeData } from './youtube/youtubeTracked.ts';
 import { detectContentType, UNSUPPORTED_LINK_MESSAGE } from './trackedContentRules.ts';
 import { NotConfiguredError, NotFoundError, ValidationError } from '../lib/errors.ts';
 import { newRowId } from '../lib/ids.ts';
+import { UNMETERED_YOUTUBE_QUOTA } from './youtubeQuotaService.ts';
+import type { YouTubeQuotaService } from './youtubeQuotaService.ts';
 import type { TrackedPostRepository, TrackedPostUpdates } from '../repositories/trackedPostRepository.ts';
 import type { AppConfig } from '../lib/config.ts';
 import type { RequestContext } from '../types/context.ts';
@@ -11,6 +13,7 @@ export interface TrackedContentDeps {
     tracked: TrackedPostRepository;
     config: AppConfig;
     context: RequestContext;
+    youtubeQuota?: YouTubeQuotaService;
 }
 
 export interface NewTrackedContent {
@@ -32,7 +35,7 @@ export interface TrackedContentService {
     refresh(userId: string, id: string): Promise<TrackedPost | null>;
 }
 
-export function createTrackedContentService({ tracked, config, context }: TrackedContentDeps): TrackedContentService {
+export function createTrackedContentService({ tracked, config, context, youtubeQuota = UNMETERED_YOUTUBE_QUOTA }: TrackedContentDeps): TrackedContentService {
     const { signal } = context;
 
     function youtubeKey(): string {
@@ -46,8 +49,8 @@ export function createTrackedContentService({ tracked, config, context }: Tracke
         return item;
     }
 
-    async function fetchVideoData(url: string): Promise<Record<string, unknown>> {
-        const data = await fetchTrackedYouTubeData(url, youtubeKey(), signal);
+    async function fetchVideoData(userId: string, url: string): Promise<Record<string, unknown>> {
+        const data = await youtubeQuota.run(userId, youtubeKey(), key => fetchTrackedYouTubeData(url, key, signal));
         return data as unknown as Record<string, unknown>;
     }
 
@@ -56,7 +59,7 @@ export function createTrackedContentService({ tracked, config, context }: Tracke
 
         async add(userId, { url, label, category }) {
             if (!detectContentType(url)) throw new ValidationError(UNSUPPORTED_LINK_MESSAGE);
-            const data = await fetchVideoData(url);
+            const data = await fetchVideoData(userId, url);
 
             const id = newRowId();
             await tracked.create({ id, url, label, category, data }, userId);
@@ -79,7 +82,7 @@ export function createTrackedContentService({ tracked, config, context }: Tracke
 
         async refresh(userId, id) {
             const existing = await findOwned(userId, id);
-            await tracked.patchDataForUser(id, await fetchVideoData(existing.url), userId);
+            await tracked.patchDataForUser(id, await fetchVideoData(userId, existing.url), userId);
             return tracked.findForUser(id, userId);
         },
     };

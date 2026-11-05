@@ -8,7 +8,7 @@ Every API request passes through the same layers, and each layer has one job:
 | Route table | `backend/routes/` | Maps a method and path to its middleware and controller | HTTP |
 | Controller | `backend/controllers/` | Reads validated input and the user id, calls one service method, picks the status and builds the response | HTTP |
 | Service | `backend/services/` | Business rules and orchestration: what should happen | Application data only |
-| Repository | `backend/repositories/` | Data access: one method per query on a Supabase table, the Redis cache or the Redis email counters (`emailQuotaRepository`) | The database |
+| Repository | `backend/repositories/` | Data access: one method per query on a Supabase table, the Redis cache, the Redis email counters (`emailQuotaRepository`) or the YouTube quota counters (`youtubeQuotaRepository`) | The database |
 | Request context | `types/context.ts`, `AppVariables` | Request-scoped metadata: request id, user id, cancellation signal, logger | Nothing else |
 
 The rule of thumb: HTTP concerns stay in middleware and controllers, business concerns in services, database concerns in repositories, cross-cutting work in middleware and request metadata in the request context.

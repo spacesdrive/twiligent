@@ -1,4 +1,5 @@
 import { ytFetch } from './youtubeApi.ts';
+import type { YouTubeKey } from './youtubeApi.ts';
 import { NotFoundError, UpstreamTimeoutError, ValidationError } from '../../lib/errors.ts';
 import type { YouTubeApiParams, YouTubeApiListResponse, YouTubeApiChannel, YouTubeApiSearchResult } from './youtubeApi.ts';
 import type { YouTubeChannelData } from '../../../shared/types/youtube.ts';
@@ -25,7 +26,7 @@ function extractChannelId(input: string | null | undefined): string | null {
 
 // null when the lookup finds nothing or fails, so the next strategy runs; a timeout stops the search
 async function lookupChannelId<TItem>(
-    endpoint: string, params: YouTubeApiParams, pickId: (item: TItem) => string, apiKey: string, signal?: AbortSignal,
+    endpoint: string, params: YouTubeApiParams, pickId: (item: TItem) => string, apiKey: YouTubeKey, signal?: AbortSignal,
 ): Promise<string | null> {
     try {
         const data = await ytFetch<YouTubeApiListResponse<TItem>>(endpoint, params, apiKey, signal);
@@ -37,7 +38,7 @@ async function lookupChannelId<TItem>(
     }
 }
 
-export async function resolveChannelId(input: string | null | undefined, apiKey: string, signal?: AbortSignal): Promise<string> {
+export async function resolveChannelId(input: string | null | undefined, apiKey: YouTubeKey, signal?: AbortSignal): Promise<string> {
     const extracted = extractChannelId(input);
     if (!extracted) throw new ValidationError('Invalid input');
     if (CHANNEL_ID_PATTERN.test(extracted)) return extracted;
@@ -56,7 +57,7 @@ export async function resolveChannelId(input: string | null | undefined, apiKey:
     throw new NotFoundError('Could not resolve channel. Please provide a valid Channel ID (starts with UC).');
 }
 
-export async function fetchChannelData(channelId: string, apiKey: string, signal?: AbortSignal): Promise<YouTubeChannelData> {
+export async function fetchChannelData(channelId: string, apiKey: YouTubeKey, signal?: AbortSignal): Promise<YouTubeChannelData> {
     const data = await ytFetch<YouTubeApiListResponse<YouTubeApiChannel>>('channels', {
         part: 'snippet,statistics,contentDetails,brandingSettings,status,topicDetails',
         id: channelId,

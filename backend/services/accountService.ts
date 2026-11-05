@@ -1,7 +1,10 @@
 import { resolveChannelId, fetchChannelData } from './youtube/youtubeChannels.ts';
 import { fetchInstagramProfile } from './instagram/instagramApi.ts';
 import { buildYouTubeAccount } from './accountFactory.ts';
-import { ConflictError, NotConfiguredError, NotFoundError, ValidationError, isUniqueViolation } from '../lib/errors.ts';
+import { ConflictError, NotConfiguredError, NotFoundError, RateLimitedError, ValidationError, isUniqueViolation } from '../lib/errors.ts';
+import { UNMETERED_YOUTUBE_QUOTA } from './youtubeQuotaService.ts';
+import type { YouTubeQuotaService } from './youtubeQuotaService.ts';
+import type { YouTubeKey } from './youtube/youtubeApi.ts';
 import type { AccountRepository } from '../repositories/accountRepository.ts';
 import type { AnalyticsCacheRepository } from '../repositories/analyticsCacheRepository.ts';
 import type { AuditRepository } from '../repositories/auditRepository.ts';
@@ -17,6 +20,7 @@ export interface AccountServiceDeps {
     audit: AuditRepository;
     config: AppConfig;
     context: RequestContext;
+    youtubeQuota?: YouTubeQuotaService;
 }
 
 export interface RefreshAllOutcome {
@@ -26,7 +30,7 @@ export interface RefreshAllOutcome {
 
 export interface AccountService {
     list(userId: string): Promise<Account[]>;
-    resolveChannel(input: string): Promise<YouTubeChannelData>;
+    resolveChannel(userId: string, input: string): Promise<YouTubeChannelData>;
     addYouTube(userId: string, input: string): Promise<NewAccount>;
     refresh(userId: string, accountId: string): Promise<Account>;
     refreshAll(userId: string): Promise<RefreshAllOutcome>;
@@ -67,7 +71,7 @@ function youtubeUpdates(channelData: YouTubeChannelData, full: boolean): Partial
 
 const CHANNEL_ADDED = 'This channel is already added';
 
-export function createAccountService({ accounts, cache, audit, config, context }: AccountServiceDeps): AccountService {
+export function createAccountService({ accounts, cache, audit, config, context, youtubeQuota = UNMETERED_YOUTUBE_QUOTA }: AccountServiceDeps): AccountService {
     const { signal } = context;
 
     function youtubeKey(): string {
@@ -92,35 +96,33 @@ export function createAccountService({ accounts, cache, audit, config, context }
     }
 
     // the platform call needs these fields; a missing one is reported before any request goes out
-    async function fetchProfileUpdates(account: Account, full: boolean): Promise<Partial<Account>> {
+    async function fetchProfileUpdates(account: Account, full: boolean, key?: YouTubeKey): Promise<Partial<Account>> {
         if (account.platform === 'instagram') {
             if (!account.accessToken) throw new ValidationError(NO_TOKEN_MESSAGE);
             return instagramUpdates(await fetchInstagramProfile(account.igUserId, account.accessToken, signal), full);
         }
         if (!account.channelId) throw new ValidationError(NO_CHANNEL_MESSAGE);
-        return youtubeUpdates(await fetchChannelData(account.channelId, youtubeKey(), signal), full);
+        return youtubeUpdates(await fetchChannelData(account.channelId, key ?? youtubeKey(), signal), full);
     }
 
-    async function refreshListed(userId: string, account: Account): Promise<void> {
-        const updates = { lastUpdated: new Date().toISOString(), ...await fetchProfileUpdates(account, false) };
+    async function refreshListed(userId: string, account: Account, key?: YouTubeKey): Promise<void> {
+        const updates = { lastUpdated: new Date().toISOString(), ...await fetchProfileUpdates(account, false, key) };
         await accounts.updateForUser(account.id, updates, userId);
     }
 
     return {
         list: userId => accounts.listForUser(userId),
 
-        async resolveChannel(input) {
-            const apiKey = youtubeKey();
-            return fetchChannelData(await resolveChannelId(input, apiKey, signal), apiKey, signal);
+        // a lookup by name can cost 100 quota units, so it counts against the member who asked
+        async resolveChannel(userId, input) {
+            return youtubeQuota.run(userId, youtubeKey(), async key => fetchChannelData(await resolveChannelId(input, key, signal), key, signal));
         },
 
         async addYouTube(userId, input) {
-            const apiKey = youtubeKey();
-            const channelId = await resolveChannelId(input, apiKey, signal);
-            const [channelData, existing] = await Promise.all([
-                fetchChannelData(channelId, apiKey, signal),
-                accounts.listForUser(userId),
-            ]);
+            const [channelId, channelData, existing] = await youtubeQuota.run(userId, youtubeKey(), async key => {
+                const id = await resolveChannelId(input, key, signal);
+                return [id, ...await Promise.all([fetchChannelData(id, key, signal), accounts.listForUser(userId)])] as const;
+            });
             if (existing.find(account => account.channelId === channelId)) throw new ConflictError(CHANNEL_ADDED);
 
             const account = buildYouTubeAccount(channelData);
@@ -130,7 +132,10 @@ export function createAccountService({ accounts, cache, audit, config, context }
 
         async refresh(userId, accountId) {
             const account = await findOwned(userId, accountId);
-            const updates = { lastUpdated: new Date().toISOString(), ...await fetchProfileUpdates(account, true) };
+            const fetched = account.platform === 'youtube'
+                ? await youtubeQuota.run(userId, youtubeKey(), key => fetchProfileUpdates(account, true, key))
+                : await fetchProfileUpdates(account, true);
+            const updates = { lastUpdated: new Date().toISOString(), ...fetched };
             await accounts.updateForUser(account.id, updates, userId);
             return { ...account, ...updates };
         },
@@ -138,7 +143,20 @@ export function createAccountService({ accounts, cache, audit, config, context }
         // one failure must not stop the rest; results line up with the accounts by index
         async refreshAll(userId) {
             const listed = await accounts.listForUser(userId);
-            const settled = await Promise.allSettled(listed.map(account => refreshListed(userId, account)));
+            const settle = (key?: YouTubeKey) => Promise.allSettled(listed.map(account => refreshListed(userId, account, key)));
+            let settled: PromiseSettledResult<void>[];
+            if (!config.youtubeApiKey || !listed.some(account => account.platform === 'youtube')) {
+                settled = await settle();
+            } else {
+                // one metered run for every channel, so a member with many channels pays two quota subrequests, not two each
+                try {
+                    settled = await youtubeQuota.run(userId, config.youtubeApiKey, key => settle(key));
+                } catch (err) {
+                    if (!(err instanceof RateLimitedError)) throw err;
+                    // a used-up YouTube share stops only the channels; Instagram accounts still refresh
+                    settled = await Promise.allSettled(listed.map(account => (account.platform === 'youtube' ? Promise.reject(err) : refreshListed(userId, account))));
+                }
+            }
             const results: AccountRefreshResult[] = settled.map((outcome, i) => (outcome.status === 'fulfilled'
                 ? { id: listed[i].id, success: true }
                 : { id: listed[i].id, success: false, error: (outcome.reason as Error)?.message }));

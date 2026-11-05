@@ -1,5 +1,6 @@
 import { createCircuitBreaker } from '../../lib/circuitBreaker.ts';
 import { UpstreamError, UpstreamTimeoutError, isAbortError } from '../../lib/errors.ts';
+import { unitsFor } from '../../lib/youtubeQuota.ts';
 
 export type YouTubeApiParams = Record<string, string>;
 
@@ -90,9 +91,20 @@ export interface YouTubeApiVideo {
 
 export const youtubeCircuit = createCircuitBreaker('YouTube');
 
-// adds the key to the caller's params object, as callers always pass a fresh one
-export function ytFetch<T>(endpoint: string, params: YouTubeApiParams, apiKey: string, signal?: AbortSignal): Promise<T> {
-    return youtubeCircuit.run(() => requestYouTube<T>(endpoint, params, apiKey, signal), signal);
+// the operator's API key, with the meter that counts the quota units each call spends for the member it serves
+export interface MeteredYouTubeKey {
+    key: string;
+    spend(units: number): void;
+}
+
+export type YouTubeKey = string | MeteredYouTubeKey;
+
+// adds the key to the caller's params object, as callers always pass a fresh one; YouTube charges a call's units even when
+// it fails, so they are counted before it goes out
+export function ytFetch<T>(endpoint: string, params: YouTubeApiParams, apiKey: YouTubeKey, signal?: AbortSignal): Promise<T> {
+    if (typeof apiKey !== 'string') apiKey.spend(unitsFor(endpoint));
+    const key = typeof apiKey === 'string' ? apiKey : apiKey.key;
+    return youtubeCircuit.run(() => requestYouTube<T>(endpoint, params, key, signal), signal);
 }
 
 async function requestYouTube<T>(endpoint: string, params: YouTubeApiParams, apiKey: string, signal?: AbortSignal): Promise<T> {
