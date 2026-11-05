@@ -25,6 +25,9 @@ CREATE OR REPLACE FUNCTION public.automation_rules_for_ig_user (
     where a.platform = 'instagram'
         and a.data ->> 'igUserId' = p_ig_user_id
         and r.enabled
+        -- a member whose access ended (token removed or expired) no longer receives the account's comments
+        and coalesce(a.data ->> 'accessToken', '') <> ''
+        and (a.data ->> 'tokenExpiresAt' is null or (a.data ->> 'tokenExpiresAt')::timestamptz > now())
     order by a.created_at, a.id, r.created_at, r.id;
 $function$;
 
