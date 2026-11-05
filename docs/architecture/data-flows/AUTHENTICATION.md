@@ -17,6 +17,8 @@ When the browser already holds a session, `/login` opens the dashboard (`/`) ins
 
 The public site's home page (`https://twiligent.ujjwal.fyi/`) opens the dashboard too. The site is another origin and cannot read the session, so `AuthProvider` writes the cookie `twiligent_signed_in=1` on the shared domain whenever a session is present and clears it whenever it is not (`signedInCookie()` in `lib/signedInCookie.ts`: `Domain=twiligent.ujjwal.fyi`, 30 days renewed on every load, `SameSite=Lax`, `Secure`). The cookie says only that someone is signed in and carries no token; the API never reads it. It is written only when the app runs under `twiligent.ujjwal.fyi`, so self-hosted and local apps write nothing. See `docs/architecture/site/SITE.md` and ADR-042.
 
+A protected page opened while signed out sends the person to `/login?next=<path and query>` (`ProtectedRoute` with `signInPathFor()`), and every way of signing in on the page then returns there. `returnPath()` in `lib/signInPage.ts` accepts only a path on this site: anything else (another host, `//host`, `/\host`, a scheme, whitespace or control characters) falls back to `/`. The hash is left behind, since it can carry a one-time code meant for the page. The Claude consent page relies on this.
+
 `?mode=signup` (the public site's Get started buttons) keeps the `start` view but shows the headline "Create your Twiligent account" and Google's "Sign up with Google". The default ways to join are Google and an emailed code, both of which create the account on first use; the password sign-up stays behind the password view for instances that do not email codes.
 
 ## Login Flow (Emailed Code, the Default)
@@ -227,6 +229,18 @@ User clicks Sign Out (Header.tsx)
 Supabase JS client handles token refresh automatically. The access token expires after 1 hour; the refresh token can be used to obtain a new access token. The `onAuthStateChange` listener fires `TOKEN_REFRESHED` when this happens, keeping the `session` in `AuthContext` current.
 
 No manual refresh logic is needed in the frontend.
+
+## Claude Connector Sign-in (OAuth Consent)
+
+Claude on the web, desktop and mobile signs in to the MCP endpoint through Supabase Auth's OAuth 2.1 server, turned on by the owner (`MCP_OAUTH_ENABLED`; `docs/platform-v2/MCP_DOCUMENTATION.md`).
+
+1. Claude calls `POST /mcp` without a token and gets `401` with `resource_metadata`; the metadata names Supabase Auth as the authorization server. Claude registers itself there and opens Supabase's authorize URL.
+2. Supabase sends the browser to the app's `/oauth/consent?authorization_id=...` (`pages/OAuthConsent.tsx`, outside the app shell). Signed out, `ProtectedRoute` sends it through `/login?next=...` and back.
+3. The page loads the request with `supabase.auth.oauth.getAuthorizationDetails`. If the person approved this client before, Supabase returns a redirect and the page follows it at once. Otherwise it shows the app's name, the site it returns to and the signed-in email, and asks for Read only (chosen by default) or Read and make changes.
+4. Allow saves the choice with `POST /api/mcp/clients` first, then calls `approveAuthorization(..., { skipBrowserRedirect: true })` and goes to the returned address. Deny calls `denyAuthorization`. Either way the page leaves only for an `https` address, or `http` on `localhost`, `127.0.0.1` or `[::1]` (`isSafeRedirect()` in `lib/oauthConsent.ts`).
+5. Claude exchanges the code with Supabase and calls `/mcp` with the access token. `requireMcpAuth` verifies it, reads its `client_id` claim and requires the saved choice; without one the client is refused.
+
+Removing an app in Settings, Claude deletes the saved choice and also calls `supabase.auth.oauth.revokeGrant`, so connecting it again shows the consent page instead of being refused.
 
 ## Instagram OAuth (Separate Flow)
 

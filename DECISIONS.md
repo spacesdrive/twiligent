@@ -1098,3 +1098,25 @@ New row ids come from `crypto.randomUUID()` (`newRowId()` in `backend/lib/ids.ts
 **Trade-offs:**
 - Contributors install the plugins once and accept the workspace trust prompt; the Trail of Bits marketplace follows `main`, the Cloudflare skill is pinned to a commit.
 - Connecting Instagram needs the app and the Worker on the same version, since the app now finishes the sign-in. The YouTube connection (#147) uses the same pattern.
+
+---
+
+## ADR-051: An MCP server on the Worker, signed in by access tokens or Supabase's OAuth server
+
+**Date:** 2026-11-05
+**Status:** Accepted
+
+**Decision:** The Worker serves a Model Context Protocol endpoint at `POST /mcp` (#146). It is stateless and answers JSON only: no sessions, no streams, both the 2026-07-28 protocol (`server/discover`, protocol headers) and the older initialize handshake. Two credentials sign a client in: personal access tokens created in Settings, Claude (stored as SHA-256 hashes, read or write, optional expiry), and Supabase Auth's OAuth 2.1 server for Claude's apps, with Twiligent's own `/oauth/consent` page and a per-client grant in `mcp_client_grants`. Each tool is a thin wrapper over one existing user-scoped service. Read-only callers never see write tools; publishing and deleting need an HMAC confirmation token bound to the user, the tool and the exact arguments; tool calls have a 25 second deadline, a 40,000 character result cap and a per-user token bucket; write calls are audited.
+
+**Context:** The owner wants Claude to read analytics and manage publishing for the account, with least privilege and confirmation before public or destructive actions. Claude Code accepts a bearer header; claude.ai, Desktop and mobile accept only OAuth for remote servers. The Worker runs on the Free plan (10 ms CPU, 50 subrequests), which rules out long-lived streams and server-side sessions.
+
+**Alternatives considered:**
+- Building an OAuth authorization server into the Worker. It would add client registration, code and refresh token storage and key rotation to a self-hosted app; Supabase Auth already provides them for the same users.
+- Accepting the app's own session token. A token copied from a browser would then carry full access with no per-client permission or way to remove one client; only tokens with a `client_id` claim are accepted.
+- Relying on the client's confirmation prompts (elicitation or tool annotations). They are hints the server cannot verify, and text in a caption could ask a model to skip them; the confirmation token is checked by the server.
+- A separate MCP Worker. It would duplicate the services, configuration and rate limits for one endpoint.
+
+**Trade-offs:**
+- Claude's apps need the owner to turn on Supabase's OAuth server and set `MCP_OAUTH_ENABLED`; access tokens work without it.
+- Confirmations need `TOKEN_ENCRYPTION_KEY`; without it the confirming tools refuse to run.
+- Stateless JSON means no server-initiated messages or progress notifications; long work such as YouTube uploads is a background job the tools start and poll.

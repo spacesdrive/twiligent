@@ -146,6 +146,20 @@ subscribeAutomationAccount: (accountId: string) => request<AutomationAccountResp
 
 The types are in `shared/types/automation.ts`. Activity and stats take their filters as `URLSearchParams` (`accountId`, `ruleId`, `status` as a comma-separated list, `from`, `to`, `before`, `limit`), built in `features/automations/useAutomationActivity.ts`. An accepted reply means Instagram took the request; the API reports nothing about delivery or reading. Rules carry `matchMode` (`contains`, `exact` or `any`) and the followers-only fields `requireFollow`, `followPromptText` and `notFollowingText`; account states carry `limitedUntil` and `messagesSubscribed`; activity items carry `gateStatus` and `followup`.
 
+## Claude (MCP) Methods
+
+```ts
+getMcpInfo: () => request<McpServerInfoResponse>('/mcp/info'),
+getMcpTokens: () => request<McpAccessTokenListResponse>('/mcp/tokens'),
+createMcpToken: (data: McpAccessTokenCreateRequest) => request<McpAccessTokenCreateResponse>('/mcp/tokens', { method: 'POST', body: JSON.stringify(data) }),
+revokeMcpToken: (id: string) => request<SuccessResponse>(`/mcp/tokens/${id}`, { method: 'DELETE' }),
+getMcpClients: () => request<McpClientGrantListResponse>('/mcp/clients'),
+approveMcpClient: (data: McpClientApprovalRequest) => request<SuccessResponse>('/mcp/clients', { method: 'POST', body: JSON.stringify(data) }),
+revokeMcpClient: (id: string) => request<SuccessResponse>(`/mcp/clients/${id}`, { method: 'DELETE' }),
+```
+
+The types are in `shared/types/mcp.ts`. Settings, Claude (`features/settings/useClaudeAccess.ts`) uses all but `approveMcpClient`, which the consent page (`pages/useOAuthConsent.ts`) calls before it approves the request with `supabase.auth.oauth.approveAuthorization`. The token from `createMcpToken` is kept only in component state until the person dismisses it. These calls manage access; the MCP endpoint itself (`/mcp`) is never called from the app.
+
 ## Tracked Content Methods
 
 Added to the `api` object in `api.ts`. Tracked content is YouTube videos only:

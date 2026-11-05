@@ -31,10 +31,11 @@ Defined in `backend/lib/rateLimit/rules.ts`.
 
 | Rule | Applies to | Key | Algorithm | Limit |
 |---|---|---|---|---|
-| `ip` | Every `/api` request | Client IP; IPv6 by /64 | Sliding window counter | 300 per minute |
+| `ip` | Every `/api` request and `/mcp` | Client IP; IPv6 by /64 | Sliding window counter | 300 per minute |
 | `user` | Every protected request | User id from the verified JWT | Token bucket | Bursts of 120, refills 2 per second |
 | `quota` | `POST /accounts`, `/accounts/instagram`, `/accounts/refresh-all`, `/accounts/:id/refresh`, `/accounts/:id/refresh-ig-token`, `/resolve-channel`, `/tracked-content`, `/tracked-content/:id/refresh`, `GET` or `POST /process-scheduled`, `POST /automations/accounts/:accountId/subscribe` | User id | Sliding window log | 30 per 10 minutes |
 | `publish` | `POST /accounts/:id/ig-media-publish`, `/accounts/:id/ig-publish` | User id | Leaking bucket | 50 deep, drains 1 every 15 seconds |
+| `mcp` | `POST /mcp`, after `requireMcpAuth` | User id from the access token or OAuth token | Token bucket | Bursts of 60, refills 1 per second |
 | `oauth` | `GET /auth/instagram/callback` | Client IP | Fixed window counter | 10 per 10 minutes |
 
 The Instagram webhook (`POST /api/webhooks/instagram`) has only the `ip` rule. Meta sends from its own servers, so a burst past 300 a minute from one of them gets 429, and Meta delivers those notifications again later; nothing is lost. Private replies have their own limits, which are not rate limit rules: hourly counts per instance, user, account and rule and a daily count per person, kept in the database by `reserve_automation_send` so every Worker sees them (`docs/architecture/data-flows/AUTOMATION.md`).
@@ -51,7 +52,7 @@ The client IP comes from `CF-Connecting-IP`, which Cloudflare always sets and wh
 
 | Algorithm | State | How it decides | Why it fits its rule |
 |---|---|---|---|
-| Token bucket | Tokens left, last update | Refills `refillPerSecond` tokens up to `capacity`; a request takes one token | Allows page-load bursts, then a steady rate (`user`) |
+| Token bucket | Tokens left, last update | Refills `refillPerSecond` tokens up to `capacity`; a request takes one token | Allows page-load bursts, then a steady rate (`user`); lets an agent chain tool calls without flooding the services (`mcp`) |
 | Leaking bucket | Level, last update | The level drains at `leakPerSecond`; a request adds one; a full bucket rejects | Paces a stream evenly (`publish`). The Worker cannot hold requests in a queue, so this is the "leaky bucket as a meter" form: it rejects instead of delaying. |
 | Fixed window counter | Window number, count | Counts requests per aligned window | Simple and exact per window, and the boundary burst does not matter at this volume (`oauth`) |
 | Sliding window log | Timestamps of accepted requests | Drops timestamps older than the window; accepts while fewer than `limit` remain | Exact in every rolling window, for the rule that protects paid quota (`quota`). Only accepted requests are logged, so the log never exceeds `limit` entries. |

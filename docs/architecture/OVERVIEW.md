@@ -28,6 +28,8 @@
 │  │   GET /api/auth/instagram/callback,                          │
 │  │   POST /api/auth/email-hook (signed by Supabase Auth),       │
 │  │   GET/POST /api/webhooks/instagram (signed by Meta)          │
+│  ├── MCP: POST /mcp (Claude clients): requireMcpAuth (access    │
+│  │   token or approved OAuth client) -> mcp limit -> tools      │
 │  ├── Protected (/api/*): requireAuth -> rate limits             │
 │  │   -> route table -> controller -> service -> repository      │
 │  └── Errors: errorHandler -> { success, code, message, ... }    │
@@ -59,6 +61,7 @@
 │ tion_*   │ │         │
 │ audit_   │ │         │
 │ events   │ │         │
+│ mcp_*    │ │         │
 │          │ │         │
 │ auth:    │ │         │
 │ users    │ │ optional│

@@ -4,7 +4,7 @@
 
 The backend uses the **service-role key** for all database operations. This key bypasses Row Level Security (RLS). Data isolation is enforced by the application:
 
-1. `requireAuth` middleware verifies the JWT and sets `userId` on the Hono context from Supabase's response - this is the only trusted source of `userId`
+1. `requireAuth` middleware (or `requireMcpAuth` on `/mcp`, see Claude (MCP) Access) verifies the JWT and sets `userId` on the Hono context from Supabase's response - this is the only trusted source of `userId`
 2. Controllers pass that `userId` to services, and every user-scoped repository method (named `...ForUser`) appends `.eq('user_id', userId)` using this verified value
 3. `userId` is never accepted from request body, query params, or any other user-controlled input
 
@@ -53,7 +53,7 @@ The migrations in `supabase/migrations/` enforce this on every instance:
 
 The service-role key used by the Worker and the GitHub Actions scheduler bypasses row level security and keeps its grants. The frontend never queries tables directly (it uses Supabase only for Auth). `backend/tests/database/migrations.test.ts` fails if a migration creates a function without the revoke.
 
-To check a live instance, call the Data API with the anon key (`GET <SUPABASE_URL>/rest/v1/accounts` with the `apikey` header): it must answer 401 for all eleven tables and for `POST /rest/v1/rpc/merge_account_data`, `POST /rest/v1/rpc/claim_automation_comments`, `POST /rest/v1/rpc/claim_automation_followups` and `POST /rest/v1/rpc/claim_automation_public_replies`. The manual check is in `docs/workflows/TESTING.md`.
+To check a live instance, call the Data API with the anon key (`GET <SUPABASE_URL>/rest/v1/accounts` with the `apikey` header): it must answer 401 for all thirteen tables and for `POST /rest/v1/rpc/merge_account_data`, `POST /rest/v1/rpc/claim_automation_comments`, `POST /rest/v1/rpc/claim_automation_followups` and `POST /rest/v1/rpc/claim_automation_public_replies`. The manual check is in `docs/workflows/TESTING.md`.
 
 ### What was wrong before
 
@@ -92,6 +92,15 @@ The Instagram `accessToken` stored in `accounts.data.accessToken` is a long-live
 
 `POST /api/webhooks/instagram` is public: Meta calls it without a user. `middleware/metaWebhook.ts` refuses a body over 1 MB and checks `X-Hub-Signature-256`, an HMAC-SHA256 of the raw body with the Instagram app secret (or `META_APP_SECRET`), in constant time before anything is parsed or stored. The verification `GET` compares the Verify Token in constant time. A comment is attached to an account only through the Instagram account id Meta signed, and only accounts with an enabled rule store anything. Comments that no rule answers keep neither their text nor their author; matched ones are kept 90 days. Logs carry ids and error codes, never tokens or comment text.
 
+## Claude (MCP) Access
+
+The MCP endpoint (`POST /mcp`) does not take the app's session token. `requireMcpAuth` sets the same verified `userId` from one of two credentials, and every tool then calls the same user-scoped services as the API:
+
+- **Personal access tokens.** `twl_` plus 32 random bytes, shown once. Only the SHA-256 hash is stored (`mcp_access_tokens.token_hash`), so a database leak does not reveal usable tokens. `mcpAccessTokenRepository.findActiveByHash` and `markUsed` are its only methods that are not user-scoped: the first turns a presented token into its owner, the second records the use on the row just found, and only `requireMcpAuth` reaches them. Revoking sets `revoked_at`, which takes effect on the next request.
+- **OAuth clients.** Supabase Auth's OAuth server issues the token; the Worker checks it with `auth.getUser` and requires a `client_id` claim plus a row in `mcp_client_grants` for that user and client, written by the consent page. Removing the row stops the client at its next call even while its token is valid.
+
+Each credential carries `read` or `write`. A read credential never sees the write tools in `tools/list` and is refused if it calls one. Publishing and deleting also need a confirmation token: an HMAC over the user, the tool and the exact arguments, keyed from `TOKEN_ENCRYPTION_KEY`, valid for five minutes. Every write tool call is recorded in `audit_events`.
+
 ## Audit Events
 
 `audit_events` records connecting, reconnecting and removing accounts, rule changes, pausing and subscribing an account, and retries, with the user, the subject and small details (never tokens or comment text). Rows reference the user only, so they stay after the account is removed, and are deleted after a year or with the user.
@@ -104,6 +113,8 @@ The Instagram `accessToken` stored in `accounts.data.accessToken` is a long-live
 
 When reviewing security, check these files:
 - `backend/middleware/auth.ts` - JWT verification
+- `backend/middleware/mcpAuth.ts` and `backend/services/mcpAccessService.ts` - the only things that authenticate `/mcp`; `findActiveByHash` is their one unscoped lookup
+- `backend/services/mcpService.ts` and `backend/mcp/tools/` - each tool takes the user from `principal.userId`, never from its arguments, and checks its permission before running
 - `backend/repositories/` - every user-scoped method ends in `ForUser` and filters by `user_id` (or passes it as `p_user_id` to a merge function); the methods without a `userId` are used only by `scheduledPublisher.ts`, `tokenRefreshService.ts`, `automationWebhookService.ts`, `automationProcessor.ts`, `automationFollowupProcessor.ts`, `automationPublicReplyProcessor.ts`, `automationReconciler.ts` and `retentionService.ts`. `automationPublicReplyRepository.ts` follows the same split: `requeueForUser` and `releaseHeldForAccount` take the verified user, the claim, reservation, finish and review methods serve the dispatch and the reconcile. `emailQuotaRepository.ts` is not user-scoped: it keeps instance-wide Redis counters for the Send Email hook, keyed by a hash of the address. `healthRepository.ts` is not user-scoped either: its one read proves the database answers and its result is discarded
 - `backend/middleware/authHook.ts` and `backend/lib/webhookSignature.ts` - the only thing that authenticates the public Send Email hook
 - `backend/middleware/metaWebhook.ts` and `backend/lib/metaWebhookSignature.ts` - the only thing that authenticates the public Instagram webhook

@@ -93,6 +93,10 @@ frontend/src/
 │   │   ├── SchedulingSetupSteps.tsx, SetupStep.tsx, GithubRepoForm.tsx, CopyChip.tsx, GuideLinkButton.tsx, RepoLinkButton.tsx
 │   │   ├── useServerSettings.ts            <- Loads keys and the saved repository; saves the repository
 │   │   ├── useApiHealthCheck.ts            <- Runs api.health() for the server keys section
+│   │   ├── ClaudeSection.tsx               <- Settings, Claude: server address, Claude Code command, tokens, approved apps
+│   │   ├── ClaudeTokenForm.tsx, ClaudeTokenList.tsx, ClaudeClientList.tsx, CopyField.tsx
+│   │   ├── useClaudeAccess.ts              <- Loads the address, tokens and apps; creates and revokes tokens; removes apps
+│   │   ├── claudeAccessData.ts             <- Pure load sequence, permission and expiry choices, the Claude Code command (claudeAccessData.test.ts)
 │   │   ├── settingsData.ts                 <- Pure load sequence (api injected), links, health text (settingsData.test.ts)
 │   │   └── schedulingProgress.ts           <- Pure guide progress in localStorage (schedulingProgress.test.ts)
 │   ├── analytics/videos/

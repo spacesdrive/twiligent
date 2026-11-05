@@ -11,7 +11,9 @@ Request arrives
      requestContext       app.use('*', requestContext)                              middleware/requestContext.ts
   3. securityHeaders      app.use('*', securityHeaders)                             middleware/securityHeaders.ts
   4. injectClients        app.use('*', injectClients)                               middleware/clients.ts
-  5. rateLimit(ip)        app.use('/api/*', rateLimit(RATE_LIMIT_RULES.ip, clientIp)) middleware/rateLimit.ts
+  5. rateLimit(ip)        app.use('/api/*' and '/mcp', rateLimit(RATE_LIMIT_RULES.ip, clientIp)) middleware/rateLimit.ts
+     MCP endpoint         app.post('/mcp', requireMcpAuth, rateLimit(mcp), handleMcpMessage)   middleware/mcpAuth.ts
+                          GET and DELETE /mcp answer 405; /.well-known/oauth-protected-resource(/mcp) answer the metadata
      public routes        app.route('/api', publicRoutes)                           health check, OAuth callback (+ rateLimit(oauth)),
                                                                                     email hook (+ verifyAuthHook)   middleware/authHook.ts
                                                                                     Instagram webhook POST (+ verifyMetaWebhook)   middleware/metaWebhook.ts
@@ -194,6 +196,22 @@ The webhook route is public, so the signature is the only proof that a notificat
 4. Checks `X-Hub-Signature-256` (`sha256=<hex>`): HMAC-SHA256 over the raw body with each configured secret, compared with `crypto.subtle.verify` (constant time).
 
 A failure throws `UnauthorizedError` (401). Meta's notifications carry no timestamp to check; a replayed notification is harmless, because each comment is stored once.
+
+---
+
+## MCP Authentication
+
+**Source:** `backend/middleware/mcpAuth.ts` (`requireMcpAuth`), with `services/mcpAccessService.ts` and `lib/jwtClaims.ts`
+**Applied to:** `POST /mcp` only, after `rateLimit(ip)` and before `rateLimit(mcp)`
+
+The MCP endpoint takes credentials a Claude client can hold, never the app's own session token:
+
+1. A request with an `Origin` other than `https://claude.ai`, `https://claude.com` or the app's allowed origins is refused with `403`, so a web page cannot drive the endpoint from someone's browser.
+2. A bearer token starting `twl_` is a personal access token: its SHA-256 hash is looked up in `mcp_access_tokens`, and a revoked or expired one is refused.
+3. Any other bearer token is checked with Supabase Auth (`auth.getUser`). It must carry a `client_id` claim, which only tokens issued by Supabase's OAuth server have, and the person must have approved that client (`mcp_client_grants`); otherwise `401` or `403`.
+4. On success it sets `userId` (the same variable `requireAuth` sets, so every repository scopes by it) and `mcpPrincipal` (`{ userId, permission, via }`). The permission decides which tools the caller sees and may run.
+
+A `401` carries `WWW-Authenticate: Bearer realm="twiligent"`, and `resource_metadata="<backend>/.well-known/oauth-protected-resource/mcp"` when `MCP_OAUTH_ENABLED` is `true`, which starts sign-in in Claude's apps. Failures use a JSON-RPC error body, not the API's.
 
 ---
 
