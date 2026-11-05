@@ -284,7 +284,7 @@ The batch cap of 15 comes from the Workers Free plan's 50 subrequests per invoca
 | Each reconcile run: expired counts, review results for both kinds (public: found, not found, failed, sent again), queue health (due, oldest due, waiting, stale, needs review, follow-ups due, public replies due, stale and checking, paused and limited accounts) | `automation reconcile` |
 | The queue falling behind: the oldest due reply or public reply waited over 10 minutes, or jobs are held by stopped runs | one `automation queue behind: ...` warning per run, so an incident does not flood the logs |
 | Every non-dispatch cron run and its duration | `cron run finished` |
-| Accounts at their limit, cooling down, held, or without message events, and public replies cooling down or at their limit | the Instagram accounts card on the Automations page |
+| Accounts at their limit, cooling down, held, or without message events, and public replies cooling down or at their limit | the Instagram accounts card on the Instagram automation page |
 
 Logs carry ids, statuses and error codes, never tokens, secrets, comment text or message text.
 

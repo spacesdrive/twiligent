@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { MessageSquareReply, Plus } from 'lucide-react';
+import { BotMessageSquare, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PageHeader from '@/components/PageHeader';
 import SurfaceBox from '@/components/SurfaceBox';
@@ -29,7 +29,7 @@ export default function Automations() {
   const hasRules = Boolean(overview && overview.rules.length > 0);
   const header = (
     <PageHeader
-      title="Automations"
+      title="Instagram automation"
       description="Answer comments on your posts and reels with a private reply, a public reply under the comment, or both."
       actions={hasRules && (
         <Button render={<Link to={newRulePath} />}><Plus data-icon="inline-start" />New rule</Button>
@@ -44,7 +44,7 @@ export default function Automations() {
       <div className="flex flex-col gap-6">
         {header}
         <SurfaceBox>
-          <ErrorState title="Automations could not load" description={automations.loadError} onRetry={automations.load} />
+          <ErrorState title="Instagram automation could not load" description={automations.loadError} onRetry={automations.load} />
         </SurfaceBox>
       </div>
     );
@@ -56,9 +56,9 @@ export default function Automations() {
         {header}
         <SurfaceBox>
           <EmptyState
-            icon={<MessageSquareReply />}
+            icon={<BotMessageSquare />}
             title="Connect an Instagram account first"
-            description="Automations reply from an Instagram professional account connected with Instagram sign-in."
+            description="Instagram automation replies from an Instagram professional account connected with Instagram sign-in."
             action={<Button render={<Link to="/accounts?add=1" />}>Add account</Button>}
           />
         </SurfaceBox>
