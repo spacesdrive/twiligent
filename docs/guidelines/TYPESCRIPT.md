@@ -65,9 +65,9 @@ When a route's response changes, change its type in `shared/types` first. The ty
 
 ```ts
 // controllers: createHandlers keeps the validator's types, so c.req.valid() is typed
-export const addInstagramAccount = controller.createHandlers(jsonBody(parseInstagramToken), async c => {
-    const account = await servicesFor(c).accounts.addInstagram(c.get('userId'), c.req.valid('json').accessToken);
-    return c.json({ success: true, account: safeAccount(account) } satisfies AccountResponse);
+export const addYouTubeAccount = controller.createHandlers(jsonBody(parseChannelInput), async c => {
+    const account = await servicesFor(c).accounts.addYouTube(c.get('userId'), c.req.valid('json').input);
+    return c.json({ success: true, account } satisfies YouTubeAccountAddResponse);
 });
 
 // services: an interface for the contract and one for the dependencies, built by a factory

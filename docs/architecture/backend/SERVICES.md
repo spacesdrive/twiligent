@@ -29,7 +29,7 @@ A service receives only what it uses: repositories, the cleaned `AppConfig` from
 
 | Service (key in `Services`) | File | Repositories | Methods |
 |---|---|---|---|
-| `accounts` | `accountService.ts` | accounts, cache | `list`, `resolveChannel`, `addYouTube`, `addInstagram`, `refresh`, `refreshAll`, `refreshInstagramToken`, `remove` |
+| `accounts` | `accountService.ts` | accounts, cache | `list`, `resolveChannel`, `addYouTube`, `refresh`, `refreshAll`, `remove` |
 | `youtubeAnalytics` | `youtubeAnalyticsService.ts` | accounts, cache | `channelAnalytics`, `channelVideos`, `comparison`, `videoLibrary` |
 | `instagramAnalytics` | `instagramAnalyticsService.ts` | accounts, cache | `analytics`, `media` |
 | `publishing` | `publishingService.ts` | accounts | `cloudinaryConfig`, `publishingLimit`, `createContainer`, `containerStatus`, `publishContainer` |
@@ -80,7 +80,7 @@ The flow is in `docs/architecture/data-flows/AUTOMATION.md`. The rules the servi
 
 `AccountService`:
 
-- `addYouTube` and `addInstagram` throw `ConflictError` (409) for an account the user already has. `addInstagram` tries the long-lived token exchange when `INSTAGRAM_APP_SECRET` is set and keeps the pasted token if it fails.
+- `addYouTube` throws `ConflictError` (409) for a channel the user already has. Instagram accounts are added only through the OAuth connection (`instagramConnect`).
 - `refresh` and `refreshAll` check the fields the platform call needs first (an Instagram token, a YouTube channel id) and throw `ValidationError` (400) when one is missing; a missing YouTube key is a `NotConfiguredError` (503). A single refresh updates more fields than refresh-all. `refreshAll` uses `Promise.allSettled`, so one failure does not stop the rest, and its `results` line up with the account list by index.
 - `remove` deletes the account row and its cache entries. The database removes the account's scheduled posts with it (the foreign keys in `docs/architecture/database/SCHEMA.md`).
 - Account updates go through `merge_account_data`, one statement in the database, so a token refresh and an analytics refresh on the same account never undo each other. A field passed as `undefined` keeps its stored value.
@@ -146,7 +146,7 @@ There is no barrel: services and tests import each module directly, and each mod
 | Module | Contents |
 |---|---|
 | `instagramApi.ts` | `igFetch(endpoint, params, retries, signal)` GET transport (through the Instagram circuit breaker, 15 s timeout, one retry on a network blip, never after the request signal aborted; no API version prefix for `/oauth`, `/access_token`, `/refresh_access_token`), `igPost(endpoint, params, signal)` (never retried, so a publish cannot run twice), `readGraphResponse` and `fetchInstagramProfile` |
-| `instagramTokens.ts` | `exchangeForLongLivedToken`, `refreshLongLivedToken` |
+| `instagramTokens.ts` | `refreshLongLivedToken` |
 | `instagramOAuth.ts` | `isOAuthConfigured`, `buildAuthorizationUrl`, `exchangeCodeForToken`, `upgradeToLongLivedToken` |
 | `instagramMedia.ts` | `classifyInstagramMedia`, `extractInstagramViews`, `normalizeInstagramMedia`, paged `fetchInstagramMedia` |
 | `instagramContentTypes.ts` | `CONTENT_TYPES`, `summarizeContentTypes`, per type stats used by the analytics |
@@ -163,7 +163,6 @@ A Graph API error becomes an `UpstreamError` (502) with Instagram's message; a c
 | Function | Purpose |
 |---|---|
 | `fetchInstagramProfile(igUserId, accessToken, signal)` | Fetches the profile for an account id, or for `/me` when `igUserId` is null |
-| `exchangeForLongLivedToken(shortToken, appSecret, signal)` | Short-lived -> 60-day long-lived token |
 | `refreshLongLivedToken(accessToken, signal)` | Extends a long-lived token; call before expiry. The daily cron calls it through `tokenRefresh.refreshExpiringInstagramTokens()` for every token expiring within 15 days |
 | `fetchInstagramMedia(igUserId, accessToken, limit, signal)` | Paginates media (50 per page, 10 pages max) up to `limit` (default 500), requesting `views` insights inline; returns normalized items |
 | `classifyInstagramMedia(raw)` | Returns `'reel'`, `'post'`, or `'video'` for a raw Graph API media item |

@@ -1,7 +1,6 @@
 import { resolveChannelId, fetchChannelData } from './youtube/youtubeChannels.ts';
 import { fetchInstagramProfile } from './instagram/instagramApi.ts';
-import { exchangeForLongLivedToken, refreshLongLivedToken } from './instagram/instagramTokens.ts';
-import { buildYouTubeAccount, buildInstagramAccount } from './accountFactory.ts';
+import { buildYouTubeAccount } from './accountFactory.ts';
 import { ConflictError, NotConfiguredError, NotFoundError, ValidationError, isUniqueViolation } from '../lib/errors.ts';
 import type { AccountRepository } from '../repositories/accountRepository.ts';
 import type { AnalyticsCacheRepository } from '../repositories/analyticsCacheRepository.ts';
@@ -29,19 +28,11 @@ export interface AccountService {
     list(userId: string): Promise<Account[]>;
     resolveChannel(input: string): Promise<YouTubeChannelData>;
     addYouTube(userId: string, input: string): Promise<NewAccount>;
-    addInstagram(userId: string, accessToken: string): Promise<Account>;
     refresh(userId: string, accountId: string): Promise<Account>;
     refreshAll(userId: string): Promise<RefreshAllOutcome>;
-    refreshInstagramToken(userId: string, accountId: string): Promise<string>;
     remove(userId: string, accountId: string): Promise<void>;
 }
 
-interface PastedToken {
-    token: string;
-    expiresIn: number;
-}
-
-const DEFAULT_TOKEN_LIFETIME_S = 5184000;
 export const NO_YOUTUBE_KEY_MESSAGE = 'YouTube API key not configured on server';
 const NO_TOKEN_MESSAGE = 'No access token stored - reconnect this Instagram account';
 const NO_CHANNEL_MESSAGE = 'No YouTube channel ID stored - delete this channel and add it again';
@@ -75,10 +66,9 @@ function youtubeUpdates(channelData: YouTubeChannelData, full: boolean): Partial
 }
 
 const CHANNEL_ADDED = 'This channel is already added';
-const INSTAGRAM_ADDED = 'This Instagram account is already added';
 
 export function createAccountService({ accounts, cache, audit, config, context }: AccountServiceDeps): AccountService {
-    const { signal, log } = context;
+    const { signal } = context;
 
     function youtubeKey(): string {
         if (!config.youtubeApiKey) throw new NotConfiguredError(NO_YOUTUBE_KEY_MESSAGE);
@@ -99,19 +89,6 @@ export function createAccountService({ accounts, cache, audit, config, context }
         const account = await accounts.findForUser(accountId, userId);
         if (!account) throw new NotFoundError('Account not found');
         return account;
-    }
-
-    // a pasted token may already be long-lived, so a failed exchange keeps it as is
-    async function exchangePastedToken(accessToken: string): Promise<PastedToken> {
-        const appSecret = config.instagram.appSecret;
-        if (!appSecret) return { token: accessToken, expiresIn: 0 };
-        try {
-            const longToken = await exchangeForLongLivedToken(accessToken, appSecret, signal);
-            return { token: longToken.accessToken, expiresIn: longToken.expiresIn };
-        } catch (err) {
-            log.info('token exchange skipped; the token may already be long-lived', { reason: (err as Error).message });
-            return { token: accessToken, expiresIn: 0 };
-        }
     }
 
     // the platform call needs these fields; a missing one is reported before any request goes out
@@ -151,22 +128,6 @@ export function createAccountService({ accounts, cache, audit, config, context }
             return account;
         },
 
-        async addInstagram(userId, accessToken) {
-            const { token, expiresIn } = await exchangePastedToken(accessToken);
-            const profile = await fetchInstagramProfile(null, token, signal);
-            if (!profile.igUserId) {
-                throw new ValidationError('Could not get Instagram User ID. Make sure the token has instagram_business_basic permission and is from a Business/Creator account.');
-            }
-            const existing = await accounts.listForUser(userId);
-            if (existing.find(account => account.platform === 'instagram' && account.igUserId === profile.igUserId)) {
-                throw new ConflictError(INSTAGRAM_ADDED);
-            }
-
-            const account = buildInstagramAccount(profile, token, expiresIn);
-            await createUnlessAdded(account, userId, INSTAGRAM_ADDED);
-            return account;
-        },
-
         async refresh(userId, accountId) {
             const account = await findOwned(userId, accountId);
             const updates = { lastUpdated: new Date().toISOString(), ...await fetchProfileUpdates(account, true) };
@@ -182,17 +143,6 @@ export function createAccountService({ accounts, cache, audit, config, context }
                 ? { id: listed[i].id, success: true }
                 : { id: listed[i].id, success: false, error: (outcome.reason as Error)?.message }));
             return { accounts: await accounts.listForUser(userId), results };
-        },
-
-        async refreshInstagramToken(userId, accountId) {
-            const account = await accounts.findForUser(accountId, userId);
-            if (!account || account.platform !== 'instagram') throw new NotFoundError('Instagram account not found');
-            if (!account.accessToken) throw new ValidationError(NO_TOKEN_MESSAGE);
-
-            const refreshed = await refreshLongLivedToken(account.accessToken, signal);
-            const tokenExpiresAt = new Date(Date.now() + (refreshed.expiresIn || DEFAULT_TOKEN_LIFETIME_S) * 1000).toISOString();
-            await accounts.updateForUser(account.id, { accessToken: refreshed.accessToken, tokenExpiresAt }, userId);
-            return tokenExpiresAt;
         },
 
         // removing an account also removes its automation rules, received comments and reply history (foreign keys)

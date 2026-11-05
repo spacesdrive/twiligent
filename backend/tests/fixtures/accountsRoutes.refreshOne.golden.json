@@ -31,26 +31,6 @@
         {
             "status": 404,
             "body": "{\"success\":false,\"code\":\"NOT_FOUND\",\"message\":\"Account not found\",\"requestId\":\"req-test\"}"
-        },
-        {
-            "status": 404,
-            "body": "{\"success\":false,\"code\":\"NOT_FOUND\",\"message\":\"Instagram account not found\",\"requestId\":\"req-test\"}"
-        },
-        {
-            "status": 404,
-            "body": "{\"success\":false,\"code\":\"NOT_FOUND\",\"message\":\"Instagram account not found\",\"requestId\":\"req-test\"}"
-        },
-        {
-            "status": 400,
-            "body": "{\"success\":false,\"code\":\"VALIDATION_ERROR\",\"message\":\"No access token stored - reconnect this Instagram account\",\"requestId\":\"req-test\"}"
-        },
-        {
-            "status": 200,
-            "body": "{\"success\":true,\"message\":\"Token refreshed for another 60 days\",\"expiresAt\":\"2026-09-02T12:00:00.000Z\"}"
-        },
-        {
-            "status": 502,
-            "body": "{\"success\":false,\"code\":\"UPSTREAM_ERROR\",\"message\":\"Token cannot be refreshed\",\"requestId\":\"req-test\"}"
         }
     ],
     "requests": [
@@ -64,14 +44,6 @@
         },
         {
             "url": "https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics%2CcontentDetails%2CbrandingSettings%2Cstatus%2CtopicDetails&id=UCmissingmissingmissing0&key=YTKEY",
-            "method": "GET"
-        },
-        {
-            "url": "https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=IGTOKEN",
-            "method": "GET"
-        },
-        {
-            "url": "https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=IGTOKEN2",
             "method": "GET"
         }
     ],
@@ -307,134 +279,6 @@
                     "user-1"
                 ]
             ]
-        },
-        {
-            "type": "select",
-            "table": "accounts",
-            "columns": "id, platform, data",
-            "filters": [
-                [
-                    "id",
-                    "nope"
-                ],
-                [
-                    "platform",
-                    [
-                        "youtube",
-                        "instagram"
-                    ],
-                    "in"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "select",
-            "table": "accounts",
-            "columns": "id, platform, data",
-            "filters": [
-                [
-                    "id",
-                    "yt1"
-                ],
-                [
-                    "platform",
-                    [
-                        "youtube",
-                        "instagram"
-                    ],
-                    "in"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "select",
-            "table": "accounts",
-            "columns": "id, platform, data",
-            "filters": [
-                [
-                    "id",
-                    "ig2"
-                ],
-                [
-                    "platform",
-                    [
-                        "youtube",
-                        "instagram"
-                    ],
-                    "in"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "select",
-            "table": "accounts",
-            "columns": "id, platform, data",
-            "filters": [
-                [
-                    "id",
-                    "ig1"
-                ],
-                [
-                    "platform",
-                    [
-                        "youtube",
-                        "instagram"
-                    ],
-                    "in"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
-        },
-        {
-            "type": "rpc",
-            "table": "merge_account_data",
-            "values": {
-                "p_id": "ig1",
-                "p_user_id": "user-1",
-                "p_patch": {
-                    "accessToken": "IGTOKEN2",
-                    "tokenExpiresAt": "2026-09-02T12:00:00.000Z"
-                }
-            },
-            "filters": []
-        },
-        {
-            "type": "select",
-            "table": "accounts",
-            "columns": "id, platform, data",
-            "filters": [
-                [
-                    "id",
-                    "ig1"
-                ],
-                [
-                    "platform",
-                    [
-                        "youtube",
-                        "instagram"
-                    ],
-                    "in"
-                ],
-                [
-                    "user_id",
-                    "user-1"
-                ]
-            ]
         }
     ],
     "redis": [],
@@ -442,10 +286,6 @@
         [
             "error",
             "{\"level\":\"error\",\"message\":\"request failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"code\":\"NOT_CONFIGURED\",\"status\":503,\"error\":\"YouTube API key not configured on server\",\"errorName\":\"NotConfiguredError\"}"
-        ],
-        [
-            "error",
-            "{\"level\":\"error\",\"message\":\"request failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"code\":\"UPSTREAM_ERROR\",\"status\":502,\"error\":\"Token cannot be refreshed\",\"errorName\":\"UpstreamError\"}"
         ]
     ]
 }

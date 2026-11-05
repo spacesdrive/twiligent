@@ -229,13 +229,6 @@ export interface InstagramMediaResponse {
     fetchedAt: string;
 }
 
-// POST /api/accounts/:id/refresh-ig-token
-export interface InstagramTokenRefreshResponse {
-    success: true;
-    message: string;
-    expiresAt: string;
-}
-
 // GET /api/auth/instagram/url
 export interface InstagramAuthUrlResponse {
     url: string;

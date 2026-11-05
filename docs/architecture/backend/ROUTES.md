@@ -98,8 +98,6 @@ Controllers call `AccountService` (`services/accountService.ts`); the Instagram 
 | DELETE | `/api/accounts/:id` | `accountRoutes.ts`, `accountController.deleteAccount` | Remove account and delete its Redis cache entries |
 | POST | `/api/accounts/refresh-all` | `accountRoutes.ts`, `accountController.refreshAllAccounts` | Refresh stats for every account; one failure does not stop the rest, and `results` reports each account's outcome |
 | POST | `/api/accounts/:id/refresh` | `accountRoutes.ts`, `accountController.refreshAccount` | Refresh a single account's stats |
-| POST | `/api/accounts/instagram` | `accountRoutes.ts`, `accountController.addInstagramAccount` | Add Instagram account via a raw access token (for manual setup); 409 when already added |
-| POST | `/api/accounts/:id/refresh-ig-token` | `accountRoutes.ts`, `accountController.refreshInstagramToken` | Extend Instagram long-lived token (valid up to 60 days; refresh when < 15 days remain) |
 
 ### Analytics
 
