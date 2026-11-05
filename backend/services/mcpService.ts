@@ -121,8 +121,9 @@ export function createMcpService({ tools, services, principal, audit, config, se
             const structured = await withTimeout(tool.run(input, { services, principal }), TOOL_TIMEOUT_MS);
             const result = toolResult(era, structured);
             const size = JSON.stringify(result.content).length;
-            if (size > MAX_RESULT_CHARS) return resultReply(message.id, toolError(era, 'The result is too large to return at once. Ask for fewer items with limit, or narrow the request.'));
+            // the change already happened, so it is recorded even when the result is too large to send back
             if (tool.permission === 'write') await record(tool, 'done');
+            if (size > MAX_RESULT_CHARS) return resultReply(message.id, toolError(era, 'The result is too large to return at once. Ask for fewer items with limit, or narrow the request.'));
             return resultReply(message.id, result);
         } catch (err) {
             if (tool.permission === 'write') await record(tool, 'failed');
