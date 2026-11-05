@@ -1,5 +1,6 @@
 import { describe, test, before, after, afterEach, mock } from 'node:test';
-import { createTokenRefreshService } from '../../services/tokenRefreshService.ts';
+import assert from 'node:assert/strict';
+import { MAX_REFRESHES_PER_RUN, createTokenRefreshService } from '../../services/tokenRefreshService.ts';
 import { createAccountRepository } from '../../repositories/accountRepository.ts';
 import { createLogger } from '../../lib/logger.ts';
 import { assertGolden } from '../fixtures/golden.ts';
@@ -65,5 +66,18 @@ describe('refreshExpiringInstagramTokens golden output', () => {
         await refreshTokens(fakeSupabase([]));
         await refreshTokens({ from() { throw new Error('database unavailable'); } } as unknown as SupabaseClient);
         assertGolden({ lines, requests: fetchMock.requests, calls: notDue.calls }, 'tokenRefreshService.idle');
+    });
+
+    test('a run refreshes at most its share of tokens, soonest to expire first', async () => {
+        const rows = Array.from({ length: MAX_REFRESHES_PER_RUN + 3 }, (_, i) => accountRow({
+            id: `c${i}`, platform: 'instagram', username: `u${i}`, accessToken: `T${i}`, tokenExpiresAt: expiresIn(14 - i),
+        }));
+        fetchMock = installFetch(() => reply({ access_token: 'NEW', expires_in: 5184000 }));
+        captureConsole();
+        await refreshTokens(fakeSupabase(rows));
+        const refreshed = fetchMock.requests.map(request => new URL(request.url).searchParams.get('access_token'));
+        assert.equal(refreshed.length, MAX_REFRESHES_PER_RUN);
+        assert.deepEqual(refreshed.slice(0, 3), ['T12', 'T11', 'T10']);
+        assert.ok(!refreshed.includes('T0'));
     });
 });

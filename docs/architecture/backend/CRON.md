@@ -42,8 +42,8 @@ export async function runScheduledJob(cron: string, env: Env, scheduledTime = Da
     } else if (plan === 'reconcile') {
         await services.automationReconciler.run();
     } else if (plan === 'daily') {
-        await services.tokenRefresh.refreshExpiringInstagramTokens();
-        await services.retention.purge(Date.now(), { commentBatches: RETENTION_BATCHES });
+        await dailyStep(context, 'token refresh', () => services.tokenRefresh.refreshExpiringInstagramTokens());
+        await dailyStep(context, 'retention purge', () => services.retention.purge(Date.now(), { commentBatches: RETENTION_BATCHES }));
     }
 }
 ```
@@ -103,11 +103,12 @@ A run that stops is recovered by a later one: a job left `processing` for more t
 
 **What it does:**
 1. Lists the Instagram accounts of every user with `accountRepository.listByPlatform('instagram')`, filtered in SQL, and keeps those with a token and an expiry
-2. For each account, checks if the Instagram long-lived token expires within 15 days
-3. If expiring soon: calls `refreshLongLivedToken()` (`GET https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=<token>`)
-4. Updates the account's `accessToken` and `tokenExpiresAt` with `accountRepository.updateById()`, which merges them into `data` in one statement (`merge_account_data`), so an analytics refresh at the same moment cannot put the old token back
+2. Skips tokens that have already expired, since Instagram refuses to refresh them, and logs their accounts once a day as needing to be connected again (`instagram tokens expired; the accounts need connecting again`)
+3. Takes the tokens that expire within the next 15 days, soonest first, at most `MAX_REFRESHES_PER_RUN` (10) a run, so the run keeps subrequests for the retention purge; the rest wait for the next day, which the 15 day window allows, and the log says how many (`left`)
+4. For each one: calls `refreshLongLivedToken()` (`GET https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=<token>`)
+5. Updates the account's `accessToken` and `tokenExpiresAt` with `accountRepository.updateById()`, which merges them into `data` in one statement (`merge_account_data`), so an analytics refresh at the same moment cannot put the old token back
 
-One failed account is logged and skipped; it never stops the others. `backend/tests/services/tokenRefreshService.test.ts` covers the selection and the updates.
+One failed account is logged and skipped; it never stops the others. Each daily step runs inside `dailyStep()`, which logs a failure (`daily step failed`) and moves on, so a refresh problem never stops the retention purge (audit lead L7). `backend/tests/services/tokenRefreshService.test.ts` covers the selection and the updates.
 
 After the refresh, `retention.purge()` in `backend/services/retentionService.ts` deletes received comments older than 90 days (their reply attempts and follow-ups go with them) and audit events older than a year, across all users. Comments are deleted by `purge_automation_comments` in batches of 1,000, oldest first, at most 20 batches a run; a larger backlog is left for the next day and the log says so (`commentsLeft`).
 

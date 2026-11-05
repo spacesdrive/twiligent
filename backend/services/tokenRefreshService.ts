@@ -17,6 +17,13 @@ type ExpiringInstagramAccount = Account & { accessToken: string; tokenExpiresAt:
 
 const DEFAULT_TOKEN_LIFETIME_S = 5184000;
 const REFRESH_WINDOW_MS = 15 * 24 * 60 * 60 * 1000;
+// each refresh is one call to Instagram and one database write; ten leave the daily run's retention purge its share of
+// the 50 subrequests, and the fifteen day window gives every token many runs to be reached
+export const MAX_REFRESHES_PER_RUN = 10;
+
+function expiresAt(account: ExpiringInstagramAccount): number {
+    return new Date(account.tokenExpiresAt).getTime();
+}
 
 function isInstagramWithToken(account: Account): account is ExpiringInstagramAccount {
     return account.platform === 'instagram' && !!account.accessToken && !!account.tokenExpiresAt;
@@ -47,9 +54,18 @@ export function createTokenRefreshService({ accounts, context }: TokenRefreshDep
                 log.error('token refresh could not load accounts', errorFields(err));
                 return;
             }
-            const soon = Date.now() + REFRESH_WINDOW_MS;
-            const due = listed.filter(isInstagramWithToken).filter(account => new Date(account.tokenExpiresAt).getTime() <= soon);
-            for (const account of due) await refreshStoredToken(account);
+            const now = Date.now();
+            const soon = now + REFRESH_WINDOW_MS;
+            const withToken = listed.filter(isInstagramWithToken);
+            // Instagram refuses to refresh an expired token, so retrying one every day only spends the run; the account
+            // needs connecting again
+            const expired = withToken.filter(account => expiresAt(account) <= now);
+            if (expired.length > 0) log.warn('instagram tokens expired; the accounts need connecting again', { accountIds: expired.map(account => account.id) });
+            const due = withToken
+                .filter(account => expiresAt(account) > now && expiresAt(account) <= soon)
+                .sort((first, second) => expiresAt(first) - expiresAt(second));
+            for (const account of due.slice(0, MAX_REFRESHES_PER_RUN)) await refreshStoredToken(account);
+            if (due.length > MAX_REFRESHES_PER_RUN) log.info('token refresh left accounts for the next run', { left: due.length - MAX_REFRESHES_PER_RUN });
         },
     };
 }
