@@ -26,8 +26,8 @@ export const DETAIL_ROUTES: DetailRoute[] = [
   { prefix: '/channel/',                  label: 'YouTube channel',   parent: { path: '/', label: 'Overview' } },
   { prefix: '/instagram/',                label: 'Instagram account', parent: { path: '/', label: 'Overview' } },
   { prefix: '/tracked-content/category/', label: 'Category',          parent: { path: '/tracked-content', label: 'Tracked content' } },
-  { prefix: '/automations/rules/new',     label: 'New rule',          parent: { path: '/automations', label: 'Automations' } },
-  { prefix: '/automations/rules/',        label: 'Edit rule',         parent: { path: '/automations', label: 'Automations' } },
+  { prefix: '/automations/rules/new',     label: 'New rule',          parent: { path: '/automations', label: 'Instagram automation' } },
+  { prefix: '/automations/rules/',        label: 'Edit rule',         parent: { path: '/automations', label: 'Instagram automation' } },
 ];
 
 export const APP_NAME = 'Twiligent';

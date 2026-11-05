@@ -50,12 +50,12 @@ Subscribe to the **messages** field too only if you will use followers-only rule
 </Step>
 <Step title="Turn on comment events for each account">
 
-In Twiligent, open **Automations**, create a rule and turn it on. The first rule turned on for an account asks Instagram to send that account's comments to your backend, and a followers-only rule asks for its messages as well. If the account shows **Not receiving comments**, choose **Turn on comment events**; if it shows **Follow checks off**, select the messages field in the Meta dashboard and choose **Turn on message events**. The account must be public: Instagram sends no comment events for private accounts.
+In Twiligent, open **Instagram automation**, create a rule and turn it on. The first rule turned on for an account asks Instagram to send that account's comments to your backend, and a followers-only rule asks for its messages as well. If the account shows **Not receiving comments**, choose **Turn on comment events**; if it shows **Follow checks off**, select the messages field in the Meta dashboard and choose **Turn on message events**. The account must be public: Instagram sends no comment events for private accounts.
 
 </Step>
 <Step title="Test it">
 
-From another Instagram account, comment a rule's keyword on one of the account's posts. The private reply should arrive within a few seconds, and a public reply appear under the comment if the rule has one. To follow it, run `npx wrangler tail` in `backend/` and look for `instagram webhook stored`, `automation reply settled` and `automation public reply settled`. Meta also sends the account's own public reply back as a comment; it is recorded as the account's own and never answered. The comment and its status also appear under **Activity** on the Automations page.
+From another Instagram account, comment a rule's keyword on one of the account's posts. The private reply should arrive within a few seconds, and a public reply appear under the comment if the rule has one. To follow it, run `npx wrangler tail` in `backend/` and look for `instagram webhook stored`, `automation reply settled` and `automation public reply settled`. Meta also sends the account's own public reply back as a comment; it is recorded as the account's own and never answered. The comment and its status also appear under **Activity** on the Instagram automation page.
 
 For a followers-only rule, reply to the first message from the commenting account. If that account follows yours, the reply and link arrive; if not, the reminder does. Look for `automation follow-up settled` in the log.
 

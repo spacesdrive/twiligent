@@ -300,7 +300,7 @@ export default function RuleEditorPage() {
 
   const header = (
     <PageHeader
-      back={{ to: '/automations', label: 'Automations' }}
+      back={{ to: '/automations', label: 'Instagram automation' }}
       title={title}
       description="When a comment matches, Twiligent answers its author in a private message, publicly under the comment, or both."
     />

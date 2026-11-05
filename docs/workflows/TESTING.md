@@ -245,10 +245,10 @@ Open the app in a browser. For each changed area, test:
 - [ ] The anon key gets 401 permission denied on every table (including the automation tables and `audit_events`) and on the merge and automation functions: `curl -i "<SUPABASE_URL>/rest/v1/accounts?select=id" -H "apikey: <anon key>"` (repeat for `settings`, `scheduled_posts`, `tracked_posts`) and `curl -i -X POST "<SUPABASE_URL>/rest/v1/rpc/merge_account_data" -H "apikey: <anon key>" -H "Content-Type: application/json" -d '{}'`
 - [ ] The app still lists accounts, scheduled posts and tracked items, and the row counts in the Table Editor are unchanged
 
-**Comment automation (if the webhook, rules, the processor or the Automations page changed):**
+**Comment automation (if the webhook, rules, the processor or the Instagram automation page changed):**
 - [ ] `curl -i "<worker>/api/webhooks/instagram?hub.mode=subscribe&hub.verify_token=<token>&hub.challenge=123"` answers `123`; a wrong token answers 403
 - [ ] `curl -i -X POST -H "Content-Type: application/json" -d '{"object":"instagram","entry":[]}' <worker>/api/webhooks/instagram` without a signature answers 401 and stores nothing
-- [ ] Create a rule on the Automations page, turn it on, and the account shows Receiving comments (or Turn on comment events succeeds)
+- [ ] Create a rule on the Instagram automation page, turn it on, and the account shows Receiving comments (or Turn on comment events succeeds)
 - [ ] Test a comment on the rule editor page: a matching sample says it matches, a non-matching one says no reply, and nothing is sent
 - [ ] From another Instagram account, comment the keyword on a covered post: the private reply arrives within seconds, Activity shows Accepted by Instagram, and `npx wrangler tail` shows `instagram webhook stored` and `automation reply settled` with no token or comment text in any line
 - [ ] Comment the same keyword again on a post the rule does not cover: Activity shows No match without the words
