@@ -3,7 +3,7 @@ import type { SupabaseClient } from '../../types/app.ts';
 
 export type Row = Record<string, unknown>;
 
-type Filter = [column: string, value: unknown, operator?: 'lte' | 'lt' | 'neq' | 'gte' | 'gt' | 'in' | 'or' | 'is'];
+type Filter = [column: string, value: unknown, operator?: 'lte' | 'lt' | 'neq' | 'gte' | 'gt' | 'in' | 'or' | 'is' | 'not.is'];
 
 interface Action {
     type: 'select' | 'update' | 'insert' | 'upsert' | 'delete' | 'rpc';
@@ -32,6 +32,7 @@ interface FakeQuery {
     in(column: string, values: unknown[]): FakeQuery;
     or(expression: string): FakeQuery;
     is(column: string, value: null): FakeQuery;
+    not(column: string, operator: 'is', value: null): FakeQuery;
     order(): FakeQuery;
     limit(count: number): FakeQuery;
     single(): Promise<QueryResult>;
@@ -82,17 +83,24 @@ function matchesOr(row: Row, expression: string): boolean {
     });
 }
 
+// a column or a path into a json column, such as data->automation; a missing key reads as null, as in PostgREST
+function valueAt(row: Row, column: string): unknown {
+    return column.split('->').reduce<unknown>((value, key) => (value && typeof value === 'object' ? (value as Row)[key] : undefined), row);
+}
+
 function matchesFilter(row: Row, [column, value, operator]: Filter): boolean {
-    if (operator === 'lte') return (row[column] as string) <= (value as string);
-    if (operator === 'lt') return row[column] != null && (row[column] as string) < (value as string);
-    if (operator === 'neq') return row[column] !== value;
-    if (operator === 'gte') return row[column] != null && (row[column] as string) >= (value as string);
-    if (operator === 'gt') return row[column] != null && (row[column] as string) > (value as string);
-    if (operator === 'in') return (value as unknown[]).includes(row[column]);
     if (operator === 'or') return matchesOr(row, value as string);
+    const actual = valueAt(row, column);
+    if (operator === 'lte') return (actual as string) <= (value as string);
+    if (operator === 'lt') return actual != null && (actual as string) < (value as string);
+    if (operator === 'neq') return actual !== value;
+    if (operator === 'gte') return actual != null && (actual as string) >= (value as string);
+    if (operator === 'gt') return actual != null && (actual as string) > (value as string);
+    if (operator === 'in') return (value as unknown[]).includes(actual);
     // is(column, null): a column the row never set counts as null, as in the database
-    if (operator === 'is') return (row[column] ?? null) === value;
-    return row[column] === value;
+    if (operator === 'is') return (actual ?? null) === value;
+    if (operator === 'not.is') return (actual ?? null) !== value;
+    return actual === value;
 }
 
 function matchesFilters(row: Row, filters: Filter[]) {
@@ -172,6 +180,10 @@ function queryBuilder(action: Action, run: Run): FakeQuery {
         },
         is(column: string, value: null) {
             filters.push([column, value, 'is']);
+            return query;
+        },
+        not(column: string, _operator: 'is', value: null) {
+            filters.push([column, value, 'not.is']);
             return query;
         },
         // rows come back in the order they were stored; tests that page seed rows newest first
