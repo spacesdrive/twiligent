@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, PlaySquare, Scissors, Clapperboard, Bookmark, Send, CloudUpload, BotMessageSquare, Users, Settings,
+  LayoutDashboard, PlaySquare, Scissors, Clapperboard, Bookmark, Send, CloudUpload, Zap, Users, Settings,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { activeNavPath, routeTitle as titleForRoute } from './routes';
@@ -35,7 +35,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { path: '/publish',     label: 'Instagram publishing', icon: Send },
       { path: '/youtube-uploads', label: 'YouTube uploads', icon: CloudUpload },
-      { path: '/automations', label: 'Instagram automation', icon: BotMessageSquare },
+      { path: '/automations', label: 'Instagram automation', icon: Zap },
     ],
   },
   {
