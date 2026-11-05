@@ -41,8 +41,8 @@ function refuseUnlisted(args: Record<string, unknown>, allowed: string[]): void 
 
 export const listYouTubeChannels = defineTool<Record<string, never>>({
     name: 'list_youtube_channels',
-    title: 'List connected YouTube channels',
-    description: 'Lists the YouTube channels connected for publishing, with their status. A channel that needs a new sign-in must be connected again on the Accounts page.',
+    title: 'List YouTube channels verified for publishing',
+    description: 'Lists the YouTube channels verified for publishing, with their status. A channel that needs a new sign-in must be verified again on the Accounts page.',
     inputSchema: noInput(),
     annotations: READ_ONLY,
     permission: 'read',
@@ -82,7 +82,7 @@ export const getYouTubeUpload = defineTool<{ uploadId: string }>({
 export const createYouTubeUpload = defineTool<YouTubeUploadRequest>({
     name: 'create_youtube_upload',
     title: 'Upload a video to YouTube',
-    description: 'Queues a video from your media (see list_media and import_media_from_url) for upload to a connected YouTube channel. Twiligent uploads it in the background over the next runs and YouTube processes it; follow it with get_youtube_upload. Asks for a confirmation first when the video will be public, unlisted or scheduled. Sending the same clientRequestId again returns the first job.',
+    description: 'Queues a video from your media (see list_media and import_media_from_url) for upload to a YouTube channel verified for publishing. Twiligent uploads it in the background over the next runs and YouTube processes it; follow it with get_youtube_upload. Asks for a confirmation first when the video will be public, unlisted or scheduled. Sending the same clientRequestId again returns the first job.',
     inputSchema: withConfirmation(objectSchema({
         connectionId: idProperty('YouTube channel connection'),
         mediaId: idProperty('video in your media'),

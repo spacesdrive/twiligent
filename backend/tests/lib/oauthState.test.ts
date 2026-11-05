@@ -1,6 +1,6 @@
 import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
-import { createOAuthState, verifyOAuthState } from '../../lib/oauthState.ts';
+import { createOAuthState, readOAuthState, verifyOAuthState } from '../../lib/oauthState.ts';
 
 test('a state verifies back to its user id', async () => {
     const state = await createOAuthState('user-123', 'secret');
@@ -32,4 +32,10 @@ test('a state older than 10 minutes is rejected', async () => {
     } finally {
         mock.timers.reset();
     }
+});
+
+test('a state carries its subject, and a state without one reads back as null', async () => {
+    assert.deepEqual(await readOAuthState(await createOAuthState('user-123', 'secret', 'account-9'), 'secret'), { userId: 'user-123', subject: 'account-9' });
+    assert.deepEqual(await readOAuthState(await createOAuthState('user-123', 'secret'), 'secret'), { userId: 'user-123', subject: null });
+    assert.equal(await verifyOAuthState(await createOAuthState('user-123', 'secret', 'account-9'), 'secret'), 'user-123');
 });

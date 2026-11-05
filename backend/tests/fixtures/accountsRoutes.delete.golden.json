@@ -116,6 +116,21 @@
             ]
         },
         {
+            "type": "select",
+            "table": "youtube_connections",
+            "columns": "id, user_id, account_id, channel_id, channel_title, scopes, status, refresh_token_enc, access_token_enc, access_token_expires_at, created_at",
+            "filters": [
+                [
+                    "channel_id",
+                    "UCmissingmissingmissing0"
+                ],
+                [
+                    "user_id",
+                    "user-1"
+                ]
+            ]
+        },
+        {
             "type": "delete",
             "table": "accounts",
             "filters": [

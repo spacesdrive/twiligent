@@ -202,8 +202,8 @@ Controllers in `youtubeController.ts` call `YouTubeConnectService` and `YouTubeU
 
 | Method | Path | File | Purpose |
 |---|---|---|---|
-| GET | `/api/auth/youtube/url` | `youtubeRoutes.ts`, `youtubeController.getYouTubeAuthUrl` | Google's consent URL with a state signed for the caller; `503` when not set up |
-| POST | `/api/auth/youtube/complete` | `youtubeRoutes.ts`, `youtubeController.completeYouTubeConnection` | Body `{ code, state }`: connects the channel only when the state was started by the caller (403 otherwise); answers `{ connection, outcome: 'connected' \| 'reconnected' }` |
+| GET | `/api/auth/youtube/url` | `youtubeRoutes.ts`, `youtubeController.getYouTubeAuthUrl` | Query `accountId`: one of the caller's YouTube accounts (`400` without it, `404` for any other account). Answers Google's consent URL with a state signed for the caller that names that account; `503` when not set up |
+| POST | `/api/auth/youtube/complete` | `youtubeRoutes.ts`, `youtubeController.completeYouTubeConnection` | Body `{ code, state }`: verifies the channel for publishing only when the state was started by the caller (`403` otherwise) and Google returned the channel of the account the state names (`400` otherwise, after revoking the access Google granted); answers `{ connection, outcome: 'connected' \| 'reconnected' }` |
 | GET | `/api/youtube/connections` | `youtubeRoutes.ts`, `youtubeController.listYouTubeConnections` | The caller's connected channels (never a token) and `configured` |
 | DELETE | `/api/youtube/connections/:id` | `youtubeRoutes.ts`, `youtubeController.deleteYouTubeConnection` | Revokes the access at Google and removes the connection with its uploads |
 | GET | `/api/youtube/uploads` | `youtubeRoutes.ts`, `youtubeController.listYouTubeUploads` | The caller's 200 newest upload jobs |

@@ -4,6 +4,7 @@ import { buildYouTubeAccount } from './accountFactory.ts';
 import { ConflictError, NotConfiguredError, NotFoundError, RateLimitedError, ValidationError, isUniqueViolation } from '../lib/errors.ts';
 import { UNMETERED_YOUTUBE_QUOTA } from './youtubeQuotaService.ts';
 import type { YouTubeQuotaService } from './youtubeQuotaService.ts';
+import type { YouTubeConnectService } from './youtubeConnectService.ts';
 import type { YouTubeKey } from './youtube/youtubeApi.ts';
 import type { AccountRepository } from '../repositories/accountRepository.ts';
 import type { AnalyticsCacheRepository } from '../repositories/analyticsCacheRepository.ts';
@@ -21,6 +22,7 @@ export interface AccountServiceDeps {
     config: AppConfig;
     context: RequestContext;
     youtubeQuota?: YouTubeQuotaService;
+    youtubePublishing?: Pick<YouTubeConnectService, 'disconnectChannel'>;
 }
 
 export interface RefreshAllOutcome {
@@ -71,7 +73,7 @@ function youtubeUpdates(channelData: YouTubeChannelData, full: boolean): Partial
 
 const CHANNEL_ADDED = 'This channel is already added';
 
-export function createAccountService({ accounts, cache, audit, config, context, youtubeQuota = UNMETERED_YOUTUBE_QUOTA }: AccountServiceDeps): AccountService {
+export function createAccountService({ accounts, cache, audit, config, context, youtubeQuota = UNMETERED_YOUTUBE_QUOTA, youtubePublishing }: AccountServiceDeps): AccountService {
     const { signal } = context;
 
     function youtubeKey(): string {
@@ -163,9 +165,11 @@ export function createAccountService({ accounts, cache, audit, config, context, 
             return { accounts: await accounts.listForUser(userId), results };
         },
 
-        // removing an account also removes its automation rules, received comments and reply history (foreign keys)
+        // removing an account also removes its automation rules, received comments and reply history (foreign keys);
+        // a channel verified for publishing has its Google access revoked first, so no upload outlives its card
         async remove(userId, accountId) {
             const account = await findOwned(userId, accountId);
+            if (account.platform === 'youtube' && account.channelId && youtubePublishing) await youtubePublishing.disconnectChannel(userId, account.channelId);
             await Promise.all([
                 accounts.deleteForUser(accountId, userId),
                 cache.deleteAllForAccount(userId, accountId),

@@ -30,13 +30,19 @@ async function hmacVerify(secret: string, message: string, signature: string): P
     return crypto.subtle.verify('HMAC', await hmacKey(secret, 'verify'), signatureBytes, new TextEncoder().encode(message));
 }
 
-export async function createOAuthState(userId: string, secret: string): Promise<string> {
-    const payload = toBase64Url(`${userId}:${Date.now()}`);
+// the subject names what the sign-in is for, such as the account it was started from; ids never contain a colon
+export async function createOAuthState(userId: string, secret: string, subject = ''): Promise<string> {
+    const payload = toBase64Url(subject ? `${userId}:${Date.now()}:${subject}` : `${userId}:${Date.now()}`);
     const signature = await hmacSign(secret, payload);
     return `${payload}.${signature}`;
 }
 
-export async function verifyOAuthState(state: string, secret: string): Promise<string | null> {
+export interface OAuthStateDetails {
+    userId: string;
+    subject: string | null;
+}
+
+export async function readOAuthState(state: string, secret: string): Promise<OAuthStateDetails | null> {
     const separatorIndex = state.lastIndexOf('.');
     if (separatorIndex === -1) return null;
 
@@ -47,8 +53,12 @@ export async function verifyOAuthState(state: string, secret: string): Promise<s
 
     const decoded = fromBase64Url(payload);
     if (!decoded) return null;
-    const [userId, createdAt] = new TextDecoder().decode(decoded).split(':');
+    const [userId, createdAt, subject] = new TextDecoder().decode(decoded).split(':');
     if (Date.now() - Number(createdAt) > STATE_TTL_MS) return null;
 
-    return userId;
+    return { userId, subject: subject || null };
+}
+
+export async function verifyOAuthState(state: string, secret: string): Promise<string | null> {
+    return (await readOAuthState(state, secret))?.userId ?? null;
 }

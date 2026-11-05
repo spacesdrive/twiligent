@@ -98,7 +98,7 @@ export function createYouTubeUploadRunner({ uploads, connections, connect, ledge
                 spent += 2;
                 const token = await connect.accessTokenFor(connection);
                 if (!token) {
-                    await release({ state: 'needs_reconnect', lastError: 'Google no longer accepts this channel\'s sign-in. Connect YouTube again on the Accounts page.' });
+                    await release({ state: 'needs_reconnect', lastError: 'Google no longer accepts this channel\'s sign-in. Choose Verify again on the channel on the Accounts page.' });
                     return { jobId: job.id, state, chunks, subrequests: spent };
                 }
 
@@ -211,7 +211,7 @@ export function createYouTubeUploadRunner({ uploads, connections, connect, ledge
                         await release({ state: 'waiting_quota', nextAttemptAt: nextPacificMidnight().toISOString(), lastError: 'YouTube\'s daily allowance is used up; the upload continues after midnight Pacific time.' });
                     } else if (kind === 'reconnect') {
                         await connections.markNeedsReconnectById(failed.connectionId);
-                        await release({ state: 'needs_reconnect', lastError: 'Google no longer accepts this channel\'s sign-in. Connect YouTube again on the Accounts page.' });
+                        await release({ state: 'needs_reconnect', lastError: 'Google no longer accepts this channel\'s sign-in. Choose Verify again on the channel on the Accounts page.' });
                     } else if (kind === 'session_gone') {
                         // with every byte sent the video may exist; a person checks before a second upload
                         if (at.confirmed >= failed.sourceBytes) await release({ state: 'needs_review', lastError: LOST_ANSWER });

@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { handleYouTubeCallback } from '../../controllers/youtubeController.ts';
-import { createOAuthState } from '../../lib/oauthState.ts';
-import { fakeSupabase } from '../fixtures/fakeSupabase.ts';
+import { getYouTubeAuthUrl, handleYouTubeCallback } from '../../controllers/youtubeController.ts';
+import { createOAuthState, readOAuthState } from '../../lib/oauthState.ts';
+import { accountRow, fakeSupabase } from '../fixtures/fakeSupabase.ts';
 import { mountWithContext } from '../fixtures/routeHarness.ts';
 import type { Env } from '../../types/env.ts';
 
@@ -30,4 +30,20 @@ test('a changed state, a cancelled sign-in or an unconfigured server never reach
     assert.equal(cancelled.headers.get('Location'), 'https://app.example.com/accounts?yt_error=access_denied');
     const unconfigured = await app().request('/auth/youtube/callback?code=CODE&state=x', {}, {});
     assert.equal(unconfigured.status, 503);
+});
+
+test('a verify link is only made for one of the person\'s own YouTube channels, and names it in the signed state', async () => {
+    const supabase = fakeSupabase([
+        accountRow({ id: 'yt1', platform: 'youtube', channelId: 'UC123' }),
+        accountRow({ id: 'ig1', platform: 'instagram', igUserId: '1789' }),
+        accountRow({ id: 'theirs', platform: 'youtube', channelId: 'UC999' }, 'user-2'),
+    ]);
+    const server = mountWithContext(app => app.get('/auth/youtube/url', ...getYouTubeAuthUrl), { supabase, redis: null, rateLimitRedis: null, userId: 'user-1' });
+    assert.equal((await server.request('/auth/youtube/url', {}, ENV)).status, 400);
+    assert.equal((await server.request('/auth/youtube/url?accountId=ig1', {}, ENV)).status, 404);
+    assert.equal((await server.request('/auth/youtube/url?accountId=theirs', {}, ENV)).status, 404);
+    const made = await server.request('/auth/youtube/url?accountId=yt1', {}, ENV);
+    assert.equal(made.status, 200);
+    const state = new URL(((await made.json()) as { url: string }).url).searchParams.get('state') ?? '';
+    assert.deepEqual(await readOAuthState(state, 'google-secret'), { userId: 'user-1', subject: 'yt1' });
 });

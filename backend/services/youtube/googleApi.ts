@@ -48,7 +48,7 @@ async function send(url: string, init: RequestInit, what: string): Promise<Respo
 }
 
 // the signed state names the person who started, so only they can finish the connection
-export async function authorizationUrl(config: YouTubeOAuthConfig, userId: string): Promise<string> {
+export async function authorizationUrl(config: YouTubeOAuthConfig, userId: string, accountId: string): Promise<string> {
     const params = new URLSearchParams({
         client_id: config.clientId,
         redirect_uri: config.redirectUri,
@@ -58,7 +58,8 @@ export async function authorizationUrl(config: YouTubeOAuthConfig, userId: strin
         access_type: 'offline',
         prompt: 'consent',
         include_granted_scopes: 'true',
-        state: await createOAuthState(userId, config.clientSecret),
+        // the state names the channel card the sign-in was started from, so completing it can check Google returned that channel
+        state: await createOAuthState(userId, config.clientSecret, accountId),
     });
     return `${AUTHORIZE_URL}?${params}`;
 }
@@ -116,7 +117,7 @@ export async function fetchMyChannel(accessToken: string, signal?: AbortSignal):
     if (!response.ok) throw await googleError(response, 'reading the channel');
     const answer = await response.json() as { items?: { id: string; snippet?: { title?: string } }[] };
     const channel = answer.items?.[0];
-    if (!channel) throw new GoogleApiError('This Google account has no YouTube channel. Create one on YouTube, then connect again.', 404, 'noChannel');
+    if (!channel) throw new GoogleApiError('This Google account has no YouTube channel. Create one on YouTube, then choose Verify again.', 404, 'noChannel');
     return { id: channel.id, title: channel.snippet?.title ?? '' };
 }
 
