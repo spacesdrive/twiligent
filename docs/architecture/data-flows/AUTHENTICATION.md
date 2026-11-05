@@ -170,6 +170,8 @@ No OAuth redirect is involved, so the Google client has JavaScript origins only 
 
 ## Session Lifecycle
 
+The browser client uses the PKCE flow (`SUPABASE_AUTH_OPTIONS` in `frontend/src/lib/supabaseAuthOptions.ts`). A sign-in only comes back from a URL as `?code=`, which this browser exchanges with the verifier it stored when the request started; a `#access_token` fragment is never adopted, so a crafted link cannot sign a person in as someone else and have them connect accounts to that person (audit run 2, N2). Email links therefore sign in only in the browser that asked for them; the 6-digit codes work anywhere.
+
 ```
 Session created (on any sign-in)
     │
