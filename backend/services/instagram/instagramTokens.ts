@@ -26,16 +26,6 @@ function toTokenResult(data: IssuedToken): InstagramTokenResult {
     };
 }
 
-export async function exchangeForLongLivedToken(shortToken: string, appSecret: string, signal?: AbortSignal): Promise<InstagramTokenResult> {
-    const data = await igFetch<InstagramApiToken>('/access_token', {
-        grant_type: 'ig_exchange_token',
-        client_secret: appSecret,
-        access_token: shortToken,
-    }, 1, signal);
-    if (!data.access_token) throw new UpstreamError('Failed to exchange token - check Instagram App Secret');
-    return toTokenResult(data as IssuedToken);
-}
-
 export async function refreshLongLivedToken(longToken: string, signal?: AbortSignal): Promise<InstagramTokenResult> {
     const data = await igFetch<InstagramApiToken>('/refresh_access_token', {
         grant_type: 'ig_refresh_token',

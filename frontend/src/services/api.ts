@@ -10,7 +10,7 @@ import type {
 import type {
     CloudinaryConfigResponse, InstagramAnalyticsResponse, InstagramAuthUrlResponse, InstagramConnectCompleteResponse, InstagramContainerStatusResponse,
     InstagramMediaPublishRequest, InstagramMediaPublishResponse, InstagramMediaResponse, InstagramPublishingLimitResponse, InstagramPublishRequest,
-    InstagramPublishResponse, InstagramTokenRefreshResponse,
+    InstagramPublishResponse,
 } from '@shared/types/instagram.ts';
 import type {
     AutomationAccountResponse, AutomationActivityItemResponse, AutomationActivityResponse, AutomationOverviewResponse,
@@ -130,8 +130,6 @@ export const api = {
     // finishes the sign-in Instagram returned in the fragment; the server checks that this person started it
     completeInstagramConnection: (code: string, state: string) => request<InstagramConnectCompleteResponse>('/auth/instagram/complete', { method: 'POST', body: JSON.stringify({ code, state }) }),
 
-    addInstagramAccount: (accessToken: string) => request<AccountResponse>('/accounts/instagram', { method: 'POST', body: JSON.stringify({ accessToken }) }),
-    refreshIGToken: (id: string) => request<InstagramTokenRefreshResponse>(`/accounts/${id}/refresh-ig-token`, { method: 'POST' }),
     getIGAnalytics: (id: string) => request<InstagramAnalyticsResponse>(`/accounts/${id}/ig-analytics`),
     getIGMedia: (id: string, fresh = false) => request<InstagramMediaResponse>(`/accounts/${id}/ig-media${fresh ? '?fresh=1' : ''}`),
 

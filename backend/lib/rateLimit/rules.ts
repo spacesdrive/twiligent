@@ -51,8 +51,8 @@ interface RouteMatcher {
 // paths are matched on the full request path, after the /api prefix
 export const QUOTA_ROUTES: readonly RouteMatcher[] = [
     { methods: ['POST'], path: /^\/api\/accounts$/ },
-    { methods: ['POST'], path: /^\/api\/accounts\/(instagram|refresh-all)$/ },
-    { methods: ['POST'], path: /^\/api\/accounts\/[^/]+\/(refresh|refresh-ig-token)$/ },
+    { methods: ['POST'], path: /^\/api\/accounts\/refresh-all$/ },
+    { methods: ['POST'], path: /^\/api\/accounts\/[^/]+\/refresh$/ },
     { methods: ['POST'], path: /^\/api\/resolve-channel$/ },
     { methods: ['POST'], path: /^\/api\/auth\/instagram\/complete$/ },
     { methods: ['POST'], path: /^\/api\/tracked-content$/ },

@@ -17,33 +17,37 @@ function accountsFailingWith(cause: unknown): AccountRepository {
     } as unknown as AccountRepository;
 }
 
+const CHANNEL_ID = 'UCabcdefghijklmnopqrstuv';
+
 function service(accounts: AccountRepository) {
     return createAccountService({
         accounts,
         cache: {} as AnalyticsCacheRepository,
         audit: {} as AuditRepository,
-        config: readConfig({} as Env),
+        config: readConfig({ YOUTUBE_API_KEY: 'KEY' } as Env),
         context: { requestId: 'req-test', signal: new AbortController().signal, log: createLogger() },
     });
 }
 
-function instagramAnswers(t: { after(fn: () => void): void }) {
-    const fetch = mock.method(globalThis, 'fetch', async () => Response.json({ user_id: '1789', username: 'ribbon' }));
+// a channel id needs no lookup, so one channels.list answer is the whole conversation with YouTube
+function youtubeAnswers(t: { after(fn: () => void): void }) {
+    const channel = { id: CHANNEL_ID, snippet: { title: 'Cooking', publishedAt: '2020-01-01T00:00:00Z' }, statistics: {}, contentDetails: { relatedPlaylists: { uploads: 'UUabc' } } };
+    const fetch = mock.method(globalThis, 'fetch', async () => Response.json({ items: [channel] }));
     t.after(() => fetch.mock.restore());
 }
 
 test('an add that loses a race to the same account gets the usual already added answer, not a database error', async t => {
-    instagramAnswers(t);
+    youtubeAnswers(t);
     const accounts = accountsFailingWith({ code: '23505', message: 'duplicate key value violates unique constraint "accounts_identity_key"' });
-    await assert.rejects(service(accounts).addInstagram('user-1', 'IGTOKEN'), (err: Error) => {
+    await assert.rejects(service(accounts).addYouTube('user-1', CHANNEL_ID), (err: Error) => {
         assert.ok(err instanceof ConflictError);
-        assert.equal(err.message, 'This Instagram account is already added');
+        assert.equal(err.message, 'This channel is already added');
         return true;
     });
 });
 
 test('any other failed insert stays a database error', async t => {
-    instagramAnswers(t);
+    youtubeAnswers(t);
     const accounts = accountsFailingWith({ code: '08006', message: 'connection failure' });
-    await assert.rejects(service(accounts).addInstagram('user-1', 'IGTOKEN'), DatabaseError);
+    await assert.rejects(service(accounts).addYouTube('user-1', CHANNEL_ID), DatabaseError);
 });

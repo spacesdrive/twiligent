@@ -128,18 +128,6 @@ describe('accounts routes golden output', () => {
         ]), 'accountsRoutes.addYouTube');
     });
 
-    test('adds Instagram accounts with and without a long-lived exchange', async () => {
-        assertGolden(await runScenario([
-            ['POST', '/accounts/instagram', {}],
-            ['POST', '/accounts/instagram', { accessToken: 'SHORT' }],
-            ['POST', '/accounts/instagram', { accessToken: 'SHORTONLY' }],
-            ['POST', '/accounts/instagram', { accessToken: 'SHORTONLY' }, {}],
-            ['POST', '/accounts/instagram', { accessToken: 'IGTOKEN' }, {}],
-            ['POST', '/accounts/instagram', { accessToken: 'NOID' }, {}],
-            ['POST', '/accounts/instagram', { accessToken: 'BROKEN' }, {}],
-        ]), 'accountsRoutes.addInstagram');
-    });
-
     test('refreshes every account and reports each result', async () => {
         assertGolden(await runScenario([
             ['POST', '/accounts/refresh-all'],
@@ -148,7 +136,7 @@ describe('accounts routes golden output', () => {
         ]), 'accountsRoutes.refreshAll');
     });
 
-    test('refreshes one account or one Instagram token', async () => {
+    test('refreshes one account', async () => {
         assertGolden(await runScenario([
             ['POST', '/accounts/nope/refresh'],
             ['POST', '/accounts/ig1/refresh'],
@@ -158,11 +146,6 @@ describe('accounts routes golden output', () => {
             ['POST', '/accounts/yt1/refresh', undefined, {}],
             ['POST', '/accounts/yt2/refresh'],
             ['POST', '/accounts/other/refresh'],
-            ['POST', '/accounts/nope/refresh-ig-token'],
-            ['POST', '/accounts/yt1/refresh-ig-token'],
-            ['POST', '/accounts/ig2/refresh-ig-token'],
-            ['POST', '/accounts/ig1/refresh-ig-token'],
-            ['POST', '/accounts/ig1/refresh-ig-token'],
         ]), 'accountsRoutes.refreshOne');
     });
 
@@ -180,10 +163,8 @@ describe('accounts routes golden output', () => {
         assertGolden(await runScenario([
             ['GET', '/accounts'],
             ['POST', '/accounts', { input: '@creator' }],
-            ['POST', '/accounts/instagram', { accessToken: 'IGTOKEN' }, {}],
             ['POST', '/accounts/refresh-all'],
             ['POST', '/accounts/ig1/refresh'],
-            ['POST', '/accounts/ig1/refresh-ig-token'],
             ['DELETE', '/accounts/ig1'],
         ], { supabase: brokenSupabase }), 'accountsRoutes.dbFailure');
     });

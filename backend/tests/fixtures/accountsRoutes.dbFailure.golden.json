@@ -19,14 +19,6 @@
         {
             "status": 500,
             "body": "{\"success\":false,\"code\":\"DATABASE_ERROR\",\"message\":\"The database request failed. Try again in a moment.\",\"requestId\":\"req-test\"}"
-        },
-        {
-            "status": 500,
-            "body": "{\"success\":false,\"code\":\"DATABASE_ERROR\",\"message\":\"The database request failed. Try again in a moment.\",\"requestId\":\"req-test\"}"
-        },
-        {
-            "status": 500,
-            "body": "{\"success\":false,\"code\":\"DATABASE_ERROR\",\"message\":\"The database request failed. Try again in a moment.\",\"requestId\":\"req-test\"}"
         }
     ],
     "requests": [
@@ -37,23 +29,11 @@
         {
             "url": "https://www.googleapis.com/youtube/v3/channels?part=snippet%2Cstatistics%2CcontentDetails%2CbrandingSettings%2Cstatus%2CtopicDetails&id=UCnnnnnnnnnnnnnnnnnnnnnn&key=YTKEY",
             "method": "GET"
-        },
-        {
-            "url": "https://graph.instagram.com/v25.0/me?access_token=IGTOKEN&fields=user_id%2Cusername%2Cname%2Cprofile_picture_url%2Cfollowers_count%2Cfollows_count%2Cmedia_count%2Cbiography%2Cwebsite",
-            "method": "GET"
         }
     ],
     "calls": [],
     "redis": [],
     "logs": [
-        [
-            "error",
-            "{\"level\":\"error\",\"message\":\"request failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"code\":\"DATABASE_ERROR\",\"status\":500,\"error\":\"The database request failed. Try again in a moment.\",\"errorName\":\"DatabaseError\",\"cause\":\"database unavailable\"}"
-        ],
-        [
-            "error",
-            "{\"level\":\"error\",\"message\":\"request failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"code\":\"DATABASE_ERROR\",\"status\":500,\"error\":\"The database request failed. Try again in a moment.\",\"errorName\":\"DatabaseError\",\"cause\":\"database unavailable\"}"
-        ],
         [
             "error",
             "{\"level\":\"error\",\"message\":\"request failed\",\"requestId\":\"req-test\",\"userId\":\"user-1\",\"code\":\"DATABASE_ERROR\",\"status\":500,\"error\":\"The database request failed. Try again in a moment.\",\"errorName\":\"DatabaseError\",\"cause\":\"database unavailable\"}"
