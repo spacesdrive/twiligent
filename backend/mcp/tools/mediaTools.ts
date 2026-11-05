@@ -2,7 +2,7 @@ import { READ_ONLY, defineTool } from '../tool.ts';
 import { idProperty, objectSchema, pageOf, pageProperties, parsePage, requiredId, withConfirmation } from '../schemas.ts';
 import { MAX_MEDIA_LABEL_LENGTH, parseMediaImport, parseMediaLabel } from '../../validators/mediaValidators.ts';
 import type { Page } from '../schemas.ts';
-import type { MediaImport } from '../../services/mediaService.ts';
+import type { FileKeptReason, MediaImport } from '../../services/mediaService.ts';
 
 const labelProperty = { type: 'string', maxLength: MAX_MEDIA_LABEL_LENGTH, description: 'A short name to find the file by later' };
 
@@ -50,10 +50,15 @@ export const updateMedia = defineTool<{ mediaId: string; label: string }>({
     },
 });
 
+const FILE_KEPT_NOTES: Record<FileKeptReason, string> = {
+    no_api_secret: 'The file is still on Cloudinary: this instance has no Cloudinary API secret to delete it with. Its address keeps working until the owner deletes it in the Cloudinary console.',
+    not_created_by_twiligent: 'The file is still on Cloudinary: it was uploaded from the browser or already existed, so Twiligent cannot tell it is only yours and never deletes it. The instance owner can delete it in the Cloudinary console.',
+};
+
 export const deleteMedia = defineTool<{ mediaId: string }>({
     name: 'delete_media',
     title: 'Delete media',
-    description: 'Deletes one of your imported files. A post already scheduled with its address will fail to publish. When the instance has a Cloudinary API secret the file is deleted from Cloudinary too; otherwise only Twiligent\'s record goes and the result says so. Asks for a confirmation first.',
+    description: 'Deletes one of your imported files. A post already scheduled with its address will fail to publish. When the instance has a Cloudinary API secret, a file Twiligent imported is deleted from Cloudinary too; a file uploaded from the browser, or an instance without the secret, keeps the file and the result says so. Asks for a confirmation first.',
     inputSchema: withConfirmation(objectSchema({ mediaId: idProperty('media') }, ['mediaId'])),
     annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
     permission: 'write',
@@ -61,12 +66,8 @@ export const deleteMedia = defineTool<{ mediaId: string }>({
     describe: ({ mediaId }) => `Delete media ${mediaId}; a post scheduled with it would fail to publish.`,
     parse: args => ({ mediaId: requiredId(args, 'mediaId', 'media') }),
     async run({ mediaId }, { services, principal }) {
-        const { removedFromCloudinary } = await services.media.remove(principal.userId, mediaId);
-        return {
-            deleted: mediaId,
-            removedFromCloudinary,
-            note: removedFromCloudinary ? undefined : 'The file is still on Cloudinary: this instance has no Cloudinary API secret to delete it with. Its address keeps working until the owner deletes it in the Cloudinary console.',
-        };
+        const { removedFromCloudinary, fileKept } = await services.media.remove(principal.userId, mediaId);
+        return { deleted: mediaId, removedFromCloudinary, note: fileKept ? FILE_KEPT_NOTES[fileKept] : undefined };
     },
 });
 

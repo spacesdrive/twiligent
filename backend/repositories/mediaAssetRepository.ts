@@ -14,6 +14,7 @@ interface MediaRow {
     height: number | null;
     duration_seconds: number | null;
     label: string;
+    owns_file: boolean;
     created_at: string;
 }
 
@@ -27,12 +28,13 @@ export interface NewMediaAsset {
     height: number | null;
     durationSeconds: number | null;
     label: string;
+    ownsFile: boolean;
 }
 
 // the Cloudinary id stays inside the Worker: it is what deleting needs, and a caller never sends one
-export type StoredMediaAsset = MediaAsset & { publicId: string };
+export type StoredMediaAsset = MediaAsset & { publicId: string; ownsFile: boolean };
 
-const COLUMNS = 'id, public_id, resource_type, url, format, bytes, width, height, duration_seconds, label, created_at';
+const COLUMNS = 'id, public_id, resource_type, url, format, bytes, width, height, duration_seconds, label, owns_file, created_at';
 
 function toAsset(row: MediaRow): StoredMediaAsset {
     return {
@@ -46,6 +48,7 @@ function toAsset(row: MediaRow): StoredMediaAsset {
         height: row.height,
         durationSeconds: row.duration_seconds === null ? null : Number(row.duration_seconds),
         label: row.label,
+        ownsFile: row.owns_file,
         createdAt: row.created_at,
     };
 }
@@ -75,6 +78,7 @@ export function createMediaAssetRepository(db: SupabaseClient): MediaAssetReposi
                 height: asset.height,
                 duration_seconds: asset.durationSeconds,
                 label: asset.label,
+                owns_file: asset.ownsFile,
             }).select(COLUMNS));
             return toAsset(created[0]);
         },

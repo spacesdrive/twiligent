@@ -25,6 +25,7 @@ YouTube publishing, media tools for Claude, and the fixes from the second securi
 - The Claude connection accepts only access tokens until connector sign-in is turned on, and refuses oversized requests (#152)
 - The scheduler's run logs no longer include account ids or stored data from failed database calls (#152)
 - Google tokens are stored encrypted, and disconnecting a channel revokes Twiligent's access at Google (#147)
+- Deleting media removes the file from Cloudinary only when Twiligent created it for you, so no one can add another member's upload to their library and delete it (#146)
 
 ## [3.1.0] - 2026-11-05
 

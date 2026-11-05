@@ -1,4 +1,5 @@
 import { destroyFile, fileSize, uploadFromUrl } from './cloudinary/cloudinaryApi.ts';
+import { isDeliveryAddressFor } from '../lib/cloudinaryAddress.ts';
 import { NotConfiguredError, NotFoundError, UpstreamError, ValidationError, isUniqueViolation } from '../lib/errors.ts';
 import type { MediaRegistration } from '../validators/mediaValidators.ts';
 import type { MediaResourceType } from './cloudinary/cloudinaryApi.ts';
@@ -21,9 +22,12 @@ export interface MediaImport {
     label: string;
 }
 
+// why a deleted record's file stayed on Cloudinary: the instance cannot delete files, or Twiligent did not create this one
+export type FileKeptReason = 'no_api_secret' | 'not_created_by_twiligent';
+
 export interface MediaRemoval {
-    // false when the instance has no Cloudinary API secret, so only Twiligent's record was removed
     removedFromCloudinary: boolean;
+    fileKept: FileKeptReason | null;
 }
 
 export interface MediaService {
@@ -37,7 +41,7 @@ export interface MediaService {
 }
 
 // the Cloudinary id never leaves the Worker; callers only ever see Twiligent's own id
-function publicView({ publicId: _publicId, ...asset }: StoredMediaAsset): MediaAsset {
+function publicView({ publicId: _publicId, ownsFile: _ownsFile, ...asset }: StoredMediaAsset): MediaAsset {
     return asset;
 }
 
@@ -71,6 +75,8 @@ export function createMediaService({ media, audit, config, context }: MediaDeps)
                 height: uploaded.height ?? null,
                 durationSeconds: uploaded.duration ?? null,
                 label,
+                // an import that landed on a file already there may have landed on someone else's
+                ownsFile: uploaded.existing !== true,
             };
             let saved: StoredMediaAsset;
             try {
@@ -87,15 +93,14 @@ export function createMediaService({ media, audit, config, context }: MediaDeps)
 
         async registerUpload(userId, upload) {
             if (!config.cloudinary) throw new NotConfiguredError('Cloudinary is not set up on this server.');
-            const url = new URL(upload.url);
-            // only a file on this instance's own cloud, at the address Cloudinary gives the id it names
-            const ownPath = `/${config.cloudinary.cloudName}/${upload.resourceType}/upload/`;
-            if (url.hostname !== 'res.cloudinary.com' || !url.pathname.startsWith(ownPath) || !decodeURIComponent(url.pathname).includes(`/${upload.publicId}`)) {
+            // only a file on this instance's own cloud, at the exact address Cloudinary gives the id it names
+            if (!isDeliveryAddressFor(upload.url, config.cloudinary.cloudName, upload.resourceType, upload.publicId)) {
                 throw new ValidationError('The file is not on this server\'s Cloudinary account. Upload it from the Publish page.');
             }
             // the size decides every chunk boundary, so it is measured, not taken from the browser
             const bytes = await fileSize(upload.url, signal);
-            const record = { ...upload, bytes };
+            // nothing proves the caller uploaded it, so removing it from the library never deletes the file
+            const record = { ...upload, bytes, ownsFile: false };
             try {
                 const saved = await media.createForUser(userId, record);
                 await audit.recordForUser(userId, { action: 'media_asset.imported', subjectType: 'media_asset', subjectId: saved.id, details: { resourceType: upload.resourceType } });
@@ -117,10 +122,11 @@ export function createMediaService({ media, audit, config, context }: MediaDeps)
         async remove(userId, id) {
             const asset = await findOwned(userId, id);
             const admin = config.cloudinaryAdmin;
-            if (admin) await destroyFile(admin, asset.publicId, asset.resourceType, signal);
+            const fileKept: FileKeptReason | null = !admin ? 'no_api_secret' : asset.ownsFile ? null : 'not_created_by_twiligent';
+            if (admin && !fileKept) await destroyFile(admin, asset.publicId, asset.resourceType, signal);
             await media.deleteForUser(id, userId);
-            await audit.recordForUser(userId, { action: 'media_asset.deleted', subjectType: 'media_asset', subjectId: id, details: { fromCloudinary: Boolean(admin) } });
-            return { removedFromCloudinary: Boolean(admin) };
+            await audit.recordForUser(userId, { action: 'media_asset.deleted', subjectType: 'media_asset', subjectId: id, details: { fromCloudinary: !fileKept } });
+            return { removedFromCloudinary: !fileKept, fileKept };
         },
 
         canDeleteFiles: () => config.cloudinaryAdmin !== null,
