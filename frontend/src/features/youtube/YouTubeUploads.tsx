@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { AlertCircle, ShieldCheck } from 'lucide-react';
+import { AlertCircle, Check } from 'lucide-react';
 import { Alert, AlertAction, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -50,7 +50,7 @@ export default function YouTubeUploads() {
       ) : active.length === 0 ? (
         <SurfaceBox>
           <EmptyState
-            icon={<ShieldCheck />}
+            icon={<Check />}
             title={youtube.connections.length > 0 ? 'Your channel needs a new sign-in' : 'Verify a YouTube channel first'}
             description="On the Accounts page, choose Verify on the channel's card and sign in with the Google account that manages it. Twiligent can then upload to it, never change or delete videos already there."
             action={<Button render={<Link to="/accounts#youtube" />}>Go to Accounts</Button>}
