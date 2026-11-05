@@ -25,9 +25,9 @@
         3000,
         3000,
         3000,
-        3000,
-        3000,
         2000,
+        3000,
+        3000,
         3000,
         3000,
         3000,
@@ -96,10 +96,6 @@
             "{\"level\":\"info\",\"message\":\"scheduled post published\",\"requestId\":\"cron-test\",\"postId\":\"p-image\",\"mediaId\":\"m-c-IG1\"}"
         ],
         [
-            "log",
-            "{\"level\":\"info\",\"message\":\"scheduled post published\",\"requestId\":\"cron-test\",\"postId\":\"p-reel\",\"mediaId\":\"m-c-IG1\"}"
-        ],
-        [
             "error",
             "{\"level\":\"error\",\"message\":\"scheduled post failed\",\"requestId\":\"cron-test\",\"postId\":\"p-story\",\"attempts\":1,\"error\":\"Processing failed: Bad video\",\"errorName\":\"UpstreamError\"}"
         ],
@@ -117,6 +113,10 @@
         ],
         [
             "log",
+            "{\"level\":\"info\",\"message\":\"scheduled post published\",\"requestId\":\"cron-test\",\"postId\":\"p-reel\",\"mediaId\":\"m-c-IG1\"}"
+        ],
+        [
+            "log",
             "{\"level\":\"info\",\"message\":\"scheduled post published\",\"requestId\":\"cron-test\",\"postId\":\"p-dup\",\"mediaId\":\"m-c-IG1\"}"
         ]
     ],
@@ -124,22 +124,6 @@
         {
             "url": "https://graph.instagram.com/v25.0/IG1/media?access_token=T1&image_url=https%3A%2F%2Fcdn%2Fa.jpg&caption=Hello",
             "method": "POST"
-        },
-        {
-            "url": "https://graph.instagram.com/v25.0/IG1/media_publish?creation_id=c-IG1&access_token=T1",
-            "method": "POST"
-        },
-        {
-            "url": "https://graph.instagram.com/v25.0/IG1/media?access_token=T1&media_type=REELS&video_url=https%3A%2F%2Fcdn%2Fr.mp4&share_to_feed=true",
-            "method": "POST"
-        },
-        {
-            "url": "https://graph.instagram.com/v25.0/c-IG1?fields=status_code%2Cstatus&access_token=T1",
-            "method": "GET"
-        },
-        {
-            "url": "https://graph.instagram.com/v25.0/c-IG1?fields=status_code%2Cstatus&access_token=T1",
-            "method": "GET"
         },
         {
             "url": "https://graph.instagram.com/v25.0/IG1/media_publish?creation_id=c-IG1&access_token=T1",
@@ -438,6 +422,22 @@
             "method": "GET"
         },
         {
+            "url": "https://graph.instagram.com/v25.0/IG1/media?access_token=T1&media_type=REELS&video_url=https%3A%2F%2Fcdn%2Fr.mp4&share_to_feed=true",
+            "method": "POST"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-IG1?fields=status_code%2Cstatus&access_token=T1",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/c-IG1?fields=status_code%2Cstatus&access_token=T1",
+            "method": "GET"
+        },
+        {
+            "url": "https://graph.instagram.com/v25.0/IG1/media_publish?creation_id=c-IG1&access_token=T1",
+            "method": "POST"
+        },
+        {
             "url": "https://graph.instagram.com/v25.0/IG1/media?access_token=T1&image_url=https%3A%2F%2Fcdn%2Fd.jpg",
             "method": "POST"
         },
@@ -541,80 +541,6 @@
             "table": "merge_scheduled_post",
             "values": {
                 "p_id": "p-image",
-                "p_user_id": null,
-                "p_patch": {
-                    "publishedMediaId": "m-c-IG1",
-                    "publishedAt": "2026-09-01T12:00:00.000Z",
-                    "error": null
-                },
-                "p_status": "published",
-                "p_scheduled_at": null,
-                "p_only_status": null
-            },
-            "filters": []
-        },
-        {
-            "type": "update",
-            "table": "scheduled_posts",
-            "values": {
-                "status": "publishing",
-                "claimed_at": "2026-09-01T12:00:00.000Z",
-                "attempts": 1
-            },
-            "filters": [
-                [
-                    "id",
-                    "p-reel"
-                ],
-                [
-                    "attempts",
-                    0
-                ],
-                [
-                    "status",
-                    "pending"
-                ]
-            ]
-        },
-        {
-            "type": "select",
-            "table": "accounts",
-            "columns": "id, platform, data",
-            "filters": [
-                [
-                    "id",
-                    "ig1"
-                ],
-                [
-                    "platform",
-                    [
-                        "youtube",
-                        "instagram"
-                    ],
-                    "in"
-                ]
-            ]
-        },
-        {
-            "type": "rpc",
-            "table": "merge_scheduled_post",
-            "values": {
-                "p_id": "p-reel",
-                "p_user_id": null,
-                "p_patch": {
-                    "containerId": "c-IG1"
-                },
-                "p_status": null,
-                "p_scheduled_at": null,
-                "p_only_status": null
-            },
-            "filters": []
-        },
-        {
-            "type": "rpc",
-            "table": "merge_scheduled_post",
-            "values": {
-                "p_id": "p-reel",
                 "p_user_id": null,
                 "p_patch": {
                     "publishedMediaId": "m-c-IG1",
@@ -1025,6 +951,80 @@
                     "error": "Instagram did not finish processing the media within 3 minutes"
                 },
                 "p_status": "pending",
+                "p_scheduled_at": null,
+                "p_only_status": null
+            },
+            "filters": []
+        },
+        {
+            "type": "update",
+            "table": "scheduled_posts",
+            "values": {
+                "status": "publishing",
+                "claimed_at": "2026-09-01T12:00:00.000Z",
+                "attempts": 1
+            },
+            "filters": [
+                [
+                    "id",
+                    "p-reel"
+                ],
+                [
+                    "attempts",
+                    0
+                ],
+                [
+                    "status",
+                    "pending"
+                ]
+            ]
+        },
+        {
+            "type": "select",
+            "table": "accounts",
+            "columns": "id, platform, data",
+            "filters": [
+                [
+                    "id",
+                    "ig1"
+                ],
+                [
+                    "platform",
+                    [
+                        "youtube",
+                        "instagram"
+                    ],
+                    "in"
+                ]
+            ]
+        },
+        {
+            "type": "rpc",
+            "table": "merge_scheduled_post",
+            "values": {
+                "p_id": "p-reel",
+                "p_user_id": null,
+                "p_patch": {
+                    "containerId": "c-IG1"
+                },
+                "p_status": null,
+                "p_scheduled_at": null,
+                "p_only_status": null
+            },
+            "filters": []
+        },
+        {
+            "type": "rpc",
+            "table": "merge_scheduled_post",
+            "values": {
+                "p_id": "p-reel",
+                "p_user_id": null,
+                "p_patch": {
+                    "publishedMediaId": "m-c-IG1",
+                    "publishedAt": "2026-09-01T12:00:00.000Z",
+                    "error": null
+                },
+                "p_status": "published",
                 "p_scheduled_at": null,
                 "p_only_status": null
             },

@@ -3,7 +3,7 @@ import { publishableAccount } from './publishingService.ts';
 import { DatabaseError, NotFoundError, UpstreamError, UpstreamTimeoutError, isAbortError } from '../lib/errors.ts';
 import { errorFields } from '../lib/logger.ts';
 import {
-    MAX_PUBLISH_ATTEMPTS, containerStep, failureMessage, failureOutcome, isTransientGraphCode, staleClaimCutoff,
+    MAX_PUBLISH_ATTEMPTS, containerStep, fairPublishOrder, failureMessage, failureOutcome, isTransientGraphCode, staleClaimCutoff,
 } from '../lib/scheduledPublishing.ts';
 import type { AccountRepository } from '../repositories/accountRepository.ts';
 import type { ScheduledPostRepository } from '../repositories/scheduledPostRepository.ts';
@@ -160,7 +160,8 @@ export function createScheduledPublisher({ accounts, posts, context }: Scheduled
         let candidates: ScheduledPost[];
         try {
             const [due, stale] = await load();
-            candidates = [...stale, ...due];
+            // a stale claim may already be on Instagram, so it is checked first; due posts take turns by account
+            candidates = [...stale, ...fairPublishOrder(due)];
         } catch (err) {
             log.error('scheduler could not load due posts', errorFields(err));
             return { processed, errors };

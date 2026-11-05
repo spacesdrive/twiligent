@@ -4,7 +4,7 @@
 // SUPABASE_SERVICE_KEY (a sb_secret_ key or the legacy service_role key) as GitHub secrets.
 
 import {
-    MAX_PUBLISH_ATTEMPTS, containerStep, failureMessage, failureOutcome, isTransientGraphCode, staleClaimCutoff,
+    MAX_PUBLISH_ATTEMPTS, containerStep, fairPublishOrder, failureMessage, failureOutcome, isTransientGraphCode, staleClaimCutoff,
 } from '../backend/lib/scheduledPublishing.ts';
 import { redactSecrets } from '../backend/lib/redact.ts';
 import type { Account, Platform, PostStatus, ScheduledPost } from '../shared/types/domain.ts';
@@ -324,7 +324,8 @@ async function main(): Promise<void> {
     console.log(`   Time: ${new Date().toISOString()}\n`);
 
     const [stalePosts, duePosts] = await Promise.all([getStalePosts(), getDuePosts()]);
-    const candidates = [...stalePosts, ...duePosts];
+    // the same order as the Worker: stale claims first, then due posts taking turns by account
+    const candidates = [...stalePosts, ...fairPublishOrder(duePosts)];
 
     if (candidates.length === 0) {
         console.log('No posts due for publishing');
