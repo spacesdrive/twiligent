@@ -74,6 +74,11 @@ export interface YouTubeConnectionListResponse {
     configured: boolean;
 }
 
+// the YouTube account (analytics card) whose channel the Google sign-in must prove
+export interface YouTubeAuthUrlQuery {
+    accountId: string;
+}
+
 export interface YouTubeAuthUrlResponse {
     success: true;
     url: string;

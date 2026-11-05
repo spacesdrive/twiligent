@@ -138,7 +138,7 @@ export function createServices(clients: Clients, config: AppConfig, context: Req
     // counters on the fail-fast client the rate limits use: without Redis nothing is metered
     const youtubeQuota = createYouTubeQuotaService({ quota: createYouTubeQuotaRepository(clients.rateLimitRedis) });
     const services: Services = {
-        accounts: createAccountService({ accounts, cache, audit, config, context, youtubeQuota }),
+        accounts: createAccountService({ accounts, cache, audit, config, context, youtubeQuota, youtubePublishing: youtubeConnect }),
         youtubeAnalytics: createYouTubeAnalyticsService({ accounts, cache, config, context, youtubeQuota }),
         instagramAnalytics: createInstagramAnalyticsService({ accounts, cache, context }),
         publishing: createPublishingService({ accounts, config, context }),

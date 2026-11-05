@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createYouTubeConnectService } from '../../services/youtubeConnectService.ts';
 import { createOAuthState } from '../../lib/oauthState.ts';
 import { decryptToken, encryptToken } from '../../lib/tokenCrypto.ts';
-import { ForbiddenError, NotConfiguredError, ValidationError } from '../../lib/errors.ts';
+import { ForbiddenError, NotConfiguredError, NotFoundError, ValidationError } from '../../lib/errors.ts';
 import { readConfig } from '../../lib/config.ts';
 import { createLogger } from '../../lib/logger.ts';
 import type { NewYouTubeConnection, StoredYouTubeConnection, YouTubeConnectionRepository, YouTubeConnectionTokens } from '../../repositories/youtubeConnectionRepository.ts';
@@ -42,7 +42,12 @@ function memory() {
         parkForConnection: async (id: string) => { parked.push(id); },
         resumeParkedForUser: async (id: string) => { resumed.push(id); },
     } as unknown as YouTubeUploadRepository;
-    const accounts = { listForUser: async () => [{ id: 'acc-1', platform: 'youtube', channelId: 'UC123' }] } as unknown as AccountRepository;
+    const owned = [
+        { id: 'acc-1', userId: 'user-1', platform: 'youtube', channelId: 'UC123', title: 'Cooking' },
+        { id: 'acc-2', userId: 'user-1', platform: 'youtube', channelId: 'UC999', title: 'Travel' },
+        { id: 'ig-1', userId: 'user-1', platform: 'instagram' },
+    ];
+    const accounts = { findForUser: async (id: string, userId: string) => owned.find(item => item.id === id && item.userId === userId) ?? null } as unknown as AccountRepository;
     const audit = { recordForUser: async () => undefined } as unknown as AuditRepository;
     return { rows, parked, resumed, service: createYouTubeConnectService({ connections, uploads, accounts, audit, config: readConfig(ENV), context: CONTEXT }) };
 }
@@ -57,22 +62,22 @@ function google(t: { after(fn: () => void): void }, token: Record<string, unknow
 
 test('a sign-in started by one person cannot be finished by another, and a changed state is refused', async () => {
     const { service } = memory();
-    const state = await createOAuthState('user-1', 'google-secret');
+    const state = await createOAuthState('user-1', 'google-secret', 'acc-1');
     await assert.rejects(service.completeForUser('user-2', 'code', state), ForbiddenError);
     await assert.rejects(service.completeForUser('user-1', 'code', `${state}x`), ValidationError);
 });
 
-test('finishing a sign-in seals both tokens, links the analytics account, and a second sign-in renews in place and resumes parked uploads', async t => {
+test('verifying a channel seals both tokens, links its account, and a second sign-in renews in place and resumes parked uploads', async t => {
     google(t, { access_token: 'ACCESS', refresh_token: 'REFRESH', expires_in: 3600, scope: 'https://www.googleapis.com/auth/youtube.upload' });
     const { rows, resumed, service } = memory();
-    const state = await createOAuthState('user-1', 'google-secret');
+    const state = await createOAuthState('user-1', 'google-secret', 'acc-1');
     const first = await service.completeForUser('user-1', 'code', state);
     assert.equal(first.outcome, 'connected');
     assert.equal(first.connection.accountId, 'acc-1');
     assert.equal(JSON.stringify(first).includes('REFRESH'), false);
     assert.equal(await decryptToken(rows[0].refreshTokenEnc, SECRET), 'REFRESH');
     assert.ok(!rows[0].refreshTokenEnc.includes('REFRESH'));
-    const again = await service.completeForUser('user-1', 'code', await createOAuthState('user-1', 'google-secret'));
+    const again = await service.completeForUser('user-1', 'code', await createOAuthState('user-1', 'google-secret', 'acc-1'));
     assert.equal(again.outcome, 'reconnected');
     assert.equal(rows.length, 1);
     assert.deepEqual(resumed, [rows[0].id]);
@@ -98,5 +103,44 @@ test('without the Google client settings, connecting says what the owner must se
         audit: {} as AuditRepository, config: readConfig({} as Env), context: CONTEXT,
     });
     assert.equal(service.configured(), false);
-    await assert.rejects(service.authorizationUrl('user-1'), (err: Error) => err instanceof NotConfiguredError && /GOOGLE_CLIENT_ID/.test(err.message));
+    await assert.rejects(service.authorizationUrl('user-1', 'acc-1'), (err: Error) => err instanceof NotConfiguredError && /GOOGLE_CLIENT_ID/.test(err.message));
+});
+
+test('a sign-in that returns another channel verifies nothing and gives back the access Google granted', async t => {
+    const fetchMock = google(t, { access_token: 'ACCESS', refresh_token: 'REFRESH', expires_in: 3600, scope: '' });
+    const { rows, service } = memory();
+    await assert.rejects(
+        service.completeForUser('user-1', 'code', await createOAuthState('user-1', 'google-secret', 'acc-2')),
+        (err: Error) => err instanceof ValidationError && /signed you in to Cooking, not Travel/.test(err.message) && /pick Travel/.test(err.message),
+    );
+    assert.equal(rows.length, 0);
+    assert.ok(fetchMock.mock.calls.some(call => String(call.arguments[0]).includes('oauth2.googleapis.com/revoke')));
+});
+
+test('a sign-in must name one of the person\'s own YouTube channels, both when it starts and when it finishes', async () => {
+    const { service } = memory();
+    await assert.rejects(service.authorizationUrl('user-1', 'ig-1'), NotFoundError);
+    await assert.rejects(service.authorizationUrl('user-2', 'acc-1'), NotFoundError);
+    assert.ok((await service.authorizationUrl('user-1', 'acc-1')).startsWith('https://accounts.google.com/'));
+    await assert.rejects(service.completeForUser('user-1', 'code', await createOAuthState('user-1', 'google-secret')), ValidationError);
+    await assert.rejects(service.completeForUser('user-1', 'code', await createOAuthState('user-1', 'google-secret', 'missing')), NotFoundError);
+});
+
+test('removing a channel\'s account turns its publishing off, and an unverified channel is left alone', async () => {
+    const { rows } = memory();
+    rows.push({
+        id: 'c1', userId: 'user-1', channelId: 'UC123', channelTitle: 'Cooking', accountId: 'acc-1', status: 'active', scopes: [], createdAt: '',
+        refreshTokenEnc: 'sealed', accessTokenEnc: null, accessTokenExpiresAt: null,
+    });
+    const removed: string[] = [];
+    const tracked = createYouTubeConnectService({
+        connections: { findByChannelForUser: async (channelId: string, userId: string) => rows.find(row => row.channelId === channelId && row.userId === userId) ?? null, deleteForUser: async (id: string) => { removed.push(id); return true; } } as unknown as YouTubeConnectionRepository,
+        uploads: {} as YouTubeUploadRepository, accounts: {} as AccountRepository,
+        audit: { recordForUser: async () => undefined } as unknown as AuditRepository, config: readConfig(ENV), context: CONTEXT,
+    });
+    await tracked.disconnectChannel('user-1', 'UC999');
+    await tracked.disconnectChannel('user-2', 'UC123');
+    assert.deepEqual(removed, []);
+    await tracked.disconnectChannel('user-1', 'UC123');
+    assert.deepEqual(removed, ['c1']);
 });

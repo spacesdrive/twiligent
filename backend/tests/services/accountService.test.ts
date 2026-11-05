@@ -51,3 +51,23 @@ test('any other failed insert stays a database error', async t => {
     const accounts = accountsFailingWith({ code: '08006', message: 'connection failure' });
     await assert.rejects(service(accounts).addYouTube('user-1', CHANNEL_ID), DatabaseError);
 });
+
+test('removing a YouTube account turns off its publishing first; removing an Instagram account does not touch YouTube', async () => {
+    const owned = [{ id: 'yt1', platform: 'youtube', channelId: CHANNEL_ID }, { id: 'ig1', platform: 'instagram' }];
+    const steps: string[] = [];
+    const accounts = {
+        findForUser: async (id: string) => owned.find(account => account.id === id) ?? null,
+        deleteForUser: async (id: string) => { steps.push(`deleted ${id}`); },
+    } as unknown as AccountRepository;
+    const removing = createAccountService({
+        accounts,
+        cache: { deleteAllForAccount: async () => undefined } as unknown as AnalyticsCacheRepository,
+        audit: { recordForUser: async () => undefined } as unknown as AuditRepository,
+        config: readConfig({ YOUTUBE_API_KEY: 'KEY' } as Env),
+        context: { requestId: 'req-test', signal: new AbortController().signal, log: createLogger() },
+        youtubePublishing: { disconnectChannel: async (_userId, channelId) => { steps.push(`publishing off ${channelId}`); } },
+    });
+    await removing.remove('user-1', 'yt1');
+    await removing.remove('user-1', 'ig1');
+    assert.deepEqual(steps, [`publishing off ${CHANNEL_ID}`, 'deleted yt1', 'deleted ig1']);
+});

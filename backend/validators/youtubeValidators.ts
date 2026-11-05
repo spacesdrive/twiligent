@@ -2,7 +2,7 @@ import { ValidationError } from '../lib/errors.ts';
 import { optionalBoolean, optionalString, requiredString } from './fields.ts';
 import type { Fields } from './fields.ts';
 import type {
-    YouTubeConnectCompleteRequest, YouTubePrivacy, YouTubeUploadRequest, YouTubeUploadUpdateRequest,
+    YouTubeAuthUrlQuery, YouTubeConnectCompleteRequest, YouTubePrivacy, YouTubeUploadRequest, YouTubeUploadUpdateRequest,
 } from '../../shared/types/youtubePublishing.ts';
 
 const PRIVACY: YouTubePrivacy[] = ['private', 'unlisted', 'public'];
@@ -85,10 +85,16 @@ export function parseYouTubeUploadUpdate(body: Fields): YouTubeUploadUpdateReque
     return edit;
 }
 
+export function parseYouTubeAuthUrl(query: Fields): YouTubeAuthUrlQuery {
+    const accountId = requiredString(query, 'accountId', 'accountId is required: the YouTube channel to verify.').trim();
+    if (accountId.length > MAX_ID) throw new ValidationError(`accountId must be at most ${MAX_ID} characters`);
+    return { accountId };
+}
+
 export function parseYouTubeComplete(body: Fields): YouTubeConnectCompleteRequest {
     return {
-        code: requiredString(body, 'code', 'The Google sign-in code is missing. Start connecting again.'),
-        state: requiredString(body, 'state', 'The Google sign-in state is missing. Start connecting again.'),
+        code: requiredString(body, 'code', 'The Google sign-in code is missing. Choose Verify on the channel again.'),
+        state: requiredString(body, 'state', 'The Google sign-in state is missing. Choose Verify on the channel again.'),
     };
 }
 

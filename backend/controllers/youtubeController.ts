@@ -1,16 +1,16 @@
 import { controller, pathParam, servicesFor } from './http.ts';
 import { jsonBody, queryParams } from '../middleware/validate.ts';
 import { requestLogger } from '../middleware/requestContext.ts';
-import { parseYouTubeCallback, parseYouTubeComplete, parseYouTubeUpload, parseYouTubeUploadUpdate } from '../validators/youtubeValidators.ts';
+import { parseYouTubeAuthUrl, parseYouTubeCallback, parseYouTubeComplete, parseYouTubeUpload, parseYouTubeUploadUpdate } from '../validators/youtubeValidators.ts';
 import { errorFields } from '../lib/logger.ts';
 import type { SuccessResponse } from '../../shared/types/domain.ts';
 import type {
     YouTubeAuthUrlResponse, YouTubeConnectCompleteResponse, YouTubeConnectionListResponse, YouTubeUploadListResponse, YouTubeUploadResponse,
 } from '../../shared/types/youtubePublishing.ts';
 
-// protected: the signed state carries the user id to the public callback
-export const getYouTubeAuthUrl = controller.createHandlers(async c => {
-    const url = await servicesFor(c).youtubeConnect.authorizationUrl(c.get('userId'));
+// protected: the signed state carries the user id and the channel's account to the public callback
+export const getYouTubeAuthUrl = controller.createHandlers(queryParams(parseYouTubeAuthUrl), async c => {
+    const url = await servicesFor(c).youtubeConnect.authorizationUrl(c.get('userId'), c.req.valid('query').accountId);
     return c.json({ success: true, url } satisfies YouTubeAuthUrlResponse);
 });
 
@@ -31,7 +31,7 @@ export const handleYouTubeCallback = controller.createHandlers(queryParams(parse
     return c.redirect(`${connect.accountsPageUrl()}#yt_code=${encodeURIComponent(code)}&yt_state=${encodeURIComponent(state)}`);
 });
 
-// protected: connects the channel only when the sign-in was started by the person now signed in
+// protected: verifies the channel only when the sign-in was started by the person now signed in, for that channel
 export const completeYouTubeConnection = controller.createHandlers(jsonBody(parseYouTubeComplete), async c => {
     const { code, state } = c.req.valid('json');
     const { connection, outcome } = await servicesFor(c).youtubeConnect.completeForUser(c.get('userId'), code, state);

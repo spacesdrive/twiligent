@@ -53,7 +53,7 @@ export function createYouTubeUploadService({ uploads, connections, media, audit,
             const problem = metadataProblem({ title: request.title, description: request.description ?? '', tags: request.tags ?? [] });
             if (problem) throw new ValidationError(problem);
             const connection = await connections.findForUser(request.connectionId, userId);
-            if (!connection) throw new NotFoundError('No connected YouTube channel with that id. Connect YouTube on the Accounts page first.');
+            if (!connection) throw new NotFoundError('No YouTube channel verified for publishing with that id. Verify the channel on the Accounts page first.');
             const video = await media.findForUser(request.mediaId, userId);
             if (!video || video.resourceType !== 'video') throw new NotFoundError('No video with that id in your media.');
             if (!video.bytes) throw new ValidationError('The size of this video is unknown, so it cannot be uploaded in parts. Upload it again.');
