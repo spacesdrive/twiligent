@@ -57,7 +57,7 @@ export async function authorizationUrl(config: YouTubeOAuthConfig, userId: strin
         // offline and consent make Google return a refresh token every time, so a reconnect always gets one
         access_type: 'offline',
         prompt: 'consent',
-        include_granted_scopes: 'true',
+        // no include_granted_scopes: sign-in scopes merged from the same client make Google refuse a Brand Account channel
         // the state names the channel card the sign-in was started from, so completing it can check Google returned that channel
         state: await createOAuthState(userId, config.clientSecret, accountId),
     });
