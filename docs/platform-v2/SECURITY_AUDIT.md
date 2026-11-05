@@ -85,3 +85,38 @@ Each depends on a fact outside the repository or on running code. None is a conf
 - Every check was source-only. Behaviour that depends on Supabase Auth, Meta or Google (L1, L2) and anything that needs running code was not reproduced.
 - The deployed settings (Supabase "Confirm email" and sign-up, Cloudflare and GitHub settings) were not inspected.
 - The open leads were fixed in 3.1.0 (#161): L2, L6, L7, L8 and L9 in code with regression tests, L1 by the self-hosting guide and a check of the project's own Supabase settings.
+
+---
+
+## Second audit (run 2, #152)
+
+A scoped pass over everything that changed between the first audit and 3.0.0 (`7f35357..c4a79fc`): the MCP server, its access tokens, OAuth client grants and tools, the consent page and the sign-in return path, the Claude settings section, the Instagram OAuth completion, the Reddit removal and the cleanup.
+
+| Tool | Scope | Result |
+|---|---|---|
+| Cloudflare `security-audit` skill, full audit mode, quick profile | The diff above, in a pinned worktree | 0 confirmed findings, 4 leads that need validation, 0 rejected; 36 coverage units (23 covered, 5 candidate, 2 deferred, 6 out of scope). Nine agents: 1 reconnaissance, 4 hunters, 1 critic, 3 independent verifiers. Source only, no code run, nothing deployed probed. Both of the skill's validators passed on `coverage-ledger.json` and `findings.json`. Output: `~/security-audit-skill/twiligent/run-2` (outside the repository); the run's own `REPORT.md` was not written there, because the sub-agent harness refuses report files, and this section is the report |
+| Claude Code `security-review` | Branch `fix/audit-leads` (the fixes for the first audit's leads, 3.1.0) | No vulnerability at confidence 8 or above |
+| Semgrep (`p/typescript`, `p/secrets`, `p/owasp-top-ten`) | The changed TypeScript files of each fix branch | 0 findings |
+| `npm audit --omit=dev` | Root lockfile | 0 vulnerabilities |
+
+The run also confirmed that first-audit findings F1 and F2 and leads L3, L4 and L5 are resolved in current source.
+
+### Leads and what was done
+
+None of the four could be confirmed from source alone, since each depends on Supabase, a library or Claude's clients. Each was fixed anyway where a source fix exists.
+
+| Id | Lead | Status |
+|---|---|---|
+| N1 | The REST API accepted tokens Supabase's OAuth server issued to Claude apps, giving an app the person's full session past its read-only choice or removal, and letting it mint a write access token for itself | Fixed: `requireAuth` refuses any token with a `client_id` claim; such tokens only work on `/mcp`, where the grant is checked. Test: `backend/tests/middleware/auth.test.ts`. Not reachable on the project's own instance at the time, whose OAuth server is off |
+| N2 | The browser client used Supabase's implicit flow with session detection on, so a link with `#access_token` could sign a person in as someone else, who would then receive the Instagram account they connect | Fixed: the client uses the PKCE flow (`frontend/src/lib/supabaseAuthOptions.ts`, with a test); a sign-in only returns as a code the same browser can exchange |
+| N3 | The confirmation token goes back to the same model it gates, so text in a caption or video title could lead a model to confirm on its own | Mitigated: the confirmation now names the media address, the full caption, collaborators, alt text and location, and the tools refuse fields their schema does not show. The rest depends on Claude's clients showing each tool call to the person; recorded in `docs/philosophy/SECURITY.md` (Known Risks) |
+| N4 | `update_scheduled_post` changed a queued public post with no confirmation, accepted unlisted fields, and allowed a time in the past | Fixed: it asks for a confirmation, refuses unlisted fields, and a changed time must be in the future. Tests in `backend/tests/mcp/scheduledPostTools.test.ts` |
+
+### Hardening from the same run
+
+- `/mcp` takes OAuth tokens only while `MCP_OAUTH_ENABLED` is `true`, and refuses a body over 1 MB with 413.
+- A write tool is audited even when its result is too large to return.
+- The GitHub Actions scheduler's Supabase errors no longer print request paths (account ids) or raw answers.
+- Accepted for now: revoked access tokens stay in the table (only active ones count toward the limit of 20), and an access token does not re-check the Supabase account's status; deleting the account deletes its tokens.
+
+Deferred by the run (quick profile, one wave): browser sign-in establishment beyond N2, and access token lifetime against account recovery or email change.
