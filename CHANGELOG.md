@@ -7,6 +7,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-11-05
+
+Fixes for the open leads from the first security audit. What an instance owner must do: run `npm run db:push` and `npm run db:schema` for two function migrations. If you self-host, keep Supabase "Confirm email" on (see the Supabase step of the self-hosting guide).
+
+### Security
+
+- One member can no longer use up the instance's shared YouTube data allowance: each member may spend a quarter of it a day, counted in YouTube's own units, and gets a clear message when it is used up (#161)
+- A member whose Instagram access ended no longer receives comments on an Instagram account another member also connected, and the hourly reply limit counts every connection to the same account (#161)
+- One account's backlog of due posts can no longer hold back everyone else's: each publish run lets accounts take turns (#161)
+- The daily job no longer retries expired Instagram tokens forever, so it always reaches the cleanup of old comments (#161)
+- One busy run can no longer pause YouTube or Instagram calls for every member (#161)
+
+### Changed
+
+- The self-hosting guide now says to keep "Confirm email" on, and to close sign-up before ever turning it off (#161)
+
 ## [3.0.0] - 2026-11-05
 
 A cleanup release: API routes, code and files that nothing in Twiligent used are removed. It is a major version only because API routes are removed; the app, the schedulers and the Claude tools work exactly as before. What an instance owner must do: nothing, unless your own scripts called one of the removed routes below.
