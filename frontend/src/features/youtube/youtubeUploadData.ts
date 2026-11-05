@@ -108,15 +108,3 @@ export function readYouTubeReturn(hash: string): YouTubeOAuthReturn | null {
   const state = params.get('yt_state');
   return code && state ? { code, state } : null;
 }
-
-const RETURN_ERRORS: Record<string, string> = {
-  access_denied: 'YouTube was not connected: the sign-in was cancelled.',
-  invalid_state: 'YouTube was not connected: the sign-in link expired or was changed. Try again.',
-  cancelled: 'YouTube was not connected: the sign-in was cancelled.',
-};
-
-export function youtubeReturnError(search: URLSearchParams): string | null {
-  const error = search.get('yt_error');
-  if (!error) return null;
-  return RETURN_ERRORS[error] ?? `YouTube was not connected (${error}). Try again.`;
-}

@@ -162,7 +162,7 @@ The types are in `shared/types/mcp.ts`. Settings, Claude (`features/settings/use
 
 ## YouTube Publishing and Media Methods
 
-`getMedia`, `registerMedia` and `uploadWithDetails` (a browser upload to Cloudinary that also returns the id, size and dimensions) feed the media library. `getYouTubeConnections`, `getYouTubeAuthUrl`, `completeYouTubeConnection` and `deleteYouTubeConnection` serve the Accounts page panel; `getYouTubeUploads`, `createYouTubeUpload`, `updateYouTubeUpload`, `cancelYouTubeUpload` and `retryYouTubeUpload` serve the YouTube uploads page. Types are in `shared/types/youtubePublishing.ts` and `shared/types/media.ts`.
+`getMedia`, `registerMedia` and `uploadWithDetails` (a browser upload to Cloudinary that also returns the id, size and dimensions) feed the media library. `getYouTubeConnections`, `getYouTubeAuthUrl(accountId)` (Verify on a YouTube card), `completeYouTubeConnection` and `deleteYouTubeConnection` (Turn off) serve the publishing row on the Accounts page YouTube cards; `getYouTubeUploads`, `createYouTubeUpload`, `updateYouTubeUpload`, `cancelYouTubeUpload` and `retryYouTubeUpload` serve the YouTube uploads page. Types are in `shared/types/youtubePublishing.ts` and `shared/types/media.ts`.
 
 ## Tracked Content Methods
 

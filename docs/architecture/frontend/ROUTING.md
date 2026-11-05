@@ -10,7 +10,7 @@ The app uses React Router 7 in `frontend/src/App.tsx`: a data router from `creat
 |---|---|---|
 | `/login` | `Login.tsx` | Public - redirects to `/` if already authenticated. Opens on the start view: Continue with Google, an email field that sends a sign-in code, and a Use password link. `?mode=signup` keeps the same view with the headline "Create your Twiligent account" and Google's "Sign up with Google"; the emailed code creates the account the first time an address is used (the public site's Get started buttons link to `https://app.twiligent.ujjwal.fyi/login?mode=signup`) |
 | `/oauth/consent` | `pages/OAuthConsent.tsx` | Protected, outside the app shell: Supabase Auth's OAuth server sends a person here to approve a Claude app (`?authorization_id=`). Signed out, it signs in through `/login?next=...` and comes back. See `docs/architecture/data-flows/AUTHENTICATION.md` |
-| `/youtube-uploads` | `features/youtube/YouTubeUploads.tsx` | Protected. Queue a video for a connected YouTube channel and follow every upload (Publishing group in the sidebar) |
+| `/youtube-uploads` | `features/youtube/YouTubeUploads.tsx` | Protected. Queue a video for a YouTube channel verified for publishing and follow every upload (Publishing group in the sidebar) |
 | `/docs/*` | `components/DocsRedirect.tsx` | Public. The docs live on the public site; this route replaces the location with the same path and hash under `https://twiligent.ujjwal.fyi/docs` (`docsUrl()` in `lib/docs.ts`), so old links keep working |
 | `/` (layout) | `AppLayout` (inline) | Protected - redirects to `/login?next=<path>` if unauthenticated, and back after sign-in |
 | `/` (index) | `Overview.tsx` | Default page after login |

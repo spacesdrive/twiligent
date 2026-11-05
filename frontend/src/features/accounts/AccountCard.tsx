@@ -18,9 +18,11 @@ export interface AccountCardProps {
   refreshing: boolean;
   onRefresh: () => void;
   onDelete: () => void;
+  // a platform's extra row above the actions, such as YouTube publishing
+  extra?: React.ReactNode;
 }
 
-export default function AccountCard({ acct, platform, refreshing, onRefresh, onDelete }: AccountCardProps) {
+export default function AccountCard({ acct, platform, refreshing, onRefresh, onDelete, extra }: AccountCardProps) {
   const metrics = accountMetrics(platform, acct);
   return (
     <article className="flex flex-col gap-4 rounded-card border border-line bg-surface-raised p-4">
@@ -50,6 +52,8 @@ export default function AccountCard({ acct, platform, refreshing, onRefresh, onD
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-ink-faint">
         {acct.lastUpdated && <span>Updated <RelativeTime date={acct.lastUpdated} /></span>}
       </div>
+
+      {extra}
 
       <div className="mt-auto flex gap-2">
         <Button variant="outline" size="sm" className="flex-1" onClick={onRefresh} disabled={refreshing}>

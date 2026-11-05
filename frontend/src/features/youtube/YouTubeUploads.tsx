@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { AlertCircle, Link2 } from 'lucide-react';
+import { AlertCircle, ShieldCheck } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -14,7 +14,7 @@ import YouTubeComposer from './YouTubeComposer';
 import YouTubeUploadList from './YouTubeUploadList';
 import { useYouTubePublishing } from './useYouTubePublishing';
 
-const DESCRIPTION = 'Upload videos and Shorts to your connected YouTube channels.';
+const DESCRIPTION = 'Upload videos and Shorts to your YouTube channels verified for publishing.';
 
 export default function YouTubeUploads() {
   const { accounts, showToast } = useAppContext();
@@ -50,10 +50,10 @@ export default function YouTubeUploads() {
       ) : active.length === 0 ? (
         <SurfaceBox>
           <EmptyState
-            icon={<Link2 />}
-            title={youtube.connections.length > 0 ? 'Your channel needs a new sign-in' : 'Connect a YouTube channel first'}
-            description="Connecting signs in with Google and lets Twiligent upload videos to the channel. It cannot change or delete videos already there."
-            action={<Button render={<Link to="/accounts#youtube-publishing" />}>Go to Accounts</Button>}
+            icon={<ShieldCheck />}
+            title={youtube.connections.length > 0 ? 'Your channel needs a new sign-in' : 'Verify a YouTube channel first'}
+            description="On the Accounts page, choose Verify on the channel's card and sign in with the Google account that manages it. Twiligent can then upload to it, never change or delete videos already there."
+            action={<Button render={<Link to="/accounts#youtube" />}>Go to Accounts</Button>}
           />
         </SurfaceBox>
       ) : (

@@ -12,9 +12,9 @@ In [Google Cloud](https://console.cloud.google.com/), choose the project you use
 
 Open **Google Auth Platform** (OAuth consent screen). Give the app a name and support email, and add the scopes `.../auth/youtube.upload` and `.../auth/youtube.readonly`. Then publish the app to **In production**.
 
-<Callout type="warning" title="Publish it, or uploads stay private">
+<Callout type="warning" title="Publish it, or sign-ins expire">
 
-While the app is in testing, YouTube locks every uploaded video as private and members must sign in again every 7 days. Google may ask to verify the app because the scopes are sensitive; until it does, members see a warning screen they can pass.
+While the app is in testing, only the test users you list can sign in, and they must sign in again every 7 days. The scopes are sensitive, so until Google verifies the app, members see an unverified-app screen they can pass (choose **Advanced**, then go to the app), and at most 100 people can use it.
 
 </Callout>
 
@@ -46,7 +46,7 @@ npx wrangler secret put TOKEN_ENCRYPTION_KEY
 </Step>
 <Step title="Update the database and deploy">
 
-Run `npm run db:push`, then deploy the backend. In the app, open **Accounts**, then **YouTube publishing**, then **Connect a channel**. Queue a video on the **YouTube uploads** page.
+Run `npm run db:push`, then deploy the backend. In the app, open **Accounts**, add the channel if it is not there yet, and choose **Verify** on its card. Sign in with the Google account that manages the channel and pick that channel if Google asks; Twiligent refuses any other. Then queue a video on the **YouTube uploads** page.
 
 </Step>
 </Steps>

@@ -4,7 +4,7 @@ How Twiligent uploads videos and Shorts to a person's YouTube channel (#147): th
 
 ## What it does
 
-- A person connects a channel on the Accounts page (YouTube publishing) by signing in with Google once.
+- A person verifies a YouTube channel they already added on the Accounts page: **Verify** on its card signs in with Google once, and Twiligent checks the Google account manages that channel. There is no separate list of publishing channels (#166).
 - On the YouTube uploads page (`/youtube-uploads`) they queue a video with:
   - title, description and tags;
   - category;
@@ -20,23 +20,23 @@ How Twiligent uploads videos and Shorts to a person's YouTube channel (#147): th
 - A vertical or square video of at most three minutes becomes a Short. YouTube decides this from the file itself; there is no separate Shorts upload.
 - Playlists are not part of this release. Adding a video to a playlist needs Google's full `youtube` scope; Twiligent asks only to upload and to read, so a leaked token can never change or delete what is already on a channel.
 
-## Connecting a channel
+## Verifying a channel
 
-1. `GET /api/auth/youtube/url` (signed in) returns Google's consent URL:
+1. `GET /api/auth/youtube/url?accountId=<id>` (signed in, for one of the person's own YouTube accounts) returns Google's consent URL:
    - scopes `youtube.upload` and `youtube.readonly`;
    - `access_type=offline` and `prompt=consent`, so a refresh token comes back every time;
-   - a state signed with the Google client secret that names the person.
+   - a state signed with the Google client secret that names the person and the account (`createOAuthState` with a subject).
 2. Google sends the browser to the public `GET /api/auth/youtube/callback`.
    - It checks the state's signature and redirects to the Accounts page with `#yt_code=...&yt_state=...` in the fragment, which never reaches a server or a referrer.
    - A cancelled or changed sign-in goes back with `?yt_error=...`.
 3. The signed-in app posts the code to `POST /api/auth/youtube/complete`. The service:
-   - refuses a state started by anyone else (403);
+   - refuses a state started by anyone else (403), or one that names no account or an account that is gone;
    - exchanges the code;
-   - reads the channel with `channels.list?mine=true`;
-   - links the analytics account for the same channel, if there is one;
-   - stores both tokens sealed with AES-GCM under a key derived from `TOKEN_ENCRYPTION_KEY` (`backend/lib/tokenCrypto.ts`).
-4. Signing in again for the same channel renews its tokens in place and puts any parked uploads back in the queue.
-5. Disconnecting asks Google to revoke the refresh token, then deletes the connection with its upload queue and history. Videos already on YouTube stay.
+   - reads the channel with `channels.list?mine=true`, which answers for the channel the person picked in Google's channel chooser;
+   - refuses any channel but the account's own (400, naming both channels), after revoking the access Google just granted. This is the proof of ownership: only a Google account that manages the channel can return it;
+   - stores both tokens sealed with AES-GCM under a key derived from `TOKEN_ENCRYPTION_KEY` (`backend/lib/tokenCrypto.ts`), linked to the account.
+4. Verifying the same channel again renews its tokens in place and puts any parked uploads back in the queue.
+5. **Turn off** on the card asks Google to revoke the refresh token, then deletes the connection with its upload queue and history. Removing the YouTube account does the same first (`accountService.remove` calls `disconnectChannel`). Videos already on YouTube stay.
 
 Tokens never appear in a response, a log or an MCP result. A refresh Google refuses (`invalid_grant`), or a token that no longer unseals because the key changed, marks the connection `needs_reconnect` and parks its uploads without spending their attempts.
 
@@ -99,7 +99,7 @@ The Google Cloud project's daily allowance is shared by every channel on the ins
 - **Video size:** Cloudinary's plan sets the largest video, 100 MB on the free plan. Larger videos need a paid plan.
 - **Throughput:** four YouTube runs an hour move about 400 MB an hour. Each run handles one job at a time.
 - **Worker CPU:** each chunk copies 8 MiB through the Worker. Whether that stays within the Workers Free plan's 10 ms of CPU per invocation has not been measured; if it does not, the run fails as a passing error and the paid plan is the fix.
-- **Unverified Google projects:** uploads from a project still in testing are locked private by YouTube, and testing-mode refresh tokens expire after 7 days. Publish the OAuth consent screen to production.
+- **The Google app's publishing status:** while the OAuth consent screen is in testing, only its listed test users can sign in and their refresh tokens expire after 7 days; publish it to production. An app not verified by Google shows people an unverified-app screen at sign-in and is limited to 100 users. Google's `videos.insert` reference (checked 5 Nov 2026) no longer locks uploads from unaudited API projects as private; Google confirmed the change on its issue tracker in October 2026, though its revision history still has the 2020 rule.
 
 ## Security
 
@@ -129,7 +129,7 @@ The Google Cloud project's daily allowance is shared by every channel on the ins
    - `npx wrangler secret put GOOGLE_CLIENT_SECRET`
    - `npx wrangler secret put TOKEN_ENCRYPTION_KEY`: 32 or more random characters, for example from `openssl rand -base64 48`. Changing it later makes every stored token unreadable, and people must connect again.
 3. Apply the migrations: `npm run db:push`, then `npm run db:schema`.
-4. Deploy the Worker. Open Accounts, then YouTube publishing, then Connect a channel.
+4. Deploy the Worker. On the Accounts page, add the channel if it is not there, then choose **Verify** on its card.
 
 The public guide is at `https://twiligent.ujjwal.fyi/docs/self-host/youtube-publishing` (source: `site/content/docs/self-host/youtube-publishing.mdx`).
 
