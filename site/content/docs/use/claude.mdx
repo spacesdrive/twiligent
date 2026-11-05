@@ -1,0 +1,71 @@
+export const meta = { title: 'Use Twiligent from Claude', description: 'Connect Claude Code or the Claude apps so Claude can read your analytics and manage scheduled posts.' }
+
+Twiligent includes a Model Context Protocol (MCP) server. Once you connect it, you can ask Claude things like "which of my videos did best this month" or "schedule this image for Friday at 9", and Claude uses your Twiligent account to answer.
+
+Each connection signs in as you and sees only your accounts. You decide whether it may only read, or also make changes.
+
+## What Claude can do
+
+| With | Claude can |
+| --- | --- |
+| Read only | List your accounts; read YouTube channel and Instagram account analytics; list videos and posts; compare your YouTube channels; read your scheduled posts, your settings (never keys or tokens) and an account's Instagram publishing limit |
+| Read and make changes | Everything above, plus schedule, edit and cancel Instagram posts, and change the GitHub scheduling setting |
+
+Before Claude schedules or cancels a post, it must ask you. Twiligent gives it a one-time confirmation for exactly that post, and it can only go ahead after you agree.
+
+## Connect Claude Code
+
+<Steps level={3}>
+<Step title="Create an access token">
+
+In Twiligent, open **Settings**, then **Claude**. Under **Access tokens**, give the token a name (such as the computer it is for), choose what Claude may do and when the token expires, then choose **Create token**.
+
+</Step>
+<Step title="Copy it now">
+
+The token is shown once. Copy the token, or the ready-made Claude Code command shown with it. Treat the token like a password: anyone who has it can act as you.
+
+</Step>
+<Step title="Add the server">
+
+Run the command in a terminal. It looks like this, with your own server address and token:
+
+```bash
+claude mcp add --transport http twiligent https://your-worker.example.com/mcp --header "Authorization: Bearer twl_your_token"
+```
+
+Then ask Claude Code about your accounts to check it works.
+
+</Step>
+</Steps>
+
+## Connect Claude on the web, desktop or mobile
+
+These apps sign in with OAuth instead of a token, which the instance owner turns on first (see below). Then:
+
+1. In Claude, open **Settings**, **Connectors**, **Add custom connector**, and paste the server address from **Settings**, **Claude** in Twiligent.
+2. Claude opens a Twiligent page that names the app and the site it returns to. Choose **Read only** or **Read and make changes**, then **Allow**.
+
+If the page names a site other than Claude's, choose **Deny**.
+
+## Remove access
+
+In **Settings**, **Claude**:
+
+- **Revoke** a token under **Your tokens**. Every client using it loses access at once.
+- **Remove** an app under **Approved apps**. It loses access at its next request, and connecting it again asks for your approval again.
+
+<Callout type="note" title="Text from your posts stays text">
+
+Captions, titles and comments that Claude reads come from people on YouTube and Instagram. Twiligent tells Claude to treat them as data, and the confirmation step means a caption cannot make Claude publish or delete anything without you.
+
+</Callout>
+
+## For the instance owner
+
+Access tokens work as soon as the backend is deployed. Two settings unlock the rest:
+
+- `TOKEN_ENCRYPTION_KEY`: 32 or more random characters (`openssl rand -base64 48`), set with `npx wrangler secret put TOKEN_ENCRYPTION_KEY`. Without it, Claude can read but cannot schedule or cancel posts.
+- For Claude's apps: in Supabase, open **Authentication**, **OAuth Server**, turn it on, allow dynamic client registration, and set the authorization path to `/oauth/consent`. Then set `MCP_OAUTH_ENABLED` to `true` with `npx wrangler secret put MCP_OAUTH_ENABLED` and deploy.
+
+The server address is your Worker address followed by `/mcp`. The settings are listed in [Environment variables](/docs/reference/environment).
