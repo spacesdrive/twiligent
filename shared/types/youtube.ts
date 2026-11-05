@@ -211,7 +211,7 @@ export interface YouTubeAccountRankings<TAccount = Account> {
     byVideos: TAccount[];
 }
 
-// accountComparison() output, sent by GET /api/comparison
+// accountComparison() output, which the MCP compare tool summarises
 export interface YouTubeAccountComparison<TAccount = Account> {
     rankings: YouTubeAccountRankings<TAccount>;
     totals: { subscribers: number; views: number; videos: number };
@@ -219,12 +219,6 @@ export interface YouTubeAccountComparison<TAccount = Account> {
     bestBySubscribers: TAccount | null;
     bestByViews: TAccount | null;
     bestByVideos: TAccount | null;
-}
-
-// a cached video tagged with its channel, as GET /api/videos/all lists it
-export interface YouTubeLibraryVideo extends YouTubeVideo {
-    channelId: string;
-    channelThumbnail: string;
 }
 
 // POST /api/resolve-channel
@@ -238,24 +232,4 @@ export interface YouTubeVideosResponse {
     success: true;
     videos: YouTubeVideo[];
     fetchedAt: string;
-}
-
-// GET /api/comparison; comparison is null when the user has no accounts
-// GET /api/comparison ranks YouTube channels only, with secrets removed by safeAccount()
-export interface YouTubeComparisonResponse {
-    success: true;
-    comparison: YouTubeAccountComparison<SafeAccount> | null;
-}
-
-export interface YouTubeLibraryChannel {
-    id: string;
-    title?: string;
-}
-
-// GET /api/videos/all
-export interface YouTubeLibraryResponse {
-    success: true;
-    videos: YouTubeLibraryVideo[];
-    total: number;
-    channels: YouTubeLibraryChannel[];
 }

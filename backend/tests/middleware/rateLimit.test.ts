@@ -139,7 +139,7 @@ test('quota and publish routes match the endpoints that spend platform API calls
     const publish = (method: string, path: string) => matchesRoute(PUBLISH_ROUTES, method, path);
     assert.equal(publish('POST', '/api/accounts/abc/ig-publish'), true);
     assert.equal(publish('POST', '/api/accounts/abc/ig-media-publish'), true);
-    assert.equal(publish('GET', '/api/accounts/abc/ig-publishing-limit'), false);
+    assert.equal(publish('GET', '/api/accounts/abc/ig-media'), false);
 });
 
 test('every rule uses a different algorithm and a positive limit', () => {

@@ -14,7 +14,7 @@ import { mountWithContext, callRoute } from '../fixtures/routeHarness.ts';
 import type { RouteStep } from '../fixtures/routeHarness.ts';
 import type { AppEnv } from '../../types/app.ts';
 import type { Env } from '../../types/env.ts';
-import type { YouTubeAnalyticsPayload, YouTubeComparisonResponse } from '../../../shared/types/youtube.ts';
+import type { YouTubeAnalyticsPayload } from '../../../shared/types/youtube.ts';
 import assert from 'node:assert/strict';
 
 interface StoreWrite {
@@ -109,13 +109,8 @@ describe('analytics and overview routes golden output', () => {
     before(() => mock.timers.enable({ apis: ['Date'], now: FIXED_NOW }));
     after(() => mock.timers.reset());
 
-    test('channel analytics, comparison and the all videos library', async () => {
+    test('channel analytics', async () => {
         const result = await runCalls(analyticsRouter, [
-            ['GET', '/comparison'],
-            ['GET', '/videos/all'],
-            ['GET', '/videos/all?search=PASTA&sort=title&order=asc'],
-            ['GET', '/videos/all?channelId=yt1&minViews=100&maxViews=899'],
-            ['GET', '/videos/all?sort=likeCount'],
             ['GET', '/accounts/yt1/analytics'],
             ['GET', '/accounts/yt2/analytics'],
             ['GET', '/accounts/yt3/analytics'],
@@ -167,22 +162,6 @@ describe('analytics and overview routes golden output', () => {
         assert.equal(channel.customUrl, '@gamma');
         assert.equal('bannerUrl' in channel, false);
         assert.equal('isLinked' in channel, false);
-    });
-
-    test('the comparison ranks YouTube channels only and never returns stored secrets', async () => {
-        const supabase = fakeSupabase(ACCOUNT_ROWS);
-        const app = mountWithContext(server => server.route('/', analyticsRouter), { supabase, redis: null, userId: 'user-1' });
-        const response = await callRoute(app, 'GET', '/comparison');
-        const body = JSON.parse(response.body) as YouTubeComparisonResponse;
-        const ranked = body.comparison!.rankings.bySubscribers;
-        assert.deepEqual(ranked.map(account => account.id), ['yt2', 'yt1', 'yt3']);
-        assert.equal(response.body.includes('"accessToken"'), false, 'accessToken leaked');
-    });
-
-    test('an empty account list has no comparison', async () => {
-        const supabase = fakeSupabase([]);
-        const app = mountWithContext(server => server.route('/', analyticsRouter), { supabase, redis: null, userId: 'user-1' });
-        assertGolden(await callRoute(app, 'GET', '/comparison'), 'analyticsRoutes.emptyComparison');
     });
 
     test('overview summarises cached accounts and reports what cannot sync', async () => {

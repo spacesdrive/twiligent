@@ -2,18 +2,13 @@ import { controller, pathParam, servicesFor } from './http.ts';
 import { jsonBody, queryParams } from '../middleware/validate.ts';
 import { parseContainerInput, parseContainerStatusQuery, parsePublishRequest } from '../validators/publishingValidators.ts';
 import type {
-    CloudinaryConfigResponse, InstagramContainerStatusResponse, InstagramMediaPublishResponse, InstagramPublishingLimitResponse,
+    CloudinaryConfigResponse, InstagramContainerStatusResponse, InstagramMediaPublishResponse,
     InstagramPublishResponse,
 } from '../../shared/types/instagram.ts';
 
 export const getCloudinaryConfig = controller.createHandlers(c => {
     const { cloudName, uploadPreset } = servicesFor(c).publishing.cloudinaryConfig();
     return c.json({ success: true, cloudName, uploadPreset } satisfies CloudinaryConfigResponse);
-});
-
-export const getPublishingLimit = controller.createHandlers(async c => {
-    const data = await servicesFor(c).publishing.publishingLimit(c.get('userId'), pathParam(c, 'id'));
-    return c.json({ success: true, data } satisfies InstagramPublishingLimitResponse);
 });
 
 export const createContainer = controller.createHandlers(jsonBody(parsePublishRequest), async c => {
