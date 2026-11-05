@@ -7,6 +7,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-11-05
+
+A cleanup release: API routes, code and files that nothing in Twiligent used are removed. It is a major version only because API routes are removed; the app, the schedulers and the Claude tools work exactly as before. What an instance owner must do: nothing, unless your own scripts called one of the removed routes below.
+
+### Removed
+
+- API routes no part of Twiligent called (#159):
+  - `POST /api/accounts/instagram` (add an account from a pasted token); accounts connect through Instagram sign-in
+  - `POST /api/accounts/:id/refresh-ig-token`; the daily job renews tokens
+  - `GET` and `POST /api/process-scheduled` (publish due posts now); the quarter-hour job and the GitHub Actions publisher do this
+  - `GET /api/comparison` and `GET /api/accounts/:id/ig-publishing-limit`; the Claude tools read these directly
+  - `GET /api/videos/all`; the Videos page filters in the browser
+- Unused interface components, helpers, hooks, types, a redundant site dependency and two unreferenced images (#159)
+
 ## [2.2.0] - 2026-11-05
 
 Claude can now use Twiligent through a Model Context Protocol (MCP) server. What an instance owner must do: run `npm run db:push` and `npm run db:schema` for the two new tables, set `TOKEN_ENCRYPTION_KEY` (32 or more random characters) so Claude can schedule and cancel posts, and, for Claude on the web, desktop and mobile, turn on Supabase's OAuth server with the authorization path `/oauth/consent` and set `MCP_OAUTH_ENABLED` to `true`. Everything else keeps working without these steps.
