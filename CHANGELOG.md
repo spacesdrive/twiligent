@@ -7,6 +7,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-11-05
+
+Claude can now use Twiligent through a Model Context Protocol (MCP) server. What an instance owner must do: run `npm run db:push` and `npm run db:schema` for the two new tables, set `TOKEN_ENCRYPTION_KEY` (32 or more random characters) so Claude can schedule and cancel posts, and, for Claude on the web, desktop and mobile, turn on Supabase's OAuth server with the authorization path `/oauth/consent` and set `MCP_OAUTH_ENABLED` to `true`. Everything else keeps working without these steps.
+
+### Added
+
+- An MCP server at `/mcp` on the Worker, with tools to list accounts, read YouTube and Instagram analytics, list videos and posts, compare channels, read settings and the publishing limit, and list, schedule, edit and cancel scheduled Instagram posts (#146)
+- Settings, Claude: the server address, a ready Claude Code command, personal access tokens (read only or read and make changes, with an expiry) and the list of approved Claude apps, each with revoke (#146)
+- A consent page at `/oauth/consent` where you approve a Claude app and choose what it may do (#146)
+- The docs page "Use Twiligent from Claude" (#146)
+
+### Changed
+
+- Opening a page while signed out now returns you to it after you sign in (#146)
+
+### Security
+
+- Claude connections never use your app session: a token is stored only as a hash, each connection is read only unless you allow changes, scheduling or cancelling a post needs a one-time confirmation for exactly that post, and every change made through Claude is recorded (#146)
+
 ## [2.1.0] - 2026-11-05
 
 The database part of removing Reddit. What an instance owner must do: deploy 2.0.0 or later first, export any Reddit rows you want to keep (the queries are in `docs/platform-v2/DATABASE_MIGRATION.md`), then run `npm run db:push` and `npm run db:schema`. Until then the app keeps working and simply ignores the Reddit rows.
