@@ -12,3 +12,27 @@ export interface MediaAsset {
     label: string;
     createdAt: string;
 }
+
+// GET /api/media
+export interface MediaListResponse {
+    success: true;
+    media: MediaAsset[];
+}
+
+// POST /api/media
+export interface MediaResponse {
+    success: true;
+    media: MediaAsset;
+}
+
+// body of POST /api/media: what Cloudinary returned to the browser after an upload
+export interface MediaRegistrationRequest {
+    url: string;
+    publicId: string;
+    resourceType: 'image' | 'video';
+    format?: string | null;
+    width?: number | null;
+    height?: number | null;
+    durationSeconds?: number | null;
+    label?: string;
+}

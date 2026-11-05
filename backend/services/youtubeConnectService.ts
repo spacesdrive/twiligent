@@ -56,7 +56,7 @@ export function createYouTubeConnectService({ connections, uploads, accounts, au
     return {
         configured: () => config.youtubeOAuth !== null,
         accountsPageUrl: () => oauth().accountsPageUrl,
-        authorizationUrl: userId => authorizationUrl(oauth(), userId),
+        authorizationUrl: async userId => authorizationUrl(oauth(), userId),
         stateIsValid: async state => (await verifyOAuthState(state, oauth().clientSecret)) !== null,
 
         async completeForUser(userId, code, state) {

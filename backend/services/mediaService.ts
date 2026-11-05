@@ -1,5 +1,6 @@
-import { destroyFile, uploadFromUrl } from './cloudinary/cloudinaryApi.ts';
-import { NotConfiguredError, NotFoundError, UpstreamError, isUniqueViolation } from '../lib/errors.ts';
+import { destroyFile, fileSize, uploadFromUrl } from './cloudinary/cloudinaryApi.ts';
+import { NotConfiguredError, NotFoundError, UpstreamError, ValidationError, isUniqueViolation } from '../lib/errors.ts';
+import type { MediaRegistration } from '../validators/mediaValidators.ts';
 import type { MediaResourceType } from './cloudinary/cloudinaryApi.ts';
 import type { MediaAssetRepository, StoredMediaAsset } from '../repositories/mediaAssetRepository.ts';
 import type { AuditRepository } from '../repositories/auditRepository.ts';
@@ -28,6 +29,8 @@ export interface MediaRemoval {
 export interface MediaService {
     list(userId: string): Promise<MediaAsset[]>;
     importFromUrl(userId: string, request: MediaImport): Promise<MediaAsset>;
+    // a file the browser already uploaded to the instance's Cloudinary account, added to the person's library
+    registerUpload(userId: string, upload: MediaRegistration): Promise<MediaAsset>;
     updateLabel(userId: string, id: string, label: string): Promise<MediaAsset>;
     remove(userId: string, id: string): Promise<MediaRemoval>;
     canDeleteFiles(): boolean;
@@ -80,6 +83,28 @@ export function createMediaService({ media, audit, config, context }: MediaDeps)
             }
             await audit.recordForUser(userId, { action: 'media_asset.imported', subjectType: 'media_asset', subjectId: saved.id, details: { resourceType } });
             return publicView(saved);
+        },
+
+        async registerUpload(userId, upload) {
+            if (!config.cloudinary) throw new NotConfiguredError('Cloudinary is not set up on this server.');
+            const url = new URL(upload.url);
+            // only a file on this instance's own cloud, at the address Cloudinary gives the id it names
+            const ownPath = `/${config.cloudinary.cloudName}/${upload.resourceType}/upload/`;
+            if (url.hostname !== 'res.cloudinary.com' || !url.pathname.startsWith(ownPath) || !decodeURIComponent(url.pathname).includes(`/${upload.publicId}`)) {
+                throw new ValidationError('The file is not on this server\'s Cloudinary account. Upload it from the Publish page.');
+            }
+            // the size decides every chunk boundary, so it is measured, not taken from the browser
+            const bytes = await fileSize(upload.url, signal);
+            const record = { ...upload, bytes };
+            try {
+                const saved = await media.createForUser(userId, record);
+                await audit.recordForUser(userId, { action: 'media_asset.imported', subjectType: 'media_asset', subjectId: saved.id, details: { resourceType: upload.resourceType } });
+                return publicView(saved);
+            } catch (err) {
+                const existing = isUniqueViolation(err) ? await media.findByPublicIdForUser(upload.publicId, userId) : null;
+                if (!existing) throw err;
+                return publicView(existing);
+            }
         },
 
         async updateLabel(userId, id, label) {

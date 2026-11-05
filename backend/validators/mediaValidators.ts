@@ -41,3 +41,39 @@ export function parseMediaImport(fields: Fields): MediaImport {
         label: parseMediaLabel(fields),
     };
 }
+
+export interface MediaRegistration {
+    url: string;
+    publicId: string;
+    resourceType: 'image' | 'video';
+    format: string | null;
+    width: number | null;
+    height: number | null;
+    durationSeconds: number | null;
+    label: string;
+}
+
+function optionalCount(fields: Fields, name: string): number | null {
+    const value = fields[name];
+    if (value === undefined || value === null) return null;
+    if (typeof value !== 'number' || !Number.isFinite(value) || value < 0) throw new ValidationError(`${name} must be a positive number`);
+    return value;
+}
+
+// what Cloudinary told the browser after an upload; the service checks the address is on this instance's own cloud
+export function parseMediaRegistration(fields: Fields): MediaRegistration {
+    const resourceType = fields.resourceType;
+    if (!RESOURCE_TYPES.includes(resourceType as typeof RESOURCE_TYPES[number])) throw new ValidationError('resourceType must be image or video');
+    const publicId = requiredString(fields, 'publicId', 'publicId is required: Cloudinary\'s id for the upload').trim();
+    if (publicId.length === 0 || publicId.length > 300) throw new ValidationError('publicId must be Cloudinary\'s id for the upload');
+    return {
+        url: parseMediaUrl(requiredString(fields, 'url', 'url is required')),
+        publicId,
+        resourceType: resourceType as MediaRegistration['resourceType'],
+        format: optionalString(fields, 'format')?.trim().slice(0, 20) || null,
+        width: optionalCount(fields, 'width'),
+        height: optionalCount(fields, 'height'),
+        durationSeconds: optionalCount(fields, 'durationSeconds'),
+        label: parseMediaLabel(fields),
+    };
+}
