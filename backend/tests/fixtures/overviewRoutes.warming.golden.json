@@ -20,19 +20,26 @@
     ],
     "requests": [
         {
+            "url": "https://graph.instagram.com/v25.0/IG1/media?access_token=T1&limit=50&fields=id%2Ccaption%2Cmedia_type%2Cmedia_product_type%2Cmedia_url%2Cthumbnail_url%2Ccover_url%2Cpermalink%2Ctimestamp%2Clike_count%2Ccomments_count%2Cinsights.metric%28views%29",
+            "method": "GET"
+        },
+        {
             "url": "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet%2CcontentDetails&playlistId=UU1&maxResults=50&key=YTKEY",
             "method": "GET"
         },
         {
             "url": "https://www.googleapis.com/youtube/v3/playlistItems?part=snippet%2CcontentDetails&playlistId=UU2&maxResults=50&key=YTKEY",
             "method": "GET"
-        },
-        {
-            "url": "https://graph.instagram.com/v25.0/IG1/media?access_token=T1&limit=50&fields=id%2Ccaption%2Cmedia_type%2Cmedia_product_type%2Cmedia_url%2Cthumbnail_url%2Ccover_url%2Cpermalink%2Ctimestamp%2Clike_count%2Ccomments_count%2Cinsights.metric%28views%29",
-            "method": "GET"
         }
     ],
     "redisWrites": [
+        {
+            "key": "ig:user-1:ig1",
+            "options": {
+                "ex": 21600
+            },
+            "version": 2
+        },
         {
             "key": "videos:user-1:yt1",
             "options": {
@@ -42,13 +49,6 @@
         },
         {
             "key": "videos:user-1:yt2",
-            "options": {
-                "ex": 21600
-            },
-            "version": 2
-        },
-        {
-            "key": "ig:user-1:ig1",
             "options": {
                 "ex": 21600
             },

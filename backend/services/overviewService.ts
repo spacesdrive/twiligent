@@ -1,6 +1,8 @@
 import { fetchAllVideos } from './youtube/youtubeVideos.ts';
 import { fetchInstagramMedia } from './instagram/instagramMedia.ts';
 import { summarizeContentTypes } from './instagram/instagramContentTypes.ts';
+import { UNMETERED_YOUTUBE_QUOTA } from './youtubeQuotaService.ts';
+import type { YouTubeQuotaService } from './youtubeQuotaService.ts';
 import type { AccountRepository } from '../repositories/accountRepository.ts';
 import type { AnalyticsCacheRepository } from '../repositories/analyticsCacheRepository.ts';
 import type { TrackedPostRepository } from '../repositories/trackedPostRepository.ts';
@@ -15,6 +17,7 @@ export interface OverviewDeps {
     tracked: TrackedPostRepository;
     cache: AnalyticsCacheRepository;
     config: AppConfig;
+    youtubeQuota?: YouTubeQuotaService;
 }
 
 export interface OverviewSummary {
@@ -37,7 +40,7 @@ function sumBy<T>(items: T[], pick: (item: T) => number): number {
     return items.reduce((total, item) => total + pick(item), 0);
 }
 
-export function createOverviewService({ accounts, tracked, cache, config }: OverviewDeps): OverviewService {
+export function createOverviewService({ accounts, tracked, cache, config, youtubeQuota = UNMETERED_YOUTUBE_QUOTA }: OverviewDeps): OverviewService {
     function instagramWarmTask(userId: string, account: Account): WarmTask | null {
         const { igUserId, accessToken } = account;
         if (!igUserId || !accessToken) return null;
@@ -51,10 +54,10 @@ export function createOverviewService({ accounts, tracked, cache, config }: Over
         const apiKey = config.youtubeApiKey;
         const { uploadsPlaylistId } = account;
         if (!apiKey || !uploadsPlaylistId) return null;
-        return async signal => {
-            const videos = await fetchAllVideos(uploadsPlaylistId, apiKey, 10, signal);
+        return signal => youtubeQuota.run(userId, apiKey, async key => {
+            const videos = await fetchAllVideos(uploadsPlaylistId, key, 10, signal);
             await cache.setVideos(userId, account.id, { videos, fetchedAt: new Date().toISOString() });
-        };
+        });
     }
 
     return {

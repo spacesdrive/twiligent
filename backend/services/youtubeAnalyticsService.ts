@@ -6,9 +6,12 @@ import { NO_YOUTUBE_KEY_MESSAGE } from './accountService.ts';
 import { NotConfiguredError, NotFoundError, ValidationError } from '../lib/errors.ts';
 import { errorFields } from '../lib/logger.ts';
 import { safeAccount } from '../lib/safeAccount.ts';
+import { UNMETERED_YOUTUBE_QUOTA } from './youtubeQuotaService.ts';
 import type { AccountRepository } from '../repositories/accountRepository.ts';
 import type { AnalyticsCacheRepository } from '../repositories/analyticsCacheRepository.ts';
 import type { AppConfig } from '../lib/config.ts';
+import type { YouTubeQuotaService } from './youtubeQuotaService.ts';
+import type { YouTubeKey } from './youtube/youtubeApi.ts';
 import type { RequestContext } from '../types/context.ts';
 import type { Account, SafeAccount } from '../../shared/types/domain.ts';
 import type {
@@ -20,6 +23,7 @@ export interface YouTubeAnalyticsDeps {
     cache: AnalyticsCacheRepository;
     config: AppConfig;
     context: RequestContext;
+    youtubeQuota?: YouTubeQuotaService;
 }
 
 export interface ChannelAnalytics {
@@ -42,7 +46,7 @@ export interface YouTubeAnalyticsService {
 const MAX_PLAYLIST_PAGES = 10;
 const NO_PLAYLIST_MESSAGE = 'No uploads playlist stored - delete this channel and add it again';
 
-export function createYouTubeAnalyticsService({ accounts, cache, config, context }: YouTubeAnalyticsDeps): YouTubeAnalyticsService {
+export function createYouTubeAnalyticsService({ accounts, cache, config, context, youtubeQuota = UNMETERED_YOUTUBE_QUOTA }: YouTubeAnalyticsDeps): YouTubeAnalyticsService {
     const { signal, log } = context;
 
     function youtubeKey(): string {
@@ -57,7 +61,7 @@ export function createYouTubeAnalyticsService({ accounts, cache, config, context
         return { ...account, uploadsPlaylistId: account.uploadsPlaylistId };
     }
 
-    async function fetchAndCacheVideos(userId: string, accountId: string, playlistId: string, apiKey: string): Promise<ChannelVideos> {
+    async function fetchAndCacheVideos(userId: string, accountId: string, playlistId: string, apiKey: YouTubeKey): Promise<ChannelVideos> {
         const videos = await fetchAllVideos(playlistId, apiKey, MAX_PLAYLIST_PAGES, signal);
         const fetchedAt = new Date().toISOString();
         await cache.setVideos(userId, accountId, { videos, fetchedAt });
@@ -65,7 +69,7 @@ export function createYouTubeAnalyticsService({ accounts, cache, config, context
     }
 
     // fills creation dates on older accounts once; a failure only skips the extras
-    async function backfillChannelData(userId: string, account: Account, apiKey: string): Promise<Account> {
+    async function backfillChannelData(userId: string, account: Account, apiKey: YouTubeKey): Promise<Account> {
         if (!account.channelId) return account;
         try {
             const channelData = await fetchChannelData(account.channelId, apiKey, signal);
@@ -92,10 +96,12 @@ export function createYouTubeAnalyticsService({ accounts, cache, config, context
         async channelAnalytics(userId, accountId) {
             const apiKey = youtubeKey();
             const account = await findChannel(userId, accountId);
-            const { videos } = await fetchAndCacheVideos(userId, accountId, account.uploadsPlaylistId, apiKey);
-            const analytics = computeVideoAnalytics(videos);
-            const channel = account.publishedAt ? account : await backfillChannelData(userId, account, apiKey);
-            return { channel: { ...safeAccount(channel), ...channelMetrics(channel) }, analytics, videoCount: videos.length };
+            return youtubeQuota.run(userId, apiKey, async key => {
+                const { videos } = await fetchAndCacheVideos(userId, accountId, account.uploadsPlaylistId, key);
+                const analytics = computeVideoAnalytics(videos);
+                const channel = account.publishedAt ? account : await backfillChannelData(userId, account, key);
+                return { channel: { ...safeAccount(channel), ...channelMetrics(channel) }, analytics, videoCount: videos.length };
+            });
         },
 
         // served from the cache when it has the channel, without spending quota, unless a person asked for fresh data
@@ -106,7 +112,7 @@ export function createYouTubeAnalyticsService({ accounts, cache, config, context
             }
             const apiKey = youtubeKey();
             const account = await findChannel(userId, accountId);
-            return fetchAndCacheVideos(userId, accountId, account.uploadsPlaylistId, apiKey);
+            return youtubeQuota.run(userId, apiKey, key => fetchAndCacheVideos(userId, accountId, account.uploadsPlaylistId, key));
         },
 
         // only channels have the counts being ranked, and stored secrets never leave the Worker

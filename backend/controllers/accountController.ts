@@ -15,7 +15,7 @@ export const listAccounts = controller.createHandlers(async c => {
 });
 
 export const resolveChannel = controller.createHandlers(jsonBody(parseChannelInput), async c => {
-    const data = await servicesFor(c).accounts.resolveChannel(c.req.valid('json').input);
+    const data = await servicesFor(c).accounts.resolveChannel(c.get('userId'), c.req.valid('json').input);
     return c.json({ success: true, data } satisfies ResolveChannelResponse);
 });
 
