@@ -3,14 +3,6 @@ import type { YouTubeTrackedVideoData } from './youtube.ts';
 
 export type Platform = 'youtube' | 'instagram';
 
-export interface YouTubeThumbnail {
-    url: string;
-    width?: number;
-    height?: number;
-}
-
-export type YouTubeThumbnails = Partial<Record<'default' | 'medium' | 'high' | 'standard' | 'maxres', YouTubeThumbnail>>;
-
 // fetchChannelData() flattens each size to its url, and accounts store that shape
 export interface ChannelThumbnails {
     default: string;

@@ -183,6 +183,7 @@ export interface InstagramContainerStatusResponse {
     status: string;
 }
 
+// body of POST /api/accounts/:id/ig-media-publish
 export interface InstagramMediaPublishRequest {
     containerId: string;
 }
