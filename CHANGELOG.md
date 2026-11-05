@@ -7,6 +7,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-11-05
+
+A post scheduled for later can now answer its own comments once it goes live. What an instance owner must do: nothing; deploy as usual.
+
+### Added
+
+- A scheduled Instagram post can carry a private reply, and public replies, for anyone who comments on it. When the post is published, Twiligent makes a rule for that post and turns it on; the rule then appears on the Instagram automation page. Claude can set it when scheduling a post (#176)
+
 ## [3.3.2] - 2026-11-05
 
 What an instance owner must do: nothing; deploy as usual.
