@@ -7,6 +7,12 @@ import { createEmailQuotaRepository } from './repositories/emailQuotaRepository.
 import { createYouTubeQuotaRepository } from './repositories/youtubeQuotaRepository.ts';
 import { createYouTubeQuotaService } from './services/youtubeQuotaService.ts';
 import { createMediaAssetRepository } from './repositories/mediaAssetRepository.ts';
+import { createYouTubeConnectionRepository } from './repositories/youtubeConnectionRepository.ts';
+import { createYouTubeUploadRepository } from './repositories/youtubeUploadRepository.ts';
+import { createYouTubeQuotaLedgerRepository } from './repositories/youtubeQuotaLedgerRepository.ts';
+import { createYouTubeConnectService } from './services/youtubeConnectService.ts';
+import { createYouTubeUploadService } from './services/youtubeUploadService.ts';
+import { createYouTubeUploadRunner } from './services/youtubeUploadRunner.ts';
 import { createMediaService } from './services/mediaService.ts';
 import { createAuditRepository } from './repositories/auditRepository.ts';
 import { createAutomationRuleRepository } from './repositories/automationRuleRepository.ts';
@@ -64,6 +70,9 @@ import type { RetentionService } from './services/retentionService.ts';
 import type { McpAccessService, McpPrincipal } from './services/mcpAccessService.ts';
 import type { McpService } from './services/mcpService.ts';
 import type { MediaService } from './services/mediaService.ts';
+import type { YouTubeConnectService } from './services/youtubeConnectService.ts';
+import type { YouTubeUploadService } from './services/youtubeUploadService.ts';
+import type { YouTubeUploadRunner } from './services/youtubeUploadRunner.ts';
 import type { AppConfig } from './lib/config.ts';
 import type { RequestContext } from './types/context.ts';
 import type { Redis, SupabaseClient } from './types/app.ts';
@@ -87,6 +96,9 @@ export interface Services {
     overview: OverviewService;
     settings: SettingsService;
     media: MediaService;
+    youtubeConnect: YouTubeConnectService;
+    youtubeUploads: YouTubeUploadService;
+    youtubeRunner: YouTubeUploadRunner;
     instagramConnect: InstagramConnectService;
     authEmail: AuthEmailService;
     automations: AutomationService;
@@ -119,6 +131,10 @@ export function createServices(clients: Clients, config: AppConfig, context: Req
     const mcpTokens = createMcpAccessTokenRepository(clients.supabase);
     const mcpGrants = createMcpClientGrantRepository(clients.supabase);
     const scheduledPublisher = createScheduledPublisher({ accounts, posts, context });
+    const media = createMediaAssetRepository(clients.supabase);
+    const youtubeConnections = createYouTubeConnectionRepository(clients.supabase);
+    const youtubeUploadRows = createYouTubeUploadRepository(clients.supabase);
+    const youtubeConnect = createYouTubeConnectService({ connections: youtubeConnections, uploads: youtubeUploadRows, accounts, audit, config, context });
     // counters on the fail-fast client the rate limits use: without Redis nothing is metered
     const youtubeQuota = createYouTubeQuotaService({ quota: createYouTubeQuotaRepository(clients.rateLimitRedis) });
     const services: Services = {
@@ -132,7 +148,10 @@ export function createServices(clients: Clients, config: AppConfig, context: Req
         trackedContent: createTrackedContentService({ tracked, config, context, youtubeQuota }),
         overview: createOverviewService({ accounts, tracked, cache, config, youtubeQuota }),
         settings: createSettingsService({ settings, config }),
-        media: createMediaService({ media: createMediaAssetRepository(clients.supabase), audit, config, context }),
+        media: createMediaService({ media, audit, config, context }),
+        youtubeConnect,
+        youtubeUploads: createYouTubeUploadService({ uploads: youtubeUploadRows, connections: youtubeConnections, media, audit, config }),
+        youtubeRunner: createYouTubeUploadRunner({ uploads: youtubeUploadRows, connections: youtubeConnections, connect: youtubeConnect, ledger: createYouTubeQuotaLedgerRepository(clients.supabase), context }),
         instagramConnect: createInstagramConnectService({ accounts, audit, config, context }),
         authEmail: createAuthEmailService({ quota: createEmailQuotaRepository(clients.rateLimitRedis), config, context }),
         automations: createAutomationService({ accounts, rules, comments, followups, publicReplies, automationAccounts, audit, automation, context }),

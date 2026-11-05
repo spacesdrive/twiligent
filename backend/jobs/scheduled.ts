@@ -15,6 +15,10 @@ export const DAILY_CRON = '0 0 * * *';
 
 // due posts are published on the quarter hour, as before; the other five minute runs reconcile the reply queue
 const PUBLISH_EVERY_MINUTES = 15;
+// minutes 5, 20, 35 and 50 belong to YouTube uploads, four runs an hour
+const YOUTUBE_MINUTE = 5;
+// a YouTube run stops starting chunks with this much of its 14 minutes left, so it never runs into the deadline
+const YOUTUBE_RUN_MS = 12 * 60 * 1000;
 // a dispatch stops starting sends well before the next minute's run, so runs rarely overlap; when they do, the claim's
 // row locks keep them apart
 const DISPATCH_TIME_MS = 50 * 1000;
@@ -32,16 +36,19 @@ function cronContext(cron: string): RequestContext {
     return { requestId, signal: AbortSignal.timeout(CRON_DEADLINE_MS), log: createLogger({ requestId, cron }) };
 }
 
-// dispatch sends due replies, follow-ups and public replies; publish sends due posts; reconcile expires, checks lost replies and reports
-// the queue's health; daily refreshes tokens and removes old data
-export type CronPlan = 'dispatch' | 'publish' | 'reconcile' | 'daily' | 'none';
+// dispatch sends due replies, follow-ups and public replies; publish sends due posts; youtube moves one YouTube upload;
+// reconcile expires, checks lost replies and reports the queue's health; daily refreshes tokens and removes old data
+export type CronPlan = 'dispatch' | 'publish' | 'youtube' | 'reconcile' | 'daily' | 'none';
 
 // which work a trigger firing at scheduledTime carries
 export function cronPlan(cron: string, scheduledTime: number): CronPlan {
     if (cron === EVERY_MINUTE_CRON) return 'dispatch';
     if (cron === DAILY_CRON) return 'daily';
     if (cron !== EVERY_FIVE_MINUTES_CRON) return 'none';
-    return new Date(scheduledTime).getUTCMinutes() % PUBLISH_EVERY_MINUTES === 0 ? 'publish' : 'reconcile';
+    const minute = new Date(scheduledTime).getUTCMinutes() % PUBLISH_EVERY_MINUTES;
+    // of each quarter hour's three runs: the first publishes, the second uploads to YouTube, the third reconciles
+    if (minute === 0) return 'publish';
+    return minute === YOUTUBE_MINUTE ? 'youtube' : 'reconcile';
 }
 
 // private replies first, since Instagram allows them only for 7 days and a public reply often points to them, then
@@ -89,6 +96,9 @@ export async function runScheduledJob(cron: string, env: Env, scheduledTime = Da
     } else if (plan === 'publish') {
         const run = await services.scheduledPublisher.publishDue();
         context.log.info('scheduled publish run', { processed: run.processed, failed: run.errors.length });
+    } else if (plan === 'youtube') {
+        const run = await services.youtubeRunner.run({ subrequests: FREE_PLAN_SUBREQUESTS, timeBudgetMs: YOUTUBE_RUN_MS });
+        if (run.jobId) context.log.info('youtube upload run', { jobId: run.jobId, state: run.state, chunks: run.chunks, subrequests: run.subrequests });
     } else if (plan === 'reconcile') {
         await services.automationReconciler.run();
     } else if (plan === 'daily') {

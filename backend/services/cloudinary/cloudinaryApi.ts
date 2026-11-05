@@ -98,3 +98,19 @@ export async function fetchWholeFile(fileUrl: string, maxBytes: number, signal?:
     if (file.byteLength > maxBytes) throw new UpstreamError(`The file is larger than ${Math.round(maxBytes / 1024 / 1024)} MB.`);
     return file;
 }
+
+// the stored size of a file, from Cloudinary's own answer; null size means the file is not there
+export async function fileSize(fileUrl: string, signal?: AbortSignal): Promise<number> {
+    const url = new URL(fileUrl);
+    if (!isCloudinaryFile(url)) throw new UpstreamError('The file is not stored on Cloudinary.');
+    let response: Response;
+    try {
+        response = await fetch(url, { method: 'HEAD', signal });
+    } catch (err) {
+        if (isAbortError(err)) throw new UpstreamTimeoutError('Cloudinary', err);
+        throw new UpstreamError(`Cloudinary could not be reached (${(err as Error).message})`, { reason: 'unreachable', cause: err });
+    }
+    const size = Number(response.headers.get('Content-Length'));
+    if (!response.ok || !Number.isFinite(size) || size <= 0) throw new UpstreamError(`Cloudinary does not have this file (status ${response.status})`, { status: response.status });
+    return size;
+}

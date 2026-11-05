@@ -11,12 +11,14 @@ test('the every minute trigger dispatches due replies and follow-ups at every mi
     for (const time of ['12:00', '12:01', '12:15', '23:59']) assert.equal(cronPlan(EVERY_MINUTE_CRON, at(time)), 'dispatch');
 });
 
-test('the five minute trigger publishes on the quarter hour and reconciles the reply queue on every other run', () => {
+test('the five minute trigger publishes on the quarter hour, uploads to YouTube five minutes later and reconciles on the third run', () => {
     assert.equal(cronPlan(EVERY_FIVE_MINUTES_CRON, at('12:00')), 'publish');
     assert.equal(cronPlan(EVERY_FIVE_MINUTES_CRON, at('12:15')), 'publish');
     assert.equal(cronPlan(EVERY_FIVE_MINUTES_CRON, at('12:45')), 'publish');
-    assert.equal(cronPlan(EVERY_FIVE_MINUTES_CRON, at('12:05')), 'reconcile');
-    assert.equal(cronPlan(EVERY_FIVE_MINUTES_CRON, at('12:50')), 'reconcile');
+    assert.equal(cronPlan(EVERY_FIVE_MINUTES_CRON, at('12:05')), 'youtube');
+    assert.equal(cronPlan(EVERY_FIVE_MINUTES_CRON, at('12:50')), 'youtube');
+    assert.equal(cronPlan(EVERY_FIVE_MINUTES_CRON, at('12:10')), 'reconcile');
+    assert.equal(cronPlan(EVERY_FIVE_MINUTES_CRON, at('12:55')), 'reconcile');
 });
 
 test('the daily trigger runs the upkeep and an unknown cron runs nothing', () => {

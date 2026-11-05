@@ -91,3 +91,18 @@ export function parseYouTubeComplete(body: Fields): YouTubeConnectCompleteReques
         state: requiredString(body, 'state', 'The Google sign-in state is missing. Start connecting again.'),
     };
 }
+
+export interface YouTubeCallbackQuery {
+    code?: string;
+    state?: string;
+    error?: string;
+}
+
+// a cancelled sign-in comes back with error instead of a code
+export function parseYouTubeCallback(query: Fields): YouTubeCallbackQuery {
+    return {
+        code: optionalString(query, 'code') || undefined,
+        state: optionalString(query, 'state') || undefined,
+        error: optionalString(query, 'error') || undefined,
+    };
+}
