@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { createCircuitBreaker, isOutage } from '../../lib/circuitBreaker.ts';
+import { createCircuitBreaker, isOutage, isSubrequestLimit } from '../../lib/circuitBreaker.ts';
 import { NotFoundError, UpstreamError, UpstreamTimeoutError } from '../../lib/errors.ts';
 
 function clock(start = 0) {
@@ -99,4 +99,17 @@ test('for Instagram a Graph error code above 500, such as 506 for a duplicate po
     const breaker = createCircuitBreaker('Instagram', { httpStatus: false, now: clock().now });
     for (let i = 0; i < 6; i++) await assert.rejects(breaker.run(() => Promise.reject(new UpstreamError('Duplicate posting', { status: 506 }))));
     assert.equal(await breaker.run(up), 'ok');
+});
+
+test('running out of this invocation\'s subrequests never pauses the platform for everyone, nor clears a real outage count', async () => {
+    const breaker = createCircuitBreaker('YouTube', { now: clock().now });
+    const spent = () => Promise.reject(new UpstreamError('YouTube could not be reached (Too many subrequests.)', { reason: 'unreachable', cause: new Error('Too many subrequests.') }));
+    for (let i = 0; i < 10; i++) await assert.rejects(breaker.run(spent));
+    assert.equal(await breaker.run(up), 'ok');
+    await failTimes(breaker, 4);
+    await assert.rejects(breaker.run(spent));
+    await failTimes(breaker, 1);
+    await assert.rejects(breaker.run(up), /paused for a moment/);
+    assert.equal(isSubrequestLimit(new Error('fetch failed')), false);
+    assert.equal(isOutage(new UpstreamError('x (Too many subrequests.)', { reason: 'unreachable' })), false);
 });

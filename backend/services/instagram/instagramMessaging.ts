@@ -1,13 +1,11 @@
 import { buildGraphUrl, igFetch, igPost } from './instagramApi.ts';
 import { UpstreamError, isAbortError } from '../../lib/errors.ts';
 import { redactSecrets } from '../../lib/redact.ts';
+import { isSubrequestLimit } from '../../lib/circuitBreaker.ts';
 import { FOLLOW_CHECK_TIMEOUT_MS, SEND_TIMEOUT_MS, classifySendError } from '../../lib/automationDelivery.ts';
 import type { FollowCheck, SendResult } from '../../lib/automationDelivery.ts';
 import type { ConversationMessage } from '../../lib/automationReview.ts';
 import type { InstagramApiErrorBody } from './instagramApi.ts';
-
-// the Workers runtime refuses a fetch past the run's subrequest allowance before anything leaves
-const SUBREQUEST_LIMIT = /too many subrequests/i;
 
 // a private reply names the comment; a message inside the 24 hour window names the person
 export type MessageRecipient = { comment_id: string } | { id: string };
@@ -50,7 +48,7 @@ export async function postOnce<T extends InstagramApiErrorBody>(endpoint: string
             signal: AbortSignal.timeout(SEND_TIMEOUT_MS),
         });
     } catch (err) {
-        if (SUBREQUEST_LIMIT.test((err as Error).message ?? '')) return { kind: 'not_sent', message: 'this run reached its request limit' };
+        if (isSubrequestLimit(err)) return { kind: 'not_sent', message: 'this run reached its request limit' };
         return { kind: 'ambiguous', message: isAbortError(err) ? 'the request timed out' : 'the connection failed' };
     }
 
