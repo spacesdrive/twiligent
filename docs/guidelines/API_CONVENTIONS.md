@@ -108,7 +108,7 @@ The backend extracts and verifies it in `requireAuth`. Controllers read the veri
 - Single resources: `/:id` suffix - `/accounts/:id`
 - Sub-resources: nested - `/accounts/:id/analytics`, `/accounts/:id/ig-media`
 - Actions on resources: verb-noun - `/accounts/refresh-all`, `/accounts/:id/refresh`
-- Non-resource actions: verb noun - `/resolve-channel`, `/process-scheduled`
+- Non-resource actions: verb noun - `/resolve-channel`, `/refresh-all`
 
 ## Frontend `api.ts` Conventions
 

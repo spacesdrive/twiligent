@@ -100,20 +100,3 @@ describe('scheduled post routes', () => {
         assert.deepEqual(supabase.table.filter(row => row._table === 'scheduled_posts').map(row => row.id).sort(), ['busy', 'theirs']);
     });
 });
-
-describe('the manual publishing trigger', () => {
-    test('runs only the caller\'s own due posts, so another person\'s posts are never claimed or reported', async () => {
-        const due = (id: string, userId: string, accountId: string) => tableRow('scheduled_posts', {
-            id, user_id: userId, account_id: accountId, status: 'pending', scheduled_at: '2026-09-01T11:00:00.000Z', attempts: 0, claimed_at: null, data: { mediaUrl: 'https://cdn/a.jpg' },
-        });
-        mock.method(console, 'error', () => undefined);
-        const { supabase, call } = setup([due('mine', 'user-1', 'missing-1'), due('theirs', 'user-2', 'missing-2')]);
-        const { status, body } = await call('POST', '/process-scheduled');
-        assert.equal(status, 200);
-        assert.deepEqual((body.errors as { id: string }[]).map(failure => failure.id), ['mine']);
-        const theirs = supabase.table.find(row => row.id === 'theirs');
-        assert.equal(theirs?.status, 'pending');
-        assert.equal(theirs?.attempts, 0);
-        assert.ok(supabase.calls.filter(call => call.table === 'scheduled_posts' && call.type === 'select').every(call => call.filters.some(([column, value]) => column === 'user_id' && value === 'user-1') || call.filters.some(([column]) => column === 'id')));
-    });
-});

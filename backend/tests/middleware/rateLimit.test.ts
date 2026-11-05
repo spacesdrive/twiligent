@@ -129,9 +129,6 @@ test('quota and publish routes match the endpoints that spend platform API calls
     assert.equal(quota('POST', '/api/tracked-content'), true);
     assert.equal(quota('PUT', '/api/tracked-content/abc'), false);
     assert.equal(quota('POST', '/api/tracked-content/abc/refresh'), true);
-    assert.equal(quota('GET', '/api/process-scheduled'), true);
-    // Hono answers HEAD with the GET handler, so HEAD cannot slip past the rule
-    assert.equal(quota('HEAD', '/api/process-scheduled'), true);
     assert.equal(quota('POST', '/api/automations/accounts/ig1/subscribe'), true);
     assert.equal(quota('PUT', '/api/automations/accounts/ig1'), false);
     assert.equal(quota('GET', '/api/accounts/abc123/analytics'), false);
@@ -140,6 +137,11 @@ test('quota and publish routes match the endpoints that spend platform API calls
     assert.equal(publish('POST', '/api/accounts/abc/ig-publish'), true);
     assert.equal(publish('POST', '/api/accounts/abc/ig-media-publish'), true);
     assert.equal(publish('GET', '/api/accounts/abc/ig-media'), false);
+
+    // Hono answers HEAD with the GET handler, so HEAD cannot slip past a rule written for GET
+    const getOnly = [{ methods: ['GET'], path: /^\/api\/report$/ }];
+    assert.equal(matchesRoute(getOnly, 'HEAD', '/api/report'), true);
+    assert.equal(matchesRoute(getOnly, 'POST', '/api/report'), false);
 });
 
 test('every rule uses a different algorithm and a positive limit', () => {

@@ -89,7 +89,7 @@ Use `.tsx` only for files that contain JSX; everything else is `.ts`.
 
 - REST convention: noun-first, plural - `/accounts`, `/scheduled-posts`
 - Resource nesting: `/accounts/:id/ig-analytics` (not `/ig-analytics/:accountId`)
-- Kebab-case multi-word paths - `/refresh-all`, `/ig-publish`, `/process-scheduled`
+- Kebab-case multi-word paths - `/refresh-all`, `/ig-publish`, `/scheduled-posts`
 
 ## Redis Cache Keys
 

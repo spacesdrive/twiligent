@@ -72,7 +72,7 @@ The lease, attempt limit and failure rules live in `backend/lib/scheduledPublish
 
 `backend/tests/services/scheduledPublisher.test.ts` pins this sequence, the log lines and the stored results against a fake Supabase client and Graph API (fixtures and golden snapshots in `backend/tests/fixtures/`), and its recovery tests cover lost replies, takeovers and retries.
 
-**No userId filter** - the publisher operates across all users through the cron-only repository methods (`listDue`, `listStale`, `claim`, `findById`, `updateById`). It uses the service-role Supabase client. The manual trigger (`GET` or `POST /api/process-scheduled`) runs the same `publishDue()`.
+**No userId filter** - the publisher operates across all users through the cron-only repository methods (`listDue`, `listStale`, `claim`, `findById`, `updateById`). It uses the service-role Supabase client.
 
 **Concurrency safety:** The claim is one conditional UPDATE, so when the Worker cron and GitHub Actions overlap, the second run to claim a post gets no row back and skips it. The 20 minute lease is longer than the 14 minute deadline of both schedulers, so a run that is still working is never taken over.
 

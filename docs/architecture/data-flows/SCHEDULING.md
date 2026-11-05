@@ -11,8 +11,7 @@ Both schedulers follow the same rules from `backend/lib/scheduledPublishing.ts`:
 **Trigger:** the `*/5 * * * *` cron in `wrangler.toml`, on its runs at minutes 0, 15, 30 and 45 (`cronPlan()`; the other five minute runs reconcile the comment reply queue)  
 **Handler:** `backend/jobs/scheduled.ts` -> `runScheduledJob()` -> `scheduledPublisher.publishDue()` in `backend/services/scheduledPublisher.ts`  
 **Deadline:** 14 minutes (the cron context's signal, under the Worker's 15 minute limit for scheduled events)  
-**Supabase client:** service-role (created from Worker env)  
-**Manual trigger:** `GET` or `POST /api/process-scheduled` runs the same `publishDue()`
+**Supabase client:** service-role (created from Worker env)
 
 ## System B: GitHub Actions
 

@@ -111,7 +111,7 @@ export interface ScheduledPublishFailure {
     error: string;
 }
 
-// processScheduledPosts() output; the process-scheduled routes add success and timestamp
+// what one run of the scheduled publisher did, for the cron log
 export interface ScheduledPublishRun {
     processed: number;
     errors: ScheduledPublishFailure[];
@@ -213,12 +213,6 @@ export interface ScheduledPostDeleteAllResponse {
     success: true;
     deleted: number;
     kept: number;
-}
-
-// GET and POST /api/process-scheduled
-export interface ScheduledPublishRunResponse extends ScheduledPublishRun {
-    success: true;
-    timestamp: string;
 }
 
 // GET /api/tracked-content

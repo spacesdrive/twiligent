@@ -4,7 +4,7 @@ import type {
     AccountListResponse, AccountRefreshAllResponse, AccountResponse, ApiFailure, GitHubSettingsRequest,
     GitHubSettingsResponse, HealthResponse, KeysStatusResponse, OverviewResponse, ScheduledPostDeleteAllResponse,
     ScheduledPostListResponse, ScheduledPostRequest, ScheduledPostResponse, ScheduledPostUpdateRequest,
-    ScheduledPostUpdateResponse, ScheduledPublishRunResponse, SuccessMessageResponse, SuccessResponse,
+    ScheduledPostUpdateResponse, SuccessMessageResponse, SuccessResponse,
     TrackedContentAddRequest, TrackedContentItem, TrackedContentUpdateRequest, YouTubeAccountAddResponse,
 } from '@shared/types/domain.ts';
 import type {
@@ -168,7 +168,6 @@ export const api = {
     updateScheduledPost: (id: string, data: ScheduledPostUpdateRequest) => request<ScheduledPostUpdateResponse>(`/scheduled-posts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
     deleteScheduledPost: (id: string) => request<SuccessMessageResponse>(`/scheduled-posts/${id}`, { method: 'DELETE' }),
     deleteAllScheduledPosts: () => request<ScheduledPostDeleteAllResponse>('/scheduled-posts', { method: 'DELETE' }),
-    processScheduled: () => request<ScheduledPublishRunResponse>('/process-scheduled'),
 
     // Comment-to-DM automation; activity and stats take filters as query parameters
     getAutomations: () => request<AutomationOverviewResponse>('/automations'),

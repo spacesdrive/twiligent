@@ -270,7 +270,7 @@ Open the app in a browser. For each changed area, test:
 **Scheduling (if changed):**
 - [ ] Create a scheduled post -> appears in queue
 - [ ] Create a scheduled post with another user's account id (`curl` with your token) -> 404 `Instagram account not found`
-- [ ] Manual trigger processes due posts correctly
+- [ ] A due post is published by the next quarter-hour cron run (`npx wrangler tail` shows the run)
 - [ ] Failed posts show error in UI
 - [ ] A post interrupted mid-publish (status `publishing`, `claimed_at` set more than 20 minutes ago in the SQL editor) is taken over by the next run: it ends `published` if its saved container already went out, without a second post on Instagram
 - [ ] A lost reply cannot leave a published post marked `failed`: when the run cannot confirm the outcome, the post stays `publishing` until a run after the lease checks the container
@@ -352,7 +352,7 @@ After any change to `scripts/publish-scheduled.ts`, `backend/lib/scheduledPublis
 2. Watch the run output
 3. Verify: "No posts due for publishing" (if no scheduled posts) or successful publish
 
-If you have a test post scheduled in the near future, use `GET /api/process-scheduled` to run the Worker's publisher for your own due posts (`scheduledPublisher.publishDueForUser()`) manually.
+To test the Worker's own publisher, schedule a post a few minutes ahead and watch `npx wrangler tail` at the next quarter-hour run.
 
 ## Future Test Infrastructure
 

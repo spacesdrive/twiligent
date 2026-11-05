@@ -3,7 +3,7 @@ import { jsonBody } from '../middleware/validate.ts';
 import { parseScheduledPost, parseScheduledPostUpdate } from '../validators/scheduledPostValidators.ts';
 import type {
     ScheduledPostDeleteAllResponse, ScheduledPostListResponse, ScheduledPostResponse, ScheduledPostUpdateResponse,
-    ScheduledPublishRunResponse, SuccessMessageResponse,
+    SuccessMessageResponse,
 } from '../../shared/types/domain.ts';
 
 export const listScheduledPosts = controller.createHandlers(async c => {
@@ -29,9 +29,4 @@ export const deleteAllScheduledPosts = controller.createHandlers(async c => {
 export const deleteScheduledPost = controller.createHandlers(async c => {
     await servicesFor(c).scheduledPosts.remove(c.get('userId'), pathParam(c, 'id'));
     return c.json({ success: true, message: 'Scheduled post deleted' } satisfies SuccessMessageResponse);
-});
-
-export const publishDuePosts = controller.createHandlers(async c => {
-    const result = await servicesFor(c).scheduledPosts.publishDueNow(c.get('userId'));
-    return c.json({ success: true, ...result, timestamp: new Date().toISOString() } satisfies ScheduledPublishRunResponse);
 });
