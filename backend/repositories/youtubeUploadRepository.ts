@@ -155,6 +155,7 @@ export interface YouTubeUploadRepository {
     saveLeased(id: string, owner: string, progress: UploadProgress): Promise<boolean>;
     releaseLeased(id: string, owner: string, progress: UploadProgress): Promise<void>;
     parkForConnection(connectionId: string, lastError: string): Promise<void>;
+    resumeParkedForUser(connectionId: string, userId: string): Promise<void>;
 }
 
 const RUNNABLE: YouTubeUploadState[] = ['queued', 'uploading', 'processing', 'finalizing', 'waiting_quota'];
@@ -248,6 +249,13 @@ export function createYouTubeUploadRepository(db: SupabaseClient): YouTubeUpload
             await execute('youtubeUploads.parkForConnection', () => db
                 .from('youtube_uploads').update({ state: 'needs_reconnect', last_error: lastError })
                 .eq('connection_id', connectionId).in('state', RUNNABLE).is('lease_owner', null));
+        },
+
+        // after a new sign-in the parked jobs go back in the queue, keeping their progress
+        async resumeParkedForUser(connectionId, userId) {
+            await execute('youtubeUploads.resumeParked', () => db
+                .from('youtube_uploads').update({ state: 'queued', last_error: null, next_attempt_at: new Date().toISOString() })
+                .eq('connection_id', connectionId).eq('user_id', userId).eq('state', 'needs_reconnect'));
         },
     };
 }
