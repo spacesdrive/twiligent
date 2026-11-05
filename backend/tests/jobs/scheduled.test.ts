@@ -2,7 +2,8 @@ import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import type { Env } from '../../types/env.ts';
-import { DAILY_CRON, EVERY_FIVE_MINUTES_CRON, EVERY_MINUTE_CRON, cronPlan, runScheduledJob } from '../../jobs/scheduled.ts';
+import { DAILY_CRON, EVERY_FIVE_MINUTES_CRON, EVERY_MINUTE_CRON, cronPlan, dailyStep, runScheduledJob } from '../../jobs/scheduled.ts';
+import { createLogger } from '../../lib/logger.ts';
 
 const at = (time: string) => Date.parse(`2026-10-16T${time}:00Z`);
 
@@ -37,4 +38,17 @@ test('a cron run without the Supabase secrets logs which are missing and stops i
     const line = JSON.parse(String(written.mock.calls[0].arguments[0]));
     assert.equal(line.message, 'cron run skipped');
     assert.match(line.reason, /SUPABASE_SERVICE_KEY, SUPABASE_ANON_KEY Worker secrets are missing/);
+});
+
+test('a failed daily step is logged and the next step still runs', async t => {
+    const errors: string[] = [];
+    const spy = mock.method(console, 'error', (line: string) => { errors.push(line); });
+    t.after(() => spy.mock.restore());
+    const context = { requestId: 'cron-test', signal: new AbortController().signal, log: createLogger({ requestId: 'cron-test' }) };
+    const ran: string[] = [];
+    await dailyStep(context, 'token refresh', async () => { throw new Error('Instagram is down'); });
+    await dailyStep(context, 'retention purge', async () => { ran.push('retention'); });
+    assert.deepEqual(ran, ['retention']);
+    assert.match(errors[0], /daily step failed/);
+    assert.match(errors[0], /token refresh/);
 });

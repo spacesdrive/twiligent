@@ -3,7 +3,7 @@ import { getSupabase } from '../database/supabase.ts';
 import { getRedis, getRateLimitRedis } from '../database/redis.ts';
 import { coreSecretsMessage, missingCoreSecrets, readConfig } from '../lib/config.ts';
 import { FREE_PLAN_SUBREQUESTS } from '../lib/automationDelivery.ts';
-import { createLogger } from '../lib/logger.ts';
+import { createLogger, errorFields } from '../lib/logger.ts';
 import type { Services } from '../container.ts';
 import type { Env } from '../types/env.ts';
 import type { RequestContext } from '../types/context.ts';
@@ -61,6 +61,15 @@ async function dispatch(services: Services, context: RequestContext): Promise<vo
     }
 }
 
+// a failed daily step is logged and the next one still runs, so a token refresh problem never stops the retention purge
+export async function dailyStep(context: RequestContext, step: string, work: () => Promise<unknown>): Promise<void> {
+    try {
+        await work();
+    } catch (err) {
+        context.log.error('daily step failed', { step, ...errorFields(err) });
+    }
+}
+
 // the cron entry point: the same services the API uses, built from the Worker env instead of a request
 export async function runScheduledJob(cron: string, env: Env, scheduledTime = Date.now()): Promise<void> {
     const context = cronContext(cron);
@@ -83,8 +92,8 @@ export async function runScheduledJob(cron: string, env: Env, scheduledTime = Da
     } else if (plan === 'reconcile') {
         await services.automationReconciler.run();
     } else if (plan === 'daily') {
-        await services.tokenRefresh.refreshExpiringInstagramTokens();
-        await services.retention.purge(Date.now(), { commentBatches: RETENTION_BATCHES });
+        await dailyStep(context, 'token refresh', () => services.tokenRefresh.refreshExpiringInstagramTokens());
+        await dailyStep(context, 'retention purge', () => services.retention.purge(Date.now(), { commentBatches: RETENTION_BATCHES }));
     } else {
         context.log.warn('no job for this cron', { cron });
         return;

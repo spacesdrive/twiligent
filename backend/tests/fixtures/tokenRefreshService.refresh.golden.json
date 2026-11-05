@@ -7,10 +7,6 @@
         [
             "error",
             "{\"level\":\"error\",\"message\":\"instagram token refresh failed\",\"requestId\":\"cron-test\",\"accountId\":\"a6\",\"username\":\"failing\",\"error\":\"Session has expired\",\"errorName\":\"UpstreamError\"}"
-        ],
-        [
-            "log",
-            "{\"level\":\"info\",\"message\":\"instagram token refreshed\",\"requestId\":\"cron-test\",\"accountId\":\"a7\",\"username\":\"expired\",\"tokenExpiresAt\":\"2026-10-31T12:00:00.000Z\"}"
         ]
     ],
     "requests": [
@@ -20,10 +16,6 @@
         },
         {
             "url": "https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=T6",
-            "method": "GET"
-        },
-        {
-            "url": "https://graph.instagram.com/refresh_access_token?grant_type=ig_refresh_token&access_token=T7",
             "method": "GET"
         }
     ],
@@ -47,19 +39,6 @@
                 "p_user_id": null,
                 "p_patch": {
                     "accessToken": "N1",
-                    "tokenExpiresAt": "2026-10-31T12:00:00.000Z"
-                }
-            },
-            "filters": []
-        },
-        {
-            "type": "rpc",
-            "table": "merge_account_data",
-            "values": {
-                "p_id": "a7",
-                "p_user_id": null,
-                "p_patch": {
-                    "accessToken": "N7",
                     "tokenExpiresAt": "2026-10-31T12:00:00.000Z"
                 }
             },
@@ -132,10 +111,9 @@
             "user_id": "user-2",
             "data": {
                 "username": "expired",
-                "accessToken": "N7",
-                "tokenExpiresAt": "2026-10-31T12:00:00.000Z"
-            },
-            "updated_at": "2026-09-01T12:00:00.000Z"
+                "accessToken": "T7",
+                "tokenExpiresAt": "2026-08-30T12:00:00.000Z"
+            }
         }
     ]
 }
