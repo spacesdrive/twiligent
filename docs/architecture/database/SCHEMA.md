@@ -451,6 +451,25 @@ Approving the same client again updates its row, so its id stays the same.
 
 ---
 
+## Table: `media_assets`
+
+The images and videos each person imported through the Claude media tools. The Cloudinary account is shared by everyone on an instance, so this row is what ties a file to one person; listing, renaming and deleting only ever reach the caller's rows.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | text | primary key | `newRowId()` |
+| `user_id` | uuid | not null, references `auth.users` on delete cascade | |
+| `public_id` | text | not null, unique with `user_id` | Cloudinary's id for the file; it never leaves the Worker |
+| `resource_type` | text | `image` or `video` | |
+| `url` | text | not null, starts with `https://` | The public address Instagram publishes from |
+| `format`, `bytes`, `width`, `height`, `duration_seconds` | text, bigint, integer, integer, numeric | | As Cloudinary reported them |
+| `label` | text | not null, default `''`, at most 200 characters | The person's name for the file |
+| `created_at`, `updated_at` | timestamptz | not null, default now() | |
+
+Index `media_assets_user_created_idx` on `(user_id, created_at desc)` serves the list.
+
+---
+
 ## Table: `audit_events`
 
 Who connected, reconnected or removed an account, changed a rule, paused or subscribed an account, or retried a reply. Rows reference only the user, so they outlive the account they describe.
@@ -459,7 +478,7 @@ Who connected, reconnected or removed an account, changed a rule, paused or subs
 |---|---|---|---|
 | `id` | text | primary key | `newRowId()` |
 | `user_id` | uuid | not null, references `auth.users` on delete cascade | |
-| `action` | text | `^[a-z_]+\.[a-z_]+$` | `account.connected`, `account.reconnected`, `account.removed`, `automation_rule.created`, `.updated`, `.duplicated`, `.deleted`, `automation_account.paused`, `.resumed`, `.subscribed`, `automation_comment.retried`, `automation_public_reply.retried`, `mcp_access_token.created`, `.revoked`, `mcp_client.approved`, `.revoked`, and `mcp_access_token.called_tool` or `mcp_client.called_tool` for each write tool a Claude client ran (with the tool name and outcome) |
+| `action` | text | `^[a-z_]+\.[a-z_]+$` | `account.connected`, `account.reconnected`, `account.removed`, `automation_rule.created`, `.updated`, `.duplicated`, `.deleted`, `automation_account.paused`, `.resumed`, `.subscribed`, `automation_comment.retried`, `automation_public_reply.retried`, `mcp_access_token.created`, `.revoked`, `mcp_client.approved`, `.revoked`, `media_asset.imported`, `.deleted`, and `mcp_access_token.called_tool` or `mcp_client.called_tool` for each write tool a Claude client ran (with the tool name and outcome) |
 | `subject_type` | text | `account`, `automation_rule`, `automation_account`, `automation_comment`, `mcp_access_token`, `mcp_client`, `scheduled_post`, `tracked_post`, `media_asset`, `youtube_connection`, `youtube_upload`, `settings` | The last six are for changes made through Claude clients, publishing, media and YouTube |
 | `subject_id` | text | | |
 | `details` | jsonb | not null, default `{}`, an object | Small facts such as the platform or the changed field names; never tokens or comment text |

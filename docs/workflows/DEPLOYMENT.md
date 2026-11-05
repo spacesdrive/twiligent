@@ -144,6 +144,8 @@ npx wrangler secret put EMAIL_DAILY_LIMIT           # optional; defaults to 100
 npx wrangler secret put INSTAGRAM_WEBHOOK_VERIFY_TOKEN  # optional; comment-to-DM automation (with INSTAGRAM_APP_SECRET)
 npx wrangler secret put META_APP_SECRET             # optional; a second key for webhook signatures
 npx wrangler secret put AUTOMATION_PAUSED           # optional; "true" holds every automated reply
+npx wrangler secret put CLOUDINARY_API_KEY          # optional; with the secret below, lets Claude delete media files
+npx wrangler secret put CLOUDINARY_API_SECRET       # optional
 npx wrangler secret put TOKEN_ENCRYPTION_KEY        # optional; signs MCP confirmations (openssl rand -base64 48)
 npx wrangler secret put MCP_OAUTH_ENABLED           # optional; "true" after turning on Supabase's OAuth server
 ```

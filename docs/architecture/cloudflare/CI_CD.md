@@ -52,7 +52,7 @@ A type error or failing test stops the run before the deploy step.
 - `CLOUDFLARE_API_TOKEN` - API token with Worker deploy permission
 - `CLOUDFLARE_ACCOUNT_ID` - your Cloudflare account ID
 
-The workflow does not set the Worker's own secrets (`SUPABASE_*`, `FRONTEND_URL`, the optional `ALLOWED_ORIGINS`, the optional email secrets `SEND_EMAIL_HOOK_SECRET`, `RESEND_API_KEY`, `EMAIL_FROM` and `EMAIL_DAILY_LIMIT`, the optional automation settings `INSTAGRAM_WEBHOOK_VERIFY_TOKEN`, `META_APP_SECRET` and `AUTOMATION_*`, the optional Claude settings `TOKEN_ENCRYPTION_KEY` and `MCP_OAUTH_ENABLED`, and the rest). They are set once with `npx wrangler secret put` and kept across deploys; see `WORKERS.md`.
+The workflow does not set the Worker's own secrets (`SUPABASE_*`, `FRONTEND_URL`, the optional `ALLOWED_ORIGINS`, the optional email secrets `SEND_EMAIL_HOOK_SECRET`, `RESEND_API_KEY`, `EMAIL_FROM` and `EMAIL_DAILY_LIMIT`, the optional automation settings `INSTAGRAM_WEBHOOK_VERIFY_TOKEN`, `META_APP_SECRET` and `AUTOMATION_*`, the optional Claude settings `TOKEN_ENCRYPTION_KEY`, `MCP_OAUTH_ENABLED`, `CLOUDINARY_API_KEY` and `CLOUDINARY_API_SECRET`, and the rest). They are set once with `npx wrangler secret put` and kept across deploys; see `WORKERS.md`.
 
 **Does not** redeploy on frontend-only changes, documentation changes, or script changes.
 

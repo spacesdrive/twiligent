@@ -1120,3 +1120,22 @@ New row ids come from `crypto.randomUUID()` (`newRowId()` in `backend/lib/ids.ts
 - Claude's apps need the owner to turn on Supabase's OAuth server and set `MCP_OAUTH_ENABLED`; access tokens work without it.
 - Confirmations need `TOKEN_ENCRYPTION_KEY`; without it the confirming tools refuse to run.
 - Stateless JSON means no server-initiated messages or progress notifications; long work such as YouTube uploads is a background job the tools start and poll.
+
+---
+
+## ADR-052: Claude imports media through Cloudinary, which fetches the file itself
+
+**Date:** 2026-11-05
+**Status:** Accepted
+
+**Decision:** The MCP media tools (#146) import an image or video by asking Cloudinary to download a public https address with the instance's existing unsigned upload preset. Twiligent keeps a `media_assets` row per file and person, since the Cloudinary account is shared by everyone on an instance. Deleting a file from Cloudinary needs two new optional Worker secrets, `CLOUDINARY_API_KEY` and `CLOUDINARY_API_SECRET`, kept out of the config the browser receives; without them a delete removes only Twiligent's record and says so.
+
+**Context:** Claude needs a stable public address before Instagram can publish a file, and a tool call cannot stream a large upload through the Worker's 10 ms CPU and 50 subrequest budget.
+
+**Alternatives considered:**
+- Downloading the file in the Worker and uploading it. It would fetch addresses a caller chose (a server-side request forgery risk), and large videos exceed the Worker's limits.
+- Signed uploads for imports too. The unsigned preset already exists on every instance; signing is only needed for deletes.
+
+**Trade-offs:**
+- A video larger than Cloudinary's plan limit, or slower than a tool call, cannot be imported this way.
+- Without the API secret, files deleted in Twiligent stay on Cloudinary until the owner removes them.
