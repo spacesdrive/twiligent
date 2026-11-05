@@ -7,6 +7,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [3.2.0] - 2026-11-05
+
+YouTube publishing, media tools for Claude, and the fixes from the second security audit. What an instance owner must do: run `npm run db:push` and `npm run db:schema` (media, YouTube and quota tables). For YouTube publishing, follow the new self-hosting guide: a Google OAuth client (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`) and `TOKEN_ENCRYPTION_KEY`. Optional: `CLOUDINARY_API_KEY` and `CLOUDINARY_API_SECRET` let Claude delete media files. Everything else keeps working without these steps.
+
+### Added
+
+- YouTube publishing: connect a channel with Google on the Accounts page, then queue videos and Shorts on the new YouTube uploads page with title, description, tags, category, visibility or a publish time, the made-for-kids answer, the AI disclosure and a thumbnail. Uploads run in the background in resumable parts and never upload the same video twice (#147)
+- Claude tools to list YouTube channels and uploads, and to queue, change, retry and cancel uploads (#147)
+- Claude tools to import images and videos from a public link, and to list, rename and delete them (#146)
+
+### Security
+
+- A token issued to a Claude app no longer works on the app's own API, only on the Claude connection, where its permission and approval are checked (#152)
+- Sign-in uses the PKCE flow, so a crafted link can no longer sign you in as someone else (#152)
+- Claude asks for confirmation before changing a scheduled post, shows every field of a post in the confirmation, and cannot set fields it was not shown (#152)
+- The Claude connection accepts only access tokens until connector sign-in is turned on, and refuses oversized requests (#152)
+- The scheduler's run logs no longer include account ids or stored data from failed database calls (#152)
+- Google tokens are stored encrypted, and disconnecting a channel revokes Twiligent's access at Google (#147)
+
 ## [3.1.0] - 2026-11-05
 
 Fixes for the open leads from the first security audit. What an instance owner must do: run `npm run db:push` and `npm run db:schema` for two function migrations. If you self-host, keep Supabase "Confirm email" on (see the Supabase step of the self-hosting guide).
