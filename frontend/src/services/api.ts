@@ -232,9 +232,10 @@ export const api = {
     registerMedia: (data: MediaRegistrationRequest) => request<MediaResponse>('/media', { method: 'POST', body: JSON.stringify(data) }),
     uploadWithDetails,
 
-    // YouTube publishing: connecting a channel with Google, then upload jobs the scheduled runs move
+    // YouTube publishing: verifying a channel with Google, then upload jobs the scheduled runs move
     getYouTubeConnections: () => request<YouTubeConnectionListResponse>('/youtube/connections'),
-    getYouTubeAuthUrl: () => request<YouTubeAuthUrlResponse>('/auth/youtube/url'),
+    // the sign-in proves the Google account manages this YouTube account's channel
+    getYouTubeAuthUrl: (accountId: string) => request<YouTubeAuthUrlResponse>(`/auth/youtube/url?accountId=${encodeURIComponent(accountId)}`),
     completeYouTubeConnection: (code: string, state: string) => request<YouTubeConnectCompleteResponse>('/auth/youtube/complete', { method: 'POST', body: JSON.stringify({ code, state }) }),
     deleteYouTubeConnection: (id: string) => request<SuccessResponse>(`/youtube/connections/${id}`, { method: 'DELETE' }),
     getYouTubeUploads: () => request<YouTubeUploadListResponse>('/youtube/uploads'),

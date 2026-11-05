@@ -56,6 +56,9 @@ frontend/src/
 │   │   ├── useAccountRefresh.ts, useAccountDelete.ts
 │   │   ├── useInstagramOAuthReturn.ts      <- Finishes a sign-in from #ig_code and #ig_state, reads ?ig_error and ?add, then clears them
 │   │   ├── platformChoices.ts              <- Platform choice titles, descriptions and icons
+│   │   ├── YouTubePublishingRow.tsx        <- A YouTube card's publishing row: Verify, Verify again, or Verified with Turn off
+│   │   ├── useYouTubeConnections.ts        <- Which channels can publish; starts Verify, finishes it from #yt_code, turns publishing off
+│   │   ├── youtubePublishingState.ts       <- Pure card publishing state and Google return errors (youtubePublishingState.test.ts)
 │   │   └── accountManagerData.ts           <- Pure OAuth return, error text, card metrics (accountManagerData.test.ts)
 │   ├── publishing/
 │   │   ├── UploadContent.tsx               <- Page: tabs, Cloudinary alert, scheduled posts (default export)

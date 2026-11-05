@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  STATE_DISPLAY, anyActive, composerProblem, parseTags, readYouTubeReturn, uploadPercent, youtubeReturnError,
+  STATE_DISPLAY, anyActive, composerProblem, parseTags, readYouTubeReturn, uploadPercent,
 } from '../../../src/features/youtube/youtubeUploadData.ts';
 import type { ComposerValues } from '../../../src/features/youtube/youtubeUploadData.ts';
 
@@ -38,10 +38,7 @@ test('the composer names the first missing field, including YouTube\'s required 
   assert.equal(composerProblem({ ...READY, scheduled: true, publishAt: '2026-11-06T11:00' }, NOW), null);
 });
 
-test('the sign-in return is read from the fragment, and errors from the query', () => {
+test('the sign-in return is read from the fragment', () => {
   assert.deepEqual(readYouTubeReturn('#yt_code=abc&yt_state=s1'), { code: 'abc', state: 's1' });
   assert.equal(readYouTubeReturn('#ig_code=abc'), null);
-  assert.match(youtubeReturnError(new URLSearchParams('yt_error=access_denied')) ?? '', /cancelled/);
-  assert.match(youtubeReturnError(new URLSearchParams('yt_error=weird')) ?? '', /weird/);
-  assert.equal(youtubeReturnError(new URLSearchParams('')), null);
 });
