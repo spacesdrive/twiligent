@@ -24,6 +24,11 @@ import type {
     McpAccessTokenCreateRequest, McpAccessTokenCreateResponse, McpAccessTokenListResponse, McpClientApprovalRequest,
     McpClientGrantListResponse, McpServerInfoResponse,
 } from '@shared/types/mcp.ts';
+import type { MediaListResponse, MediaRegistrationRequest, MediaResponse } from '@shared/types/media.ts';
+import type {
+    YouTubeAuthUrlResponse, YouTubeConnectCompleteResponse, YouTubeConnectionListResponse, YouTubeUploadListResponse, YouTubeUploadRequest,
+    YouTubeUploadResponse, YouTubeUploadUpdateRequest,
+} from '@shared/types/youtubePublishing.ts';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:8787/api';
 
@@ -66,7 +71,24 @@ export interface UploadOptions {
 // the parts of a Cloudinary upload response the client reads
 interface CloudinaryUploadBody {
     secure_url?: string;
+    public_id?: string;
+    resource_type?: string;
+    format?: string;
+    width?: number;
+    height?: number;
+    duration?: number;
     error?: { message?: string };
+}
+
+// what a finished upload tells the media library
+export interface CloudinaryUpload {
+    url: string;
+    publicId: string;
+    resourceType: 'image' | 'video';
+    format: string | null;
+    width: number | null;
+    height: number | null;
+    durationSeconds: number | null;
 }
 
 const UPLOAD_ERROR_MESSAGES: Record<UploadErrorReason, string> = {
@@ -88,13 +110,17 @@ function readUploadError(responseText: string): UploadErrorDetails {
 }
 
 // the browser posts straight to Cloudinary so the Worker never handles binaries
-function uploadToCloudinary(file: File, cloudConfig: CloudinaryUploadConfig, { onProgress }: UploadOptions = {}): Promise<string> {
+function uploadToCloudinary(file: File, cloudConfig: CloudinaryUploadConfig, options: UploadOptions = {}): Promise<string> {
+    return uploadWithDetails(file, cloudConfig, options).then(upload => upload.url);
+}
+
+function uploadWithDetails(file: File, cloudConfig: CloudinaryUploadConfig, { onProgress }: UploadOptions = {}): Promise<CloudinaryUpload> {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('upload_preset', cloudConfig.uploadPreset);
     const type = file.type.startsWith('video/') ? 'video' : 'image';
     const xhr = new XMLHttpRequest();
-    return new Promise<string>((resolve, reject) => {
+    return new Promise<CloudinaryUpload>((resolve, reject) => {
         if (onProgress) {
             xhr.upload.addEventListener('progress', e => {
                 if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
@@ -102,7 +128,16 @@ function uploadToCloudinary(file: File, cloudConfig: CloudinaryUploadConfig, { o
         }
         xhr.addEventListener('load', () => {
             if (xhr.status >= 200 && xhr.status < 300) {
-                resolve((JSON.parse(xhr.responseText) as CloudinaryUploadBody).secure_url as string);
+                const body = JSON.parse(xhr.responseText) as CloudinaryUploadBody;
+                resolve({
+                    url: body.secure_url ?? '',
+                    publicId: body.public_id ?? '',
+                    resourceType: body.resource_type === 'video' ? 'video' : 'image',
+                    format: body.format ?? null,
+                    width: body.width ?? null,
+                    height: body.height ?? null,
+                    durationSeconds: body.duration ?? null,
+                });
                 return;
             }
             reject(uploadError('rejected', readUploadError(xhr.responseText)));
@@ -191,4 +226,20 @@ export const api = {
     getMcpClients: () => request<McpClientGrantListResponse>('/mcp/clients'),
     approveMcpClient: (data: McpClientApprovalRequest) => request<SuccessResponse>('/mcp/clients', { method: 'POST', body: JSON.stringify(data) }),
     revokeMcpClient: (id: string) => request<SuccessResponse>(`/mcp/clients/${id}`, { method: 'DELETE' }),
+
+    // the person's media library on the instance's Cloudinary account; a browser upload is registered after Cloudinary answers
+    getMedia: () => request<MediaListResponse>('/media'),
+    registerMedia: (data: MediaRegistrationRequest) => request<MediaResponse>('/media', { method: 'POST', body: JSON.stringify(data) }),
+    uploadWithDetails,
+
+    // YouTube publishing: connecting a channel with Google, then upload jobs the scheduled runs move
+    getYouTubeConnections: () => request<YouTubeConnectionListResponse>('/youtube/connections'),
+    getYouTubeAuthUrl: () => request<YouTubeAuthUrlResponse>('/auth/youtube/url'),
+    completeYouTubeConnection: (code: string, state: string) => request<YouTubeConnectCompleteResponse>('/auth/youtube/complete', { method: 'POST', body: JSON.stringify({ code, state }) }),
+    deleteYouTubeConnection: (id: string) => request<SuccessResponse>(`/youtube/connections/${id}`, { method: 'DELETE' }),
+    getYouTubeUploads: () => request<YouTubeUploadListResponse>('/youtube/uploads'),
+    createYouTubeUpload: (data: YouTubeUploadRequest) => request<YouTubeUploadResponse>('/youtube/uploads', { method: 'POST', body: JSON.stringify(data) }),
+    updateYouTubeUpload: (id: string, data: YouTubeUploadUpdateRequest) => request<YouTubeUploadResponse>(`/youtube/uploads/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+    cancelYouTubeUpload: (id: string) => request<YouTubeUploadResponse>(`/youtube/uploads/${id}/cancel`, { method: 'POST' }),
+    retryYouTubeUpload: (id: string) => request<YouTubeUploadResponse>(`/youtube/uploads/${id}/retry`, { method: 'POST' }),
 };
