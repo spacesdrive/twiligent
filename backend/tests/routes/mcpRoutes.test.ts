@@ -120,3 +120,19 @@ describe('access token management routes', () => {
         assert.deepEqual(JSON.parse(info.body), { success: true, serverUrl: 'https://api.example.com/mcp', oauthEnabled: false });
     });
 });
+
+describe('MCP endpoint limits', () => {
+    test('a body larger than one MCP message is refused with 413 before it is parsed', async () => {
+        const { app } = endpoint([await tokenRow(READ_TOKEN, 'user-1', 'read')]);
+        const big = JSON.stringify({ ...rpc('tools/list'), padding: 'x'.repeat(1024 * 1024) });
+        const response = await app.request('/mcp', { method: 'POST', body: big, headers: { Authorization: `Bearer ${READ_TOKEN}`, 'Content-Type': 'application/json' } }, ENV);
+        assert.equal(response.status, 413);
+    });
+
+    test('a non-access token is refused while connector sign-in is off, without asking Supabase', async () => {
+        const { app } = endpoint([]);
+        const response = await callRoute(app, 'POST', '/mcp', { json: rpc('tools/list'), headers: { Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyLTEiLCJjbGllbnRfaWQiOiJjIn0.sig' }, env: ENV });
+        assert.equal(response.status, 401);
+        assert.match(response.body, /Connector sign-in is not turned on/);
+    });
+});
