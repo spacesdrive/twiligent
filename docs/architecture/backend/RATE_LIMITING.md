@@ -33,7 +33,7 @@ Defined in `backend/lib/rateLimit/rules.ts`.
 |---|---|---|---|---|
 | `ip` | Every `/api` request and `/mcp` | Client IP; IPv6 by /64 | Sliding window counter | 300 per minute |
 | `user` | Every protected request | User id from the verified JWT | Token bucket | Bursts of 120, refills 2 per second |
-| `quota` | `POST /accounts`, `/accounts/refresh-all`, `/accounts/:id/refresh`, `/resolve-channel`, `/tracked-content`, `/tracked-content/:id/refresh`, `GET` or `POST /process-scheduled`, `POST /automations/accounts/:accountId/subscribe` | User id | Sliding window log | 30 per 10 minutes |
+| `quota` | `POST /accounts`, `/accounts/refresh-all`, `/accounts/:id/refresh`, `/resolve-channel`, `/tracked-content`, `/tracked-content/:id/refresh`, `POST /automations/accounts/:accountId/subscribe` | User id | Sliding window log | 30 per 10 minutes |
 | `publish` | `POST /accounts/:id/ig-media-publish`, `/accounts/:id/ig-publish` | User id | Leaking bucket | 50 deep, drains 1 every 15 seconds |
 | `mcp` | `POST /mcp`, after `requireMcpAuth` | User id from the access token or OAuth token | Token bucket | Bursts of 60, refills 1 per second |
 | `oauth` | `GET /auth/instagram/callback` | Client IP | Fixed window counter | 10 per 10 minutes |

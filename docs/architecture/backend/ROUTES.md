@@ -138,8 +138,6 @@ Controllers call `ScheduledPostService` (`services/scheduledPostService.ts`).
 | PUT | `/api/scheduled-posts/:id` | `scheduledPostRoutes.ts`, `scheduledPostController.updateScheduledPost` | Edit a pending post (caption, scheduled time, media, etc.); 400 for a post that is not pending |
 | DELETE | `/api/scheduled-posts/:id` | `scheduledPostRoutes.ts`, `scheduledPostController.deleteScheduledPost` | Delete a single post; 400 while it is publishing |
 | DELETE | `/api/scheduled-posts` | `scheduledPostRoutes.ts`, `scheduledPostController.deleteAllScheduledPosts` | Delete all posts except those with `status: 'publishing'`; returns `{ deleted, kept }` |
-| GET | `/api/process-scheduled` | `scheduledPostRoutes.ts`, `scheduledPostController.publishDuePosts` | Manual trigger - runs `scheduledPublisher.publishDueForUser()` immediately for the caller's own due and stale posts only; the cron and the GitHub Actions publisher serve everyone |
-| POST | `/api/process-scheduled` | `scheduledPostRoutes.ts`, `scheduledPostController.publishDuePosts` | Same as above |
 
 ### Overview
 | Method | Path | File | Purpose |

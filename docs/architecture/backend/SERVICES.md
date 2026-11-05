@@ -33,8 +33,8 @@ A service receives only what it uses: repositories, the cleaned `AppConfig` from
 | `youtubeAnalytics` | `youtubeAnalyticsService.ts` | accounts, cache | `channelAnalytics`, `channelVideos`, `comparison` (used by the MCP `compare_youtube_channels` tool) |
 | `instagramAnalytics` | `instagramAnalyticsService.ts` | accounts, cache | `analytics`, `media` |
 | `publishing` | `publishingService.ts` | accounts | `cloudinaryConfig`, `publishingLimit` (used by the MCP `get_instagram_publishing_limit` tool), `createContainer`, `containerStatus`, `publishContainer` |
-| `scheduledPosts` | `scheduledPostService.ts` | accounts, scheduled posts (and the publisher) | `list`, `create`, `update`, `remove`, `removeAll`, `publishDueNow` |
-| `scheduledPublisher` | `scheduledPublisher.ts` | accounts, scheduled posts | `publishDue` (every user's due posts; cron and manual trigger) |
+| `scheduledPosts` | `scheduledPostService.ts` | accounts, scheduled posts | `list`, `create`, `update`, `remove`, `removeAll` |
+| `scheduledPublisher` | `scheduledPublisher.ts` | accounts, scheduled posts | `publishDue` (every user's due posts; the cron) |
 | `tokenRefresh` | `tokenRefreshService.ts` | accounts | `refreshExpiringInstagramTokens` (daily cron) |
 | `trackedContent` | `trackedContentService.ts` | tracked posts | `list`, `add`, `update`, `remove`, `refresh` |
 | `overview` | `overviewService.ts` | accounts, tracked posts, cache | `summary` |
@@ -258,7 +258,7 @@ Account responses for every platform pass through `safeAccount()` in `backend/li
 
 ## Shared Instagram publishing parameters
 
-`buildMediaParams(post, accessToken)` in `services/instagram/instagramPublishing.ts` builds the Graph API container parameters for photos, Reels, Stories and carousel items. The same file holds the Graph calls both publishers make: `createMediaContainer`, `fetchContainerStatus`, `publishMediaContainer` and `fetchPublishingLimit`. `PublishingService` (publish now) and `scheduledPublisher` (the cron and the manual trigger) both call them. `scripts/publish-scheduled.ts` keeps its own copy on purpose: it runs in GitHub Actions with zero npm dependencies and cannot import Worker code.
+`buildMediaParams(post, accessToken)` in `services/instagram/instagramPublishing.ts` builds the Graph API container parameters for photos, Reels, Stories and carousel items. The same file holds the Graph calls both publishers make: `createMediaContainer`, `fetchContainerStatus`, `publishMediaContainer` and `fetchPublishingLimit`. `PublishingService` (publish now) and `scheduledPublisher` (the cron) both call them. `scripts/publish-scheduled.ts` keeps its own copy on purpose: it runs in GitHub Actions with zero npm dependencies and cannot import Worker code.
 
 ---
 

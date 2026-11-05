@@ -20,8 +20,6 @@ export interface ScheduledPublisherDeps {
 
 export interface ScheduledPublisher {
     publishDue(): Promise<ScheduledPublishRun>;
-    // the manual trigger: only the caller's own due posts, so one person never runs, settles or reads another's
-    publishDueForUser(userId: string): Promise<ScheduledPublishRun>;
 }
 
 // what one claimed post ended as; 'left' means the outcome on Instagram is unknown and the lease decides later
@@ -48,7 +46,7 @@ function isTransientFailure(err: unknown): boolean {
     return isAbortError(err);
 }
 
-// publishes every user's due posts, so it runs from the cron job or the manual trigger, never per user
+// publishes every user's due posts, so it runs from the cron job, never per request
 export function createScheduledPublisher({ accounts, posts, context }: ScheduledPublisherDeps): ScheduledPublisher {
     const { signal, log } = context;
 
@@ -155,7 +153,7 @@ export function createScheduledPublisher({ accounts, posts, context }: Scheduled
         }
     }
 
-    // claims and publishes the listed posts one at a time; the cron run lists everyone's, the manual trigger only its caller's
+    // claims and publishes the listed posts one at a time
     async function publishCandidates(load: () => Promise<[ScheduledPost[], ScheduledPost[]]>): Promise<ScheduledPublishRun> {
         let processed = 0;
         const errors: ScheduledPublishFailure[] = [];
@@ -188,8 +186,5 @@ export function createScheduledPublisher({ accounts, posts, context }: Scheduled
 
     return {
         publishDue: () => publishCandidates(() => Promise.all([posts.listDue(), posts.listStale(staleClaimCutoff(Date.now()))])),
-        publishDueForUser: userId => publishCandidates(() => Promise.all([
-            posts.listDueForUser(userId), posts.listStaleForUser(staleClaimCutoff(Date.now()), userId),
-        ])),
     };
 }

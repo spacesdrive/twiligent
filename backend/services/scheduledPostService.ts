@@ -3,15 +3,11 @@ import { newRowId } from '../lib/ids.ts';
 import { publishableAccount } from './publishingService.ts';
 import type { AccountRepository } from '../repositories/accountRepository.ts';
 import type { ScheduledPostRepository, DeleteAllResult } from '../repositories/scheduledPostRepository.ts';
-import type { ScheduledPublisher } from './scheduledPublisher.ts';
-import type {
-    ScheduledPost, ScheduledPostRequest, ScheduledPostUpdateRequest, ScheduledPublishRun,
-} from '../../shared/types/domain.ts';
+import type { ScheduledPost, ScheduledPostRequest, ScheduledPostUpdateRequest } from '../../shared/types/domain.ts';
 
 export interface ScheduledPostDeps {
     accounts: AccountRepository;
     posts: ScheduledPostRepository;
-    publisher: ScheduledPublisher;
 }
 
 export interface ScheduledPostService {
@@ -20,7 +16,6 @@ export interface ScheduledPostService {
     update(userId: string, postId: string, changes: ScheduledPostUpdateRequest): Promise<ScheduledPost | null>;
     remove(userId: string, postId: string): Promise<void>;
     removeAll(userId: string): Promise<DeleteAllResult>;
-    publishDueNow(userId: string): Promise<ScheduledPublishRun>;
 }
 
 function futureDate(value: string): string {
@@ -31,7 +26,7 @@ function futureDate(value: string): string {
     return date.toISOString();
 }
 
-export function createScheduledPostService({ accounts, posts, publisher }: ScheduledPostDeps): ScheduledPostService {
+export function createScheduledPostService({ accounts, posts }: ScheduledPostDeps): ScheduledPostService {
     async function findOwned(userId: string, postId: string): Promise<ScheduledPost> {
         const post = await posts.findForUser(postId, userId);
         if (!post) throw new NotFoundError('Scheduled post not found');
@@ -89,8 +84,5 @@ export function createScheduledPostService({ accounts, posts, publisher }: Sched
         },
 
         removeAll: userId => posts.deleteAllForUser(userId),
-
-        // the manual trigger runs the same publisher the cron uses, for every user's due posts
-        publishDueNow: userId => publisher.publishDueForUser(userId),
     };
 }
