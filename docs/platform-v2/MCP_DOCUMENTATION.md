@@ -138,7 +138,7 @@ Every tool works only on the caller's own data. Read tools need no confirmation.
 | `cancel_youtube_upload` | write, confirm | `uploadId` | `upload` |
 | `list_scheduled_posts` | read | `status`, `limit` (1 to 50, default 20), `cursor` | `posts`, `nextCursor`, `total` |
 | `get_scheduled_post` | read | `postId` | `post` |
-| `schedule_instagram_post` | write, confirm | `accountId`, `mediaUrl` (public https), `scheduledAt` (future ISO 8601), `mediaType` (IMAGE, VIDEO, REELS, STORIES), `caption`, `shareToFeed`, `collaborators`, `altText`, `locationId` | `post`, `alreadyScheduled` (true when the same media was already scheduled for that account and time) |
+| `schedule_instagram_post` | write, confirm | `accountId`, `mediaUrl` (public https), `scheduledAt` (future ISO 8601), `mediaType` (IMAGE, VIDEO, REELS, STORIES), `caption`, `shareToFeed`, `collaborators`, `altText`, `locationId`, `automation` (`replyText` up to 1,000 bytes, optional `publicReplyTexts`: once published, anyone who comments gets them; the confirmation shows both in full) | `post` (with `automation.ruleCreated` and `automation.error`), `alreadyScheduled` (true when the same media was already scheduled for that account and time) |
 | `update_scheduled_post` | write | `postId` and the fields to change | `post` |
 | `cancel_scheduled_post` | write, confirm | `postId` | `cancelled` |
 

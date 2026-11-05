@@ -1,6 +1,7 @@
 import { ValidationError } from '../lib/errors.ts';
 import { followTextsProblem, keywordsProblem, replyActionsProblem } from '../lib/automationRules.ts';
 import { MAX_PUBLIC_REPLY_TEXTS, publicReplyTextProblem } from '../lib/automationPublicReply.ts';
+import { MAX_MESSAGE_BYTES, messageBytes } from '../lib/automationDelivery.ts';
 import { isString, optionalArray, optionalBoolean, optionalNumber, optionalString, presentField, requiredString } from './fields.ts';
 import type { Fields } from './fields.ts';
 import type { ActivityCursor } from '../repositories/automationCommentRepository.ts';
@@ -8,6 +9,7 @@ import type {
     AutomationAccountRequest, AutomationCommentStatus, AutomationMatchMode, AutomationRuleRequest, AutomationRuleUpdateRequest,
     AutomationTestRequest,
 } from '../../shared/types/automation.ts';
+import type { ScheduledPostAutomation } from '../../shared/types/domain.ts';
 
 const MATCH_MODES: AutomationMatchMode[] = ['contains', 'exact', 'any'];
 const STATUSES: AutomationCommentStatus[] = ['ignored', 'queued', 'processing', 'retry_wait', 'sending', 'accepted', 'failed', 'needs_review', 'skipped', 'expired'];
@@ -123,6 +125,21 @@ function publicReplyTexts(body: Fields): string[] | undefined {
         if (problem) throw new ValidationError(problem);
     }
     return texts;
+}
+
+// a scheduled post's comment automation, made into a rule for that post once it is published
+export function parsePostAutomation(body: Fields): ScheduledPostAutomation | undefined {
+    if (!presentField(body, 'automation') || body.automation === null) return undefined;
+    if (typeof body.automation !== 'object' || Array.isArray(body.automation)) {
+        throw new ValidationError('automation must be an object with replyText and, optionally, publicReplyTexts');
+    }
+    const fields = body.automation as Fields;
+    const reply = replyText(fields).trim();
+    if (!reply) throw new ValidationError('automation.replyText is required: the private reply sent to each person who comments');
+    // checked now, so a post never waits weeks only to fail when its rule is made
+    const bytes = messageBytes(reply);
+    if (bytes > MAX_MESSAGE_BYTES) throw new ValidationError(`automation.replyText is ${bytes} bytes; Instagram accepts at most ${MAX_MESSAGE_BYTES}. Shorten it.`);
+    return { replyText: reply, publicReplyTexts: publicReplyTexts(fields) ?? [] };
 }
 
 // only https links without a user name or password, since the link goes to strangers in a private message

@@ -12,6 +12,12 @@ interface ScheduledPostRow {
     data: Partial<ScheduledPost> | null;
 }
 
+// a published post whose comment automation has no rule yet, with the person it belongs to
+export interface PostAwaitingAutomation {
+    post: ScheduledPost;
+    userId: string;
+}
+
 export interface DeleteAllResult {
     deleted: number;
     kept: number;
@@ -31,12 +37,13 @@ function toPost(row: ScheduledPostRow): ScheduledPost {
     };
 }
 
-// methods named ...ForUser filter by the verified user id; listDue, listStale, claim and updateById serve the schedulers across all users
+// methods named ...ForUser filter by the verified user id; listDue, listStale, listAwaitingAutomation, claim and updateById serve the schedulers across all users
 export interface ScheduledPostRepository {
     listForUser(userId: string): Promise<ScheduledPost[]>;
     findForUser(id: string, userId: string): Promise<ScheduledPost | null>;
     listDue(): Promise<ScheduledPost[]>;
     listStale(claimedBefore: string): Promise<ScheduledPost[]>;
+    listAwaitingAutomation(limit: number): Promise<PostAwaitingAutomation[]>;
     claim(post: ScheduledPost): Promise<ScheduledPost | null>;
     create(post: ScheduledPost, userId: string): Promise<void>;
     updatePendingForUser(id: string, updates: Partial<ScheduledPost>, userId: string): Promise<boolean>;
@@ -96,6 +103,20 @@ export function createScheduledPostRepository(db: SupabaseClient): ScheduledPost
                 .eq('status', 'publishing')
                 .lt('claimed_at', claimedBefore));
             return found.map(toPost);
+        },
+
+        // oldest first, so a backlog clears in order; a post whose rule could not be made keeps its error and is not tried again
+        async listAwaitingAutomation(limit) {
+            const found = await rows<ScheduledPostRow & { user_id: string }>('scheduledPosts.listAwaitingAutomation', () => db
+                .from('scheduled_posts')
+                .select(`${COLUMNS}, user_id`)
+                .eq('status', 'published')
+                .not('data->automation', 'is', null)
+                .is('data->automationRuleId', null)
+                .is('data->automationError', null)
+                .order('scheduled_at', { ascending: true })
+                .limit(limit));
+            return found.map(row => ({ post: toPost(row), userId: row.user_id }));
         },
 
         // matches only the post as it was listed (pending, or the same expired claim) with the same attempts; null means another run won

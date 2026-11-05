@@ -75,6 +75,14 @@ export interface CarouselItem {
     mediaType?: MediaType;
 }
 
+// a comment automation that waits for its post: once the post is published, a rule answers any comment on it
+export interface ScheduledPostAutomation {
+    // the private reply sent to each person who comments
+    replyText: string;
+    // replies posted under the comment, one picked per comment; empty for none
+    publicReplyTexts: string[];
+}
+
 // one row of `scheduled_posts`: id, account_id, status and scheduled_at are columns, the rest is data jsonb
 export interface ScheduledPost {
     id: string;
@@ -104,6 +112,10 @@ export interface ScheduledPost {
     attempts?: number;
     // saved before the publish call, so a later run can ask Instagram whether the post went out
     containerId?: string | null;
+    automation?: ScheduledPostAutomation | null;
+    // the rule made for the automation after publishing, or why it could not be made
+    automationRuleId?: string | null;
+    automationError?: string | null;
 }
 
 export interface ScheduledPublishFailure {
@@ -304,6 +316,7 @@ export interface ScheduledPostRequest {
     locationId?: string;
     userTags?: UserTag[];
     altText?: string;
+    automation?: ScheduledPostAutomation;
 }
 
 // body of PUT /api/scheduled-posts/:id; any other field is ignored

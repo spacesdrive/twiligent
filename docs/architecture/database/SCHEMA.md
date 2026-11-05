@@ -216,6 +216,7 @@ A claim is one UPDATE that sets `status = 'publishing'`, `claimed_at = now()` an
 ```
 
 - `containerId` is the Instagram media container, saved right after it is created and before the scheduler waits or publishes. A later run reads its `status_code` to find out whether the post already went out. It is cleared when the container expired and a retry needs a new one.
+- `automation` (`{ replyText, publicReplyTexts }`, optional) answers every comment on the post once it is published; `automationRuleId` is the rule made for it then, and `automationError` why it could not be made (`docs/architecture/data-flows/SCHEDULING.md`).
 - `publishedMediaId` is `null` when a run found the post already published through the container status, because that status does not carry the media id.
 - `error` is set on a `failed` post, and also on a `pending` post that is being retried, where it holds the reason the last attempt failed.
 

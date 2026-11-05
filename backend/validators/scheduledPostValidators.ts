@@ -1,5 +1,6 @@
 import { ValidationError } from '../lib/errors.ts';
 import { mediaType, postDetails } from './publishingValidators.ts';
+import { parsePostAutomation } from './automationValidators.ts';
 import { optionalString, presentField, requiredString } from './fields.ts';
 import type { Fields } from './fields.ts';
 import type { MediaType, Platform, ScheduledPostRequest, ScheduledPostUpdateRequest } from '../../shared/types/domain.ts';
@@ -26,6 +27,7 @@ export function parseScheduledPost(body: Fields): ScheduledPostRequest {
         scheduledAt: requiredString(body, 'scheduledAt', required),
         platform: platform(body),
         mediaType: mediaType(body, SCHEDULED_MEDIA_TYPES),
+        automation: parsePostAutomation(body),
     };
 }
 

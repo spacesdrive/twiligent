@@ -20,6 +20,10 @@ function summary(post: ScheduledPost) {
         caption: post.caption ?? '',
         publishedAt: post.publishedAt ?? null,
         error: post.error ?? null,
+        // the rule is made once the post is published; ruleCreated and automationError say how that went
+        automation: post.automation
+            ? { ...post.automation, ruleCreated: Boolean(post.automationRuleId), error: post.automationError ?? null }
+            : null,
     };
 }
 
@@ -42,6 +46,8 @@ function describeFields(fields: Partial<ScheduledPostRequest>): string {
         fields.altText !== undefined && `Alt text: "${fields.altText}".`,
         fields.locationId && `Location id: ${fields.locationId}.`,
         fields.shareToFeed !== undefined && `Share to feed: ${fields.shareToFeed ? 'yes' : 'no'}.`,
+        fields.automation && `Once published, anyone who comments gets this private reply: "${fields.automation.replyText}".`,
+        fields.automation?.publicReplyTexts.length && `And one of these public replies under their comment: ${fields.automation.publicReplyTexts.map(text => `"${text}"`).join(', ')}.`,
     ];
     return parts.filter(Boolean).join(' ');
 }
@@ -89,19 +95,29 @@ export const getScheduledPost = defineTool<{ postId: string }>({
 export const scheduleInstagramPost = defineTool<ScheduledPostRequest>({
     name: 'schedule_instagram_post',
     title: 'Schedule an Instagram post',
-    description: 'Schedules an image, video, reel or story on a connected Instagram account. Twiligent publishes it at scheduledAt. The media must already be at a public https URL, such as one returned by the media tools. Asks for a confirmation first, because the post goes public. Scheduling the same media for the same account and time twice returns the existing post.',
+    description: 'Schedules an image, video, reel or story on a connected Instagram account. Twiligent publishes it at scheduledAt, and with automation it then answers every comment on the post. The media must already be at a public https URL, such as one returned by the media tools. Asks for a confirmation first, because the post goes public. Scheduling the same media for the same account and time twice returns the existing post.',
     inputSchema: withConfirmation(objectSchema({
         accountId: idProperty('Instagram account'),
         mediaUrl: { type: 'string', format: 'uri', description: 'Public https URL of the image or video' },
         mediaType: { type: 'string', enum: ['IMAGE', 'VIDEO', 'REELS', 'STORIES'], description: 'What kind of post; IMAGE when left out' },
         ...postFields,
+        automation: {
+            type: 'object',
+            description: 'Answer every comment on this post once it is published: a rule for this post is made and turned on then',
+            properties: {
+                replyText: { type: 'string', maxLength: 1000, description: 'The private reply sent to each person who comments, up to 1000 bytes' },
+                publicReplyTexts: { type: 'array', items: { type: 'string', maxLength: 300 }, maxItems: 5, description: 'Replies posted under the comment, one picked per comment; leave out for none' },
+            },
+            required: ['replyText'],
+            additionalProperties: false,
+        },
     }, ['accountId', 'mediaUrl', 'scheduledAt'])),
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
     permission: 'write',
     needsConfirmation: () => true,
     describe: input => `Publish a ${input.mediaType ?? 'IMAGE'} post on Instagram account ${input.accountId}. ${describeFields(input)}`,
     parse(args) {
-        refuseUnlisted(args, ['accountId', 'mediaUrl', 'mediaType', ...Object.keys(postFields)]);
+        refuseUnlisted(args, ['accountId', 'mediaUrl', 'mediaType', 'automation', ...Object.keys(postFields)]);
         const request = parseScheduledPost(args);
         if (request.mediaType === 'CAROUSEL') throw new ValidationError('Carousels can be scheduled from the Instagram publishing page; this tool takes one image or video.');
         return request;

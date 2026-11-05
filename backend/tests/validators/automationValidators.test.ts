@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
     parseActivityQuery, parseAutomationAccount, parseAutomationRule, parseAutomationRuleUpdate, parseAutomationTest, parseStatsQuery,
-    parseWebhookVerification,
+    parsePostAutomation, parseWebhookVerification,
 } from '../../validators/automationValidators.ts';
 
 const valid = { accountId: 'ig1', name: 'Guide', keywords: ['GUIDE'], replyText: 'Here it is' };
@@ -132,4 +132,15 @@ test('pausing needs a true or false, and the webhook check reads the hub paramet
     assert.deepEqual(parseWebhookVerification({ 'hub.mode': 'subscribe', 'hub.verify_token': 'tok', 'hub.challenge': '123' }), {
         mode: 'subscribe', verifyToken: 'tok', challenge: '123',
     });
+});
+
+test('a scheduled post automation needs its private reply within Instagram’s 1,000 bytes, and cleans its public replies', () => {
+    assert.equal(parsePostAutomation({}), undefined);
+    assert.equal(parsePostAutomation({ automation: null }), undefined);
+    assert.deepEqual(parsePostAutomation({ automation: { replyText: '  Here it is ', publicReplyTexts: [' Sent you a DM ', 'Sent you a DM', ''] } }), {
+        replyText: 'Here it is', publicReplyTexts: ['Sent you a DM'],
+    });
+    assert.throws(() => parsePostAutomation({ automation: 'Here it is' }), /must be an object/);
+    assert.throws(() => parsePostAutomation({ automation: { publicReplyTexts: ['Hi'] } }), /replyText is required/);
+    assert.throws(() => parsePostAutomation({ automation: { replyText: '\u{1F4E9}'.repeat(300) } }), /1200 bytes/);
 });
