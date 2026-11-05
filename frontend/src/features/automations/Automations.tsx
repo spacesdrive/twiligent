@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { BotMessageSquare, Plus } from 'lucide-react';
+import { Plus, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import PageHeader from '@/components/PageHeader';
 import SurfaceBox from '@/components/SurfaceBox';
@@ -56,7 +56,7 @@ export default function Automations() {
         {header}
         <SurfaceBox>
           <EmptyState
-            icon={<BotMessageSquare />}
+            icon={<Zap />}
             title="Connect an Instagram account first"
             description="Instagram automation replies from an Instagram professional account connected with Instagram sign-in."
             action={<Button render={<Link to="/accounts?add=1" />}>Add account</Button>}
