@@ -127,10 +127,10 @@ Hooks used by more than one feature. Hooks used by a single feature live in that
 | `useIsMobile()` | `use-mobile.ts` | True below the mobile breakpoint |
 | `useCommandPaletteShortcut(setOpen)` | `use-command-palette-shortcut.ts` | Ctrl+K / Cmd+K toggle for the command palette |
 | `useSmoothTheme()` | `use-smooth-theme.ts` | Theme switch as one cross-fade |
-| `useCloudinaryConfig(reloadKey)` | `use-cloudinary-config.ts` | Loads `api.getCloudinaryConfig()`; returns the config or `null` |
+| `useCloudinaryConfig(reloadKey)` | `use-cloudinary-config.ts` | Loads `api.getCloudinaryConfig()`; returns `{ config, loading, error, retry }` |
 | `useAccountAnalytics(account, fetchAnalytics, label)` | `use-account-analytics.ts` | Loads one account's analytics and refreshes it; used by Instagram analytics |
 
-`useCloudinaryConfig` sets the config only when the response has `success: true`. A failed request keeps the previous value (initially `null`), and pages show a missing config as an alert or a disabled upload field. The request runs again whenever `reloadKey` changes: the Instagram publishing page passes `accounts`.
+`useCloudinaryConfig` keeps loading, ready and failed apart (`lib/cloudinaryConfigState.ts`), so a slow or failed request never reads as a server without Cloudinary. Loading shows no warning; a failed first load sets `error` to the server's reason, which the Instagram publishing and YouTube uploads pages show with Try again (`retry`); a failed refetch keeps the config already loaded. The request runs again whenever `reloadKey` changes: the Instagram publishing page passes `accounts`.
 
 `useAccountAnalytics` returns `{ loading, profile, analytics, refreshing, handleRefresh }`. Pass a stable `api` method (`api.getIGAnalytics`), never an inline arrow: the load is keyed on the account id and that method, so a background account refresh does not refetch analytics. `label` names the platform in the toasts (`Couldn't load Instagram analytics.`, `Instagram account refreshed`). `handleRefresh` calls `api.refreshAccount()` and then loads the analytics again.
 

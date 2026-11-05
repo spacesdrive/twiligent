@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { AlertCircle, ShieldCheck } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Alert, AlertAction, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import PageHeader from '@/components/PageHeader';
@@ -18,7 +18,7 @@ const DESCRIPTION = 'Upload videos and Shorts to your YouTube channels verified 
 
 export default function YouTubeUploads() {
   const { accounts, showToast } = useAppContext();
-  const cloudConfig = useCloudinaryConfig(accounts);
+  const cloudinary = useCloudinaryConfig(accounts);
   const youtube = useYouTubePublishing(showToast);
   const active = youtube.connections.filter(connection => connection.status === 'active');
 
@@ -57,7 +57,16 @@ export default function YouTubeUploads() {
           />
         </SurfaceBox>
       ) : (
-        <YouTubeComposer connections={youtube.connections} cloudConfig={cloudConfig} onQueue={youtube.queue} showError={message => showToast(message, 'error')} />
+        <>
+          {cloudinary.error && (
+            <Alert variant="warning">
+              <AlertCircle />
+              <AlertDescription>Uploads can't start: the upload settings did not load. {cloudinary.error}</AlertDescription>
+              <AlertAction><Button size="xs" variant="outline" onClick={cloudinary.retry} disabled={cloudinary.loading}>{cloudinary.loading ? 'Trying again' : 'Try again'}</Button></AlertAction>
+            </Alert>
+          )}
+          <YouTubeComposer connections={youtube.connections} cloudConfig={cloudinary.config} cloudLoading={cloudinary.loading} onQueue={youtube.queue} showError={message => showToast(message, 'error')} />
+        </>
       )}
 
       {!youtube.error && youtube.configured && (

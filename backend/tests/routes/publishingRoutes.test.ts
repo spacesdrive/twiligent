@@ -54,7 +54,7 @@ describe('publishing routes check the account before calling Instagram', () => {
     });
 
     test('a missing Cloudinary configuration is an error status, not a 200', async () => {
-        assert.deepEqual(await call('GET', '/cloudinary-config'), failure(503, 'NOT_CONFIGURED', 'Cloudinary not configured on server'));
+        assert.deepEqual(await call('GET', '/cloudinary-config'), failure(503, 'NOT_CONFIGURED', 'Cloudinary is not set up on this server. The owner needs to set CLOUDINARY_CLOUD_NAME and CLOUDINARY_UPLOAD_PRESET.'));
         assert.deepEqual(await call('GET', '/cloudinary-config', undefined, { CLOUDINARY_CLOUD_NAME: 'cloud', CLOUDINARY_UPLOAD_PRESET: 'preset' }), {
             status: 200, body: { success: true, cloudName: 'cloud', uploadPreset: 'preset' },
         });
