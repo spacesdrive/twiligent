@@ -19,6 +19,7 @@ Security fixes from the first full audit (`docs/platform-v2/SECURITY_AUDIT.md`).
 - The GitHub Actions publisher removes addresses and tokens from Instagram's error messages before they reach the run log (#148)
 - The app and the public site can no longer be framed by other sites, and send nosniff, referrer and permissions policies (#148)
 - Every workflow's GitHub token can only read the repository (#148)
+- The shadcn command-line tool is listed as build tooling, so the production dependency audit reports no advisories; the built app is unchanged (#148)
 
 ## [2.0.0] - 2026-11-05
 

@@ -12,7 +12,7 @@ This first audit covers the application as it stood on `main` at commit 7f35357 
 |---|---|---|
 | Cloudflare `security-audit` skill, full audit mode, quick profile | Worker, app, site, migrations and SQL functions, GitHub Actions, the scheduling script | 2 confirmed findings, 9 leads that need validation, 1 rejected; 25 coverage units (14 covered, 8 candidate, 3 deferred). Ten agents: 2 reconnaissance, 4 hunters, 1 critic, 3 independent verifiers. Source only: the machine has no OS sandbox, so no project code was run and nothing deployed was probed. Output, validated by the skill's own validators: `~/security-audit-skill/twiligent/run-1` (outside the repository) |
 | Semgrep 1.174.0 (`p/typescript`, `p/javascript`, `p/secrets`, `p/github-actions`, `p/react`) | Every tracked file | Before fixes: 14 results (13 actions on movable tags, 1 `dangerouslySetInnerHTML`). After fixes: 1 result, the `dangerouslySetInnerHTML`, which is a false positive (see below) |
-| `npm audit` | Root lockfile | 20 advisories in all (0 critical, 6 high, 13 moderate, 1 low), almost all in development tools; with `--omit=dev`, 12 (6 high), all reached through the `shadcn` CLI (see Dependencies) |
+| `npm audit` | Root lockfile | 20 advisories in all (0 critical, 6 high, 13 moderate, 1 low), almost all in development tools; with `--omit=dev`, 12 (6 high), all reached through the `shadcn` CLI. After moving it to devDependencies: 0 production advisories (see Dependencies) |
 
 Coverage areas, each recorded in the audit's coverage ledger: authentication and sessions, access control, API and input validation, injection and deserialization, output encoding and XSS, CSRF, CORS, response headers, SQL functions and row level security, SSRF and path traversal, command injection, scheduling and publish-once logic, secrets and environment variables, rate limiting, dependencies, CI/CD, token handling, the Supabase Auth email hook, the Instagram webhook, cron jobs and the public site.
 
@@ -69,7 +69,7 @@ Each depends on a fact outside the repository or on running code. None is a conf
 ## Dependencies
 
 - All 12 production advisories (`npm audit --omit=dev`: 6 high, 5 moderate, 1 low, in `body-parser`, `undici`, `systeminformation`, `zod`, `qs`, `fast-uri`, `minimatch`, `deepmerge` and `@shadcn/registry`) come through the `shadcn` package, which `frontend/package.json` lists under `dependencies`. The app only imports its stylesheet (`@import "shadcn/tailwind.css"` in `frontend/src/index.css`), which Vite inlines at build time, so none of the CLI's server-side packages reaches the browser bundle or the Worker. The exposure is to developers who run the shadcn CLI.
-- Recommended, not yet applied: move `shadcn` to `devDependencies` at the same version (`npm install -D shadcn@4.21.5 --workspace frontend`), which states that it is build tooling and takes these advisories out of the production audit. The command was blocked by this session's permission checks, so it waits for the owner's approval.
+- Applied in 2.0.1 with the owner's approval: `shadcn` moved to `devDependencies` at the same version (`npm install -D shadcn@4.21.5 --workspace frontend`), which states that it is build tooling. `npm audit --omit=dev` afterwards: 0 advisories. The app builds the same, since Vite inlines the stylesheet at build time.
 - The development-only advisories (`typescript-eslint`'s `minimatch`, `wrangler`'s `miniflare` and `undici`) affect local tooling only; they are fixed by routine updates of those tools.
 
 ---
