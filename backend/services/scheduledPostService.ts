@@ -70,7 +70,8 @@ export function createScheduledPostService({ accounts, posts }: ScheduledPostDep
             const post = await findOwned(userId, postId);
             if (post.status !== 'pending') throw new ValidationError('Can only edit pending posts');
             const updates: Partial<ScheduledPost> = { ...changes };
-            if (changes.scheduledAt) updates.scheduledAt = new Date(changes.scheduledAt).toISOString();
+            // a new time in the past would make the next run publish it at once, so a change of time is held to the same rule
+            if (changes.scheduledAt) updates.scheduledAt = futureDate(changes.scheduledAt);
             if (!(await posts.updatePendingForUser(postId, updates, userId))) throw new ValidationError('Can only edit pending posts');
             return posts.findForUser(postId, userId);
         },

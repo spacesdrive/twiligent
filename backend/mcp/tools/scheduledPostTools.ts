@@ -32,6 +32,26 @@ const postFields: Record<string, JsonSchema> = {
     locationId: { type: 'string', description: 'A Facebook place id' },
 };
 
+// the confirmation is the person's only look at a public post before it goes out, so it names every field in full
+function describeFields(fields: Partial<ScheduledPostRequest>): string {
+    const parts = [
+        fields.mediaUrl && `Media: ${fields.mediaUrl}.`,
+        fields.scheduledAt && `Time: ${fields.scheduledAt}.`,
+        fields.caption !== undefined && `Caption: "${fields.caption}".`,
+        fields.collaborators?.length && `Collaborators: ${fields.collaborators.join(', ')}.`,
+        fields.altText !== undefined && `Alt text: "${fields.altText}".`,
+        fields.locationId && `Location id: ${fields.locationId}.`,
+        fields.shareToFeed !== undefined && `Share to feed: ${fields.shareToFeed ? 'yes' : 'no'}.`,
+    ];
+    return parts.filter(Boolean).join(' ');
+}
+
+// the validators accept more fields than these tools publish; anything a client was not told about is refused
+function refuseUnlisted(args: Record<string, unknown>, allowed: string[]): void {
+    const unlisted = Object.keys(args).filter(name => name !== 'confirmationToken' && !allowed.includes(name));
+    if (unlisted.length > 0) throw new ValidationError(`These fields cannot be set from Claude: ${unlisted.join(', ')}. Use the Publish page for them.`);
+}
+
 export const listScheduledPosts = defineTool<{ status: PostStatus | undefined; page: Page }>({
     name: 'list_scheduled_posts',
     title: 'List scheduled posts',
@@ -79,8 +99,9 @@ export const scheduleInstagramPost = defineTool<ScheduledPostRequest>({
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
     permission: 'write',
     needsConfirmation: () => true,
-    describe: input => `Publish a ${input.mediaType ?? 'IMAGE'} post on Instagram account ${input.accountId} at ${input.scheduledAt}${input.caption ? ` with the caption "${input.caption.slice(0, 120)}"` : ''}.`,
+    describe: input => `Publish a ${input.mediaType ?? 'IMAGE'} post on Instagram account ${input.accountId}. ${describeFields(input)}`,
     parse(args) {
+        refuseUnlisted(args, ['accountId', 'mediaUrl', 'mediaType', ...Object.keys(postFields)]);
         const request = parseScheduledPost(args);
         if (request.mediaType === 'CAROUSEL') throw new ValidationError('Carousels can be scheduled from the Publish page; this tool takes one image or video.');
         return request;
@@ -97,11 +118,14 @@ export const scheduleInstagramPost = defineTool<ScheduledPostRequest>({
 export const updateScheduledPost = defineTool<{ postId: string; changes: ScheduledPostUpdateRequest }>({
     name: 'update_scheduled_post',
     title: 'Change a scheduled post',
-    description: 'Changes the caption, time or other details of an Instagram post that has not started publishing. Fields left out stay as they are.',
-    inputSchema: objectSchema({ postId: idProperty('scheduled post'), ...postFields }, ['postId']),
+    description: 'Changes the caption, time or other details of an Instagram post that has not started publishing. Fields left out stay as they are. Asks for a confirmation first, because the post goes public.',
+    inputSchema: withConfirmation(objectSchema({ postId: idProperty('scheduled post'), ...postFields }, ['postId'])),
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     permission: 'write',
+    needsConfirmation: () => true,
+    describe: ({ postId, changes }) => `Change scheduled post ${postId}. ${describeFields(changes)}`,
     parse(args) {
+        refuseUnlisted(args, ['postId', ...Object.keys(postFields)]);
         const changes = parseScheduledPostUpdate(args);
         if (Object.keys(changes).length === 0) throw new ValidationError('Name at least one field to change, such as caption or scheduledAt.');
         return { postId: requiredId(args, 'postId', 'scheduled post'), changes };

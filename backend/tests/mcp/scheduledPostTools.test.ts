@@ -73,3 +73,19 @@ test('an update needs at least one field, and cancelling needs confirmation', as
     await cancelScheduledPost.run({ postId: 'a' }, ctx);
     assert.deepEqual(ctx.removed, ['a']);
 });
+
+test('changing a queued post asks for a confirmation that shows every changed field in full', () => {
+    const input = updateScheduledPost.parse({ postId: 'a', caption: 'A long caption '.repeat(20), collaborators: ['friend'] });
+    assert.equal(updateScheduledPost.needsConfirmation?.(input), true);
+    const text = updateScheduledPost.describe?.(input) ?? '';
+    assert.match(text, /Change scheduled post a\./);
+    assert.ok(text.includes('A long caption '.repeat(20).trim()));
+    assert.match(text, /Collaborators: friend\./);
+});
+
+test('fields the tools do not publish are refused, so a client cannot set what it was never shown', () => {
+    assert.throws(() => updateScheduledPost.parse({ postId: 'a', coverUrl: 'https://cdn.example/x.jpg' }), /cannot be set from Claude: coverUrl/);
+    assert.throws(() => scheduleInstagramPost.parse({ accountId: 'ig-1', mediaUrl: 'https://cdn.example/a.jpg', scheduledAt: LATER, userTags: [] }), /userTags/);
+    const withMedia = scheduleInstagramPost.parse({ accountId: 'ig-1', mediaUrl: 'https://cdn.example/a.jpg', scheduledAt: LATER, confirmationToken: 'x' });
+    assert.match(scheduleInstagramPost.describe?.(withMedia) ?? '', /Media: https:\/\/cdn\.example\/a\.jpg\./);
+});
