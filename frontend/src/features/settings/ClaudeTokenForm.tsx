@@ -53,7 +53,7 @@ export default function ClaudeTokenForm({ creating, onCreate }: ClaudeTokenFormP
           className="max-w-sm"
         />
       </FieldRow>
-      <FieldRow label="What Claude may do" htmlFor="mcp-token-permission" group hint="Making changes covers scheduling, editing and cancelling posts and saving settings. Claude asks you to confirm before it schedules or cancels a post.">
+      <FieldRow label="What Claude may do" htmlFor="mcp-token-permission" group hint="Making changes covers importing media, scheduling, editing and cancelling posts, and saving settings. Claude asks you to confirm before it schedules or cancels a post, or deletes media.">
         <SegmentedChoice<McpPermission>
           name="mcp-token-permission"
           id="mcp-token-permission"

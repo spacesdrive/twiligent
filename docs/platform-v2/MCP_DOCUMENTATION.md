@@ -126,6 +126,10 @@ Every tool works only on the caller's own data. Read tools need no confirmation.
 | `get_settings` | read | none | Which server keys are set (never their values); the GitHub repository setting |
 | `get_instagram_publishing_limit` | read | `accountId` | Posts published in the last 24 hours and the limit |
 | `update_github_settings` | write | `repoOwner`, `repoName`, `branch` | The saved setting |
+| `list_media` | read | `limit`, `cursor` | `media` (id, type, public https `url`, size and dimensions, label), `nextCursor`, `total` |
+| `import_media_from_url` | write | `url` (public https), `resourceType` (`image` or `video`), `label` | `media`. Cloudinary downloads the file, not the Worker; private and non-https addresses are refused |
+| `update_media` | write | `mediaId`, `label` | `media` |
+| `delete_media` | write, confirm | `mediaId` | `deleted`, `removedFromCloudinary`, and a `note` when the file stays on Cloudinary because the instance has no API secret |
 | `list_scheduled_posts` | read | `status`, `limit` (1 to 50, default 20), `cursor` | `posts`, `nextCursor`, `total` |
 | `get_scheduled_post` | read | `postId` | `post` |
 | `schedule_instagram_post` | write, confirm | `accountId`, `mediaUrl` (public https), `scheduledAt` (future ISO 8601), `mediaType` (IMAGE, VIDEO, REELS, STORIES), `caption`, `shareToFeed`, `collaborators`, `altText`, `locationId` | `post`, `alreadyScheduled` (true when the same media was already scheduled for that account and time) |

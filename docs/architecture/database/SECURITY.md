@@ -53,7 +53,7 @@ The migrations in `supabase/migrations/` enforce this on every instance:
 
 The service-role key used by the Worker and the GitHub Actions scheduler bypasses row level security and keeps its grants. The frontend never queries tables directly (it uses Supabase only for Auth). `backend/tests/database/migrations.test.ts` fails if a migration creates a function without the revoke.
 
-To check a live instance, call the Data API with the anon key (`GET <SUPABASE_URL>/rest/v1/accounts` with the `apikey` header): it must answer 401 for all thirteen tables and for `POST /rest/v1/rpc/merge_account_data`, `POST /rest/v1/rpc/claim_automation_comments`, `POST /rest/v1/rpc/claim_automation_followups` and `POST /rest/v1/rpc/claim_automation_public_replies`. The manual check is in `docs/workflows/TESTING.md`.
+To check a live instance, call the Data API with the anon key (`GET <SUPABASE_URL>/rest/v1/accounts` with the `apikey` header): it must answer 401 for all fourteen tables and for `POST /rest/v1/rpc/merge_account_data`, `POST /rest/v1/rpc/claim_automation_comments`, `POST /rest/v1/rpc/claim_automation_followups` and `POST /rest/v1/rpc/claim_automation_public_replies`. The manual check is in `docs/workflows/TESTING.md`.
 
 ### What was wrong before
 
