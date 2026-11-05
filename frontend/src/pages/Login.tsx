@@ -13,7 +13,7 @@ import type { AuthErrorLike } from '@/lib/authErrors';
 import { PASSWORD_MIN_LENGTH, newPasswordProblem } from '@/lib/passwords';
 import { CODE_LENGTH } from '@/lib/authErrors';
 import { looksLikeEmail } from '@/lib/emailAddress';
-import { signInPageOutcome } from '@/lib/signInPage';
+import { returnPath, signInPageOutcome } from '@/lib/signInPage';
 import { FieldRow } from '@/components/DetailPanel';
 import { useDocumentTitle } from '@/hooks/use-document-title';
 import { useCountdown } from './useCountdown';
@@ -104,6 +104,8 @@ export default function Login() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const signingUp = params.get('mode') === 'signup';
+  // a page that needed a sign-in, such as the Claude consent page, gets the person back after it
+  const returnTo = returnPath(params.get('next'));
   const [view, setView] = useState<LoginView>('start');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -188,7 +190,7 @@ export default function Login() {
   async function submitCode() {
     const { error } = await verifySignInCode(email.trim(), code);
     if (error) throw error;
-    navigate('/');
+    navigate(returnTo);
   }
 
   async function submitPassword() {
@@ -202,7 +204,7 @@ export default function Login() {
       return;
     }
     if (error) throw error;
-    navigate('/');
+    navigate(returnTo);
   }
 
   async function submitSignUp() {
@@ -210,7 +212,7 @@ export default function Login() {
     if (error) throw error;
     // with Confirm email off the account is ready at once
     if (data.session) {
-      navigate('/');
+      navigate(returnTo);
       return;
     }
     if (isExistingAccount(data.user)) {
@@ -225,7 +227,7 @@ export default function Login() {
     const { error } = await verifySignUpCode(email.trim(), code);
     if (error) throw error;
     toast.success('Email confirmed');
-    navigate('/');
+    navigate(returnTo);
   }
 
   // Supabase answers the same whether or not the address has an account, so the message cannot say which
@@ -250,7 +252,7 @@ export default function Login() {
       return;
     }
     toast.success('Password saved');
-    navigate('/');
+    navigate(returnTo);
   }
 
   const SUBMIT: Record<LoginView, () => Promise<void>> = {
@@ -310,7 +312,7 @@ export default function Login() {
     try {
       const { error } = await signInWithGoogle(idToken, nonce);
       if (error) throw error;
-      navigate('/');
+      navigate(returnTo);
     } catch (err) {
       setProblem({ field: 'email', message: `Couldn't sign in with Google. ${(err as Error).message}` });
     } finally {
@@ -321,7 +323,7 @@ export default function Login() {
   // the public site's Sign in and Get started buttons land here, so a stored session opens the dashboard
   const outcome = signInPageOutcome(session === undefined ? undefined : !!session, signingIn);
   if (outcome === 'wait') return <p role="status" className="sr-only">Checking whether you are signed in</p>;
-  if (outcome === 'dashboard') return <Navigate to="/" replace />;
+  if (outcome === 'dashboard') return <Navigate to={returnTo} replace />;
 
   return (
     <div className="relative min-h-svh bg-surface">
