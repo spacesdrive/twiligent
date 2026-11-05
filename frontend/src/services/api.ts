@@ -20,6 +20,10 @@ import type {
 import type {
     ResolveChannelResponse, YouTubeAnalyticsPayload, YouTubeComparisonResponse, YouTubeVideosResponse,
 } from '@shared/types/youtube.ts';
+import type {
+    McpAccessTokenCreateRequest, McpAccessTokenCreateResponse, McpAccessTokenListResponse, McpClientApprovalRequest,
+    McpClientGrantListResponse, McpServerInfoResponse,
+} from '@shared/types/mcp.ts';
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:8787/api';
 
@@ -184,4 +188,13 @@ export const api = {
     getAutomationStats: (query: URLSearchParams) => request<AutomationStatsResponse>(`/automations/stats?${query}`),
     setAutomationAccountPaused: (accountId: string, paused: boolean) => request<AutomationAccountResponse>(`/automations/accounts/${accountId}`, { method: 'PUT', body: JSON.stringify({ paused }) }),
     subscribeAutomationAccount: (accountId: string) => request<AutomationAccountResponse>(`/automations/accounts/${accountId}/subscribe`, { method: 'POST' }),
+
+    // how Claude clients reach this account: the server address, personal access tokens and approved OAuth clients
+    getMcpInfo: () => request<McpServerInfoResponse>('/mcp/info'),
+    getMcpTokens: () => request<McpAccessTokenListResponse>('/mcp/tokens'),
+    createMcpToken: (data: McpAccessTokenCreateRequest) => request<McpAccessTokenCreateResponse>('/mcp/tokens', { method: 'POST', body: JSON.stringify(data) }),
+    revokeMcpToken: (id: string) => request<SuccessResponse>(`/mcp/tokens/${id}`, { method: 'DELETE' }),
+    getMcpClients: () => request<McpClientGrantListResponse>('/mcp/clients'),
+    approveMcpClient: (data: McpClientApprovalRequest) => request<SuccessResponse>('/mcp/clients', { method: 'POST', body: JSON.stringify(data) }),
+    revokeMcpClient: (id: string) => request<SuccessResponse>(`/mcp/clients/${id}`, { method: 'DELETE' }),
 };

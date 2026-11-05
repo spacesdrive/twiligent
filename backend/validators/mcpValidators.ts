@@ -1,7 +1,7 @@
 import { ValidationError } from '../lib/errors.ts';
 import { optionalNumber, requiredString } from './fields.ts';
 import type { Fields } from './fields.ts';
-import type { McpAccessTokenCreateRequest, McpPermission } from '../../shared/types/mcp.ts';
+import type { McpAccessTokenCreateRequest, McpClientApprovalRequest, McpPermission } from '../../shared/types/mcp.ts';
 
 const MAX_LABEL_LENGTH = 80;
 // a year at most, so a forgotten token stops working on its own
@@ -22,16 +22,10 @@ export function parseAccessTokenCreate(body: Fields): McpAccessTokenCreateReques
     return { label, permission: parsePermission(body.permission), expiresInDays };
 }
 
-export interface ClientApprovalInput {
-    clientId: string;
-    clientName: string;
-    permission: McpPermission;
-}
-
 const MAX_CLIENT_NAME_LENGTH = 200;
 
 // the consent page sends what Supabase Auth told it about the client; the approval only ever applies to the caller
-export function parseClientApproval(body: Fields): ClientApprovalInput {
+export function parseClientApproval(body: Fields): McpClientApprovalRequest {
     const clientId = requiredString(body, 'clientId', 'clientId is required').trim();
     if (clientId.length === 0 || clientId.length > 200) throw new ValidationError('clientId must be 1 to 200 characters');
     const clientName = requiredString(body, 'clientName', 'clientName is required').trim().slice(0, MAX_CLIENT_NAME_LENGTH) || 'Claude';
