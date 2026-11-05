@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../../services/api';
+import { supabase } from '../../lib/supabase';
 import { loadClaudeAccess } from './claudeAccessData';
 import type { ClaudeAccess } from './claudeAccessData';
 import type { AppContextValue } from '../../context/AppContext';
-import type { McpAccessTokenCreateRequest, McpAccessTokenSummary } from '@shared/types/mcp.ts';
+import type { McpAccessTokenCreateRequest, McpAccessTokenSummary, McpClientGrantSummary } from '@shared/types/mcp.ts';
 
 type ShowToast = AppContextValue['showToast'];
 
@@ -68,15 +69,20 @@ export function useClaudeAccess(showToast: ShowToast) {
     }
   };
 
-  const revokeClient = async (id: string, name: string): Promise<boolean> => {
-    setRevokingId(id);
+  const revokeClient = async (client: McpClientGrantSummary): Promise<boolean> => {
+    setRevokingId(client.id);
     try {
-      await api.revokeMcpClient(id);
-      setAccess(current => current && { ...current, clients: current.clients.filter(item => item.id !== id) });
-      showToast(`${name} removed`);
+      await api.revokeMcpClient(client.id);
+      setAccess(current => current && { ...current, clients: current.clients.filter(item => item.id !== client.id) });
+      // Supabase keeps its own record of the approval; without withdrawing it, connecting again would skip the
+      // consent page and the app would be refused for want of a saved choice
+      const { error } = access?.oauthEnabled ? await supabase.auth.oauth.revokeGrant({ clientId: client.clientId }) : { error: null };
+      showToast(error
+        ? `${client.clientName} removed. Its Supabase approval was not withdrawn (${error.message}), so remove it in Claude too before connecting again.`
+        : `${client.clientName} removed`);
       return true;
     } catch (err) {
-      showToast(`Couldn't remove ${name}. ${(err as Error).message}`, 'error');
+      showToast(`Couldn't remove ${client.clientName}. ${(err as Error).message}`, 'error');
       return false;
     } finally {
       setRevokingId(null);
