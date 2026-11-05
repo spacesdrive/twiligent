@@ -7,6 +7,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [3.3.2] - 2026-11-05
+
+What an instance owner must do: nothing; deploy as usual.
+
+### Fixed
+
+- Verifying a YouTube channel that belongs to a Brand Account no longer ends on a Google error page when the instance reuses its Google sign-in client: Twiligent asks Google only for YouTube's permissions (#173)
+
+### Changed
+
+- The Verify button uses a simple tick (#174)
+
 ## [3.3.1] - 2026-11-05
 
 What an instance owner must do: nothing; deploy as usual.
