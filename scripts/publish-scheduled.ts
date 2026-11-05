@@ -77,9 +77,15 @@ const sbHeaders: Record<string, string> = {
     'Content-Type': 'application/json',
 };
 
+// run logs on a public fork can be read by anyone, so a failed call names only the kind of request and a short,
+// redacted answer; the path can hold account ids and the body can echo stored data
+async function supabaseFailure(kind: string, res: Response): Promise<Error> {
+    return new Error(`Supabase ${kind} failed (status ${res.status}): ${redactSecrets((await res.text()).slice(0, 200))}`);
+}
+
 async function sbGet<T>(path: string): Promise<T> {
     const res = await fetch(`${SUPABASE_URL}/rest/v1${path}`, { headers: sbHeaders, signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
-    if (!res.ok) throw new Error(`Supabase GET ${path}: ${await res.text()}`);
+    if (!res.ok) throw await supabaseFailure('read', res);
     return res.json() as Promise<T>;
 }
 
@@ -90,7 +96,7 @@ async function sbRpc(fn: string, args: Record<string, unknown>): Promise<unknown
         body: JSON.stringify(args),
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
-    if (!res.ok) throw new Error(`Supabase RPC ${fn}: ${await res.text()}`);
+    if (!res.ok) throw await supabaseFailure(`call ${fn}`, res);
     return res.json();
 }
 
@@ -101,7 +107,7 @@ async function sbPatch<T>(path: string, body: unknown): Promise<T[]> {
         body: JSON.stringify(body),
         signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
-    if (!res.ok) throw new Error(`Supabase PATCH ${path}: ${await res.text()}`);
+    if (!res.ok) throw await supabaseFailure('update', res);
     return res.json() as Promise<T[]>;
 }
 
