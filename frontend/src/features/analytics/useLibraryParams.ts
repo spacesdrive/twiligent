@@ -2,8 +2,6 @@ import { useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { readParam, readPositiveInt, withParam } from '@/lib/urlState';
 
-export type ParamDefaults = Record<string, string>;
-
 export interface UpdateOptions {
   // typing replaces the history entry instead of adding one per keystroke
   replace?: boolean;
