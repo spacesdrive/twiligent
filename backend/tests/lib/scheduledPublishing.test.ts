@@ -1,7 +1,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-    MAX_PUBLISH_ATTEMPTS, PUBLISH_LEASE_MS, containerStep, failureMessage, failureOutcome, isTransientGraphCode, staleClaimCutoff,
+    MAX_PUBLISH_ATTEMPTS, PUBLISH_LEASE_MS, containerStep, fairPublishOrder, MAX_POSTS_PER_ACCOUNT_PER_RUN, failureMessage, failureOutcome, isTransientGraphCode, staleClaimCutoff,
 } from '../../lib/scheduledPublishing.ts';
 
 describe('scheduled publishing rules', () => {
@@ -35,5 +35,15 @@ describe('scheduled publishing rules', () => {
         assert.equal(failureMessage('Invalid image', false, 1), 'Invalid image');
         assert.equal(failureMessage('Instagram API unreachable (reset)', true, MAX_PUBLISH_ATTEMPTS),
             'Instagram API unreachable (reset). Publishing stopped after 3 attempts; schedule the post again.');
+    });
+
+    test('due posts take turns by account, oldest first, and one account gets a capped share of a run', () => {
+        const post = (id: string, accountId: string, minute: number) => ({ id, accountId, scheduledAt: `2026-11-05T10:${String(minute).padStart(2, '0')}:00.000Z` });
+        const busy = Array.from({ length: 20 }, (_, i) => post(`a${i}`, 'busy', i));
+        const ordered = fairPublishOrder([...busy, post('b1', 'quiet', 30), post('c1', 'other', 25)]);
+        assert.deepEqual(ordered.slice(0, 3).map(item => item.id), ['a0', 'c1', 'b1']);
+        assert.equal(ordered.filter(item => item.accountId === 'busy').length, MAX_POSTS_PER_ACCOUNT_PER_RUN);
+        assert.deepEqual(ordered.filter(item => item.accountId === 'busy').map(item => item.id), ['a0', 'a1', 'a2', 'a3', 'a4']);
+        assert.deepEqual(fairPublishOrder([]), []);
     });
 });

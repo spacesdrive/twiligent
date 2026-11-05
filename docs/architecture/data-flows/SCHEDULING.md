@@ -36,6 +36,8 @@ Each run lists two kinds of candidates:
 - Due posts: `status = 'pending'` and `scheduled_at <= now()` (`listDue()`)
 - Stale posts: `status = 'publishing'` and `claimed_at` older than 20 minutes (`listStale(cutoff)`, cutoff from `staleClaimCutoff()`)
 
+Stale posts come first, since one may already be on Instagram. Due posts then take turns by account, oldest first, at most `MAX_POSTS_PER_ACCOUNT_PER_RUN` (5) per account a run (`fairPublishOrder()` in `backend/lib/scheduledPublishing.ts`, used by both schedulers), so one account's large backlog cannot hold every other account's posts back for a whole run (audit lead L8). The rest of a backlog goes out in the next runs.
+
 It then claims each candidate with one UPDATE that only matches the post as it was listed:
 
 ```sql
