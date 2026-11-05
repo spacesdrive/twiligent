@@ -7,6 +7,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [3.3.1] - 2026-11-05
+
+What an instance owner must do: nothing; deploy as usual.
+
+### Changed
+
+- Instagram automation uses a lightning bolt icon in the sidebar (#171)
+
 ## [3.3.0] - 2026-11-05
 
 YouTube channels are verified for publishing from their own cards, and the publishing pages say which platform they are for. What an instance owner must do: nothing; deploy as usual.
