@@ -43,6 +43,13 @@ export interface McpAccessTokenCreateResponse {
     summary: McpAccessTokenSummary;
 }
 
+// body of POST /api/mcp/clients, sent by the consent page before it approves the client with Supabase Auth
+export interface McpClientApprovalRequest {
+    clientId: string;
+    clientName: string;
+    permission: McpPermission;
+}
+
 // GET /api/mcp/clients
 export interface McpClientGrantListResponse {
     success: true;
