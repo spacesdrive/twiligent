@@ -163,6 +163,6 @@ Step-by-step instructions for a person setting this up: `docs/workflows/SCHEDULI
 
 - Publish explains, next to the schedule fields, that the server publishes within 15 minutes after the chosen time.
 - A `pending` post that is being retried shows `Trying again on the next run` under its status, and the reason of the last attempt in its error tooltip (`isRetrying()` in `frontend/src/features/publishing/scheduleHelpers.ts`).
-- The overdue alert in Publish counts `pending` posts more than 30 minutes late (a retried post counts from its last claim) and `publishing` posts whose claim is older than the lease plus 30 minutes, 50 minutes in all (`overduePostsOf()`). It reads `... more than 30 minutes late and not yet published, so the scheduler on this server is not running.` and names the administrator contact (`VITE_ADMIN_EMAIL`).
+- The overdue alert on the Instagram publishing page counts `pending` posts more than 30 minutes late (a retried post counts from its last claim) and `publishing` posts whose claim is older than the lease plus 30 minutes, 50 minutes in all (`overduePostsOf()`). It reads `... more than 30 minutes late and not yet published, so the scheduler on this server is not running.` and names the administrator contact (`VITE_ADMIN_EMAIL`).
 - Settings, Scheduled publishing says the GitHub fallback often starts hours late and is a backup, not a 15 minute guarantee.
 - Note: These GitHub secrets are only required for System B - the main deploy workflows (`deploy-backend.yml`, `deploy-frontend.yml`) do not need them

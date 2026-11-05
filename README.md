@@ -56,7 +56,7 @@ Twiligent puts them in one dashboard that you host yourself. Your data stays in 
   </tr>
   <tr>
     <td width="50%" valign="top">
-      <img src="docs/media/publish.webp" alt="The Publish page with post settings" width="100%" />
+      <img src="docs/media/publish.webp" alt="The Instagram publishing page with post settings" width="100%" />
       <h4>Publish now, or at the hour you pick</h4>
       <p>Post photos, Reels and Stories to Instagram, or schedule them. The server publishes within 15 minutes of that time, even with your browser closed.</p>
     </td>

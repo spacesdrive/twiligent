@@ -3,7 +3,7 @@ import { Bookmark, Plus, Send } from 'lucide-react';
 
 // only actions start here; the library pages are already one click away in the sidebar
 const QUICK_ACTIONS = [
-  { to: '/publish',         label: 'Publish',       icon: Send },
+  { to: '/publish',         label: 'Instagram publishing', icon: Send },
   { to: '/accounts?add=1',  label: 'Add account',   icon: Plus },
   { to: '/tracked-content', label: 'Track content', icon: Bookmark },
 ];

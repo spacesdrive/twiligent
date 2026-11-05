@@ -95,7 +95,7 @@ export function createMediaService({ media, audit, config, context }: MediaDeps)
             if (!config.cloudinary) throw new NotConfiguredError('Cloudinary is not set up on this server.');
             // only a file on this instance's own cloud, at the exact address Cloudinary gives the id it names
             if (!isDeliveryAddressFor(upload.url, config.cloudinary.cloudName, upload.resourceType, upload.publicId)) {
-                throw new ValidationError('The file is not on this server\'s Cloudinary account. Upload it from the Publish page.');
+                throw new ValidationError('The file is not on this server\'s Cloudinary account. Upload it from the Instagram publishing page.');
             }
             // the size decides every chunk boundary, so it is measured, not taken from the browser
             const bytes = await fileSize(upload.url, signal);

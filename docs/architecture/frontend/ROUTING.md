@@ -23,7 +23,7 @@ The app uses React Router 7 in `frontend/src/App.tsx`: a data router from `creat
 | `/shorts` | `ShortsExplorer.tsx` | Videos of 60 seconds or less |
 | `/instagram` | `ReelsExplorer.tsx` | Instagram reels, posts and videos (the Instagram content page) |
 | `/reels` | redirect | Redirects to `/instagram`, keeping the query string and hash |
-| `/publish` | `UploadContent.tsx` | Publish and schedule to Instagram, plus the scheduled post queue |
+| `/publish` | `UploadContent.tsx` | Instagram publishing (sidebar and page title): publish and schedule to Instagram, plus the scheduled post queue |
 | `/upload` | redirect | Redirects to `/publish`, keeping the query string and hash |
 | `/automations` | `features/automations/Automations.tsx` | Comment-to-DM rules, account controls and reply activity; in the sidebar under Publishing |
 | `/automations/rules/new` | `features/automations/RuleEditorPage.tsx` | Create a rule on its own page, with a warning before leaving unsaved changes |

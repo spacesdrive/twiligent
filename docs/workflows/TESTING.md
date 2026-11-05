@@ -265,7 +265,7 @@ Open the app in a browser. For each changed area, test:
 
 **Forms and deletes (if a form or a delete changed):**
 - [ ] Submit a form with a field missing or wrong: the message shows under the field, focus moves to it, and what was typed stays
-- [ ] Type in the rule editor or the Publish form, then click a sidebar link: a Discard changes question appears; reload the page and the draft is back
+- [ ] Type in the rule editor or the Instagram publishing form, then click a sidebar link: a Discard changes question appears; reload the page and the draft is back
 - [ ] Delete a rule or a scheduled post: it disappears at once with an Undo toast; Undo brings it back, and without Undo it is gone after a reload 8 seconds later
 - [ ] Remove an account: the confirm works by holding the button and by pressing it twice
 

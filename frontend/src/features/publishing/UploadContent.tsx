@@ -78,7 +78,7 @@ export default function UploadContent() {
 
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader title="Publish" description="Post and schedule photos, Reels and Stories to Instagram." />
+      <PageHeader title="Instagram publishing" description="Post and schedule photos, Reels and Stories to Instagram." />
       <LiveStatus message={stageAnnouncement(publish.publishStatus, publish.uploading)} />
 
       {!cloudConfig && (
