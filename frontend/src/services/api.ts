@@ -5,11 +5,11 @@ import type {
     GitHubSettingsResponse, HealthResponse, KeysStatusResponse, OverviewResponse, ScheduledPostDeleteAllResponse,
     ScheduledPostListResponse, ScheduledPostRequest, ScheduledPostResponse, ScheduledPostUpdateRequest,
     ScheduledPostUpdateResponse, ScheduledPublishRunResponse, SuccessMessageResponse, SuccessResponse,
-    TrackedContentItem, TrackedContentUpdateRequest, YouTubeAccountAddResponse,
+    TrackedContentAddRequest, TrackedContentItem, TrackedContentUpdateRequest, YouTubeAccountAddResponse,
 } from '@shared/types/domain.ts';
 import type {
     CloudinaryConfigResponse, InstagramAnalyticsResponse, InstagramAuthUrlResponse, InstagramConnectCompleteResponse, InstagramContainerStatusResponse,
-    InstagramMediaPublishResponse, InstagramMediaResponse, InstagramPublishingLimitResponse, InstagramPublishRequest,
+    InstagramMediaPublishRequest, InstagramMediaPublishResponse, InstagramMediaResponse, InstagramPublishingLimitResponse, InstagramPublishRequest,
     InstagramPublishResponse, InstagramTokenRefreshResponse,
 } from '@shared/types/instagram.ts';
 import type {
@@ -151,7 +151,7 @@ export const api = {
     getIGPublishingLimit: (id: string) => request<InstagramPublishingLimitResponse>(`/accounts/${id}/ig-publishing-limit`),
     createIGContainer: (id: string, data: InstagramPublishRequest) => request<InstagramPublishResponse>(`/accounts/${id}/ig-publish`, { method: 'POST', body: JSON.stringify(data) }),
     getIGContainerStatus: (containerId: string, accountId: string) => request<InstagramContainerStatusResponse>(`/ig-container/${containerId}/status?accountId=${accountId}`),
-    publishIGContainer: (id: string, containerId: string) => request<InstagramMediaPublishResponse>(`/accounts/${id}/ig-media-publish`, { method: 'POST', body: JSON.stringify({ containerId }) }),
+    publishIGContainer: (id: string, containerId: string) => request<InstagramMediaPublishResponse>(`/accounts/${id}/ig-media-publish`, { method: 'POST', body: JSON.stringify({ containerId } satisfies InstagramMediaPublishRequest) }),
 
 
     // Overview dashboard (tracked content + per-account analytics cache)
@@ -159,7 +159,7 @@ export const api = {
 
     // Tracked content (YouTube videos)
     getTrackedContent: () => request<TrackedContentItem[]>('/tracked-content'),
-    addTrackedContent: (url: string, label: string, category: string) => request<TrackedContentItem>('/tracked-content', { method: 'POST', body: JSON.stringify({ url, label, category }) }),
+    addTrackedContent: (url: string, label: string, category: string) => request<TrackedContentItem>('/tracked-content', { method: 'POST', body: JSON.stringify({ url, label, category } satisfies TrackedContentAddRequest) }),
     updateTrackedContent: (id: string, updates: TrackedContentUpdateRequest) => request<TrackedContentItem>(`/tracked-content/${id}`, { method: 'PUT', body: JSON.stringify(updates) }),
     deleteTrackedContent: (id: string) => request<SuccessResponse>(`/tracked-content/${id}`, { method: 'DELETE' }),
     refreshTrackedContent: (id: string) => request<TrackedContentItem>(`/tracked-content/${id}/refresh`, { method: 'POST' }),
