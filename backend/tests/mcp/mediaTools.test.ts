@@ -17,7 +17,7 @@ function context(canDelete: boolean): ToolContext & { removed: string[] } {
         list: async userId => (userId === 'user-1' ? [asset('a'), asset('b'), asset('c')] : []),
         async remove(_userId, id) {
             removed.push(id);
-            return { removedFromCloudinary: canDelete };
+            return { removedFromCloudinary: canDelete, fileKept: canDelete ? null : 'no_api_secret' };
         },
     };
     return { services: { media } as unknown as Services, principal: { userId: 'user-1', permission: 'write', via: 'token:t1' }, removed };

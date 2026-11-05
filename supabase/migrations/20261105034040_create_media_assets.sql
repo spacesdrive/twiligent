@@ -12,6 +12,8 @@ create table public.media_assets (
     height integer,
     duration_seconds numeric,
     label text not null default '',
+    -- true only when Twiligent created the file for this person; a browser upload proves no ownership, so it is never deleted from Cloudinary
+    owns_file boolean not null default false,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
     constraint media_assets_user_public_id_key unique (user_id, public_id),

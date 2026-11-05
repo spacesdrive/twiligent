@@ -464,6 +464,7 @@ The images and videos each person imported through the Claude media tools. The C
 | `url` | text | not null, starts with `https://` | The public address Instagram publishes from |
 | `format`, `bytes`, `width`, `height`, `duration_seconds` | text, bigint, integer, integer, numeric | | As Cloudinary reported them |
 | `label` | text | not null, default `''`, at most 200 characters | The person's name for the file |
+| `owns_file` | boolean | not null, default false | True only when Twiligent created the file for this person (an import Cloudinary did not answer with `existing`); deleting the row deletes the file from Cloudinary only then, because a browser upload proves no ownership on the shared account |
 | `created_at`, `updated_at` | timestamptz | not null, default now() | |
 
 Index `media_assets_user_created_idx` on `(user_id, created_at desc)` serves the list.

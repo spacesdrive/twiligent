@@ -14,7 +14,7 @@ const ENV = { GOOGLE_CLIENT_ID: 'client', GOOGLE_CLIENT_SECRET: 'secret', TOKEN_
 
 const VIDEO: StoredMediaAsset = {
     id: 'm-video', publicId: 'v', resourceType: 'video', url: 'https://res.cloudinary.com/demo/video/upload/v.mp4', format: 'mp4',
-    bytes: 1000, width: 1080, height: 1920, durationSeconds: 45, label: '', createdAt: '',
+    bytes: 1000, width: 1080, height: 1920, durationSeconds: 45, label: '', ownsFile: false, createdAt: '',
 };
 const IMAGE: StoredMediaAsset = { ...VIDEO, id: 'm-image', resourceType: 'image', url: 'https://res.cloudinary.com/demo/image/upload/t.jpg', format: 'jpg', bytes: 5000 };
 

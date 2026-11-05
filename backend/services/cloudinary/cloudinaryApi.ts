@@ -15,6 +15,8 @@ export interface CloudinaryUpload {
     width?: number;
     height?: number;
     duration?: number;
+    // set when the upload landed on a file that was already there, which may be someone else's
+    existing?: boolean;
 }
 
 interface CloudinaryErrorBody {

@@ -10,6 +10,7 @@ CREATE TABLE "public"."media_assets" (
   "height"           integer,
   "duration_seconds" numeric,
   "label"            text                     NOT NULL DEFAULT ''::text,
+  "owns_file"        boolean                  NOT NULL DEFAULT false,
   "created_at"       timestamp with time zone NOT NULL DEFAULT now(),
   "updated_at"       timestamp with time zone NOT NULL DEFAULT now(),
   CONSTRAINT "media_assets_label_check" CHECK ((char_length(label) <= 200)),

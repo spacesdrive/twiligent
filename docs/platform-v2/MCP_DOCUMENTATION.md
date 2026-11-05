@@ -129,7 +129,7 @@ Every tool works only on the caller's own data. Read tools need no confirmation.
 | `list_media` | read | `limit`, `cursor` | `media` (id, type, public https `url`, size and dimensions, label), `nextCursor`, `total` |
 | `import_media_from_url` | write | `url` (public https), `resourceType` (`image` or `video`), `label` | `media`. Cloudinary downloads the file, not the Worker; private and non-https addresses are refused |
 | `update_media` | write | `mediaId`, `label` | `media` |
-| `delete_media` | write, confirm | `mediaId` | `deleted`, `removedFromCloudinary`, and a `note` when the file stays on Cloudinary because the instance has no API secret |
+| `delete_media` | write, confirm | `mediaId` | `deleted`, `removedFromCloudinary`, and a `note` when the file stays on Cloudinary: the instance has no API secret, or Twiligent did not create the file (a browser upload, or an import that landed on a file Cloudinary already had) |
 | `list_youtube_channels` | read | none | `channels` (no tokens), `configured` |
 | `list_youtube_uploads`, `get_youtube_upload` | read | `limit`, `cursor`; or `uploadId` | Upload jobs with state, progress, video id and error |
 | `create_youtube_upload` | write, confirm when public, unlisted or scheduled | `connectionId`, `mediaId`, `title`, `privacy`, `madeForKids`, and optional `description`, `tags`, `categoryId`, `publishAt`, `syntheticMedia`, `notifySubscribers`, `thumbnailMediaId`, `clientRequestId` | `upload`, `alreadyQueued` |
