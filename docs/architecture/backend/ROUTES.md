@@ -1,6 +1,6 @@
 # Backend Routes
 
-All routes live under `/api`. Routes in the protected group require a valid Supabase JWT (`requireAuth` middleware). Public routes bypass auth.
+All routes live under `/api`, except the MCP endpoint for Claude clients (see MCP Endpoint). Routes in the protected group require a valid Supabase JWT (`requireAuth` middleware). Public routes bypass auth.
 
 Each route is one line in a route table in `backend/routes/` that points at a controller in `backend/controllers/`; the controller calls one service method. `backend/routes/index.ts` groups the tables into `publicRoutes` and `protectedRoutes`. See `REQUEST_PIPELINE.md` for the layers.
 
@@ -64,6 +64,18 @@ Supabase Auth calls this route, not a browser, so it has its own rules:
 - **Retries.** The `webhook-id` is sent to Resend as the idempotency key, so a repeated call does not send the email twice.
 
 See `docs/architecture/data-flows/AUTHENTICATION.md` for the whole flow.
+
+## MCP Endpoint
+
+Claude clients reach Twiligent through a Model Context Protocol server registered in `app.ts`, outside `/api`. It has its own credentials and its own error body (JSON-RPC), so the table above does not apply. Tools, sign-in and setup are in `docs/platform-v2/MCP_DOCUMENTATION.md`.
+
+| Method | Path | Controller | Purpose |
+|---|---|---|---|
+| POST | `/mcp` | `mcpController.handleMcpMessage` | One JSON-RPC message in, one JSON reply out (`202` with no body for a notification). Auth by `requireMcpAuth` (`middleware/mcpAuth.ts`): a personal access token (`twl_...`) or a Supabase OAuth token issued to an approved client; an app session token is refused. Rate limited per IP (`ip`) and per user (`mcp`) |
+| GET, DELETE | `/mcp` | `mcpController.refuseMcpStream` | `405` with `Allow: POST`: the server keeps no stream and no session |
+| GET | `/.well-known/oauth-protected-resource`, `/.well-known/oauth-protected-resource/mcp` | `mcpController.getProtectedResourceMetadata` | Protected resource metadata naming Supabase Auth as the authorization server; `404` until `MCP_OAUTH_ENABLED` is `true` |
+
+Statuses on `POST /mcp`: `401` with `WWW-Authenticate: Bearer realm="twiligent"` (plus `resource_metadata` when OAuth is on) for a missing, unknown, revoked or expired credential; `403` for a request from a web page whose `Origin` is not Claude's or the app's, or an OAuth client the person has not approved; `400` for a body that is not JSON-RPC or a header that does not match the body; `404` with `-32601` for an unknown method; `429` from the rate limit. A tool that fails returns `200` with `isError: true` and a message the model can act on.
 
 ## Protected Routes (require `Authorization: Bearer <jwt>`)
 
@@ -175,6 +187,20 @@ Controllers call `AutomationService` (`services/automationService.ts`). Every ro
 |---|---|---|---|
 | GET | `/api/settings/github` | `settingsRoutes.ts`, `settingsController.getGithubSettings` | Retrieve the scheduling repository (`repoOwner`, `repoName`, `branch`) for the current user |
 | PUT | `/api/settings/github` | `settingsRoutes.ts`, `settingsController.saveGithubSettings` | Save the scheduling repository; rewrites `settings.github`, dropping any token an older version stored |
+
+### Claude (MCP access)
+
+Controllers in `mcpAccessController.ts` call `McpAccessService` (`services/mcpAccessService.ts`). The Settings page (Claude section) and the consent page (`/oauth/consent`) use them.
+
+| Method | Path | File | Purpose |
+|---|---|---|---|
+| GET | `/api/mcp/info` | `mcpRoutes.ts`, `mcpAccessController.getMcpInfo` | `{ serverUrl, oauthEnabled }`: the address Claude connects to and whether connector sign-in is on |
+| GET | `/api/mcp/tokens` | `mcpRoutes.ts`, `mcpAccessController.listAccessTokens` | The caller's active access tokens: label, last four characters, permission, last used, expiry. Never the token |
+| POST | `/api/mcp/tokens` | `mcpRoutes.ts`, `mcpAccessController.createAccessToken` | Body `{ label, permission: 'read' \| 'write', expiresInDays: 1-365 \| null }`. `201` with the token, the only response that carries it (`Cache-Control: no-store`); 20 active tokens at most |
+| DELETE | `/api/mcp/tokens/:id` | `mcpRoutes.ts`, `mcpAccessController.revokeAccessToken` | Revokes one of the caller's tokens at once |
+| GET | `/api/mcp/clients` | `mcpRoutes.ts`, `mcpAccessController.listClientGrants` | The OAuth clients the caller approved, with their permission and last use |
+| POST | `/api/mcp/clients` | `mcpRoutes.ts`, `mcpAccessController.approveClient` | Body `{ clientId, clientName, permission }`: saves the consent page's choice for the caller before the page approves the request with Supabase |
+| DELETE | `/api/mcp/clients/:id` | `mcpRoutes.ts`, `mcpAccessController.revokeClient` | Removes an approval; the client is refused at its next call |
 
 ## Adding a New Route
 

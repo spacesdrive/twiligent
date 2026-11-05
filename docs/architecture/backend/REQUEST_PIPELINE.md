@@ -28,6 +28,9 @@ Request
      Public routes     routes/index.ts               /api/health, /api/health/ready, /api/auth/instagram/callback (with its own oauth limit),
                                                      /api/auth/email-hook (middleware/authHook.ts checks Supabase's signature),
                                                      /api/webhooks/instagram (middleware/metaWebhook.ts checks Meta's signature)
+     MCP endpoint      app.ts                        POST /mcp: middleware/mcpAuth.ts verifies an access token or an approved OAuth
+                                                     client and sets userId, then the mcp limit, then mcpController -> McpService,
+                                                     which runs one tool; each tool calls one service method
   6. Authentication    middleware/auth.ts            verifies the JWT and sets userId; 401 otherwise
   7. Per-user limits   middleware/rateLimit.ts       user, quota and publish rules
   8. Route table       routes/<feature>Routes.ts
@@ -38,7 +41,7 @@ Request
 Response, or a thrown error -> middleware/errorHandler.ts
 ```
 
-Authorization is ownership: every user-scoped repository method filters by the verified user id, so another user's row is simply not found (404). There are no roles. The Send Email hook and the Instagram webhook have no user: Supabase Auth and Meta call them, and their signatures take the place of the JWT. The Instagram webhook attaches each comment to the account its signed payload names.
+Authorization is ownership: every user-scoped repository method filters by the verified user id, so another user's row is simply not found (404). There are no roles; the MCP endpoint adds a read or write permission per access token or approved client, checked before any tool runs. The Send Email hook and the Instagram webhook have no user: Supabase Auth and Meta call them, and their signatures take the place of the JWT. The Instagram webhook attaches each comment to the account its signed payload names.
 
 ## Request context
 

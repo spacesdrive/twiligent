@@ -406,6 +406,47 @@ One row per message or public reply request sent to Instagram. The private reply
 
 ---
 
+## Claude (MCP) Tables
+
+How Claude clients sign in to the MCP endpoint (`docs/platform-v2/MCP_DOCUMENTATION.md`). Both are read and written only by the Worker with the service key; browser access is revoked like every other table.
+
+### Table: `mcp_access_tokens`
+
+Personal access tokens a person creates in Settings, Claude. The token is shown once; only its hash is kept.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | text | primary key | `newRowId()` |
+| `user_id` | uuid | not null, references `auth.users` on delete cascade | |
+| `label` | text | not null, 1 to 80 characters | The person's name for it, such as the computer it is for |
+| `token_hash` | text | not null, unique, 64 lowercase hex characters | SHA-256 of the token (`twl_` and 43 base64url characters from 32 random bytes); a fast hash is enough because the token is random, not a password |
+| `token_hint` | text | not null, 4 characters | The token's last four characters, shown in Settings |
+| `permission` | text | `read` or `write` | Which tools the token may list and run |
+| `last_used_at` | timestamptz | | Written at most once an hour per token |
+| `expires_at` | timestamptz | | Null when the token does not expire; at most 365 days ahead when set |
+| `revoked_at` | timestamptz | | Set on revoke; a revoked token is refused and no longer listed |
+| `created_at`, `updated_at` | timestamptz | not null, default now() | |
+
+A person may have 20 active tokens.
+
+### Table: `mcp_client_grants`
+
+The OAuth clients (Claude's apps) a person approved on the consent page, and what each may do. Supabase Auth issues the client's tokens; this table is Twiligent's own record, and the MCP endpoint refuses a client without a row here.
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | text | primary key | `newRowId()` |
+| `user_id` | uuid | not null, references `auth.users` on delete cascade | |
+| `client_id` | text | not null, unique with `user_id` | The OAuth client id Supabase Auth issued, the `client_id` claim of its tokens |
+| `client_name` | text | not null, 1 to 200 characters | The name the client registered, shown in Settings |
+| `permission` | text | `read` or `write` | Chosen on the consent page |
+| `last_used_at` | timestamptz | | Written at most once an hour per client |
+| `created_at`, `updated_at` | timestamptz | not null, default now() | |
+
+Approving the same client again updates its row, so its id stays the same.
+
+---
+
 ## Table: `audit_events`
 
 Who connected, reconnected or removed an account, changed a rule, paused or subscribed an account, or retried a reply. Rows reference only the user, so they outlive the account they describe.
@@ -414,8 +455,8 @@ Who connected, reconnected or removed an account, changed a rule, paused or subs
 |---|---|---|---|
 | `id` | text | primary key | `newRowId()` |
 | `user_id` | uuid | not null, references `auth.users` on delete cascade | |
-| `action` | text | `^[a-z_]+\.[a-z_]+$` | `account.connected`, `account.reconnected`, `account.removed`, `automation_rule.created`, `.updated`, `.duplicated`, `.deleted`, `automation_account.paused`, `.resumed`, `.subscribed`, `automation_comment.retried`, `automation_public_reply.retried` |
-| `subject_type` | text | `account`, `automation_rule`, `automation_account`, `automation_comment` | |
+| `action` | text | `^[a-z_]+\.[a-z_]+$` | `account.connected`, `account.reconnected`, `account.removed`, `automation_rule.created`, `.updated`, `.duplicated`, `.deleted`, `automation_account.paused`, `.resumed`, `.subscribed`, `automation_comment.retried`, `automation_public_reply.retried`, `mcp_access_token.created`, `.revoked`, `mcp_client.approved`, `.revoked`, and `mcp_access_token.called_tool` or `mcp_client.called_tool` for each write tool a Claude client ran (with the tool name and outcome) |
+| `subject_type` | text | `account`, `automation_rule`, `automation_account`, `automation_comment`, `mcp_access_token`, `mcp_client`, `scheduled_post`, `tracked_post`, `media_asset`, `youtube_connection`, `youtube_upload`, `settings` | The last six are for changes made through Claude clients, publishing, media and YouTube |
 | `subject_id` | text | | |
 | `details` | jsonb | not null, default `{}`, an object | Small facts such as the platform or the changed field names; never tokens or comment text |
 | `created_at`, `updated_at` | timestamptz | not null, default now() | |
@@ -463,6 +504,7 @@ An index exists because a frequent query filters or orders on its columns. Each 
 | `automation_comments_created_at_idx` | `automation_comments (created_at)` | `purge_automation_comments`: the oldest comments first, a batch at a time | |
 | `automation_attempts_*_started_at_idx` | `(started_at)`, `(user_id, started_at)`, `(account_id, started_at)`, `(rule_id, started_at)`, `(account_id, recipient_id, started_at)` | `reserve_automation_send`: sends in the last hour per scope, and per recipient in the last day | One per limit the reservation counts |
 | `automation_attempts_comment_idx` | `automation_attempts (automation_comment_id)` | Finishing and recovering one comment's attempt; the cascade | |
+| `mcp_access_tokens_user_created_idx`, `mcp_client_grants_user_created_idx` | `(user_id, created_at desc)` | Listing a person's tokens and approved clients in Settings | The token lookup by hash uses the unique `token_hash` key, and a client lookup the unique `(user_id, client_id)` key |
 | `audit_events_user_id_created_at_idx`, `audit_events_created_at_idx` | `(user_id, created_at desc)`, `(created_at)` | Listing a user's events; the retention delete | |
 
 The primary keys serve every lookup by `id`, and `settings` is read through its `(user_id, key)` primary key.

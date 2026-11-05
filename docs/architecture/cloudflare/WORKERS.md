@@ -57,6 +57,8 @@ All secrets are set via `npx wrangler secret put <NAME>`, run from `backend/`. T
 | `EMAIL_FROM` | Optional | Sender of the auth emails on a domain verified in Resend, such as `Twiligent <no-reply@example.com>` |
 | `EMAIL_DAILY_LIMIT` | Optional | Auth emails a day across all users (each code sign-in is one) before the sign-in page pauses email codes and points to Google or a password; defaults to `100`, Resend's free daily quota |
 | `INSTAGRAM_WEBHOOK_VERIFY_TOKEN` | Optional | The Verify Token typed into the Meta dashboard's Instagram webhook settings; `GET /api/webhooks/instagram` answers Meta's check only with it. Without it, and `INSTAGRAM_APP_SECRET`, no comment reaches the Worker and the Automations page says so |
+| `TOKEN_ENCRYPTION_KEY` | Optional | At least 32 random characters (`openssl rand -base64 48`). Keys derived from it sign the MCP confirmation tokens, so without it the Claude tools that publish or delete refuse to run; YouTube publishing will also encrypt stored tokens with it. Changing it voids confirmations in flight |
+| `MCP_OAUTH_ENABLED` | Optional | `true` once Supabase Auth's OAuth server is turned on with the authorization path `/oauth/consent`; the MCP endpoint then publishes its protected resource metadata, so Claude on the web, desktop and mobile can connect. Access tokens work without it |
 | `META_APP_SECRET` | Optional | The Meta app's own secret (App settings, Basic). Webhook signatures are checked against `INSTAGRAM_APP_SECRET` and, when this is set, against it too |
 | `AUTOMATION_PAUSED` | Optional | `true` holds every comment-to-DM reply on the instance; comments are still stored and matched |
 | `AUTOMATION_ACCOUNT_HOURLY_LIMIT` | Optional | Private replies an hour per Instagram account; default `200`, at most `750` (Instagram's limit) |
@@ -102,6 +104,8 @@ UPSTASH_REDIS_REST_TOKEN=...
 # only to test the Instagram webhook locally; Meta cannot reach localhost, so sign request bodies yourself
 # INSTAGRAM_WEBHOOK_VERIFY_TOKEN=a-long-random-string
 # AUTOMATION_PAUSED=true
+# signs the MCP confirmation tokens; any 32 or more random characters
+# TOKEN_ENCRYPTION_KEY=...
 ```
 
 Run locally from the repository root: `npm run dev:backend` (Worker only, port 8787) or `npm run dev` (Worker and Vite together). Both run `wrangler dev` in `backend/`, which reloads on save.

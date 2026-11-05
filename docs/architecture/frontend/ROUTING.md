@@ -9,8 +9,9 @@ The app uses React Router 7 in `frontend/src/App.tsx`: a data router from `creat
 | Path | Component | Notes |
 |---|---|---|
 | `/login` | `Login.tsx` | Public - redirects to `/` if already authenticated. Opens on the start view: Continue with Google, an email field that sends a sign-in code, and a Use password link. `?mode=signup` keeps the same view with the headline "Create your Twiligent account" and Google's "Sign up with Google"; the emailed code creates the account the first time an address is used (the public site's Get started buttons link to `https://app.twiligent.ujjwal.fyi/login?mode=signup`) |
+| `/oauth/consent` | `pages/OAuthConsent.tsx` | Protected, outside the app shell: Supabase Auth's OAuth server sends a person here to approve a Claude app (`?authorization_id=`). Signed out, it signs in through `/login?next=...` and comes back. See `docs/architecture/data-flows/AUTHENTICATION.md` |
 | `/docs/*` | `components/DocsRedirect.tsx` | Public. The docs live on the public site; this route replaces the location with the same path and hash under `https://twiligent.ujjwal.fyi/docs` (`docsUrl()` in `lib/docs.ts`), so old links keep working |
-| `/` (layout) | `AppLayout` (inline) | Protected - redirects to `/login` if unauthenticated |
+| `/` (layout) | `AppLayout` (inline) | Protected - redirects to `/login?next=<path>` if unauthenticated, and back after sign-in |
 | `/` (index) | `Overview.tsx` | Default page after login |
 | `/accounts` | `AccountManager.tsx` | Connect and remove accounts. `?add=1` opens the add flow; Instagram sign-in returns `#ig_code=...&ig_state=...` in the fragment, which the page removes from the address and posts to `api.completeInstagramConnection` (the server connects the account only for the person who started the sign-in), or `?ig_error` when it failed or was cancelled |
 | `/channel/:id` | `ChannelAnalytics.tsx` | `:id` = account.id for YouTube accounts |
@@ -31,7 +32,7 @@ The app uses React Router 7 in `frontend/src/App.tsx`: a data router from `creat
 
 ## Auth Guard
 
-Auth protection is applied via a `<ProtectedRoute>` component wrapping the layout route in `App.tsx`. All child routes are protected. `/login` and `/docs/*` (the redirect to the public docs) are the only public routes.
+Auth protection is applied via a `<ProtectedRoute>` component wrapping the layout route and `/oauth/consent` in `App.tsx`. All child routes are protected. A signed-out visit keeps the path and query in `next`, and `returnPath()` in `lib/signInPage.ts` accepts only a path on this site. `/login` and `/docs/*` (the redirect to the public docs) are the only public routes.
 
 ## Lazy Loading
 

@@ -117,6 +117,12 @@ Every tool works only on the caller's own data. Read tools need no confirmation.
 
 | Tool | Kind | Input | Result |
 |---|---|---|---|
+| `list_accounts` | read | none | `accounts`: id, platform, name, handle, headline figures (never a token) |
+| `get_youtube_channel_analytics` | read | `accountId` | `channel` figures and growth estimates, `uploads` averages and engagement, the best, worst and most recent `videos` |
+| `list_youtube_videos` | read | `accountId`, `sort` (`recent` or `views`), `limit`, `cursor` | `videos`, `nextCursor`, `total`, `fetchedAt` |
+| `compare_youtube_channels` | read | none | `channels`, combined `totals`, the `leaders` by subscribers, views and videos |
+| `get_instagram_account_analytics` | read | `accountId` | `account` figures, `posts` averages and engagement rate, `byContentType`, `postFrequency`, the best and worst posts |
+| `list_instagram_media` | read | `accountId`, `limit`, `cursor` | `posts` (captions cut at 300 characters, with a permalink), `nextCursor`, `total`, `fetchedAt` |
 | `get_settings` | read | none | Which server keys are set (never their values); the GitHub repository setting |
 | `get_instagram_publishing_limit` | read | `accountId` | Posts published in the last 24 hours and the limit |
 | `update_github_settings` | write | `repoOwner`, `repoName`, `branch` | The saved setting |
