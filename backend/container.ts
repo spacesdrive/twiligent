@@ -41,6 +41,7 @@ import { createAutomationProcessor } from './services/automationProcessor.ts';
 import { createAutomationFollowupProcessor } from './services/automationFollowupProcessor.ts';
 import { createAutomationPublicReplyProcessor } from './services/automationPublicReplyProcessor.ts';
 import { createAutomationReconciler } from './services/automationReconciler.ts';
+import { createPostAutomationService } from './services/postAutomationService.ts';
 import { createRetentionService } from './services/retentionService.ts';
 import { createHealthService } from './services/healthService.ts';
 import { createMcpAccessService } from './services/mcpAccessService.ts';
@@ -66,6 +67,7 @@ import type { AutomationProcessor } from './services/automationProcessor.ts';
 import type { AutomationFollowupProcessor } from './services/automationFollowupProcessor.ts';
 import type { AutomationPublicReplyProcessor } from './services/automationPublicReplyProcessor.ts';
 import type { AutomationReconciler } from './services/automationReconciler.ts';
+import type { PostAutomationService } from './services/postAutomationService.ts';
 import type { RetentionService } from './services/retentionService.ts';
 import type { McpAccessService, McpPrincipal } from './services/mcpAccessService.ts';
 import type { McpService } from './services/mcpService.ts';
@@ -107,6 +109,7 @@ export interface Services {
     automationFollowups: AutomationFollowupProcessor;
     automationPublicReplies: AutomationPublicReplyProcessor;
     automationReconciler: AutomationReconciler;
+    postAutomation: PostAutomationService;
     retention: RetentionService;
     health: HealthService;
     mcpAccess: McpAccessService;
@@ -137,6 +140,7 @@ export function createServices(clients: Clients, config: AppConfig, context: Req
     const youtubeConnect = createYouTubeConnectService({ connections: youtubeConnections, uploads: youtubeUploadRows, accounts, audit, config, context });
     // counters on the fail-fast client the rate limits use: without Redis nothing is metered
     const youtubeQuota = createYouTubeQuotaService({ quota: createYouTubeQuotaRepository(clients.rateLimitRedis) });
+    const automations = createAutomationService({ accounts, rules, comments, followups, publicReplies, automationAccounts, audit, automation, context });
     const services: Services = {
         accounts: createAccountService({ accounts, cache, audit, config, context, youtubeQuota, youtubePublishing: youtubeConnect }),
         youtubeAnalytics: createYouTubeAnalyticsService({ accounts, cache, config, context, youtubeQuota }),
@@ -154,12 +158,13 @@ export function createServices(clients: Clients, config: AppConfig, context: Req
         youtubeRunner: createYouTubeUploadRunner({ uploads: youtubeUploadRows, connections: youtubeConnections, connect: youtubeConnect, ledger: createYouTubeQuotaLedgerRepository(clients.supabase), context }),
         instagramConnect: createInstagramConnectService({ accounts, audit, config, context }),
         authEmail: createAuthEmailService({ quota: createEmailQuotaRepository(clients.rateLimitRedis), config, context }),
-        automations: createAutomationService({ accounts, rules, comments, followups, publicReplies, automationAccounts, audit, automation, context }),
+        automations,
         automationWebhook: createAutomationWebhookService({ rules, comments, followups, automation, context }),
         automationProcessor: createAutomationProcessor({ comments, automation, context }),
         automationFollowups: createAutomationFollowupProcessor({ followups, automation, context }),
         automationPublicReplies: createAutomationPublicReplyProcessor({ publicReplies, automation, context }),
         automationReconciler: createAutomationReconciler({ comments, publicReplies, context }),
+        postAutomation: createPostAutomationService({ posts, rules, automations, context }),
         retention: createRetentionService({ comments, audit, context }),
         health: createHealthService({ health: createHealthRepository(clients.supabase) }),
         mcpAccess: createMcpAccessService({ tokens: mcpTokens, grants: mcpGrants, audit, context }),

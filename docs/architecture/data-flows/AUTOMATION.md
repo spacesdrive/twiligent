@@ -325,3 +325,7 @@ Everything runs on the existing Worker, Supabase project and Workers Free plan; 
 | Repositories | `repositories/automationRuleRepository.ts`, `automationCommentRepository.ts`, `automationFollowupRepository.ts`, `automationPublicReplyRepository.ts`, `automationAccountRepository.ts`, `auditRepository.ts` |
 | Database | `supabase/migrations/20261016100000` to `20261016103500`, `20261016120000` to `20261016122500` and `20261016130000` to `20261016132100`, one entity per file |
 | App | `frontend/src/features/automations/` |
+
+## Rules made from scheduled posts
+
+A scheduled post can carry the reply for its own comments. Once it is published, `postAutomation.attachPublished` makes an ordinary enabled rule for that post (`matchMode: 'any'`, `mediaIds: [publishedMediaId]`) through `automations.createRule`, so everything above applies to it unchanged. The flow is in `SCHEDULING.md` (Comment automation for a scheduled post) and ADR-054.

@@ -1162,3 +1162,23 @@ New row ids come from `crypto.randomUUID()` (`newRowId()` in `backend/lib/ids.ts
 - The CPU cost of copying 8 MiB per chunk on the Free plan is unmeasured; the paid plan is the fallback.
 - A session lost after the last byte goes to a person (`needs_review`) instead of a retry, trading automation for never publishing twice.
 - Changing `TOKEN_ENCRYPTION_KEY` signs everyone out of YouTube.
+
+---
+
+## ADR-054: A scheduled post carries its comment automation, and the Worker makes the rule once the post is published
+
+**Date:** 2026-11-05
+**Status:** Accepted
+
+**Decision:** A scheduled Instagram post may store an `automation` (`{ replyText, publicReplyTexts }`) in its `data`. After each publish run and each reconcile run, `postAutomation.attachPublished` lists published posts whose automation has no rule yet and creates, through `automations.createRule` for the post's owner, an enabled rule that answers any comment on that one post. The post then records `automationRuleId`, or `automationError` when the rule cannot be made (#176).
+
+**Context:** A rule for one post needs the post's Instagram id, which only exists after publishing. Posts are scheduled weeks ahead, each with its own message, so making each rule by hand means coming back for every post.
+
+**Alternatives considered:**
+- Making the rule in the publisher. Both schedulers would need it, and the GitHub Actions script has no dependencies and no access to the rule checks or the webhook subscription.
+- Matching comments to scheduled posts in the webhook. It would add a lookup to every comment for a feature most comments never use.
+- A new column for the automation. The post's other content already lives in `data` and changes through the merge functions; no migration was needed.
+
+**Trade-offs:**
+- A post the GitHub Actions scheduler publishes gets its rule at the next Worker publish or reconcile run, up to about ten minutes later; comments in that gap are not answered.
+- The rule is an ordinary rule afterwards: editing the scheduled post does not change it, and it is edited or paused on the Instagram automation page.

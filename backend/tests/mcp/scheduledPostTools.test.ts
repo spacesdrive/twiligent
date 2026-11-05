@@ -89,3 +89,17 @@ test('fields the tools do not publish are refused, so a client cannot set what i
     const withMedia = scheduleInstagramPost.parse({ accountId: 'ig-1', mediaUrl: 'https://cdn.example/a.jpg', scheduledAt: LATER, confirmationToken: 'x' });
     assert.match(scheduleInstagramPost.describe?.(withMedia) ?? '', /Media: https:\/\/cdn\.example\/a\.jpg\./);
 });
+
+test('a post scheduled with an automation shows its private and public replies in the confirmation, and reports when its rule exists', async () => {
+    const input = scheduleInstagramPost.parse({
+        accountId: 'ig-1', mediaUrl: 'https://res.cloudinary.com/demo/reel.mp4', mediaType: 'REELS', scheduledAt: LATER,
+        automation: { replyText: 'Here is the link', publicReplyTexts: ['Sent you a DM', 'Check your messages'] },
+    });
+    const described = scheduleInstagramPost.describe?.(input) ?? '';
+    assert.match(described, /anyone who comments gets this private reply: "Here is the link"/);
+    assert.match(described, /"Sent you a DM", "Check your messages"/);
+    const ctx = context([post('live', 'published', { automation: { replyText: 'Hi', publicReplyTexts: [] }, automationRuleId: 'rule-1' })]);
+    const got = await getScheduledPost.run({ postId: 'live' }, ctx) as { post: { automation: { ruleCreated: boolean; error: string | null } } };
+    assert.deepEqual(got.post.automation, { replyText: 'Hi', publicReplyTexts: [], ruleCreated: true, error: null });
+    assert.throws(() => scheduleInstagramPost.parse({ accountId: 'ig-1', mediaUrl: 'https://x/y.mp4', scheduledAt: LATER, automation: { publicReplyTexts: ['Hi'] } }), ValidationError);
+});

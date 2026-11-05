@@ -68,6 +68,18 @@ async function dispatch(services: Services, context: RequestContext): Promise<vo
     }
 }
 
+// each post's rule costs about ten subrequests, so a run makes a few and leaves the rest of its budget to its own work
+const POST_AUTOMATIONS_PER_RUN = 3;
+
+// a newly published post gets its comment rule in the same run, or the reconcile run when another scheduler published it
+async function attachPostAutomations(services: Services, context: RequestContext): Promise<void> {
+    try {
+        await services.postAutomation.attachPublished(POST_AUTOMATIONS_PER_RUN);
+    } catch (err) {
+        context.log.error('post automation run failed', errorFields(err));
+    }
+}
+
 // a failed daily step is logged and the next one still runs, so a token refresh problem never stops the retention purge
 export async function dailyStep(context: RequestContext, step: string, work: () => Promise<unknown>): Promise<void> {
     try {
@@ -96,11 +108,13 @@ export async function runScheduledJob(cron: string, env: Env, scheduledTime = Da
     } else if (plan === 'publish') {
         const run = await services.scheduledPublisher.publishDue();
         context.log.info('scheduled publish run', { processed: run.processed, failed: run.errors.length });
+        await attachPostAutomations(services, context);
     } else if (plan === 'youtube') {
         const run = await services.youtubeRunner.run({ subrequests: FREE_PLAN_SUBREQUESTS, timeBudgetMs: YOUTUBE_RUN_MS });
         if (run.jobId) context.log.info('youtube upload run', { jobId: run.jobId, state: run.state, chunks: run.chunks, subrequests: run.subrequests });
     } else if (plan === 'reconcile') {
         await services.automationReconciler.run();
+        await attachPostAutomations(services, context);
     } else if (plan === 'daily') {
         await dailyStep(context, 'token refresh', () => services.tokenRefresh.refreshExpiringInstagramTokens());
         await dailyStep(context, 'retention purge', () => services.retention.purge(Date.now(), { commentBatches: RETENTION_BATCHES }));

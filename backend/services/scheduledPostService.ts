@@ -60,6 +60,7 @@ export function createScheduledPostService({ accounts, posts }: ScheduledPostDep
                 createdAt: new Date().toISOString(),
                 publishedMediaId: null,
                 error: null,
+                ...(request.automation ? { automation: request.automation } : {}),
             };
             await posts.create(post, userId);
             return post;

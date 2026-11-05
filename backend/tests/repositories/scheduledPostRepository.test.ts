@@ -55,3 +55,16 @@ describe('scheduled post repository', () => {
         assert.deepEqual(db.table.map(row => (row.data as Row).caption), ['Hi', 'Changed']);
     });
 });
+
+test('only published posts with an automation, no rule yet and no recorded failure wait for a rule, each with its owner', async () => {
+    const automation = { replyText: 'Here is the link', publicReplyTexts: [] };
+    const posts = createScheduledPostRepository(fakeSupabase([
+        postRow('waiting', { status: 'published', user_id: 'user-2', data: { automation, publishedMediaId: '1789' } }),
+        postRow('pending', { data: { automation } }),
+        postRow('plain', { status: 'published', data: { caption: 'No automation' } }),
+        postRow('done', { status: 'published', data: { automation, automationRuleId: 'rule-1' } }),
+        postRow('broken', { status: 'published', data: { automation, automationError: 'No access token' } }),
+    ]));
+    const waiting = await posts.listAwaitingAutomation(10);
+    assert.deepEqual(waiting.map(item => [item.post.id, item.userId, item.post.publishedMediaId]), [['waiting', 'user-2', '1789']]);
+});
