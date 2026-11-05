@@ -75,6 +75,7 @@ export const DOC_TABS: DocTab[] = [
           { slug: 'use/publishing', title: 'Publish and schedule', icon: Plane },
           { slug: 'use/automations', title: 'Reply to comments automatically', icon: ChatDots },
           { slug: 'use/tracked-content', title: 'Track content', icon: Bookmark },
+          { slug: 'use/claude', title: 'Use Twiligent from Claude', icon: Key },
         ],
       },
       {
