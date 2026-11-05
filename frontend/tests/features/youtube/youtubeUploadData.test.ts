@@ -6,6 +6,12 @@ import {
 import type { ComposerValues } from '../../../src/features/youtube/youtubeUploadData.ts';
 
 const NOW = new Date('2026-11-05T12:00:00Z');
+// the form gives a local date and time, so the test builds it from NOW in whatever zone the machine runs in
+function localInput(offsetHours: number): string {
+  const at = new Date(NOW.getTime() + offsetHours * 60 * 60 * 1000);
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${at.getFullYear()}-${pad(at.getMonth() + 1)}-${pad(at.getDate())}T${pad(at.getHours())}:${pad(at.getMinutes())}`;
+}
 const READY: ComposerValues = { connectionId: 'c1', hasVideo: true, title: 'Launch', madeForKids: false, scheduled: false, publishAt: '' };
 
 test('every state has a word, a tone and a line of help, so status is never shown by colour alone', () => {
@@ -34,8 +40,8 @@ test('the composer names the first missing field, including YouTube\'s required 
   assert.equal(composerProblem({ ...READY, title: 'x'.repeat(101) }, NOW)?.field, 'title');
   assert.equal(composerProblem({ ...READY, title: 'a <b>' }, NOW)?.field, 'title');
   assert.equal(composerProblem({ ...READY, madeForKids: null }, NOW)?.field, 'madeForKids');
-  assert.equal(composerProblem({ ...READY, scheduled: true, publishAt: '2026-11-05T11:00' }, NOW)?.message, 'Pick a time in the future.');
-  assert.equal(composerProblem({ ...READY, scheduled: true, publishAt: '2026-11-06T11:00' }, NOW), null);
+  assert.equal(composerProblem({ ...READY, scheduled: true, publishAt: localInput(-1) }, NOW)?.message, 'Pick a time in the future.');
+  assert.equal(composerProblem({ ...READY, scheduled: true, publishAt: localInput(23) }, NOW), null);
 });
 
 test('the sign-in return is read from the fragment', () => {
