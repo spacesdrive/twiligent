@@ -8,6 +8,8 @@ export interface Env {
     INSTAGRAM_APP_SECRET?: string;
     CLOUDINARY_CLOUD_NAME?: string;
     CLOUDINARY_UPLOAD_PRESET?: string;
+    CLOUDINARY_API_KEY?: string;
+    CLOUDINARY_API_SECRET?: string;
     BACKEND_URL?: string;
     FRONTEND_URL?: string;
     // comma-separated extra browser origins allowed by CORS, besides FRONTEND_URL
