@@ -34,8 +34,9 @@ Open **SQL Editor**, then run each file from `supabase/migrations/` in file name
 
 Open **Authentication**, then **Sign In / Providers**, then **Email**.
 
-- Turn off **Confirm email** unless you set up [email verification codes](/docs/self-host/email-codes). Otherwise members who create an account with a password wait for a confirmation code that Supabase's own email does not contain.
-- To keep the instance private, turn off **Allow new users to sign up** after you and your team have created accounts. Google and emailed codes then only sign in existing members. You can also add members yourself under **Authentication**, **Users**, **Add user**.
+- Keep **Confirm email** on and set up [email verification codes](/docs/self-host/email-codes), so a password account only works once its owner enters a code sent to the address.
+- If you cannot set up email codes yet, members who create a password account would wait for a code Supabase's own email does not contain. Turn off **Allow new users to sign up** first and add members yourself under **Authentication**, **Users**, **Add user**; only then turn off **Confirm email**. Never leave both open: anyone could then create a password account for an address that is not theirs.
+- To keep the instance private, turn off **Allow new users to sign up** after you and your team have created accounts. Google and emailed codes then only sign in existing members.
 
 The sign-in page's email field sends a 6-digit sign-in code. Without [email verification codes](/docs/self-host/email-codes), Supabase sends its own **Magic Link** email instead, which by default holds a link rather than a code; the link still signs the person in. To show the code as well, open **Authentication**, **Emails**, **Magic Link** and add `{{ .Token }}` to the template. Supabase's built-in email only sends a few messages an hour, so set up email verification codes, or have members use Google or a password.
 

@@ -252,7 +252,7 @@ Follow-ups and public replies use the same statuses, without `ignored`. Retry on
 |---|---|---|
 | Instance, per hour | 1,000 private replies | `AUTOMATION_GLOBAL_HOURLY_LIMIT` |
 | User, per hour | 500 private replies | `AUTOMATION_USER_HOURLY_LIMIT` |
-| Instagram account, per hour | 200 private replies (Instagram allows 750) | `AUTOMATION_ACCOUNT_HOURLY_LIMIT`, at most 750 |
+| Instagram account, per hour | 200 private replies (Instagram allows 750), counted across every member's connection to the same Instagram account | `AUTOMATION_ACCOUNT_HOURLY_LIMIT`, at most 750 |
 | Rule, per hour | none | the rule's hourly limit, 1 to 750 |
 | Person, per day per account | 3 replies | `AUTOMATION_RECIPIENT_DAILY_LIMIT` |
 | Instagram account, public replies per hour | 60 | `AUTOMATION_PUBLIC_ACCOUNT_HOURLY_LIMIT`, at most 200 |

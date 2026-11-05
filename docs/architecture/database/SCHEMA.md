@@ -52,6 +52,7 @@ The first four files are baselines. Each recreates one table as it stood before 
 | 20 | `alter_tracked_posts_youtube_only`, `drop_tracked_posts_account_id`, `alter_accounts_without_reddit`, `replace_accounts_identity_index` | The Reddit cleanup (#145) |
 | 21 | `create_mcp_access_tokens`, `revoke_browser_access_mcp_access_tokens`, `add_mcp_access_tokens_updated_at_trigger`, `index_mcp_access_tokens_user_created`, the same four for `mcp_client_grants`, `alter_audit_events_subject_types` | The Claude (MCP) tables below (#146) |
 | 22 | `replace_automation_rules_for_ig_user_function` | Comments route only to accounts that still hold an unexpired Instagram token (audit lead L2, #161) |
+| 23 | `replace_reserve_automation_send_function` | The hourly account limit counts replies through every connection to the same Instagram account (audit lead L2, #161) |
 
 From order 10 on, every migration creates at most one entity, and the migration test enforces it. The files before it were applied to production first and stay as recorded.
 
