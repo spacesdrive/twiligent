@@ -12,7 +12,7 @@ export interface ClaudeClientListProps {
   clients: McpClientGrantSummary[];
   oauthEnabled: boolean;
   revokingId: string | null;
-  onRemove: (id: string, name: string) => Promise<boolean>;
+  onRemove: (client: McpClientGrantSummary) => Promise<boolean>;
 }
 
 function ClientRow({ client, onAskRemove }: { client: McpClientGrantSummary; onAskRemove: () => void }) {
@@ -66,7 +66,7 @@ export default function ClaudeClientList({ clients, oauthEnabled, revokingId, on
         busyLabel="Removing"
         busy={pending !== null && revokingId === pending.id}
         onConfirm={() => {
-          if (pending) void onRemove(pending.id, pending.clientName).then(done => { if (done) setPending(null); });
+          if (pending) void onRemove(pending).then(done => { if (done) setPending(null); });
         }}
       />
     </>
