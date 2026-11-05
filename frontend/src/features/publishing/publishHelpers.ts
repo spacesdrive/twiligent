@@ -206,32 +206,8 @@ export function editPostProblem({ postId, date, time, now }: EditPostCheck): Fie
   return null;
 }
 
-export function singlePostError({ selectedAccount, file, contentType, hasCloudConfig, fields, now }: SinglePostCheck): string {
-  if (!selectedAccount || !file || !contentType) return 'Choose an account, a content type and a file before publishing.';
-  if (!hasCloudConfig) return 'Cloudinary is not set up on the server. Check Settings.';
-  if (!fields.scheduleMode) return '';
-  if (!fields.scheduleDate || !fields.scheduleTime) return 'Set a date and time for the scheduled post.';
-  if (new Date(`${fields.scheduleDate}T${fields.scheduleTime}`) <= now) return 'Pick a time in the future.';
-  return '';
-}
-
 export function bulkBaseTime(settings: Pick<BulkSettings, 'scheduleMode' | 'startDate' | 'startTime'>): Date | null {
   return settings.scheduleMode ? new Date(`${settings.startDate}T${settings.startTime}`) : null;
-}
-
-export function bulkStartError({ settings, fileCount, hasCloudConfig, now }: BulkStartCheck): string {
-  if (!settings.account || fileCount === 0 || !settings.contentType) return 'Choose an account, a content type and at least one file.';
-  if (!hasCloudConfig) return 'Cloudinary is not set up on the server. Check Settings.';
-  if (settings.scheduleMode && (!settings.startDate || !settings.startTime)) return 'Set a start date and time for the schedule.';
-  const baseTime = bulkBaseTime(settings);
-  if (baseTime && baseTime <= now) return 'Pick a start time in the future.';
-  return '';
-}
-
-export function editPostError({ postId, date, time, now }: EditPostCheck): string {
-  if (!postId || !date || !time) return 'Set a date and time.';
-  if (new Date(`${date}T${time}`) <= now) return 'Pick a time in the future.';
-  return '';
 }
 
 export function bulkScheduledTime(baseTime: Date, offset: number, intervalMinutes: number): Date {

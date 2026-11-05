@@ -8,10 +8,6 @@ export const SERIES = {
   deep: 'var(--chart-5)',
 };
 
-export const SERIES_ORDER = [SERIES.primary, SERIES.neutral, SERIES.warm, SERIES.cool, SERIES.deep];
-
-export const seriesAt = (index: number): string => SERIES_ORDER[index % SERIES_ORDER.length];
-
 // a figure is a category name and its value; the summary is what a sighted reader takes from the plot at a glance
 export interface ChartPoint {
   name: string;

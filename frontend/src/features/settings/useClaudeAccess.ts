@@ -95,5 +95,3 @@ export function useClaudeAccess(showToast: ShowToast) {
     creating, createToken, revokingId, revokeToken, revokeClient,
   };
 }
-
-export type ClaudeAccessState = ReturnType<typeof useClaudeAccess>;

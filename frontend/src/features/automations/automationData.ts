@@ -362,11 +362,6 @@ export function ruleFormError(form: RuleForm): RuleFieldProblem | null {
   return null;
 }
 
-// the message of the first problem, or null
-export function ruleFormProblem(form: RuleForm): string | null {
-  return ruleFormError(form)?.message ?? null;
-}
-
 // a followers-only rule that is on needs Instagram to send the account's messages as well as its comments
 export function needsMessageEvents(rules: Pick<AutomationRule, 'accountId' | 'enabled' | 'requireFollow'>[], accountId: string): boolean {
   return rules.some(rule => rule.accountId === accountId && rule.enabled && rule.requireFollow);

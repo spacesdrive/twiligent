@@ -41,11 +41,6 @@ export function fmtDateTime(d: DateLike): string {
     });
 }
 
-export function fmtDateShort(d: DateLike): string {
-    if (!d) return '';
-    return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-}
-
 export function fmtDuration(seconds: number | null | undefined): string {
     if (!seconds) return '0:00';
     const hours = Math.floor(seconds / 3600);

@@ -3,12 +3,15 @@ import assert from 'node:assert/strict';
 import {
   ACTIVITY_FILTERS, DEFAULT_FOLLOW_PROMPT, DEFAULT_NOT_FOLLOWING, DEFAULT_PUBLIC_REPLY, MAX_MESSAGE_BYTES, accountStatus, canRetry, canRetryPublic,
   composeReply, emptyRuleForm, formToRequest, gateDetail, matchModeLabel, messageBytes, needsMessageEvents, parseKeywords, periodStart,
-  publicReplyTexts, publicStatusDisplay, ruleFormProblem, ruleFormError, normalizeLink, ruleScopeLabel, ruleToForm, statusDisplay, summarizeStats,
+  publicReplyTexts, publicStatusDisplay, ruleFormError, normalizeLink, ruleScopeLabel, ruleToForm, statusDisplay, summarizeStats,
 } from '../../../src/features/automations/automationData.ts';
 import type { RuleForm } from '../../../src/features/automations/automationData.ts';
 import type { AutomationAccountState, AutomationRule } from '../../../../shared/types/automation.ts';
 
 const NOW = Date.parse('2026-10-16T12:00:00Z');
+
+// the message of the first problem, or null
+const ruleFormProblem = (rule: RuleForm): string | null => ruleFormError(rule)?.message ?? null;
 
 function form(overrides: Partial<RuleForm> = {}): RuleForm {
   return { ...emptyRuleForm('ig1'), name: 'Guide', keywordsText: 'GUIDE', replyText: 'Here it is', ...overrides };

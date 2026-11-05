@@ -5,7 +5,7 @@ import type { CloudinaryUploadConfig, UploadError } from '../../services/api';
 import type { AccountPostDetails, ContentTypeValue, SinglePostFields } from './publishHelpers.ts';
 import type { PublishStatus } from './queueHelpers.ts';
 
-// singlePostError has already checked that file and contentType are set
+// singlePostProblem has already checked that file and contentType are set
 export interface SinglePostInput {
   selectedAccount: string;
   contentType: ContentTypeValue | '';

@@ -32,7 +32,5 @@ export const METRIC_ICONS = {
   time: Clock,
 } satisfies Record<string, LucideIcon>;
 
-export type MetricIconName = keyof typeof METRIC_ICONS;
-
 // Instagram content types, with the same icons wherever they are counted or filtered
 export const IG_TYPE_ICONS = { reel: Clapperboard, post: Image, video: Video } satisfies Record<string, LucideIcon>;

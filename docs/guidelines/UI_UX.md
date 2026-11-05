@@ -74,7 +74,7 @@ Don't cite these as rules: "7 plus or minus 2" as a menu limit, the 400 ms figur
 ### Navigation and layout
 
 - Each page has its own tab title (`useDocumentTitle` for detail pages), focus moves to its heading after navigation, and the current place is marked (`aria-current`).
-- View state lives in the address (`useUrlState`, `useUrlChoice`, `useUrlPage`): tabs, search, filters, sort, page, layout. Typing replaces the history entry; a tab or page change adds one.
+- View state lives in the address (`useUrlChoice` in `hooks/use-url-state.ts` for tabs and choices, `useLibraryParams` for a library's search, filters, sort and page; both build on `lib/urlState.ts`): tabs, search, filters, sort, page, layout. Typing replaces the history entry; a tab or page change adds one.
 - One label per destination, the same in the sidebar, the page title, buttons and the command palette.
 - Page anatomy stays the same everywhere: `PageHeader` (title, short description, the primary action on the right), then filters, then content.
 
