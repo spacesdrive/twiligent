@@ -43,7 +43,7 @@ export function createPublishingService({ accounts, config, context }: Publishin
 
     return {
         cloudinaryConfig() {
-            if (!config.cloudinary) throw new NotConfiguredError('Cloudinary not configured on server');
+            if (!config.cloudinary) throw new NotConfiguredError('Cloudinary is not set up on this server. The owner needs to set CLOUDINARY_CLOUD_NAME and CLOUDINARY_UPLOAD_PRESET.');
             return config.cloudinary;
         },
 

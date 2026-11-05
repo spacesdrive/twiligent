@@ -20,6 +20,7 @@ import type { YouTubeConnectionSummary, YouTubePrivacy, YouTubeUploadRequest } f
 export interface YouTubeComposerProps {
   connections: YouTubeConnectionSummary[];
   cloudConfig: CloudinaryUploadConfig | null;
+  cloudLoading: boolean;
   onQueue: (request: YouTubeUploadRequest) => Promise<boolean>;
   showError: (message: string) => void;
 }
@@ -38,7 +39,7 @@ async function register(upload: CloudinaryUpload, label: string): Promise<string
   return media.id;
 }
 
-export default function YouTubeComposer({ connections, cloudConfig, onQueue, showError }: YouTubeComposerProps) {
+export default function YouTubeComposer({ connections, cloudConfig, cloudLoading, onQueue, showError }: YouTubeComposerProps) {
   const active = connections.filter(connection => connection.status === 'active');
   const [connectionId, setConnectionId] = useState(active.length === 1 ? active[0].id : '');
   const [video, setVideo] = useState<File | null>(null);
@@ -210,7 +211,9 @@ export default function YouTubeComposer({ connections, cloudConfig, onQueue, sho
           {working ? <Spinner className="size-4" /> : <Upload data-icon="inline-start" />}
           {working ? 'Queueing' : 'Queue upload'}
         </Button>
-        {!cloudConfig && <p className="text-sm text-ink-muted">Uploads need Cloudinary, which is not set up on this server.</p>}
+        {!cloudConfig && (
+          <p className="text-sm text-ink-muted">{cloudLoading ? 'Checking the upload settings.' : 'Uploads can\'t start until the upload settings load. The reason is above the form.'}</p>
+        )}
       </form>
     </SurfaceBox>
   );

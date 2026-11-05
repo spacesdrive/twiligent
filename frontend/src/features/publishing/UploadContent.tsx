@@ -41,7 +41,8 @@ function stageAnnouncement(status: PublishStatus, uploading: boolean): string {
 
 export default function UploadContent() {
   const { accounts, showToast } = useAppContext();
-  const cloudConfig = useCloudinaryConfig(accounts);
+  const cloudinary = useCloudinaryConfig(accounts);
+  const cloudConfig = cloudinary.config;
   const [igAccounts, setIgAccounts] = useState<AppAccount[]>([]);
   const [uploadMode, setUploadMode] = useUrlChoice<UploadMode>('mode', UPLOAD_MODES, 'single');
   const schedule = useScheduledPosts();
@@ -81,12 +82,13 @@ export default function UploadContent() {
       <PageHeader title="Instagram publishing" description="Post and schedule photos, Reels and Stories to Instagram." />
       <LiveStatus message={stageAnnouncement(publish.publishStatus, publish.uploading)} />
 
-      {!cloudConfig && (
+      {cloudinary.error && (
         <Alert variant="warning">
           <AlertCircle />
           <AlertDescription>
-            Uploads need Cloudinary, which is not set up on the server. Instagram only accepts media from a public URL. Set the Cloudinary environment variables, then check the status in <Link to="/settings#server-keys" className="font-semibold underline underline-offset-4">Settings</Link>.
+            Uploads can't start: the upload settings did not load. {cloudinary.error} The server status is in <Link to="/settings#server-keys" className="font-semibold underline underline-offset-4">Settings</Link>.
           </AlertDescription>
+          <AlertAction><Button size="xs" variant="outline" onClick={cloudinary.retry} disabled={cloudinary.loading}>{cloudinary.loading ? 'Trying again' : 'Try again'}</Button></AlertAction>
         </Alert>
       )}
 
