@@ -1139,3 +1139,26 @@ New row ids come from `crypto.randomUUID()` (`newRowId()` in `backend/lib/ids.ts
 **Trade-offs:**
 - A video larger than Cloudinary's plan limit, or slower than a tool call, cannot be imported this way.
 - Without the API secret, files deleted in Twiligent stay on Cloudinary until the owner removes them.
+
+---
+
+## ADR-053: YouTube uploads run as leased jobs that stream Cloudinary byte ranges into resumable sessions
+
+**Date:** 2026-11-05
+**Status:** Accepted
+
+**Decision:** YouTube publishing (#147) stores one `youtube_uploads` row per video. The five minute cron gives four runs an hour to `youtubeRunner`, which leases one job (`claim_youtube_upload`, `FOR UPDATE SKIP LOCKED`), saves the resumable session before sending any byte, resumes from Google's own count, and moves 8 MiB chunks read from Cloudinary by byte range until its 50 subrequests or 12 minutes run out; processing and the thumbnail are separate later steps. Each channel is connected by its owner through Google OAuth with only the `youtube.upload` and `youtube.readonly` scopes, finished by the person who started it, and its tokens are sealed with AES-GCM under a key derived from `TOKEN_ENCRYPTION_KEY`. A Postgres ledger counts the Google project's daily units and inserts per Pacific day before each call. New Worker secrets: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
+
+**Context:** The Worker runs on the Free plan (10 ms CPU, 50 subrequests, 15 minute cron limit), so a video cannot be uploaded in one request, and a run that dies must never start a second copy of the same video on a public channel.
+
+**Alternatives considered:**
+- Uploading at publish time, as with Instagram. Errors would surface at the last moment; YouTube schedules publication itself with `publishAt`, so the upload can happen early.
+- Queues or workflow engines (Cloudflare Queues, Temporal). They add paid or external infrastructure for a job a leased row already describes.
+- Sending the browser's file straight to YouTube. The person would have to keep the page open for the whole upload, and the token would reach the browser.
+- The full `youtube` scope for playlists. It would let a leaked token change or delete existing videos; playlists wait.
+
+**Trade-offs:**
+- Throughput is about 400 MB an hour, and a video is limited by the Cloudinary plan (100 MB on free).
+- The CPU cost of copying 8 MiB per chunk on the Free plan is unmeasured; the paid plan is the fallback.
+- A session lost after the last byte goes to a person (`needs_review`) instead of a retry, trading automation for never publishing twice.
+- Changing `TOKEN_ENCRYPTION_KEY` signs everyone out of YouTube.

@@ -38,6 +38,7 @@ Registered on `publicRoutes` in `routes/index.ts`.
 |---|---|---|---|
 | GET | `/api/health` | `healthController.getHealth` | Liveness: returns `{ status: 'ok', timestamp }` without touching the database |
 | GET | `/api/health/ready` | `healthController.getReadiness` | Readiness: the Supabase secrets are set and one database read succeeds; returns `{ status: 'ready', databaseMs, timestamp }`, or `503 NOT_CONFIGURED` naming a missing secret, or `500 DATABASE_ERROR` |
+| GET | `/api/auth/youtube/callback` | `youtubeController.handleYouTubeCallback` | Checks the signed state and redirects to the accounts page with `#yt_code=<code>&yt_state=<state>` for the app to complete, or `?yt_error=<reason>`; `503` when YouTube publishing is not set up. Rate limited by `oauth` |
 | GET | `/api/auth/instagram/callback` | `instagramAuthController.handleInstagramCallback` | Checks the signed state and redirects the browser to the accounts page with `#ig_code=<code>&ig_state=<state>` for the app to complete, or `?ig_error=<reason>`; never exchanges the code itself and never answers JSON |
 | POST | `/api/auth/email-hook` | `authHookController.sendAuthEmail` (`routes/authHookRoutes.ts`) | Supabase Auth's Send Email hook: sends sign-up, password reset and other auth emails through Resend. Answers `{}` |
 | GET | `/api/webhooks/instagram` | `instagramWebhookController.verifyInstagramWebhook` (`routes/instagramWebhookRoutes.ts`) | Meta's webhook check: answers the bare `hub.challenge` as text when `hub.mode=subscribe` and `hub.verify_token` matches `INSTAGRAM_WEBHOOK_VERIFY_TOKEN`; 403 otherwise, 503 when the token is not set |
@@ -194,6 +195,24 @@ Controllers in `mcpAccessController.ts` call `McpAccessService` (`services/mcpAc
 | GET | `/api/mcp/clients` | `mcpRoutes.ts`, `mcpAccessController.listClientGrants` | The OAuth clients the caller approved, with their permission and last use |
 | POST | `/api/mcp/clients` | `mcpRoutes.ts`, `mcpAccessController.approveClient` | Body `{ clientId, clientName, permission }`: saves the consent page's choice for the caller before the page approves the request with Supabase |
 | DELETE | `/api/mcp/clients/:id` | `mcpRoutes.ts`, `mcpAccessController.revokeClient` | Removes an approval; the client is refused at its next call |
+
+### YouTube publishing
+
+Controllers in `youtubeController.ts` call `YouTubeConnectService` and `YouTubeUploadService`; `mediaController.ts` calls `MediaService`. See `docs/platform-v2/YOUTUBE_INTEGRATION.md`.
+
+| Method | Path | File | Purpose |
+|---|---|---|---|
+| GET | `/api/auth/youtube/url` | `youtubeRoutes.ts`, `youtubeController.getYouTubeAuthUrl` | Google's consent URL with a state signed for the caller; `503` when not set up |
+| POST | `/api/auth/youtube/complete` | `youtubeRoutes.ts`, `youtubeController.completeYouTubeConnection` | Body `{ code, state }`: connects the channel only when the state was started by the caller (403 otherwise); answers `{ connection, outcome: 'connected' \| 'reconnected' }` |
+| GET | `/api/youtube/connections` | `youtubeRoutes.ts`, `youtubeController.listYouTubeConnections` | The caller's connected channels (never a token) and `configured` |
+| DELETE | `/api/youtube/connections/:id` | `youtubeRoutes.ts`, `youtubeController.deleteYouTubeConnection` | Revokes the access at Google and removes the connection with its uploads |
+| GET | `/api/youtube/uploads` | `youtubeRoutes.ts`, `youtubeController.listYouTubeUploads` | The caller's 200 newest upload jobs |
+| POST | `/api/youtube/uploads` | `youtubeRoutes.ts`, `youtubeController.createYouTubeUpload` | Queues a video from the caller's media; `201`, or `200` with the first job when `clientRequestId` was seen |
+| PUT | `/api/youtube/uploads/:id` | `youtubeRoutes.ts`, `youtubeController.updateYouTubeUpload` | Changes the details of a job that has not started |
+| POST | `/api/youtube/uploads/:id/cancel` | `youtubeRoutes.ts`, `youtubeController.cancelYouTubeUpload` | Stops a job YouTube has not finished |
+| POST | `/api/youtube/uploads/:id/retry` | `youtubeRoutes.ts`, `youtubeController.retryYouTubeUpload` | Queues a failed or needs-review job again from byte 0 |
+| GET | `/api/media` | `mediaRoutes.ts`, `mediaController.listMedia` | The caller's media library |
+| POST | `/api/media` | `mediaRoutes.ts`, `mediaController.registerMedia` | Adds a file the browser uploaded to this instance's Cloudinary cloud; the size is measured by the server; `201` |
 
 ## Adding a New Route
 

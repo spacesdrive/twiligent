@@ -1,0 +1,60 @@
+export const meta = { title: 'YouTube publishing', description: 'Let members upload videos and Shorts to their YouTube channels from Twiligent.' }
+
+YouTube analytics only need an API key. Publishing also needs a Google OAuth client, so each member can connect their own channel and Twiligent can upload to it. Twiligent asks only to upload videos and to read the channel. It can never change or delete what is already there.
+
+<Steps level={3}>
+<Step title="Enable the API">
+
+In [Google Cloud](https://console.cloud.google.com/), choose the project you use for Twiligent (or create one). Open **APIs and services**, **Library**, and enable **YouTube Data API v3**.
+
+</Step>
+<Step title="Set up the consent screen">
+
+Open **Google Auth Platform** (OAuth consent screen). Give the app a name and support email, and add the scopes `.../auth/youtube.upload` and `.../auth/youtube.readonly`. Then publish the app to **In production**.
+
+<Callout type="warning" title="Publish it, or uploads stay private">
+
+While the app is in testing, YouTube locks every uploaded video as private and members must sign in again every 7 days. Google may ask to verify the app because the scopes are sensitive; until it does, members see a warning screen they can pass.
+
+</Callout>
+
+</Step>
+<Step title="Create the OAuth client">
+
+Open **Clients**, **Create client**, type **Web application**. Under **Authorized redirect URIs** add your backend address followed by `/api/auth/youtube/callback`, for example:
+
+```text
+https://twiligent.you.workers.dev/api/auth/youtube/callback
+```
+
+Copy the client ID and client secret.
+
+</Step>
+<Step title="Set the backend secrets">
+
+In the top folder of the project, run each command and paste the value when asked:
+
+```bash
+cd backend
+npx wrangler secret put GOOGLE_CLIENT_ID
+npx wrangler secret put GOOGLE_CLIENT_SECRET
+npx wrangler secret put TOKEN_ENCRYPTION_KEY
+```
+
+`TOKEN_ENCRYPTION_KEY` is 32 or more random characters, for example from `openssl rand -base64 48`. It seals the stored Google tokens. Keep it safe: if it changes, every member has to connect YouTube again.
+
+</Step>
+<Step title="Update the database and deploy">
+
+Run `npm run db:push`, then deploy the backend. In the app, open **Accounts**, then **YouTube publishing**, then **Connect a channel**. Queue a video on the **YouTube uploads** page.
+
+</Step>
+</Steps>
+
+## How uploads run
+
+The video goes to your Cloudinary account from the browser first. Every 15 minutes a backend run sends up to about 100 MB of it to YouTube, then checks until YouTube has processed it and sets the thumbnail. A vertical or square video of up to three minutes becomes a Short.
+
+- **Size:** your Cloudinary plan sets the largest video (100 MB on the free plan).
+- **Daily limits:** Google allows 100 uploads a day per project, shared by every channel on your instance. When they run out, uploads continue after midnight Pacific time.
+- **Thumbnails:** YouTube only accepts custom thumbnails from verified channels. Without one, the video is still published and the page says the thumbnail was not set.

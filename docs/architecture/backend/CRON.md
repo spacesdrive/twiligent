@@ -16,6 +16,7 @@ The Workers Free plan allows five cron triggers per Cloudflare account. This Wor
 | `* * * * *` | `dispatch` | `automationProcessor.run()`, then `automationFollowups.run()`, then `automationPublicReplies.run()` | Queue dispatch and recovery: due private replies, follow-ups and public replies, jobs whose run stopped |
 | `*/5 * * * *` at minutes 0, 15, 30, 45 | `publish` | `scheduledPublisher.publishDue()` | Scheduled processing: due Instagram posts |
 | `*/5 * * * *` at the other minutes | `reconcile` | `automationReconciler.run()` | Reconciliation: overdue jobs, replies whose answer was lost, queue health |
+| `*/5 * * * *` at minutes 5, 20, 35, 50 | `youtube` | `youtubeRunner.run()` | Moves one YouTube upload: session, chunks, processing check or thumbnail (`docs/platform-v2/YOUTUBE_INTEGRATION.md`); the reconcile plan keeps minutes 10, 25, 40 and 55 |
 | `0 0 * * *` | `daily` | `tokenRefresh.refreshExpiringInstagramTokens()`, then `retention.purge()` | Maintenance: tokens and retention |
 
 Cron jobs coordinate and recover; they are not a second delivery pipeline. The dispatch sends through the same claim, reservation and finish as the webhook, so its runs, the webhook's runs and a retry can overlap without sending anything twice, and the reconciler only reads from Instagram.

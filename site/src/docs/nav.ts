@@ -103,6 +103,7 @@ export const DOC_TABS: DocTab[] = [
           { slug: 'self-host/cloudinary', title: 'Cloudinary', icon: Gallery },
           { slug: 'self-host/redis', title: 'Upstash Redis (optional)', icon: ServerSquare },
           { slug: 'self-host/comment-automation', title: 'Comment automation (optional)', icon: Plug },
+          { slug: 'self-host/youtube-publishing', title: 'YouTube publishing (optional)', icon: YouTubeIcon },
         ],
       },
       {
