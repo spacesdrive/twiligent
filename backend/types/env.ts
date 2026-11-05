@@ -9,6 +9,8 @@ export interface Env {
     CLOUDINARY_CLOUD_NAME?: string;
     CLOUDINARY_UPLOAD_PRESET?: string;
     CLOUDINARY_API_KEY?: string;
+    GOOGLE_CLIENT_ID?: string;
+    GOOGLE_CLIENT_SECRET?: string;
     CLOUDINARY_API_SECRET?: string;
     BACKEND_URL?: string;
     FRONTEND_URL?: string;

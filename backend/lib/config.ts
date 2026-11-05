@@ -68,6 +68,17 @@ export interface McpConfig {
     oauthEnabled: boolean;
 }
 
+// Google sign-in for YouTube publishing; null until the owner adds the OAuth client and TOKEN_ENCRYPTION_KEY, which
+// seals the stored Google tokens
+export interface YouTubeOAuthConfig {
+    clientId: string;
+    clientSecret: string;
+    redirectUri: string;
+    // where the callback hands the code to the app, which finishes the connection as the signed-in person
+    accountsPageUrl: string;
+    encryptionSecret: string;
+}
+
 export interface AppConfig {
     youtubeApiKey: string | undefined;
     instagram: InstagramOAuthConfig;
@@ -77,6 +88,7 @@ export interface AppConfig {
     authEmail: AuthEmailConfig;
     automation: AutomationConfig;
     mcp: McpConfig;
+    youtubeOAuth: YouTubeOAuthConfig | null;
 }
 
 // pasted secrets can carry a byte order mark or stray whitespace
@@ -198,6 +210,22 @@ export function readMcpConfig(env: Env): McpConfig {
     };
 }
 
+export function readYouTubeOAuthConfig(env: Env): YouTubeOAuthConfig | null {
+    const clientId = cleanSecret(env.GOOGLE_CLIENT_ID);
+    const clientSecret = cleanSecret(env.GOOGLE_CLIENT_SECRET);
+    const encryptionSecret = readMcpConfig(env).signingSecret;
+    if (!clientId || !clientSecret || !encryptionSecret) return null;
+    const backendUrl = cleanUrl(env.BACKEND_URL, DEFAULT_BACKEND_URL).replace(/\/$/, '');
+    const frontendUrl = cleanUrl(env.FRONTEND_URL, DEFAULT_FRONTEND_URL).replace(/\/$/, '');
+    return {
+        clientId,
+        clientSecret,
+        redirectUri: `${backendUrl}/api/auth/youtube/callback`,
+        accountsPageUrl: `${frontendUrl}/accounts`,
+        encryptionSecret,
+    };
+}
+
 export function readConfig(env: Env): AppConfig {
     const cloudName = cleanSecret(env.CLOUDINARY_CLOUD_NAME);
     const uploadPreset = cleanSecret(env.CLOUDINARY_UPLOAD_PRESET);
@@ -212,5 +240,6 @@ export function readConfig(env: Env): AppConfig {
         authEmail: readAuthEmailConfig(env),
         automation: readAutomationConfig(env),
         mcp: readMcpConfig(env),
+        youtubeOAuth: readYouTubeOAuthConfig(env),
     };
 }
