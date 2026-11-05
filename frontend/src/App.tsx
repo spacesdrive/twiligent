@@ -26,11 +26,17 @@ const Settings           = lazy(() => import('./features/settings/Settings'));
 const TrackedContent     = lazy(() => import('./features/analytics/tracked/TrackedContent'));
 const TrackedCategory    = lazy(() => import('./features/analytics/tracked/TrackedCategory'));
 const NotFound           = lazy(() => import('./pages/NotFound'));
+const OAuthConsent       = lazy(() => import('./pages/OAuthConsent'));
 
 const router = createBrowserRouter([
   {
     path: '/login',
     element: <Login />,
+  },
+  {
+    // Supabase's OAuth server sends a person here to approve a Claude app; it stands outside the app shell
+    path: '/oauth/consent',
+    element: <ProtectedRoute><OAuthConsent /></ProtectedRoute>,
   },
   {
     path: '/docs/*',
