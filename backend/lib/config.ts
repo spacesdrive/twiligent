@@ -22,6 +22,13 @@ export interface CloudinaryConfig {
     uploadPreset: string;
 }
 
+// the signed API, only for deleting files; kept apart from CloudinaryConfig, which the browser receives
+export interface CloudinaryAdminConfig {
+    cloudName: string;
+    apiKey: string;
+    apiSecret: string;
+}
+
 // appId and appSecret are undefined when the Worker secrets are not set
 export interface InstagramOAuthConfig {
     frontendUrl: string;
@@ -65,6 +72,7 @@ export interface AppConfig {
     youtubeApiKey: string | undefined;
     instagram: InstagramOAuthConfig;
     cloudinary: CloudinaryConfig | null;
+    cloudinaryAdmin: CloudinaryAdminConfig | null;
     allowedOrigins: string[];
     authEmail: AuthEmailConfig;
     automation: AutomationConfig;
@@ -193,10 +201,13 @@ export function readMcpConfig(env: Env): McpConfig {
 export function readConfig(env: Env): AppConfig {
     const cloudName = cleanSecret(env.CLOUDINARY_CLOUD_NAME);
     const uploadPreset = cleanSecret(env.CLOUDINARY_UPLOAD_PRESET);
+    const apiKey = cleanSecret(env.CLOUDINARY_API_KEY);
+    const apiSecret = cleanSecret(env.CLOUDINARY_API_SECRET);
     return {
         youtubeApiKey: cleanSecret(env.YOUTUBE_API_KEY),
         instagram: readInstagramOAuthConfig(env),
         cloudinary: cloudName && uploadPreset ? { cloudName, uploadPreset } : null,
+        cloudinaryAdmin: cloudName && apiKey && apiSecret ? { cloudName, apiKey, apiSecret } : null,
         allowedOrigins: allowedOrigins(env),
         authEmail: readAuthEmailConfig(env),
         automation: readAutomationConfig(env),
