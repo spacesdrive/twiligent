@@ -28,6 +28,8 @@ function failure(c: AppContext, status: 401 | 403, message: string): Response {
 async function principalFor(c: AppContext, token: string): Promise<McpPrincipal> {
     const access = servicesFor(c).mcpAccess;
     if (isAccessToken(token)) return access.authenticateToken(token);
+    // without connector sign-in turned on, no Claude app was ever approved here, so only access tokens are accepted
+    if (!readConfig(c.env).mcp.oauthEnabled) throw new AppError('UNAUTHORIZED', 'This server takes access tokens from Settings, Claude. Connector sign-in is not turned on.');
     const { data: { user }, error } = await getSupabaseAuth(c.env).auth.getUser(token);
     if (error || !user) throw new AppError('UNAUTHORIZED', 'Your Claude connection has expired. Sign in again from Claude.');
     // only tokens issued to an OAuth client are accepted, so an app session token copied from a browser cannot be replayed here

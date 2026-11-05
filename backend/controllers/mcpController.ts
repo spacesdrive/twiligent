@@ -3,11 +3,18 @@ import { readConfig } from '../lib/config.ts';
 import { RPC_ERROR, errorReply } from '../lib/mcp/protocol.ts';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 
+// a JSON-RPC message is a few kilobytes; anything far larger is refused before it is read into memory and parsed
+export const MAX_MCP_BODY_BYTES = 1024 * 1024;
+
 // POST /mcp: one JSON-RPC message in, one JSON reply out, for the caller requireMcpAuth verified
 export const handleMcpMessage = controller.createHandlers(async c => {
+    const tooLarge = () => c.json(errorReply(null, RPC_ERROR.invalidRequest, 'The request body is too large for one MCP message.', 413).body, 413);
+    if (Number(c.req.header('Content-Length') ?? 0) > MAX_MCP_BODY_BYTES) return tooLarge();
+    const text = await c.req.text();
+    if (new TextEncoder().encode(text).length > MAX_MCP_BODY_BYTES) return tooLarge();
     let body: unknown;
     try {
-        body = await c.req.json();
+        body = JSON.parse(text);
     } catch {
         const reply = errorReply(null, RPC_ERROR.parse, 'The request body is not valid JSON.', 400);
         return c.json(reply.body, 400);
