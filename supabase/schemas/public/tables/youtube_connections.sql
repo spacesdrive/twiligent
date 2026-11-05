@@ -1,22 +1,21 @@
-create table public.youtube_connections (
-    id text primary key,
-    user_id uuid not null references auth.users (id) on delete cascade,
-    -- the analytics account for the same channel, when the person has one
-    account_id text,
-    channel_id text not null,
-    channel_title text not null default '',
-    scopes text[] not null default '{}',
-    status text not null default 'active',
-    -- AES-GCM sealed with a key derived from TOKEN_ENCRYPTION_KEY; never sent to a browser, a log or Claude
-    refresh_token_enc text not null,
-    access_token_enc text,
-    access_token_expires_at timestamptz,
-    created_at timestamptz not null default now(),
-    updated_at timestamptz not null default now(),
-    constraint youtube_connections_user_channel_key unique (user_id, channel_id),
-    constraint youtube_connections_status_check check (status in ('active', 'needs_reconnect')),
-    constraint youtube_connections_account_fkey foreign key (account_id, user_id)
-        references public.accounts (id, user_id) on delete set null (account_id)
+CREATE TABLE "public"."youtube_connections" (
+  "id"                      text                     NOT NULL,
+  "user_id"                 uuid                     NOT NULL,
+  "account_id"              text,
+  "channel_id"              text                     NOT NULL,
+  "channel_title"           text                     NOT NULL DEFAULT ''::text,
+  "scopes"                  text[]                   NOT NULL DEFAULT '{}'::text[],
+  "status"                  text                     NOT NULL DEFAULT 'active'::text,
+  "refresh_token_enc"       text                     NOT NULL,
+  "access_token_enc"        text,
+  "access_token_expires_at" timestamp with time zone,
+  "created_at"              timestamp with time zone NOT NULL DEFAULT now(),
+  "updated_at"              timestamp with time zone NOT NULL DEFAULT now(),
+  CONSTRAINT "youtube_connections_account_fkey" FOREIGN KEY (account_id, user_id) REFERENCES public.accounts(id, user_id) ON DELETE SET NULL (account_id),
+  CONSTRAINT "youtube_connections_pkey" PRIMARY KEY (id),
+  CONSTRAINT "youtube_connections_status_check" CHECK ((status = ANY (ARRAY['active'::text, 'needs_reconnect'::text]))),
+  CONSTRAINT "youtube_connections_user_channel_key" UNIQUE (user_id, channel_id),
+  CONSTRAINT "youtube_connections_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 );
 
 ALTER TABLE "public"."youtube_connections"

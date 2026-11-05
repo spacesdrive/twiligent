@@ -1,8 +1,13 @@
-create or replace function public.reserve_youtube_quota(p_day date, p_bucket text, p_units integer, p_limit integer)
-returns boolean
-language plpgsql
-set search_path = ''
-as $$
+CREATE OR REPLACE FUNCTION public.reserve_youtube_quota (
+  p_day    date,
+  p_bucket text,
+  p_units  integer,
+  p_limit  integer
+)
+  RETURNS boolean
+  LANGUAGE plpgsql
+  SET search_path TO ''
+  AS $function$
 declare
     reserved integer;
 begin
@@ -20,7 +25,7 @@ begin
     end if;
     return true;
 end;
-$$;
+$function$;
 
 GRANT EXECUTE ON FUNCTION "public"."reserve_youtube_quota"(date, text, integer, integer) TO "service_role";
 

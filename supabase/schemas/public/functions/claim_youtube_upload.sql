@@ -1,8 +1,11 @@
-create or replace function public.claim_youtube_upload(p_owner text, p_lease_seconds integer)
-returns setof public.youtube_uploads
-language plpgsql
-set search_path = ''
-as $$
+CREATE OR REPLACE FUNCTION public.claim_youtube_upload (
+  p_owner         text,
+  p_lease_seconds integer
+)
+  RETURNS SETOF public.youtube_uploads
+  LANGUAGE plpgsql
+  SET search_path TO ''
+  AS $function$
 begin
     return query
     update public.youtube_uploads u
@@ -18,7 +21,7 @@ begin
     )
     returning u.*;
 end;
-$$;
+$function$;
 
 GRANT EXECUTE ON FUNCTION "public"."claim_youtube_upload"(text, integer) TO "service_role";
 

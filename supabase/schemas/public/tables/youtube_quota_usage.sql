@@ -1,11 +1,10 @@
-create table public.youtube_quota_usage (
-    day date not null,
-    -- uploads: videos.insert calls, 100 a day; default: every other call, 10,000 units a day
-    bucket text not null,
-    units integer not null default 0,
-    constraint youtube_quota_usage_pkey primary key (day, bucket),
-    constraint youtube_quota_usage_bucket_check check (bucket in ('uploads', 'default')),
-    constraint youtube_quota_usage_units_check check (units >= 0)
+CREATE TABLE "public"."youtube_quota_usage" (
+  "day"    date    NOT NULL,
+  "bucket" text    NOT NULL,
+  "units"  integer NOT NULL DEFAULT 0,
+  CONSTRAINT "youtube_quota_usage_bucket_check" CHECK ((bucket = ANY (ARRAY['uploads'::text, 'default'::text]))),
+  CONSTRAINT "youtube_quota_usage_pkey" PRIMARY KEY (day, bucket),
+  CONSTRAINT "youtube_quota_usage_units_check" CHECK ((units >= 0))
 );
 
 ALTER TABLE "public"."youtube_quota_usage"
