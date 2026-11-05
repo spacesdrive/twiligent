@@ -202,11 +202,6 @@ export interface InstagramPublishingLimit {
     };
 }
 
-export interface InstagramPublishingLimitResponse {
-    success: true;
-    data: InstagramPublishingLimit[];
-}
-
 export interface CloudinaryConfigResponse {
     success: true;
     cloudName: string;

@@ -1,19 +1,18 @@
 import { fetchAllVideos } from './youtube/youtubeVideos.ts';
 import { fetchChannelData } from './youtube/youtubeChannels.ts';
 import { computeVideoAnalytics } from './youtube/youtubeAnalytics.ts';
-import { channelMetrics, accountComparison, filterAndSortVideos } from './youtube/youtubeLibrary.ts';
+import { channelMetrics, accountComparison } from './youtube/youtubeLibrary.ts';
 import { NO_YOUTUBE_KEY_MESSAGE } from './accountService.ts';
 import { NotConfiguredError, NotFoundError, ValidationError } from '../lib/errors.ts';
 import { errorFields } from '../lib/logger.ts';
 import { safeAccount } from '../lib/safeAccount.ts';
-import type { VideoLibraryFilters } from './youtube/youtubeLibrary.ts';
 import type { AccountRepository } from '../repositories/accountRepository.ts';
 import type { AnalyticsCacheRepository } from '../repositories/analyticsCacheRepository.ts';
 import type { AppConfig } from '../lib/config.ts';
 import type { RequestContext } from '../types/context.ts';
 import type { Account, SafeAccount } from '../../shared/types/domain.ts';
 import type {
-    VideoAnalytics, YouTubeAccountComparison, YouTubeChannelMetrics, YouTubeLibraryChannel, YouTubeLibraryVideo, YouTubeVideo,
+    VideoAnalytics, YouTubeAccountComparison, YouTubeChannelMetrics, YouTubeVideo,
 } from '../../shared/types/youtube.ts';
 
 export interface YouTubeAnalyticsDeps {
@@ -34,20 +33,10 @@ export interface ChannelVideos {
     fetchedAt: string;
 }
 
-export interface VideoLibraryQuery extends VideoLibraryFilters {
-    channelId?: string;
-}
-
-export interface VideoLibrary {
-    videos: YouTubeLibraryVideo[];
-    channels: YouTubeLibraryChannel[];
-}
-
 export interface YouTubeAnalyticsService {
     channelAnalytics(userId: string, accountId: string): Promise<ChannelAnalytics>;
     channelVideos(userId: string, accountId: string, options?: { fresh?: boolean }): Promise<ChannelVideos>;
     comparison(userId: string): Promise<YouTubeAccountComparison<SafeAccount> | null>;
-    videoLibrary(userId: string, query: VideoLibraryQuery): Promise<VideoLibrary>;
 }
 
 const MAX_PLAYLIST_PAGES = 10;
@@ -126,25 +115,5 @@ export function createYouTubeAnalyticsService({ accounts, cache, config, context
             return channels.length === 0 ? null : accountComparison(channels);
         },
 
-        // built from cached videos only; a channel that was never opened contributes nothing yet
-        async videoLibrary(userId, { channelId, ...filters }) {
-            const listed = await accounts.listForUser(userId);
-            const videos: YouTubeLibraryVideo[] = [];
-            for (const account of listed) {
-                if (channelId && account.id !== channelId) continue;
-                const cached = await cache.getVideos(userId, account.id);
-                if (!cached?.videos) continue;
-                videos.push(...cached.videos.map(video => ({
-                    ...video,
-                    channelTitle: account.title || video.channelTitle,
-                    channelId: account.id,
-                    channelThumbnail: account.thumbnails?.default || '',
-                })));
-            }
-            return {
-                videos: filterAndSortVideos(videos, filters),
-                channels: listed.map(account => ({ id: account.id, title: account.title })),
-            };
-        },
     };
 }

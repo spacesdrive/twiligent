@@ -107,10 +107,8 @@ Controllers call `YouTubeAnalyticsService` and `InstagramAnalyticsService`. Chan
 |---|---|---|---|
 | GET | `/api/accounts/:id/analytics` | `analyticsRoutes.ts`, `analyticsController.getChannelAnalytics` | Full YouTube analytics - fetches up to 500 videos, runs `computeVideoAnalytics()`, returns 50+ metrics; 404 for an account that is not a YouTube channel, 400 when no uploads playlist is stored |
 | GET | `/api/accounts/:id/videos` | `analyticsRoutes.ts`, `analyticsController.getChannelVideos` | Returns `{ videos, fetchedAt }` from the cache when it has the channel, live otherwise; `?fresh=1` skips the cache (a person's Refresh; spends YouTube quota); the same 404 and 400 checks before a live fetch |
-| GET | `/api/videos/all` | `analyticsRoutes.ts`, `analyticsController.getVideoLibrary` | Every cached video across the user's channels, filtered and sorted by `channelId`, `search`, `minViews`, `maxViews`, `sort` and `order` query parameters |
 | GET | `/api/accounts/:id/ig-analytics` | `analyticsRoutes.ts`, `analyticsController.getInstagramAnalytics` | Instagram analytics - fetches up to 500 media with views, classifies each as reel, post, or video, runs `computeInstagramAnalytics()` |
 | GET | `/api/accounts/:id/ig-media` | `analyticsRoutes.ts`, `analyticsController.getInstagramMedia` | Returns `{ media, fetchedAt }` (each item with `contentType` and `viewCount`) from cache, fetching live on a miss; `?fresh=1` skips the cache |
-| GET | `/api/comparison` | `analyticsRoutes.ts`, `analyticsController.getComparison` | Cross-account comparison data for the Overview dashboard |
 
 ### Instagram OAuth
 | Method | Path | File | Purpose |
@@ -125,7 +123,6 @@ Controllers call `PublishingService` (`services/publishingService.ts`).
 | Method | Path | File | Purpose |
 |---|---|---|---|
 | GET | `/api/cloudinary-config` | `publishingRoutes.ts`, `publishingController.getCloudinaryConfig` | Returns `{ cloudName, uploadPreset }` for frontend Cloudinary upload; 503 when the Worker has no Cloudinary settings |
-| GET | `/api/accounts/:id/ig-publishing-limit` | `publishingRoutes.ts`, `publishingController.getPublishingLimit` | Checks daily Instagram publishing quota remaining |
 | POST | `/api/accounts/:id/ig-publish` | `publishingRoutes.ts`, `publishingController.createContainer` | Creates Instagram media container via Graph API; returns `{ containerId }` |
 | GET | `/api/ig-container/:containerId/status` | `publishingRoutes.ts`, `publishingController.getContainerStatus` | Polls container status (`FINISHED`, `IN_PROGRESS`, `ERROR`, `EXPIRED`); needs `?accountId=` of an Instagram account with a token (400 or 404 otherwise) |
 | POST | `/api/accounts/:id/ig-media-publish` | `publishingRoutes.ts`, `publishingController.publishContainer` | Publishes the container to Instagram; returns `{ mediaId }` |

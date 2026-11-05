@@ -9,7 +9,7 @@ import type {
 } from '@shared/types/domain.ts';
 import type {
     CloudinaryConfigResponse, InstagramAnalyticsResponse, InstagramAuthUrlResponse, InstagramConnectCompleteResponse, InstagramContainerStatusResponse,
-    InstagramMediaPublishRequest, InstagramMediaPublishResponse, InstagramMediaResponse, InstagramPublishingLimitResponse, InstagramPublishRequest,
+    InstagramMediaPublishRequest, InstagramMediaPublishResponse, InstagramMediaResponse, InstagramPublishRequest,
     InstagramPublishResponse,
 } from '@shared/types/instagram.ts';
 import type {
@@ -18,7 +18,7 @@ import type {
     AutomationTestResponse,
 } from '@shared/types/automation.ts';
 import type {
-    ResolveChannelResponse, YouTubeAnalyticsPayload, YouTubeComparisonResponse, YouTubeVideosResponse,
+    ResolveChannelResponse, YouTubeAnalyticsPayload, YouTubeVideosResponse,
 } from '@shared/types/youtube.ts';
 import type {
     McpAccessTokenCreateRequest, McpAccessTokenCreateResponse, McpAccessTokenListResponse, McpClientApprovalRequest,
@@ -140,13 +140,10 @@ export const api = {
     getAnalytics: (id: string) => request<YouTubeAnalyticsPayload>(`/accounts/${id}/analytics`),
     getVideos: (id: string, fresh = false) => request<YouTubeVideosResponse>(`/accounts/${id}/videos${fresh ? '?fresh=1' : ''}`),
 
-    getComparison: () => request<YouTubeComparisonResponse>('/comparison'),
-
     getCloudinaryConfig: () => request<CloudinaryConfigResponse>('/cloudinary-config'),
     uploadToCloudinary,
 
     // Instagram Publishing
-    getIGPublishingLimit: (id: string) => request<InstagramPublishingLimitResponse>(`/accounts/${id}/ig-publishing-limit`),
     createIGContainer: (id: string, data: InstagramPublishRequest) => request<InstagramPublishResponse>(`/accounts/${id}/ig-publish`, { method: 'POST', body: JSON.stringify(data) }),
     getIGContainerStatus: (containerId: string, accountId: string) => request<InstagramContainerStatusResponse>(`/ig-container/${containerId}/status?accountId=${accountId}`),
     publishIGContainer: (id: string, containerId: string) => request<InstagramMediaPublishResponse>(`/accounts/${id}/ig-media-publish`, { method: 'POST', body: JSON.stringify({ containerId } satisfies InstagramMediaPublishRequest) }),

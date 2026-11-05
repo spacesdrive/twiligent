@@ -1,15 +1,6 @@
 import { DAY_MS } from '../../lib/analyticsMath.ts';
 import type { Account } from '../../../shared/types/domain.ts';
-import type { YouTubeAccountComparison, YouTubeChannelMetrics, YouTubeVideo } from '../../../shared/types/youtube.ts';
-
-// query string values from GET /api/videos/all
-export interface VideoLibraryFilters {
-    search?: string;
-    minViews?: string;
-    maxViews?: string;
-    sort?: string;
-    order?: string;
-}
+import type { YouTubeAccountComparison, YouTubeChannelMetrics } from '../../../shared/types/youtube.ts';
 
 type ComparableAccount = Pick<Account, 'subscriberCount' | 'viewCount' | 'videoCount'>;
 
@@ -60,30 +51,4 @@ export function accountComparison<TAccount extends ComparableAccount>(accounts: 
         bestByViews: sorted.byViews[0] || null,
         bestByVideos: sorted.byVideos[0] || null,
     };
-}
-
-function matchesSearch(video: YouTubeVideo, term: string): boolean {
-    return video.title?.toLowerCase().includes(term) || (video.tags || []).some(tag => tag.toLowerCase().includes(term));
-}
-
-export function filterAndSortVideos<TVideo extends YouTubeVideo>(
-    videos: TVideo[], { search, minViews, maxViews, sort, order }: VideoLibraryFilters,
-): TVideo[] {
-    let result = videos;
-    if (search) {
-        const term = search.toLowerCase();
-        result = result.filter(video => matchesSearch(video, term));
-    }
-    if (minViews) result = result.filter(video => (video.viewCount || 0) >= parseInt(minViews));
-    if (maxViews) result = result.filter(video => (video.viewCount || 0) <= parseInt(maxViews));
-
-    const sortField = sort || 'viewCount';
-    const sortOrder = order === 'asc' ? 1 : -1;
-    result.sort((first, second) => {
-        const firstValue = first[sortField as keyof YouTubeVideo] ?? 0;
-        const secondValue = second[sortField as keyof YouTubeVideo] ?? 0;
-        if (typeof firstValue === 'string') return sortOrder * firstValue.localeCompare(secondValue as string);
-        return sortOrder * ((secondValue as number) - (firstValue as number));
-    });
-    return result;
 }

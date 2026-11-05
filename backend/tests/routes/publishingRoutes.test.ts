@@ -35,7 +35,6 @@ async function call(method: string, path: string, json?: unknown, env = {}) {
 describe('publishing routes check the account before calling Instagram', () => {
     test('an Instagram account without a token is refused with 400 on every publishing route', async () => {
         const expected = failure(400, 'VALIDATION_ERROR', 'No Instagram access token stored - reconnect this account');
-        assert.deepEqual(await call('GET', '/accounts/igNoToken/ig-publishing-limit'), expected);
         assert.deepEqual(await call('POST', '/accounts/igNoToken/ig-publish', { mediaType: 'IMAGE', imageUrl: 'https://cdn/a.jpg' }), expected);
         assert.deepEqual(await call('POST', '/accounts/igNoToken/ig-media-publish', { containerId: 'c-1' }), expected);
         assert.deepEqual(await call('GET', '/ig-container/c-1/status?accountId=igNoToken'), expected);

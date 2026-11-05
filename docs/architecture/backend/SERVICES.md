@@ -30,9 +30,9 @@ A service receives only what it uses: repositories, the cleaned `AppConfig` from
 | Service (key in `Services`) | File | Repositories | Methods |
 |---|---|---|---|
 | `accounts` | `accountService.ts` | accounts, cache | `list`, `resolveChannel`, `addYouTube`, `refresh`, `refreshAll`, `remove` |
-| `youtubeAnalytics` | `youtubeAnalyticsService.ts` | accounts, cache | `channelAnalytics`, `channelVideos`, `comparison`, `videoLibrary` |
+| `youtubeAnalytics` | `youtubeAnalyticsService.ts` | accounts, cache | `channelAnalytics`, `channelVideos`, `comparison` (used by the MCP `compare_youtube_channels` tool) |
 | `instagramAnalytics` | `instagramAnalyticsService.ts` | accounts, cache | `analytics`, `media` |
-| `publishing` | `publishingService.ts` | accounts | `cloudinaryConfig`, `publishingLimit`, `createContainer`, `containerStatus`, `publishContainer` |
+| `publishing` | `publishingService.ts` | accounts | `cloudinaryConfig`, `publishingLimit` (used by the MCP `get_instagram_publishing_limit` tool), `createContainer`, `containerStatus`, `publishContainer` |
 | `scheduledPosts` | `scheduledPostService.ts` | accounts, scheduled posts (and the publisher) | `list`, `create`, `update`, `remove`, `removeAll`, `publishDueNow` |
 | `scheduledPublisher` | `scheduledPublisher.ts` | accounts, scheduled posts | `publishDue` (every user's due posts; cron and manual trigger) |
 | `tokenRefresh` | `tokenRefreshService.ts` | accounts | `refreshExpiringInstagramTokens` (daily cron) |
@@ -217,7 +217,7 @@ There is no barrel: services and tests import each module directly.
 | `youtubeFormat.ts` | `parseDuration`, `formatCompact`, `formatDuration`, `formatVideoSummary` |
 | `youtubeAnalytics.ts` | `computeVideoAnalytics` orchestrator, the empty state, totals, durations, rankings, Shorts split, format flags |
 | `youtubeTrends.ts` | Publish day and hour distribution, categories, tags, recency counts, upload frequency, weekly consistency, views histogram, monthly trends |
-| `youtubeLibrary.ts` | Pure helpers for `YouTubeAnalyticsService`: `channelMetrics` (channel age, ratios and estimates; a channel without `publishedAt` counts as 365 days old), `accountComparison` (rankings and totals for `/comparison`), `filterAndSortVideos` (search, view range and sort for `/videos/all`) |
+| `youtubeLibrary.ts` | Pure helpers for `YouTubeAnalyticsService`: `channelMetrics` (channel age, ratios and estimates; a channel without `publishedAt` counts as 365 days old), `accountComparison` (rankings and totals for the MCP `compare_youtube_channels` tool). The app filters and sorts the video library in the browser (`frontend/src/features/analytics/videos/videoLibrary.ts`) |
 
 ### Key Functions
 
