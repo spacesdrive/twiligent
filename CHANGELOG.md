@@ -7,6 +7,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [3.3.0] - 2026-11-05
+
+YouTube channels are verified for publishing from their own cards, and the publishing pages say which platform they are for. What an instance owner must do: nothing; deploy as usual.
+
+### Changed
+
+- YouTube publishing starts from the channels already on the Accounts page: each YouTube card shows whether the channel is verified for publishing, with Verify, Verify again or Turn off. Twiligent checks that the Google account you sign in with manages that exact channel and refuses any other. The separate YouTube publishing list is gone (#166)
+- Removing a YouTube channel also turns off its publishing and revokes Twiligent's access at Google (#166)
+- The Publish page is now called Instagram publishing (#165)
+- Automations is now called Instagram automation, with its own icon (#167)
+
+### Fixed
+
+- The Instagram publishing and YouTube uploads pages no longer say Cloudinary is not set up while the upload settings are loading or after a failed request; a failure shows its real reason with Try again (#168)
+
 ## [3.2.0] - 2026-11-05
 
 YouTube publishing, media tools for Claude, and the fixes from the second security audit. What an instance owner must do: run `npm run db:push` and `npm run db:schema` (media, YouTube and quota tables). For YouTube publishing, follow the new self-hosting guide: a Google OAuth client (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`) and `TOKEN_ENCRYPTION_KEY`. Optional: `CLOUDINARY_API_KEY` and `CLOUDINARY_API_SECRET` let Claude delete media files. Everything else keeps working without these steps.
