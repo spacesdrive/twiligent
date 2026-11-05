@@ -6,6 +6,8 @@ import { createSettingsRepository } from './repositories/settingsRepository.ts';
 import { createEmailQuotaRepository } from './repositories/emailQuotaRepository.ts';
 import { createYouTubeQuotaRepository } from './repositories/youtubeQuotaRepository.ts';
 import { createYouTubeQuotaService } from './services/youtubeQuotaService.ts';
+import { createMediaAssetRepository } from './repositories/mediaAssetRepository.ts';
+import { createMediaService } from './services/mediaService.ts';
 import { createAuditRepository } from './repositories/auditRepository.ts';
 import { createAutomationRuleRepository } from './repositories/automationRuleRepository.ts';
 import { createAutomationCommentRepository } from './repositories/automationCommentRepository.ts';
@@ -61,6 +63,7 @@ import type { AutomationReconciler } from './services/automationReconciler.ts';
 import type { RetentionService } from './services/retentionService.ts';
 import type { McpAccessService, McpPrincipal } from './services/mcpAccessService.ts';
 import type { McpService } from './services/mcpService.ts';
+import type { MediaService } from './services/mediaService.ts';
 import type { AppConfig } from './lib/config.ts';
 import type { RequestContext } from './types/context.ts';
 import type { Redis, SupabaseClient } from './types/app.ts';
@@ -83,6 +86,7 @@ export interface Services {
     trackedContent: TrackedContentService;
     overview: OverviewService;
     settings: SettingsService;
+    media: MediaService;
     instagramConnect: InstagramConnectService;
     authEmail: AuthEmailService;
     automations: AutomationService;
@@ -128,6 +132,7 @@ export function createServices(clients: Clients, config: AppConfig, context: Req
         trackedContent: createTrackedContentService({ tracked, config, context, youtubeQuota }),
         overview: createOverviewService({ accounts, tracked, cache, config, youtubeQuota }),
         settings: createSettingsService({ settings, config }),
+        media: createMediaService({ media: createMediaAssetRepository(clients.supabase), audit, config, context }),
         instagramConnect: createInstagramConnectService({ accounts, audit, config, context }),
         authEmail: createAuthEmailService({ quota: createEmailQuotaRepository(clients.rateLimitRedis), config, context }),
         automations: createAutomationService({ accounts, rules, comments, followups, publicReplies, automationAccounts, audit, automation, context }),
