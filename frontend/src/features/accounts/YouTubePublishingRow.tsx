@@ -1,5 +1,5 @@
 import React from 'react';
-import { CheckCircle2, CircleDashed, ShieldCheck, TriangleAlert } from 'lucide-react';
+import { Check, CheckCircle2, CircleDashed, TriangleAlert } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -21,7 +21,7 @@ export default function YouTubePublishingRow({ publishing, channelName, verifyin
 
   const verifyButton = (label: string) => (
     <Button variant="outline" size="sm" onClick={onVerify} disabled={verifying} aria-label={verifying ? undefined : `${label} for publishing: ${channelName}`}>
-      {verifying ? <Spinner className="size-4" /> : <ShieldCheck data-icon="inline-start" />}
+      {verifying ? <Spinner className="size-4" /> : <Check data-icon="inline-start" />}
       {verifying ? 'Opening Google' : label}
     </Button>
   );
