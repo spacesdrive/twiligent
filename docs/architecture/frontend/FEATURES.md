@@ -127,7 +127,7 @@ The computed indices `viralityScore` and `consistencyScore` (YouTube and Instagr
 
 ## Shared Chart Components
 
-Charts are drawn with Intent UI's components in `components/ui` (`AreaChart`, `BarChart`, `LineChart`; ADR-048)
+Charts are drawn with Intent UI's components in `components/ui` (`AreaChart`, `BarChart`; ADR-048)
 inside the shared pieces below. Each chart is a figure with a screen-reader name and a hidden description of its
 data; nothing extra is shown on screen.
 
