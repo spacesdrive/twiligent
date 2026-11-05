@@ -63,8 +63,11 @@ begin
         end if;
     end if;
 
+    -- the account limit belongs to the Instagram account, so replies sent through every member's connection to it count
     select case when count(*) >= p_account_limit then min(t.started_at) + interval '1 hour' end into free_at
-    from public.automation_attempts t where t.account_id = job.account_id and t.kind = 'private_reply' and t.started_at > hour_ago;
+    from public.automation_attempts t
+    join public.automation_comments c on c.id = t.automation_comment_id
+    where c.ig_user_id = job.ig_user_id and t.kind = 'private_reply' and t.started_at > hour_ago;
     if free_at is not null then
         insert into public.automation_accounts (account_id, user_id, limited_until)
         values (job.account_id, job.user_id, free_at)
