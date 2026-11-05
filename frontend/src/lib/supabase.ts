@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { SUPABASE_AUTH_OPTIONS } from './supabaseAuthOptions';
 
 const url = import.meta.env.VITE_SUPABASE_URL;
 const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -7,4 +8,4 @@ if (!url || !anonKey) {
     throw new Error('Missing VITE_SUPABASE_URL or VITE_SUPABASE_ANON_KEY in environment');
 }
 
-export const supabase = createClient(url, anonKey);
+export const supabase = createClient(url, anonKey, { auth: SUPABASE_AUTH_OPTIONS });
