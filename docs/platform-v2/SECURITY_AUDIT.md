@@ -1,4 +1,10 @@
-# Security audit
+Fixed (#161): the circuit breakers ignore the Workers "Too many subrequests" error, neither counting nor clearing failures. Test in `circuitBreaker.test.ts` |
+
+
+
+
+
+
 
 The security assessment for #148: what was run, what it found, what was fixed and what stays open. Every tool named here ran; each result is the tool's actual output. The workflow that keeps this going after v2 is `docs/workflows/SECURITY_REVIEW.md`.
 
@@ -37,15 +43,15 @@ Each depends on a fact outside the repository or on running code. None is a conf
 
 | Id | Lead | Status |
 |---|---|---|
-| L1 | With "Confirm email" off, as the self-hosting guide advises, anyone can create a password account for someone else's address, and may keep access after the real owner signs in with a code or Google | Open, owner action. Depends on Supabase Auth's identity linking. Recorded in `docs/philosophy/SECURITY.md` (Known Risks) with the mitigation: turn on email confirmation once the email hook is set up, or turn off open sign-up |
-| L2 | Comments on an Instagram account connected by two Twiligent users are routed to whichever user's rule wins, without checking that the account's token still works | Open. Only reachable when two users connected the same Instagram account with valid tokens. Planned: route only to accounts whose last token check passed, and limit sends per Instagram identity |
+| L1 | With "Confirm email" off, as the self-hosting guide advises, anyone can create a password account for someone else's address, and may keep access after the real owner signs in with a code or Google | Mitigated (#161). It is a Supabase setting: the self-hosting guide now says to keep Confirm email on and to close sign-up before ever turning it off. The project's own instance was checked read-only through the Supabase Management API on 2026-11-05: Confirm email on, Send Email hook set |
+| L2 | Comments on an Instagram account connected by two Twiligent users are routed to whichever user's rule wins, without checking that the account's token still works | Fixed (#161): comments route only to connections whose token is present and unexpired, and the hourly account limit counts replies through every connection to the same Instagram account (migrations `replace_automation_rules_for_ig_user_function` and `replace_reserve_automation_send_function`) |
 | L3 | The GitHub Actions publisher printed Instagram's error text unredacted, and the setup guide recommends a public fork whose run logs anyone can read | Fixed: commit "redact Instagram errors in the GitHub Actions publisher log". Errors go through the Worker's `redactSecrets`, the account id is no longer printed, and the guide and the app say what the logs contain |
 | L4 | `HEAD /api/process-scheduled` skipped the quota rule because the matcher compared the raw method | Fixed: commit "count HEAD requests against the same rate limit rule as GET"; test in `rateLimit.test.ts` |
 | L5 | A user-triggered publisher run under the 30 second request deadline could leave other users' posts claimed and spend their attempts | Mitigated by F2: the trigger now only touches the caller's own posts |
-| L6 | The instance's shared YouTube API quota is counted per request, not per unit | Open, accepted for now: the quota rule caps quota-spending routes at 30 per 10 minutes per user. The YouTube publishing work adds a quota ledger per Pacific day (`ARCHITECTURE.md`, section 3) |
-| L7 | The daily token refresh retries dead Instagram tokens with no subrequest budget and can starve the 90 day retention purge | Open. Planned: give the refresh its own subrequest budget and skip tokens marked as needing a reconnect |
-| L8 | One user's many due posts can use the shared publisher's subrequests and delay others' posts | Open. Planned with the YouTube job runner: a per-user cap per run |
-| L9 | One user's subrequest overrun can open the circuit breakers all users share | Open. Planned: do not count the Workers subrequest limit as a platform outage |
+| L6 | The instance's shared YouTube API quota is counted per request, not per unit | Fixed (#161): each YouTube operation runs through `youtubeQuotaService`, which counts units (search 100, list calls 1) per member and Pacific day in Redis and refuses a member past 2,500 with a 429 that says when it resets. Tests: `youtubeQuota.test.ts`, `youtubeQuotaService.test.ts`, `youtubeQuotaRepository.test.ts` |
+| L7 | The daily token refresh retries dead Instagram tokens with no subrequest budget and can starve the 90 day retention purge | Fixed (#161): expired tokens are skipped and logged as needing a reconnect, at most 10 refreshes run a day soonest first, and each daily step logs its own failure so the retention purge always runs. Tests in `tokenRefreshService.test.ts` and `jobs/scheduled.test.ts` |
+| L8 | One user's many due posts can use the shared publisher's subrequests and delay others' posts | Fixed (#161): both schedulers check stale claims first, then let due posts take turns by account, oldest first, five per account a run (`fairPublishOrder`). Test in `scheduledPublishing.test.ts` |
+| L9 | One user's subrequest overrun can open the circuit breakers all users share | Fixed (#161): the circuit breakers ignore the Workers "Too many subrequests" error, neither counting nor clearing failures. Test in `circuitBreaker.test.ts` |
 
 ---
 
@@ -78,4 +84,4 @@ Each depends on a fact outside the repository or on running code. None is a conf
 
 - Every check was source-only. Behaviour that depends on Supabase Auth, Meta or Google (L1, L2) and anything that needs running code was not reproduced.
 - The deployed settings (Supabase "Confirm email" and sign-up, Cloudflare and GitHub settings) were not inspected.
-- Open leads L1, L2, L6 to L9 are listed in `docs/philosophy/SECURITY.md` (Known Risks) with what would remove them.
+- The open leads were fixed in 3.1.0 (#161): L2, L6, L7, L8 and L9 in code with regression tests, L1 by the self-hosting guide and a check of the project's own Supabase settings.
