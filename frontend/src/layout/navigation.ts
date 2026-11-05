@@ -33,7 +33,7 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Publishing',
     items: [
-      { path: '/publish',     label: 'Publish',     icon: Send },
+      { path: '/publish',     label: 'Instagram publishing', icon: Send },
       { path: '/youtube-uploads', label: 'YouTube uploads', icon: CloudUpload },
       { path: '/automations', label: 'Automations', icon: MessageSquareReply },
     ],

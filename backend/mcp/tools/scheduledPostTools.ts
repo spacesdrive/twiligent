@@ -49,7 +49,7 @@ function describeFields(fields: Partial<ScheduledPostRequest>): string {
 // the validators accept more fields than these tools publish; anything a client was not told about is refused
 function refuseUnlisted(args: Record<string, unknown>, allowed: string[]): void {
     const unlisted = Object.keys(args).filter(name => name !== 'confirmationToken' && !allowed.includes(name));
-    if (unlisted.length > 0) throw new ValidationError(`These fields cannot be set from Claude: ${unlisted.join(', ')}. Use the Publish page for them.`);
+    if (unlisted.length > 0) throw new ValidationError(`These fields cannot be set from Claude: ${unlisted.join(', ')}. Use the Instagram publishing page for them.`);
 }
 
 export const listScheduledPosts = defineTool<{ status: PostStatus | undefined; page: Page }>({
@@ -103,7 +103,7 @@ export const scheduleInstagramPost = defineTool<ScheduledPostRequest>({
     parse(args) {
         refuseUnlisted(args, ['accountId', 'mediaUrl', 'mediaType', ...Object.keys(postFields)]);
         const request = parseScheduledPost(args);
-        if (request.mediaType === 'CAROUSEL') throw new ValidationError('Carousels can be scheduled from the Publish page; this tool takes one image or video.');
+        if (request.mediaType === 'CAROUSEL') throw new ValidationError('Carousels can be scheduled from the Instagram publishing page; this tool takes one image or video.');
         return request;
     },
     async run(request, { services, principal }) {

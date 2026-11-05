@@ -96,7 +96,7 @@ Every token in `frontend/src/index.css` traces to a row in this file.
 
 | Element | Measured value | Twiligent |
 |---|---|---|
-| Settings panel | 460px wide, right side, separated by a hairline | `DetailPanel` in the Publish page, `lg:w-[28rem]` |
+| Settings panel | 460px wide, right side, separated by a hairline | `DetailPanel` in the Instagram publishing page, `lg:w-[28rem]` |
 | Panel tabs | underline tabs, 42px | `TabsList` default |
 | Field label | 14px weight 500 | `FieldRow` label |
 | Field control | 40px, 10px radius, 1px border at 10% | `--control-h-lg` |

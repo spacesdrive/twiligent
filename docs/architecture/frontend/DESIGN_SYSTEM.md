@@ -76,7 +76,7 @@ Shared components live in `frontend/src/components/`. Reach for these before wri
 | Library | Videos, Shorts, Instagram content, Tracked content | Search, filter chips, quiet table or card grid, pager |
 | Detail | YouTube channel, Instagram account, Category | Back link, avatar header, metric grids, underline tabs or sections |
 | Create | Accounts (add flow) | Choice cards, then a form step, then review before commit |
-| Working surface | Publish | Main editor on the left, sticky `DetailPanel` with settings and the primary action on the right |
+| Working surface | Instagram publishing | Main editor on the left, sticky `DetailPanel` with settings and the primary action on the right |
 | Settings | Settings | Sections with a label column and content column |
 | Editor page | Rule editor (`/automations/rules/new`, `/automations/rules/:id`) | A long form on its own page: back link, sections of `FieldRow`s, a live preview, a sticky bar with Cancel and the primary action, a draft and a leave warning |
 | Sign-in | Login | One centred card in the dialog styling (`rounded-dialog`, `border-line`, `bg-popover`, `shadow-lg`) over a blurred picture of the dashboard (`LoginBackdrop`, the shared components with sample figures under a `bg-surface/70` blur); logo, Back link when not on the first view, one headline, then the view's form |

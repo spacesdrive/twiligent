@@ -20,7 +20,7 @@ A person who reports an error can quote the request id at the end of the error m
 |---|---|---|
 | Comment replies go out wrong or too fast | `npx wrangler secret put AUTOMATION_PAUSED` with the value `true` | Every reply is held; comments are still recorded and wait. Remove the secret, or set `false`, to resume |
 | One Instagram account replies badly | Pause the account on the Automations page | Only that account stops |
-| A scheduled post keeps failing | Read its reason in the scheduled posts list on the Publish page | A temporary failure is tried up to three times and a permanent one once; the post is then marked Failed with the reason and is not tried again |
+| A scheduled post keeps failing | Read its reason in the scheduled posts list on the Instagram publishing page | A temporary failure is tried up to three times and a permanent one once; the post is then marked Failed with the reason and is not tried again |
 | A secret leaked | Set a new value with `npx wrangler secret put <NAME>` and revoke the old one where it was issued (Meta, Google, Resend, Supabase) | The Worker uses the new value on its next request |
 
 ## 3. Undo a change
