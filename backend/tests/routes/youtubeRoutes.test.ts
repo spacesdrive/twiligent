@@ -44,6 +44,9 @@ test('a verify link is only made for one of the person\'s own YouTube channels, 
     assert.equal((await server.request('/auth/youtube/url?accountId=theirs', {}, ENV)).status, 404);
     const made = await server.request('/auth/youtube/url?accountId=yt1', {}, ENV);
     assert.equal(made.status, 200);
-    const state = new URL(((await made.json()) as { url: string }).url).searchParams.get('state') ?? '';
-    assert.deepEqual(await readOAuthState(state, 'google-secret'), { userId: 'user-1', subject: 'yt1' });
+    const params = new URL(((await made.json()) as { url: string }).url).searchParams;
+    assert.deepEqual(await readOAuthState(params.get('state') ?? '', 'google-secret'), { userId: 'user-1', subject: 'yt1' });
+    // only YouTube's scopes, never merged with earlier grants: a Brand Account channel refuses any other scope
+    assert.equal(params.get('scope'), 'https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly');
+    assert.equal(params.has('include_granted_scopes'), false);
 });

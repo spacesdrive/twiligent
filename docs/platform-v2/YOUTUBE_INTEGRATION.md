@@ -25,6 +25,7 @@ How Twiligent uploads videos and Shorts to a person's YouTube channel (#147): th
 1. `GET /api/auth/youtube/url?accountId=<id>` (signed in, for one of the person's own YouTube accounts) returns Google's consent URL:
    - scopes `youtube.upload` and `youtube.readonly`;
    - `access_type=offline` and `prompt=consent`, so a refresh token comes back every time;
+   - no `include_granted_scopes`: the instance may reuse a client that also signs people in with Google, and merging those sign-in scopes (`openid`, `email`, `profile`) makes Google refuse a Brand Account channel, which accepts YouTube scopes only (#173);
    - a state signed with the Google client secret that names the person and the account (`createOAuthState` with a subject).
 2. Google sends the browser to the public `GET /api/auth/youtube/callback`.
    - It checks the state's signature and redirects to the Accounts page with `#yt_code=...&yt_state=...` in the fragment, which never reaches a server or a referrer.
