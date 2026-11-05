@@ -8,6 +8,7 @@ import SettingsSection from './SettingsSection';
 import AppearanceSection from './AppearanceSection';
 import PasswordSection from './PasswordSection';
 import ServerKeysSection from './ServerKeysSection';
+import ClaudeSection from './ClaudeSection';
 import SchedulingSection from './SchedulingSection';
 import PlatformRequirementsSection from './PlatformRequirementsSection';
 import UsefulLinksSection from './UsefulLinksSection';
@@ -41,6 +42,7 @@ export default function Settings() {
         <AppearanceSection />
         <PasswordSection />
         <ServerKeysSection serverStatus={serverStatus} refreshAll={refreshAll} refreshingAll={refreshingAll} />
+        <ClaudeSection />
         <SchedulingSection github={github} />
         <PlatformRequirementsSection />
         <UsefulLinksSection />
