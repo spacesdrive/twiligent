@@ -15,6 +15,8 @@
     "public/tables/automation_followups.sql",
     "public/tables/automation_public_replies.sql",
     "public/tables/automation_rules.sql",
+    "public/tables/mcp_access_tokens.sql",
+    "public/tables/mcp_client_grants.sql",
     "public/tables/scheduled_posts.sql",
     "public/tables/settings.sql",
     "public/tables/tracked_posts.sql",
@@ -84,6 +86,8 @@
     "public/tables/automation_followups.sql",
     "public/tables/automation_public_replies.sql",
     "public/tables/automation_rules.sql",
+    "public/tables/mcp_access_tokens.sql",
+    "public/tables/mcp_client_grants.sql",
     "public/tables/scheduled_posts.sql",
     "public/tables/settings.sql",
     "public/tables/tracked_posts.sql"
