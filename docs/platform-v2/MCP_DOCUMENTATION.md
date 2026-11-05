@@ -130,6 +130,12 @@ Every tool works only on the caller's own data. Read tools need no confirmation.
 | `import_media_from_url` | write | `url` (public https), `resourceType` (`image` or `video`), `label` | `media`. Cloudinary downloads the file, not the Worker; private and non-https addresses are refused |
 | `update_media` | write | `mediaId`, `label` | `media` |
 | `delete_media` | write, confirm | `mediaId` | `deleted`, `removedFromCloudinary`, and a `note` when the file stays on Cloudinary because the instance has no API secret |
+| `list_youtube_channels` | read | none | `channels` (no tokens), `configured` |
+| `list_youtube_uploads`, `get_youtube_upload` | read | `limit`, `cursor`; or `uploadId` | Upload jobs with state, progress, video id and error |
+| `create_youtube_upload` | write, confirm when public, unlisted or scheduled | `connectionId`, `mediaId`, `title`, `privacy`, `madeForKids`, and optional `description`, `tags`, `categoryId`, `publishAt`, `syntheticMedia`, `notifySubscribers`, `thumbnailMediaId`, `clientRequestId` | `upload`, `alreadyQueued` |
+| `update_youtube_upload` | write, confirm when it makes the video public, unlisted or scheduled | `uploadId` and the details to change | `upload` |
+| `retry_youtube_upload` | write | `uploadId` | `upload` |
+| `cancel_youtube_upload` | write, confirm | `uploadId` | `upload` |
 | `list_scheduled_posts` | read | `status`, `limit` (1 to 50, default 20), `cursor` | `posts`, `nextCursor`, `total` |
 | `get_scheduled_post` | read | `postId` | `post` |
 | `schedule_instagram_post` | write, confirm | `accountId`, `mediaUrl` (public https), `scheduledAt` (future ISO 8601), `mediaType` (IMAGE, VIDEO, REELS, STORIES), `caption`, `shareToFeed`, `collaborators`, `altText`, `locationId` | `post`, `alreadyScheduled` (true when the same media was already scheduled for that account and time) |

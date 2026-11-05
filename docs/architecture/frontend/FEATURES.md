@@ -85,6 +85,11 @@ frontend/src/
 │   │   ├── useAutomationActivity.ts        <- Filters, counts, activity pages and retry
 │   │   ├── useRuleForm.ts                  <- Rule editor state, draft, field problems, the account's posts, the test call
 │   │   └── automationData.ts               <- Pure status labels, filters, summary, form conversion and checks (automationData.test.ts)
+│   ├── youtube/
+│   │   ├── YouTubeUploads.tsx              <- Page: composer and upload list, with loading, error, not-set-up and no-channel states
+│   │   ├── YouTubeComposer.tsx, YouTubeUploadList.tsx
+│   │   ├── useYouTubePublishing.ts         <- Loads channels and uploads, reloads every 30 s while one moves, queue, cancel, retry
+│   │   └── youtubeUploadData.ts            <- Pure state labels, progress, tags, composer checks, sign-in return (youtubeUploadData.test.ts)
 │   ├── settings/
 │   │   ├── Settings.tsx                    <- Page: loads server settings, then renders each section; keeps the #hash scroll
 │   │   ├── SettingsSection.tsx, AppearanceSection.tsx, PasswordSection.tsx, ServerKeysSection.tsx, SchedulingSection.tsx

@@ -160,6 +160,10 @@ revokeMcpClient: (id: string) => request<SuccessResponse>(`/mcp/clients/${id}`, 
 
 The types are in `shared/types/mcp.ts`. Settings, Claude (`features/settings/useClaudeAccess.ts`) uses all but `approveMcpClient`, which the consent page (`pages/useOAuthConsent.ts`) calls before it approves the request with `supabase.auth.oauth.approveAuthorization`. The token from `createMcpToken` is kept only in component state until the person dismisses it. These calls manage access; the MCP endpoint itself (`/mcp`) is never called from the app.
 
+## YouTube Publishing and Media Methods
+
+`getMedia`, `registerMedia` and `uploadWithDetails` (a browser upload to Cloudinary that also returns the id, size and dimensions) feed the media library. `getYouTubeConnections`, `getYouTubeAuthUrl`, `completeYouTubeConnection` and `deleteYouTubeConnection` serve the Accounts page panel; `getYouTubeUploads`, `createYouTubeUpload`, `updateYouTubeUpload`, `cancelYouTubeUpload` and `retryYouTubeUpload` serve the YouTube uploads page. Types are in `shared/types/youtubePublishing.ts` and `shared/types/media.ts`.
+
 ## Tracked Content Methods
 
 Added to the `api` object in `api.ts`. Tracked content is YouTube videos only:

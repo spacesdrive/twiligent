@@ -36,7 +36,7 @@ Defined in `backend/lib/rateLimit/rules.ts`.
 | `quota` | `POST /accounts`, `/accounts/refresh-all`, `/accounts/:id/refresh`, `/resolve-channel`, `/tracked-content`, `/tracked-content/:id/refresh`, `POST /automations/accounts/:accountId/subscribe` | User id | Sliding window log | 30 per 10 minutes |
 | `publish` | `POST /accounts/:id/ig-media-publish`, `/accounts/:id/ig-publish` | User id | Leaking bucket | 50 deep, drains 1 every 15 seconds |
 | `mcp` | `POST /mcp`, after `requireMcpAuth` | User id from the access token or OAuth token | Token bucket | Bursts of 60, refills 1 per second |
-| `oauth` | `GET /auth/instagram/callback` | Client IP | Fixed window counter | 10 per 10 minutes |
+| `oauth` | `GET /auth/instagram/callback`, `GET /auth/youtube/callback` | Client IP | Fixed window counter | 10 per 10 minutes |
 
 The Instagram webhook (`POST /api/webhooks/instagram`) has only the `ip` rule. Meta sends from its own servers, so a burst past 300 a minute from one of them gets 429, and Meta delivers those notifications again later; nothing is lost. Private replies have their own limits, which are not rate limit rules: hourly counts per instance, user, account and rule and a daily count per person, kept in the database by `reserve_automation_send` so every Worker sees them (`docs/architecture/data-flows/AUTOMATION.md`).
 

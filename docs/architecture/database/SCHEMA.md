@@ -470,6 +470,51 @@ Index `media_assets_user_created_idx` on `(user_id, created_at desc)` serves the
 
 ---
 
+## YouTube Publishing Tables
+
+See `docs/platform-v2/YOUTUBE_INTEGRATION.md` for the flow. All three are reached only by the Worker with the service key.
+
+### Table: `youtube_connections`
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id` | text | primary key | `newRowId()` |
+| `user_id` | uuid | not null, references `auth.users` on delete cascade | |
+| `account_id` | text | references `accounts (id, user_id)` on delete set null (account_id) | The analytics account for the same channel, if any |
+| `channel_id`, `channel_title` | text | unique `(user_id, channel_id)` | |
+| `scopes` | text[] | not null | As Google granted them |
+| `status` | text | `active` or `needs_reconnect` | |
+| `refresh_token_enc`, `access_token_enc` | text | refresh not null | AES-GCM sealed under a key derived from `TOKEN_ENCRYPTION_KEY`; never leave the Worker |
+| `access_token_expires_at` | timestamptz | | |
+| `created_at`, `updated_at` | timestamptz | not null, default now() | |
+
+### Table: `youtube_uploads`
+
+| Column | Type | Constraints | Description |
+|---|---|---|---|
+| `id`, `user_id` | text, uuid | primary key; references `auth.users` on delete cascade | |
+| `connection_id` | text | references `youtube_connections` on delete cascade | |
+| `source_url`, `source_bytes`, `content_type` | text, bigint, text | https; bytes above 0 | The Cloudinary source, read in byte ranges |
+| `thumbnail_url`, `is_short` | text, boolean | | |
+| `title`, `description`, `tags`, `category_id` | text, text, text[], text | title 1 to 100 characters | The metadata snapshot |
+| `privacy`, `publish_at` | text, timestamptz | `private`, `unlisted` or `public`; a publish time only with `private` | |
+| `made_for_kids`, `synthetic_media`, `notify_subscribers` | boolean | not null | |
+| `state` | text | `queued`, `uploading`, `processing`, `finalizing`, `done`, `waiting_quota`, `needs_reconnect`, `needs_review`, `failed`, `cancelled` | |
+| `session_uri`, `bytes_confirmed`, `video_id` | text, bigint, text | bytes between 0 and the source size | Saved before any byte is sent |
+| `attempts`, `next_attempt_at`, `lease_owner`, `lease_until`, `last_error` | integer, timestamptz, text, timestamptz, text | | The runner's bookkeeping |
+| `client_request_id` | text | unique `(user_id, client_request_id)` | The same request twice queues once |
+| `created_at`, `updated_at` | timestamptz | not null, default now() | |
+
+Indexes: `youtube_uploads_due_idx` on `(next_attempt_at)` for the runnable states; `youtube_uploads_user_created_idx` on `(user_id, created_at desc)`.
+
+### Table: `youtube_quota_usage`
+
+The Google project's units per Pacific `day` and `bucket` (`uploads`: 100 inserts; `default`: 10,000 units), primary key `(day, bucket)`.
+
+Functions: `claim_youtube_upload(p_owner, p_lease_seconds)` leases one due job with `for update skip locked`; `reserve_youtube_quota(p_day, p_bucket, p_units, p_limit)` adds units only while they fit and answers whether it did. Both are granted to `service_role` only.
+
+---
+
 ## Table: `audit_events`
 
 Who connected, reconnected or removed an account, changed a rule, paused or subscribed an account, or retried a reply. Rows reference only the user, so they outlive the account they describe.
@@ -478,7 +523,7 @@ Who connected, reconnected or removed an account, changed a rule, paused or subs
 |---|---|---|---|
 | `id` | text | primary key | `newRowId()` |
 | `user_id` | uuid | not null, references `auth.users` on delete cascade | |
-| `action` | text | `^[a-z_]+\.[a-z_]+$` | `account.connected`, `account.reconnected`, `account.removed`, `automation_rule.created`, `.updated`, `.duplicated`, `.deleted`, `automation_account.paused`, `.resumed`, `.subscribed`, `automation_comment.retried`, `automation_public_reply.retried`, `mcp_access_token.created`, `.revoked`, `mcp_client.approved`, `.revoked`, `media_asset.imported`, `.deleted`, and `mcp_access_token.called_tool` or `mcp_client.called_tool` for each write tool a Claude client ran (with the tool name and outcome) |
+| `action` | text | `^[a-z_]+\.[a-z_]+$` | `account.connected`, `account.reconnected`, `account.removed`, `automation_rule.created`, `.updated`, `.duplicated`, `.deleted`, `automation_account.paused`, `.resumed`, `.subscribed`, `automation_comment.retried`, `automation_public_reply.retried`, `mcp_access_token.created`, `.revoked`, `mcp_client.approved`, `.revoked`, `media_asset.imported`, `.deleted`, `youtube_connection.connected`, `.reconnected`, `.removed`, `youtube_upload.created`, `.cancelled`, and `mcp_access_token.called_tool` or `mcp_client.called_tool` for each write tool a Claude client ran (with the tool name and outcome) |
 | `subject_type` | text | `account`, `automation_rule`, `automation_account`, `automation_comment`, `mcp_access_token`, `mcp_client`, `scheduled_post`, `tracked_post`, `media_asset`, `youtube_connection`, `youtube_upload`, `settings` | The last six are for changes made through Claude clients, publishing, media and YouTube |
 | `subject_id` | text | | |
 | `details` | jsonb | not null, default `{}`, an object | Small facts such as the platform or the changed field names; never tokens or comment text |

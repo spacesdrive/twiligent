@@ -53,7 +53,7 @@ The migrations in `supabase/migrations/` enforce this on every instance:
 
 The service-role key used by the Worker and the GitHub Actions scheduler bypasses row level security and keeps its grants. The frontend never queries tables directly (it uses Supabase only for Auth). `backend/tests/database/migrations.test.ts` fails if a migration creates a function without the revoke.
 
-To check a live instance, call the Data API with the anon key (`GET <SUPABASE_URL>/rest/v1/accounts` with the `apikey` header): it must answer 401 for all fourteen tables and for `POST /rest/v1/rpc/merge_account_data`, `POST /rest/v1/rpc/claim_automation_comments`, `POST /rest/v1/rpc/claim_automation_followups` and `POST /rest/v1/rpc/claim_automation_public_replies`. The manual check is in `docs/workflows/TESTING.md`.
+To check a live instance, call the Data API with the anon key (`GET <SUPABASE_URL>/rest/v1/accounts` with the `apikey` header): it must answer 401 for all seventeen tables and for `POST /rest/v1/rpc/merge_account_data`, `POST /rest/v1/rpc/claim_automation_comments`, `POST /rest/v1/rpc/claim_automation_followups` and `POST /rest/v1/rpc/claim_automation_public_replies`. The manual check is in `docs/workflows/TESTING.md`.
 
 ### What was wrong before
 
@@ -100,6 +100,10 @@ The MCP endpoint (`POST /mcp`) does not take the app's session token. `requireMc
 - **OAuth clients.** Supabase Auth's OAuth server issues the token; the Worker checks it with `auth.getUser` and requires a `client_id` claim plus a row in `mcp_client_grants` for that user and client, written by the consent page. Removing the row stops the client at its next call even while its token is valid.
 
 Each credential carries `read` or `write`. A read credential never sees the write tools in `tools/list` and is refused if it calls one. Publishing and deleting also need a confirmation token: an HMAC over the user, the tool and the exact arguments, keyed from `TOKEN_ENCRYPTION_KEY`, valid for five minutes. Every write tool call is recorded in `audit_events`.
+
+## YouTube Publishing
+
+`youtube_connections` holds each channel's Google tokens sealed with AES-GCM under a key derived from `TOKEN_ENCRYPTION_KEY`; they are unsealed only in the Worker, to call Google, and never returned or logged. The connection is finished only by the person who started the Google sign-in. The runner's repository methods `claim`, `saveLeased`, `releaseLeased`, `parkForConnection`, `findById`, `updateTokensById` and `markNeedsReconnectById` are not user-scoped and serve only `youtubeUploadRunner` and `youtubeConnectService.accessTokenFor`; every runner write is conditioned on its lease. The runner reads only Cloudinary addresses.
 
 ## Audit Events
 

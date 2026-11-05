@@ -146,7 +146,9 @@ npx wrangler secret put META_APP_SECRET             # optional; a second key for
 npx wrangler secret put AUTOMATION_PAUSED           # optional; "true" holds every automated reply
 npx wrangler secret put CLOUDINARY_API_KEY          # optional; with the secret below, lets Claude delete media files
 npx wrangler secret put CLOUDINARY_API_SECRET       # optional
-npx wrangler secret put TOKEN_ENCRYPTION_KEY        # optional; signs MCP confirmations (openssl rand -base64 48)
+npx wrangler secret put GOOGLE_CLIENT_ID            # optional; YouTube publishing (with the two below)
+npx wrangler secret put GOOGLE_CLIENT_SECRET        # optional
+npx wrangler secret put TOKEN_ENCRYPTION_KEY        # optional; signs MCP confirmations and seals Google tokens (openssl rand -base64 48)
 npx wrangler secret put MCP_OAUTH_ENABLED           # optional; "true" after turning on Supabase's OAuth server
 ```
 
