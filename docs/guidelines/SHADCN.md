@@ -21,7 +21,7 @@ Always import from the local `@/components/ui/` path:
 
 ```tsx
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Badge } from '@/components/ui/badge';
 ```
 
@@ -43,27 +43,22 @@ This copies the component source into `frontend/src/components/ui/` as a `.tsx` 
 shadcn components are composed using their named export variants. Read the component file in `frontend/src/components/ui/` to understand the available props before using them.
 
 ```tsx
-// Card composition
-<Card>
-    <CardHeader>
-        <CardTitle>Title</CardTitle>
-        <CardDescription>Subtitle</CardDescription>
-    </CardHeader>
-    <CardContent>
-        {/* content */}
-    </CardContent>
-    <CardFooter>
-        {/* actions */}
-    </CardFooter>
-</Card>
+// Tooltip composition: the trigger renders the button, the content is the label
+<Tooltip>
+    <TooltipTrigger render={<Button variant="ghost" size="icon-xs" aria-label="Refresh" />}>
+        <RefreshCw />
+    </TooltipTrigger>
+    <TooltipContent>Refresh</TooltipContent>
+</Tooltip>
 ```
+
+Only the components the app uses are kept in `components/ui/`. Add one with the CLI when a feature needs it, and delete it when the last use goes. Grouped content uses `SurfaceBox` and labelled fields use `FieldRow` (`DESIGN_SYSTEM.md`), not `Card` or `Label`.
 
 ## Common Components in Use
 
 | Component | Import | Use case |
 |---|---|---|
 | `Button` | `@/components/ui/button` | All action buttons; use `variant` prop: `default`, `outline`, `ghost`, `destructive` |
-| `Card`, `CardHeader`, `CardContent`, `CardFooter` | `@/components/ui/card` | Content containers |
 | `Badge` | `@/components/ui/badge` | Status labels, platform tags |
 | `Avatar` | `@/components/ui/avatar` | Channel/account avatars |
 | `Table`, `TableHeader`, etc. | `@/components/ui/table` | Data tables |
@@ -74,7 +69,6 @@ shadcn components are composed using their named export variants. Read the compo
 | `Skeleton` | `@/components/ui/skeleton` | Loading placeholders |
 | `Alert`, `AlertTitle`, `AlertDescription` | `@/components/ui/alert` | Info/warning/error banners |
 | `Input` | `@/components/ui/input` | Text inputs |
-| `Label` | `@/components/ui/label` | Form labels |
 
 ## `cn()` Utility
 

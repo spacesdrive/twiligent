@@ -46,7 +46,7 @@ Shared components live in `frontend/src/components/`. Reach for these before wri
 | `MediaCard`, `MediaChip` | Thumbnail cards for videos, Shorts and Instagram media |
 | `ChartPanel` | The titled card around a chart, with an empty state and an optional `description`: the chart's takeaway in words, read by screen readers in place of the plot (`trendSummary`, `rankingSummary` and `pointsOf` in `lib/chart.ts` write it from the data) |
 | `ChartFigure` | The figure inside `ChartPanel`, `MetricAreaChart` and `AudienceChart`: the chart's screen-reader name and its hidden description |
-| `AreaChart`, `BarChart`, `LineChart` (`components/ui`) | Intent UI's Recharts charts (ADR-048): pass `data`, the category `dataKey`, a `config` of series with labels and `SERIES` or `PLATFORM_META` colours, `containerHeight`, `valueFormatter={fmtNum}` for the axis, and `legend={false}` for a single series; the legend highlights one series when pressed |
+| `AreaChart`, `BarChart` (`components/ui`) | Intent UI's Recharts charts (ADR-048): pass `data`, the category `dataKey`, a `config` of series with labels and `SERIES` or `PLATFORM_META` colours, `containerHeight`, `valueFormatter={fmtNum}` for the axis, and `legend={false}` for a single series; the legend highlights one series when pressed |
 | `ExactTooltip` | Intent's tooltip with every value in full (`tooltip={<ExactTooltip />}`); `format` for rates, `labelOf` when one series mixes kinds |
 | `DonutChart` | Parts of a whole as a ring inside Intent's chart frame, with the exact tooltip and a legend |
 | `MetricAreaChart` | A single-series Intent area chart with its own screen-reader name and description |
