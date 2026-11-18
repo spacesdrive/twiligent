@@ -1,7 +1,7 @@
 import { subscribeToWebhooks } from './instagram/instagramMessaging.ts';
 import { coversMedia, ruleMatch } from '../lib/automationMatching.ts';
 import { followTextsProblem, keywordsProblem, replyActionsProblem } from '../lib/automationRules.ts';
-import { MAX_MESSAGE_BYTES, composeReply, messageBytes, replyMessage } from '../lib/automationDelivery.ts';
+import { MAX_MESSAGE_BYTES, composeReply, messageBytes, replyMessage, restartingUntil } from '../lib/automationDelivery.ts';
 import { ConflictError, NotFoundError, UpstreamError, ValidationError } from '../lib/errors.ts';
 import { newRowId } from '../lib/ids.ts';
 import { errorFields } from '../lib/logger.ts';
@@ -109,6 +109,7 @@ function toState(account: Account, controls: AutomationAccountControls): Automat
         publicCooldownUntil: future(controls.publicCooldownUntil),
         publicCooldownReason: future(controls.publicCooldownUntil) ? controls.publicCooldownReason : null,
         publicLimitedUntil: future(controls.publicLimitedUntil),
+        restartingUntil: restartingUntil(controls.blockedUntil, Date.now()),
     };
 }
 

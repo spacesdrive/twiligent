@@ -380,6 +380,13 @@ export function accountStatus(account: AutomationAccountState, now: number, need
   if (account.cooldownUntil && Date.parse(account.cooldownUntil) > now) {
     return { label: 'Cooling down', tone: 'warning', detail: account.cooldownReason ?? 'Instagram is limiting replies from this account for now.' };
   }
+  if (account.restartingUntil && Date.parse(account.restartingUntil) > now) {
+    return {
+      label: 'Restarting slowly',
+      tone: 'warning',
+      detail: 'Instagram blocked private replies from this account recently. Twiligent sent one test reply first and adds a few more each hour, so the block is less likely to return.',
+    };
+  }
   if (account.limitedUntil && Date.parse(account.limitedUntil) > now) {
     return { label: 'At its hourly limit', tone: 'warning', detail: 'This account sent its hourly number of replies. The rest go out as the hour frees up, within Instagram\'s 7 days.' };
   }
