@@ -65,6 +65,8 @@ interface ClaimedRow {
     access_token: string | null;
     require_follow: boolean | null;
     follow_prompt_text: string | null;
+    link_after_reply: boolean | null;
+    reply_variants: string[] | null;
 }
 
 interface ReviewCandidateRow {
@@ -134,9 +136,11 @@ export interface ClaimedComment {
     replyText: string | null;
     linkUrl: string | null;
     accessToken: string | null;
-    // a followers-only rule sends its request to follow and answer instead of the reply
+    // a rule that waits for the person's answer sends its first message instead of the reply and link
     requireFollow: boolean;
     followPromptText: string | null;
+    linkAfterReply: boolean;
+    replyVariants: string[];
 }
 
 // a reply whose answer was lost, with what is needed to look for it in the conversation
@@ -271,6 +275,8 @@ function toClaimed(row: ClaimedRow): ClaimedComment {
         accessToken: row.access_token,
         requireFollow: row.require_follow ?? false,
         followPromptText: row.follow_prompt_text ?? null,
+        linkAfterReply: row.link_after_reply ?? false,
+        replyVariants: row.reply_variants ?? [],
     };
 }
 

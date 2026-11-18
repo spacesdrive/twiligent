@@ -1,5 +1,5 @@
 import { ValidationError } from '../lib/errors.ts';
-import { followTextsProblem, keywordsProblem, replyActionsProblem } from '../lib/automationRules.ts';
+import { MAX_REPLY_VARIANTS, followTextsProblem, keywordsProblem, replyActionsProblem } from '../lib/automationRules.ts';
 import { MAX_PUBLIC_REPLY_TEXTS, publicReplyTextProblem } from '../lib/automationPublicReply.ts';
 import { MAX_MESSAGE_BYTES, messageBytes } from '../lib/automationDelivery.ts';
 import { isString, optionalArray, optionalBoolean, optionalNumber, optionalString, presentField, requiredString } from './fields.ts';
@@ -94,7 +94,7 @@ function followText(body: Fields, field: 'followPromptText' | 'notFollowingText'
     return value;
 }
 
-const FOLLOW_PROMPT_LABEL = 'The message asking people to follow and reply';
+const FOLLOW_PROMPT_LABEL = 'The first message, which asks people to reply';
 const NOT_FOLLOWING_LABEL = 'The reminder for people who do not follow yet';
 
 
@@ -114,6 +114,17 @@ function replyText(body: Fields): string {
     return value;
 }
 
+// other wordings of the first message: trimmed, without blanks or repeats; each must fit one Instagram message, which
+// the service checks with the link added
+function replyVariants(body: Fields): string[] | undefined {
+    const list = optionalArray(body, 'replyVariants', isString, 'texts');
+    if (!list) return undefined;
+    const texts = [...new Set(list.map(item => item.trim()).filter(Boolean))];
+    if (texts.length > MAX_REPLY_VARIANTS) throw new ValidationError(`A rule can have at most ${MAX_REPLY_VARIANTS} other wordings`);
+    if (texts.some(text => text.length > MAX_REPLY)) throw new ValidationError(`Each wording can be at most ${MAX_REPLY} characters`);
+    return texts;
+}
+
 // trimmed, without blanks or repeats; each text must be one Instagram takes as a comment
 function publicReplyTexts(body: Fields): string[] | undefined {
     const list = optionalArray(body, 'publicReplyTexts', isString, 'texts');
@@ -131,15 +142,24 @@ function publicReplyTexts(body: Fields): string[] | undefined {
 export function parsePostAutomation(body: Fields): ScheduledPostAutomation | undefined {
     if (!presentField(body, 'automation') || body.automation === null) return undefined;
     if (typeof body.automation !== 'object' || Array.isArray(body.automation)) {
-        throw new ValidationError('automation must be an object with replyText and, optionally, publicReplyTexts');
+        throw new ValidationError('automation must be an object with replyText and, optionally, publicReplyTexts, firstMessage and replyVariants');
     }
     const fields = body.automation as Fields;
     const reply = replyText(fields).trim();
     if (!reply) throw new ValidationError('automation.replyText is required: the private reply sent to each person who comments');
     // checked now, so a post never waits weeks only to fail when its rule is made
-    const bytes = messageBytes(reply);
-    if (bytes > MAX_MESSAGE_BYTES) throw new ValidationError(`automation.replyText is ${bytes} bytes; Instagram accepts at most ${MAX_MESSAGE_BYTES}. Shorten it.`);
-    return { replyText: reply, publicReplyTexts: publicReplyTexts(fields) ?? [] };
+    const first = optionalString(fields, 'firstMessage')?.trim() || undefined;
+    const variants = replyVariants(fields) ?? [];
+    for (const [label, text] of [['automation.replyText', reply], ['automation.firstMessage', first ?? ''], ...variants.map(text => ['automation.replyVariants', text])]) {
+        const bytes = messageBytes(text);
+        if (bytes > MAX_MESSAGE_BYTES) throw new ValidationError(`${label} is ${bytes} bytes; Instagram accepts at most ${MAX_MESSAGE_BYTES}. Shorten it.`);
+    }
+    return {
+        replyText: reply,
+        publicReplyTexts: publicReplyTexts(fields) ?? [],
+        ...(first ? { firstMessage: first } : {}),
+        ...(variants.length > 0 ? { replyVariants: variants } : {}),
+    };
 }
 
 // only https links without a user name or password, since the link goes to strangers in a private message
@@ -216,6 +236,8 @@ export function parseAutomationRule(body: Fields): AutomationRuleRequest {
         requireFollow: optionalBoolean(body, 'requireFollow') ?? false,
         followPromptText: followText(body, 'followPromptText', FOLLOW_PROMPT_LABEL) ?? null,
         notFollowingText: followText(body, 'notFollowingText', NOT_FOLLOWING_LABEL) ?? null,
+        linkAfterReply: optionalBoolean(body, 'linkAfterReply') ?? false,
+        replyVariants: replyVariants(body) ?? [],
     };
     const problem = replyActionsProblem(rule) ?? followTextsProblem(rule);
     if (problem) throw new ValidationError(problem);
@@ -242,6 +264,8 @@ export function parseAutomationRuleUpdate(body: Fields): AutomationRuleUpdateReq
     if (presentField(body, 'requireFollow')) changes.requireFollow = optionalBoolean(body, 'requireFollow');
     if (presentField(body, 'followPromptText')) changes.followPromptText = followText(body, 'followPromptText', FOLLOW_PROMPT_LABEL);
     if (presentField(body, 'notFollowingText')) changes.notFollowingText = followText(body, 'notFollowingText', NOT_FOLLOWING_LABEL);
+    if (presentField(body, 'linkAfterReply')) changes.linkAfterReply = optionalBoolean(body, 'linkAfterReply');
+    if (presentField(body, 'replyVariants')) changes.replyVariants = replyVariants(body);
     if (Object.keys(changes).length === 0) throw new ValidationError('Nothing to change: send at least one rule field');
     return changes;
 }
@@ -264,6 +288,7 @@ export function parseAutomationTest(body: Fields): AutomationTestRequest {
         linkUrl: linkUrl(body) ?? null,
         requireFollow: optionalBoolean(body, 'requireFollow') ?? false,
         followPromptText: followText(body, 'followPromptText', FOLLOW_PROMPT_LABEL) ?? null,
+        linkAfterReply: optionalBoolean(body, 'linkAfterReply') ?? false,
         comment,
         mediaId: optionalString(body, 'mediaId') || undefined,
     };

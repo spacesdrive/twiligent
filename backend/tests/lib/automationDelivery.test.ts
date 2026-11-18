@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
     MAX_FOLLOW_REMINDERS, MAX_SEND_ATTEMPTS, REPLY_WINDOW_MS, classifySendError, composeReply, cooldownFromUsage, expiresAtFor, finishPlan,
     RESTART_HOURLY_LIMITS, followupMessage, followupReadiness, messageBytes, messageDigest, readinessPlan, releasePlan, replyMessage, restartingUntil,
-    SEND_ERROR_MESSAGES, retryDelayMs, withInstagramDetails,
+    SEND_ERROR_MESSAGES, replyMessages, retryDelayMs, waitsForAnswer, withInstagramDetails,
 } from '../../lib/automationDelivery.ts';
 import type { FollowupJob, SendResult } from '../../lib/automationDelivery.ts';
 
@@ -75,6 +75,23 @@ test('a follow-up stops before asking Instagram when its window closed, its rule
     assert.equal(followupReadiness(followup({ requireFollow: false }), NOW)?.reason, 'rule_changed');
     assert.equal(followupReadiness(followup({ gateStatus: 'completed' }), NOW)?.reason, 'answered');
     assert.equal(followupReadiness(followup({ accessToken: null }), NOW)?.status, 'failed');
+});
+
+test('a rule that waits for an answer starts with its first message, without the link, in one of its wordings', () => {
+    const rule = { requireFollow: false, linkAfterReply: true, followPromptText: 'Reply LINK and I will send it', replyText: 'Here it is', linkUrl: 'https://e.com', replyVariants: ['Want it? Reply LINK'] };
+    assert.equal(waitsForAnswer(rule), true);
+    assert.equal(replyMessage(rule, () => 0), 'Reply LINK and I will send it');
+    assert.equal(replyMessage(rule, () => 0.99), 'Want it? Reply LINK');
+    assert.equal(replyMessage({ ...rule, linkAfterReply: false }, () => 0.99), 'Want it? Reply LINK\n\nhttps://e.com');
+    assert.equal(replyMessage({ ...rule, linkAfterReply: false, replyVariants: [] }, () => 0.99), 'Here it is\n\nhttps://e.com');
+    assert.deepEqual(replyMessages(rule), ['Reply LINK and I will send it', 'Want it? Reply LINK']);
+    assert.equal(waitsForAnswer({ requireFollow: true }), true);
+    assert.equal(waitsForAnswer({ requireFollow: false }), false);
+});
+
+test('a follow-up for a rule that no longer waits for an answer is skipped', () => {
+    assert.equal(followupReadiness(followup({ requireFollow: false, linkAfterReply: true }), NOW), null);
+    assert.equal(followupReadiness(followup({ requireFollow: false, linkAfterReply: false }), NOW)?.reason, 'rule_changed');
 });
 
 test('the reply puts the link on its own line after the text', () => {

@@ -45,6 +45,10 @@ export interface AutomationRule {
     requireFollow: boolean;
     followPromptText: string | null;
     notFollowingText: string | null;
+    // the first message is followPromptText, with no link; the reply and link go out only after the person answers
+    linkAfterReply: boolean;
+    // other wordings of the first message (the reply, or followPromptText when the link waits); one is picked per comment
+    replyVariants: string[];
     createdAt: string;
     updatedAt: string;
 }
@@ -68,6 +72,8 @@ export interface AutomationRuleRequest {
     requireFollow?: boolean;
     followPromptText?: string | null;
     notFollowingText?: string | null;
+    linkAfterReply?: boolean;
+    replyVariants?: string[];
 }
 
 // body of PUT /api/automations/rules/:id; a rule stays on its account
@@ -185,6 +191,7 @@ export interface AutomationTestRequest {
     linkUrl?: string | null;
     requireFollow?: boolean;
     followPromptText?: string | null;
+    linkAfterReply?: boolean;
     comment: string;
     mediaId?: string;
 }

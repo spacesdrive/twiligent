@@ -14,7 +14,11 @@ export interface ReplyActions {
     publicReplyEnabled: boolean;
     publicReplyTexts: string[];
     requireFollow: boolean;
+    linkAfterReply?: boolean;
 }
+
+// other wordings of the first message; one is picked per comment
+export const MAX_REPLY_VARIANTS = 4;
 
 // a rule answers with a private reply, a public reply or both, and each one it uses needs its text; the followers-only
 // wait starts with the private reply. null means the actions fit together
@@ -23,13 +27,14 @@ export function replyActionsProblem(rule: ReplyActions): string | null {
     if (rule.privateReplyEnabled && !rule.replyText) return 'Write the reply to send';
     if (rule.publicReplyEnabled && rule.publicReplyTexts.length === 0) return 'Write at least one public reply';
     if (rule.requireFollow && !rule.privateReplyEnabled) return 'Sending the link only to followers needs the private reply. Turn it on, or turn off the followers-only option.';
+    if (rule.linkAfterReply && !rule.privateReplyEnabled) return 'Sending the link after a reply needs the private reply. Turn it on, or send the link right away.';
     return null;
 }
 
 // both messages are needed before a rule can ask people to follow; null means the rule is complete
-export function followTextsProblem(rule: { requireFollow: boolean; followPromptText: string | null; notFollowingText: string | null }): string | null {
-    if (!rule.requireFollow) return null;
-    if (!rule.followPromptText) return 'Write the message that asks people to follow you and reply';
-    if (!rule.notFollowingText) return 'Write the reminder for people who do not follow you yet';
+export function followTextsProblem(rule: { requireFollow: boolean; linkAfterReply?: boolean; followPromptText: string | null; notFollowingText: string | null }): string | null {
+    if (rule.requireFollow && !rule.followPromptText) return 'Write the message that asks people to follow you and reply';
+    if (rule.requireFollow && !rule.notFollowingText) return 'Write the reminder for people who do not follow you yet';
+    if (rule.linkAfterReply && !rule.followPromptText) return 'Write the first message, which asks people to reply and has no link';
     return null;
 }

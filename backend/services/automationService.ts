@@ -1,7 +1,7 @@
 import { subscribeToWebhooks } from './instagram/instagramMessaging.ts';
 import { coversMedia, ruleMatch } from '../lib/automationMatching.ts';
 import { followTextsProblem, keywordsProblem, replyActionsProblem } from '../lib/automationRules.ts';
-import { MAX_MESSAGE_BYTES, composeReply, messageBytes, replyMessage, restartingUntil } from '../lib/automationDelivery.ts';
+import { MAX_MESSAGE_BYTES, composeReply, messageBytes, replyMessage, replyMessages, restartingUntil, waitsForAnswer } from '../lib/automationDelivery.ts';
 import { ConflictError, NotFoundError, UpstreamError, ValidationError } from '../lib/errors.ts';
 import { newRowId } from '../lib/ids.ts';
 import { errorFields } from '../lib/logger.ts';
@@ -120,17 +120,25 @@ function checkMessageSize(replyText: string, linkUrl: string | null): void {
     }
 }
 
-// the request to follow and the reminder are sent as they are, so each must fit one Instagram message
+// the first message and the reminder are sent as they are, so each must fit one Instagram message
 function checkFollowTexts(rule: { followPromptText: string | null; notFollowingText: string | null }): void {
-    for (const [label, text] of [['The message asking people to follow', rule.followPromptText], ['The reminder', rule.notFollowingText]] as const) {
+    for (const [label, text] of [['The first message', rule.followPromptText], ['The reminder', rule.notFollowingText]] as const) {
         const bytes = text ? messageBytes(text) : 0;
         if (bytes > MAX_MESSAGE_BYTES) throw new ValidationError(`${label} is ${bytes} bytes; Instagram accepts at most ${MAX_MESSAGE_BYTES}. Shorten it.`);
     }
 }
 
-// the private reply goes out as one Instagram message, so it is measured only when the rule sends it
-function checkPrivateReply(rule: { privateReplyEnabled: boolean; replyText: string; linkUrl: string | null }): void {
-    if (rule.privateReplyEnabled) checkMessageSize(rule.replyText, rule.linkUrl);
+// the reply with its link always goes out at some point, and every wording of the first message may be the one picked,
+// so each is measured as Instagram will receive it; nothing is measured when the rule sends no private reply
+function checkPrivateReply(rule: Parameters<typeof replyMessages>[0] & { privateReplyEnabled: boolean }): void {
+    if (!rule.privateReplyEnabled) return;
+    checkMessageSize(rule.replyText, rule.linkUrl);
+    for (const message of replyMessages(rule)) {
+        const bytes = messageBytes(message);
+        if (bytes > MAX_MESSAGE_BYTES) {
+            throw new ValidationError(`A wording of the first message is ${bytes} bytes${waitsForAnswer(rule) ? '' : ' with its link'}; Instagram accepts at most ${MAX_MESSAGE_BYTES}. Shorten it.`);
+        }
+    }
 }
 
 function checkActions(rule: Parameters<typeof replyActionsProblem>[0]): void {
@@ -149,6 +157,7 @@ function resolveChanges(current: AutomationRule, changes: AutomationRuleUpdateRe
     if (keywordProblem) throw new ValidationError(keywordProblem);
     const merged = {
         requireFollow: resolved.requireFollow ?? current.requireFollow,
+        linkAfterReply: resolved.linkAfterReply ?? current.linkAfterReply,
         followPromptText: resolved.followPromptText === undefined ? current.followPromptText : resolved.followPromptText,
         notFollowingText: resolved.notFollowingText === undefined ? current.notFollowingText : resolved.notFollowingText,
     };
@@ -159,9 +168,10 @@ function resolveChanges(current: AutomationRule, changes: AutomationRuleUpdateRe
         publicReplyEnabled: resolved.publicReplyEnabled ?? current.publicReplyEnabled,
         publicReplyTexts: resolved.publicReplyTexts ?? current.publicReplyTexts,
         requireFollow: merged.requireFollow,
+        linkAfterReply: merged.linkAfterReply,
     };
     checkActions(actions);
-    checkPrivateReply(actions);
+    checkPrivateReply({ ...actions, ...merged, replyVariants: resolved.replyVariants ?? current.replyVariants });
     const followProblem = followTextsProblem(merged);
     if (followProblem) throw new ValidationError(followProblem);
     checkFollowTexts(merged);
@@ -171,7 +181,7 @@ function resolveChanges(current: AutomationRule, changes: AutomationRuleUpdateRe
 // Instagram sends every message to the webhook once messages are subscribed, so they are asked for only while an
 // enabled rule of the account needs them
 function fieldsFor(accountRules: AutomationRule[]): WebhookField[] {
-    return accountRules.some(rule => rule.enabled && rule.requireFollow) ? ['comments', 'messages'] : ['comments'];
+    return accountRules.some(rule => rule.enabled && waitsForAnswer(rule)) ? ['comments', 'messages'] : ['comments'];
 }
 
 // the user's rules, the controls of their Instagram accounts, and the API that lists, tests and retries replies
@@ -264,13 +274,15 @@ export function createAutomationService(deps: AutomationServiceDeps): Automation
                 publicReplyEnabled: input.publicReplyEnabled ?? false,
                 publicReplyTexts: input.publicReplyTexts ?? [],
             };
-            checkActions({ ...actions, requireFollow: input.requireFollow ?? false });
-            checkPrivateReply(actions);
             const follow = {
                 requireFollow: input.requireFollow ?? false,
                 followPromptText: input.followPromptText ?? null,
                 notFollowingText: input.notFollowingText ?? null,
+                linkAfterReply: input.linkAfterReply ?? false,
+                replyVariants: input.replyVariants ?? [],
             };
+            checkActions({ ...actions, requireFollow: follow.requireFollow, linkAfterReply: follow.linkAfterReply });
+            checkPrivateReply({ ...actions, ...follow });
             checkFollowTexts(follow);
             const now = new Date().toISOString();
             const rule = await rules.create({
@@ -308,8 +320,8 @@ export function createAutomationService(deps: AutomationServiceDeps): Automation
                 action: 'automation_rule.updated', subjectType: 'automation_rule', subjectId: id,
                 details: { fields: Object.keys(resolved), enabled: rule.enabled },
             });
-            // turning a rule on, or switching the followers-only option, can change the events the account needs
-            if (rule.enabled !== current.enabled || rule.requireFollow !== current.requireFollow) {
+            // turning a rule on, or switching whether it waits for a reply, can change the events the account needs
+            if (rule.enabled !== current.enabled || waitsForAnswer(rule) !== waitsForAnswer(current)) {
                 await ensureSubscribed(userId, await instagramAccount(userId, rule.accountId));
             }
             return rule;
@@ -348,6 +360,7 @@ export function createAutomationService(deps: AutomationServiceDeps): Automation
             // a rule with no private reply sends no message, so there is nothing to measure
             const message = input.privateReplyEnabled === false ? '' : replyMessage({
                 requireFollow: input.requireFollow ?? false,
+                linkAfterReply: input.linkAfterReply ?? false,
                 followPromptText: input.followPromptText ?? null,
                 replyText: input.replyText,
                 linkUrl: input.linkUrl ?? null,

@@ -22,6 +22,7 @@ interface ClaimedFollowupRow {
     link_url: string | null;
     not_following_text: string | null;
     access_token: string | null;
+    link_after_reply: boolean | null;
 }
 
 // a message from a person, as the webhook read it; its text is never kept
@@ -51,6 +52,8 @@ export interface ClaimedFollowup {
     linkUrl: string | null;
     notFollowingText: string | null;
     accessToken: string | null;
+    // the rule sends the link once the person answers, checking the follow only when requireFollow is on
+    linkAfterReply: boolean;
 }
 
 export interface FollowupClaimOptions {
@@ -83,6 +86,7 @@ function toClaimed(row: ClaimedFollowupRow): ClaimedFollowup {
         linkUrl: row.link_url,
         notFollowingText: row.not_following_text,
         accessToken: row.access_token,
+        linkAfterReply: row.link_after_reply ?? false,
     };
 }
 

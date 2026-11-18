@@ -1,7 +1,7 @@
 import { readFollowStatus, sendMessage } from './instagram/instagramMessaging.ts';
 import {
     BACKGROUND_RUN_MS, CLAIM_LEASE_SECONDS, DUE_NOW_SKEW_MS, FOLLOWUP_EXPIRED_MESSAGE, FOLLOW_CHECK_TIMEOUT_MS, FREE_PLAN_SUBREQUESTS, SEND_TIMEOUT_MS,
-    SUBREQUESTS_PER_FOLLOWUP, finishPlan, followupMessage, followupReadiness, messageDigest, releasePlan,
+    SUBREQUESTS_PER_FOLLOWUP, finishPlan, followupMessage, followupReadiness, linkMessage, messageDigest, releasePlan,
 } from '../lib/automationDelivery.ts';
 import { newRowId } from '../lib/ids.ts';
 import { errorFields } from '../lib/logger.ts';
@@ -49,14 +49,18 @@ export function createAutomationFollowupProcessor({ followups, automation, conte
             return notReady.status as AutomationFollowupStatus;
         }
 
-        spend();
-        const check = await readFollowStatus(job.recipientId, job.accessToken!);
-        const decision = followupMessage(check, job, Date.now());
-        if ('release' in decision) {
+        // only a followers-only rule asks Instagram about the follow; the others send the link to anyone who answered
+        let decision: ReturnType<typeof followupMessage> = { message: linkMessage(job) };
+        if (job.requireFollow) {
             spend();
-            await followups.release(job.id, decision.release);
-            log.info('automation follow-up held', { followupId: job.id, accountId: job.accountId, follow: check.kind, status: decision.release.status });
-            return decision.release.status as AutomationFollowupStatus;
+            const check = await readFollowStatus(job.recipientId, job.accessToken!);
+            decision = followupMessage(check, job, Date.now());
+            if ('release' in decision) {
+                spend();
+                await followups.release(job.id, decision.release);
+                log.info('automation follow-up held', { followupId: job.id, accountId: job.accountId, follow: check.kind, status: decision.release.status });
+                return decision.release.status as AutomationFollowupStatus;
+            }
         }
 
         // a slow check can leave too little time for the send's whole timeout; the job goes back unsent rather than risk an

@@ -166,11 +166,23 @@ A public reply is its own job in `automation_public_replies`, created with its c
 - Missing on two checks, with every reply read each time: it goes back in the queue once (`resend_after_check`), and the dispatch posts it again. The reconciler itself never posts.
 - A second lost answer, a page left unread, or a read Instagram refuses: it stays `needs_review` with a note, and a person decides.
 
-## Followers-Only Replies (`backend/services/automationFollowupProcessor.ts`)
+## Replies That Wait for an Answer (`backend/services/automationFollowupProcessor.ts`)
+
+A rule can hold its link back until the person answers (#186). Many identical private replies with links, sent mostly to people who do not follow the account, are what Instagram's spam block (code 368) most often follows; a short first message without a link reads as a conversation, and the person's answer opens Instagram's normal 24 hour window, so the link then goes out in a conversation they started.
+
+| Rule setting | First private message | When the person answers |
+|---|---|---|
+| Link in the first message (default) | The reply and link | Nothing more |
+| `link_after_reply` | `follow_prompt_text`, no link | The reply and link, with no follow check |
+| `require_follow` (implies the wait) | `follow_prompt_text`, asking to follow and reply | The follow check below: the reply and link for followers, a reminder for others |
+
+Every rule may also keep up to 4 other wordings of its first message (`reply_variants`); `replyMessage` picks one per comment, and the service measures every wording against the 1,000 bytes as it would be sent. A rule made for a scheduled post takes `firstMessage` and `replyVariants` from the post's automation (see `SCHEDULING.md`).
+
+Both waiting settings need Instagram's `messages` events, which the account subscribes to while such a rule is on, and the **messages** field selected in the Meta app's webhooks.
 
 **Status: in testing.** The flow is covered by tests with fakes and a local database, but it has not been tried with a real account. It depends on Meta sending the account's `messages` events, which may need Advanced Access for `instagram_business_manage_messages`; this instance runs on Standard Access. The app and the docs label it as testing, and it may or may not work.
 
-Instagram does not let an app check whether a commenter follows the account until that person messages it, so the check cannot happen before the first private reply. A followers-only rule therefore works in two steps, and Twiligent never says a follow was checked when it was not.
+Instagram does not let an app check whether a commenter follows the account until that person messages it, so the check cannot happen before the first private reply. A followers-only rule therefore works in two steps, and Twiligent never says a follow was checked when it was not. A `link_after_reply` rule without `require_follow` skips the follow check (step 3's follow check and decision) and sends the reply and link to anyone who answered (`linkMessage`).
 
 1. **The private reply** sends the rule's first message (`follow_prompt_text`), with no link: for example "Follow this account, then reply to this message and the link is on its way." Once Instagram accepts it, the comment waits for the person's answer.
 2. **Their answer** arrives as a `messages` webhook event and becomes a follow-up job (see Intake). Their message gives Instagram's consent for the profile read and opens Instagram's 24 hour window.

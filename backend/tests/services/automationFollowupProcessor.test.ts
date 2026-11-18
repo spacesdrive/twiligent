@@ -79,6 +79,17 @@ describe('automation follow-up processor', () => {
         assert.deepEqual(queue.attempts.map(attempt => [attempt.kind, attempt.outcome]), [['followup', 'accepted']]);
     });
 
+    test('a rule that sends the link after a reply sends it to anyone who answered, without asking Instagram about the follow', async () => {
+        instagram({ 'igsid-a': false });
+        const queue = waiting('a');
+        Object.assign(queue.rules.get('rule-guide')!, { requireFollow: false, linkAfterReply: true });
+        const run = await processor(queue).run();
+        assert.deepEqual(run.outcomes, { accepted: 1 });
+        assert.deepEqual(checks, []);
+        assert.deepEqual(sent, [{ recipient: 'igsid-a', text: 'Here is your guide\n\nhttps://example.com/guide' }]);
+        assert.deepEqual([queue.followupRows[0].kind, queue.rows[0].gateStatus], ['link', 'completed']);
+    });
+
     test('someone who does not follow yet gets the reminder, counted, and the comment keeps waiting', async () => {
         instagram({ 'igsid-a': false });
         const queue = waiting('a');

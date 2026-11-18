@@ -46,6 +46,7 @@ describe('automation comment repository', () => {
         assert.deepEqual(claimed, {
             id: 'a', userId: 'user-1', accountId: 'ig1', ruleId: 'r', igUserId: '1784', commentId: 'c', fromId: 'f', attempts: 2,
             expiresAt: 'E', ruleEnabled: true, replyText: 'T', linkUrl: null, accessToken: 'TOK', requireFollow: true, followPromptText: 'P',
+            linkAfterReply: false, replyVariants: [],
         });
         assert.deepEqual(rpcArgs(supabase, 'claim_automation_comments'), { p_limit: 10, p_per_account: 5, p_lease_seconds: 1200, p_ids: null });
         assert.deepEqual(await repo.reserve('a', 'att', LIMITS, 'digest'), { outcome: 'account_limit', retryAt: 'R' });
