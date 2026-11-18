@@ -13,6 +13,7 @@ CREATE TABLE "public"."automation_accounts" (
   "public_cooldown_until"  timestamp with time zone,
   "public_cooldown_reason" text,
   "public_limited_until"   timestamp with time zone,
+  "blocked_until"          timestamp with time zone,
   CONSTRAINT "automation_accounts_account_fkey" FOREIGN KEY (account_id, user_id) REFERENCES public.accounts(id, user_id) ON DELETE CASCADE,
   CONSTRAINT "automation_accounts_cooldown_reason_check" CHECK (((cooldown_reason IS NULL) OR (char_length(cooldown_reason) <= 200))),
   CONSTRAINT "automation_accounts_paused_reason_check" CHECK (((paused_reason IS NULL) OR (char_length(paused_reason) <= 200))),
