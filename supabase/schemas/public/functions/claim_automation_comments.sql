@@ -19,7 +19,9 @@ CREATE OR REPLACE FUNCTION public.claim_automation_comments (
     link_url           text,
     access_token       text,
     require_follow     boolean,
-    follow_prompt_text text
+    follow_prompt_text text,
+    link_after_reply   boolean,
+    reply_variants     text[]
   )
   LANGUAGE plpgsql
   SET search_path TO ''
@@ -124,7 +126,7 @@ begin
     select claimed.id, claimed.user_id, claimed.account_id, claimed.rule_id, claimed.ig_user_id, claimed.comment_id,
         claimed.from_id, claimed.attempts, claimed.expires_at,
         coalesce(r.enabled and r.private_reply_enabled, false), r.reply_text, r.link_url, a.data ->> 'accessToken',
-        coalesce(r.require_follow, false), r.follow_prompt_text
+        coalesce(r.require_follow, false), r.follow_prompt_text, coalesce(r.link_after_reply, false), coalesce(r.reply_variants, '{}')
     from claimed
     left join public.automation_rules r on r.id = claimed.rule_id
     left join public.accounts a on a.id = claimed.account_id and a.user_id = claimed.user_id;
