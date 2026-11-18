@@ -3,8 +3,8 @@ import type { FormEvent } from 'react';
 import { useAppContext } from '../../context/AppContext';
 import { api } from '../../services/api';
 import { clearDraft, readDraft, writeDraft } from '@/lib/sessionDraft';
-import { formToRequest, normalizeLink, ruleFormError } from './automationData.ts';
-import type { RuleField, RuleFieldProblem, RuleForm } from './automationData.ts';
+import { formToRequest, normalizeLink, ruleFormError, withLinkMode } from './automationData.ts';
+import type { LinkMode, RuleField, RuleFieldProblem, RuleForm } from './automationData.ts';
 import type { AutomationTestResponse } from '@shared/types/automation.ts';
 import type { InstagramMedia } from '@shared/types/instagram.ts';
 
@@ -25,6 +25,8 @@ export const RULE_FIELD_IDS: Record<RuleField, string> = {
   requireFollow: 'rule-follow',
   followPromptText: 'rule-follow-prompt',
   notFollowingText: 'rule-follow-reminder',
+  linkAfterReply: 'rule-link-mode',
+  replyVariants: 'rule-variant-0',
 };
 
 interface RuleFormDeps {
@@ -84,6 +86,10 @@ export function useRuleForm({ ruleId, initialForm, saveRule, onSaved }: RuleForm
     setForm(current => ({ ...current, linkUrl: normalizeLink(current.linkUrl) }));
   }, []);
 
+  const setLinkMode = useCallback((mode: LinkMode) => {
+    setForm(current => withLinkMode(current, mode));
+  }, []);
+
   const toggleMedia = useCallback((id: string) => {
     setForm(current => ({ ...current, mediaIds: current.mediaIds.includes(id) ? current.mediaIds.filter(item => item !== id) : [...current.mediaIds, id] }));
     setTestResult(null);
@@ -119,7 +125,7 @@ export function useRuleForm({ ruleId, initialForm, saveRule, onSaved }: RuleForm
       setTestResult(await api.testAutomationRule({
         keywords: request.keywords, matchMode: request.matchMode, caseSensitive: request.caseSensitive,
         privateReplyEnabled: request.privateReplyEnabled, replyText: request.replyText || TEST_REPLY_PLACEHOLDER, linkUrl: request.linkUrl, comment: sampleComment,
-        requireFollow: request.requireFollow, followPromptText: request.followPromptText,
+        requireFollow: request.requireFollow, followPromptText: request.followPromptText, linkAfterReply: request.linkAfterReply,
       }));
     } catch (err) {
       showToast(`Couldn't test the rule. ${(err as Error).message}`, 'error');
@@ -147,7 +153,7 @@ export function useRuleForm({ ruleId, initialForm, saveRule, onSaved }: RuleForm
   }, [form, onSaved, ruleId, saveRule, saving]);
 
   return {
-    ruleId, form, setField, normalizeLinkField, toggleMedia, saving, dirty, restored, discardDraft, problem, errorFor,
+    ruleId, form, setField, setLinkMode, normalizeLinkField, toggleMedia, saving, dirty, restored, discardDraft, problem, errorFor,
     media, mediaLoading, mediaError, retryMedia, sampleComment, setSampleComment, testResult, testing, runTest, handleSubmit,
   };
 }

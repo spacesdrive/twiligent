@@ -83,7 +83,7 @@ frontend/src/
 │   │   ├── AutomationNotices.tsx           <- Webhook not set up, or replies paused on the server
 │   │   ├── AutomationMetrics.tsx, AutomationAccounts.tsx, AutomationRules.tsx, AutomationActivity.tsx
 │   │   ├── RuleEditorPage.tsx              <- The rule editor at /automations/rules/new and /automations/rules/:id: sticky Save bar, draft, leave warning
-│   │   ├── RuleMediaPicker.tsx, RulePublicReplies.tsx, RulePreview.tsx   <- Rule form (private and public reply sections), post picker, public wordings, thread and message preview, keyword test
+│   │   ├── RuleMediaPicker.tsx, RulePublicReplies.tsx, RuleReplyVariants.tsx, RulePreview.tsx   <- Rule form (private and public reply sections, when the link goes out), post picker, public and private wordings, thread and message preview, keyword test
 │   │   ├── useAutomations.ts               <- Overview and every rule and account action, with toasts
 │   │   ├── useAutomationActivity.ts        <- Filters, counts, activity pages and retry
 │   │   ├── useRuleForm.ts                  <- Rule editor state, draft, field problems, the account's posts, the test call

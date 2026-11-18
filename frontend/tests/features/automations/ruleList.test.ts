@@ -8,7 +8,8 @@ function rule(id: string, overrides: Partial<AutomationRule> = {}): AutomationRu
   return {
     id, accountId: 'ig1', name: `Rule ${id}`, keywords: [], matchMode: 'any', caseSensitive: false, mediaIds: [], privateReplyEnabled: true,
     replyText: 'Here is the link', linkUrl: null, publicReplyEnabled: false, publicReplyTexts: [], enabled: true, hourlyLimit: null,
-    requireFollow: false, followPromptText: null, notFollowingText: null, createdAt: 'x', updatedAt: 'x', ...overrides,
+    requireFollow: false, followPromptText: null, notFollowingText: null, linkAfterReply: false, replyVariants: [], createdAt: 'x',
+    updatedAt: 'x', ...overrides,
   };
 }
 

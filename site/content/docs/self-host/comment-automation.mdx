@@ -45,7 +45,7 @@ Open the app, **Instagram**, **API setup with Instagram business login**, **Conf
 
 Choose **Verify and save**. Meta calls the URL once; if it fails, check that the backend is deployed and the secret is set. Then subscribe to the **comments** field.
 
-Subscribe to the **messages** field too only if you will use followers-only rules. That option is still in testing and may or may not work: without Advanced Access for `instagram_business_manage_messages`, Meta may not send the messages. Meta then sends every direct message to your connected accounts to the backend, each one a Worker request. Twiligent reads only who sent it, never the text, and answers only people a followers-only reply is waiting for.
+Subscribe to the **messages** field too only if you will use rules that send the link after a reply, with or without the followers-only check. That option is still in testing and may or may not work: without Advanced Access for `instagram_business_manage_messages`, Meta may not send the messages. Meta then sends every direct message to your connected accounts to the backend, each one a Worker request. Twiligent reads only who sent it, never the text, and answers only people a reply is waiting for.
 
 </Step>
 <Step title="Turn on comment events for each account">
@@ -57,7 +57,7 @@ In Twiligent, open **Instagram automation**, create a rule and turn it on. The f
 
 From another Instagram account, comment a rule's keyword on one of the account's posts. The private reply should arrive within a few seconds, and a public reply appear under the comment if the rule has one. To follow it, run `npx wrangler tail` in `backend/` and look for `instagram webhook stored`, `automation reply settled` and `automation public reply settled`. Meta also sends the account's own public reply back as a comment; it is recorded as the account's own and never answered. The comment and its status also appear under **Activity** on the Instagram automation page.
 
-For a followers-only rule, reply to the first message from the commenting account. If that account follows yours, the reply and link arrive; if not, the reminder does. Look for `automation follow-up settled` in the log.
+For a rule that sends the link after a reply, reply to the first message from the commenting account; the reply and link should arrive. For a followers-only rule, the reply and link arrive if that account follows yours; if not, the reminder does. Look for `automation follow-up settled` in the log.
 
 </Step>
 </Steps>

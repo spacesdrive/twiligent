@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  ACTIVITY_FILTERS, DEFAULT_FOLLOW_PROMPT, DEFAULT_NOT_FOLLOWING, DEFAULT_PUBLIC_REPLY, MAX_MESSAGE_BYTES, accountStatus, canRetry, canRetryPublic,
-  composeReply, emptyRuleForm, formToRequest, gateDetail, matchModeLabel, messageBytes, needsMessageEvents, parseKeywords, periodStart,
+  ACTIVITY_FILTERS, DEFAULT_FOLLOW_PROMPT, DEFAULT_NOT_FOLLOWING, DEFAULT_REPLY_FIRST, DEFAULT_PUBLIC_REPLY, MAX_MESSAGE_BYTES, accountStatus, canRetry, canRetryPublic,
+  composeReply, emptyRuleForm, formToRequest, gateDetail, linkModeOf, withLinkMode, matchModeLabel, messageBytes, needsMessageEvents, parseKeywords, periodStart,
   publicReplyTexts, publicStatusDisplay, ruleFormError, normalizeLink, ruleScopeLabel, ruleToForm, statusDisplay, summarizeStats,
 } from '../../../src/features/automations/automationData.ts';
 import type { RuleForm } from '../../../src/features/automations/automationData.ts';
@@ -20,7 +20,7 @@ function form(overrides: Partial<RuleForm> = {}): RuleForm {
 const rule: AutomationRule = {
   id: 'r1', accountId: 'ig1', name: 'Guide', keywords: ['GUIDE', 'LINK'], matchMode: 'exact', caseSensitive: true, mediaIds: ['1', '2'],
   privateReplyEnabled: true, replyText: 'Here it is', linkUrl: 'https://example.com', publicReplyEnabled: true, publicReplyTexts: ['Thanks', 'Thank you'], enabled: false, hourlyLimit: 30, requireFollow: true, followPromptText: 'Follow and reply',
-  notFollowingText: 'Follow first', createdAt: 'c', updatedAt: 'u',
+  notFollowingText: 'Follow first', linkAfterReply: true, replyVariants: ['Here you go'], createdAt: 'c', updatedAt: 'u',
 };
 
 test('accepted replies say Instagram accepted them, never that they were delivered or read', () => {
@@ -106,20 +106,21 @@ test('a rule turns into its form and back without losing a field', () => {
     accountId: 'ig1', name: 'Guide', keywordsText: 'GUIDE, LINK', matchMode: 'exact', caseSensitive: true, scope: 'selected', mediaIds: ['1', '2'],
     privateReplyEnabled: true, replyText: 'Here it is', linkUrl: 'https://example.com', publicReplyEnabled: true, publicReplyTexts: ['Thanks', 'Thank you'],
     hourlyLimit: '30', enabled: false, requireFollow: true, followPromptText: 'Follow and reply', notFollowingText: 'Follow first',
+    linkAfterReply: true, replyVariants: ['Here you go'],
   });
   const {
     accountId, name, keywords, matchMode, caseSensitive, mediaIds, privateReplyEnabled, replyText, linkUrl, publicReplyEnabled, publicReplyTexts: texts,
-    enabled, hourlyLimit, requireFollow, followPromptText, notFollowingText,
+    enabled, hourlyLimit, requireFollow, followPromptText, notFollowingText, linkAfterReply, replyVariants,
   } = rule;
   assert.deepEqual(formToRequest(editing), {
     accountId, name, keywords, matchMode, caseSensitive, mediaIds, privateReplyEnabled, replyText, linkUrl, publicReplyEnabled, publicReplyTexts: texts,
-    enabled, hourlyLimit, requireFollow, followPromptText, notFollowingText,
+    enabled, hourlyLimit, requireFollow, followPromptText, notFollowingText, linkAfterReply, replyVariants,
   });
 });
 
-test('a new rule starts with editable followers-only messages, used only when the option is on', () => {
+test('a new rule starts with editable first and reminder messages, used only when the link waits for a reply', () => {
   const fresh = emptyRuleForm('ig1');
-  assert.deepEqual([fresh.requireFollow, fresh.followPromptText, fresh.notFollowingText], [false, DEFAULT_FOLLOW_PROMPT, DEFAULT_NOT_FOLLOWING]);
+  assert.deepEqual([fresh.requireFollow, fresh.linkAfterReply, fresh.followPromptText, fresh.notFollowingText], [false, false, DEFAULT_REPLY_FIRST, DEFAULT_NOT_FOLLOWING]);
   assert.equal(ruleFormProblem(form({ requireFollow: true })), null);
   assert.equal(ruleFormProblem(form({ requireFollow: true, followPromptText: ' ' })), 'Write the message that asks people to follow you and reply');
   assert.equal(ruleFormProblem(form({ requireFollow: true, notFollowingText: '' })), 'Write the reminder for people who do not follow you yet');
@@ -202,14 +203,38 @@ test('a public reply shows as posted only once Instagram gave it an id, and is r
   assert.equal(canRetry({ status: 'skipped', statusReason: 'recipient_limit', expiresAt: future }, NOW), true);
 });
 
-test('an account needs message events only while one of its followers-only rules is on', () => {
+test('an account needs message events only while one of its rules that wait for a reply is on', () => {
   const rules = [
-    { accountId: 'ig1', enabled: true, requireFollow: false },
-    { accountId: 'ig1', enabled: false, requireFollow: true },
-    { accountId: 'ig2', enabled: true, requireFollow: true },
+    { accountId: 'ig1', enabled: true, requireFollow: false, linkAfterReply: false },
+    { accountId: 'ig1', enabled: false, requireFollow: true, linkAfterReply: true },
+    { accountId: 'ig2', enabled: true, requireFollow: true, linkAfterReply: true },
+    { accountId: 'ig3', enabled: true, requireFollow: false, linkAfterReply: true },
   ];
   assert.equal(needsMessageEvents(rules, 'ig1'), false);
   assert.equal(needsMessageEvents(rules, 'ig2'), true);
+  assert.equal(needsMessageEvents(rules, 'ig3'), true);
+});
+
+test('the link can go out right away, after a reply, or after a reply from a follower, and a default first message follows the choice', () => {
+  const form = emptyRuleForm('ig1');
+  assert.equal(linkModeOf(form), 'now');
+  const reply = withLinkMode(form, 'reply');
+  assert.deepEqual([reply.linkAfterReply, reply.requireFollow, reply.followPromptText], [true, false, DEFAULT_REPLY_FIRST]);
+  const follow = withLinkMode(reply, 'follow');
+  assert.deepEqual([linkModeOf(follow), follow.followPromptText], ['follow', DEFAULT_FOLLOW_PROMPT]);
+  const typed = withLinkMode({ ...follow, followPromptText: 'My own words' }, 'reply');
+  assert.equal(typed.followPromptText, 'My own words');
+  assert.equal(formToRequest(follow).linkAfterReply, true);
+});
+
+test('other wordings are trimmed and checked like the message they replace', () => {
+  const base = { ...emptyRuleForm('ig1'), name: 'Guide', keywordsText: 'GUIDE', replyText: 'Here it is', linkUrl: 'https://e.com' };
+  assert.deepEqual(formToRequest({ ...base, replyVariants: [' Here you go ', '', 'Here you go'] }).replyVariants, ['Here you go']);
+  assert.equal(ruleFormError({ ...base, replyVariants: ['a', 'b', 'c', 'd', 'e'] })?.field, 'replyVariants');
+  assert.match(ruleFormError({ ...base, replyVariants: ['x'.repeat(990)] })?.message ?? '', /with its link/);
+  assert.equal(ruleFormError({ ...base, linkAfterReply: true, followPromptText: ' ' })?.field, 'followPromptText');
+  assert.equal(ruleFormError({ ...base, linkAfterReply: true, privateReplyEnabled: false, publicReplyEnabled: true })?.field, 'linkAfterReply');
+  assert.equal(ruleFormError({ ...base, linkAfterReply: true, replyVariants: ['Reply LINK for it'] }), null);
 });
 
 test('a link typed without a scheme is saved as an https address', () => {

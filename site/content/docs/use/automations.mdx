@@ -41,17 +41,25 @@ A public reply appears under the person's comment, where everyone can see it. Tw
 
 If Instagram limits or blocks comments from your account for a while, public replies wait and private replies keep going out. The account shows **Public replies cooling down**.
 
-## Send the link only to followers (testing)
+## Vary the wording
+
+Under the private reply, **Other wordings** holds up to four more ways of saying the first message. Twiligent picks one for each comment. Many identical messages, mostly to people who do not follow you, are what most often leads Instagram to block an account's private replies for a while, so two or three wordings are worth adding.
+
+## Send the link after they reply (testing)
 
 <Callout type="warning" title="In testing">
 
-This option is still being tested and may or may not work. It needs Instagram to send your account's direct messages to Twiligent, which Meta may not allow without extra approval for the app. If the link must arrive, use a keyword rule instead.
+These options are still being tested and may or may not work. They need Instagram to send your account's direct messages to Twiligent, which Meta may not allow without extra approval for the app, and the **messages** webhook field selected in your Meta app. If the link must arrive, send it in the first message.
 
 </Callout>
 
-Turn on **Send the link only to followers**, inside the private reply section, to keep the link for people who follow you. Instagram lets Twiligent check whether someone follows you only after that person has messaged you, so the rule works in two steps:
+**When to send the link**, inside the private reply section, has three choices:
 
-1. Everyone who comments gets the **First reply**, which asks them to follow you and reply. It has no link.
+- **In the first message**: the private reply carries the link. This is the default.
+- **After they reply**: everyone who comments gets the **First message**, short and without a link, asking them to reply. When they reply, your reply and link go out. A reply from them opens a normal conversation, which Instagram treats as wanted rather than as a message request.
+- **After they reply, if they follow**: the same, and Twiligent also asks Instagram whether they follow you. Instagram lets Twiligent check this only after the person has messaged you, so the rule works in two steps:
+
+1. Everyone who comments gets the **First message**, which asks them to follow you and reply. It has no link.
 2. When they reply, Twiligent asks Instagram whether they follow you. A follower gets your reply and link. Anyone else gets the **Reminder**, at most twice.
 
 If Instagram cannot say whether the person follows you, nothing is sent, and the activity says why. The link is never sent on a guess. The reply must come within 7 days of the first message, and the answer goes out within Instagram's 24 hours after their reply.
