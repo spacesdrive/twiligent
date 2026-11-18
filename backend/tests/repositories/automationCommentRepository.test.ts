@@ -51,16 +51,18 @@ describe('automation comment repository', () => {
         assert.deepEqual(await repo.reserve('a', 'att', LIMITS, 'digest'), { outcome: 'account_limit', retryAt: 'R' });
         assert.deepEqual(rpcArgs(supabase, 'reserve_automation_send'), {
             p_id: 'a', p_attempt_id: 'att', p_global_limit: 1000, p_user_limit: 500, p_account_limit: 200, p_recipient_limit: 3, p_message_digest: 'digest',
+            p_restart_limits: [1, 5, 15, 40, 100],
         });
         const plan: FinishPlan = {
             status: 'retry_wait', outcome: 'rate_limited', reason: 'rate_limited', errorMessage: 'm', messageId: null, errorCode: 4, errorSubcode: null,
             httpStatus: 400, nextAttemptAt: 'N', cooldownUntil: 'C', cooldownReason: 'why', pauseReason: null, recipientId: 'igsid', gateStatus: 'awaiting_reply',
+            blockedUntil: 'B',
         };
         assert.equal(await repo.finish('a', 'att', plan), true);
         assert.deepEqual(rpcArgs(supabase, 'finish_automation_send'), {
             p_id: 'a', p_attempt_id: 'att', p_status: 'retry_wait', p_outcome: 'rate_limited', p_reason: 'rate_limited', p_error_message: 'm',
             p_message_id: null, p_error_code: 4, p_error_subcode: null, p_http_status: 400, p_next_attempt_at: 'N', p_cooldown_until: 'C',
-            p_cooldown_reason: 'why', p_pause_reason: null, p_recipient_id: 'igsid', p_gate_status: 'awaiting_reply',
+            p_cooldown_reason: 'why', p_pause_reason: null, p_recipient_id: 'igsid', p_gate_status: 'awaiting_reply', p_blocked_until: 'B',
         });
     });
 

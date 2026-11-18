@@ -42,6 +42,7 @@ describe('automation follow-up repository', () => {
         const plan: FollowupFinishPlan = {
             status: 'accepted', outcome: 'accepted', reason: null, errorMessage: null, messageId: 'm', errorCode: null, errorSubcode: null, httpStatus: null,
             nextAttemptAt: null, cooldownUntil: null, cooldownReason: null, pauseReason: null, recipientId: null, gateStatus: 'completed', countReminder: false,
+            blockedUntil: null,
         };
         assert.equal(await repo.finish('fu', 'att', plan), true);
         assert.deepEqual(rpcArgs(supabase, 'finish_automation_followup'), {

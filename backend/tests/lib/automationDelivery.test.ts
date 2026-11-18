@@ -2,7 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
     MAX_FOLLOW_REMINDERS, MAX_SEND_ATTEMPTS, REPLY_WINDOW_MS, classifySendError, composeReply, cooldownFromUsage, expiresAtFor, finishPlan,
-    followupMessage, followupReadiness, messageBytes, messageDigest, readinessPlan, releasePlan, replyMessage, retryDelayMs,
+    RESTART_HOURLY_LIMITS, followupMessage, followupReadiness, messageBytes, messageDigest, readinessPlan, releasePlan, replyMessage, restartingUntil,
+    retryDelayMs,
 } from '../../lib/automationDelivery.ts';
 import type { FollowupJob, SendResult } from '../../lib/automationDelivery.ts';
 
@@ -164,12 +165,26 @@ test('a rate limit waits for the cooldown and cools the whole account down', () 
     assert.equal(plan.nextAttemptAt, new Date(NOW + 20 * MINUTE).toISOString());
     assert.equal(plan.cooldownUntil, plan.nextAttemptAt);
     assert.equal(plan.errorCode, 4);
+    assert.equal(plan.blockedUntil, null);
 });
 
-test('a temporary block rests the account for a day', () => {
+test('a temporary block rests the account for a day, then marks when sending may restart slowly', () => {
     const plan = finishPlan(graphError(368, 1404169), job(), NOW);
     assert.equal(plan.status, 'retry_wait');
     assert.equal(plan.cooldownUntil, new Date(NOW + 24 * 60 * MINUTE).toISOString());
+    assert.equal(plan.blockedUntil, plan.cooldownUntil);
+});
+
+test('after a block the account restarts with one test reply and a few more each hour, never at full speed at once', () => {
+    assert.equal(RESTART_HOURLY_LIMITS[0], 1);
+    assert.ok(RESTART_HOURLY_LIMITS.every((limit, hour) => hour === 0 || limit > RESTART_HOURLY_LIMITS[hour - 1]));
+    const blockEnds = new Date(NOW).toISOString();
+    const restartEnds = new Date(NOW + RESTART_HOURLY_LIMITS.length * 60 * MINUTE).toISOString();
+    assert.equal(restartingUntil(blockEnds, NOW - MINUTE), null);
+    assert.equal(restartingUntil(blockEnds, NOW), restartEnds);
+    assert.equal(restartingUntil(blockEnds, Date.parse(restartEnds) - 1), restartEnds);
+    assert.equal(restartingUntil(blockEnds, Date.parse(restartEnds)), null);
+    assert.equal(restartingUntil(null, NOW), null);
 });
 
 test('a cooldown that ends after the reply window expires the comment instead', () => {
@@ -229,6 +244,7 @@ test('a full limit waits until a send frees up, a pause holds, and a recipient l
     assert.equal(releasePlan('paused', null, job(), NOW)?.status, 'queued');
     assert.equal(releasePlan('recipient_limit', null, job(), NOW)?.status, 'skipped');
     assert.equal(releasePlan('rule_limit', freeAt, job(1, 10 * MINUTE), NOW)?.status, 'expired');
+    assert.match(releasePlan('restart_limit', freeAt, job(), NOW)?.errorMessage ?? '', /restarts slowly/);
     assert.equal(releasePlan('ok', null, job(), NOW), null);
     assert.equal(releasePlan('gone', null, job(), NOW), null);
 });

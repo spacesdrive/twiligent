@@ -54,6 +54,9 @@ export const NOT_SENT_RETRY_MS = 5 * 60 * 1000;
 export const DEFAULT_COOLDOWN_MS = 15 * 60 * 1000;
 // code 368 is a temporary block for activity Instagram considers abusive, so the account rests for a day
 export const BLOCKED_COOLDOWN_MS = 24 * 60 * 60 * 1000;
+// resuming at full speed after a block invites the next one, so the first hour sends one test reply and later hours a few more
+export const RESTART_HOURLY_LIMITS = [1, 5, 15, 40, 100];
+const HOUR_MS = 60 * 60 * 1000;
 
 // Graph API codes Meta documents for throttling: app, user, page and business use case limits
 const RATE_LIMIT_CODES = new Set([4, 17, 32, 613, 80002, 80006]);
@@ -144,6 +147,8 @@ export interface FinishPlan {
     // who Instagram says received an accepted reply, and the followers-only wait it starts or ends
     recipientId: string | null;
     gateStatus: AutomationGateStatus | null;
+    // when Instagram's block of the account's private replies ends, so sending restarts slowly from then
+    blockedUntil: string | null;
 }
 
 // a job given back without sending: where it goes and why
@@ -156,11 +161,11 @@ export interface ReleasePlan {
 
 export type ReserveOutcome =
     | 'ok' | 'gone' | 'paused' | 'cooldown' | 'recipient_limit'
-    | 'rule_limit' | 'account_limit' | 'user_limit' | 'global_limit';
+    | 'rule_limit' | 'restart_limit' | 'account_limit' | 'user_limit' | 'global_limit';
 
 export const SEND_ERROR_MESSAGES: Record<SendErrorKind, string> = {
     rate_limited: 'Instagram is limiting replies from this account for now. The reply goes out after the cooldown.',
-    blocked: 'Instagram has temporarily blocked private replies from this account. Replies wait a day; check the account in the Instagram app.',
+    blocked: 'Instagram has temporarily blocked private replies from this account. Replies wait a day, then restart slowly with one test reply.',
     transient: 'Instagram had a temporary problem. The reply is tried again.',
     already_replied: 'Instagram says this comment already has a private reply, so a second one was not sent.',
     not_authorized: 'Instagram refused this account\'s permission to send messages. Replies are held: reconnect the account on the Accounts page, check that it allows access to messages in the Instagram app, then resume it.',
@@ -171,6 +176,7 @@ export const SEND_ERROR_MESSAGES: Record<SendErrorKind, string> = {
 const LIMIT_MESSAGES: Record<Exclude<ReserveOutcome, 'ok' | 'gone' | 'paused' | 'recipient_limit'>, string> = {
     cooldown: 'Waiting for Instagram\'s cooldown on this account to end.',
     rule_limit: 'Waiting: this rule reached its hourly reply limit.',
+    restart_limit: 'Waiting: Instagram blocked replies from this account recently, so sending restarts slowly, a few replies an hour.',
     account_limit: 'Waiting: this account reached its hourly reply limit.',
     user_limit: 'Waiting: your accounts reached their combined hourly reply limit.',
     global_limit: 'Waiting: this Twiligent instance reached its hourly reply limit.',
@@ -239,7 +245,16 @@ function emptyPlan(): Omit<FinishPlan, 'status' | 'outcome'> {
     return {
         reason: null, errorMessage: null, messageId: null, errorCode: null, errorSubcode: null, httpStatus: null,
         nextAttemptAt: null, cooldownUntil: null, cooldownReason: null, pauseReason: null, recipientId: null, gateStatus: null,
+        blockedUntil: null,
     };
+}
+
+// the end of the slow restart after a block, while the account is in it; null before the block ends and once it is over
+export function restartingUntil(blockedUntil: string | null, now: number): string | null {
+    if (!blockedUntil) return null;
+    const blockEnds = Date.parse(blockedUntil);
+    const restartEnds = blockEnds + RESTART_HOURLY_LIMITS.length * HOUR_MS;
+    return now >= blockEnds && now < restartEnds ? new Date(restartEnds).toISOString() : null;
 }
 
 // a wait that ends after Instagram's reply window would only fail, so the job expires instead
@@ -286,6 +301,7 @@ export function finishPlan(result: SendResult, job: DeliveryJob, now: number, ra
             outcome: kind === 'rate_limited' ? 'rate_limited' : 'rejected',
             cooldownUntil,
             cooldownReason: SEND_ERROR_MESSAGES[kind],
+            blockedUntil: kind === 'blocked' ? cooldownUntil : null,
         };
     }
     if (kind === 'transient' && job.attempts < MAX_SEND_ATTEMPTS) {
