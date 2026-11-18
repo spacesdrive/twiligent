@@ -7,6 +7,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [3.6.0] - 2026-11-19
+
+The rules list on the Instagram automation page can now be searched, filtered and paged. What an instance owner must do: nothing; deploy as usual.
+
+### Added
+
+- Once an account has 6 or more rules, the Rules section has a search (rule name, keywords, replies and links), filters for on or off and for chosen posts or every post, each with its count, and pages of 20 rules. The search, filters and page stay in the address, so a refresh or a shared link shows the same view (#179)
+
+### Fixed
+
+- A test that changed a sealed token sometimes left it unchanged and failed a deploy at random (#181)
+
 ## [3.5.0] - 2026-11-19
 
 After Instagram blocks an account's private replies, sending now restarts slowly instead of at full speed. What an instance owner must do: run `npm run db:push` and `npm run db:schema` for three migrations before deploying this version.
