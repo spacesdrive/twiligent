@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  ACTIVITY_FILTERS, DEFAULT_FOLLOW_PROMPT, DEFAULT_NOT_FOLLOWING, DEFAULT_REPLY_FIRST, DEFAULT_PUBLIC_REPLY, MAX_MESSAGE_BYTES, accountStatus, canRetry, canRetryPublic,
+  ACTIVITY_FILTERS, DEFAULT_FOLLOW_PROMPT, DEFAULT_FOLLOW_VARIANTS, DEFAULT_NOT_FOLLOWING, DEFAULT_REPLY_FIRST, DEFAULT_PUBLIC_REPLY, MAX_MESSAGE_BYTES, accountStatus, canRetry, canRetryPublic,
   composeReply, emptyRuleForm, formToRequest, gateDetail, linkModeOf, withLinkMode, matchModeLabel, messageBytes, needsMessageEvents, parseKeywords, periodStart,
   publicReplyTexts, publicStatusDisplay, ruleFormError, normalizeLink, ruleScopeLabel, ruleToForm, statusDisplay, summarizeStats,
 } from '../../../src/features/automations/automationData.ts';
@@ -13,8 +13,10 @@ const NOW = Date.parse('2026-10-16T12:00:00Z');
 // the message of the first problem, or null
 const ruleFormProblem = (rule: RuleForm): string | null => ruleFormError(rule)?.message ?? null;
 
+// most checks are about one field, so the helper starts from a rule that sends the link in the first message
 function form(overrides: Partial<RuleForm> = {}): RuleForm {
-  return { ...emptyRuleForm('ig1'), name: 'Guide', keywordsText: 'GUIDE', replyText: 'Here it is', ...overrides };
+  const sendsAtOnce = withLinkMode(emptyRuleForm('ig1'), 'now');
+  return { ...sendsAtOnce, name: 'Guide', keywordsText: 'GUIDE', replyText: 'Here it is', ...overrides };
 }
 
 const rule: AutomationRule = {
@@ -120,7 +122,9 @@ test('a rule turns into its form and back without losing a field', () => {
 
 test('a new rule starts with editable first and reminder messages, used only when the link waits for a reply', () => {
   const fresh = emptyRuleForm('ig1');
-  assert.deepEqual([fresh.requireFollow, fresh.linkAfterReply, fresh.followPromptText, fresh.notFollowingText], [false, false, DEFAULT_REPLY_FIRST, DEFAULT_NOT_FOLLOWING]);
+  assert.deepEqual([fresh.requireFollow, fresh.linkAfterReply, fresh.followPromptText, fresh.notFollowingText], [true, true, DEFAULT_FOLLOW_PROMPT, DEFAULT_NOT_FOLLOWING]);
+  assert.deepEqual(fresh.replyVariants, DEFAULT_FOLLOW_VARIANTS);
+  assert.match(fresh.followPromptText, /type YES/);
   assert.equal(ruleFormProblem(form({ requireFollow: true })), null);
   assert.equal(ruleFormProblem(form({ requireFollow: true, followPromptText: ' ' })), 'Write the message that asks people to follow you and reply');
   assert.equal(ruleFormProblem(form({ requireFollow: true, notFollowingText: '' })), 'Write the reminder for people who do not follow you yet');
@@ -217,18 +221,20 @@ test('an account needs message events only while one of its rules that wait for 
 
 test('the link can go out right away, after a reply, or after a reply from a follower, and a default first message follows the choice', () => {
   const form = emptyRuleForm('ig1');
-  assert.equal(linkModeOf(form), 'now');
-  const reply = withLinkMode(form, 'reply');
+  assert.equal(linkModeOf(form), 'follow');
+  const now = withLinkMode(form, 'now');
+  assert.deepEqual([linkModeOf(now), now.replyVariants], ['now', []]);
+  const reply = withLinkMode(now, 'reply');
   assert.deepEqual([reply.linkAfterReply, reply.requireFollow, reply.followPromptText], [true, false, DEFAULT_REPLY_FIRST]);
   const follow = withLinkMode(reply, 'follow');
-  assert.deepEqual([linkModeOf(follow), follow.followPromptText], ['follow', DEFAULT_FOLLOW_PROMPT]);
+  assert.deepEqual([linkModeOf(follow), follow.followPromptText, follow.replyVariants], ['follow', DEFAULT_FOLLOW_PROMPT, DEFAULT_FOLLOW_VARIANTS]);
   const typed = withLinkMode({ ...follow, followPromptText: 'My own words' }, 'reply');
   assert.equal(typed.followPromptText, 'My own words');
   assert.equal(formToRequest(follow).linkAfterReply, true);
 });
 
 test('other wordings are trimmed and checked like the message they replace', () => {
-  const base = { ...emptyRuleForm('ig1'), name: 'Guide', keywordsText: 'GUIDE', replyText: 'Here it is', linkUrl: 'https://e.com' };
+  const base = form({ linkUrl: 'https://e.com' });
   assert.deepEqual(formToRequest({ ...base, replyVariants: [' Here you go ', '', 'Here you go'] }).replyVariants, ['Here you go']);
   assert.equal(ruleFormError({ ...base, replyVariants: ['a', 'b', 'c', 'd', 'e'] })?.field, 'replyVariants');
   assert.match(ruleFormError({ ...base, replyVariants: ['x'.repeat(990)] })?.message ?? '', /with its link/);
