@@ -7,6 +7,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [3.7.0] - 2026-11-19
+
+Two ways to make comment replies less likely to be blocked by Instagram. What an instance owner must do: run `npm run db:push` and `npm run db:schema` for three migrations before deploying, and select the **messages** webhook field in the Meta app if you will send the link after a reply.
+
+### Added
+
+- A rule can keep up to four other wordings of its first private message; one is picked for each comment, so a busy post does not send hundreds of identical messages (#185)
+- A rule can send the link only after the person replies: the first message is short and has no link, and the reply and link go out once they answer, with or without the followers-only check. Marked as testing until it has run on a live account (#186)
+- A scheduled post's automation can carry a first message and other wordings, and a pending post's automation can be changed from Claude (#186)
+
 ## [3.6.1] - 2026-11-19
 
 What an instance owner must do: nothing; deploy as usual.
