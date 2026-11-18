@@ -4,7 +4,7 @@ import { parseScheduledPost, parseScheduledPostUpdate } from '../../validators/s
 import { ValidationError, NotFoundError } from '../../lib/errors.ts';
 import type { JsonSchema } from '../tool.ts';
 import type { Page } from '../schemas.ts';
-import type { PostStatus, ScheduledPost, ScheduledPostRequest, ScheduledPostUpdateRequest } from '../../../shared/types/domain.ts';
+import type { PostStatus, ScheduledPost, ScheduledPostAutomation, ScheduledPostRequest, ScheduledPostUpdateRequest } from '../../../shared/types/domain.ts';
 
 const STATUSES: PostStatus[] = ['pending', 'publishing', 'published', 'failed'];
 
@@ -37,7 +37,7 @@ const postFields: Record<string, JsonSchema> = {
 };
 
 // the confirmation is the person's only look at a public post before it goes out, so it names every field in full
-function describeFields(fields: Partial<ScheduledPostRequest>): string {
+function describeFields(fields: Partial<Omit<ScheduledPostRequest, 'automation'>> & { automation?: ScheduledPostAutomation | null }): string {
     const parts = [
         fields.mediaUrl && `Media: ${fields.mediaUrl}.`,
         fields.scheduledAt && `Time: ${fields.scheduledAt}.`,
@@ -46,11 +46,27 @@ function describeFields(fields: Partial<ScheduledPostRequest>): string {
         fields.altText !== undefined && `Alt text: "${fields.altText}".`,
         fields.locationId && `Location id: ${fields.locationId}.`,
         fields.shareToFeed !== undefined && `Share to feed: ${fields.shareToFeed ? 'yes' : 'no'}.`,
-        fields.automation && `Once published, anyone who comments gets this private reply: "${fields.automation.replyText}".`,
+        fields.automation?.firstMessage && `Once published, anyone who comments first gets this message without the link: "${fields.automation.firstMessage}"; after they reply, they get: "${fields.automation.replyText}".`,
+        fields.automation && !fields.automation.firstMessage && `Once published, anyone who comments gets this private reply: "${fields.automation.replyText}".`,
+        fields.automation?.replyVariants?.length && `The first message is one of these wordings, picked per comment: ${fields.automation.replyVariants.map(text => `"${text}"`).join(', ')}.`,
         fields.automation?.publicReplyTexts.length && `And one of these public replies under their comment: ${fields.automation.publicReplyTexts.map(text => `"${text}"`).join(', ')}.`,
     ];
     return parts.filter(Boolean).join(' ');
 }
+
+// a post's comment automation; a first message without the link and several wordings make Instagram less likely to block it
+const AUTOMATION_PROPERTY = {
+    type: 'object',
+    description: 'Answer every comment on this post once it is published: a rule for this post is made and turned on then. On a change, the whole automation is replaced',
+    properties: {
+        replyText: { type: 'string', maxLength: 1000, description: 'The private reply with the link, up to 1000 bytes; sent at once, or after the person answers firstMessage' },
+        firstMessage: { type: 'string', maxLength: 1000, description: 'A short first message without the link that asks the person to reply; the reply is sent once they answer. Leave out to send replyText at once' },
+        replyVariants: { type: 'array', items: { type: 'string', maxLength: 1000 }, maxItems: 4, description: 'Other wordings of the first private message (firstMessage, or replyText when there is none), one picked per comment' },
+        publicReplyTexts: { type: 'array', items: { type: 'string', maxLength: 300 }, maxItems: 5, description: 'Replies posted under the comment, one picked per comment; leave out for none' },
+    },
+    required: ['replyText'],
+    additionalProperties: false,
+} as const;
 
 // the validators accept more fields than these tools publish; anything a client was not told about is refused
 function refuseUnlisted(args: Record<string, unknown>, allowed: string[]): void {
@@ -101,16 +117,7 @@ export const scheduleInstagramPost = defineTool<ScheduledPostRequest>({
         mediaUrl: { type: 'string', format: 'uri', description: 'Public https URL of the image or video' },
         mediaType: { type: 'string', enum: ['IMAGE', 'VIDEO', 'REELS', 'STORIES'], description: 'What kind of post; IMAGE when left out' },
         ...postFields,
-        automation: {
-            type: 'object',
-            description: 'Answer every comment on this post once it is published: a rule for this post is made and turned on then',
-            properties: {
-                replyText: { type: 'string', maxLength: 1000, description: 'The private reply sent to each person who comments, up to 1000 bytes' },
-                publicReplyTexts: { type: 'array', items: { type: 'string', maxLength: 300 }, maxItems: 5, description: 'Replies posted under the comment, one picked per comment; leave out for none' },
-            },
-            required: ['replyText'],
-            additionalProperties: false,
-        },
+        automation: AUTOMATION_PROPERTY,
     }, ['accountId', 'mediaUrl', 'scheduledAt'])),
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
     permission: 'write',
@@ -135,13 +142,13 @@ export const updateScheduledPost = defineTool<{ postId: string; changes: Schedul
     name: 'update_scheduled_post',
     title: 'Change a scheduled post',
     description: 'Changes the caption, time or other details of an Instagram post that has not started publishing. Fields left out stay as they are. Asks for a confirmation first, because the post goes public.',
-    inputSchema: withConfirmation(objectSchema({ postId: idProperty('scheduled post'), ...postFields }, ['postId'])),
+    inputSchema: withConfirmation(objectSchema({ postId: idProperty('scheduled post'), ...postFields, automation: AUTOMATION_PROPERTY }, ['postId'])),
     annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     permission: 'write',
     needsConfirmation: () => true,
     describe: ({ postId, changes }) => `Change scheduled post ${postId}. ${describeFields(changes)}`,
     parse(args) {
-        refuseUnlisted(args, ['postId', ...Object.keys(postFields)]);
+        refuseUnlisted(args, ['postId', 'automation', ...Object.keys(postFields)]);
         const changes = parseScheduledPostUpdate(args);
         if (Object.keys(changes).length === 0) throw new ValidationError('Name at least one field to change, such as caption or scheduledAt.');
         return { postId: requiredId(args, 'postId', 'scheduled post'), changes };
