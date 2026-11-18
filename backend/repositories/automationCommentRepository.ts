@@ -1,5 +1,5 @@
 import { execute, maybeRow, rows } from './query.ts';
-import { DUE_NOW_SKEW_MS } from '../lib/automationDelivery.ts';
+import { DUE_NOW_SKEW_MS, RESTART_HOURLY_LIMITS } from '../lib/automationDelivery.ts';
 import type { FinishPlan, ReleasePlan, ReserveOutcome } from '../lib/automationDelivery.ts';
 import type { QueueHealth } from '../lib/automationHealth.ts';
 import type { SupabaseClient } from '../types/app.ts';
@@ -362,6 +362,7 @@ export function createAutomationCommentRepository(db: SupabaseClient): Automatio
                 p_account_limit: limits.accountHourly,
                 p_recipient_limit: limits.recipientDaily,
                 p_message_digest: messageDigest ?? null,
+                p_restart_limits: RESTART_HOURLY_LIMITS,
             }));
             const [row] = (data ?? []) as { outcome: ReserveOutcome; retry_at: string | null }[];
             return row ? { outcome: row.outcome, retryAt: row.retry_at } : { outcome: 'gone', retryAt: null };
@@ -385,6 +386,7 @@ export function createAutomationCommentRepository(db: SupabaseClient): Automatio
                 p_pause_reason: plan.pauseReason,
                 p_recipient_id: plan.recipientId,
                 p_gate_status: plan.gateStatus,
+                p_blocked_until: plan.blockedUntil,
             }));
             return data === true;
         },

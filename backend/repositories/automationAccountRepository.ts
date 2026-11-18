@@ -13,6 +13,7 @@ interface AutomationAccountRow {
     public_cooldown_until: string | null;
     public_cooldown_reason: string | null;
     public_limited_until: string | null;
+    blocked_until: string | null;
 }
 
 // an account has no row until its automation is paused, subscribed or cooled down; these are the defaults then
@@ -30,9 +31,11 @@ export interface AutomationAccountControls {
     publicCooldownUntil: string | null;
     publicCooldownReason: string | null;
     publicLimitedUntil: string | null;
+    // when Instagram's latest block of private replies ends; sending restarts slowly after it
+    blockedUntil: string | null;
 }
 
-const COLUMNS = 'account_id, paused, paused_reason, cooldown_until, cooldown_reason, subscribed_at, limited_until, subscribed_fields, public_cooldown_until, public_cooldown_reason, public_limited_until';
+const COLUMNS = 'account_id, paused, paused_reason, cooldown_until, cooldown_reason, subscribed_at, limited_until, subscribed_fields, public_cooldown_until, public_cooldown_reason, public_limited_until, blocked_until';
 
 function toControls(row: AutomationAccountRow): AutomationAccountControls {
     return {
@@ -47,13 +50,14 @@ function toControls(row: AutomationAccountRow): AutomationAccountControls {
         publicCooldownUntil: row.public_cooldown_until ?? null,
         publicCooldownReason: row.public_cooldown_reason ?? null,
         publicLimitedUntil: row.public_limited_until ?? null,
+        blockedUntil: row.blocked_until ?? null,
     };
 }
 
 export function defaultControls(accountId: string): AutomationAccountControls {
     return {
         accountId, paused: false, pausedReason: null, cooldownUntil: null, cooldownReason: null, subscribedAt: null, limitedUntil: null, subscribedFields: null,
-        publicCooldownUntil: null, publicCooldownReason: null, publicLimitedUntil: null,
+        publicCooldownUntil: null, publicCooldownReason: null, publicLimitedUntil: null, blockedUntil: null,
     };
 }
 
@@ -74,7 +78,7 @@ export function createAutomationAccountRepository(db: SupabaseClient): Automatio
             .select(COLUMNS));
         const fallback: AutomationAccountRow = {
             account_id: accountId, paused: false, paused_reason: null, cooldown_until: null, cooldown_reason: null, subscribed_at: null,
-            limited_until: null, subscribed_fields: null, public_cooldown_until: null, public_cooldown_reason: null, public_limited_until: null, ...values,
+            limited_until: null, subscribed_fields: null, public_cooldown_until: null, public_cooldown_reason: null, public_limited_until: null, blocked_until: null, ...values,
         };
         return toControls(saved[0] ?? fallback);
     }
