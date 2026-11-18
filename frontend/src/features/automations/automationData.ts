@@ -75,6 +75,35 @@ const FOLLOWUP_WINDOW_MS = 24 * HOUR_MS;
 // where a followers-only rule starts; the owner edits both before saving
 export const DEFAULT_FOLLOW_PROMPT = 'Thanks for your comment. Follow this account, then reply to this message and the link is on its way.';
 export const DEFAULT_NOT_FOLLOWING = 'It looks like you do not follow this account yet. Follow it, then reply here again and the link is on its way.';
+// a short first message without a link reads as a conversation, not as spam, and the person's reply opens Instagram's window
+export const DEFAULT_REPLY_FIRST = 'Thanks for your comment. Reply LINK and I will send it here.';
+// other wordings of the first message; one is picked per comment, since many identical messages look like spam
+export const MAX_REPLY_VARIANTS = 4;
+
+// when the link goes out: in the first private reply, after the person replies, or after they reply and Instagram says they follow
+export type LinkMode = 'now' | 'reply' | 'follow';
+
+export function linkModeOf(form: Pick<RuleForm, 'requireFollow' | 'linkAfterReply'>): LinkMode {
+  if (form.requireFollow) return 'follow';
+  return form.linkAfterReply ? 'reply' : 'now';
+}
+
+// switching between the two waiting modes swaps a default first message for the other mode's default, never typed text
+export function withLinkMode(form: RuleForm, mode: LinkMode): RuleForm {
+  const defaults: Record<LinkMode, string> = { now: form.followPromptText, reply: DEFAULT_REPLY_FIRST, follow: DEFAULT_FOLLOW_PROMPT };
+  const isDefault = form.followPromptText === DEFAULT_REPLY_FIRST || form.followPromptText === DEFAULT_FOLLOW_PROMPT || !form.followPromptText.trim();
+  return {
+    ...form,
+    requireFollow: mode === 'follow',
+    linkAfterReply: mode !== 'now',
+    followPromptText: isDefault ? defaults[mode] : form.followPromptText,
+  };
+}
+
+// the wordings as they will be saved: trimmed, without blanks or repeats
+export function replyVariantTexts(texts: string[]): string[] {
+  return [...new Set(texts.map(text => text.trim()).filter(Boolean))];
+}
 // where a public reply starts; it says nothing about the private reply, which can fail on its own
 export const DEFAULT_PUBLIC_REPLY = 'Thanks for your comment.';
 
@@ -109,12 +138,14 @@ export interface RuleForm {
   requireFollow: boolean;
   followPromptText: string;
   notFollowingText: string;
+  linkAfterReply: boolean;
+  replyVariants: string[];
 }
 
 // the field a problem belongs to, so the editor can show it under that field and move focus there
 export type RuleField =
   | 'accountId' | 'name' | 'keywordsText' | 'mediaIds' | 'replies' | 'replyText' | 'linkUrl' | 'hourlyLimit'
-  | 'publicReplyTexts' | 'requireFollow' | 'followPromptText' | 'notFollowingText';
+  | 'publicReplyTexts' | 'requireFollow' | 'followPromptText' | 'notFollowingText' | 'linkAfterReply' | 'replyVariants';
 
 export interface RuleFieldProblem {
   field: RuleField;
@@ -245,7 +276,7 @@ export function emptyRuleForm(accountId: string): RuleForm {
   return {
     accountId, name: '', keywordsText: '', matchMode: 'contains', caseSensitive: false, scope: 'all', mediaIds: [],
     privateReplyEnabled: true, replyText: '', linkUrl: '', publicReplyEnabled: false, publicReplyTexts: [DEFAULT_PUBLIC_REPLY], hourlyLimit: '', enabled: true,
-    requireFollow: false, followPromptText: DEFAULT_FOLLOW_PROMPT, notFollowingText: DEFAULT_NOT_FOLLOWING,
+    requireFollow: false, followPromptText: DEFAULT_REPLY_FIRST, notFollowingText: DEFAULT_NOT_FOLLOWING, linkAfterReply: false, replyVariants: [],
   };
 }
 
@@ -266,8 +297,10 @@ export function ruleToForm(rule: AutomationRule): RuleForm {
     hourlyLimit: rule.hourlyLimit === null ? '' : String(rule.hourlyLimit),
     enabled: rule.enabled,
     requireFollow: rule.requireFollow,
-    followPromptText: rule.followPromptText ?? DEFAULT_FOLLOW_PROMPT,
+    followPromptText: rule.followPromptText ?? (rule.requireFollow ? DEFAULT_FOLLOW_PROMPT : DEFAULT_REPLY_FIRST),
     notFollowingText: rule.notFollowingText ?? DEFAULT_NOT_FOLLOWING,
+    linkAfterReply: rule.linkAfterReply,
+    replyVariants: rule.replyVariants,
   };
 }
 
@@ -291,6 +324,8 @@ export function formToRequest(form: RuleForm): AutomationRuleRequest {
     requireFollow: form.requireFollow,
     followPromptText: form.followPromptText.trim() || null,
     notFollowingText: form.notFollowingText.trim() || null,
+    linkAfterReply: form.linkAfterReply || form.requireFollow,
+    replyVariants: replyVariantTexts(form.replyVariants),
   };
 }
 
@@ -347,11 +382,24 @@ export function ruleFormError(form: RuleForm): RuleFieldProblem | null {
       if (textProblem) return problem('publicReplyTexts', textProblem);
     }
   }
-  if (form.requireFollow && !form.privateReplyEnabled) {
-    return problem('requireFollow', 'Sending the link only to followers needs the private reply. Turn it on, or turn off the followers-only option');
+  const waits = form.requireFollow || form.linkAfterReply;
+  if (waits && !form.privateReplyEnabled) {
+    return problem('linkAfterReply', 'Sending the link after a reply needs the private reply. Turn it on, or send the link in the first message');
+  }
+  if (form.privateReplyEnabled) {
+    const variants = replyVariantTexts(form.replyVariants);
+    if (variants.length > MAX_REPLY_VARIANTS) return problem('replyVariants', `A rule can have at most ${MAX_REPLY_VARIANTS} other wordings`);
+    for (const variant of variants) {
+      const variantBytes = messageBytes(waits ? variant : composeReply(variant, normalizeLink(form.linkUrl)));
+      if (variantBytes > MAX_MESSAGE_BYTES) {
+        return problem('replyVariants', `A wording is ${variantBytes} bytes${waits ? '' : ' with its link'}; Instagram accepts at most ${MAX_MESSAGE_BYTES}`);
+      }
+    }
+  }
+  if (waits && !form.followPromptText.trim()) {
+    return problem('followPromptText', form.requireFollow ? 'Write the message that asks people to follow you and reply' : 'Write the first message, which asks people to reply');
   }
   if (form.requireFollow) {
-    if (!form.followPromptText.trim()) return problem('followPromptText', 'Write the message that asks people to follow you and reply');
     if (!form.notFollowingText.trim()) return problem('notFollowingText', 'Write the reminder for people who do not follow you yet');
     const prompt = messageBytes(form.followPromptText.trim());
     const reminder = messageBytes(form.notFollowingText.trim());
@@ -362,9 +410,9 @@ export function ruleFormError(form: RuleForm): RuleFieldProblem | null {
   return null;
 }
 
-// a followers-only rule that is on needs Instagram to send the account's messages as well as its comments
-export function needsMessageEvents(rules: Pick<AutomationRule, 'accountId' | 'enabled' | 'requireFollow'>[], accountId: string): boolean {
-  return rules.some(rule => rule.accountId === accountId && rule.enabled && rule.requireFollow);
+// a rule that is on and waits for a reply needs Instagram to send the account's messages as well as its comments
+export function needsMessageEvents(rules: Pick<AutomationRule, 'accountId' | 'enabled' | 'requireFollow' | 'linkAfterReply'>[], accountId: string): boolean {
+  return rules.some(rule => rule.accountId === accountId && rule.enabled && (rule.requireFollow || rule.linkAfterReply));
 }
 
 export interface AccountStatus {

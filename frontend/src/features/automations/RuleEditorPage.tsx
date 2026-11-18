@@ -21,13 +21,22 @@ import { useAppContext } from '../../context/AppContext';
 import RuleMediaPicker from './RuleMediaPicker';
 import RulePreview from './RulePreview';
 import RulePublicReplies from './RulePublicReplies';
-import { emptyRuleForm, ruleToForm } from './automationData.ts';
+import RuleReplyVariants from './RuleReplyVariants';
+import SegmentedChoice from '@/components/SegmentedChoice';
+import { emptyRuleForm, linkModeOf, normalizeLink, ruleToForm } from './automationData.ts';
 import { useAutomations } from './useAutomations';
 import { useRuleForm } from './useRuleForm';
 import type { AutomationMatchMode } from '@shared/types/automation.ts';
 import type { ReactNode } from 'react';
 import type { AppAccount } from '../../utils/formatters';
-import type { RuleForm, RuleScope } from './automationData.ts';
+import type { LinkMode, RuleForm, RuleScope } from './automationData.ts';
+
+// what each choice does, in the words of the person who comments
+const LINK_MODE_HINTS: Record<LinkMode, string> = {
+  now: 'The private reply carries the link. Simple, but many identical messages with links are what Instagram most often blocks.',
+  reply: 'The first message has no link and asks them to reply. Their reply opens a normal conversation, and the link goes out then.',
+  follow: 'As after a reply, and Instagram is asked whether they follow you. Followers get the link; others get a reminder to follow.',
+};
 
 interface ReplySectionProps {
   id: string;
@@ -85,6 +94,7 @@ function RuleEditor({ ruleId, initialForm, igAccounts, saveRule }: RuleEditorPro
   const [done, setDone] = useState(false);
   const rule = useRuleForm({ ruleId, initialForm, saveRule, onSaved: useCallback(() => setDone(true), []) });
   const { form, setField, saving, errorFor } = rule;
+  const linkMode = linkModeOf(form);
   const guard = useUnsavedChanges(rule.dirty && !saving);
 
   // leaving waits for the render in which the saved form no longer counts as unsaved work
@@ -174,42 +184,49 @@ function RuleEditor({ ruleId, initialForm, igAccounts, saveRule }: RuleEditorPro
               onCheckedChange={checked => setField('privateReplyEnabled', checked)}
               error={errorFor('replies')}
             >
-              <div className="flex flex-col gap-3 border-t border-divider pt-3">
-                <label htmlFor="rule-follow" className="flex items-center justify-between gap-3 text-sm font-medium text-ink">
-                  <span className="flex items-center gap-2">
-                    <UserCheck className="size-4 text-ink-muted" />Send the link only to followers
-                    <Badge variant="warning">Testing</Badge>
-                  </span>
-                  <Switch
-                    id="rule-follow"
-                    checked={form.requireFollow}
-                    onCheckedChange={checked => setField('requireFollow', checked)}
-                    aria-describedby={errorFor('requireFollow') ? fieldErrorId('rule-follow') : 'rule-follow-help'}
-                    aria-invalid={errorFor('requireFollow') ? true : undefined}
-                  />
-                </label>
-                {errorFor('requireFollow') && <p id={fieldErrorId('rule-follow')} className="text-sm text-danger"><span className="sr-only">Error: </span>{errorFor('requireFollow')}</p>}
-                <p id="rule-follow-help" className="max-w-prose text-body text-ink-muted">
-                  Instagram tells Twiligent whether someone follows you only after they message you. With this on, the first reply asks them
-                  to follow and reply. When they reply, Twiligent asks Instagram, then sends the reply and link to followers and a reminder to
-                  everyone else, twice at most. If Instagram cannot say, nothing is sent.
-                </p>
-                <p className="max-w-prose text-body text-warning">
-                  This option is still being tested and may or may not work. It needs Instagram to send your account&apos;s messages to
-                  Twiligent, which Meta may not allow without extra app approval. Use a keyword rule when the link must arrive.
-                </p>
-                {form.requireFollow && (
-                  <>
-                    <FieldRow label="First reply" htmlFor="rule-follow-prompt" hint="Sent to everyone who comments. It has no link." error={errorFor('followPromptText')}>
-                      <Textarea id="rule-follow-prompt" rows={3} maxLength={1000} value={form.followPromptText} onChange={e => setField('followPromptText', e.target.value)} />
-                    </FieldRow>
-                    <FieldRow label="Reminder" htmlFor="rule-follow-reminder" hint="Sent when they reply but do not follow yet." error={errorFor('notFollowingText')}>
+              <FieldRow
+                label="When to send the link"
+                htmlFor="rule-link-mode"
+                group
+                hint={LINK_MODE_HINTS[linkMode]}
+                error={errorFor('linkAfterReply') ?? errorFor('requireFollow')}
+              >
+                <SegmentedChoice<LinkMode>
+                  name="rule-link-mode"
+                  id="rule-link-mode"
+                  options={[
+                    { value: 'now', label: 'In the first message', icon: <Send /> },
+                    { value: 'reply', label: 'After they reply', icon: <MessageCircle /> },
+                    { value: 'follow', label: 'After they reply, if they follow', icon: <UserCheck /> },
+                  ]}
+                  value={linkMode}
+                  onChange={rule.setLinkMode}
+                />
+              </FieldRow>
+              {linkMode !== 'now' && (
+                <>
+                  <p className="max-w-prose text-body text-warning">
+                    <Badge variant="warning" className="mr-2">Testing</Badge>
+                    This needs Instagram to send your account&apos;s messages to Twiligent, which has not been tried on a live account yet.
+                    Twiligent turns it on when you save. If replies do not arrive, switch back to sending the link in the first message.
+                  </p>
+                  <FieldRow
+                    label="First message"
+                    htmlFor="rule-follow-prompt"
+                    hint="Sent to everyone who comments. Keep it short and leave the link out; it goes in the next message."
+                    error={errorFor('followPromptText')}
+                  >
+                    <Textarea id="rule-follow-prompt" rows={3} maxLength={1000} value={form.followPromptText} onChange={e => setField('followPromptText', e.target.value)} />
+                  </FieldRow>
+                  <RuleReplyVariants texts={form.replyVariants} onChange={texts => setField('replyVariants', texts)} linkUrl={null} error={errorFor('replyVariants')} />
+                  {linkMode === 'follow' && (
+                    <FieldRow label="Reminder" htmlFor="rule-follow-reminder" hint="Sent when they reply but do not follow yet, twice at most." error={errorFor('notFollowingText')}>
                       <Textarea id="rule-follow-reminder" rows={3} maxLength={1000} value={form.notFollowingText} onChange={e => setField('notFollowingText', e.target.value)} />
                     </FieldRow>
-                  </>
-                )}
-              </div>
-              <FieldRow label={form.requireFollow ? 'Reply for followers' : 'Reply'} htmlFor="rule-reply" error={errorFor('replyText')}>
+                  )}
+                </>
+              )}
+              <FieldRow label={linkMode === 'now' ? 'Reply' : 'Reply with the link'} htmlFor="rule-reply" error={errorFor('replyText')}>
                 <Textarea id="rule-reply" rows={4} maxLength={1000} value={form.replyText} onChange={e => setField('replyText', e.target.value)} placeholder="Here is your guide. Enjoy it." />
               </FieldRow>
               <FieldRow label="Link" htmlFor="rule-link" optional hint="Added on its own line after the reply. An address without https:// gets it added." error={errorFor('linkUrl')}>
@@ -223,6 +240,14 @@ function RuleEditor({ ruleId, initialForm, igAccounts, saveRule }: RuleEditorPro
                   placeholder="https://example.com/guide"
                 />
               </FieldRow>
+              {linkMode === 'now' && (
+                <RuleReplyVariants
+                  texts={form.replyVariants}
+                  onChange={texts => setField('replyVariants', texts)}
+                  linkUrl={normalizeLink(form.linkUrl) || null}
+                  error={errorFor('replyVariants')}
+                />
+              )}
               <FieldRow label="Private replies an hour" htmlFor="rule-limit" optional hint="The account's own limit still applies; Instagram allows 750 an hour." error={errorFor('hourlyLimit')}>
                 <Input id="rule-limit" type="text" inputMode="numeric" value={form.hourlyLimit} onChange={e => setField('hourlyLimit', e.target.value.replace(/[\s,]/g, ''))} placeholder="No limit for this rule" />
               </FieldRow>

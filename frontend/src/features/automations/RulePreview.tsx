@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Spinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
-import { MAX_MESSAGE_BYTES, composeReply, messageBytes, publicReplyTexts } from './automationData.ts';
+import { MAX_MESSAGE_BYTES, composeReply, messageBytes, publicReplyTexts, replyVariantTexts } from './automationData.ts';
 import type { RuleFormState } from './useRuleForm';
 
 interface RulePreviewProps {
@@ -37,7 +37,9 @@ export default function RulePreview({ rule }: RulePreviewProps) {
   const bytes = messageBytes(message);
   const publicTexts = publicReplyTexts(form.publicReplyTexts);
   const canTest = rule.sampleComment.trim() && (form.matchMode === 'any' || form.keywordsText.trim());
-  const answers = [form.privateReplyEnabled && (form.requireFollow ? 'the first private reply' : 'the private reply'), form.publicReplyEnabled && 'the public reply']
+  const waits = form.requireFollow || form.linkAfterReply;
+  const wordings = 1 + replyVariantTexts(form.replyVariants).length;
+  const answers = [form.privateReplyEnabled && (waits ? 'the first private message' : 'the private reply'), form.publicReplyEnabled && 'the public reply']
     .filter(Boolean)
     .join(' and ');
   return (
@@ -52,14 +54,16 @@ export default function RulePreview({ rule }: RulePreviewProps) {
       {form.privateReplyEnabled && (
         <div className="flex flex-col gap-2">
           <p className="text-small font-medium text-ink">Private message</p>
-          {form.requireFollow && (
+          {waits && (
             <>
-              <p className="text-caption text-ink-faint">First reply, to everyone who comments</p>
-              <Bubble text={form.followPromptText.trim()} placeholder="Your request to follow appears here" />
-              <p className="text-caption text-ink-faint">After they reply, if Instagram says they follow</p>
+              <p className="text-caption text-ink-faint">First message, to everyone who comments</p>
+              <Bubble text={form.followPromptText.trim()} placeholder="Your first message appears here" />
+              {wordings > 1 && <p className="text-caption text-ink-faint">One of {wordings} wordings, picked for each comment.</p>}
+              <p className="text-caption text-ink-faint">{form.requireFollow ? 'After they reply, if Instagram says they follow' : 'After they reply'}</p>
             </>
           )}
           <Bubble text={message} placeholder="Your reply appears here" />
+          {!waits && wordings > 1 && <p className="text-caption text-ink-faint">One of {wordings} wordings, picked for each comment.</p>}
           <p className={cn('text-caption', bytes > MAX_MESSAGE_BYTES ? 'text-danger' : 'text-ink-faint')}>
             {bytes} of {MAX_MESSAGE_BYTES} bytes. Instagram sends one private reply per comment, within 7 days of it.
           </p>

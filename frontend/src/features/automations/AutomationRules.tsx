@@ -55,7 +55,9 @@ function RuleRow({ rule, username, busy, automations, onEdit, onDelete }: RuleRo
             : rule.keywords.map(keyword => <Badge key={keyword} variant="secondary">{keyword}</Badge>)}
           {rule.privateReplyEnabled && <Badge variant="info">Private reply</Badge>}
           {rule.publicReplyEnabled && <Badge variant="info">Public reply</Badge>}
-          {rule.requireFollow && <Badge variant="info">Followers only, testing</Badge>}
+          {rule.requireFollow && <Badge variant="info">Link after reply, followers only, testing</Badge>}
+          {!rule.requireFollow && rule.linkAfterReply && <Badge variant="info">Link after reply, testing</Badge>}
+          {rule.replyVariants.length > 0 && <Badge variant="secondary">{rule.replyVariants.length + 1} wordings</Badge>}
         </div>
         <p className="text-small text-ink-muted">
           {matchModeLabel(rule)} &middot; {ruleScopeLabel(rule)}{rule.hourlyLimit ? ` · at most ${rule.hourlyLimit} an hour` : ''}
