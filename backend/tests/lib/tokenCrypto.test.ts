@@ -17,7 +17,8 @@ test('another key, a changed value or a foreign string gives nothing back', asyn
     const sealed = await encryptToken('secret', SECRET);
     assert.equal(await decryptToken(sealed, 'x'.repeat(48)), null);
     const [version, iv, data] = sealed.split('.');
-    const flipped = `${version}.${iv}.${data.slice(0, -2)}${data.endsWith('A') ? 'B' : 'A'}${data.slice(-1)}`;
+    // the replacement is chosen from the character it replaces, so the value always changes
+    const flipped = `${version}.${iv}.${data.slice(0, -2)}${data.at(-2) === 'A' ? 'B' : 'A'}${data.slice(-1)}`;
     assert.equal(await decryptToken(flipped, SECRET), null);
     assert.equal(await decryptToken('plain-token', SECRET), null);
     assert.equal(await decryptToken('v2.a.b', SECRET), null);
