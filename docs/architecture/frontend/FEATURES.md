@@ -87,6 +87,7 @@ frontend/src/
 │   │   ├── useAutomations.ts               <- Overview and every rule and account action, with toasts
 │   │   ├── useAutomationActivity.ts        <- Filters, counts, activity pages and retry
 │   │   ├── useRuleForm.ts                  <- Rule editor state, draft, field problems, the account's posts, the test call
+│   │   ├── ruleList.ts                     <- Pure rules search, status and posts filters, chip counts, page size (ruleList.test.ts)
 │   │   └── automationData.ts               <- Pure status labels, filters, summary, form conversion and checks (automationData.test.ts)
 │   ├── youtube/
 │   │   ├── YouTubeUploads.tsx              <- Page: composer and upload list, with loading, error, not-set-up and no-channel states

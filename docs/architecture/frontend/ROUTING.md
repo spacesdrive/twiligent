@@ -25,7 +25,7 @@ The app uses React Router 7 in `frontend/src/App.tsx`: a data router from `creat
 | `/reels` | redirect | Redirects to `/instagram`, keeping the query string and hash |
 | `/publish` | `UploadContent.tsx` | Instagram publishing (sidebar and page title): publish and schedule to Instagram, plus the scheduled post queue |
 | `/upload` | redirect | Redirects to `/publish`, keeping the query string and hash |
-| `/automations` | `features/automations/Automations.tsx` | Instagram automation (sidebar and page title): comment-to-DM rules, account controls and reply activity; in the sidebar under Publishing |
+| `/automations` | `features/automations/Automations.tsx` | Instagram automation (sidebar and page title): comment-to-DM rules, account controls and reply activity; in the sidebar under Publishing. From 6 rules the Rules section has a search and filters, 20 rules a page, kept in the address as `q`, `state` (`on`, `off`), `applies` (`chosen`, `every`) and `page`; the activity keeps `status`, `period`, `account` and `rule` |
 | `/automations/rules/new` | `features/automations/RuleEditorPage.tsx` | Create a rule on its own page, with a warning before leaving unsaved changes |
 | `/automations/rules/:id` | `features/automations/RuleEditorPage.tsx` | Edit the rule with that id |
 | `/settings` | `Settings.tsx` | User/platform settings |
