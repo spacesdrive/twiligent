@@ -79,6 +79,8 @@ export interface GraphSendError {
     subcode?: number;
     httpStatus: number;
     message: string;
+    // Meta's id for the request, which its support asks for
+    traceId?: string;
 }
 
 // what one request to Instagram's messages endpoint came back as; ambiguous means it may have been delivered,
@@ -263,8 +265,21 @@ function waitUntil(at: number, job: DeliveryJob, reason: string, message: string
     return { status: 'retry_wait', reason, errorMessage: message, nextAttemptAt: new Date(at).toISOString() };
 }
 
+// Instagram's own words, codes and trace id after Twiligent's message, so a person or Meta support can see exactly what was refused
+export function withInstagramDetails(message: string, error: GraphSendError): string {
+    const said = error.message && !/^HTTP \d+$/.test(error.message) && !message.includes(error.message) ? ` Instagram said: "${error.message}"` : '';
+    const codes = error.code !== undefined ? ` (code ${error.code}${error.subcode !== undefined ? `, subcode ${error.subcode}` : ''}` : '';
+    const trace = error.traceId ? `${codes ? ', ' : ' ('}trace ${error.traceId})` : codes ? ')' : '';
+    return `${message}${said}${codes}${trace}`.slice(0, 500);
+}
+
 // what to record for the answer to one send
 export function finishPlan(result: SendResult, job: DeliveryJob, now: number, random: () => number = Math.random): FinishPlan {
+    const plan = planForAnswer(result, job, now, random);
+    return result.kind === 'error' && plan.errorMessage ? { ...plan, errorMessage: withInstagramDetails(plan.errorMessage, result) } : plan;
+}
+
+function planForAnswer(result: SendResult, job: DeliveryJob, now: number, random: () => number): FinishPlan {
     if (result.kind === 'accepted') {
         return {
             ...emptyPlan(),

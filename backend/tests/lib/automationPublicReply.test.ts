@@ -56,7 +56,7 @@ describe('public reply rules', () => {
         const held = publicFinishPlan(error({ code: 190 }), JOB, NOW);
         assert.deepEqual([held.status, held.reason, held.pauseReason], ['queued', 'paused', PUBLIC_ERROR_MESSAGES.not_authorized]);
         const refused = publicFinishPlan(error({ code: 100, message: 'Invalid parameter' }), JOB, NOW);
-        assert.deepEqual([refused.status, refused.errorMessage], ['failed', 'Instagram refused the public reply. Invalid parameter']);
+        assert.deepEqual([refused.status, refused.errorMessage], ['failed', 'Instagram refused the public reply. Invalid parameter (code 100)']);
     });
 
     test('a wait that would end after the 7 days expires the reply instead', () => {
