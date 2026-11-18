@@ -1,7 +1,7 @@
 import { sendPrivateReply } from './instagram/instagramMessaging.ts';
 import {
     BACKGROUND_RUN_MS, CLAIM_LEASE_SECONDS, FREE_PLAN_SUBREQUESTS, SEND_TIMEOUT_MS, SUBREQUESTS_PER_REPLY,
-    finishPlan, messageDigest, readinessPlan, releasePlan, replyMessage,
+    finishPlan, messageDigest, readinessPlan, releasePlan, replyMessage, waitsForAnswer,
 } from '../lib/automationDelivery.ts';
 import { newRowId } from '../lib/ids.ts';
 import { errorFields } from '../lib/logger.ts';
@@ -58,7 +58,7 @@ export function createAutomationProcessor({ comments, automation, context }: Aut
         }
 
         // readinessPlan checked that the rule is on and the token is there
-        const text = replyMessage({ requireFollow: job.requireFollow, followPromptText: job.followPromptText, replyText: job.replyText!, linkUrl: job.linkUrl });
+        const text = replyMessage({ ...job, replyText: job.replyText! });
         const attemptId = newRowId();
         spend();
         const reservation = await comments.reserve(job.id, attemptId, automation.limits, await messageDigest(text));
@@ -72,7 +72,7 @@ export function createAutomationProcessor({ comments, automation, context }: Aut
 
         spend();
         const result = await sendPrivateReply(job.igUserId, job.accessToken!, job.commentId, text);
-        const plan = finishPlan(result, { attempts: job.attempts + 1, expiresAt: job.expiresAt, fromId: job.fromId, awaitsReply: job.requireFollow }, Date.now());
+        const plan = finishPlan(result, { attempts: job.attempts + 1, expiresAt: job.expiresAt, fromId: job.fromId, awaitsReply: waitsForAnswer(job) }, Date.now());
         spend();
         await comments.finish(job.id, attemptId, plan);
         log.info('automation reply settled', {
@@ -82,6 +82,7 @@ export function createAutomationProcessor({ comments, automation, context }: Aut
             status: plan.status,
             outcome: plan.outcome,
             followersOnly: job.requireFollow,
+            linkAfterReply: job.linkAfterReply,
             errorCode: plan.errorCode,
             errorSubcode: plan.errorSubcode,
         });

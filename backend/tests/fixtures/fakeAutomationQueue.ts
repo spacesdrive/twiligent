@@ -56,6 +56,8 @@ export interface QueueRule {
     requireFollow?: boolean;
     followPromptText?: string | null;
     notFollowingText?: string | null;
+    linkAfterReply?: boolean;
+    replyVariants?: string[];
     // the claim of a public reply sees the rule as on only while its public reply is on
     publicReplyEnabled?: boolean;
 }
@@ -284,7 +286,7 @@ export function fakeAutomationQueue(rows: QueueRow[] = [], followupRows: Followu
                     recipientId: row.recipientId, attempts: row.attempts, windowExpiresAt: row.windowExpiresAt, gateStatus: comment.gateStatus,
                     gatePrompts: comment.gatePrompts, ruleEnabled: rule?.enabled ?? false, requireFollow: rule?.requireFollow ?? false,
                     replyText: rule?.replyText ?? null, linkUrl: rule?.linkUrl ?? null, notFollowingText: rule?.notFollowingText ?? null,
-                    accessToken: tokens.get(row.accountId) ?? null,
+                    accessToken: tokens.get(row.accountId) ?? null, linkAfterReply: rule?.linkAfterReply ?? false,
                 };
             });
         },
@@ -511,6 +513,7 @@ export function fakeAutomationQueue(rows: QueueRow[] = [], followupRows: Followu
                     fromId: row.fromId, attempts: row.attempts, expiresAt: row.expiresAt, ruleEnabled: rule?.enabled ?? false,
                     replyText: rule?.replyText ?? null, linkUrl: rule?.linkUrl ?? null, accessToken: tokens.get(row.accountId) ?? null,
                     requireFollow: rule?.requireFollow ?? false, followPromptText: rule?.followPromptText ?? null,
+                    linkAfterReply: rule?.linkAfterReply ?? false, replyVariants: rule?.replyVariants ?? [],
                 };
             });
         },

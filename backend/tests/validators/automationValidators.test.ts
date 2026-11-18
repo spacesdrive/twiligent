@@ -11,7 +11,7 @@ test('a new rule gets its defaults: contains, ignoring case, every post, off, no
     assert.deepEqual(parseAutomationRule(valid), {
         accountId: 'ig1', name: 'Guide', keywords: ['GUIDE'], matchMode: 'contains', caseSensitive: false, mediaIds: [],
         privateReplyEnabled: true, replyText: 'Here it is', linkUrl: null, publicReplyEnabled: false, publicReplyTexts: [], enabled: false, hourlyLimit: null,
-        requireFollow: false, followPromptText: null, notFollowingText: null,
+        requireFollow: false, followPromptText: null, notFollowingText: null, linkAfterReply: false, replyVariants: [],
     });
 });
 
@@ -143,4 +143,12 @@ test('a scheduled post automation needs its private reply within Instagram’s 1
     assert.throws(() => parsePostAutomation({ automation: 'Here it is' }), /must be an object/);
     assert.throws(() => parsePostAutomation({ automation: { publicReplyTexts: ['Hi'] } }), /replyText is required/);
     assert.throws(() => parsePostAutomation({ automation: { replyText: '\u{1F4E9}'.repeat(300) } }), /1200 bytes/);
+});
+
+test('a scheduled post automation may start with a first message without the link, in several wordings, each within 1,000 bytes', () => {
+    assert.deepEqual(parsePostAutomation({ automation: { replyText: 'Here it is', firstMessage: ' Reply LINK ', replyVariants: [' Want it? ', 'Want it?', ''] } }), {
+        replyText: 'Here it is', publicReplyTexts: [], firstMessage: 'Reply LINK', replyVariants: ['Want it?'],
+    });
+    assert.throws(() => parsePostAutomation({ automation: { replyText: 'Here', replyVariants: ['a', 'b', 'c', 'd', 'e'] } }), /at most 4 other wordings/);
+    assert.throws(() => parsePostAutomation({ automation: { replyText: 'Here', firstMessage: '\u{1F4E9}'.repeat(300) } }), /firstMessage is 1200 bytes/);
 });

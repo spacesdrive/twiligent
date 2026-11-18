@@ -116,6 +116,7 @@ export interface FollowupJob {
     windowExpiresAt: string;
     ruleEnabled: boolean;
     requireFollow: boolean;
+    linkAfterReply?: boolean;
     gateStatus: AutomationGateStatus | null;
     gatePrompts: number;
     replyText: string | null;
@@ -205,9 +206,34 @@ export async function messageDigest(text: string): Promise<string> {
     return [...new Uint8Array(hash)].map(byte => byte.toString(16).padStart(2, '0')).join('');
 }
 
-// the private reply a job sends: the request to follow and answer for a followers-only rule, the reply and link otherwise
-export function replyMessage(job: { requireFollow: boolean; followPromptText: string | null; replyText: string; linkUrl: string | null }): string {
-    return job.requireFollow && job.followPromptText ? job.followPromptText : composeReply(job.replyText, job.linkUrl);
+// a followers-only rule, or one that sends the link after a reply, starts with a message without the link
+export function waitsForAnswer(rule: { requireFollow: boolean; linkAfterReply?: boolean }): boolean {
+    return rule.requireFollow || Boolean(rule.linkAfterReply);
+}
+
+export interface ReplyMessageSource {
+    requireFollow: boolean;
+    linkAfterReply?: boolean;
+    followPromptText: string | null;
+    replyText: string;
+    linkUrl: string | null;
+    replyVariants?: string[];
+}
+
+// the private reply a job sends: the first message without the link when the rule waits for an answer, the reply and
+// link otherwise; one wording is picked per comment, since many identical messages look like spam to Instagram
+export function replyMessage(job: ReplyMessageSource, random: () => number = Math.random): string {
+    const waits = waitsForAnswer(job) && Boolean(job.followPromptText);
+    const first = waits ? job.followPromptText! : job.replyText;
+    const wordings = [first, ...(job.replyVariants ?? [])].filter(text => text.trim().length > 0);
+    const text = wordings[Math.min(wordings.length - 1, Math.floor(random() * wordings.length))] ?? first;
+    return waits ? text : composeReply(text, job.linkUrl);
+}
+
+// every wording a rule may send as its first message, so each can be measured against Instagram's size limit
+export function replyMessages(job: ReplyMessageSource): string[] {
+    const count = 1 + (job.replyVariants ?? []).filter(text => text.trim().length > 0).length;
+    return Array.from({ length: count }, (_, index) => replyMessage(job, () => (index + 0.5) / count));
 }
 
 export function classifySendError({ code, subcode, httpStatus }: GraphSendError): SendErrorKind {
@@ -374,8 +400,8 @@ export function followupReadiness(job: FollowupJob, now: number): ReleasePlan | 
     if (!job.ruleEnabled) {
         return { status: 'skipped', reason: 'rule_disabled', errorMessage: 'The rule was turned off or removed before the follow-up was sent.', nextAttemptAt: null };
     }
-    if (!job.requireFollow) {
-        return { status: 'skipped', reason: 'rule_changed', errorMessage: 'The rule no longer asks people to follow, so no follow-up was sent.', nextAttemptAt: null };
+    if (!waitsForAnswer(job)) {
+        return { status: 'skipped', reason: 'rule_changed', errorMessage: 'The rule no longer waits for a reply before sending the link, so no follow-up was sent.', nextAttemptAt: null };
     }
     if (job.gateStatus !== 'awaiting_reply') {
         return { status: 'skipped', reason: 'answered', errorMessage: 'This person already got the link or every reminder.', nextAttemptAt: null };
@@ -384,6 +410,11 @@ export function followupReadiness(job: FollowupJob, now: number): ReleasePlan | 
         return { status: 'failed', reason: 'not_connected', errorMessage: 'The Instagram account has no access token. Reconnect it on the Accounts page, then retry.', nextAttemptAt: null };
     }
     return null;
+}
+
+// the person answered a rule that sends the link after a reply without asking for a follow, so the link goes out
+export function linkMessage(job: Pick<FollowupJob, 'replyText' | 'linkUrl'>): FollowupMessage {
+    return { kind: 'link', text: composeReply(job.replyText ?? '', job.linkUrl), gateStatus: 'completed', countReminder: false };
 }
 
 // what the follow check leads to: a message to send, or why nothing is sent. Only a confirmed follow sends the link

@@ -35,6 +35,7 @@ describe('automation follow-up repository', () => {
         assert.deepEqual(claimed, {
             id: 'fu', userId: 'u', accountId: 'ig1', commentRowId: 'c', igUserId: '1784', recipientId: '77', attempts: 0, windowExpiresAt: 'W',
             gateStatus: 'awaiting_reply', gatePrompts: 1, ruleEnabled: true, requireFollow: true, replyText: 'R', linkUrl: 'L', notFollowingText: 'N', accessToken: 'TOK',
+            linkAfterReply: false,
         });
         assert.deepEqual(rpcArgs(supabase, 'claim_automation_followups'), { p_limit: 5, p_lease_seconds: 1200, p_ids: ['fu'] });
         assert.deepEqual(await repo.reserve('fu', 'att', 'link', 'd'), { outcome: 'ok', retryAt: null });
