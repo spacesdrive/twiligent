@@ -7,6 +7,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [3.8.0] - 2026-11-19
+
+Rules now ask people to follow and reply before they get the link. What an instance owner must do: nothing; deploy as usual. The **messages** webhook field must stay selected in the Meta app.
+
+### Added
+
+- Claude can list and change comment automation rules (`list_automation_rules`, `update_automation_rule`), going through the same checks as the rule editor (#190)
+
+### Changed
+
+- A new rule starts followers-only: the first message asks the person to follow and type YES, in three different wordings, and the link goes out once Instagram says they follow; others get a reminder (#190)
+- A scheduled post's comment automation is followers-only unless it opts out, with default texts that say exactly what to type when it brings none, and can carry its own reminder (#190)
+
 ## [3.7.0] - 2026-11-19
 
 Two ways to make comment replies less likely to be blocked by Instagram. What an instance owner must do: run `npm run db:push` and `npm run db:schema` for three migrations before deploying, and select the **messages** webhook field in the Meta app if you will send the link after a reply.
