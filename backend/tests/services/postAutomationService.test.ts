@@ -1,6 +1,7 @@
 import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
-import { createPostAutomationService, postRuleName } from '../../services/postAutomationService.ts';
+import { createPostAutomationService, firstMessageOf, postRuleName } from '../../services/postAutomationService.ts';
+import { DEFAULT_FOLLOW_FIRST_MESSAGE, DEFAULT_FOLLOW_REMINDER, DEFAULT_FOLLOW_VARIANTS } from '../../lib/automationRules.ts';
 import { DatabaseError, ValidationError } from '../../lib/errors.ts';
 import { createLogger } from '../../lib/logger.ts';
 import type { AutomationService } from '../../services/automationService.ts';
@@ -40,13 +41,14 @@ test('a published post gets one rule that answers any comment on that post, owne
     assert.equal(made[0][0], 'user-2');
     assert.deepEqual(made[0][1], {
         accountId: 'ig1', name: 'Post 2026-11-05: Comment "AGENTS" and I will send the link', keywords: [], matchMode: 'any', mediaIds: ['1789'],
-        privateReplyEnabled: true, replyText: AUTOMATION.replyText, linkAfterReply: false, followPromptText: null, replyVariants: [],
+        privateReplyEnabled: true, replyText: AUTOMATION.replyText, requireFollow: true, linkAfterReply: true, followPromptText: DEFAULT_FOLLOW_FIRST_MESSAGE,
+        notFollowingText: DEFAULT_FOLLOW_REMINDER, replyVariants: DEFAULT_FOLLOW_VARIANTS,
         publicReplyEnabled: true, publicReplyTexts: ['Sent you a DM'], enabled: true,
     });
     assert.deepEqual(updates, [['p1', { automationRuleId: 'rule-9' }]]);
 });
 
-test('a post with a first message gets a rule that sends the link only after the person replies, in several wordings', async () => {
+test('a post with its own first message keeps its texts, and one that opts out of the follow check still holds the link for a reply', async () => {
     const made: AutomationRuleRequest[] = [];
     const automation = { ...AUTOMATION, firstMessage: 'Reply LINK and I will send it', replyVariants: ['Want it? Reply LINK'] };
     const { service } = harness([{ post: post('p1', { automation }), userId: 'user-2' }], async (_userId, input) => {
@@ -54,7 +56,11 @@ test('a post with a first message gets a rule that sends the link only after the
         return { id: 'rule-9' } as AutomationRule;
     });
     await service.attachPublished(3);
-    assert.deepEqual([made[0].linkAfterReply, made[0].followPromptText, made[0].replyVariants], [true, 'Reply LINK and I will send it', ['Want it? Reply LINK']]);
+    assert.deepEqual([made[0].requireFollow, made[0].linkAfterReply, made[0].followPromptText, made[0].replyVariants], [true, true, 'Reply LINK and I will send it', ['Want it? Reply LINK']]);
+    assert.deepEqual(firstMessageOf({ ...automation, followersOnly: false }), {
+        requireFollow: false, linkAfterReply: true, followPromptText: 'Reply LINK and I will send it', notFollowingText: null, replyVariants: ['Want it? Reply LINK'],
+    });
+    assert.deepEqual(firstMessageOf({ ...AUTOMATION, followersOnly: false }).linkAfterReply, false);
 });
 
 test('a rule an earlier run already saved is reused, so a post never gets two rules', async () => {

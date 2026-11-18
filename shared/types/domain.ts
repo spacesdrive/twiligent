@@ -85,6 +85,10 @@ export interface ScheduledPostAutomation {
     firstMessage?: string;
     // other wordings of the first private message, one picked per comment
     replyVariants?: string[];
+    // the link goes only to people Instagram says follow the account; on unless false, with default texts when none are given
+    followersOnly?: boolean;
+    // sent when someone answers but does not follow yet
+    reminder?: string;
 }
 
 // one row of `scheduled_posts`: id, account_id, status and scheduled_at are columns, the rest is data jsonb

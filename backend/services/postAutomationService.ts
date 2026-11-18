@@ -1,10 +1,12 @@
 import { AppError, DatabaseError, UpstreamError } from '../lib/errors.ts';
 import { errorFields } from '../lib/logger.ts';
+import { DEFAULT_FOLLOW_FIRST_MESSAGE, DEFAULT_FOLLOW_REMINDER, DEFAULT_FOLLOW_VARIANTS } from '../lib/automationRules.ts';
 import type { AutomationService } from './automationService.ts';
 import type { AutomationRuleRepository } from '../repositories/automationRuleRepository.ts';
 import type { PostAwaitingAutomation, ScheduledPostRepository } from '../repositories/scheduledPostRepository.ts';
 import type { RequestContext } from '../types/context.ts';
-import type { ScheduledPost } from '../../shared/types/domain.ts';
+import type { ScheduledPost, ScheduledPostAutomation } from '../../shared/types/domain.ts';
+import type { AutomationRuleRequest } from '../../shared/types/automation.ts';
 
 export interface PostAutomationDeps {
     posts: ScheduledPostRepository;
@@ -24,6 +26,28 @@ export interface PostAutomationService {
 }
 
 const MAX_RULE_NAME = 80;
+
+// followers-only unless the post says otherwise: the first message asks to follow and reply, and the link waits for a
+// follower's answer; a post without its own texts gets the defaults, and one that opts out may still hold the link for any reply
+export function firstMessageOf(automation: ScheduledPostAutomation): Pick<AutomationRuleRequest, 'requireFollow' | 'linkAfterReply' | 'followPromptText' | 'notFollowingText' | 'replyVariants'> {
+    if (automation.followersOnly === false) {
+        return {
+            requireFollow: false,
+            linkAfterReply: Boolean(automation.firstMessage),
+            followPromptText: automation.firstMessage ?? null,
+            notFollowingText: null,
+            replyVariants: automation.replyVariants ?? [],
+        };
+    }
+    const ownTexts = Boolean(automation.firstMessage);
+    return {
+        requireFollow: true,
+        linkAfterReply: true,
+        followPromptText: automation.firstMessage ?? DEFAULT_FOLLOW_FIRST_MESSAGE,
+        notFollowingText: automation.reminder ?? DEFAULT_FOLLOW_REMINDER,
+        replyVariants: ownTexts ? automation.replyVariants ?? [] : DEFAULT_FOLLOW_VARIANTS,
+    };
+}
 const NO_MEDIA_ID = 'The post was published without an Instagram post id, so no comment rule could be made for it.';
 
 // the rule's name says which post it answers, so the Instagram automation page lists it beside hand-made rules
@@ -65,9 +89,7 @@ export function createPostAutomationService({ posts, rules, automations, context
             mediaIds: [mediaId],
             privateReplyEnabled: true,
             replyText: automation.replyText,
-            linkAfterReply: Boolean(automation.firstMessage),
-            followPromptText: automation.firstMessage ?? null,
-            replyVariants: automation.replyVariants ?? [],
+            ...firstMessageOf(automation),
             publicReplyEnabled: automation.publicReplyTexts.length > 0,
             publicReplyTexts: automation.publicReplyTexts,
             enabled: true,
