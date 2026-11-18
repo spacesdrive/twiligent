@@ -7,6 +7,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [3.6.1] - 2026-11-19
+
+What an instance owner must do: nothing; deploy as usual.
+
+### Changed
+
+- When Instagram refuses a private reply, public reply or follow-up, the activity list now shows Instagram's own words, its error code and subcode, and Meta's trace id, so the exact reason is visible and Meta support can look up the request (#184)
+
 ## [3.6.0] - 2026-11-19
 
 The rules list on the Instagram automation page can now be searched, filtered and paged. What an instance owner must do: nothing; deploy as usual.
