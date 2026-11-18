@@ -14,7 +14,8 @@ CREATE OR REPLACE FUNCTION public.finish_automation_send (
   p_cooldown_reason text                     DEFAULT NULL::text,
   p_pause_reason    text                     DEFAULT NULL::text,
   p_recipient_id    text                     DEFAULT NULL::text,
-  p_gate_status     text                     DEFAULT NULL::text
+  p_gate_status     text                     DEFAULT NULL::text,
+  p_blocked_until   timestamp with time zone DEFAULT NULL::timestamp WITH time zone
 )
   RETURNS boolean
   LANGUAGE plpgsql
@@ -56,6 +57,14 @@ begin
             cooldown_reason = excluded.cooldown_reason;
     end if;
 
+    -- sending restarts slowly once this time passes, so the account does not resume at full speed straight after a block
+    if p_blocked_until is not null then
+        insert into public.automation_accounts (account_id, user_id, blocked_until)
+        values (job.account_id, job.user_id, p_blocked_until)
+        on conflict (account_id) do update
+        set blocked_until = greatest(coalesce(public.automation_accounts.blocked_until, excluded.blocked_until), excluded.blocked_until);
+    end if;
+
     if p_pause_reason is not null then
         insert into public.automation_accounts (account_id, user_id, paused, paused_reason)
         values (job.account_id, job.user_id, true, p_pause_reason)
@@ -67,20 +76,20 @@ $function$;
 
 GRANT EXECUTE
   ON FUNCTION "public"."finish_automation_send"(text, text, text, text, text, text, text, integer, integer, integer, timestamp WITH time zone, timestamp
-    WITH time zone, text, text, text, text)
+    WITH time zone, text, text, text, text, timestamp WITH time zone)
   TO "service_role";
 
 REVOKE ALL
   ON FUNCTION "public"."finish_automation_send"(text, text, text, text, text, text, text, integer, integer, integer, timestamp WITH time zone, timestamp
-    WITH time zone, text, text, text, text)
+    WITH time zone, text, text, text, text, timestamp WITH time zone)
   FROM "postgres";
 
 GRANT EXECUTE
   ON FUNCTION "public"."finish_automation_send"(text, text, text, text, text, text, text, integer, integer, integer, timestamp WITH time zone, timestamp
-    WITH time zone, text, text, text, text)
+    WITH time zone, text, text, text, text, timestamp WITH time zone)
   TO "postgres";
 
 REVOKE ALL
   ON FUNCTION "public"."finish_automation_send"(text, text, text, text, text, text, text, integer, integer, integer, timestamp WITH time zone, timestamp
-    WITH time zone, text, text, text, text)
+    WITH time zone, text, text, text, text, timestamp WITH time zone)
   FROM PUBLIC, "anon", "authenticated";

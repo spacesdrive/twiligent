@@ -5,7 +5,8 @@ CREATE OR REPLACE FUNCTION public.reserve_automation_send (
   p_user_limit      integer,
   p_account_limit   integer,
   p_recipient_limit integer,
-  p_message_digest  text    DEFAULT NULL::text
+  p_message_digest  text      DEFAULT NULL::text,
+  p_restart_limits  integer[] DEFAULT '{}'::integer[]
 )
   RETURNS TABLE (
     outcome  text,
@@ -21,6 +22,7 @@ declare
     rule_limit integer;
     hour_ago timestamptz := now() - interval '1 hour';
     free_at timestamptz;
+    restart_hour integer;
 begin
     -- one reservation at a time across every Worker, so two jobs cannot both take the last free send
     perform pg_advisory_xact_lock(hashtext('reserve_automation_send'));
@@ -63,6 +65,25 @@ begin
         end if;
     end if;
 
+    -- after a block ends the account sends one test reply, then the most p_restart_limits allows in each later hour
+    if controls.blocked_until <= now()
+        and now() < controls.blocked_until + make_interval(hours => coalesce(array_length(p_restart_limits, 1), 0)) then
+        restart_hour := floor(extract(epoch from now() - controls.blocked_until) / 3600)::integer;
+        select case when count(*) >= p_restart_limits[restart_hour + 1]
+            then least(min(t.started_at) + interval '1 hour', controls.blocked_until + make_interval(hours => restart_hour + 1)) end
+        into free_at
+        from public.automation_attempts t
+        join public.automation_comments c on c.id = t.automation_comment_id
+        where c.ig_user_id = job.ig_user_id and t.kind = 'private_reply' and t.started_at > greatest(hour_ago, controls.blocked_until);
+        if free_at is not null then
+            insert into public.automation_accounts (account_id, user_id, limited_until)
+            values (job.account_id, job.user_id, free_at)
+            on conflict (account_id) do update set limited_until = excluded.limited_until;
+            return query select 'restart_limit'::text, free_at;
+            return;
+        end if;
+    end if;
+
     -- the account limit belongs to the Instagram account, so replies sent through every member's connection to it count
     select case when count(*) >= p_account_limit then min(t.started_at) + interval '1 hour' end into free_at
     from public.automation_attempts t
@@ -99,10 +120,10 @@ begin
 end;
 $function$;
 
-GRANT EXECUTE ON FUNCTION "public"."reserve_automation_send"(text, text, integer, integer, integer, integer, text) TO "service_role";
+GRANT EXECUTE ON FUNCTION "public"."reserve_automation_send"(text, text, integer, integer, integer, integer, text, integer[]) TO "service_role";
 
-REVOKE ALL ON FUNCTION "public"."reserve_automation_send"(text, text, integer, integer, integer, integer, text) FROM "postgres";
+REVOKE ALL ON FUNCTION "public"."reserve_automation_send"(text, text, integer, integer, integer, integer, text, integer[]) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."reserve_automation_send"(text, text, integer, integer, integer, integer, text) TO "postgres";
+GRANT EXECUTE ON FUNCTION "public"."reserve_automation_send"(text, text, integer, integer, integer, integer, text, integer[]) TO "postgres";
 
-REVOKE ALL ON FUNCTION "public"."reserve_automation_send"(text, text, integer, integer, integer, integer, text) FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."reserve_automation_send"(text, text, integer, integer, integer, integer, text, integer[]) FROM PUBLIC, "anon", "authenticated";
