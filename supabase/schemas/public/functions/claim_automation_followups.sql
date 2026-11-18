@@ -19,7 +19,8 @@ CREATE OR REPLACE FUNCTION public.claim_automation_followups (
     reply_text            text,
     link_url              text,
     not_following_text    text,
-    access_token          text
+    access_token          text,
+    link_after_reply      boolean
   )
   LANGUAGE plpgsql
   SET search_path TO ''
@@ -90,7 +91,7 @@ begin
     select claimed.id, claimed.user_id, claimed.account_id, claimed.automation_comment_id, claimed.ig_user_id,
         claimed.recipient_id, claimed.attempts, claimed.window_expires_at, c.gate_status, c.gate_prompts,
         coalesce(r.enabled, false), coalesce(r.require_follow, false), r.reply_text, r.link_url, r.not_following_text,
-        a.data ->> 'accessToken'
+        a.data ->> 'accessToken', coalesce(r.link_after_reply, false)
     from claimed
     join public.automation_comments c on c.id = claimed.automation_comment_id
     left join public.automation_rules r on r.id = c.rule_id

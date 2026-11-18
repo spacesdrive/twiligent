@@ -19,6 +19,8 @@ CREATE TABLE "public"."automation_rules" (
   "private_reply_enabled" boolean                  NOT NULL DEFAULT true,
   "public_reply_enabled"  boolean                  NOT NULL DEFAULT false,
   "public_reply_texts"    text[]                   NOT NULL DEFAULT '{}'::text[],
+  "link_after_reply"      boolean                  NOT NULL DEFAULT false,
+  "reply_variants"        text[]                   NOT NULL DEFAULT '{}'::text[],
   CONSTRAINT "automation_rules_account_fkey" FOREIGN KEY (account_id, user_id) REFERENCES public.accounts(id, user_id) ON DELETE CASCADE,
   CONSTRAINT "automation_rules_actions_check" CHECK ((private_reply_enabled OR public_reply_enabled)),
   CONSTRAINT "automation_rules_follow_private_check" CHECK (((NOT require_follow) OR private_reply_enabled)),
@@ -42,6 +44,7 @@ END),
     CHECK (((cardinality(public_reply_texts) <= 5) AND ((NOT public_reply_enabled) OR (cardinality(public_reply_texts) >= 1)))),
   CONSTRAINT "automation_rules_reply_text_check"
     CHECK ((((char_length(reply_text) >= 1) AND (char_length(reply_text) <= 1000)) OR ((NOT private_reply_enabled) AND (reply_text = ''::text)))),
+  CONSTRAINT "automation_rules_reply_variants_check" CHECK ((cardinality(reply_variants) <= 4)),
   CONSTRAINT "automation_rules_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON DELETE CASCADE
 );
 
