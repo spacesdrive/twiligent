@@ -1,4 +1,5 @@
 import { ANALYTICS_TOOLS } from './tools/analyticsTools.ts';
+import { AUTOMATION_TOOLS } from './tools/automationTools.ts';
 import { MEDIA_TOOLS } from './tools/mediaTools.ts';
 import { SCHEDULED_POST_TOOLS } from './tools/scheduledPostTools.ts';
 import { SETTINGS_TOOLS } from './tools/settingsTools.ts';
@@ -7,7 +8,7 @@ import type { AnyTool } from './tool.ts';
 import type { ServerIdentity } from '../lib/mcp/protocol.ts';
 
 // every tool the MCP endpoint offers, in the order tools/list returns them; read-only callers see only the read tools
-export const MCP_TOOLS: readonly AnyTool[] = [...ANALYTICS_TOOLS, ...SETTINGS_TOOLS, ...MEDIA_TOOLS, ...SCHEDULED_POST_TOOLS, ...YOUTUBE_TOOLS];
+export const MCP_TOOLS: readonly AnyTool[] = [...ANALYTICS_TOOLS, ...SETTINGS_TOOLS, ...MEDIA_TOOLS, ...SCHEDULED_POST_TOOLS, ...AUTOMATION_TOOLS, ...YOUTUBE_TOOLS];
 
 export function mcpServerIdentity(version: string): ServerIdentity {
     return {
