@@ -7,6 +7,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [3.5.0] - 2026-11-19
+
+After Instagram blocks an account's private replies, sending now restarts slowly instead of at full speed. What an instance owner must do: run `npm run db:push` and `npm run db:schema` for three migrations before deploying this version.
+
+### Changed
+
+- When Instagram temporarily blocks private replies from an account, Twiligent still waits a day, then sends one test reply and only a few more each hour (1, 5, 15, 40, then 100) for five hours before returning to the usual limit. A test reply that is blocked again waits another day, so a blocked account sends at most one reply a day until Instagram lifts the block (#178)
+- The Instagram automation page shows "Restarting slowly" for an account during that time (#178)
+
 ## [3.4.0] - 2026-11-05
 
 A post scheduled for later can now answer its own comments once it goes live. What an instance owner must do: nothing; deploy as usual.
