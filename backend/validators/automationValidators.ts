@@ -149,8 +149,11 @@ export function parsePostAutomation(body: Fields): ScheduledPostAutomation | und
     if (!reply) throw new ValidationError('automation.replyText is required: the private reply sent to each person who comments');
     // checked now, so a post never waits weeks only to fail when its rule is made
     const first = optionalString(fields, 'firstMessage')?.trim() || undefined;
+    const reminder = optionalString(fields, 'reminder')?.trim() || undefined;
+    const followersOnly = optionalBoolean(fields, 'followersOnly');
     const variants = replyVariants(fields) ?? [];
-    for (const [label, text] of [['automation.replyText', reply], ['automation.firstMessage', first ?? ''], ...variants.map(text => ['automation.replyVariants', text])]) {
+    const texts = [['automation.replyText', reply], ['automation.firstMessage', first ?? ''], ['automation.reminder', reminder ?? ''], ...variants.map(text => ['automation.replyVariants', text])];
+    for (const [label, text] of texts) {
         const bytes = messageBytes(text);
         if (bytes > MAX_MESSAGE_BYTES) throw new ValidationError(`${label} is ${bytes} bytes; Instagram accepts at most ${MAX_MESSAGE_BYTES}. Shorten it.`);
     }
@@ -159,6 +162,8 @@ export function parsePostAutomation(body: Fields): ScheduledPostAutomation | und
         publicReplyTexts: publicReplyTexts(fields) ?? [],
         ...(first ? { firstMessage: first } : {}),
         ...(variants.length > 0 ? { replyVariants: variants } : {}),
+        ...(followersOnly !== undefined ? { followersOnly } : {}),
+        ...(reminder ? { reminder } : {}),
     };
 }
 

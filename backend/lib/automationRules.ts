@@ -20,6 +20,14 @@ export interface ReplyActions {
 // other wordings of the first message; one is picked per comment
 export const MAX_REPLY_VARIANTS = 4;
 
+// a rule made without its own texts asks the person to follow and reply YES, in three wordings, and reminds non-followers once
+export const DEFAULT_FOLLOW_FIRST_MESSAGE = 'Thanks for commenting! Do you follow me? If you do, type YES here and I will send the link right away.';
+export const DEFAULT_FOLLOW_VARIANTS = [
+    'Hey, glad this one helped. Quick check first: are you following me? Reply YES and the link is yours.',
+    'Want the link? Follow this account, then answer this message with YES and I will send it over.',
+];
+export const DEFAULT_FOLLOW_REMINDER = 'I cannot see a follow from you yet. Tap Follow on my profile, then type YES here once more and I will send the link.';
+
 // a rule answers with a private reply, a public reply or both, and each one it uses needs its text; the followers-only
 // wait starts with the private reply. null means the actions fit together
 export function replyActionsProblem(rule: ReplyActions): string | null {

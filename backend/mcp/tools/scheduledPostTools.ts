@@ -49,6 +49,8 @@ function describeFields(fields: Partial<Omit<ScheduledPostRequest, 'automation'>
         fields.automation?.firstMessage && `Once published, anyone who comments first gets this message without the link: "${fields.automation.firstMessage}"; after they reply, they get: "${fields.automation.replyText}".`,
         fields.automation && !fields.automation.firstMessage && `Once published, anyone who comments gets this private reply: "${fields.automation.replyText}".`,
         fields.automation?.replyVariants?.length && `The first message is one of these wordings, picked per comment: ${fields.automation.replyVariants.map(text => `"${text}"`).join(', ')}.`,
+        fields.automation && (fields.automation.followersOnly === false ? 'Anyone who comments can get the reply.' : 'Only people Instagram says follow the account get the reply; others get a reminder.'),
+        fields.automation?.reminder && `Reminder: "${fields.automation.reminder}".`,
         fields.automation?.publicReplyTexts.length && `And one of these public replies under their comment: ${fields.automation.publicReplyTexts.map(text => `"${text}"`).join(', ')}.`,
     ];
     return parts.filter(Boolean).join(' ');
@@ -62,6 +64,8 @@ const AUTOMATION_PROPERTY = {
         replyText: { type: 'string', maxLength: 1000, description: 'The private reply with the link, up to 1000 bytes; sent at once, or after the person answers firstMessage' },
         firstMessage: { type: 'string', maxLength: 1000, description: 'A short first message without the link that asks the person to reply; the reply is sent once they answer. Leave out to send replyText at once' },
         replyVariants: { type: 'array', items: { type: 'string', maxLength: 1000 }, maxItems: 4, description: 'Other wordings of the first private message (firstMessage, or replyText when there is none), one picked per comment' },
+        followersOnly: { type: 'boolean', description: 'On unless false: the first message asks the person to follow and reply, and replyText goes only to people Instagram says follow the account. Without firstMessage, default texts asking them to reply YES are used' },
+        reminder: { type: 'string', maxLength: 1000, description: 'Sent when someone replies but does not follow yet; a default is used when left out' },
         publicReplyTexts: { type: 'array', items: { type: 'string', maxLength: 300 }, maxItems: 5, description: 'Replies posted under the comment, one picked per comment; leave out for none' },
     },
     required: ['replyText'],

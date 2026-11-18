@@ -149,6 +149,9 @@ test('a scheduled post automation may start with a first message without the lin
     assert.deepEqual(parsePostAutomation({ automation: { replyText: 'Here it is', firstMessage: ' Reply LINK ', replyVariants: [' Want it? ', 'Want it?', ''] } }), {
         replyText: 'Here it is', publicReplyTexts: [], firstMessage: 'Reply LINK', replyVariants: ['Want it?'],
     });
+    assert.deepEqual(parsePostAutomation({ automation: { replyText: 'Here', followersOnly: false, reminder: ' Follow first ' } }), {
+        replyText: 'Here', publicReplyTexts: [], followersOnly: false, reminder: 'Follow first',
+    });
     assert.throws(() => parsePostAutomation({ automation: { replyText: 'Here', replyVariants: ['a', 'b', 'c', 'd', 'e'] } }), /at most 4 other wordings/);
     assert.throws(() => parsePostAutomation({ automation: { replyText: 'Here', firstMessage: '\u{1F4E9}'.repeat(300) } }), /firstMessage is 1200 bytes/);
 });
