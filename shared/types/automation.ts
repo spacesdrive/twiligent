@@ -91,6 +91,8 @@ export interface AutomationAccountState {
     publicCooldownUntil: string | null;
     publicCooldownReason: string | null;
     publicLimitedUntil: string | null;
+    // after Instagram blocked private replies, sending restarts slowly until this time
+    restartingUntil: string | null;
 }
 
 export interface AutomationLimits {

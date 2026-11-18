@@ -85,7 +85,7 @@ describe('automation routes', () => {
         assert.deepEqual(body.rules.map((rule: { id: string }) => rule.id), ['rule-mine']);
         assert.deepEqual(body.accounts, [{
             accountId: 'ig1', username: 'mine', profilePictureUrl: '', paused: false, cooldownUntil: null, cooldownReason: null, subscribedAt: null,
-            limitedUntil: null, messagesSubscribed: false, publicCooldownUntil: null, publicCooldownReason: null, publicLimitedUntil: null,
+            limitedUntil: null, messagesSubscribed: false, publicCooldownUntil: null, publicCooldownReason: null, publicLimitedUntil: null, restartingUntil: null,
         }]);
         assert.deepEqual(body.settings, { webhookConfigured: true, paused: false, limits: { accountHourly: 200, userHourly: 500, globalHourly: 1000, recipientDaily: 3, publicAccountHourly: 60 } });
     });

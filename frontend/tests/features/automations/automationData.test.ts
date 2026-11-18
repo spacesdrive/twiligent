@@ -153,15 +153,17 @@ test('the form names the first thing to fix, in the order of the fields', () => 
   assert.match(ruleFormProblem(form({ replyText: 'é'.repeat(MAX_MESSAGE_BYTES / 2 + 1) }))!, /is 1002 bytes; Instagram accepts at most 1000/);
 });
 
-test('an account shows held, paused, cooling down, at its limit, not receiving, follow checks off or receiving, in that order', () => {
+test('an account shows held, paused, cooling down, restarting slowly, at its limit, not receiving, follow checks off or receiving, in that order', () => {
   const base: AutomationAccountState = {
     accountId: 'ig1', username: 'me', profilePictureUrl: '', paused: false, cooldownUntil: null, cooldownReason: null, subscribedAt: 'x',
-    limitedUntil: null, messagesSubscribed: false, publicCooldownUntil: null, publicCooldownReason: null, publicLimitedUntil: null,
+    limitedUntil: null, messagesSubscribed: false, publicCooldownUntil: null, publicCooldownReason: null, publicLimitedUntil: null, restartingUntil: null,
   };
   assert.equal(accountStatus({ ...base, paused: true, cooldownReason: 'Reconnect it' }, NOW).label, 'Held');
   assert.equal(accountStatus({ ...base, paused: true }, NOW).label, 'Paused');
   assert.equal(accountStatus({ ...base, cooldownUntil: new Date(NOW + 1000).toISOString() }, NOW).label, 'Cooling down');
   assert.equal(accountStatus({ ...base, limitedUntil: new Date(NOW + 1000).toISOString() }, NOW).label, 'At its hourly limit');
+  const restarting = { ...base, restartingUntil: new Date(NOW + 1000).toISOString(), limitedUntil: new Date(NOW + 1000).toISOString() };
+  assert.equal(accountStatus(restarting, NOW).label, 'Restarting slowly');
   assert.equal(accountStatus({ ...base, cooldownUntil: new Date(NOW - 1000).toISOString() }, NOW).label, 'Receiving comments');
   assert.equal(accountStatus({ ...base, subscribedAt: null }, NOW).label, 'Not receiving comments');
   assert.equal(accountStatus(base, NOW, true).label, 'Follow checks off');
