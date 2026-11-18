@@ -176,6 +176,8 @@ A rule can hold its link back until the person answers (#186). Many identical pr
 | `link_after_reply` | `follow_prompt_text`, no link | The reply and link, with no follow check |
 | `require_follow` (implies the wait) | `follow_prompt_text`, asking to follow and reply | The follow check below: the reply and link for followers, a reminder for others |
 
+New rules start followers-only (#190): the editor fills in a first message that says exactly what to type ("type YES here"), two other wordings and a reminder, and a scheduled post's automation is followers-only unless it sets `followersOnly: false`, with the same default texts in `lib/automationRules.ts` when it brings none. Claude can list and change rules with `list_automation_rules` and `update_automation_rule`, which go through `automations.updateRule` and its checks.
+
 Every rule may also keep up to 4 other wordings of its first message (`reply_variants`); `replyMessage` picks one per comment, and the service measures every wording against the 1,000 bytes as it would be sent. A rule made for a scheduled post takes `firstMessage` and `replyVariants` from the post's automation (see `SCHEDULING.md`).
 
 Both waiting settings need Instagram's `messages` events, which the account subscribes to while such a rule is on, and the **messages** field selected in the Meta app's webhooks.

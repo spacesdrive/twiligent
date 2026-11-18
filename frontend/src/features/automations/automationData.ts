@@ -73,10 +73,15 @@ const LINK = /\bhttps?:\/\/\S+|\bwww\.\S+/gi;
 const FOLLOWUP_WINDOW_MS = 24 * HOUR_MS;
 
 // where a followers-only rule starts; the owner edits both before saving
-export const DEFAULT_FOLLOW_PROMPT = 'Thanks for your comment. Follow this account, then reply to this message and the link is on its way.';
-export const DEFAULT_NOT_FOLLOWING = 'It looks like you do not follow this account yet. Follow it, then reply here again and the link is on its way.';
+// the same defaults as the Worker's: a first message that says exactly what to type, in three wordings, and one reminder
+export const DEFAULT_FOLLOW_PROMPT = 'Thanks for commenting! Do you follow me? If you do, type YES here and I will send the link right away.';
+export const DEFAULT_FOLLOW_VARIANTS = [
+  'Hey, glad this one helped. Quick check first: are you following me? Reply YES and the link is yours.',
+  'Want the link? Follow this account, then answer this message with YES and I will send it over.',
+];
+export const DEFAULT_NOT_FOLLOWING = 'I cannot see a follow from you yet. Tap Follow on my profile, then type YES here once more and I will send the link.';
 // a short first message without a link reads as a conversation, not as spam, and the person's reply opens Instagram's window
-export const DEFAULT_REPLY_FIRST = 'Thanks for your comment. Reply LINK and I will send it here.';
+export const DEFAULT_REPLY_FIRST = 'Thanks for commenting! Want the link? Type YES here and I will send it right away.';
 // other wordings of the first message; one is picked per comment, since many identical messages look like spam
 export const MAX_REPLY_VARIANTS = 4;
 
@@ -92,11 +97,17 @@ export function linkModeOf(form: Pick<RuleForm, 'requireFollow' | 'linkAfterRepl
 export function withLinkMode(form: RuleForm, mode: LinkMode): RuleForm {
   const defaults: Record<LinkMode, string> = { now: form.followPromptText, reply: DEFAULT_REPLY_FIRST, follow: DEFAULT_FOLLOW_PROMPT };
   const isDefault = form.followPromptText === DEFAULT_REPLY_FIRST || form.followPromptText === DEFAULT_FOLLOW_PROMPT || !form.followPromptText.trim();
+  // the default wordings ask for a follow, so they leave with the followers-only mode and come back with it
+  const defaultVariants = form.replyVariants.length === DEFAULT_FOLLOW_VARIANTS.length && form.replyVariants.every((text, at) => text === DEFAULT_FOLLOW_VARIANTS[at]);
+  const variants = mode === 'follow'
+    ? (form.replyVariants.length === 0 ? [...DEFAULT_FOLLOW_VARIANTS] : form.replyVariants)
+    : (defaultVariants ? [] : form.replyVariants);
   return {
     ...form,
     requireFollow: mode === 'follow',
     linkAfterReply: mode !== 'now',
     followPromptText: isDefault ? defaults[mode] : form.followPromptText,
+    replyVariants: variants,
   };
 }
 
@@ -276,7 +287,8 @@ export function emptyRuleForm(accountId: string): RuleForm {
   return {
     accountId, name: '', keywordsText: '', matchMode: 'contains', caseSensitive: false, scope: 'all', mediaIds: [],
     privateReplyEnabled: true, replyText: '', linkUrl: '', publicReplyEnabled: false, publicReplyTexts: [DEFAULT_PUBLIC_REPLY], hourlyLimit: '', enabled: true,
-    requireFollow: false, followPromptText: DEFAULT_REPLY_FIRST, notFollowingText: DEFAULT_NOT_FOLLOWING, linkAfterReply: false, replyVariants: [],
+    requireFollow: true, followPromptText: DEFAULT_FOLLOW_PROMPT, notFollowingText: DEFAULT_NOT_FOLLOWING, linkAfterReply: true,
+    replyVariants: [...DEFAULT_FOLLOW_VARIANTS],
   };
 }
 
