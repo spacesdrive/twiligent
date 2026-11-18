@@ -9,7 +9,7 @@ const SCHEDULED_MEDIA_TYPES: MediaType[] = ['IMAGE', 'VIDEO', 'REELS', 'STORIES'
 const PLATFORMS: Platform[] = ['instagram'];
 
 // the fields a pending post can change; anything else in the body is ignored
-const EDITABLE_FIELDS = ['caption', 'scheduledAt', 'shareToFeed', 'collaborators', 'audioName', 'thumbOffset', 'locationId', 'userTags', 'altText', 'coverUrl'] as const;
+const EDITABLE_FIELDS = ['caption', 'scheduledAt', 'shareToFeed', 'collaborators', 'audioName', 'thumbOffset', 'locationId', 'userTags', 'altText', 'coverUrl', 'automation'] as const;
 
 function platform(fields: Fields): Platform | undefined {
     const value = optionalString(fields, 'platform');
@@ -33,7 +33,7 @@ export function parseScheduledPost(body: Fields): ScheduledPostRequest {
 
 export function parseScheduledPostUpdate(body: Fields): ScheduledPostUpdateRequest {
     const details = postDetails(body);
-    const all: ScheduledPostUpdateRequest = { ...details, scheduledAt: optionalString(body, 'scheduledAt') };
+    const all: ScheduledPostUpdateRequest = { ...details, scheduledAt: optionalString(body, 'scheduledAt'), automation: parsePostAutomation(body) };
     if (all.scheduledAt && Number.isNaN(new Date(all.scheduledAt).getTime())) throw new ValidationError('scheduledAt must be a valid date');
     const changes: ScheduledPostUpdateRequest = {};
     for (const field of EDITABLE_FIELDS) {

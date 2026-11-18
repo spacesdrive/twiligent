@@ -77,10 +77,14 @@ export interface CarouselItem {
 
 // a comment automation that waits for its post: once the post is published, a rule answers any comment on it
 export interface ScheduledPostAutomation {
-    // the private reply sent to each person who comments
+    // the private reply sent to each person who comments, or after their answer when firstMessage is set
     replyText: string;
     // replies posted under the comment, one picked per comment; empty for none
     publicReplyTexts: string[];
+    // a short first message without the link; the reply goes out only once the person answers it
+    firstMessage?: string;
+    // other wordings of the first private message, one picked per comment
+    replyVariants?: string[];
 }
 
 // one row of `scheduled_posts`: id, account_id, status and scheduled_at are columns, the rest is data jsonb
@@ -321,7 +325,7 @@ export interface ScheduledPostRequest {
 
 // body of PUT /api/scheduled-posts/:id; any other field is ignored
 export type ScheduledPostUpdateRequest = Partial<Pick<ScheduledPost,
-    'caption' | 'scheduledAt' | 'shareToFeed' | 'collaborators' | 'audioName' | 'thumbOffset' | 'locationId' | 'userTags' | 'altText' | 'coverUrl'>>;
+    'caption' | 'scheduledAt' | 'shareToFeed' | 'collaborators' | 'audioName' | 'thumbOffset' | 'locationId' | 'userTags' | 'altText' | 'coverUrl' | 'automation'>>;
 
 // a tracked video with the fields fetched from YouTube
 export type TrackedContentItem = TrackedPost & Partial<Omit<YouTubeTrackedVideoData, 'contentType'>>;

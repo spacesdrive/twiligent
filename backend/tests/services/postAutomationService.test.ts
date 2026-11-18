@@ -40,9 +40,21 @@ test('a published post gets one rule that answers any comment on that post, owne
     assert.equal(made[0][0], 'user-2');
     assert.deepEqual(made[0][1], {
         accountId: 'ig1', name: 'Post 2026-11-05: Comment "AGENTS" and I will send the link', keywords: [], matchMode: 'any', mediaIds: ['1789'],
-        privateReplyEnabled: true, replyText: AUTOMATION.replyText, publicReplyEnabled: true, publicReplyTexts: ['Sent you a DM'], enabled: true,
+        privateReplyEnabled: true, replyText: AUTOMATION.replyText, linkAfterReply: false, followPromptText: null, replyVariants: [],
+        publicReplyEnabled: true, publicReplyTexts: ['Sent you a DM'], enabled: true,
     });
     assert.deepEqual(updates, [['p1', { automationRuleId: 'rule-9' }]]);
+});
+
+test('a post with a first message gets a rule that sends the link only after the person replies, in several wordings', async () => {
+    const made: AutomationRuleRequest[] = [];
+    const automation = { ...AUTOMATION, firstMessage: 'Reply LINK and I will send it', replyVariants: ['Want it? Reply LINK'] };
+    const { service } = harness([{ post: post('p1', { automation }), userId: 'user-2' }], async (_userId, input) => {
+        made.push(input);
+        return { id: 'rule-9' } as AutomationRule;
+    });
+    await service.attachPublished(3);
+    assert.deepEqual([made[0].linkAfterReply, made[0].followPromptText, made[0].replyVariants], [true, 'Reply LINK and I will send it', ['Want it? Reply LINK']]);
 });
 
 test('a rule an earlier run already saved is reused, so a post never gets two rules', async () => {
