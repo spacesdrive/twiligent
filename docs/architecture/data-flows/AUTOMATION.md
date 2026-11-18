@@ -133,6 +133,8 @@ The claim takes only as many jobs as the budget pays for (one for the claim, one
 | Code 551, 10903; subcodes 2534014, 2534022, 2534025, 2018001 (not allowed for this comment) | `failed` | `rejected` | |
 | Any other error | `failed`, with Instagram's message | `rejected` | |
 | Timeout, connection lost, unreadable 200 | `needs_review` | `ambiguous` | |
+
+For every Instagram error, the reply's error message ends with Instagram's own words, its code and subcode, and Meta's trace id (`fbtrace_id`), for example `Instagram said: "..." (code 368, subcode 1404102, trace A1b2)` (`withInstagramDetails`). The activity list shows it, so the owner can see the exact reason and give the trace id to Meta support. Public replies and follow-ups do the same.
 | The Worker refused the request (subrequest limit) | `retry_wait`, 5 minutes | `rejected` | |
 
 A wait that would end after the 7 day window makes the comment `expired` instead.

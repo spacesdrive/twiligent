@@ -1,5 +1,5 @@
 import {
-    BLOCKED_COOLDOWN_MS, DEFAULT_COOLDOWN_MS, HOLD_RECHECK_MS, MAX_SEND_ATTEMPTS, NOT_SENT_RETRY_MS, classifySendError, cooldownFromUsage, retryDelayMs,
+    BLOCKED_COOLDOWN_MS, DEFAULT_COOLDOWN_MS, HOLD_RECHECK_MS, MAX_SEND_ATTEMPTS, NOT_SENT_RETRY_MS, classifySendError, cooldownFromUsage, retryDelayMs, withInstagramDetails,
 } from './automationDelivery.ts';
 import type { ReleasePlan, ReserveOutcome, SendErrorKind, SendResult } from './automationDelivery.ts';
 import type { AutomationAttemptOutcome, AutomationPublicReplyStatus } from '../../shared/types/automation.ts';
@@ -110,6 +110,11 @@ function emptyPlan(): Omit<PublicFinishPlan, 'status' | 'outcome'> {
 
 // what to record for the answer to one public reply; accepted only when Instagram returned the new reply's id
 export function publicFinishPlan(result: SendResult, job: PublicReplyJob, now: number, random: () => number = Math.random): PublicFinishPlan {
+    const plan = publicPlanForAnswer(result, job, now, random);
+    return result.kind === 'error' && plan.errorMessage ? { ...plan, errorMessage: withInstagramDetails(plan.errorMessage, result) } : plan;
+}
+
+function publicPlanForAnswer(result: SendResult, job: PublicReplyJob, now: number, random: () => number): PublicFinishPlan {
     if (result.kind === 'accepted') return { ...emptyPlan(), status: 'accepted', outcome: 'accepted', replyId: result.messageId };
     if (result.kind === 'not_sent') {
         return { ...emptyPlan(), ...waitUntil(now + NOT_SENT_RETRY_MS, job, 'not_sent', `The public reply was not sent (${result.message}). It is tried again on the next run.`), outcome: 'rejected' };

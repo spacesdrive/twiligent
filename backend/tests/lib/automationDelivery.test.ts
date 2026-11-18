@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {
     MAX_FOLLOW_REMINDERS, MAX_SEND_ATTEMPTS, REPLY_WINDOW_MS, classifySendError, composeReply, cooldownFromUsage, expiresAtFor, finishPlan,
     RESTART_HOURLY_LIMITS, followupMessage, followupReadiness, messageBytes, messageDigest, readinessPlan, releasePlan, replyMessage, restartingUntil,
-    retryDelayMs,
+    SEND_ERROR_MESSAGES, retryDelayMs, withInstagramDetails,
 } from '../../lib/automationDelivery.ts';
 import type { FollowupJob, SendResult } from '../../lib/automationDelivery.ts';
 
@@ -175,6 +175,17 @@ test('a temporary block rests the account for a day, then marks when sending may
     assert.equal(plan.blockedUntil, plan.cooldownUntil);
 });
 
+test('a refused reply keeps Instagram\'s own words, codes and trace id for the owner and Meta support', () => {
+    const blocked: SendResult = {
+        kind: 'error', code: 368, subcode: 1404102, httpStatus: 400, message: 'This link goes against our Community Standards', traceId: 'AbC123', usageHeader: null,
+    };
+    const plan = finishPlan(blocked, job(), NOW);
+    assert.match(plan.errorMessage!, /^Instagram has temporarily blocked private replies/);
+    assert.match(plan.errorMessage!, /Instagram said: "This link goes against our Community Standards" \(code 368, subcode 1404102, trace AbC123\)$/);
+    assert.equal(plan.cooldownReason, SEND_ERROR_MESSAGES.blocked);
+    assert.equal(withInstagramDetails('x'.repeat(600), blocked).length, 500);
+});
+
 test('after a block the account restarts with one test reply and a few more each hour, never at full speed at once', () => {
     assert.equal(RESTART_HOURLY_LIMITS[0], 1);
     assert.ok(RESTART_HOURLY_LIMITS.every((limit, hour) => hour === 0 || limit > RESTART_HOURLY_LIMITS[hour - 1]));
@@ -200,7 +211,7 @@ test('a temporary Instagram error is retried with backoff until the last try fai
     assert.equal(retried.nextAttemptAt, new Date(NOW + 2 * MINUTE).toISOString());
     const last = finishPlan(graphError(2, undefined, 503), job(MAX_SEND_ATTEMPTS), NOW);
     assert.equal(last.status, 'failed');
-    assert.match(last.errorMessage!, /Sending stopped after 5 tries\.$/);
+    assert.match(last.errorMessage!, /Sending stopped after 5 tries\. Instagram said: "Graph said no" \(code 2\)$/);
 });
 
 test('a comment that already has a private reply is skipped, not failed', () => {
@@ -223,7 +234,7 @@ test('a comment Instagram will not allow a reply to fails with a reason a person
     assert.equal(plan.reason, 'not_eligible');
     assert.equal(plan.errorSubcode, 2534025);
     const other = finishPlan(graphError(100, 2534015), job(), NOW);
-    assert.equal(other.errorMessage, 'Instagram refused the reply. Graph said no');
+    assert.equal(other.errorMessage, 'Instagram refused the reply. Graph said no (code 100, subcode 2534015)');
 });
 
 test('before any limit is spent, an expired comment, a disabled rule or a missing token stops the job', () => {

@@ -70,6 +70,7 @@ export async function postOnce<T extends InstagramApiErrorBody>(endpoint: string
         subcode: error.error_subcode,
         httpStatus: response.status,
         message: redactSecrets(error.message || body.error_message || `HTTP ${response.status}`),
+        ...(error.fbtrace_id ? { traceId: error.fbtrace_id } : {}),
         usageHeader,
     };
 }
