@@ -7,6 +7,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [3.8.1] - 2026-11-20
+
+A link Instagram refuses no longer pauses the whole account. What an instance owner must do: nothing; deploy as usual.
+
+### Fixed
+
+- When Instagram refuses a link in a message as against its Community Standards (code 368, subcode 1404102), only that message fails and its rule turns itself off, so the link is not sent to anyone else. Before, Twiligent treated it as a block of the whole account and paused every private reply for a day (#192)
+
 ## [3.8.0] - 2026-11-19
 
 Rules now ask people to follow and reply before they get the link. What an instance owner must do: nothing; deploy as usual. The **messages** webhook field must stay selected in the Meta app.
