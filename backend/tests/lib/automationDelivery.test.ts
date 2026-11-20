@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-    MAX_FOLLOW_REMINDERS, MAX_SEND_ATTEMPTS, REPLY_WINDOW_MS, classifySendError, composeReply, cooldownFromUsage, expiresAtFor, finishPlan,
+    MAX_FOLLOW_REMINDERS, MAX_SEND_ATTEMPTS, REPLY_WINDOW_MS, classifySendError, composeReply, refusedLink, cooldownFromUsage, expiresAtFor, finishPlan,
     RESTART_HOURLY_LIMITS, followupMessage, followupReadiness, messageBytes, messageDigest, readinessPlan, releasePlan, replyMessage, restartingUntil,
     SEND_ERROR_MESSAGES, replyMessages, retryDelayMs, waitsForAnswer, withInstagramDetails,
 } from '../../lib/automationDelivery.ts';
@@ -114,6 +114,8 @@ test('Graph API codes are sorted into what the Worker does next', () => {
     assert.equal(classifySendError({ code: 80002, httpStatus: 400, message: '' }), 'rate_limited');
     assert.equal(classifySendError({ httpStatus: 429, message: '' }), 'rate_limited');
     assert.equal(classifySendError({ code: 368, subcode: 1404169, httpStatus: 400, message: '' }), 'blocked');
+    assert.equal(classifySendError({ code: 368, httpStatus: 400, message: '' }), 'blocked');
+    assert.equal(classifySendError({ code: 368, subcode: 1404102, httpStatus: 400, message: '' }), 'link_refused');
     assert.equal(classifySendError({ code: 10900, httpStatus: 400, message: '' }), 'already_replied');
     assert.equal(classifySendError({ code: 100, subcode: 2534025, httpStatus: 400, message: '' }), 'not_eligible');
     assert.equal(classifySendError({ code: 10, subcode: 2534022, httpStatus: 400, message: '' }), 'not_eligible');
@@ -194,13 +196,24 @@ test('a temporary block rests the account for a day, then marks when sending may
 
 test('a refused reply keeps Instagram\'s own words, codes and trace id for the owner and Meta support', () => {
     const blocked: SendResult = {
-        kind: 'error', code: 368, subcode: 1404102, httpStatus: 400, message: 'This link goes against our Community Standards', traceId: 'AbC123', usageHeader: null,
+        kind: 'error', code: 368, subcode: 1404169, httpStatus: 400, message: 'Your account has been temporarily blocked from taking this action', traceId: 'AbC123', usageHeader: null,
     };
     const plan = finishPlan(blocked, job(), NOW);
     assert.match(plan.errorMessage!, /^Instagram has temporarily blocked private replies/);
-    assert.match(plan.errorMessage!, /Instagram said: "This link goes against our Community Standards" \(code 368, subcode 1404102, trace AbC123\)$/);
+    assert.match(plan.errorMessage!, /Instagram said: "Your account has been temporarily blocked from taking this action" \(code 368, subcode 1404169, trace AbC123\)$/);
     assert.equal(plan.cooldownReason, SEND_ERROR_MESSAGES.blocked);
     assert.equal(withInstagramDetails('x'.repeat(600), blocked).length, 500);
+});
+
+test('a link Instagram refuses fails only that message: no cooldown, no block, and the rule is to be turned off', () => {
+    const refused: SendResult = {
+        kind: 'error', code: 368, subcode: 1404102, httpStatus: 400, message: "Your message couldn't be shared, because this link goes against our Community Standards", usageHeader: null,
+    };
+    const plan = finishPlan(refused, job(), NOW);
+    assert.deepEqual([plan.status, plan.reason, plan.cooldownUntil, plan.blockedUntil], ['failed', 'link_refused', null, null]);
+    assert.match(plan.errorMessage!, /^Instagram refused a link in this message .*\(code 368, subcode 1404102\)$/);
+    assert.equal(refusedLink(plan), true);
+    assert.equal(refusedLink(finishPlan({ ...refused, subcode: 1404169 }, job(), NOW)), false);
 });
 
 test('after a block the account restarts with one test reply and a few more each hour, never at full speed at once', () => {

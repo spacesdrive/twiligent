@@ -93,6 +93,7 @@ Everything runs on the services you already use, and nothing new is billed on Cl
 | Meta says the callback could not be verified | Check the URL ends in `/api/webhooks/instagram` and that `INSTAGRAM_WEBHOOK_VERIFY_TOKEN` matches exactly |
 | `wrangler tail` shows 401 for webhook calls | The signature does not match: set `META_APP_SECRET` as well, then check that `INSTAGRAM_APP_SECRET` is the Instagram app secret |
 | No webhook calls at all | The app is not Live, the account has no role on the app during testing, the account is private, or comment events are not turned on for it |
+| A rule turned itself off, and a reply failed with "refused a link in this message" | Instagram refused one of the rule's links as against its Community Standards (code 368, subcode 1404102). The account is not blocked, so the other rules keep going. Remove or change the link (links straight to install scripts, such as `curl ... install.sh \| bash`, are a common cause), then turn the rule on |
 | A reply failed with "does not allow a private reply" | The comment was deleted, is older than 7 days, or its author does not accept messages |
 | An account shows **Public replies cooling down** | Instagram limited or blocked comments from the account. Public replies wait (a day after a block) while private replies continue. Lower `AUTOMATION_PUBLIC_ACCOUNT_HOURLY_LIMIT`, add more wordings, and check the account in the Instagram app |
 | A public reply was skipped as deleted or hidden | Instagram cannot reply under a deleted or hidden comment, or a comment on a live video |

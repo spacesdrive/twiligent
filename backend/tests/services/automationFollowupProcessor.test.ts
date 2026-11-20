@@ -50,7 +50,7 @@ function waiting(id: string, overrides: { gatePrompts?: number } = {}): FakeQueu
 
 function processor(queue: FakeQueue, signal = new AbortController().signal) {
     return createAutomationFollowupProcessor({
-        followups: queue.followups, automation: readAutomationConfig({} as Env), context: { requestId: 'req-test', signal, log: createLogger() },
+        followups: queue.followups, rules: queue.ruleRepository, automation: readAutomationConfig({} as Env), context: { requestId: 'req-test', signal, log: createLogger() },
     });
 }
 
@@ -203,6 +203,16 @@ describe('automation follow-up processor', () => {
         assert.deepEqual([queue.followupRows[0].status, queue.attempts.length], ['queued', 0]);
     });
 
+    test('a link Instagram refuses in the follow-up fails it and turns the rule off, without a cooldown for the account', async () => {
+        instagram({ 'igsid-a': true }, () => reply({ error: { message: "Your message couldn't be shared, because this link goes against our Community Standards", code: 368, error_subcode: 1404102 } }, 400));
+        const queue = waiting('a');
+        const run = await processor(queue).run();
+        assert.deepEqual(run.outcomes, { failed: 1 });
+        assert.equal(queue.followupRows[0].statusReason, 'link_refused');
+        assert.equal(queue.rules.get('rule-guide')!.enabled, false);
+        assert.deepEqual([...queue.controls.values()].map(controls => controls.cooldownUntil ?? null), [...queue.controls.values()].map(() => null));
+    });
+
     test('a run claims only the follow-ups its subrequests pay for, four each after the claim', async () => {
         instagram({ 'igsid-a': true, 'igsid-b': true });
         const queue = fakeAutomationQueue(
@@ -210,7 +220,8 @@ describe('automation follow-up processor', () => {
             [followupRow('fu-a', 'a'), followupRow('fu-b', 'b')],
         );
         Object.assign(queue.rules.get('rule-guide')!, { requireFollow: true, notFollowingText: 'Follow first' });
-        const run = await processor(queue).run({ subrequests: 6 });
+        // the claim and a hand-back take two and turning off a rule two more, so 8 subrequests pay for one follow-up
+        const run = await processor(queue).run({ subrequests: 8 });
         assert.deepEqual([run.claimed, run.subrequests, sent.length], [1, 5, 1]);
     });
 });

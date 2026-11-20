@@ -1,17 +1,19 @@
 import { readFollowStatus, sendMessage } from './instagram/instagramMessaging.ts';
 import {
     BACKGROUND_RUN_MS, CLAIM_LEASE_SECONDS, DUE_NOW_SKEW_MS, FOLLOWUP_EXPIRED_MESSAGE, FOLLOW_CHECK_TIMEOUT_MS, FREE_PLAN_SUBREQUESTS, SEND_TIMEOUT_MS,
-    SUBREQUESTS_PER_FOLLOWUP, finishPlan, followupMessage, followupReadiness, linkMessage, messageDigest, releasePlan,
+    SUBREQUESTS_PER_FOLLOWUP, SUBREQUESTS_TO_DISABLE_RULE, finishPlan, followupMessage, followupReadiness, linkMessage, messageDigest, refusedLink, releasePlan,
 } from '../lib/automationDelivery.ts';
 import { newRowId } from '../lib/ids.ts';
 import { errorFields } from '../lib/logger.ts';
 import type { AutomationFollowupRepository, ClaimedFollowup } from '../repositories/automationFollowupRepository.ts';
+import type { AutomationRuleRepository } from '../repositories/automationRuleRepository.ts';
 import type { AutomationConfig } from '../lib/config.ts';
 import type { RequestContext } from '../types/context.ts';
 import type { AutomationFollowupStatus } from '../../shared/types/automation.ts';
 
 export interface AutomationFollowupProcessorDeps {
     followups: AutomationFollowupRepository;
+    rules: Pick<AutomationRuleRepository, 'disableForComment'>;
     automation: AutomationConfig;
     context: RequestContext;
 }
@@ -35,13 +37,30 @@ export interface AutomationFollowupProcessor {
 
 const SEND_MARGIN_MS = 2_000;
 
+// how many rules a run may still turn off; the batch leaves room for one, and a later refusal turns off any other
+interface RuleOffBudget {
+    left: number;
+}
+
 // answers people who replied to a followers-only private reply: Instagram is asked whether they follow the account,
 // then the reply and link go to a follower and a reminder to anyone else. Nothing is sent when Instagram cannot say,
 // and like private replies, a send whose answer is lost is never repeated without a person's decision
-export function createAutomationFollowupProcessor({ followups, automation, context }: AutomationFollowupProcessorDeps): AutomationFollowupProcessor {
+export function createAutomationFollowupProcessor({ followups, rules, automation, context }: AutomationFollowupProcessorDeps): AutomationFollowupProcessor {
     const { signal, log } = context;
 
-    async function settle(job: ClaimedFollowup, spend: () => void, timeLeft: () => number): Promise<AutomationFollowupStatus | 'gone' | 'returned'> {
+    // the follow-up is already settled, so a failure here only leaves the rule on; the next refusal tries again
+    async function disableRule(job: ClaimedFollowup, spend: () => void): Promise<void> {
+        spend();
+        spend();
+        try {
+            const ruleId = await rules.disableForComment(job.commentRowId);
+            log.warn('automation rule turned off: Instagram refused its link', { followupId: job.id, accountId: job.accountId, ruleId });
+        } catch (err) {
+            log.error('automation rule not turned off after a refused link', { followupId: job.id, accountId: job.accountId, ...errorFields(err) });
+        }
+    }
+
+    async function settle(job: ClaimedFollowup, spend: () => void, timeLeft: () => number, ruleOff: RuleOffBudget): Promise<AutomationFollowupStatus | 'gone' | 'returned'> {
         const notReady = followupReadiness(job, Date.now());
         if (notReady) {
             spend();
@@ -94,6 +113,10 @@ export function createAutomationFollowupProcessor({ followups, automation, conte
             gateStatus: accepted ? message.gateStatus : null,
             countReminder: accepted && message.countReminder,
         });
+        if (refusedLink(plan) && ruleOff.left > 0) {
+            ruleOff.left--;
+            await disableRule(job, spend);
+        }
         log.info('automation follow-up settled', {
             followupId: job.id,
             accountId: job.accountId,
@@ -120,10 +143,11 @@ export function createAutomationFollowupProcessor({ followups, automation, conte
             const outcomes: FollowupRun['outcomes'] = {};
             if (automation.paused) return { claimed: 0, outcomes, subrequests: 0 };
             const started = Date.now();
-            const batch = Math.min(automation.batchSize, Math.floor((subrequests - 2) / SUBREQUESTS_PER_FOLLOWUP));
+            const batch = Math.min(automation.batchSize, Math.floor((subrequests - 2 - SUBREQUESTS_TO_DISABLE_RULE) / SUBREQUESTS_PER_FOLLOWUP));
             if (batch < 1) return { claimed: 0, outcomes, subrequests: 0 };
             let spent = 1;
             const spend = () => { spent++; };
+            const ruleOff: RuleOffBudget = { left: 1 };
             const jobs = await followups.claim({ limit: batch, leaseSeconds: CLAIM_LEASE_SECONDS, ids });
 
             const timeLeft = () => timeBudgetMs - (Date.now() - started);
@@ -135,7 +159,7 @@ export function createAutomationFollowupProcessor({ followups, automation, conte
                     break;
                 }
                 try {
-                    const status = await settle(job, spend, timeLeft);
+                    const status = await settle(job, spend, timeLeft, ruleOff);
                     outcomes[status] = (outcomes[status] ?? 0) + 1;
                 } catch (err) {
                     outcomes.error = (outcomes.error ?? 0) + 1;

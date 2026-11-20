@@ -62,6 +62,7 @@ export interface PublicFinishPlan {
 export const PUBLIC_ERROR_MESSAGES: Record<SendErrorKind, string> = {
     rate_limited: 'Instagram is limiting this account\'s requests for now. The public reply goes out after the cooldown.',
     blocked: 'Instagram has temporarily blocked comments from this account. Public replies wait a day; check the account in the Instagram app. Private replies are not affected.',
+    link_refused: 'Instagram refused a link in this public reply as against its Community Standards, so it was not posted. Remove that link from the rule\'s public replies.',
     transient: 'Instagram had a temporary problem. The public reply is tried again.',
     already_replied: 'Instagram refused the public reply.',
     not_authorized: 'Instagram refused this account\'s permission to reply to comments. Replies are held: reconnect the account on the Accounts page, then resume it.',
