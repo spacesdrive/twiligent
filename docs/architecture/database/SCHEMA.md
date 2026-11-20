@@ -56,6 +56,7 @@ The first four files are baselines. Each recreates one table as it stood before 
 | 24 | `alter_automation_accounts_blocked_until`, `replace_finish_automation_send_function`, `replace_reserve_automation_send_function` | An account restarts slowly after Instagram blocked its private replies: one test reply, then a few more each hour (#178) |
 | 25 | `alter_automation_rules_reply_options`, `replace_claim_automation_comments_function`, `replace_claim_automation_followups_function` | A rule can send the link only after the person replies, and pick its first message from several wordings (#185, #186) |
 | 26 | `replace_finish_automation_followup_function` | A block on a follow-up records when it ends, so the account restarts slowly as after a blocked first message (#194) |
+| 27 | `alter_youtube_uploads_language` | A YouTube upload can say which language the video is in (#196) |
 
 From order 10 on, every migration creates at most one entity, and the migration test enforces it. The files before it were applied to production first and stay as recorded.
 
@@ -507,6 +508,7 @@ See `docs/platform-v2/YOUTUBE_INTEGRATION.md` for the flow. All three are reache
 | `title`, `description`, `tags`, `category_id` | text, text, text[], text | title 1 to 100 characters | The metadata snapshot |
 | `privacy`, `publish_at` | text, timestamptz | `private`, `unlisted` or `public`; a publish time only with `private` | |
 | `made_for_kids`, `synthetic_media`, `notify_subscribers` | boolean | not null | |
+| `language` | text | | The language the video is in, a BCP-47 tag such as `en-US` (checked by `youtube_uploads_language_check`); sent to YouTube as `defaultLanguage` and `defaultAudioLanguage`. Null leaves both unset |
 | `state` | text | `queued`, `uploading`, `processing`, `finalizing`, `done`, `waiting_quota`, `needs_reconnect`, `needs_review`, `failed`, `cancelled` | |
 | `session_uri`, `bytes_confirmed`, `video_id` | text, bigint, text | bytes between 0 and the source size | Saved before any byte is sent |
 | `attempts`, `next_attempt_at`, `lease_owner`, `lease_until`, `last_error` | integer, timestamptz, text, timestamptz, text | | The runner's bookkeeping |
