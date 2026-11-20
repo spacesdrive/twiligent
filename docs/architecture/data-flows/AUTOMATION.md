@@ -205,7 +205,7 @@ Instagram does not let an app check whether a commenter follows the account unti
 
    - **Reserve** (`reserve_automation_followup`): a paused account holds it and a cooldown waits for it. Follow-ups use the Send API, not the private reply allowance, so the hourly reply limits do not count them (`automation_attempts.kind = 'followup'`).
    - **Send** (`sendMessage`): `POST /<ig-id>/messages` with `{ recipient: { id: <igsid> }, message: { text } }`, 10 second timeout, never repeated. A slow follow check that leaves less than the send's whole timeout hands the job back unsent.
-   - **Finish** (`finish_automation_followup`): the same answer table as private replies, plus the comment's wait. A lost answer is `needs_review` and is never sent again without a person.
+   - **Finish** (`finish_automation_followup`): the same answer table as private replies, plus the comment's wait. A block on a follow-up sets `blocked_until` as a blocked first message does, so the account restarts slowly after it. A lost answer is `needs_review` and is never sent again without a person.
 
 Nothing about the follow is stored except the follow-up's outcome; the person's message text is never read or kept.
 
