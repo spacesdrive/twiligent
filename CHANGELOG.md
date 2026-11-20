@@ -7,6 +7,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [3.10.0] - 2026-11-20
+
+A YouTube upload can say which language the video is in. What an instance owner must do: run `npm run db:push` (one new column), then `npm run db:schema`, before deploying the Worker.
+
+### Added
+
+- A YouTube upload can carry a `language`, such as `en-US`, through the API and the Claude tools. YouTube gets it as the language of the title, description and audio, which it uses to match the video to viewers (#196)
+
 ## [3.9.0] - 2026-11-20
 
 The slow restart after a block now also follows a block on the message sent after someone types YES. What an instance owner must do: run `npm run db:push`, then `npm run db:schema`, before deploying the Worker (one function migration).
