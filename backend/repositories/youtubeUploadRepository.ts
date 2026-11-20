@@ -22,6 +22,7 @@ interface UploadRow {
     made_for_kids: boolean;
     synthetic_media: boolean;
     notify_subscribers: boolean;
+    language: string | null;
     state: YouTubeUploadState;
     session_uri: string | null;
     bytes_confirmed: number | string;
@@ -59,6 +60,7 @@ export interface NewYouTubeUpload {
     madeForKids: boolean;
     syntheticMedia: boolean;
     notifySubscribers: boolean;
+    language: string | null;
     clientRequestId: string | null;
 }
 
@@ -74,9 +76,9 @@ export interface UploadProgress {
 }
 
 // the metadata a person may change before the upload starts
-export type UploadEdit = Partial<Pick<NewYouTubeUpload, 'title' | 'description' | 'tags' | 'categoryId' | 'privacy' | 'publishAt' | 'madeForKids' | 'syntheticMedia' | 'notifySubscribers'>>;
+export type UploadEdit = Partial<Pick<NewYouTubeUpload, 'title' | 'description' | 'tags' | 'categoryId' | 'privacy' | 'publishAt' | 'madeForKids' | 'syntheticMedia' | 'notifySubscribers' | 'language'>>;
 
-const COLUMNS = 'id, user_id, connection_id, source_url, source_bytes, content_type, thumbnail_url, is_short, title, description, tags, category_id, privacy, publish_at, made_for_kids, synthetic_media, notify_subscribers, state, session_uri, bytes_confirmed, video_id, attempts, next_attempt_at, lease_owner, last_error, created_at, updated_at';
+const COLUMNS = 'id, user_id, connection_id, source_url, source_bytes, content_type, thumbnail_url, is_short, title, description, tags, category_id, privacy, publish_at, made_for_kids, synthetic_media, notify_subscribers, language, state, session_uri, bytes_confirmed, video_id, attempts, next_attempt_at, lease_owner, last_error, created_at, updated_at';
 
 function toUpload(row: UploadRow): StoredYouTubeUpload {
     return {
@@ -92,6 +94,7 @@ function toUpload(row: UploadRow): StoredYouTubeUpload {
         madeForKids: row.made_for_kids,
         syntheticMedia: row.synthetic_media,
         notifySubscribers: row.notify_subscribers,
+        language: row.language ?? null,
         isShort: row.is_short,
         hasThumbnail: row.thumbnail_url !== null,
         state: row.state,
@@ -126,6 +129,7 @@ function editColumns(edit: UploadEdit): Record<string, unknown> {
     if (edit.madeForKids !== undefined) columns.made_for_kids = edit.madeForKids;
     if (edit.syntheticMedia !== undefined) columns.synthetic_media = edit.syntheticMedia;
     if (edit.notifySubscribers !== undefined) columns.notify_subscribers = edit.notifySubscribers;
+    if (edit.language !== undefined) columns.language = edit.language;
     return columns;
 }
 
@@ -188,6 +192,7 @@ export function createYouTubeUploadRepository(db: SupabaseClient): YouTubeUpload
                     made_for_kids: upload.madeForKids,
                     synthetic_media: upload.syntheticMedia,
                     notify_subscribers: upload.notifySubscribers,
+                    language: upload.language,
                     client_request_id: upload.clientRequestId,
                 }).select(COLUMNS));
                 return { upload: toUpload(created[0]), existing: false };

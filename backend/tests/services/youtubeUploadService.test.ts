@@ -61,6 +61,9 @@ test('a queued upload takes its source from the person\'s own media and knows a 
     assert.equal(upload.sourceBytes, 1000);
     assert.equal('sourceUrl' in upload, false);
     assert.equal('sessionUri' in upload, false);
+    assert.equal(upload.language, null);
+    const { upload: english } = await service.create('user-1', { ...REQUEST, language: 'en-US', clientRequestId: 'english' });
+    assert.equal(english.language, 'en-US');
 });
 
 test('another person\'s channel or media is not found, and metadata outside YouTube\'s limits is refused', async () => {

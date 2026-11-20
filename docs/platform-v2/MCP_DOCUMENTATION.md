@@ -132,7 +132,7 @@ Every tool works only on the caller's own data. Read tools need no confirmation.
 | `delete_media` | write, confirm | `mediaId` | `deleted`, `removedFromCloudinary`, and a `note` when the file stays on Cloudinary: the instance has no API secret, or Twiligent did not create the file (a browser upload, or an import that landed on a file Cloudinary already had) |
 | `list_youtube_channels` | read | none | `channels` (no tokens), `configured` |
 | `list_youtube_uploads`, `get_youtube_upload` | read | `limit`, `cursor`; or `uploadId` | Upload jobs with state, progress, video id and error |
-| `create_youtube_upload` | write, confirm when public, unlisted or scheduled | `connectionId`, `mediaId`, `title`, `privacy`, `madeForKids`, and optional `description`, `tags`, `categoryId`, `publishAt`, `syntheticMedia`, `notifySubscribers`, `thumbnailMediaId`, `clientRequestId` | `upload`, `alreadyQueued` |
+| `create_youtube_upload` | write, confirm when public, unlisted or scheduled | `connectionId`, `mediaId`, `title`, `privacy`, `madeForKids`, and optional `description`, `tags`, `categoryId`, `publishAt`, `syntheticMedia`, `notifySubscribers`, `language` (a tag such as `en-US`, sent as the video's and its audio's language), `thumbnailMediaId`, `clientRequestId` | `upload`, `alreadyQueued` |
 | `update_youtube_upload` | write, confirm when it makes the video public, unlisted or scheduled | `uploadId` and the details to change | `upload` |
 | `retry_youtube_upload` | write | `uploadId` | `upload` |
 | `cancel_youtube_upload` | write, confirm | `uploadId` | `upload` |

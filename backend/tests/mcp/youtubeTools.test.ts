@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { YOUTUBE_TOOLS, cancelYouTubeUpload, createYouTubeUpload, updateYouTubeUpload } from '../../mcp/tools/youtubeTools.ts';
 import { ValidationError } from '../../lib/errors.ts';
+import type { YouTubeUploadRequest, YouTubeUploadUpdateRequest } from '../../../shared/types/youtubePublishing.ts';
 
 const BASE = { connectionId: 'conn-1', mediaId: 'm-1', title: 'Launch', privacy: 'private', madeForKids: false };
 
@@ -31,4 +32,13 @@ test('YouTube\'s required choices and limits are checked before anything is queu
     assert.throws(() => createYouTubeUpload.parse({ ...BASE, privacy: 'public', publishAt: '2099-01-01T00:00:00Z' }), /must be private/);
     assert.throws(() => createYouTubeUpload.parse({ ...BASE, sourceUrl: 'https://evil.example/x.mp4' }), ValidationError);
     assert.throws(() => updateYouTubeUpload.parse({ uploadId: 'u1' }), /at least one detail/);
+});
+
+test('the language of a video is a language tag, kept as given, and named in the confirmation', () => {
+    const input = createYouTubeUpload.parse({ ...BASE, privacy: 'private', publishAt: '2099-01-01T00:00:00Z', language: 'en-US', syntheticMedia: false }) as YouTubeUploadRequest;
+    assert.equal(input.language, 'en-US');
+    assert.match(createYouTubeUpload.describe!(input), /Made or changed with AI: no\. Language: en-US\./);
+    assert.equal((createYouTubeUpload.parse(BASE) as YouTubeUploadRequest).language, null);
+    assert.throws(() => createYouTubeUpload.parse({ ...BASE, language: 'English (US)' }), /language tag/);
+    assert.equal((updateYouTubeUpload.parse({ uploadId: 'u1', language: 'en-GB' }) as { changes: YouTubeUploadUpdateRequest }).changes.language, 'en-GB');
 });

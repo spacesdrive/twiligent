@@ -14,7 +14,7 @@ const SOURCE = 'https://res.cloudinary.com/demo/video/upload/v1/clip.mp4';
 function job(extra: Partial<StoredYouTubeUpload> = {}): StoredYouTubeUpload {
     return {
         id: 'job-1', userId: 'user-1', connectionId: 'conn-1', title: 'Launch', description: '', tags: [], categoryId: '22',
-        privacy: 'private', publishAt: null, madeForKids: false, syntheticMedia: false, notifySubscribers: true, isShort: false,
+        privacy: 'private', publishAt: null, madeForKids: false, syntheticMedia: false, notifySubscribers: true, language: null, isShort: false,
         hasThumbnail: false, state: 'queued', bytesConfirmed: 0, sourceBytes: 10, videoId: null, attempts: 0,
         nextAttemptAt: '2026-11-05T00:00:00Z', lastError: null, createdAt: '2026-11-05T00:00:00Z', updatedAt: '2026-11-05T00:00:00Z',
         sourceUrl: SOURCE, contentType: 'video/mp4', thumbnailUrl: null, sessionUri: null, ...extra,
@@ -78,6 +78,24 @@ test('a queued job opens a session, saves it before sending bytes, uploads the v
     assert.equal(outcome.chunks, 1);
     assert.equal(released()?.state, 'processing');
     assert.deepEqual(saves.at(-1), { state: 'processing', videoId: 'vid-1', bytesConfirmed: 10, attempts: 0, lastError: null });
+});
+
+test('a job with a language tells YouTube the language of its text and audio; one without leaves both out', async t => {
+    const bodies: Record<string, unknown>[] = [];
+    network(t, (url, init) => {
+        if (url.includes('uploadType=resumable')) {
+            bodies.push(JSON.parse(String(init.body)) as Record<string, unknown>);
+            return new Response(null, { status: 200, headers: { Location: SESSION } });
+        }
+        if (url === SOURCE) return new Response(new Uint8Array(10), { status: 206 });
+        if (url === SESSION && new Headers(init.headers).get('Content-Range') === 'bytes */10') return new Response(null, { status: 308 });
+        return Response.json({ id: 'vid-1' }, { status: 201 });
+    });
+    await harness(job({ language: 'en-US' })).runner.run({ subrequests: 50, timeBudgetMs: 600_000 });
+    await harness(job()).runner.run({ subrequests: 50, timeBudgetMs: 600_000 });
+    const snippets = bodies.map(body => body.snippet as Record<string, unknown>);
+    assert.deepEqual([snippets[0].defaultLanguage, snippets[0].defaultAudioLanguage], ['en-US', 'en-US']);
+    assert.equal('defaultLanguage' in snippets[1] || 'defaultAudioLanguage' in snippets[1], false);
 });
 
 test('an upload resumes where Google says it stopped and stops at the run\'s budget, ready for the next run', async t => {

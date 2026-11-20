@@ -10,6 +10,8 @@ const MAX_ID = 100;
 const MAX_TAGS = 50;
 // YouTube's category ids are small numbers; 22 is People and Blogs, its own default
 const CATEGORY = /^\d{1,3}$/;
+// a BCP-47 language tag, such as en or en-US, as YouTube's i18nLanguages list names them
+const LANGUAGE = /^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8}){0,3}$/;
 
 function id(fields: Fields, name: string, what: string): string {
     const value = requiredString(fields, name, `${name} is required: the ${what} id`).trim();
@@ -45,6 +47,12 @@ function category(value: unknown): string | undefined {
     return value;
 }
 
+function language(value: unknown): string | null {
+    if (value === undefined || value === null || value === '') return null;
+    if (typeof value !== 'string' || !LANGUAGE.test(value.trim())) throw new ValidationError('language must be a language tag such as en-US');
+    return value.trim();
+}
+
 export function parseYouTubeUpload(body: Fields): YouTubeUploadRequest {
     const chosen = privacy(body.privacy);
     const madeForKids = optionalBoolean(body, 'madeForKids');
@@ -65,6 +73,7 @@ export function parseYouTubeUpload(body: Fields): YouTubeUploadRequest {
         madeForKids,
         syntheticMedia: optionalBoolean(body, 'syntheticMedia') ?? false,
         notifySubscribers: optionalBoolean(body, 'notifySubscribers') ?? true,
+        language: language(body.language),
         clientRequestId: clientRequestId || undefined,
     };
 }
@@ -77,6 +86,7 @@ export function parseYouTubeUploadUpdate(body: Fields): YouTubeUploadUpdateReque
     if (body.categoryId !== undefined) edit.categoryId = category(body.categoryId);
     if (body.privacy !== undefined) edit.privacy = privacy(body.privacy);
     if (body.publishAt !== undefined) edit.publishAt = publishAt(body.publishAt, edit.privacy);
+    if (body.language !== undefined) edit.language = language(body.language);
     for (const flag of ['madeForKids', 'syntheticMedia', 'notifySubscribers'] as const) {
         const value = optionalBoolean(body, flag);
         if (value !== undefined) edit[flag] = value;
