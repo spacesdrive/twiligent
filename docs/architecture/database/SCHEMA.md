@@ -684,6 +684,7 @@ deleteForUser(id, userId): Promise<void>
 // Automation rules (automationRuleRepository.ts)
 listForUser(userId) / findForUser(id, userId) / create(rule, userId) / updateForUser(id, changes, userId) / deleteForUser(id, userId)
 listEnabledForInstagramUser(igUserId): Promise<WebhookRule[]>         // webhook only - automation_rules_for_ig_user, every user
+disableForComment(commentRowId): Promise<string | null>             // processors only - turns off the rule of a comment whose link Instagram refused, in that comment's account
 
 // Automation comments (automationCommentRepository.ts)
 store(comments): Promise<StoredComments>                             // webhook only - store_automation_comments: comments and their public replies in one transaction; returns the new ones

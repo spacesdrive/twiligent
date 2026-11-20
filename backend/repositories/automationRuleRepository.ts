@@ -108,7 +108,8 @@ function toColumns(changes: AutomationRuleChanges): Record<string, unknown> {
     return Object.fromEntries(Object.entries(columns).filter(([, value]) => value !== undefined));
 }
 
-// methods named ...ForUser filter by the verified user id; listEnabledForInstagramUser serves the webhook across all users
+// methods named ...ForUser filter by the verified user id; listEnabledForInstagramUser serves the webhook and
+// disableForComment the reply processors, across all users
 export interface AutomationRuleRepository {
     listForUser(userId: string): Promise<AutomationRule[]>;
     findForUser(id: string, userId: string): Promise<AutomationRule | null>;
@@ -116,6 +117,7 @@ export interface AutomationRuleRepository {
     updateForUser(id: string, changes: AutomationRuleChanges, userId: string): Promise<AutomationRule | null>;
     deleteForUser(id: string, userId: string): Promise<boolean>;
     listEnabledForInstagramUser(igUserId: string): Promise<WebhookRule[]>;
+    disableForComment(commentRowId: string): Promise<string | null>;
 }
 
 export function createAutomationRuleRepository(db: SupabaseClient): AutomationRuleRepository {
@@ -182,6 +184,23 @@ export function createAutomationRuleRepository(db: SupabaseClient): AutomationRu
                 publicReplyEnabled: row.public_reply_enabled ?? false,
                 publicReplyTexts: row.public_reply_texts ?? [],
             }));
+        },
+
+        // turns off the rule a stored comment matched, in that comment's own account; the rule's id comes back, null when
+        // the comment has no rule any more
+        async disableForComment(commentRowId) {
+            const comment = await maybeRow<{ rule_id: string | null; user_id: string }>('automationRules.ruleOfComment', () => db
+                .from('automation_comments')
+                .select('rule_id, user_id')
+                .eq('id', commentRowId)
+                .maybeSingle());
+            if (!comment?.rule_id) return null;
+            await execute('automationRules.disableForComment', () => db
+                .from('automation_rules')
+                .update({ enabled: false })
+                .eq('id', comment.rule_id)
+                .eq('user_id', comment.user_id));
+            return comment.rule_id;
         },
     };
 }
