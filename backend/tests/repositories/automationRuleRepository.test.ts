@@ -27,6 +27,22 @@ test('the webhook lookup maps the database function\'s rows to rules with their 
     assert.deepEqual(supabase.calls[0].values, { p_ig_user_id: '1784' });
 });
 
+test('turning off the rule of a comment Instagram refused changes only that rule, in the comment\'s own account', async () => {
+    const supabase = fakeSupabase([
+        tableRow('automation_comments', { id: 'c1', rule_id: 'r1', user_id: 'user-1' }),
+        tableRow('automation_comments', { id: 'c2', rule_id: null, user_id: 'user-1' }),
+        tableRow('automation_rules', { id: 'r1', user_id: 'user-1', enabled: true }),
+        tableRow('automation_rules', { id: 'r2', user_id: 'user-1', enabled: true }),
+    ]);
+    const repo = createAutomationRuleRepository(supabase);
+    assert.equal(await repo.disableForComment('c1'), 'r1');
+    assert.deepEqual(supabase.calls[1].values, { enabled: false });
+    assert.deepEqual(supabase.calls[1].filters, [['id', 'r1'], ['user_id', 'user-1']]);
+    assert.deepEqual(supabase.table.filter(row => row._table === 'automation_rules').map(row => row.enabled), [false, true]);
+    assert.equal(await repo.disableForComment('c2'), null);
+    assert.equal(await repo.disableForComment('missing'), null);
+});
+
 test('pausing or resuming by hand creates the account\'s row once and clears a hold the Worker set', async () => {
     const supabase = fakeSupabase([tableRow('automation_accounts', { account_id: 'ig1', user_id: 'user-1', paused: true, paused_reason: 'token refused' })]);
     const repo = createAutomationAccountRepository(supabase);
