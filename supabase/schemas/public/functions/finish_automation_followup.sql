@@ -14,7 +14,8 @@ CREATE OR REPLACE FUNCTION public.finish_automation_followup (
   p_cooldown_reason text                     DEFAULT NULL::text,
   p_pause_reason    text                     DEFAULT NULL::text,
   p_gate_status     text                     DEFAULT NULL::text,
-  p_count_reminder  boolean                  DEFAULT false
+  p_count_reminder  boolean                  DEFAULT false,
+  p_blocked_until   timestamp with time zone DEFAULT NULL::timestamp WITH time zone
 )
   RETURNS boolean
   LANGUAGE plpgsql
@@ -33,6 +34,7 @@ begin
         claimed_at = null
     where f.id = p_id and (f.status = 'sending' or (f.status = 'needs_review' and f.status_reason = 'interrupted'))
     returning * into job;
+    -- a follow-up already settled keeps the attempt that settled it
     if not found then
         return false;
     end if;
@@ -58,6 +60,14 @@ begin
             cooldown_reason = excluded.cooldown_reason;
     end if;
 
+    -- sending restarts slowly once this time passes, so the account does not resume at full speed straight after a block
+    if p_blocked_until is not null then
+        insert into public.automation_accounts (account_id, user_id, blocked_until)
+        values (job.account_id, job.user_id, p_blocked_until)
+        on conflict (account_id) do update
+        set blocked_until = greatest(coalesce(public.automation_accounts.blocked_until, excluded.blocked_until), excluded.blocked_until);
+    end if;
+
     if p_pause_reason is not null then
         insert into public.automation_accounts (account_id, user_id, paused, paused_reason)
         values (job.account_id, job.user_id, true, p_pause_reason)
@@ -69,20 +79,20 @@ $function$;
 
 GRANT EXECUTE
   ON FUNCTION "public"."finish_automation_followup"(text, text, text, text, text, text, text, integer, integer, integer, timestamp WITH time zone, timestamp
-    WITH time zone, text, text, text, boolean)
+    WITH time zone, text, text, text, boolean, timestamp WITH time zone)
   TO "service_role";
 
 REVOKE ALL
   ON FUNCTION "public"."finish_automation_followup"(text, text, text, text, text, text, text, integer, integer, integer, timestamp WITH time zone, timestamp
-    WITH time zone, text, text, text, boolean)
+    WITH time zone, text, text, text, boolean, timestamp WITH time zone)
   FROM "postgres";
 
 GRANT EXECUTE
   ON FUNCTION "public"."finish_automation_followup"(text, text, text, text, text, text, text, integer, integer, integer, timestamp WITH time zone, timestamp
-    WITH time zone, text, text, text, boolean)
+    WITH time zone, text, text, text, boolean, timestamp WITH time zone)
   TO "postgres";
 
 REVOKE ALL
   ON FUNCTION "public"."finish_automation_followup"(text, text, text, text, text, text, text, integer, integer, integer, timestamp WITH time zone, timestamp
-    WITH time zone, text, text, text, boolean)
+    WITH time zone, text, text, text, boolean, timestamp WITH time zone)
   FROM PUBLIC, "anon", "authenticated";
