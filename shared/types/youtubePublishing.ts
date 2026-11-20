@@ -32,6 +32,8 @@ export interface YouTubeUploadSummary {
     madeForKids: boolean;
     syntheticMedia: boolean;
     notifySubscribers: boolean;
+    // the language the video is in, such as en-US; null when YouTube was not told
+    language: string | null;
     isShort: boolean;
     hasThumbnail: boolean;
     state: YouTubeUploadState;
@@ -59,13 +61,15 @@ export interface YouTubeUploadRequest {
     madeForKids: boolean;
     syntheticMedia?: boolean;
     notifySubscribers?: boolean;
+    // a BCP-47 tag such as en-US, sent to YouTube as the language of the title, description and audio
+    language?: string | null;
     // the same key twice returns the first job instead of uploading the video again
     clientRequestId?: string;
 }
 
 // body of PUT /api/youtube/uploads/:id; only a job that has not started uploading can change
 export type YouTubeUploadUpdateRequest = Partial<Pick<YouTubeUploadRequest,
-    'title' | 'description' | 'tags' | 'categoryId' | 'privacy' | 'publishAt' | 'madeForKids' | 'syntheticMedia' | 'notifySubscribers'>>;
+    'title' | 'description' | 'tags' | 'categoryId' | 'privacy' | 'publishAt' | 'madeForKids' | 'syntheticMedia' | 'notifySubscribers' | 'language'>>;
 
 export interface YouTubeConnectionListResponse {
     success: true;

@@ -207,7 +207,7 @@ Controllers in `youtubeController.ts` call `YouTubeConnectService` and `YouTubeU
 | GET | `/api/youtube/connections` | `youtubeRoutes.ts`, `youtubeController.listYouTubeConnections` | The caller's connected channels (never a token) and `configured` |
 | DELETE | `/api/youtube/connections/:id` | `youtubeRoutes.ts`, `youtubeController.deleteYouTubeConnection` | Revokes the access at Google and removes the connection with its uploads |
 | GET | `/api/youtube/uploads` | `youtubeRoutes.ts`, `youtubeController.listYouTubeUploads` | The caller's 200 newest upload jobs |
-| POST | `/api/youtube/uploads` | `youtubeRoutes.ts`, `youtubeController.createYouTubeUpload` | Queues a video from the caller's media; `201`, or `200` with the first job when `clientRequestId` was seen |
+| POST | `/api/youtube/uploads` | `youtubeRoutes.ts`, `youtubeController.createYouTubeUpload` | Queues a video from the caller's media, with its title, description, tags, category, privacy, publish time, made-for-kids and AI answers, and an optional `language` (a BCP-47 tag such as `en-US`, sent to YouTube as the video's and its audio's language); `201`, or `200` with the first job when `clientRequestId` was seen |
 | PUT | `/api/youtube/uploads/:id` | `youtubeRoutes.ts`, `youtubeController.updateYouTubeUpload` | Changes the details of a job that has not started |
 | POST | `/api/youtube/uploads/:id/cancel` | `youtubeRoutes.ts`, `youtubeController.cancelYouTubeUpload` | Stops a job YouTube has not finished |
 | POST | `/api/youtube/uploads/:id/retry` | `youtubeRoutes.ts`, `youtubeController.retryYouTubeUpload` | Queues a failed or needs-review job again from byte 0 |

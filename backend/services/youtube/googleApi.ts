@@ -131,13 +131,21 @@ export interface VideoInsert {
     madeForKids: boolean;
     syntheticMedia: boolean;
     notifySubscribers: boolean;
+    language: string | null;
 }
 
 // opens a resumable session; Google answers with the session address in Location, which the caller saves before sending bytes
 export async function startUploadSession(accessToken: string, video: VideoInsert, bytes: number, contentType: string, signal?: AbortSignal): Promise<string> {
     const url = `${UPLOAD_API}/videos?uploadType=resumable&part=snippet,status&notifySubscribers=${video.notifySubscribers}`;
     const body = {
-        snippet: { title: video.title, description: video.description, tags: video.tags, categoryId: video.categoryId },
+        snippet: {
+            title: video.title,
+            description: video.description,
+            tags: video.tags,
+            categoryId: video.categoryId,
+            // the language of the title and description, and of the spoken audio; YouTube uses them to match viewers
+            ...(video.language ? { defaultLanguage: video.language, defaultAudioLanguage: video.language } : {}),
+        },
         status: {
             privacyStatus: video.privacy,
             ...(video.publishAt ? { publishAt: video.publishAt } : {}),

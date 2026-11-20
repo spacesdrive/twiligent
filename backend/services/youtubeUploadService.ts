@@ -80,6 +80,7 @@ export function createYouTubeUploadService({ uploads, connections, media, audit,
                 madeForKids: request.madeForKids,
                 syntheticMedia: request.syntheticMedia ?? false,
                 notifySubscribers: request.notifySubscribers ?? true,
+                language: request.language ?? null,
                 clientRequestId: request.clientRequestId ?? null,
             });
             if (!created.existing) {

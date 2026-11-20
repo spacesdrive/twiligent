@@ -16,6 +16,7 @@ const metadataFields: Record<string, JsonSchema> = {
     madeForKids: { type: 'boolean', description: 'Whether the video is made for children; required by law and by YouTube' },
     syntheticMedia: { type: 'boolean', description: 'Whether realistic content was made or changed with AI' },
     notifySubscribers: { type: 'boolean', description: 'Tell subscribers about the new video; true when left out' },
+    language: { type: 'string', maxLength: 35, description: 'The language the video is in, as a tag such as en-US; YouTube uses it to match viewers. Left out, YouTube is not told' },
 };
 
 // anything other than a private video with no publish time becomes visible on the channel, so the person confirms it
@@ -29,6 +30,8 @@ function describeVideo(fields: Partial<YouTubeUploadRequest>): string {
         fields.privacy && `Visibility: ${fields.privacy}.`,
         fields.publishAt && `Publishes at: ${fields.publishAt}.`,
         fields.madeForKids !== undefined && `Made for kids: ${fields.madeForKids ? 'yes' : 'no'}.`,
+        fields.syntheticMedia !== undefined && `Made or changed with AI: ${fields.syntheticMedia ? 'yes' : 'no'}.`,
+        fields.language && `Language: ${fields.language}.`,
         fields.description !== undefined && `Description: "${fields.description}".`,
         fields.tags?.length && `Tags: ${fields.tags.join(', ')}.`,
     ].filter(Boolean).join(' ');
