@@ -7,6 +7,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [3.11.0] - 2026-11-20
+
+Claude can upload images and videos from your computer. What an instance owner must do: nothing; deploy as usual.
+
+### Added
+
+- Two Claude tools, `start_media_upload` and `register_media`, upload a file from the computer to the instance's Cloudinary storage and add it to your media, the same way the app's upload does. Before, Claude could only import files that were already at a public address (#198)
+
 ## [3.10.0] - 2026-11-20
 
 A YouTube upload can say which language the video is in. What an instance owner must do: run `npm run db:push` (one new column), then `npm run db:schema`, before deploying the Worker.
