@@ -128,6 +128,8 @@ Every tool works only on the caller's own data. Read tools need no confirmation.
 | `update_github_settings` | write | `repoOwner`, `repoName`, `branch` | The saved setting |
 | `list_media` | read | `limit`, `cursor` | `media` (id, type, public https `url`, size and dimensions, label), `nextCursor`, `total` |
 | `import_media_from_url` | write | `url` (public https), `resourceType` (`image` or `video`), `label` | `media`. Cloudinary downloads the file, not the Worker; private and non-https addresses are refused |
+| `start_media_upload` | write | `resourceType` (`image` or `video`) | `uploadUrl`, `fileField`, `fields` (the unsigned `upload_preset`), `next`. The same Cloudinary target the app's browser upload gets from `/api/cloudinary-config`; the client posts the local file there itself |
+| `register_media` | write | `publicId`, `url`, `resourceType`, and optional `format`, `width`, `height`, `durationSeconds`, `label`, from Cloudinary's answer | `media`. Goes through `MediaService.registerUpload`: only a file on this instance's cloud is accepted, its size is measured by the Worker, and removing it later never deletes the file |
 | `update_media` | write | `mediaId`, `label` | `media` |
 | `delete_media` | write, confirm | `mediaId` | `deleted`, `removedFromCloudinary`, and a `note` when the file stays on Cloudinary: the instance has no API secret, or Twiligent did not create the file (a browser upload, or an import that landed on a file Cloudinary already had) |
 | `list_youtube_channels` | read | none | `channels` (no tokens), `configured` |
