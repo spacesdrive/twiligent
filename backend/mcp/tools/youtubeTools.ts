@@ -85,7 +85,7 @@ export const getYouTubeUpload = defineTool<{ uploadId: string }>({
 export const createYouTubeUpload = defineTool<YouTubeUploadRequest>({
     name: 'create_youtube_upload',
     title: 'Upload a video to YouTube',
-    description: 'Queues a video from your media (see list_media and import_media_from_url) for upload to a YouTube channel verified for publishing. Twiligent uploads it in the background over the next runs and YouTube processes it; follow it with get_youtube_upload. Asks for a confirmation first when the video will be public, unlisted or scheduled. Sending the same clientRequestId again returns the first job.',
+    description: 'Queues a video from your media (see list_media, import_media_from_url and start_media_upload) for upload to a YouTube channel verified for publishing. Twiligent uploads it in the background over the next runs and YouTube processes it; follow it with get_youtube_upload. Asks for a confirmation first when the video will be public, unlisted or scheduled. Sending the same clientRequestId again returns the first job.',
     inputSchema: withConfirmation(objectSchema({
         connectionId: idProperty('YouTube channel connection'),
         mediaId: idProperty('video in your media'),
