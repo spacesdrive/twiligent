@@ -49,8 +49,19 @@ describe('automation follow-up repository', () => {
         assert.deepEqual(rpcArgs(supabase, 'finish_automation_followup'), {
             p_id: 'fu', p_attempt_id: 'att', p_status: 'accepted', p_outcome: 'accepted', p_reason: null, p_error_message: null, p_message_id: 'm',
             p_error_code: null, p_error_subcode: null, p_http_status: null, p_next_attempt_at: null, p_cooldown_until: null, p_cooldown_reason: null,
-            p_pause_reason: null, p_gate_status: 'completed', p_count_reminder: false,
+            p_pause_reason: null, p_gate_status: 'completed', p_count_reminder: false, p_blocked_until: null,
         });
+    });
+
+    test('a block on a follow-up records when it ends, so the account restarts slowly as after a blocked first message', async () => {
+        const supabase = fakeSupabase([], { finish_automation_followup: () => true });
+        const plan: FollowupFinishPlan = {
+            status: 'retry_wait', outcome: 'rejected', reason: 'blocked', errorMessage: 'blocked', messageId: null, errorCode: 368, errorSubcode: 1404169, httpStatus: 400,
+            nextAttemptAt: '2026-11-21T10:00:00.000Z', cooldownUntil: '2026-11-21T10:00:00.000Z', cooldownReason: 'blocked', pauseReason: null, recipientId: null,
+            gateStatus: null, countReminder: false, blockedUntil: '2026-11-21T10:00:00.000Z',
+        };
+        await createAutomationFollowupRepository(supabase).finish('fu', 'att', plan);
+        assert.equal(rpcArgs(supabase, 'finish_automation_followup').p_blocked_until, '2026-11-21T10:00:00.000Z');
     });
 
     test('a follow-up is released or handed back only while a run still holds it', async () => {

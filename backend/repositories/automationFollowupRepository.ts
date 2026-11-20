@@ -153,6 +153,7 @@ export function createAutomationFollowupRepository(db: SupabaseClient): Automati
                 p_pause_reason: plan.pauseReason,
                 p_gate_status: plan.gateStatus,
                 p_count_reminder: plan.countReminder,
+                p_blocked_until: plan.blockedUntil,
             }));
             return data === true;
         },
