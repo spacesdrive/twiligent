@@ -7,6 +7,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [3.9.0] - 2026-11-20
+
+The slow restart after a block now also follows a block on the message sent after someone types YES. What an instance owner must do: run `npm run db:push`, then `npm run db:schema`, before deploying the Worker (one function migration).
+
+### Fixed
+
+- When Instagram blocked the account on a follow-up (the message after the person's reply), the account waited a day but then resumed at full speed. It now restarts slowly, with one test reply in the first hour and a few more each hour after, as it already did after a blocked first message (#194)
+
 ## [3.8.1] - 2026-11-20
 
 A link Instagram refuses no longer pauses the whole account. What an instance owner must do: nothing; deploy as usual.
