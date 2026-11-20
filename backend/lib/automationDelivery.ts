@@ -31,6 +31,8 @@ export const DUE_NOW_SKEW_MS = 30_000;
 
 // a follow-up costs the follow check as well as reserve, send and finish
 export const SUBREQUESTS_PER_FOLLOWUP = 4;
+// turning off a rule whose link Instagram refused reads the comment and updates the rule; each run keeps room for one
+export const SUBREQUESTS_TO_DISABLE_RULE = 2;
 // the follow check is a read and safe to ask again, so it gets less time than a send: both fit a webhook's 20 seconds
 export const FOLLOW_CHECK_TIMEOUT_MS = 5_000;
 
@@ -71,8 +73,11 @@ const ALREADY_REPLIED_SUBCODE = 2534023;
 // the token is invalid, or the account does not grant or allow messaging
 const NOT_AUTHORIZED_CODES = new Set([3, 190, 200]);
 const NOT_AUTHORIZED_SUBCODES = new Set([2534041]);
+// code 368 with this subcode is Instagram refusing one link in the message as against its Community Standards; the
+// account itself is not blocked, so only that message fails
+const LINK_REFUSED_SUBCODE = 1404102;
 
-export type SendErrorKind = 'rate_limited' | 'blocked' | 'transient' | 'already_replied' | 'not_authorized' | 'not_eligible' | 'refused';
+export type SendErrorKind = 'rate_limited' | 'blocked' | 'link_refused' | 'transient' | 'already_replied' | 'not_authorized' | 'not_eligible' | 'refused';
 
 export interface GraphSendError {
     code?: number;
@@ -169,6 +174,7 @@ export type ReserveOutcome =
 export const SEND_ERROR_MESSAGES: Record<SendErrorKind, string> = {
     rate_limited: 'Instagram is limiting replies from this account for now. The reply goes out after the cooldown.',
     blocked: 'Instagram has temporarily blocked private replies from this account. Replies wait a day, then restart slowly with one test reply.',
+    link_refused: 'Instagram refused a link in this message as against its Community Standards, so it was not sent and the rule was turned off. Remove or change that link in the rule, then turn the rule on again. The account\'s other replies keep going.',
     transient: 'Instagram had a temporary problem. The reply is tried again.',
     already_replied: 'Instagram says this comment already has a private reply, so a second one was not sent.',
     not_authorized: 'Instagram refused this account\'s permission to send messages. Replies are held: reconnect the account on the Accounts page, check that it allows access to messages in the Instagram app, then resume it.',
@@ -238,6 +244,7 @@ export function replyMessages(job: ReplyMessageSource): string[] {
 
 export function classifySendError({ code, subcode, httpStatus }: GraphSendError): SendErrorKind {
     if (httpStatus === 429 || (code !== undefined && RATE_LIMIT_CODES.has(code))) return 'rate_limited';
+    if (code === 368 && subcode === LINK_REFUSED_SUBCODE) return 'link_refused';
     if (code === 368) return 'blocked';
     if (code === ALREADY_REPLIED_CODE || subcode === ALREADY_REPLIED_SUBCODE) return 'already_replied';
     if (subcode !== undefined && NOT_ELIGIBLE_SUBCODES.has(subcode)) return 'not_eligible';
@@ -365,6 +372,11 @@ function planForAnswer(result: SendResult, job: DeliveryJob, now: number, random
     }
     const finalMessage = kind === 'transient' ? `${message.replace(/ The reply is tried again\.$/, '')} Sending stopped after ${MAX_SEND_ATTEMPTS} tries.` : message;
     return { ...details, status: 'failed', outcome: 'rejected', reason: kind, errorMessage: finalMessage };
+}
+
+// a refused link would be refused again for everyone else the rule answers, and each refusal counts against the account
+export function refusedLink(plan: Pick<FinishPlan, 'reason'>): boolean {
+    return plan.reason === 'link_refused';
 }
 
 // a claimed job that cannot be sent as it is, checked before any limit is spent; null means it may go ahead. ruleEnabled

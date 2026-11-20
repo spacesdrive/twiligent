@@ -71,7 +71,7 @@ describe('automation public reply processor', () => {
     test('a private reply that fails never repeats the public one, and a public one retried alone never repeats the private one', async () => {
         instagram({ '1784': () => reply({ error: { message: 'Not allowed', code: 10, error_subcode: 2534022 } }, 400) });
         const queue = both('a');
-        const privateReplies = createAutomationProcessor({ comments: queue, automation: readAutomationConfig({} as Env), context: context() });
+        const privateReplies = createAutomationProcessor({ comments: queue, rules: queue.ruleRepository, automation: readAutomationConfig({} as Env), context: context() });
         await privateReplies.run();
         await processor(queue).run();
         assert.deepEqual([queue.rows[0].status, queue.publicRows[0].status], ['failed', 'accepted']);
@@ -83,7 +83,7 @@ describe('automation public reply processor', () => {
         posted = [];
         instagram({ 'c-b': count => (count === 1 ? reply({ error: { message: 'Invalid parameter', code: 100 } }, 400) : reply({ id: 'reply-b' })) });
         const other = both('b');
-        await createAutomationProcessor({ comments: other, automation: readAutomationConfig({} as Env), context: context() }).run();
+        await createAutomationProcessor({ comments: other, rules: other.ruleRepository, automation: readAutomationConfig({} as Env), context: context() }).run();
         await processor(other).run();
         assert.deepEqual([other.rows[0].status, other.publicRows[0].status], ['accepted', 'failed']);
         assert.equal(await other.publicReplies.requeueForUser('b', 'user-1'), 'pub-b');

@@ -50,7 +50,7 @@ function automation(env: Partial<Env> = {}): AutomationConfig {
 }
 
 function processor(queue: FakeQueue, config = automation(), signal = new AbortController().signal) {
-    return createAutomationProcessor({ comments: queue, automation: config, context: { requestId: 'req-test', signal, log: createLogger() } });
+    return createAutomationProcessor({ comments: queue, rules: queue.ruleRepository, automation: config, context: { requestId: 'req-test', signal, log: createLogger() } });
 }
 
 const statuses = (queue: FakeQueue) => Object.fromEntries(queue.rows.map(row => [row.id, row.status]));
@@ -346,14 +346,30 @@ describe('automation processor', () => {
         assert.deepEqual(Object.values(statuses(queue)), ['queued', 'queued']);
     });
 
+    test('a link Instagram refuses fails that reply and turns its rule off, without a cooldown for the account', async () => {
+        instagram({ 'c-a': () => reply({ error: { message: "Your message couldn't be shared, because this link goes against our Community Standards", code: 368, error_subcode: 1404102, fbtrace_id: 'T1' } }, 400) });
+        const queue = fakeAutomationQueue([queueRow('a'), queueRow('b')]);
+        const run = await processor(queue).run({ limit: 1 });
+        assert.deepEqual(run.outcomes, { failed: 1 });
+        // the next comment the rule matched is not sent with the same link
+        assert.deepEqual((await processor(queue).run()).outcomes, { skipped: 1 });
+        assert.equal(sent.length, 1);
+        assert.deepEqual([queue.rows[0].statusReason, queue.rows[1].statusReason], ['link_refused', 'rule_disabled']);
+        assert.match(queue.rows[0].errorMessage!, /refused a link .*turned off.*\(code 368, subcode 1404102, trace T1\)/);
+        assert.equal(queue.rules.get('rule-guide')!.enabled, false);
+        assert.deepEqual([...queue.controls.values()].map(controls => controls.cooldownUntil ?? null), [...queue.controls.values()].map(() => null));
+        // the claim, the reply's three, and two to turn the rule off
+        assert.equal(run.subrequests, 1 + 3 + 2);
+    });
+
     test('a run claims only as many replies as its subrequests can pay for, and none when they are spent', async () => {
         instagram();
         const queue = fakeAutomationQueue(Array.from({ length: 6 }, (_, i) => queueRow(`s${i}`)));
-        // the claim and a hand-back take two, each reply three: 11 subrequests pay for 3 replies
-        const run = await processor(queue).run({ ids: queue.rows.map(row => row.id), subrequests: 11 });
+        // the claim and a hand-back take two, turning off a rule two more, each reply three: 13 subrequests pay for 3 replies
+        const run = await processor(queue).run({ ids: queue.rows.map(row => row.id), subrequests: 13 });
         assert.equal(run.claimed, 3);
         assert.equal(sent.length, 3);
-        assert.deepEqual(await processor(queue).run({ subrequests: 4 }), { claimed: 0, outcomes: {}, subrequests: 0 });
+        assert.deepEqual(await processor(queue).run({ subrequests: 6 }), { claimed: 0, outcomes: {}, subrequests: 0 });
         assert.equal(queue.rows.filter(row => row.status === 'queued').length, 3);
     });
 });

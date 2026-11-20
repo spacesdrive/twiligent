@@ -1,17 +1,19 @@
 import { sendPrivateReply } from './instagram/instagramMessaging.ts';
 import {
-    BACKGROUND_RUN_MS, CLAIM_LEASE_SECONDS, FREE_PLAN_SUBREQUESTS, SEND_TIMEOUT_MS, SUBREQUESTS_PER_REPLY,
-    finishPlan, messageDigest, readinessPlan, releasePlan, replyMessage, waitsForAnswer,
+    BACKGROUND_RUN_MS, CLAIM_LEASE_SECONDS, FREE_PLAN_SUBREQUESTS, SEND_TIMEOUT_MS, SUBREQUESTS_PER_REPLY, SUBREQUESTS_TO_DISABLE_RULE,
+    finishPlan, messageDigest, readinessPlan, refusedLink, releasePlan, replyMessage, waitsForAnswer,
 } from '../lib/automationDelivery.ts';
 import { newRowId } from '../lib/ids.ts';
 import { errorFields } from '../lib/logger.ts';
 import type { AutomationCommentRepository, ClaimedComment } from '../repositories/automationCommentRepository.ts';
+import type { AutomationRuleRepository } from '../repositories/automationRuleRepository.ts';
 import type { AutomationConfig } from '../lib/config.ts';
 import type { RequestContext } from '../types/context.ts';
 import type { AutomationCommentStatus } from '../../shared/types/automation.ts';
 
 export interface AutomationProcessorDeps {
     comments: AutomationCommentRepository;
+    rules: Pick<AutomationRuleRepository, 'disableForComment'>;
     automation: AutomationConfig;
     context: RequestContext;
 }
@@ -43,12 +45,29 @@ export interface AutomationProcessor {
 // a send needs its whole timeout plus a moment to record the answer
 const SEND_MARGIN_MS = 2_000;
 
+// how many rules a run may still turn off; the batch leaves room for one, and a later refusal turns off any other
+interface RuleOffBudget {
+    left: number;
+}
+
 // sends the private replies that are due, one at a time so each account's replies keep their order and the
 // Worker's six open connections are never exceeded; every job is settled in the database before the next starts
-export function createAutomationProcessor({ comments, automation, context }: AutomationProcessorDeps): AutomationProcessor {
+export function createAutomationProcessor({ comments, rules, automation, context }: AutomationProcessorDeps): AutomationProcessor {
     const { signal, log } = context;
 
-    async function settle(job: ClaimedComment, spend: () => void): Promise<AutomationCommentStatus | 'gone'> {
+    // the reply is already settled, so a failure here only leaves the rule on; the next refusal tries again
+    async function disableRule(job: ClaimedComment, spend: () => void): Promise<void> {
+        spend();
+        spend();
+        try {
+            const ruleId = await rules.disableForComment(job.id);
+            log.warn('automation rule turned off: Instagram refused its link', { commentRowId: job.id, accountId: job.accountId, ruleId });
+        } catch (err) {
+            log.error('automation rule not turned off after a refused link', { commentRowId: job.id, accountId: job.accountId, ...errorFields(err) });
+        }
+    }
+
+    async function settle(job: ClaimedComment, spend: () => void, ruleOff: RuleOffBudget): Promise<AutomationCommentStatus | 'gone'> {
         const now = Date.now();
         const notReady = readinessPlan(job, now);
         if (notReady) {
@@ -75,6 +94,10 @@ export function createAutomationProcessor({ comments, automation, context }: Aut
         const plan = finishPlan(result, { attempts: job.attempts + 1, expiresAt: job.expiresAt, fromId: job.fromId, awaitsReply: waitsForAnswer(job) }, Date.now());
         spend();
         await comments.finish(job.id, attemptId, plan);
+        if (refusedLink(plan) && ruleOff.left > 0) {
+            ruleOff.left--;
+            await disableRule(job, spend);
+        }
         log.info('automation reply settled', {
             commentRowId: job.id,
             accountId: job.accountId,
@@ -109,7 +132,7 @@ export function createAutomationProcessor({ comments, automation, context }: Aut
             }
             const started = Date.now();
             // the claim and one hand-back come first, then each reply needs its three calls
-            const affordable = Math.floor((subrequests - 2) / SUBREQUESTS_PER_REPLY);
+            const affordable = Math.floor((subrequests - 2 - SUBREQUESTS_TO_DISABLE_RULE) / SUBREQUESTS_PER_REPLY);
             const batch = Math.min(limit ?? automation.batchSize, automation.batchSize, affordable);
             if (batch < 1) {
                 log.warn('automation run skipped: no subrequests left', { subrequests });
@@ -117,6 +140,7 @@ export function createAutomationProcessor({ comments, automation, context }: Aut
             }
             let spent = 1;
             const spend = () => { spent++; };
+            const ruleOff: RuleOffBudget = { left: 1 };
             // accounts take turns inside the claim, so one account may fill the batch only when no other is waiting
             const jobs = await comments.claim({ limit: batch, perAccount: batch, leaseSeconds: CLAIM_LEASE_SECONDS, ids });
 
@@ -128,7 +152,7 @@ export function createAutomationProcessor({ comments, automation, context }: Aut
                     break;
                 }
                 try {
-                    const status = await settle(job, spend);
+                    const status = await settle(job, spend, ruleOff);
                     outcomes[status] = (outcomes[status] ?? 0) + 1;
                 } catch (err) {
                     // one job's database failure must not stop the others; its claim or reservation expires and recovers it

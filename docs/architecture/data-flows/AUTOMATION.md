@@ -126,7 +126,8 @@ The claim takes only as many jobs as the budget pays for (one for the claim, one
 |---|---|---|---|
 | 200 with `message_id` | `accepted`, `message_id` and recipient kept | `accepted` | |
 | Codes 4, 17, 32, 613, 80002, 80006 or HTTP 429 | `retry_wait` until the cooldown ends | `rate_limited` | cooldown from `X-Business-Use-Case-Usage` (`estimated_time_to_regain_access`), else 15 minutes |
-| Code 368 (temporarily blocked) | `retry_wait` | `rejected` | 24 hour cooldown, then a slow restart: one test reply in the first hour and at most 5, 15, 40 and 100 in the next four. A test reply that is blocked again starts another day's cooldown, so a blocked account sends at most one reply a day until Instagram lifts the block |
+| Code 368 with subcode 1404102 (Instagram refused a link in the message as against its Community Standards) | `failed`, reason `link_refused` | `rejected` | no cooldown: the account is not blocked. The rule is turned off (`disableForComment`), so the same link is not sent to the next person and the account does not collect more refusals; the owner changes the link and turns the rule on again. A run keeps room for one such switch-off (`SUBREQUESTS_TO_DISABLE_RULE`); a later refusal turns off any other |
+| Any other code 368 (temporarily blocked, such as subcode 1404169) | `retry_wait` | `rejected` | 24 hour cooldown, then a slow restart: one test reply in the first hour and at most 5, 15, 40 and 100 in the next four. A test reply that is blocked again starts another day's cooldown, so a blocked account sends at most one reply a day until Instagram lifts the block |
 | Codes 1, 2 or HTTP 5xx | `retry_wait` after 1, 2, 4, 8 minutes (at most an hour) plus up to 30 seconds; `failed` after 5 tries | `rejected` | |
 | Code 10900 or subcode 2534023 (already replied) | `skipped` | `rejected` | |
 | Codes 3, 190, 200, a bare 10, subcode 2534041 (token or permission) | back to `queued`, held | `rejected` | paused with the reason: reconnect, then resume |
@@ -155,7 +156,8 @@ A public reply is its own job in `automation_public_replies`, created with its c
 | 200 without `id`, timeout, connection lost, unreadable 200 | `needs_review`, reason `no_answer` | `ambiguous` | |
 | Code 100 with subcode 33 (the comment is deleted or cannot be seen) | `skipped` | `rejected` | |
 | Rate limit codes or HTTP 429 | `retry_wait` until the cooldown ends | `rate_limited` | public cooldown from `X-Business-Use-Case-Usage`, else 15 minutes |
-| Code 368 (temporarily blocked) | `retry_wait` | `rejected` | 24 hour public cooldown; private replies go on |
+| Code 368 with subcode 1404102 (a refused link) | `failed`, reason `link_refused` | `rejected` | no cooldown; remove the link from the rule's public replies |
+| Any other code 368 (temporarily blocked) | `retry_wait` | `rejected` | 24 hour public cooldown; private replies go on |
 | Codes 1, 2 or HTTP 5xx | `retry_wait` with the same backoff; `failed` after 5 tries | `rejected` | |
 | Token or permission refused | back to `queued`, held | `rejected` | paused with the reason |
 | Any other error | `failed`, with Instagram's message | `rejected` | |

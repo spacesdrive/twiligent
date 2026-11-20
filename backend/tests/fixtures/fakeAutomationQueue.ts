@@ -5,6 +5,7 @@
 import type { AutomationCommentRepository, ClaimedComment, NewAutomationComment, ReviewResult } from '../../repositories/automationCommentRepository.ts';
 import type { AutomationFollowupRepository, ClaimedFollowup } from '../../repositories/automationFollowupRepository.ts';
 import type { AutomationPublicReplyRepository, ClaimedPublicReply, PublicReviewResult } from '../../repositories/automationPublicReplyRepository.ts';
+import type { AutomationRuleRepository } from '../../repositories/automationRuleRepository.ts';
 import type {
     AutomationCommentStatus, AutomationFollowupKind, AutomationFollowupStatus, AutomationGateStatus, AutomationPublicReplyStatus,
 } from '../../../shared/types/automation.ts';
@@ -128,6 +129,8 @@ export interface FakeQueue extends AutomationCommentRepository {
     reviews: { id: string; result: ReviewResult }[];
     // the same state seen through the follow-up repository
     followups: AutomationFollowupRepository;
+    // the rule repository's one method the processors use: turns off the rule a stored comment matched
+    ruleRepository: Pick<AutomationRuleRepository, 'disableForComment'>;
     // makes the next calls of one method throw, as a database outage would
     failNext(method: 'claim' | 'reserve' | 'finish' | 'release' | 'insertForMessages' | 'store', times?: number): void;
 }
@@ -472,6 +475,14 @@ export function fakeAutomationQueue(rows: QueueRow[] = [], followupRows: Followu
         tokens,
         reviews,
         followups,
+        ruleRepository: {
+            async disableForComment(commentRowId) {
+                const ruleId = rows.find(row => row.id === commentRowId)?.ruleId ?? null;
+                const rule = ruleId ? rules.get(ruleId) : undefined;
+                if (rule) rule.enabled = false;
+                return rule ? rule.id : null;
+            },
+        },
         failNext(method, times = 1) { failures.set(method, times); },
 
         // comments are unique per account and public replies per comment; a public reply joins the stored comment, new
